@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/metadata"
 )
 
 var (
@@ -45,6 +46,7 @@ type Item struct {
 	IndexNumber, ParentIndexNumber                                int
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
+	Metadata                                                      *metadata.Metadata
 }
 
 type Query struct {

@@ -1,0 +1,93 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T23:05:49.246752+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items/18/Images/Primary?MaxWidth=64",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "5897"
+      ],
+      [
+        "Content-Type",
+        "image/jpeg"
+      ],
+      [
+        "Date",
+        "Tue, 08 Sep 2026 23:05:48 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "public"
+      ],
+      [
+        "ETag",
+        "\"9f9e2cd450f6d1bbe6de728c16594041\""
+      ],
+      [
+        "Vary",
+        "Accept"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ],
+      [
+        "transferMode.dlna.org",
+        "Interactive"
+      ],
+      [
+        "realTimeInfo.dlna.org",
+        "DLNA.ORG_TLAG=*"
+      ]
+    ],
+    "bodyType": "binary-base64",
+    "body": "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"
+  },
+  "observation": "Wire image: 5897 bytes; SHA-256=dc583adef0b846ffa12bfcc67a667d42d60830262e39a30f9de27bbd301af97f; format=jpeg; dimensions=64x96. Body is base64-encoded exact response bytes."
+}

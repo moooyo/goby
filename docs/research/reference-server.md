@@ -217,3 +217,136 @@ ssh test-env 'pid=$(systemctl show goby-emby-reference -p MainPID --value); nsen
 Do not point this recorder at a production Emby instance or run destructive setup/library stages against unrelated data. The reference remains available for further authorized capture, with its process and private data independent of Goby.
 
 Outstanding evidence includes real third-party-client flows, static media range/conditional requests, actual HLS segments and seeking, subtitles, playback reports/resume policy, WebSocket handshake/events, conflicting authentication carriers, music grouping with tagged fixtures, and additional error/permission cases. The current capture is an M0 reference baseline, not a compatibility test pass for Goby.
+
+## M2b local artwork and NFO extension
+
+An additional 24 `artwork-*.json` fixtures were captured on the same isolated Emby 4.9.5.0 instance on 2026-09-08 UTC. They extend the original 65-fixture baseline; all 130 original raw/export files were checked by SHA-256 and remained byte-for-byte unchanged. This section records reference behavior for Goby's metadata and image work, not a Goby compatibility result.
+
+### Source provenance and refresh
+
+The existing synthetic movie was retained without changes. Only three new adjacent files were created:
+
+| File under `/opt/goby-fixtures/movies` | Origin and size | SHA-256 |
+| --- | --- | --- |
+| `Goby Sample (2026)-poster.jpg` | Self-generated color pattern, 160x240 JPEG, 22361 bytes; encoded with the existing test-env FFmpeg 9.0.1 | `c27e2c603548899acd6de7961b9f4b61e0b0cfce7f9059755bf10aa1221ac561` |
+| `Goby Sample (2026)-fanart.png` | Self-generated color pattern, 320x180 PNG, 9358 bytes; generated with Python's standard library | `9109c25b91e8bdf6a4e2f527c86e5f5b3ba4958490b5dfda405d3a08b280afe7` |
+| `Goby Sample (2026).nfo` | Synthetic metadata, 624 bytes | `cefe9cca37b0acae912f6b44e466695a8b5649caa8b29a9a54d2066ac997a9eb` |
+
+The original MP4 SHA-256 before and after preparation was `7763ca57b5f9285d3e0036250f7aab418832faa149f9dca7f0ef5545fbb0948a`. No existing media file was replaced or renamed. The reference service continued to see the fixture tree read-only, and its private network namespace prevented online metadata retrieval. No Goby scan was triggered by the recorder.
+
+The filenames follow the official [movie image naming rules](https://emby.media/support/articles/Movie-Naming.html#video-images). The extension also consulted the explicitly versioned [Emby SDK 4.9.5.0 OpenAPI](https://github.com/MediaBrowser/Emby.SDK/blob/4.9.5.0/Resources/OpenApi/openapi_v3.json) and [same-version image guide](https://github.com/MediaBrowser/Emby.SDK/blob/4.9.5.0/Documentation/doc/restapi/Images.html). Only public documentation, API requests, and self-generated inputs were used; no vendor-private implementation was inspected.
+
+After file creation, `POST /Items/18/Refresh` with `Recursive=false`, both refresh modes `FullRefresh`, both replacement flags true, and JSON `{}` returned HTTP 204. This was a targeted reference-item refresh, not a full-library scan. The corresponding evidence is `artwork-refresh.json`.
+
+The NFO contains the following controlled values:
+
+```xml
+<movie>
+  <title>Reference Artwork Film</title>
+  <originaltitle>Reference Original Title</originaltitle>
+  <year>2024</year>
+  <premiered>2024-01-02</premiered>
+  <rating>7.5</rating>
+  <mpaa>PG-13</mpaa>
+  <genre>Drama</genre>
+  <genre>Science Fiction</genre>
+  <tag>reference</tag>
+  <tag>local-artwork</tag>
+  <studio>Reference Studio</studio>
+  <uniqueid type="imdb" default="true">tt999999999</uniqueid>
+  <uniqueid type="tmdb">999999999</uniqueid>
+  <actor><name>Reference Actor</name><role>Lead</role><order>0</order></actor>
+  <director>Reference Director</director>
+</movie>
+```
+
+These provider identifiers are synthetic test values; no provider was contacted. The NFO has no overview.
+
+### NFO projection observations
+
+All four NFO requests were authenticated. List responses remained `{ "Items": [...], "TotalRecordCount": 1 }`; item detail remained a single JSON object.
+
+| Fixture | Request | Observed shape |
+| --- | --- | --- |
+| `artwork-nfo-default-items.json` | `GET /Users/{userId}/Items?Ids=18` | Only `Name`, `ServerId`, `Id`, `RunTimeTicks`, `IsFolder`, `Type`, `UserData`, `ImageTags`, `BackdropImageTags`, `MediaType`. The new NFO title is visible; optional NFO scalars and collections are absent, not null. |
+| `artwork-nfo-detail.json` | `GET /Users/{userId}/Items/18` | 51 properties, including `OriginalTitle`, `ProductionYear`, `PremiereDate`, `CommunityRating`, `OfficialRating`, `Genres`, `ProviderIds`, `People`, `Studios`, `GenreItems`, and `TagItems`. |
+| `artwork-nfo-projected-items.json` | List with `Fields=ProviderIds,Genres,Tags,Studios,People` | Adds the requested collections and related `GenreItems`/`TagItems`; the optional NFO scalars remain absent. |
+| `artwork-nfo-scalar-fields.json` | List with `Fields=ProductionYear,PremiereDate,OriginalTitle,CommunityRating,OfficialRating,Overview,SortName,DateCreated` | Enables the named nonempty scalars. `Overview` stays absent because this fixture contains no overview. |
+
+The returned NFO values included `OriginalTitle="Reference Original Title"`, `ProductionYear=2024`, `CommunityRating=7.5`, `OfficialRating="PG-13"`, and `ProviderIds={"Imdb":"tt999999999","Tmdb":"999999999"}`. `Genres` was the string array `["Drama","Science Fiction"]`.
+
+There was no `Tags` property. Requesting `Fields=Tags` produced `TagItems`, and the fixture's original tag order was sorted by name:
+
+```json
+{
+  "TagItems": [
+    {"Name": "local-artwork", "Id": 24},
+    {"Name": "reference", "Id": 25}
+  ],
+  "Studios": [
+    {"Name": "Reference Studio", "Id": 23}
+  ],
+  "People": [
+    {"Name": "Reference Actor", "Id": "19", "Role": "Lead", "Type": "Actor"},
+    {"Name": "Reference Director", "Id": "20", "Type": "Director"}
+  ]
+}
+```
+
+The distinction is material: `TagItems[].Id` and `Studios[].Id` are JSON numbers in these responses, while `People[].Id` is a JSON string. The actor precedes the director. The actor's NFO `<order>0</order>` did not produce an explicit `SortOrder` property. These observations do not establish ordering among multiple actors with different order values.
+
+The reference host's timezone was confirmed read-only as `Asia/Shanghai`, `CST+0800`. For NFO `<premiered>2024-01-02</premiered>`, Emby returned `PremiereDate="2024-01-01T16:00:00Z"`, consistent with a local-midnight interpretation on that host. The timezone was not changed, and this single case does not establish a universal fixed offset for other deployments.
+
+### Artwork discovery and image-list authentication
+
+The refreshed item contained `ImageTags.Primary="66dcea91e5ed256521d919b37c1e6c4d"` and one `BackdropImageTags` entry, `ea3300eb80fb72fba2c9eff80d1a45b4`. These tags appeared in the default list, explicit projections, and detail.
+
+Authenticated `GET /Items/18/Images` returned a top-level array with Primary and Backdrop image records. Both included `ImageType`, `Path`, `Filename`, `Height`, `Width`, and `Size`. Primary omitted `ImageIndex`; Backdrop explicitly had `ImageIndex: 0`. `Size` was `0` for both despite their nonempty files. No image-list `Tag` field was present. Evidence: `artwork-images-list.json`.
+
+The image metadata and binary endpoints had different authentication behavior in this configured instance:
+
+| Request | Valid `X-Emby-Token` | No token | Invalid `X-Emby-Token` |
+| --- | --- | --- | --- |
+| `GET /Items/18/Images` | 200 JSON array | 401 `text/plain` | 401 `text/plain` |
+| `GET /Items/18/Images/Primary` | 200 JPEG | 200 JPEG | 200 JPEG |
+
+The two unauthorized metadata-list responses had the exact body `Access token is invalid or expired.`. All three Primary body responses had the same bytes, dimensions, ETag, and content length. This observation covers image retrieval for the configured synthetic item; it does not cover image mutation, user-profile images, or per-user restricted libraries.
+
+### Image transforms and indexed paths
+
+The following image-content requests used a valid token unless explicitly named otherwise. The recorder decoded image headers on `test-env` to record format and dimensions; it did not run image processing locally.
+
+| Request suffix after `/Items/18/Images/Primary` | Status | Content type | Dimensions | Wire bytes |
+| --- | --- | --- | --- | --- |
+| No suffix, GET | 200 | `image/jpeg` | 160x240 | 22361 |
+| No suffix, HEAD | 200 | `image/jpeg` | No response body | `Content-Length: 22361` |
+| `/0` | 200 | `image/jpeg` | 160x240 | 22361 |
+| `/1` | 500 | `text/plain` | Not an image | 53 |
+| `?Width=64` | 200 | `image/jpeg` | 64x96 | 5897 |
+| `?MaxWidth=64` | 200 | `image/jpeg` | 64x96 | 5897 |
+| `?MaxWidth=320` | 200 | `image/jpeg` | 160x240 | 22361 |
+| `?Format=png` | 200 | `image/png` | 160x240 | 60770 |
+| `?Format=jpg&Quality=30` | 200 | `image/jpeg` | 160x240 | 3266 |
+| `?Format=jpg&Quality=90` | 200 | `image/jpeg` | 160x240 | 22361 |
+
+`Width=64` and `MaxWidth=64` preserved the portrait aspect ratio and produced identical image bytes. `MaxWidth=320` did not upscale the 160-pixel source. No separate `Width=320` upscaling case was requested. The default and quality-90 responses were byte-identical to the generated source JPEG.
+
+The unavailable Primary index `1` returned `Object reference not set to an instance of an object.`. This is an observed reference error, not evidence that an implementation needs a failing internal dereference.
+
+`GET /Items/18/Images/Backdrop/0?Format=original` returned the original 320x180 PNG, 9358 bytes, with a body hash identical to the generated PNG. Evidence for every transform is in `artwork-primary-*.json` and `artwork-backdrop-original.json`. Captured byte hashes establish provenance; cross-server image checks should separately evaluate dimensions, format, decodability, and cache behavior.
+
+### ETag, conditional requests, and Tag caching
+
+The unmodified Primary GET and HEAD returned the quoted ETag `"66dcea91e5ed256521d919b37c1e6c4d"` with `Cache-Control: public`. Supplying that exact value in `If-None-Match` yielded HTTP 304 for both GET and HEAD, with empty bodies. The observed 304 headers retained `Content-Type: image/jpeg` and `ETag`, and omitted `Content-Length` and `Cache-Control`.
+
+Adding `?Tag=66dcea91e5ed256521d919b37c1e6c4d` kept the same body and ETag but returned `Cache-Control: public, max-age=31536000`, plus `Expires` and `Last-Modified`. Untagged responses did not contain those last two headers. Evidence: `artwork-primary-tagged.json` and `artwork-primary-if-none-match-{get,head}.json`.
+
+ETags varied with transformation requests. In particular, `Width=64` and `MaxWidth=64` had different ETags even though their binary bodies matched. PNG conversion and quality 30 also produced distinct ETags. The capture does not identify or reproduce Emby's ETag algorithm. Conditional requests with weak validators, multiple validators, an incorrect validator, or a validator from another transformation were not tested.
+
+### Extension fixture format and audit
+
+Only the new artwork fixtures use `response.bodyType="binary-base64"` when an actual image body is present; `response.body` then contains the base64 encoding of the exact wire bytes. Their existing optional `observation` property records byte length, SHA-256, format, and dimensions. Empty HEAD/304 bodies remain `bodyType="text"` and `body=""`; JSON and error responses keep their original representations. The original 65 fixtures and their schema were not modified.
+
+The `export_artwork` stage exported only `artwork-*` records. Its remote audit checked exact response-header equality, JSON structure and primitive values, absence of all recorded credentials in exported text and decoded image bytes, and SHA-256 preservation of every original baseline file. Private raw records and credentials remain in the existing restricted reference data directory; only sanitized `artwork-*.json` exports were copied into the repository. Synthetic reference IDs and source-artwork paths are intentionally retained.
+
+The corresponding additional recorder stages are `artwork_prepare`, `artwork_refresh`, `artwork`, `artwork_scalars`, and `export_artwork`. They refuse to overwrite existing artwork evidence. All image generation, HTTP execution, and audit work ran through `ssh test-env`. The reference remained in its original private network namespace, and the existing Goby service was not restarted or scanned by this task.

@@ -1,4 +1,4 @@
-# Implemented API surface: foundation and ingestion
+# Implemented API surface: foundation, ingestion, and local metadata
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
@@ -54,7 +54,7 @@ The administrator UI refreshes active work at bounded intervals, pauses polling 
 | `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and probe metadata, including the item's path as observed in the reference contract |
 | `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
 | `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
-| `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; the assumed query-result envelope still needs reference comparison |
+| `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; the query-result envelope is confirmed by the reference capture |
 | `GET /emby/Library/VirtualFolders/Query` | Administrator library query projection; broader query/options remain incomplete |
 | `POST /emby/Library/VirtualFolders` | Initial administrator library creation and optional refresh; observed `204` success; full LibraryOptions support is pending |
 | `POST /emby/Library/VirtualFolders/Delete` | Administrator catalog removal, preserving media |
@@ -72,6 +72,12 @@ The initial Emby user projection disables media/transcode/deletion capabilities 
 
 Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, `Path`, and `Chapters` projections. Default list results omit paths and probe structures; an explicit field selection or authorized item detail includes them as observed in the reference. Authorization is applied before any projection. `EnableImages=false` removes image fields, and `EnableUserData=false` suppresses user data when present. Source stream indices and probe sizes/ticks are preserved. Sources still advertise no playable delivery method until the playback stage. Artwork tags are empty until artwork is implemented. Native media metadata retains FFmpeg format aliases; the current wire container uses the first alias and will be refined during playback negotiation.
 
+Local NFO data contributes `ProductionYear`, `PremiereDate`, `OriginalTitle`, `CommunityRating`, and `OfficialRating` when present, for detail requests or when selected with a same-named `Fields` value. These scalars are absent from the default item list, as confirmed by the NFO reference captures. Missing scalar values are omitted, while an explicit zero rating remains zero.
+
+`Fields=ProviderIds,Genres,Tags,Studios,People` includes provider identifiers, `Genres` strings together with `GenreItems`, `TagItems`, `Studios`, and `People`. In the pinned reference, `Fields=Tags` selects `TagItems` objects rather than a `Tags` string array. Detail requests include these collections as well. Requested missing collections are empty arrays and missing provider identifiers are an empty object.
+
+Studios, genre items, and tag items currently use objects with `Name`; people use `Name`, `Type`, and optional `Role`. `TagItems` is sorted by name using a lowercase comparison and an original-string tie break; the reference sample confirms name ordering for its two ASCII tags. NFO credit order controls stable array order rather than adding an unsupported `SortOrder` response field. **This entity projection remains partial:** the reference has numeric studio/genre/tag IDs and string person IDs, but Goby has not yet persisted those entities and therefore omits their identifiers and image metadata. The scanner applies names, overview, and numbering; the DTO does not reapply a conflicting NFO season. The raw sidecar and its internal source path/hash are not exposed. See [local metadata](../development/local-metadata.md) for supported files, values, and failure behavior.
+
 Library authorization currently implements administrator access plus `EnableAllFolders` and `EnabledFolders`. Counts and grouping occur after authorization filtering. Default ordinary users can access all libraries unless restricted. Subfolder exclusions, parental restrictions and the full policy editor remain work; this increment does not claim those policies are enforced.
 
 The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
@@ -80,4 +86,4 @@ The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, 
 
 `/admin/` serves the built React/MUI application, with route fallback for UI navigation. `/admin/v1` always goes through the API router, including unknown routes. `/healthz` exposes minimal liveness; `/readyz` checks PostgreSQL and the catalog ownership session. The service runs as an unprivileged Linux user in the test deployment.
 
-There is no consumer web player by design. Stream endpoints, the HLS job controller and hardware playback are still pending in the [active delivery plan](../planning/delivery-and-verification.md). Local sidecars, artwork and richer metadata are the next ingestion increment.
+There is no consumer web player by design. Stream endpoints, the HLS job controller and hardware playback are still pending in the [active delivery plan](../planning/delivery-and-verification.md). Artwork, richer catalog entities, and the complete query/policy surface remain ingestion work.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,22 +23,28 @@ var trackPattern = regexp.MustCompile(`^([0-9]{1,3})[ ._-]+(.+)$`)
 type hierarchy struct {
 	parentID, seriesID, seasonID, albumID string
 	seasonNumber                          int
+	folderType                            string
+	folderIndex                           int
 }
 
 type scanState struct {
-	store    *Store
-	task     *scanTask
-	library  Library
-	root     libraryRoot
-	opened   *os.Root
-	warnings int
+	store               *Store
+	task                *scanTask
+	library             Library
+	root                libraryRoot
+	opened              *os.Root
+	warnings            int
+	numberingConflicts  int
+	directoryIdentities map[string]os.FileInfo
 }
 
 type storedFile struct {
-	id, rootID, relativePath, identity, parentID, path, name, itemType string
-	size                                                               int64
-	modified                                                           *time.Time
-	media                                                              *media.Info
+	id, rootID, relativePath, identity, parentID, path, name, itemType, sortName, overview string
+	indexNumber, parentIndexNumber                                                         int
+	size                                                                                   int64
+	modified                                                                               *time.Time
+	media                                                                                  *media.Info
+	local                                                                                  localMetadata
 }
 
 func (s *Store) scanLibrary(task *scanTask) (string, error) {
@@ -63,7 +70,7 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 	if err := rows.Err(); err != nil {
 		return "Library directories could not be read", err
 	}
-	warnings, failedRoots := 0, 0
+	warnings, failedRoots, numberingConflicts := 0, 0, 0
 	for _, root := range roots {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err
@@ -77,6 +84,7 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		err = state.walk(".", hierarchy{parentID: library.ID}, 0)
 		_ = opened.Close()
 		warnings += state.warnings
+		numberingConflicts += state.numberingConflicts
 		if err != nil {
 			if task.ctx.Err() != nil {
 				return "Scan cancelled", task.ctx.Err()
@@ -84,11 +92,15 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			failedRoots++
 		}
 	}
+	numberingMessage := ""
+	if numberingConflicts > 0 {
+		numberingMessage = fmt.Sprintf("; %d local metadata numbering conflicts were ignored to preserve the existing hierarchy", numberingConflicts)
+	}
 	if failedRoots > 0 {
-		return fmt.Sprintf("%d media directories could not be scanned; existing catalog records were retained", failedRoots), ErrUnavailable
+		return fmt.Sprintf("%d media directories could not be scanned; existing catalog records were retained", failedRoots) + numberingMessage, ErrUnavailable
 	}
 	if warnings > 0 {
-		return fmt.Sprintf("%d media entries could not be inspected; existing catalog records were retained", warnings), nil
+		return fmt.Sprintf("%d media or local metadata entries could not be inspected; previous valid metadata was retained", warnings) + numberingMessage, nil
 	}
 	return "", nil
 }
@@ -110,25 +122,46 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		_ = directory.Close()
 		return fmt.Errorf("media directory is unavailable")
 	}
+	// Hold the observed directory while its NFO and children are processed so
+	// its identity cannot be recycled after a concurrent rename or removal.
+	defer directory.Close()
 	entries, err := directory.ReadDir(-1)
-	_ = directory.Close()
 	if err != nil {
 		return err
 	}
-	// A directory containing audio files is the album boundary. Artist folders
-	// are retained as folders because no provider metadata has been consulted.
-	if (state.library.CollectionType == "music" || state.library.CollectionType == "mixed") && containsAudio(entries) {
-		if relative == "." {
-			id, err := state.folder("//album/root", "", filepath.Base(state.root.path), "MusicAlbum", current.parentID, 0)
+	if state.directoryIdentities == nil {
+		state.directoryIdentities = make(map[string]os.FileInfo)
+	}
+	directoryKey := filepath.Clean(relative)
+	state.directoryIdentities[directoryKey] = info
+	defer delete(state.directoryIdentities, directoryKey)
+	// A directory containing audio files is the album boundary. Local metadata
+	// may describe this existing hierarchy but cannot choose a different kind.
+	folderType := current.folderType
+	albumDirectory := (state.library.CollectionType == "music" || state.library.CollectionType == "mixed") && containsAudio(entries)
+	if relative == "." {
+		if albumDirectory {
+			id, err := state.folder("//album/root", "", cleanName(filepath.Base(state.root.path)), "MusicAlbum", current.parentID, 0, ".")
 			if err != nil {
 				return err
 			}
 			current.albumID = id
-		} else {
-			if _, err := state.store.execOwned(state.task.ctx, "UPDATE items SET type = 'MusicAlbum' WHERE id = $1", current.parentID); err != nil {
-				return err
-			}
-			current.albumID = current.parentID
+		}
+	} else {
+		if albumDirectory {
+			folderType = "MusicAlbum"
+		}
+		id, err := state.folder(filepath.ToSlash(relative), filepath.Join(state.root.path, relative), cleanName(filepath.Base(relative)), folderType, current.parentID, current.folderIndex)
+		if err != nil {
+			return err
+		}
+		current.parentID = id
+		if folderType == "Series" {
+			current.seriesID, current.seasonID = id, ""
+		} else if folderType == "Season" {
+			current.seasonID, current.seasonNumber = id, current.folderIndex
+		} else if folderType == "MusicAlbum" {
+			current.albumID = id
 		}
 	}
 	for _, entry := range entries {
@@ -147,7 +180,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 					number, _ = strconv.Atoi(matches[1])
 					itemType = "Season"
 					if next.seriesID == "" {
-						next.seriesID, err = state.folder("//series/root", "", filepath.Base(state.root.path), "Series", state.library.ID, 0)
+						next.seriesID, err = state.folder("//series/root", "", cleanName(filepath.Base(state.root.path)), "Series", state.library.ID, 0, ".")
 						if err != nil {
 							return err
 						}
@@ -157,16 +190,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 					itemType = "Series"
 				}
 			}
-			id, err := state.folder(filepath.ToSlash(path), filepath.Join(state.root.path, path), cleanName(entry.Name()), itemType, next.parentID, number)
-			if err != nil {
-				return err
-			}
-			next.parentID = id
-			if itemType == "Series" {
-				next.seriesID, next.seasonID = id, ""
-			} else if itemType == "Season" {
-				next.seasonID, next.seasonNumber = id, number
-			}
+			next.folderType, next.folderIndex = itemType, number
 			if err := state.walk(path, next, depth+1); err != nil {
 				return err
 			}
@@ -229,6 +253,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	}
 	name := cleanName(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
 	itemType, parentID, indexNumber, parentIndex := "Movie", current.parentID, 0, 0
+	parentNumberDefined := false
 	if kind == "audio" {
 		itemType = "Audio"
 		if current.albumID != "" {
@@ -243,6 +268,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if state.library.CollectionType == "tvshows" || (state.library.CollectionType == "mixed" && len(matches) != 0) {
 			itemType = "Episode"
 			if len(matches) != 0 {
+				parentNumberDefined = true
 				parentIndex, _ = strconv.Atoi(matches[2])
 				indexNumber, _ = strconv.Atoi(matches[3])
 				seriesID := current.seriesID
@@ -265,15 +291,36 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 				}
 			} else if current.seasonID != "" {
 				parentIndex = current.seasonNumber
+				parentNumberDefined = true
 			}
 		}
 	}
+	candidates, nfoKind := fileNFOCandidates(path, itemType)
+	local := state.localNFO(candidates, nfoKind, stored.local)
+	if itemType == "Episode" {
+		local, indexNumber, parentIndex = state.episodeNumbering(local, indexNumber, parentIndex, parentNumberDefined)
+	}
+	name, sortName, overview := describeFromLocal(name, local)
+	// Sidecar absence is authoritative only while this media pathname still
+	// names the opened file. A concurrent directory move is not NFO deletion.
+	currentInfo, pathErr := state.opened.Lstat(path)
+	if pathErr != nil || !currentInfo.Mode().IsRegular() || !os.SameFile(info, currentInfo) ||
+		currentInfo.Size() != info.Size() || !currentInfo.ModTime().Equal(info.ModTime()) {
+		state.warnings++
+		return state.store.persistProgress(state.task)
+	}
 	fullPath := filepath.Join(state.root.path, path)
-	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || stored.name != name || stored.itemType != itemType
+	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || stored.name != name || stored.itemType != itemType ||
+		stored.sortName != sortName || stored.overview != overview || stored.indexNumber != indexNumber || stored.parentIndexNumber != parentIndex ||
+		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+	localJSON, err := encodeLocalMetadata(local)
 	if err != nil {
 		return err
 	}
@@ -286,17 +333,20 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	}
 	_, err = state.store.execOwned(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path,
-		 index_number, parent_index_number, media, file_identity, file_size, modified_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+		 index_number, parent_index_number, media, file_identity, file_size, modified_at,
+		 overview, local_metadata, local_metadata_hash, local_metadata_path)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 		ON CONFLICT (id) DO UPDATE SET root_id = EXCLUDED.root_id, parent_id = EXCLUDED.parent_id,
 		 name = EXCLUDED.name, sort_name = EXCLUDED.sort_name, type = EXCLUDED.type, path = EXCLUDED.path,
 		 is_folder = false,
 		 relative_path = EXCLUDED.relative_path, index_number = EXCLUDED.index_number,
 		 parent_index_number = EXCLUDED.parent_index_number, media = EXCLUDED.media,
+		 overview = EXCLUDED.overview, local_metadata = EXCLUDED.local_metadata,
+		 local_metadata_hash = EXCLUDED.local_metadata_hash, local_metadata_path = EXCLUDED.local_metadata_path,
 		 file_identity = EXCLUDED.file_identity, file_size = EXCLUDED.file_size,
 		 modified_at = EXCLUDED.modified_at, updated_at = now()`, id, state.library.ID, state.root.id,
-		parentID, name, strings.ToLower(name), itemType, fullPath, relative, indexNumber, parentIndex,
-		mediaJSON, fileIdentity(info), info.Size(), catalogModifiedTime(info))
+		parentID, name, sortName, itemType, fullPath, relative, indexNumber, parentIndex,
+		mediaJSON, fileIdentity(info), info.Size(), catalogModifiedTime(info), overview, localJSON, local.hash, local.path)
 	if err != nil {
 		return err
 	}
@@ -308,29 +358,58 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	return state.store.persistProgress(state.task)
 }
 
-func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int) (string, error) {
+func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
+	metadataPath := relative
+	if strings.HasPrefix(relative, "//") {
+		metadataPath = ""
+	}
+	if len(nfoRelative) != 0 {
+		metadataPath = nfoRelative[0]
+	}
+	local, err := state.folderLocalMetadata(relative, metadataPath, itemType, indexNumber)
+	if err != nil {
+		return "", err
+	}
+	if metadataPath != "" {
+		expected := state.directoryIdentities[filepath.Clean(metadataPath)]
+		current, statErr := state.opened.Lstat(metadataPath)
+		if expected == nil || statErr != nil || !current.IsDir() || !os.SameFile(expected, current) {
+			return "", fmt.Errorf("%w: media directory changed before metadata persistence", ErrUnavailable)
+		}
+	}
+	name, sortName, overview := describeFromLocal(name, local)
+	localJSON, err := encodeLocalMetadata(local)
+	if err != nil {
+		return "", err
+	}
 	id, err := randomID()
 	if err != nil {
 		return "", err
 	}
 	err = state.store.queryOwnedRow(state.task.ctx, `INSERT INTO items
-		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path, is_folder, index_number)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10)
+		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path, is_folder, index_number,
+		 overview, local_metadata, local_metadata_hash, local_metadata_path)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14)
 		ON CONFLICT (root_id, relative_path) DO UPDATE SET parent_id = EXCLUDED.parent_id,
 		name = EXCLUDED.name, sort_name = EXCLUDED.sort_name, type = EXCLUDED.type,
 		is_folder = true, media = NULL, file_identity = '', file_size = 0, modified_at = NULL,
 		parent_index_number = 0,
+		overview = EXCLUDED.overview, local_metadata = EXCLUDED.local_metadata,
+		local_metadata_hash = EXCLUDED.local_metadata_hash, local_metadata_path = EXCLUDED.local_metadata_path,
 		path = EXCLUDED.path, index_number = EXCLUDED.index_number, updated_at = now()
-		RETURNING id`, id, state.library.ID, state.root.id, parentID, name, strings.ToLower(name), itemType, path, relative, indexNumber).Scan(&id)
+		RETURNING id`, id, state.library.ID, state.root.id, parentID, name, sortName, itemType, path, relative, indexNumber,
+		overview, localJSON, local.hash, local.path).Scan(&id)
 	return id, err
 }
 
-const storedFileColumns = `id, root_id, relative_path, file_identity, file_size, modified_at, media, COALESCE(parent_id, ''), path, name, type`
+const storedFileColumns = `id, root_id, relative_path, file_identity, file_size, modified_at, media, COALESCE(parent_id, ''), path, name, type,
+	sort_name, overview, index_number, parent_index_number, local_metadata, local_metadata_hash, local_metadata_path`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
 	var item storedFile
-	var raw []byte
-	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType)
+	var raw, localRaw []byte
+	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType,
+		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path)
 	if err != nil {
 		return storedFile{}, err
 	}
@@ -339,6 +418,9 @@ func readStoredFile(row rowScanner) (storedFile, error) {
 		if err := json.Unmarshal(raw, item.media); err != nil {
 			return storedFile{}, err
 		}
+	}
+	if err := decodeLocalMetadata(localRaw, &item.local); err != nil {
+		return storedFile{}, err
 	}
 	return item, nil
 }

@@ -1,0 +1,105 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T23:08:06.394533+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users/fa0ec9ecc77b4fb487eceb8233c9a1fb/Items?Ids=18&Fields=ProductionYear,PremiereDate,OriginalTitle,CommunityRating,OfficialRating,Overview,SortName,DateCreated",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "640"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Tue, 08 Sep 2026 23:08:05 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference Artwork Film",
+          "OriginalTitle": "Reference Original Title",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "18",
+          "DateCreated": "2026-09-08T21:56:32.0000000Z",
+          "SortName": "Reference Artwork Film",
+          "PremiereDate": "2024-01-01T16:00:00.0000000Z",
+          "OfficialRating": "PG-13",
+          "CommunityRating": 7.5,
+          "RunTimeTicks": 20000000,
+          "ProductionYear": 2024,
+          "IsFolder": false,
+          "Type": "Movie",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "ImageTags": {
+            "Primary": "66dcea91e5ed256521d919b37c1e6c4d"
+          },
+          "BackdropImageTags": [
+            "ea3300eb80fb72fba2c9eff80d1a45b4"
+          ],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": "Scalar field names are requested explicitly against the same NFO-backed movie. The NFO fixture does not contain an overview."
+}

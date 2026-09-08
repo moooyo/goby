@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/database"
+	"github.com/moooyo/goby/internal/metadata"
 )
 
 func TestLibraryPolicyDefaultsAndRestrictions(t *testing.T) {
@@ -296,6 +297,96 @@ func TestItemReadsEnforceActiveUserPolicy(t *testing.T) {
 	}
 	if _, err := store.GetItem(ctx, "restricted", "episode-b1"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("read item after policy revocation error = %v, want ErrNotFound", err)
+	}
+}
+
+func TestItemQueriesReturnLocalMetadataWithinLibraryPolicy(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, store.pool)
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET local_metadata = '{
+		"Kind":"episodedetails","Name":"Local Episode","SortName":"Episode Local",
+		"OriginalTitle":"Original Episode","Overview":"A local episode overview.",
+		"OfficialRating":"TV-PG","ProductionYear":2024,"PremiereDate":"2024-01-02T03:04:05Z",
+		"IndexNumber":0,"ParentIndexNumber":0,"CommunityRating":8.5,
+		"ProviderIDs":{"Imdb":"tt1234567","Tvdb":"7654321"},
+		"Genres":["Drama","Mystery"],"Tags":["Local"],"Studios":["Example Studio"],
+		"People":[{"Name":"Example Actor","Role":"Lead","Type":"Actor","SortOrder":0}]
+	}'::jsonb, local_metadata_hash = repeat('a', 64), local_metadata_path = '/private/episode.nfo'
+		WHERE id = 'episode-b1';
+		UPDATE items SET local_metadata = '{"Kind":"movie","Name":"Private Movie","Overview":"Hidden metadata"}'::jsonb,
+			local_metadata_hash = repeat('b', 64), local_metadata_path = '/private/movie.nfo' WHERE id = 'movie-a'`); err != nil {
+		t.Fatal(err)
+	}
+	year, zero, rating := 2024, 0, 8.5
+	premiere := time.Date(2024, time.January, 2, 3, 4, 5, 0, time.UTC)
+	want := &metadata.Metadata{
+		Kind: "episodedetails", Name: "Local Episode", SortName: "Episode Local",
+		OriginalTitle: "Original Episode", Overview: "A local episode overview.",
+		OfficialRating: "TV-PG", ProductionYear: &year, PremiereDate: &premiere,
+		IndexNumber: &zero, ParentIndexNumber: &zero, CommunityRating: &rating,
+		ProviderIDs: map[string]string{"Imdb": "tt1234567", "Tvdb": "7654321"},
+		Genres:      []string{"Drama", "Mystery"}, Tags: []string{"Local"}, Studios: []string{"Example Studio"},
+		People: []metadata.Person{{Name: "Example Actor", Role: "Lead", Type: "Actor", SortOrder: &zero}},
+	}
+	query := Query{UserID: "restricted", Ids: []string{"movie-a", "episode-b1"}}
+	result, err := store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 1 || len(result.Items) != 1 || result.Items[0].ID != "episode-b1" {
+		t.Fatalf("metadata query = %+v, %v, want one visible episode", result, err)
+	}
+	if !reflect.DeepEqual(result.Items[0].Metadata, want) {
+		t.Errorf("query metadata = %+v, want %+v", result.Items[0].Metadata, want)
+	}
+	item, err := store.GetItem(ctx, "restricted", "episode-b1")
+	if err != nil || !reflect.DeepEqual(item.Metadata, want) {
+		t.Fatalf("item metadata = %+v, %v, want %+v", item.Metadata, err, want)
+	}
+	if item.Media == nil || item.Media.DurationTicks != 15000000 {
+		t.Errorf("local metadata changed the media projection: %+v", item.Media)
+	}
+	if _, err := store.GetItem(ctx, "restricted", "movie-a"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("hidden metadata item error = %v, want ErrNotFound", err)
+	}
+	private, err := store.GetItem(ctx, "admin", "movie-a")
+	if err != nil || private.Metadata == nil || private.Metadata.Name != "Private Movie" {
+		t.Errorf("administrator metadata = %+v, %v, want private movie metadata", private.Metadata, err)
+	}
+	// Hidden rows must be excluded before their metadata is decoded.
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET local_metadata = '{"Name":17}'::jsonb WHERE id = 'movie-a'`); err != nil {
+		t.Fatal(err)
+	}
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 1 || len(result.Items) != 1 || !reflect.DeepEqual(result.Items[0].Metadata, want) {
+		t.Fatalf("hidden invalid metadata affected visible results: %+v, %v", result, err)
+	}
+	if _, err := store.GetItem(ctx, "restricted", "movie-a"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("hidden invalid metadata error = %v, want ErrNotFound", err)
+	}
+	if _, err := store.GetItem(ctx, "admin", "movie-a"); err == nil {
+		t.Error("invalid visible metadata must not be returned as a successful item")
+	}
+}
+
+func TestItemQueriesPreserveAbsentAndNullLocalMetadata(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, store.pool)
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET local_metadata = 'null'::jsonb WHERE id = 'movie-b'`); err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{"episode-b2", "movie-b"}
+	result, err := store.QueryItems(ctx, Query{UserID: "restricted", Ids: ids})
+	if err != nil || result.TotalRecordCount != 2 || len(result.Items) != 2 {
+		t.Fatalf("absent metadata query = %+v, %v, want two items", result, err)
+	}
+	for _, item := range result.Items {
+		if item.Metadata != nil {
+			t.Errorf("item %s metadata = %+v, want nil", item.ID, item.Metadata)
+		}
+	}
+	for _, id := range ids {
+		item, err := store.GetItem(ctx, "restricted", id)
+		if err != nil || item.Metadata != nil {
+			t.Errorf("read item %s metadata = %+v, %v, want nil metadata", id, item.Metadata, err)
+		}
 	}
 }
 

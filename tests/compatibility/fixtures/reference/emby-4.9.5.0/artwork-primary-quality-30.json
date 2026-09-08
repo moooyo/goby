@@ -1,0 +1,93 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T23:05:49.269071+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items/18/Images/Primary?Format=jpg&Quality=30",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "3266"
+      ],
+      [
+        "Content-Type",
+        "image/jpeg"
+      ],
+      [
+        "Date",
+        "Tue, 08 Sep 2026 23:05:48 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "public"
+      ],
+      [
+        "ETag",
+        "\"d6c8a70a70f8d53a4981f45743bb76ca\""
+      ],
+      [
+        "Vary",
+        "Accept"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ],
+      [
+        "transferMode.dlna.org",
+        "Interactive"
+      ],
+      [
+        "realTimeInfo.dlna.org",
+        "DLNA.ORG_TLAG=*"
+      ]
+    ],
+    "bodyType": "binary-base64",
+    "body": "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"
+  },
+  "observation": "Wire image: 3266 bytes; SHA-256=505cbff39b6b0da3f7367aef5e7e8cdaa06640a8b635c4e4df617d3c54e873cd; format=jpeg; dimensions=160x240. Body is base64-encoded exact response bytes."
+}

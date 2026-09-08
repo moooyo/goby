@@ -13,7 +13,7 @@ import (
 
 const itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
-	i.parent_index_number, i.created_at, i.media`
+	i.parent_index_number, i.created_at, i.media, i.local_metadata`
 
 const libraryColumns = `l.id, l.name, l.collection_type,
 	COALESCE((SELECT array_agg(r.path ORDER BY r.path) FROM library_roots r
@@ -354,10 +354,10 @@ func itemOrderSQL(query Query) string {
 
 func scanItem(row rowScanner, additional ...any) (Item, error) {
 	var item Item
-	var encoded []byte
+	var encoded, encodedMetadata []byte
 	destinations := []any{&item.ID, &item.LibraryID, &item.ParentID, &item.Name, &item.SortName,
 		&item.Type, &item.Path, &item.Overview, &item.IsFolder, &item.IndexNumber,
-		&item.ParentIndexNumber, &item.CreatedAt, &encoded}
+		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata}
 	err := row.Scan(append(destinations, additional...)...)
 	if err != nil {
 		return Item{}, err
@@ -366,6 +366,11 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 		item.Media = &media.Info{}
 		if err := json.Unmarshal(encoded, item.Media); err != nil {
 			return Item{}, fmt.Errorf("decode item media: %w", err)
+		}
+	}
+	if len(encodedMetadata) != 0 {
+		if err := json.Unmarshal(encodedMetadata, &item.Metadata); err != nil {
+			return Item{}, fmt.Errorf("decode item local metadata: %w", err)
 		}
 	}
 	return item, nil

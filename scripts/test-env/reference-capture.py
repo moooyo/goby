@@ -8,15 +8,21 @@ Private raw captures and credentials remain in a root-only directory.
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
+import hashlib
 import http.client
 import json
 import os
 from pathlib import Path
 import re
 import secrets
+import shutil
 import stat
+import struct
+import subprocess
 import urllib.parse
+import zlib
 
 
 DATA = Path("/opt/goby-test/emby-reference-data")
@@ -104,7 +110,9 @@ class Recorder:
         elif type(original) is not type(exported) or original != exported:
             raise RuntimeError("Export changed a number, boolean, or null")
 
-    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None):
+    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False):
+        if name.startswith("artwork-") and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
+            raise RuntimeError(f"Refusing to overwrite artwork evidence: {name}")
         request_headers = dict(BASE_HEADERS if headers is None else headers)
         if authenticated:
             request_headers["X-Emby-Token"] = self.credentials["REFERENCE_TOKEN"]
@@ -123,13 +131,21 @@ class Recorder:
         status_code = response.status
         response_headers = response.getheaders()
         connection.close()
-        text = content.decode("utf-8", errors="replace")
-        try:
-            parsed = json.loads(text)
-            representation = "json"
-        except json.JSONDecodeError:
-            parsed = text
-            representation = "text"
+        content_type = dict((key.lower(), value) for key, value in response_headers).get("content-type", "")
+        if binary_image and content and content_type.startswith("image/"):
+            parsed = base64.b64encode(content).decode("ascii")
+            representation = "binary-base64"
+            image_format, width, height = self.image_dimensions(content)
+            details = f"Wire image: {len(content)} bytes; SHA-256={hashlib.sha256(content).hexdigest()}; format={image_format}; dimensions={width}x{height}. Body is base64-encoded exact response bytes."
+            note = f"{note} {details}" if note else details
+        else:
+            text = content.decode("utf-8", errors="replace")
+            try:
+                parsed = json.loads(text)
+                representation = "json"
+            except json.JSONDecodeError:
+                parsed = text
+                representation = "text"
         if isinstance(parsed, dict) and parsed.get("AccessToken"):
             self.credentials["REFERENCE_TOKEN"] = parsed["AccessToken"]
             self.secret_values.add(parsed["AccessToken"])
@@ -148,6 +164,170 @@ class Recorder:
         length = len(parsed) if isinstance(parsed, (list, dict, str)) else 0
         print(f"{name}: HTTP {status_code}, {representation}, top-level length={length}", flush=True)
         return status_code, parsed
+
+    @staticmethod
+    def image_dimensions(content: bytes) -> tuple[str, int, int]:
+        if content.startswith(b"\x89PNG\r\n\x1a\n") and len(content) >= 24:
+            width, height = struct.unpack(">II", content[16:24])
+            return "png", width, height
+        if content.startswith(b"\xff\xd8"):
+            offset = 2
+            while offset + 4 <= len(content):
+                if content[offset] != 0xFF:
+                    offset += 1
+                    continue
+                while offset < len(content) and content[offset] == 0xFF:
+                    offset += 1
+                marker = content[offset]
+                offset += 1
+                if marker in {0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
+                    continue
+                segment_size = struct.unpack(">H", content[offset:offset + 2])[0]
+                if marker in {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}:
+                    height, width = struct.unpack(">HH", content[offset + 3:offset + 7])
+                    return "jpeg", width, height
+                offset += segment_size
+        raise RuntimeError("Unexpected image format or missing dimensions")
+
+    @staticmethod
+    def synthetic_png(width: int, height: int) -> bytes:
+        def chunk(kind: bytes, payload: bytes) -> bytes:
+            checksum = zlib.crc32(kind + payload) & 0xFFFFFFFF
+            return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
+        pixels = bytearray()
+        for y in range(height):
+            pixels.append(0)
+            for x in range(width):
+                pixels.extend(((x // 11 * 29) % 256, (y // 13 * 41) % 256, ((x + y) // 17 * 53) % 256))
+        return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(bytes(pixels), 9)) + chunk(b"IEND", b"")
+
+    def artwork_prepare(self) -> None:
+        baseline_file = PRIVATE / "artwork-baseline-hashes.json"
+        if (PRIVATE / "artwork-source-provenance.json").exists():
+            raise RuntimeError("Artwork source fixtures have already been prepared")
+        if not baseline_file.exists():
+            baseline = {}
+            for directory in (PRIVATE / "raw", EXPORT):
+                for path in sorted(directory.glob("*.json")):
+                    baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+            private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        movie = Path(original["response"]["body"]["Path"])
+        if movie.parent != Path("/opt/goby-fixtures/movies") or not movie.is_file():
+            raise RuntimeError("Unexpected reference media path")
+        original_hash = hashlib.sha256(movie.read_bytes()).hexdigest()
+        ffmpeg = shutil.which("ffmpeg") or "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg"
+        if not Path(ffmpeg).is_file():
+            raise RuntimeError("Existing test-env FFmpeg was not found")
+        poster_png = self.synthetic_png(160, 240)
+        poster = subprocess.run(
+            [ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "image2pipe", "-i", "pipe:0", "-frames:v", "1", "-threads", "1", "-q:v", "2", "-f", "image2pipe", "-c:v", "mjpeg", "pipe:1"],
+            input=poster_png, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=20,
+        ).stdout
+        if self.image_dimensions(poster) != ("jpeg", 160, 240):
+            raise RuntimeError("Generated JPEG dimensions do not match the requested fixture")
+        nfo = """<?xml version="1.0" encoding="utf-8"?>
+<movie>
+  <title>Reference Artwork Film</title>
+  <originaltitle>Reference Original Title</originaltitle>
+  <year>2024</year>
+  <premiered>2024-01-02</premiered>
+  <rating>7.5</rating>
+  <mpaa>PG-13</mpaa>
+  <genre>Drama</genre>
+  <genre>Science Fiction</genre>
+  <tag>reference</tag>
+  <tag>local-artwork</tag>
+  <studio>Reference Studio</studio>
+  <uniqueid type="imdb" default="true">tt999999999</uniqueid>
+  <uniqueid type="tmdb">999999999</uniqueid>
+  <actor><name>Reference Actor</name><role>Lead</role><order>0</order></actor>
+  <director>Reference Director</director>
+</movie>
+"""
+        sources = {
+            movie.with_name(movie.stem + "-poster.jpg"): poster,
+            movie.with_name(movie.stem + "-fanart.png"): self.synthetic_png(320, 180),
+            movie.with_suffix(".nfo"): nfo.encode(),
+        }
+        for path, content in sources.items():
+            if path.exists():
+                raise RuntimeError(f"Refusing to replace existing source fixture: {path.name}")
+            with path.open("xb") as stream:
+                stream.write(content)
+            path.chmod(0o644)
+        provenance = {
+            "generator": "Python standard-library synthetic color pattern; existing test-env FFmpeg JPEG encoder",
+            "mediaPath": str(movie), "mediaSha256Before": original_hash,
+            "mediaSha256After": hashlib.sha256(movie.read_bytes()).hexdigest(),
+            "sources": [{"path": str(path), "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()} for path, content in sources.items()],
+        }
+        if provenance["mediaSha256After"] != original_hash:
+            raise RuntimeError("Original movie bytes changed")
+        private_write(PRIVATE / "artwork-source-provenance.json", json.dumps(provenance, indent=2) + "\n")
+        print("Created one 160x240 JPEG, one 320x180 PNG, and one synthetic NFO; original movie SHA-256 is unchanged.", flush=True)
+
+    def artwork_refresh(self) -> None:
+        if not (PRIVATE / "artwork-source-provenance.json").exists():
+            raise RuntimeError("Artwork preparation must complete before refreshing the item")
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        item_id = original["response"]["body"]["Id"]
+        self.request(
+            "artwork-refresh", "POST", f"/emby/Items/{item_id}/Refresh?Recursive=false&MetadataRefreshMode=FullRefresh&ImageRefreshMode=FullRefresh&ReplaceAllMetadata=true&ReplaceAllImages=true",
+            body={}, authenticated=True,
+            note="Only the existing synthetic reference movie is refreshed after adding local artwork and a same-basename NFO. No full-library scan is requested.",
+        )
+
+    def artwork(self) -> None:
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        item_id = original["response"]["body"]["Id"]
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        self.request("artwork-nfo-default-items", "GET", f"/emby/Users/{user_id}/Items?Ids={item_id}", authenticated=True)
+        _, detail = self.request("artwork-nfo-detail", "GET", f"/emby/Users/{user_id}/Items/{item_id}", authenticated=True)
+        self.request("artwork-nfo-projected-items", "GET", f"/emby/Users/{user_id}/Items?Ids={item_id}&Fields=ProviderIds,Genres,Tags,Studios,People", authenticated=True)
+        if not isinstance(detail, dict) or not detail.get("ImageTags", {}).get("Primary"):
+            raise RuntimeError("Local primary artwork was not identified; refusing to capture misleading image results")
+        image_path = f"/emby/Items/{item_id}/Images/Primary"
+        self.request("artwork-images-list", "GET", f"/emby/Items/{item_id}/Images", authenticated=True)
+        self.request("artwork-primary-get", "GET", image_path, authenticated=True, binary_image=True)
+        self.request("artwork-primary-head", "HEAD", image_path, authenticated=True, binary_image=True)
+        self.request("artwork-primary-index-zero", "GET", image_path + "/0", authenticated=True, binary_image=True)
+        self.request("artwork-primary-index-one", "GET", image_path + "/1", authenticated=True, binary_image=True)
+        for name, query in (
+            ("width-64", "Width=64"), ("maxwidth-64", "MaxWidth=64"), ("maxwidth-320", "MaxWidth=320"),
+            ("format-png", "Format=png"), ("quality-30", "Format=jpg&Quality=30"), ("quality-90", "Format=jpg&Quality=90"),
+        ):
+            self.request("artwork-primary-" + name, "GET", image_path + "?" + query, authenticated=True, binary_image=True)
+        primary = json.loads((PRIVATE / "raw" / "artwork-primary-get.json").read_text())
+        etag = next((value for key, value in primary["response"]["headers"] if key.lower() == "etag"), None)
+        if etag:
+            self.request("artwork-primary-if-none-match-get", "GET", image_path, headers={**BASE_HEADERS, "If-None-Match": etag}, authenticated=True, binary_image=True)
+            self.request("artwork-primary-if-none-match-head", "HEAD", image_path, headers={**BASE_HEADERS, "If-None-Match": etag}, authenticated=True, binary_image=True)
+        self.request("artwork-primary-no-token", "GET", image_path, headers={"Accept": "image/*"}, binary_image=True)
+        self.request("artwork-primary-invalid-token", "GET", image_path, headers={"Accept": "image/*", "X-Emby-Token": "invalid-reference-token"}, binary_image=True)
+        self.request("artwork-images-list-no-token", "GET", f"/emby/Items/{item_id}/Images", headers={"Accept": "application/json"})
+        self.request("artwork-images-list-invalid-token", "GET", f"/emby/Items/{item_id}/Images", headers={"Accept": "application/json", "X-Emby-Token": "invalid-reference-token"})
+        self.request("artwork-primary-tagged", "GET", image_path + "?" + urllib.parse.urlencode({"Tag": detail["ImageTags"]["Primary"]}), authenticated=True, binary_image=True)
+        self.request("artwork-backdrop-original", "GET", f"/emby/Items/{item_id}/Images/Backdrop/0?Format=original", authenticated=True, binary_image=True)
+
+    def export_artwork(self) -> None:
+        self.export(prefix="artwork-")
+        baseline = json.loads((PRIVATE / "artwork-baseline-hashes.json").read_text())
+        for name, expected in baseline.items():
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("A pre-existing baseline capture was changed")
+        print(f"Preserved all {len(baseline)} pre-existing raw/export fixture files byte-for-byte.", flush=True)
+
+    def artwork_scalars(self) -> None:
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        item_id = original["response"]["body"]["Id"]
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        fields = "ProductionYear,PremiereDate,OriginalTitle,CommunityRating,OfficialRating,Overview,SortName,DateCreated"
+        self.request(
+            "artwork-nfo-scalar-fields", "GET", f"/emby/Users/{user_id}/Items?Ids={item_id}&Fields={fields}",
+            authenticated=True,
+            note="Scalar field names are requested explicitly against the same NFO-backed movie. The NFO fixture does not contain an overview.",
+        )
 
     def public(self, prefix="public") -> None:
         self.request(f"{prefix}-system-info", "GET", "/emby/System/Info/Public", headers={"Accept": "application/json"})
@@ -318,7 +498,7 @@ class Recorder:
             note="Negotiation only. No Premiere entitlement or paid feature was bypassed, and no returned media URL was automatically played.",
         )
 
-    def export(self) -> None:
+    def export(self, prefix=None) -> None:
         records = [(path.stem, json.loads(path.read_text())) for path in sorted((PRIVATE / "raw").glob("*.json"))]
         for _, record in records:
             for header_name in ("X-Emby-Token", "X-MediaBrowser-Token"):
@@ -328,7 +508,8 @@ class Recorder:
             result = record["response"]["body"]
             if isinstance(result, dict) and result.get("AccessToken"):
                 self.secret_values.add(result["AccessToken"])
-        for name, record in records:
+        selected = [(name, record) for name, record in records if prefix is None or name.startswith(prefix)]
+        for name, record in selected:
             sanitized = self.sanitize(record)
             self.audit_export(record, sanitized)
             for original_header, exported_header in zip(record["response"]["headers"], sanitized["response"]["headers"]):
@@ -337,8 +518,12 @@ class Recorder:
             serialized = json.dumps(sanitized, indent=2, ensure_ascii=False) + "\n"
             if any(secret in serialized for secret in self.secret_values):
                 raise RuntimeError(f"Secret redaction failed for {name}")
+            if sanitized["response"]["bodyType"] == "binary-base64":
+                binary = base64.b64decode(sanitized["response"]["body"], validate=True)
+                if any(secret.encode() in binary for secret in self.secret_values):
+                    raise RuntimeError(f"Binary body contains a credential in {name}")
             private_write(EXPORT / f"{name}.json", serialized)
-        print(f"Exported {len(records)} fixtures; all response headers are exact, JSON structure/types/numbers are preserved, and all recorded credentials are absent. Synthetic reference IDs remain unchanged.", flush=True)
+        print(f"Exported {len(selected)} fixtures; all response headers are exact, JSON structure/types/numbers are preserved, and all recorded credentials are absent. Synthetic reference IDs remain unchanged.", flush=True)
 
     def hls(self) -> None:
         original = json.loads((PRIVATE / "raw" / "playback-info-post-hls-profile.json").read_text())
@@ -369,7 +554,7 @@ class Recorder:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export"])
+    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork"])
     options = parser.parse_args()
     recorder = Recorder()
     getattr(recorder, options.stage)()

@@ -2,12 +2,14 @@ package server
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/metadata"
 )
 
 func (s *Server) itemUser(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -354,6 +356,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	if detail || hasField(fields, "Overview") {
 		dto["Overview"] = item.Overview
 	}
+	addLocalMetadata(dto, item.Metadata, fields, detail)
 	if item.Media != nil {
 		mediaType := "Video"
 		if item.Type == "Audio" {
@@ -379,6 +382,87 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		}
 	}
 	return dto
+}
+
+// Descriptive metadata follows Fields/detail projection, as confirmed by the
+// NFO reference captures. The default item list omits these metadata values.
+// Display names, descriptions, and hierarchy indexes belong to the catalog item.
+func addLocalMetadata(dto map[string]any, source *metadata.Metadata, fields []string, detail bool) {
+	var local metadata.Metadata
+	if source != nil {
+		local = *source
+	}
+	if local.ProductionYear != nil && (detail || hasField(fields, "ProductionYear")) {
+		dto["ProductionYear"] = int32(*local.ProductionYear)
+	}
+	if local.PremiereDate != nil && (detail || hasField(fields, "PremiereDate")) {
+		dto["PremiereDate"] = local.PremiereDate.UTC()
+	}
+	if local.OriginalTitle != "" && (detail || hasField(fields, "OriginalTitle")) {
+		dto["OriginalTitle"] = local.OriginalTitle
+	}
+	if local.CommunityRating != nil && (detail || hasField(fields, "CommunityRating")) {
+		dto["CommunityRating"] = float32(*local.CommunityRating)
+	}
+	if local.OfficialRating != "" && (detail || hasField(fields, "OfficialRating")) {
+		dto["OfficialRating"] = local.OfficialRating
+	}
+	if detail || hasField(fields, "ProviderIds") {
+		providers := make(map[string]string, len(local.ProviderIDs))
+		for key, value := range local.ProviderIDs {
+			providers[key] = value
+		}
+		dto["ProviderIds"] = providers
+	}
+	if detail || hasField(fields, "Genres") {
+		dto["Genres"] = append([]string{}, local.Genres...)
+		dto["GenreItems"] = localMetadataNames(local.Genres)
+	}
+	if detail || hasField(fields, "Tags") {
+		tags := append([]string(nil), local.Tags...)
+		sort.SliceStable(tags, func(i, j int) bool {
+			left, right := strings.ToLower(tags[i]), strings.ToLower(tags[j])
+			if left == right {
+				return tags[i] < tags[j]
+			}
+			return left < right
+		})
+		dto["TagItems"] = localMetadataNames(tags)
+	}
+	if detail || hasField(fields, "Studios") {
+		dto["Studios"] = localMetadataNames(local.Studios)
+	}
+	if detail || hasField(fields, "People") {
+		credits := append([]metadata.Person(nil), local.People...)
+		sort.SliceStable(credits, func(i, j int) bool {
+			left, right := credits[i].SortOrder, credits[j].SortOrder
+			if left == nil {
+				return false
+			}
+			return right == nil || *left < *right
+		})
+		people := make([]map[string]any, 0, len(credits))
+		for _, credit := range credits {
+			person := map[string]any{"Name": credit.Name, "Type": credit.Type}
+			if credit.Role != "" {
+				person["Role"] = credit.Role
+			}
+			// BaseItemPerson has no SortOrder field. Preserve that order in the
+			// array without inventing person IDs or untracked image metadata.
+			people = append(people, person)
+		}
+		dto["People"] = people
+	}
+}
+
+func localMetadataNames(names []string) []map[string]any {
+	items := make([]map[string]any, 0, len(names))
+	for _, name := range names {
+		// NameLongIdPair.Id must be a persistent int64 catalog identifier.
+		// Facet entities are not yet stored, so this partial mapping omits Id.
+		items = append(items, map[string]any{"Name": name})
+	}
+	return items
 }
 
 func applyItemSwitches(item map[string]any, r *http.Request) {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<movie>
+  <title>Café Cinema — 🐈</title>
+  <originaltitle>A Curious Cat's Story</originaltitle>
+  <plot><![CDATA[Café, cinema, and a curious cat 🐈.]]></plot>
+  <genre>Comedy</genre>
+  <actor><name>Zoë Example</name><role>Narrator</role></actor>
+</movie>

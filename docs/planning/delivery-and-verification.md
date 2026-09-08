@@ -1,6 +1,6 @@
 # Delivery plan and remote compatibility verification
 
-Status: **research baseline documented; M1 service foundation in progress**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
+Status: **research baseline, service foundation, and initial ingestion delivered; metadata and artwork in progress**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
 
 ## Milestones and dependencies
 
@@ -33,7 +33,7 @@ During implementation, establish the remote repository/work directory and requir
 
 The user authorizes direct development on `main` during this initial development stage. Complete each milestone in a reviewable checkpoint, document its build/test evidence and remaining limitations, then create a milestone commit and push it to the configured remote before proceeding to the next milestone. Preserve unrelated user changes and inspect the actual branch/remote state before committing. A partial milestone checkpoint must be labeled partial and must not be reported as passing its completion gate.
 
-M0 documentation maintenance updates the chosen architecture and toolchain without implying that the reference-server contract freeze is complete. M1 implementation is in progress. Track actual delivery status and remote verification evidence as work lands; the original upstream inventory is a research catalog rather than an implementation test report.
+M0 documentation maintenance updates the chosen architecture and toolchain without implying that the reference-server contract freeze is complete. Track actual delivery status in the [implementation progress](../development/progress.md) and remote verification evidence as work lands; the original upstream inventory is a research catalog rather than an implementation test report.
 
 ## Compatibility harness design
 

@@ -1,0 +1,15 @@
+<movie>
+  <title> </title>
+  <sorttitle></sorttitle>
+  <originaltitle> </originaltitle>
+  <plot> </plot>
+  <mpaa> </mpaa>
+  <year> </year>
+  <premiered></premiered>
+  <aired> </aired>
+  <rating> </rating>
+  <uniqueid type="imdb"> </uniqueid>
+  <genre> </genre>
+  <tag></tag>
+  <studio> </studio>
+</movie>

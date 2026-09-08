@@ -2,7 +2,7 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **M1 service foundation in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+Implementation status: **service foundation and catalog ingestion delivered; local metadata and artwork in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
 
 ## Reading order
 
@@ -11,6 +11,7 @@ Implementation status: **M1 service foundation in progress**. The required stack
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
 | [Build and run](development/running.md) | Foundation configuration, PostgreSQL deployment, and remote verification |
+| [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |
@@ -30,7 +31,7 @@ Implementation status: **M1 service foundation in progress**. The required stack
 - **Unverified behavior:** a contract detail that needs a target server/client exchange, especially where the upstream sources conflict.
 - **Legacy candidate:** a route found in older material but absent from the current research baseline.
 
-The research inventory labels operations **planned, deferred, or excluded**; it is not a live implementation status report. M1 implementation is in progress, and compatibility claims require recorded runtime evidence. Catalog classifications identify candidate service families; they do not make every operation in a family an MVP requirement. The endpoint selections in [implementation scope](api/implementation-scope.md) control initial delivery.
+The research inventory labels operations **planned, deferred, or excluded**; it is not a live implementation status report. Read the [implementation progress](development/progress.md) and its verification reports for delivered increments. Compatibility claims require recorded runtime evidence. Catalog classifications identify candidate service families; they do not make every operation in a family an MVP requirement. The endpoint selections in [implementation scope](api/implementation-scope.md) control initial delivery.
 
 All Emby route examples are relative to the documented `/emby` base unless otherwise stated. `/admin` and `/admin/v1` are separate Goby namespaces. JSON is the first delivery format; XML and alternate route aliases require explicit compatibility coverage before being advertised.
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/metadata"
 )
 
 func TestQueryLatestRejectsInvalidInputBeforeDatabaseAccess(t *testing.T) {
@@ -197,6 +198,129 @@ func TestQueryLatestRawReturnsIndividualMedia(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertLatestItems(t, items, []latestExpectation{{"episode-b2", 1}, {"audio-b2", 1}})
+}
+
+func TestQueryLatestReturnsMetadataFromTheSelectedItem(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryLatestFixture(t, ctx, store.pool)
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET local_metadata = metadata_rows.metadata::jsonb
+		FROM (VALUES
+			('album-b', '{"Name":"Album metadata","Overview":"Album overview"}'),
+			('series-b', '{"Name":"Series metadata","Overview":"Series overview"}'),
+			('audio-b1', '{"Name":"First audio metadata","Overview":"First audio overview"}'),
+			('audio-b2', '{"Name":"Second audio metadata","Overview":"Second audio overview"}'),
+			('episode-b1', '{"Name":"First episode metadata","Overview":"First episode overview"}'),
+			('episode-b2', '{"Name":"Second episode metadata","Overview":"Second episode overview"}'),
+			('movie-b', '{"Name":"Visible movie metadata","Overview":"Visible movie overview"}'),
+			('movie-a', '{"Name":"Hidden movie metadata","Overview":"Hidden movie overview"}'),
+			('cross-library-child', '{"Name":"Hidden episode metadata","Overview":"Hidden episode overview"}')
+		) AS metadata_rows(id, metadata) WHERE items.id = metadata_rows.id;
+		INSERT INTO items
+			(id, library_id, parent_id, name, sort_name, type, is_folder, local_metadata) VALUES
+			('hidden-series-a', 'library-a', 'library-a', 'Hidden Series', 'Hidden Series', 'Series', true,
+			'{"Name":"Hidden series metadata","Overview":"Hidden series overview"}'::jsonb),
+			('cross-ancestor-episode-b', 'library-b', 'hidden-series-a', 'Visible Episode', 'Visible Episode', 'Episode', false,
+			'{"Name":"Visible episode metadata","Overview":"Visible episode overview"}'::jsonb)`); err != nil {
+		t.Fatalf("seed latest metadata fixtures: %v", err)
+	}
+	wantMetadata := map[string]metadata.Metadata{
+		"album-b":                  {Name: "Album metadata", Overview: "Album overview"},
+		"series-b":                 {Name: "Series metadata", Overview: "Series overview"},
+		"audio-b1":                 {Name: "First audio metadata", Overview: "First audio overview"},
+		"audio-b2":                 {Name: "Second audio metadata", Overview: "Second audio overview"},
+		"episode-b1":               {Name: "First episode metadata", Overview: "First episode overview"},
+		"episode-b2":               {Name: "Second episode metadata", Overview: "Second episode overview"},
+		"movie-b":                  {Name: "Visible movie metadata", Overview: "Visible movie overview"},
+		"movie-a":                  {Name: "Hidden movie metadata", Overview: "Hidden movie overview"},
+		"cross-library-child":      {Name: "Hidden episode metadata", Overview: "Hidden episode overview"},
+		"cross-ancestor-episode-b": {Name: "Visible episode metadata", Overview: "Visible episode overview"},
+	}
+	mediaIDs := []string{"audio-b1", "audio-b2", "episode-b1", "episode-b2", "movie-b", "movie-a", "cross-library-child"}
+	tests := []struct {
+		name  string
+		query Query
+		group bool
+		want  []latestExpectation
+	}{
+		{
+			name:  "raw results retain each source media metadata",
+			query: Query{UserID: "restricted", Ids: mediaIDs},
+			want:  []latestExpectation{{"audio-b1", 1}, {"episode-b1", 1}, {"movie-b", 1}, {"episode-b2", 1}, {"audio-b2", 1}},
+		},
+		{
+			name:  "groups use container metadata rather than matching child metadata",
+			query: Query{UserID: "restricted", Ids: mediaIDs},
+			group: true,
+			want:  []latestExpectation{{"album-b", 2}, {"movie-b", 1}, {"series-b", 2}},
+		},
+		{
+			name:  "a representative outside the parent scope retains its own metadata",
+			query: Query{UserID: "restricted", ParentID: "season-b"},
+			group: true,
+			want:  []latestExpectation{{"series-b", 2}},
+		},
+		{
+			name:  "hidden media metadata is absent from raw results",
+			query: Query{UserID: "restricted", Ids: []string{"movie-a", "cross-library-child"}},
+			want:  []latestExpectation{},
+		},
+		{
+			name:  "hidden media metadata is absent from grouped results",
+			query: Query{UserID: "restricted", Ids: []string{"movie-a", "cross-library-child"}},
+			group: true,
+			want:  []latestExpectation{},
+		},
+		{
+			name:  "authorized cross-library fallback retains source metadata",
+			query: Query{UserID: "default", Ids: []string{"movie-a", "cross-library-child"}},
+			group: true,
+			want:  []latestExpectation{{"movie-a", 1}, {"cross-library-child", 1}},
+		},
+		{
+			name:  "a visible source cannot expose hidden ancestor metadata",
+			query: Query{UserID: "restricted", Ids: []string{"cross-ancestor-episode-b", "hidden-series-a"}},
+			group: true,
+			want:  []latestExpectation{{"cross-ancestor-episode-b", 1}},
+		},
+		{
+			name:  "access to both libraries does not substitute cross-library ancestor metadata",
+			query: Query{UserID: "default", Ids: []string{"cross-ancestor-episode-b", "hidden-series-a"}},
+			group: true,
+			want:  []latestExpectation{{"cross-ancestor-episode-b", 1}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			items, err := store.QueryLatest(ctx, test.query, test.group)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertLatestItems(t, items, test.want)
+			for _, latest := range items {
+				want := wantMetadata[latest.Item.ID]
+				if latest.Item.Metadata == nil || !reflect.DeepEqual(*latest.Item.Metadata, want) {
+					t.Errorf("latest item %s metadata = %+v, want %+v", latest.Item.ID, latest.Item.Metadata, want)
+				}
+			}
+		})
+	}
+	t.Run("containers without metadata do not inherit matching child metadata", func(t *testing.T) {
+		if _, err := store.pool.Exec(ctx, `UPDATE items SET local_metadata =
+			CASE WHEN id = 'series-b' THEN NULL ELSE 'null'::jsonb END
+			WHERE id IN ('series-b', 'album-b')`); err != nil {
+			t.Fatal(err)
+		}
+		items, err := store.QueryLatest(ctx, Query{UserID: "restricted", Ids: mediaIDs}, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertLatestItems(t, items, []latestExpectation{{"album-b", 2}, {"movie-b", 1}, {"series-b", 2}})
+		for _, latest := range items {
+			if latest.Item.IsFolder && latest.Item.Metadata != nil {
+				t.Errorf("latest container %s metadata = %+v, want nil", latest.Item.ID, latest.Item.Metadata)
+			}
+		}
+	})
 }
 
 func TestQueryLatestParentScopeUsesSameLibraryDescendants(t *testing.T) {

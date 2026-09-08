@@ -1,0 +1,15 @@
+<episodedetails>
+  <title>A New Beginning</title>
+  <sorttitle>New Beginning, A</sorttitle>
+  <plot>The first chapter.</plot>
+  <season>2</season>
+  <episode>3</episode>
+  <aired>2025-01-02</aired>
+  <year>2025</year>
+  <rating>7.5</rating>
+  <uniqueid type="tvdb">76543</uniqueid>
+  <genre>Science Fiction</genre>
+  <actor><name>Alex Example</name><role>Explorer</role><order>2</order></actor>
+  <director>Taylor Director</director>
+  <writer>Jordan Writer</writer>
+</episodedetails>

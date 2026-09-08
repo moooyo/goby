@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<movie>
+  <title>The Example</title>
+  <sorttitle>Example, The</sorttitle>
+  <originaltitle>The Original Example</originaltitle>
+  <plot>A careful story about music &amp; discovery.</plot>
+  <mpaa>PG-13</mpaa>
+  <year>2024</year>
+  <premiered>2024-02-29</premiered>
+  <rating>8.25</rating>
+  <uniqueid type="imdb" default="true">tt1234567</uniqueid>
+  <uniqueid type="tmdb">12345</uniqueid>
+  <uniqueid type="MusicBrainz">release-123</uniqueid>
+  <genre>Drama</genre>
+  <genre> Music </genre>
+  <genre>Drama</genre>
+  <tag>Featured</tag>
+  <tag> Library favorite </tag>
+  <studio>Example Pictures</studio>
+  <actor>
+    <name>Ada Example</name>
+    <role>Lead</role>
+    <order>0</order>
+    <thumb>https://invalid.example/actor.jpg</thumb>
+  </actor>
+  <director>Sam Director</director>
+  <credits>Pat Writer</credits>
+  <thumb>https://invalid.example/poster.jpg</thumb>
+  <fanart><thumb>/outside/library/background.jpg</thumb></fanart>
+  <resume><position>123</position><total>456</total></resume>
+</movie>
