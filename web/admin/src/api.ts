@@ -49,6 +49,59 @@ export interface UsersResponse {
   TotalRecordCount: number;
 }
 
+export interface Library {
+  Id: string;
+  Name: string;
+  CollectionType: string;
+  Paths: string[];
+  CreatedAt: string;
+  LastScanAt: string | null;
+}
+
+export interface Job {
+  Id: string;
+  LibraryId: string;
+  Status: string;
+  Error: string;
+  Scanned: number;
+  Added: number;
+  Updated: number;
+  CreatedAt: string;
+  StartedAt: string | null;
+  FinishedAt: string | null;
+}
+
+export interface LibrariesResponse {
+  Items: Library[];
+  TotalRecordCount: number;
+}
+
+export interface LibraryResponse {
+  Library: Library;
+  Job?: Job;
+  ScanError?: {
+    Code: string;
+    Message: string;
+  };
+}
+
+export interface JobsResponse {
+  Items: Job[];
+  TotalRecordCount: number;
+}
+
+export interface JobResponse {
+  Job: Job;
+}
+
+export interface StorageRootsResponse {
+  Items: {
+    Path: string;
+    Available: boolean;
+  }[];
+  Configured: boolean;
+}
+
 export interface LoginInput {
   Name: string;
   Password: string;
@@ -60,6 +113,13 @@ export interface BootstrapInput extends LoginInput {
 
 export interface CreateUserInput extends LoginInput {
   IsAdministrator: boolean;
+}
+
+export interface LibraryInput {
+  Name: string;
+  CollectionType: "movies" | "tvshows" | "music" | "mixed";
+  Paths: string[];
+  Scan: boolean;
 }
 
 export interface RequestOptions {
@@ -358,5 +418,33 @@ export const adminApi = {
 
   createUser(input: CreateUserInput, options: RequestOptions = {}): Promise<UserResponse> {
     return mutate("/users", "POST", input, options);
+  },
+
+  getLibraries(options: RequestOptions = {}): Promise<LibrariesResponse> {
+    return request("/libraries", options);
+  },
+
+  createLibrary(input: LibraryInput, options: RequestOptions = {}): Promise<LibraryResponse> {
+    return mutate("/libraries", "POST", input, options);
+  },
+
+  deleteLibrary(libraryId: string, options: RequestOptions = {}): Promise<void> {
+    return mutate(`/libraries/${encodeURIComponent(libraryId)}`, "DELETE", undefined, options);
+  },
+
+  scanLibrary(libraryId: string, options: RequestOptions = {}): Promise<JobResponse> {
+    return mutate(`/libraries/${encodeURIComponent(libraryId)}/scan`, "POST", undefined, options);
+  },
+
+  getJobs(options: RequestOptions = {}): Promise<JobsResponse> {
+    return request("/jobs", options);
+  },
+
+  cancelJob(jobId: string, options: RequestOptions = {}): Promise<JobResponse> {
+    return mutate(`/jobs/${encodeURIComponent(jobId)}/cancel`, "POST", undefined, options);
+  },
+
+  getStorageRoots(options: RequestOptions = {}): Promise<StorageRootsResponse> {
+    return request("/storage/roots", options);
   },
 };

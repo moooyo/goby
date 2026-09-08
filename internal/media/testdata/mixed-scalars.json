@@ -1,0 +1,64 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "h264",
+      "codec_type": "video",
+      "profile": "High",
+      "width": 1920,
+      "height": "1080",
+      "level": 41,
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "24000/1001",
+      "duration": "12.3456789",
+      "bit_rate": "8000000",
+      "disposition": {"default": 1, "forced": "0"},
+      "tags": {"language": "und", "title": "Main video"}
+    },
+    {
+      "index": "3",
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "profile": "LC",
+      "sample_rate": 48000,
+      "channels": "6",
+      "bit_rate": 192000,
+      "duration_ts": "592593",
+      "time_base": "1/48000",
+      "disposition": {"default": "1", "forced": 0},
+      "tags": {"LANGUAGE": "eng", "TITLE": "Original audio"}
+    },
+    {
+      "index": 7,
+      "codec_name": "subrip",
+      "codec_type": "subtitle",
+      "bit_rate": "N/A",
+      "disposition": {"default": 0, "forced": 1},
+      "tags": {"language": "fra", "title": "Forced dialogue"}
+    },
+    {
+      "index": 9,
+      "codec_name": "hdmv_pgs_subtitle",
+      "codec_type": "subtitle",
+      "level": -99,
+      "disposition": {"default": 0, "forced": 0}
+    }
+  ],
+  "chapters": [
+    {
+      "id": 0,
+      "time_base": "1/1000000000",
+      "start": 123456789,
+      "start_time": "0.123456",
+      "end": "999999999",
+      "end_time": 0.999999,
+      "tags": {"title": "Opening"}
+    }
+  ],
+  "format": {
+    "format_name": "matroska,webm",
+    "duration": "900719925.4740993",
+    "size": "9007199254740993",
+    "bit_rate": 1e6
+  }
+}

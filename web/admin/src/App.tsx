@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { Avatar, Box, Button, Chip, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Paper, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
@@ -18,8 +18,10 @@ import { colors } from './theme';
 const AuthPage = lazy(() => import('./AuthPage').then((module) => ({ default: module.AuthPage })));
 const OverviewPage = lazy(() => import('./OverviewPage').then((module) => ({ default: module.OverviewPage })));
 const UsersPage = lazy(() => import('./UsersPage').then((module) => ({ default: module.UsersPage })));
+const LibrariesPage = lazy(() => import('./LibrariesPage').then((module) => ({ default: module.LibrariesPage })));
+const TasksPage = lazy(() => import('./TasksPage').then((module) => ({ default: module.TasksPage })));
 
-type Page = 'overview' | 'users';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -28,14 +30,18 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks' };
 
 function pageFromLocation(): Page {
-  return window.location.pathname.replace(/\/+$/, '').endsWith('/users') ? 'users' : 'overview';
+  const path = window.location.pathname.replace(/\/+$/, '');
+  if (path.endsWith('/users')) return 'users';
+  if (path.endsWith('/libraries')) return 'libraries';
+  if (path.endsWith('/tasks')) return 'tasks';
+  return 'overview';
 }
 
 function pageURL(page: Page): string {
-  return page === 'overview' ? '/admin/' : '/admin/users';
+  return page === 'overview' ? '/admin/' : `/admin/${page}`;
 }
 
 function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, event?: MouseEvent<HTMLAnchorElement>) => void }) {
@@ -47,15 +53,15 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
         {[
           { id: 'overview' as const, label: 'Overview', icon: SpaceDashboardOutlined },
           { id: 'users' as const, label: 'Users', icon: PeopleOutlineRounded },
+          { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
+          { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
         ].map(({ id, label, icon: Icon }) => (
           <ListItemButton key={id} component="a" href={pageURL(id)} selected={page === id} aria-current={page === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
             <ListItemIcon><Icon sx={{ fontSize: 21 }} /></ListItemIcon><ListItemText primary={label} />
           </ListItemButton>
         ))}
         {[
-          { label: 'Libraries', icon: VideoLibraryOutlined },
           { label: 'Sessions', icon: SensorsRounded },
-          { label: 'Tasks', icon: PlaylistAddCheckRounded },
           { label: 'Settings', icon: SettingsOutlined },
         ].map(({ label, icon: Icon }) => (
           <Tooltip key={label} title="Available in a future release" placement="right">
@@ -78,6 +84,8 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
 function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [page, setPage] = useState<Page>(pageFromLocation);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const focusAfterDrawer = useRef(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
@@ -99,7 +107,8 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     setMobileOpen(false);
     if (page !== next) {
       window.scrollTo({ top: 0, behavior: 'instant' });
-      requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+      if (mobileOpen) focusAfterDrawer.current = true;
+      else requestAnimationFrame(() => document.getElementById('main-content')?.focus());
     }
   }
 
@@ -121,11 +130,11 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     <Box sx={{ minHeight: '100dvh' }}>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <Box sx={{ position: 'fixed', inset: '0 auto 0 0', width: sidebarWidth, display: { xs: 'none', md: 'block' } }}><Navigation page={page} navigate={navigate} /></Box>
-      <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: sidebarWidth, border: 0 } }}><Navigation page={page} navigate={navigate} /></Drawer>
+      <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} slotProps={{ root: { disableRestoreFocus: true }, transition: { onExited: () => { if (focusAfterDrawer.current) { focusAfterDrawer.current = false; document.getElementById('main-content')?.focus(); } else menuButton.current?.focus(); } } }} sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: sidebarWidth, border: 0 } }}><Navigation page={page} navigate={navigate} /></Drawer>
       <Box sx={{ ml: { md: `${sidebarWidth}px` } }}>
         <Stack component="header" direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1, minHeight: 77, px: { xs: 2, sm: 3, lg: 5 }, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, minWidth: 0 }}>
-            <IconButton onClick={() => setMobileOpen(true)} aria-label="Open navigation" sx={{ display: { md: 'none' }, ml: -1 }}><MenuRounded /></IconButton>
+            <IconButton ref={menuButton} onClick={() => { focusAfterDrawer.current = false; setMobileOpen(true); }} aria-label="Open navigation" sx={{ display: { md: 'none' }, ml: -1 }}><MenuRounded /></IconButton>
             <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>Administration</Typography>
             <ChevronRightRounded sx={{ display: { xs: 'none', sm: 'block' }, color: '#A3B7BF', fontSize: 15 }} />
             <Typography variant="body2" sx={{ fontWeight: 600 }}>{pageTitles[page]}</Typography>
@@ -140,7 +149,10 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
         <Box component="main" id="main-content" tabIndex={-1} sx={{ p: { xs: 2.5, sm: 3, lg: 5 }, maxWidth: 1460, mx: 'auto', outline: 'none' }}>
           {error != null && <Box sx={{ mb: 3 }}><ErrorNotice error={error} /></Box>}
           <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
-            {page === 'overview' ? <OverviewPage user={user} onUsers={() => navigate('users')} /> : <UsersPage currentUser={user} />}
+            {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
+            {page === 'users' && <UsersPage currentUser={user} />}
+            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} />}
+            {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} />}
           </Suspense>
         </Box>
       </Box>

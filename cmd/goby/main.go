@@ -55,6 +55,13 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		closeCtx, done := context.WithTimeout(context.Background(), 10*time.Second)
+		defer done()
+		if err := app.Close(closeCtx); err != nil {
+			logger.Error("background work did not close cleanly")
+		}
+	}()
 	srv := &http.Server{
 		Addr:              cfg.ListenAddress,
 		Handler:           app.Handler(),

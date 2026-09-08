@@ -79,15 +79,16 @@ func (s *Server) adminLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func implementedFeatures() map[string]bool {
-	return map[string]bool{"UserManagement": true, "LibraryManagement": false, "Playback": false, "Transcoding": false, "HardwareDecoding": false, "HardwareEncoding": false}
+	return map[string]bool{"UserManagement": true, "LibraryManagement": true, "Playback": false, "Transcoding": false, "HardwareDecoding": false, "HardwareEncoding": false}
 }
 
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
-	var userCount, sessionCount int
+	var userCount, sessionCount, libraryCount, itemCount int
 	err := s.db.QueryRow(r.Context(), `SELECT (SELECT count(*) FROM users),
 		(SELECT count(*) FROM sessions JOIN users ON sessions.user_id=users.id
 		WHERE revoked_at IS NULL AND expires_at>now() AND NOT users.is_disabled
-		AND (sessions.kind='emby' OR users.is_administrator))`).Scan(&userCount, &sessionCount)
+		AND (sessions.kind='emby' OR users.is_administrator)),
+		(SELECT count(*) FROM libraries), (SELECT count(*) FROM items WHERE NOT is_folder)`).Scan(&userCount, &sessionCount, &libraryCount, &itemCount)
 	if err != nil {
 		s.identityError(w, r, err)
 		return
@@ -95,7 +96,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, 200, map[string]any{
 		"Server":   map[string]string{"Id": s.serverID, "Name": s.cfg.ServerName, "Version": s.version},
 		"Database": map[string]string{"Status": "connected", "Engine": "PostgreSQL"},
-		"Counts":   map[string]int{"Users": userCount, "Libraries": 0, "Items": 0, "ActiveSessions": sessionCount},
+		"Counts":   map[string]int{"Users": userCount, "Libraries": libraryCount, "Items": itemCount, "ActiveSessions": sessionCount},
 		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": implementedFeatures(),
 	})
 }

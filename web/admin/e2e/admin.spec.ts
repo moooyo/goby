@@ -11,7 +11,7 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   const consoleErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  const capture = async (file: string) => page.screenshot({ path: testInfo.outputPath(file), fullPage: true });
+  const capture = async (file: string) => page.screenshot({ path: testInfo.outputPath(file), fullPage: true, animations: 'disabled' });
 
   await page.goto('/admin/');
   await expect(page.getByRole('heading', { name: /Set up your server|Sign in to Goby/ })).toBeVisible();
@@ -147,7 +147,7 @@ test('a stale tab cannot replay a mutation under another administrator', async (
   expect(sessionResponse.status()).toBe(200);
   const session = await sessionResponse.json() as { User: { Name: string } };
   expect(session.User.Name).toBe(otherName);
-  await page.screenshot({ path: testInfo.outputPath('changed-session-requires-login.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('changed-session-requires-login.png'), fullPage: true, animations: 'disabled' });
   console.log(JSON.stringify({ pageErrors, rejectedMutationRequests: mutationRequests, unintendedUserCreated: false }));
   expect(pageErrors).toEqual([]);
 });

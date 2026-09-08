@@ -1,4 +1,4 @@
-# Implemented API surface: foundation increment
+# Implemented API surface: foundation and ingestion
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
@@ -19,10 +19,21 @@ All names are Goby-owned. JSON bodies and responses use the field names shown he
 | `GET /admin/v1/capabilities` | Administrator cookie | Implementation flags and pinned toolchain targets; unavailable media/hardware features report false |
 | `GET /admin/v1/users` | Administrator cookie | `{Items: User[], TotalRecordCount}` |
 | `POST /admin/v1/users` | Cookie, CSRF header, `{Name, Password, IsAdministrator}` | `201 {User}` |
+| `GET /admin/v1/libraries` | Administrator cookie | `{Items: Library[], TotalRecordCount}` |
+| `POST /admin/v1/libraries` | Cookie, CSRF, `{Name, CollectionType, Paths, Scan}` | `201 {Library, Job?}`; optional `ScanError` if catalog creation succeeded but initial scan admission failed |
+| `DELETE /admin/v1/libraries/{id}` | Cookie and CSRF | `204`; remove catalog records, retain every media file; active scans prevent removal |
+| `POST /admin/v1/libraries/{id}/scan` | Cookie and CSRF | `202 {Job}`; durable scan admission with per-library deduplication |
+| `GET /admin/v1/jobs` | Administrator cookie | Recent scan jobs, real progress and outcomes |
+| `POST /admin/v1/jobs/{id}/cancel` | Cookie and CSRF | `202 {Job}`; cancel remaining scan work, retain already indexed items |
+| `GET /admin/v1/storage/roots` | Administrator cookie | `{Items: [{Path, Available}], Configured}`; `Available` includes directory read permission |
 
 The native user shape is `{Id, Name, IsAdministrator, IsDisabled, HasPassword, CreatedAt}`. Errors have `{Error: {Code, Message}, RequestId}`. `401` signals invalid/missing/revoked authentication; `403` signals rejected origin, setup token, or CSRF. Mutations require JSON and CSRF protection once authenticated. The cookie is scoped to `/admin`, uses `HttpOnly` and `SameSite=Strict`, and is secure by default. CSRF values remain in browser memory and can be recovered with the authenticated session endpoint.
 
-Library/item counts are zero while those domains are unavailable. Active sessions in this increment are active authentication sessions, not a count of playing media clients.
+Library/item counts reflect persisted libraries and non-folder media records. Active sessions in this increment are active authentication sessions, not a count of playing media clients.
+
+Library records contain `Id`, `Name`, `CollectionType`, `Paths`, `CreatedAt`, and nullable `LastScanAt`. Scan jobs contain `Id`, `LibraryId`, `Status`, `Error`, `Scanned`, `Added`, `Updated`, `CreatedAt`, and nullable start/finish timestamps. Native statuses are `pending`, `running`, `completed`, `failed`, `cancelled`, and `interrupted`. A completed scan can have a warning describing individual media entries that could not be inspected; existing records are retained in that case. Job history is currently capped at the most recent 1,000 entries.
+
+The administrator UI refreshes active work at bounded intervals, pauses polling while hidden, stops after terminal state, and allows explicit refresh after errors. A lost create response has an unknown outcome: the UI asks the administrator to check the list before attempting another creation.
 
 ## Initial Emby API adapter
 
@@ -37,6 +48,17 @@ Library/item counts are zero while those domains are unavailable. Active session
 | `GET /emby/Users/{Id}` | Current account or administrator; a different ordinary user's account is denied |
 | `GET /emby/Users/Query` | Administrator only; supports `StartIndex`/`Limit` and query-result envelope; other upstream filters remain to be implemented |
 | `POST /emby/Sessions/Logout` | Revokes the caller's token |
+| `GET /emby/Users/{UserId}/Views` | Authorized library roots with collection types |
+| `GET /emby/Users/{UserId}/Items/Root` | Stable virtual navigation root |
+| `GET /emby/Users/{UserId}/Items` and `GET /emby/Items` | ACL-filtered browsing/search, recursive parents, IDs/types/media-type filters, paging and selected sorts |
+| `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and selected probe metadata; private filesystem paths are not exposed |
+| `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
+| `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
+| `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; the assumed query-result envelope still needs reference comparison |
+| `GET /emby/Library/VirtualFolders/Query` | Administrator library query projection; broader query/options remain incomplete |
+| `POST /emby/Library/VirtualFolders` | Initial administrator library creation and optional refresh; full LibraryOptions support is pending |
+| `POST /emby/Library/VirtualFolders/Delete` | Administrator catalog removal, preserving media |
+| `POST /emby/Library/Refresh` | Administrator scan request for configured libraries |
 
 The parser accepts `Authorization: Emby ...`, `X-Emby-Authorization`, `X-Emby-Token`, and query `api_key` for issued user tokens. Conflicting token values are rejected. Caller-provided user/role attributes never establish authority. Static application API keys are a separate future implementation and are not created by these routes.
 
@@ -44,8 +66,14 @@ Administrator-cookie sessions and Emby-token sessions cannot be substituted for 
 
 The initial Emby user projection disables media/transcode/deletion capabilities until those services exist. Unsupported Emby paths return an error. Full policy/configuration projections, query filters, device/session reporting, user edits, API keys, and the complete media API remain scheduled work. Error DTO/status details and version negotiation also need reference-server/client evidence.
 
+Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, and `Chapters` projections. Source stream indices and probe sizes/ticks are preserved. Sources still advertise no playable delivery method until the playback stage. Artwork tags are empty until artwork is implemented. Native media metadata retains FFmpeg format aliases; the current wire container uses the first alias and will be refined during playback negotiation.
+
+Library authorization currently implements administrator access plus `EnableAllFolders` and `EnabledFolders`. Counts and grouping occur after authorization filtering. Default ordinary users can access all libraries unless restricted. Subfolder exclusions, parental restrictions and the full policy editor remain work; this increment does not claim those policies are enforced.
+
+The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
+
 ## Delivery and health
 
-`/admin/` serves the built React/MUI application, with route fallback for UI navigation. `/admin/v1` always goes through the API router, including unknown routes. `/healthz` exposes minimal liveness; `/readyz` checks PostgreSQL. The service runs as an unprivileged Linux user in the test deployment.
+`/admin/` serves the built React/MUI application, with route fallback for UI navigation. `/admin/v1` always goes through the API router, including unknown routes. `/healthz` exposes minimal liveness; `/readyz` checks PostgreSQL and the catalog ownership session. The service runs as an unprivileged Linux user in the test deployment.
 
-No consumer web player, library scanner, stream endpoint, HLS job controller, or working hardware pipeline is included in this increment. Those requirements remain in the [active delivery plan](../planning/delivery-and-verification.md).
+There is no consumer web player by design. Stream endpoints, the HLS job controller and hardware playback are still pending in the [active delivery plan](../planning/delivery-and-verification.md). Local sidecars, artwork and richer metadata are the next ingestion increment.

@@ -1,6 +1,6 @@
 # Goby administrator dashboard
 
-React, TypeScript, and MUI provide an administrator-only Material Design interface. The dashboard has no media browser or player. The initial milestone includes first-run setup, administrator sessions, a live server overview, and user creation. Future modules stay disabled until their server APIs are implemented.
+React, TypeScript, and MUI provide an administrator-only Material Design interface. The dashboard has no media browser or player. It includes first-run setup, administrator sessions, a live server overview, user creation, library directory management, and scan tasks. Sessions and settings stay disabled until their management APIs are implemented.
 
 ## Build
 
@@ -16,9 +16,19 @@ MUI uses Emotion to insert style elements at runtime. A deployment content secur
 
 The server owns the HttpOnly session cookie. Requests use same-origin credentials. CSRF tokens are held only in memory and obtained from the session endpoint. A CSRF mismatch clears the local session and returns to login; mutations are never automatically replayed under an identity that may have changed in another tab. Neither credentials nor setup tokens are stored in browser storage. First-run setup returns to login rather than assuming a session was created.
 
+## Libraries and scan tasks
+
+Libraries use absolute Linux paths inside the configured media roots. The dashboard displays root availability, validates basic path syntax, and leaves canonical path authorization to the server. Creating a library can request an initial scan. Deleting a library removes catalog records while keeping media files on disk; a confirmation explains this before the request is sent.
+
+Tasks display actual scanned, added, and updated counts instead of an estimated percentage. Pending or running tasks can be cancelled. The task page schedules its next refresh three seconds after the previous request finishes, and only while active tasks remain. Terminal states, request errors, and navigation stop automatic refreshes. Cancelling a task keeps catalog entries that were already scanned.
+
 ## Remote browser verification
 
 Run `npm run test:e2e` only in `test-env`, against a disposable Goby test server. Set `GOBY_SMOKE_BASE_URL`, `GOBY_SMOKE_NAME`, and `GOBY_SMOKE_PASSWORD`; a fresh server also needs `GOBY_SETUP_TOKEN`. Install Chromium there with `npx playwright install chromium` when required. The suite creates the first administrator when needed, one normal user, and another administrator per run. It verifies login, cookie attributes, user creation, logout, session persistence after reload, mobile navigation, and rejection of a stale form after another tab changes administrator accounts. Screenshots are written to `test-results/`. Network traces are disabled because authentication requests contain secrets.
+
+The library test additionally needs `GOBY_SMOKE_MEDIA_PATH` pointing to an allowed directory containing real probeable media and `GOBY_SMOKE_MEDIA_FILE` pointing to one file inside it. Without these variables the fixture-dependent test is explicitly skipped. With fixtures configured, it verifies library creation, a real scan, completed task counts, mobile layouts, and library deletion without changing the fixture file.
+
+Cancellation verification requires `GOBY_SMOKE_CANCEL_MEDIA_PATH` with enough real media files for an active scan. On the authorized Linux test host, `python3 e2e/prepare-cancel-fixture.py` prepares 200 hard links under `/opt/goby-fixtures/cancel` from `GOBY_SMOKE_MEDIA_FILE` without duplicating media data or deleting files. Point the cancellation variable at that directory. The cancellation test must observe and cancel an active task; it fails if the scan finishes before the action and never treats that race as a pass or skip.
 
 ## Visual direction
 

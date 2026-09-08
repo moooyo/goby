@@ -26,15 +26,23 @@ input {
   top: 12px;
   left: 12px;
   z-index: 1600;
-  transform: translateY(-200%);
-  padding: 10px 18px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   border-radius: 6px;
   background: white;
   color: #193a46;
 }
 
 .skip-link:focus {
-  transform: translateY(0);
+  width: auto;
+  height: auto;
+  padding: 10px 18px;
+  overflow: visible;
+  clip-path: none;
 }
 
 .mono {

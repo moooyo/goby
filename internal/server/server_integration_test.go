@@ -32,6 +32,7 @@ type serverFixture struct {
 	cfg     config.Config
 	log     *slog.Logger
 	handler http.Handler
+	app     *Server
 }
 
 // Every API integration test uses a newly created, uniquely named schema.
@@ -98,6 +99,14 @@ func newServerFixture(t *testing.T) *serverFixture {
 		t.Fatalf("create server: %v", err)
 	}
 	fixture.handler = api.Handler()
+	fixture.app = api
+	t.Cleanup(func() {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := api.Close(closeCtx); err != nil {
+			t.Errorf("close server workers: %v", err)
+		}
+	})
 	return fixture
 }
 
@@ -404,10 +413,20 @@ func TestHTTPPublicServerIDPersistsAndUnknownAdminAPIReturnsJSON(t *testing.T) {
 		t.Fatalf("public server metadata is incorrect: %#v", public)
 	}
 	f.bootstrap(t)
+	if err := f.app.Close(f.ctx); err != nil {
+		t.Fatalf("close original server before recreation: %v", err)
+	}
 	recreated, err := New(f.ctx, f.cfg, f.pool, identity.New(f.pool), f.log, "integration-version")
 	if err != nil {
 		t.Fatalf("recreate API server: %v", err)
 	}
+	t.Cleanup(func() {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := recreated.Close(closeCtx); err != nil {
+			t.Errorf("close recreated server: %v", err)
+		}
+	})
 	f.handler = recreated.Handler()
 	after := f.request(t, http.MethodGet, "/emby/System/Info/Public", nil, nil)
 	expectStatus(t, after, http.StatusOK)

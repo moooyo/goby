@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 )
 
 type Server struct {
@@ -21,6 +23,7 @@ type Server struct {
 	version  string
 	serverID string
 	limiter  *loginLimiter
+	library  *library.Store
 }
 
 func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
@@ -28,8 +31,14 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if err != nil {
 		return nil, err
 	}
-	return &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter()}, nil
+	catalog, err := library.New(db, media.Prober{FFprobePath: cfg.FFprobePath, Timeout: 30 * time.Second}, cfg.MediaRoots)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog}, nil
 }
+
+func (s *Server) Close(ctx context.Context) error { return s.library.Close(ctx) }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -44,6 +53,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/v1/capabilities", s.requireAdmin(s.capabilities))
 	mux.HandleFunc("GET /admin/v1/users", s.requireAdmin(s.users))
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
+	s.registerLibraryRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})
@@ -105,6 +115,10 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if s.db.Ping(ctx) != nil {
 		apiError(w, r, 503, "not_ready", "The service is not ready.")
+		return
+	}
+	if s.library.CheckOwnership(ctx) != nil {
+		apiError(w, r, 503, "catalog_not_ready", "The media catalog is not ready. Restart the service if its database session was lost.")
 		return
 	}
 	jsonResponse(w, 200, map[string]string{"Status": "ready"})

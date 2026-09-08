@@ -1,0 +1,424 @@
+package server
+
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
+)
+
+func (s *Server) itemUser(w http.ResponseWriter, r *http.Request) (string, bool) {
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	userID := r.PathValue("UserId")
+	queryUserID := r.URL.Query().Get("UserId")
+	if userID != "" && queryUserID != "" && userID != queryUserID {
+		apiError(w, r, 400, "invalid_input", "User identifiers must agree.")
+		return "", false
+	}
+	if userID == "" {
+		userID = queryUserID
+	}
+	if userID == "" {
+		userID = principal.User.ID
+	}
+	if userID != principal.User.ID && !principal.User.IsAdministrator {
+		apiError(w, r, 403, "access_denied", "The requested user's library is not accessible.")
+		return "", false
+	}
+	return userID, true
+}
+
+func virtualRootID() string { return "goby-library-root" }
+
+func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	libraries, err := s.library.ListUserLibraries(r.Context(), userID)
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	items := make([]map[string]any, 0, len(libraries))
+	for _, entry := range libraries {
+		item := s.itemDTO(library.Item{ID: entry.ID, LibraryID: entry.ID, Name: entry.Name, SortName: entry.Name, Type: "CollectionFolder", IsFolder: true, CreatedAt: entry.CreatedAt}, nil, false)
+		if entry.CollectionType == "mixed" {
+			item["CollectionType"] = nil
+		} else {
+			item["CollectionType"] = entry.CollectionType
+		}
+		items = append(items, item)
+	}
+	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": len(items)})
+}
+
+func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	libraries, err := s.library.ListUserLibraries(r.Context(), userID)
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	jsonResponse(w, 200, map[string]any{"Id": virtualRootID(), "Name": "Media libraries", "Type": "Folder", "IsFolder": true, "ServerId": s.serverID, "ChildCount": len(libraries)})
+}
+
+func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (library.Query, bool) {
+	values := r.URL.Query()
+	query := library.Query{UserID: userID, ParentID: values.Get("ParentId"), SearchTerm: values.Get("SearchTerm"), SortBy: values.Get("SortBy"), SortOrder: values.Get("SortOrder"), Limit: 100}
+	if query.ParentID == virtualRootID() {
+		query.ParentID = ""
+	}
+	if raw := values.Get("Recursive"); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			apiError(w, r, 400, "invalid_input", "Recursive must be a boolean.")
+			return query, false
+		}
+		query.Recursive = value
+	}
+	for name, target := range map[string]*int{"StartIndex": &query.StartIndex, "Limit": &query.Limit} {
+		if raw := values.Get(name); raw != "" {
+			value, err := strconv.Atoi(raw)
+			if err != nil || value < 0 {
+				apiError(w, r, 400, "invalid_input", "Pagination must use non-negative integers.")
+				return query, false
+			}
+			*target = value
+		}
+	}
+	if query.Limit > 1000 {
+		query.Limit = 1000
+	}
+	query.IncludeItemTypes = queryValues(values["IncludeItemTypes"])
+	query.Ids = queryValues(values["Ids"])
+	query.MediaTypes = queryValues(values["MediaTypes"])
+	return query, true
+}
+
+func queryValues(values []string) []string {
+	var result []string
+	for _, value := range values {
+		for _, part := range strings.Split(value, ",") {
+			if part = strings.TrimSpace(part); part != "" {
+				result = append(result, part)
+			}
+		}
+	}
+	return result
+}
+
+func (s *Server) embyItems(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	query, ok := readItemQuery(w, r, userID)
+	if !ok {
+		return
+	}
+	s.sendItemQuery(w, r, query, false)
+}
+
+func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query library.Query, bare bool) {
+	zeroLimit := query.Limit == 0
+	if zeroLimit {
+		query.Limit = 1
+	}
+	result, err := s.library.QueryItems(r.Context(), query)
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	fields := queryValues(r.URL.Query()["Fields"])
+	items := make([]map[string]any, 0, len(result.Items))
+	if !zeroLimit {
+		for _, entry := range result.Items {
+			item := s.itemDTO(entry, fields, false)
+			if entry.Type == "CollectionFolder" {
+				lib, err := s.library.GetLibrary(r.Context(), entry.LibraryID)
+				if err != nil {
+					s.libraryError(w, r, err)
+					return
+				}
+				if lib.CollectionType == "mixed" {
+					item["CollectionType"] = nil
+				} else {
+					item["CollectionType"] = lib.CollectionType
+				}
+			}
+			items = append(items, item)
+		}
+	}
+	if bare {
+		jsonResponse(w, 200, items)
+		return
+	}
+	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})
+}
+
+func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	if r.PathValue("Id") == virtualRootID() {
+		s.embyRoot(w, r)
+		return
+	}
+	item, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	dto := s.itemDTO(item, queryValues(r.URL.Query()["Fields"]), true)
+	if item.Type == "CollectionFolder" {
+		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)
+		if err != nil {
+			s.libraryError(w, r, err)
+			return
+		}
+		if lib.CollectionType == "mixed" {
+			dto["CollectionType"] = nil
+		} else {
+			dto["CollectionType"] = lib.CollectionType
+		}
+	}
+	jsonResponse(w, 200, dto)
+}
+
+func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	query, ok := readItemQuery(w, r, userID)
+	if !ok {
+		return
+	}
+	query.Recursive = true
+	query.SortBy = "DateCreated"
+	query.SortOrder = "Descending"
+	if r.URL.Query().Get("Limit") == "" {
+		query.Limit = 20
+	}
+	if len(query.IncludeItemTypes) == 0 {
+		query.IncludeItemTypes = []string{"Movie", "Episode", "Audio", "Video"}
+	}
+	group := true
+	if raw := r.URL.Query().Get("GroupItems"); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			apiError(w, r, 400, "invalid_input", "GroupItems must be a boolean.")
+			return
+		}
+		group = value
+	}
+	zeroLimit := query.Limit == 0
+	if zeroLimit {
+		query.Limit = 1
+	}
+	result, err := s.library.QueryLatest(r.Context(), query, group)
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	items := make([]map[string]any, 0, len(result))
+	if !zeroLimit {
+		for _, entry := range result {
+			dto := s.itemDTO(entry.Item, queryValues(r.URL.Query()["Fields"]), false)
+			if group && entry.Item.IsFolder {
+				dto["ChildCount"] = entry.ChildCount
+			}
+			items = append(items, dto)
+		}
+	}
+	jsonResponse(w, 200, items)
+}
+
+func (s *Server) embySeasons(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	series, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	if series.Type != "Series" {
+		apiError(w, r, 400, "invalid_input", "The item is not a television series.")
+		return
+	}
+	query, ok := readItemQuery(w, r, userID)
+	if !ok {
+		return
+	}
+	query.ParentID = series.ID
+	query.Recursive = false
+	query.IncludeItemTypes = []string{"Season"}
+	if query.SortBy == "" {
+		query.SortBy = "IndexNumber"
+	}
+	s.sendItemQuery(w, r, query, false)
+}
+
+func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
+	series, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	if err != nil {
+		s.libraryError(w, r, err)
+		return
+	}
+	if series.Type != "Series" {
+		apiError(w, r, 400, "invalid_input", "The item is not a television series.")
+		return
+	}
+	query, ok := readItemQuery(w, r, userID)
+	if !ok {
+		return
+	}
+	query.ParentID = series.ID
+	query.Recursive = true
+	query.IncludeItemTypes = []string{"Episode"}
+	if query.SortBy == "" {
+		query.SortBy = "IndexNumber"
+	}
+	if raw := r.URL.Query().Get("Season"); raw != "" {
+		number, err := strconv.Atoi(raw)
+		if err != nil || number < 0 || number > 2147483647 {
+			apiError(w, r, 400, "invalid_input", "Season must be a non-negative 32-bit integer.")
+			return
+		}
+		query.ParentIndexNumber = &number
+	}
+	if seasonID := r.URL.Query().Get("SeasonId"); seasonID != "" {
+		season, err := s.library.GetItem(r.Context(), userID, seasonID)
+		if err != nil {
+			s.libraryError(w, r, err)
+			return
+		}
+		if season.Type != "Season" || season.ParentID != series.ID {
+			apiError(w, r, 400, "invalid_input", "The season does not belong to the requested series.")
+			return
+		}
+		if query.ParentIndexNumber != nil && *query.ParentIndexNumber != season.IndexNumber {
+			apiError(w, r, 400, "invalid_input", "Season identifiers must agree.")
+			return
+		}
+		query.ParentID = season.ID
+		query.Recursive = false
+	}
+	s.sendItemQuery(w, r, query, false)
+}
+
+func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[string]any {
+	dto := map[string]any{"Id": item.ID, "Name": item.Name, "SortName": item.SortName, "Type": item.Type, "IsFolder": item.IsFolder, "ServerId": s.serverID, "DateCreated": item.CreatedAt, "ImageTags": map[string]string{}, "BackdropImageTags": []string{}}
+	if item.ParentID != "" {
+		dto["ParentId"] = item.ParentID
+	} else {
+		dto["ParentId"] = virtualRootID()
+	}
+	if item.Type == "Season" || item.Type == "Episode" {
+		dto["IndexNumber"] = item.IndexNumber
+	}
+	if item.Type == "Episode" {
+		dto["ParentIndexNumber"] = item.ParentIndexNumber
+	}
+	if detail || hasField(fields, "Overview") {
+		dto["Overview"] = item.Overview
+	}
+	if item.Media != nil {
+		mediaType := "Video"
+		if item.Type == "Audio" {
+			mediaType = "Audio"
+		}
+		dto["MediaType"] = mediaType
+		dto["RunTimeTicks"] = item.Media.DurationTicks
+		if mediaType == "Video" {
+			dto["VideoType"] = "VideoFile"
+		}
+		if detail || hasField(fields, "MediaStreams") {
+			dto["MediaStreams"] = mediaStreamsDTO(item.Media.Streams)
+		}
+		if detail || hasField(fields, "MediaSources") {
+			dto["MediaSources"] = []map[string]any{{"Id": item.ID, "Name": item.Name, "Container": strings.Split(item.Media.Container, ",")[0], "Formats": strings.Split(item.Media.Container, ","), "RunTimeTicks": item.Media.DurationTicks, "Bitrate": item.Media.Bitrate, "Size": item.Media.Size, "MediaStreams": mediaStreamsDTO(item.Media.Streams), "SupportsDirectPlay": false, "SupportsDirectStream": false, "SupportsTranscoding": false, "RequiresOpening": false, "RequiresClosing": false}}
+		}
+		if detail || hasField(fields, "Chapters") {
+			chapters := make([]map[string]any, 0, len(item.Media.Chapters))
+			for _, chapter := range item.Media.Chapters {
+				chapters = append(chapters, map[string]any{"StartPositionTicks": chapter.StartTicks, "Name": chapter.Title})
+			}
+			dto["Chapters"] = chapters
+		}
+	}
+	return dto
+}
+
+func hasField(fields []string, name string) bool {
+	for _, field := range fields {
+		if strings.EqualFold(field, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func mediaStreamsDTO(streams []media.Stream) []map[string]any {
+	items := make([]map[string]any, 0, len(streams))
+	for _, stream := range streams {
+		kind := stream.CodecType
+		switch kind {
+		case "video":
+			kind = "Video"
+		case "audio":
+			kind = "Audio"
+		case "subtitle":
+			kind = "Subtitle"
+		case "attachment":
+			kind = "Attachment"
+		case "data":
+			kind = "Data"
+		}
+		item := map[string]any{"Index": stream.Index, "Type": kind, "Codec": stream.Codec, "Language": stream.Language, "Title": stream.Title, "DisplayTitle": stream.Title, "IsDefault": stream.IsDefault, "IsForced": stream.IsForced, "IsExternal": stream.IsExternal, "IsTextSubtitleStream": stream.IsTextSubtitleStream, "Profile": stream.Profile}
+		if stream.Width > 0 {
+			item["Width"] = stream.Width
+		}
+		if stream.Height > 0 {
+			item["Height"] = stream.Height
+		}
+		if stream.Channels > 0 {
+			item["Channels"] = stream.Channels
+		}
+		if stream.SampleRate > 0 {
+			item["SampleRate"] = stream.SampleRate
+		}
+		if stream.Bitrate > 0 {
+			item["BitRate"] = stream.Bitrate
+		}
+		if stream.Level > 0 {
+			item["Level"] = stream.Level
+		}
+		if stream.PixelFormat != "" {
+			item["PixelFormat"] = stream.PixelFormat
+		}
+		if numerator, denominator, ok := strings.Cut(stream.AverageFrameRate, "/"); ok {
+			n, nerr := strconv.ParseFloat(numerator, 64)
+			d, derr := strconv.ParseFloat(denominator, 64)
+			if nerr == nil && derr == nil && d > 0 {
+				item["AverageFrameRate"] = n / d
+			}
+		}
+		items = append(items, item)
+	}
+	return items
+}

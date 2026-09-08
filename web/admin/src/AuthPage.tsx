@@ -5,7 +5,8 @@ import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
 import { adminApi, isAbortError } from './api';
 import type { SessionResponse } from './api';
-import { Brand, ErrorNotice, fieldError, PasswordField } from './components';
+import { Brand, ErrorNotice } from './components';
+import { fieldError, PasswordField } from './formFields';
 import { colors } from './theme';
 
 type AuthPageProps = {

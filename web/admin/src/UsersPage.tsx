@@ -7,7 +7,8 @@ import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { adminApi, isAbortError } from './api';
 import type { User, UsersResponse } from './api';
-import { ErrorNotice, fieldError, PageHeading, PasswordField } from './components';
+import { ErrorNotice, PageHeading } from './components';
+import { fieldError, PasswordField } from './formFields';
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase();

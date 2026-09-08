@@ -24,6 +24,7 @@ type Config struct {
 	FFmpegPath     string
 	FFprobePath    string
 	TrustedProxies []netip.Prefix
+	MediaRoots     []string
 }
 
 func Load() (Config, error) {
@@ -36,6 +37,7 @@ func Load() (Config, error) {
 		WebDirectory:  env("GOBY_WEB_DIR", "web/admin/dist"),
 		FFmpegPath:    env("GOBY_FFMPEG", "ffmpeg"),
 		FFprobePath:   env("GOBY_FFPROBE", "ffprobe"),
+		MediaRoots:    filepath.SplitList(os.Getenv("GOBY_MEDIA_ROOTS")),
 	}
 	var err error
 	for _, entry := range strings.Split(os.Getenv("GOBY_TRUSTED_PROXIES"), ",") {
