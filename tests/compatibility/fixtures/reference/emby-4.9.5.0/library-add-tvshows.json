@@ -1,0 +1,122 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T22:30:45.527267+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Library/VirtualFolders",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "Name": "Reference Shows",
+      "CollectionType": "tvshows",
+      "RefreshLibrary": false,
+      "Paths": [
+        "/opt/goby-fixtures/tv"
+      ],
+      "LibraryOptions": {
+        "EnableRealtimeMonitor": false,
+        "EnableChapterImageExtraction": false,
+        "ExtractChapterImagesDuringLibraryScan": false,
+        "EnableMarkerDetection": false,
+        "EnableMarkerDetectionDuringLibraryScan": false,
+        "DownloadImagesInAdvance": false,
+        "SaveLocalMetadata": false,
+        "SaveLocalThumbnailSets": false,
+        "SaveSubtitlesWithMedia": false,
+        "SaveLyricsWithMedia": false,
+        "SubtitleDownloadLanguages": [],
+        "LyricsDownloadLanguages": [],
+        "AutomaticRefreshIntervalDays": 0,
+        "EnableEmbeddedTitles": true,
+        "TypeOptions": [
+          {
+            "Type": "Movie",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "Series",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "Season",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "Episode",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "MusicArtist",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "MusicAlbum",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          },
+          {
+            "Type": "Audio",
+            "MetadataFetchers": [],
+            "ImageFetchers": []
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Tue, 08 Sep 2026 22:30:44 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": "Provider arrays are explicitly empty; PrivateNetwork independently prevents all external traffic. Media paths are read-only in the service mount namespace."
+}

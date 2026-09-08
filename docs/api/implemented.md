@@ -2,7 +2,7 @@
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
-The routes below exist in source. Authentication and permission workflows have passed Goby's own PostgreSQL-backed HTTP tests on Linux. They have **not** been compared against a live reference Emby release or a real media client, so they are not claims of complete Emby behavioral compatibility.
+The routes below exist in source. Authentication, permission and ingestion workflows have passed Goby's own PostgreSQL-backed HTTP tests on Linux. Selected behavior has also been corrected using [real Emby 4.9.5.0 captures](../research/reference-server.md). This is not yet a complete differential compatibility run or a real third-party-player pass.
 
 ## Administrator API
 
@@ -41,7 +41,7 @@ The administrator UI refreshes active work at bounded intervals, pauses polling 
 | --- | --- |
 | `GET /emby/System/Info/Public` | Stable server identity and setup state; Goby product/version is reported truthfully |
 | `GET /emby/System/Info` | Requires an Emby user session; currently the minimal public identity projection, not the complete upstream SystemInfo DTO |
-| `GET`, `HEAD`, `POST /emby/System/Ping` | Empty success body based on the initial snapshot contract; reference payload still needs comparison |
+| `GET`, `HEAD`, `POST /emby/System/Ping` | Confirmed reference behavior: `text/plain`, length 11, GET/POST body `Emby Server`, HEAD body empty |
 | `GET /emby/Users/Public` | Enabled ordinary accounts; administrators are hidden from this initial public list |
 | `POST /emby/Users/AuthenticateByName` | `{Username, Pw}` and Emby client/device metadata; returns `User`, `SessionInfo`, `AccessToken`, `ServerId` |
 | `POST /emby/Users/{Id}/Authenticate` | `{Pw}` and client/device metadata; selected-user authentication |
@@ -51,22 +51,26 @@ The administrator UI refreshes active work at bounded intervals, pauses polling 
 | `GET /emby/Users/{UserId}/Views` | Authorized library roots with collection types |
 | `GET /emby/Users/{UserId}/Items/Root` | Stable virtual navigation root |
 | `GET /emby/Users/{UserId}/Items` and `GET /emby/Items` | ACL-filtered browsing/search, recursive parents, IDs/types/media-type filters, paging and selected sorts |
-| `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and selected probe metadata; private filesystem paths are not exposed |
+| `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and probe metadata, including the item's path as observed in the reference contract |
 | `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
 | `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
 | `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; the assumed query-result envelope still needs reference comparison |
 | `GET /emby/Library/VirtualFolders/Query` | Administrator library query projection; broader query/options remain incomplete |
-| `POST /emby/Library/VirtualFolders` | Initial administrator library creation and optional refresh; full LibraryOptions support is pending |
+| `POST /emby/Library/VirtualFolders` | Initial administrator library creation and optional refresh; observed `204` success; full LibraryOptions support is pending |
 | `POST /emby/Library/VirtualFolders/Delete` | Administrator catalog removal, preserving media |
-| `POST /emby/Library/Refresh` | Administrator scan request for configured libraries |
+| `POST /emby/Library/Refresh` | Administrator scan request for configured libraries; observed `204` success |
 
-The parser accepts `Authorization: Emby ...`, `X-Emby-Authorization`, `X-Emby-Token`, and query `api_key` for issued user tokens. Conflicting token values are rejected. Caller-provided user/role attributes never establish authority. Static application API keys are a separate future implementation and are not created by these routes.
+The parser accepts `Emby` and legacy `MediaBrowser` authorization schemes, the `X-Emby-Authorization` alternative, four separate `X-Emby-*` client/device headers, `X-Emby-Token`, legacy `X-MediaBrowser-Token`, and query `api_key` for issued user tokens. Conflicting token or identity values are rejected. Caller-provided user/role claims never establish authority. Static application API keys are a separate future implementation and are not created by these routes.
+
+Confirmed authentication failures use the reference `text/plain` bodies and byte lengths: wrong/unknown credentials, missing client/device metadata, and missing/invalid access tokens. Native administrator errors remain JSON. Other Emby error cases are not yet claimed to match the reference.
+
+The `/emby` namespace supports token-client CORS, including the observed OPTIONS response, origin reflection for valid HTTP(S)/opaque-null origins, credentials/preflight headers and private-network access headers. This does not expose `/admin/v1` through CORS or make administrator cookies authenticate Emby requests.
 
 Administrator-cookie sessions and Emby-token sessions cannot be substituted for one another. Token secrets are stored as SHA-256 digests, sessions are revocable and expire, and current account disable/demotion state is checked when resolving a token. Emby user tokens currently have a 30-day lifetime; this is a Goby policy, not a proven Emby lifetime match.
 
 The initial Emby user projection disables media/transcode/deletion capabilities until those services exist. Unsupported Emby paths return an error. Full policy/configuration projections, query filters, device/session reporting, user edits, API keys, and the complete media API remain scheduled work. Error DTO/status details and version negotiation also need reference-server/client evidence.
 
-Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, and `Chapters` projections. Source stream indices and probe sizes/ticks are preserved. Sources still advertise no playable delivery method until the playback stage. Artwork tags are empty until artwork is implemented. Native media metadata retains FFmpeg format aliases; the current wire container uses the first alias and will be refined during playback negotiation.
+Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, `Path`, and `Chapters` projections. Default list results omit paths and probe structures; an explicit field selection or authorized item detail includes them as observed in the reference. Authorization is applied before any projection. `EnableImages=false` removes image fields, and `EnableUserData=false` suppresses user data when present. Source stream indices and probe sizes/ticks are preserved. Sources still advertise no playable delivery method until the playback stage. Artwork tags are empty until artwork is implemented. Native media metadata retains FFmpeg format aliases; the current wire container uses the first alias and will be refined during playback negotiation.
 
 Library authorization currently implements administrator access plus `EnableAllFolders` and `EnabledFolders`. Counts and grouping occur after authorization filtering. Default ordinary users can access all libraries unless restricted. Subfolder exclusions, parental restrictions and the full policy editor remain work; this increment does not claim those policies are enforced.
 

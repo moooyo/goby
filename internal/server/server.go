@@ -100,6 +100,9 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Cache-Control", "no-store")
+		if s.embyCORS(w, r) {
+			return
+		}
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				s.log.Error("request panic", "request_id", requestID)

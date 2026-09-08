@@ -106,6 +106,96 @@ func TestParseEmbyCredentialsAcceptsConsistentSources(t *testing.T) {
 	}
 }
 
+func TestParseEmbyCredentialsAcceptsReferenceClientCarriers(t *testing.T) {
+	want := identity.Client{Name: "Reference Player", DeviceID: "device-1", Device: "Linux", Version: "1.0"}
+	tests := []struct {
+		name    string
+		headers map[string][]string
+	}{
+		{
+			name: "legacy_scheme",
+			headers: map[string][]string{"Authorization": {
+				`MediaBrowser Client="Reference Player", DeviceId="device-1", Device="Linux", Version="1.0", Token="token-a"`,
+			}},
+		},
+		{
+			name: "legacy_scheme_case_insensitive",
+			headers: map[string][]string{"X-Emby-Authorization": {
+				`mEdIaBrOwSeR Client="Reference Player", DeviceId="device-1", Device="Linux", Version="1.0", Token="token-a"`,
+			}},
+		},
+		{
+			name: "four_client_headers_and_legacy_token",
+			headers: map[string][]string{
+				"X-Emby-Client": {"Reference Player"}, "X-Emby-Device-Id": {"device-1"},
+				"X-Emby-Device-Name": {"Linux"}, "X-Emby-Client-Version": {"1.0"}, "X-MediaBrowser-Token": {"token-a"},
+			},
+		},
+		{
+			name: "matching_attributes_and_separate_headers",
+			headers: map[string][]string{
+				"Authorization": {`Emby Client="Reference Player", DeviceId="device-1", Device="Linux", Version="1.0", Token="token-a"`},
+				"X-Emby-Client": {"Reference Player", "Reference Player"}, "X-Emby-Device-Id": {"device-1"},
+				"X-Emby-Device-Name": {"Linux"}, "X-Emby-Client-Version": {"1.0"},
+				"X-Emby-Token": {"token-a"}, "X-MediaBrowser-Token": {"token-a"},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token, client, err := parseEmbyCredentials(embyCredentialRequest(test.headers, ""))
+			if err != nil || token != "token-a" || client != want {
+				t.Fatalf("reference carrier parsed as token %q, client %+v, error %v", token, client, err)
+			}
+		})
+	}
+	for _, headers := range []map[string][]string{
+		{"X-Emby-Client": {""}, "X-Emby-Device-Id": {""}, "X-Emby-Device-Name": {""}, "X-Emby-Client-Version": {""}},
+		{"Authorization": {`MediaBrowser UserId="administrator", IsAdministrator="true"`}},
+		{"X-Emby-Client": {""}, "X-Emby-UserId": {"administrator"}, "IsAdministrator": {"true"}},
+	} {
+		token, client, err := parseEmbyCredentials(embyCredentialRequest(headers, ""))
+		if err != nil || token != "" || client != (identity.Client{}) {
+			t.Errorf("empty metadata or identity claims produced credentials: token %q, client %+v, error %v", token, client, err)
+		}
+	}
+}
+
+func TestParseEmbyCredentialsRejectsReferenceCarrierConflicts(t *testing.T) {
+	for _, field := range []struct{ header, attribute string }{
+		{header: "X-Emby-Client", attribute: "Client"},
+		{header: "X-Emby-Client-Version", attribute: "Version"},
+		{header: "X-Emby-Device-Id", attribute: "DeviceId"},
+		{header: "X-Emby-Device-Name", attribute: "Device"},
+	} {
+		for _, headers := range []map[string][]string{
+			{"Authorization": {`MediaBrowser ` + field.attribute + `="first", Token="token-a"`}, field.header: {"second"}},
+			{field.header: {"first", "second"}, "X-Emby-Token": {"token-a"}},
+		} {
+			t.Run(field.header, func(t *testing.T) {
+				token, _, err := parseEmbyCredentials(embyCredentialRequest(headers, ""))
+				if err == nil || token != "" {
+					t.Errorf("conflicting client headers returned token %q, error %v", token, err)
+				}
+			})
+		}
+	}
+	for _, test := range []struct {
+		headers map[string][]string
+		query   string
+	}{
+		{headers: map[string][]string{"X-MediaBrowser-Token": {"token-a"}, "X-Emby-Token": {"token-b"}}},
+		{headers: map[string][]string{"X-MediaBrowser-Token": {"token-a"}, "Authorization": {`Emby Token="token-b"`}}},
+		{headers: map[string][]string{"X-MediaBrowser-Token": {"token-a", "token-b"}}},
+		{headers: map[string][]string{"X-MediaBrowser-Token": {"token-a"}}, query: "api_key=token-b"},
+	} {
+		token, _, err := parseEmbyCredentials(embyCredentialRequest(test.headers, test.query))
+		if err == nil || token != "" {
+			t.Errorf("conflicting legacy token returned token %q, error %v", token, err)
+		}
+	}
+}
+
 func TestParseEmbyCredentialsRejectsConflicts(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -27,7 +28,16 @@ func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) { s.publicSystemInfo(w, r) }
 
-func (s *Server) ping(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
+func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
+	// This wire identifier is confirmed by the Emby 4.9.5.0 reference captures.
+	const body = "Emby Server"
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	w.WriteHeader(http.StatusOK)
+	if r.Method != http.MethodHead {
+		_, _ = w.Write([]byte(body))
+	}
+}
 
 func (s *Server) publicUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.identity.ListUsers(r.Context())
@@ -65,7 +75,11 @@ func (s *Server) embyLoginByID(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := s.identity.GetUser(r.Context(), r.PathValue("Id"))
 	if err != nil {
-		s.identityError(w, r, identity.ErrInvalidCredentials)
+		if errors.Is(err, identity.ErrNotFound) {
+			embyTextError(w, r, http.StatusUnauthorized, embyInvalidLoginMessage)
+		} else {
+			s.identityError(w, r, err)
+		}
 		return
 	}
 	s.authenticateEmby(w, r, user.Name, body.Pw)
@@ -73,13 +87,25 @@ func (s *Server) embyLoginByID(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, password string) {
 	_, client, err := parseEmbyCredentials(r)
-	if err != nil || client.Name == "" || client.DeviceID == "" {
+	if err != nil {
 		apiError(w, r, 400, "invalid_client", "Supply Emby Client and DeviceId authorization metadata.")
+		return
+	}
+	if client.Name == "" {
+		embyTextError(w, r, http.StatusBadRequest, embyMissingClientMessage)
+		return
+	}
+	if client.DeviceID == "" {
+		embyTextError(w, r, http.StatusBadRequest, embyMissingDeviceMessage)
 		return
 	}
 	credentials, err := s.identity.Authenticate(r.Context(), name, password, client, "emby")
 	if err != nil {
-		s.identityError(w, r, err)
+		if errors.Is(err, identity.ErrInvalidCredentials) || errors.Is(err, identity.ErrUnauthorized) {
+			embyTextError(w, r, http.StatusUnauthorized, embyInvalidLoginMessage)
+		} else {
+			s.identityError(w, r, err)
+		}
 		return
 	}
 	jsonResponse(w, 200, map[string]any{

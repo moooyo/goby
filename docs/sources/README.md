@@ -1,6 +1,6 @@
 # Source provenance and document limitations
 
-Collected on **2026-09-09, Asia/Shanghai**. Official pages were retrieved with read-only HTTPS requests. The built-in search gateway was unavailable. No requests were made to a running Emby installation or to the sample servers named in upstream exports.
+Initial documentation was collected on **2026-09-09, Asia/Shanghai** through read-only HTTPS requests; the built-in search gateway was unavailable. Later implementation work added an [isolated official Emby 4.9.5.0 reference](../research/reference-server.md) and 65 audited HTTP captures. No sample server address embedded in an upstream export was used as a research target.
 
 ## Primary API baseline
 

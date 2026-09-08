@@ -16,9 +16,9 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 runtime reference contract capture | Pending | Need an isolated reference server and recorded public/auth/DTO/media behavior; the static SDK does not prove this |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 isolated on test-env, 65 audited HTTP fixtures; selected Ping/auth/CORS/projection/library responses corrected from these captures; [report](../research/reference-server.md) |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
-| M2a media ingestion and browse | Complete | Safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
+| M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | In progress | Local NFO parser exists and passes independent tests; scanner integration, artwork, richer metadata and reconciliation remain |
 | M3 initial client playback | Pending | Direct playback, negotiation, subtitles, progress, session/events |
 | M4 conversion and hardware pipeline | Pending | Remux/transcode/HLS, tracks, hardware decode/encode, limits and recovery |

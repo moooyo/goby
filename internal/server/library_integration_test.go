@@ -204,6 +204,7 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 	if _, exists := direct[0]["MediaSources"]; exists {
 		t.Error("listing returned MediaSources without requesting the field")
 	}
+	assertNoItemPaths(t, direct[0], root)
 	recursive, total := responseItems(t, f.request(t, http.MethodGet, base+"&Recursive=true&MediaTypes=Video&SortBy=SortName", nil, headers))
 	if total != 2 || len(recursive) != 2 || recursive[0]["Name"] != "Alpha Movie" || recursive[1]["Name"] != "Beta Movie" {
 		t.Fatalf("recursive movie filtering or sorting is incorrect: %#v, total = %d", recursive, total)
@@ -218,12 +219,16 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 			t.Errorf("requested field %s is missing", field)
 		}
 	}
-	assertNoItemPaths(t, mediaItem, root)
+	if mediaItem["Path"] != secondFile {
+		t.Errorf("explicit Path projection = %v, want authorized file %q", mediaItem["Path"], secondFile)
+	}
 	itemID := stringValue(t, mediaItem, "Id")
 	detailResponse := f.request(t, http.MethodGet, "/emby/Users/"+adminID+"/Items/"+itemID+"?Fields=Path", nil, headers)
 	expectStatus(t, detailResponse, http.StatusOK)
 	detail := jsonObject(t, detailResponse)
-	assertNoItemPaths(t, detail, root)
+	if detail["Path"] != secondFile {
+		t.Errorf("item detail Path = %v, want %q", detail["Path"], secondFile)
+	}
 	streams, ok := detail["MediaStreams"].([]any)
 	if !ok || len(streams) != 3 {
 		t.Fatalf("detail media streams are incomplete: %#v", detail)
@@ -241,6 +246,18 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 	source, ok := sources[0].(map[string]any)
 	if !ok {
 		t.Fatalf("media source must be an object: %#v", sources[0])
+	}
+	if source["Path"] != secondFile || source["Protocol"] != "File" {
+		t.Errorf("authorized media source path/protocol mismatch: %#v", source)
+	}
+	noImages, total := responseItems(t, f.request(t, http.MethodGet, base+"&EnableImages=false&EnableUserData=false", nil, headers))
+	if total != 1 || len(noImages) != 1 {
+		t.Fatalf("projection switches changed query membership")
+	}
+	for _, name := range []string{"ImageTags", "BackdropImageTags", "UserData"} {
+		if _, exists := noImages[0][name]; exists {
+			t.Errorf("disabled field %s remains", name)
+		}
 	}
 	stat, err := os.Stat(secondFile)
 	if err != nil || source["Size"] != float64(stat.Size()) || source["Container"] != "mov" || detail["RunTimeTicks"] != float64(125*media.TicksPerSecond) {

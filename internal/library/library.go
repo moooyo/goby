@@ -38,7 +38,7 @@ type Job struct {
 	StartedAt, FinishedAt        *time.Time
 }
 
-// Path is private server data and must never be copied into a public item DTO.
+// Path is server data: only authorized item projections may expose it.
 type Item struct {
 	ID, LibraryID, ParentID, Name, SortName, Type, Path, Overview string
 	IsFolder                                                      bool

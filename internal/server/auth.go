@@ -72,7 +72,7 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, err := parseEmbyCredentials(r)
 		if err != nil || token == "" {
-			apiError(w, r, 401, "authentication_required", "An Emby access token is required.")
+			embyTextError(w, r, http.StatusUnauthorized, embyInvalidTokenMessage)
 			return
 		}
 		principal, err := s.identity.Resolve(r.Context(), token, "emby")
@@ -92,7 +92,7 @@ func parseEmbyCredentials(r *http.Request) (string, identity.Client, error) {
 				continue
 			}
 			prefix, rest, found := strings.Cut(value, " ")
-			if !found || !strings.EqualFold(prefix, "Emby") {
+			if !found || (!strings.EqualFold(prefix, "Emby") && !strings.EqualFold(prefix, "MediaBrowser")) {
 				return "", identity.Client{}, fmt.Errorf("unsupported authorization scheme")
 			}
 			for rest != "" {
@@ -128,8 +128,28 @@ func parseEmbyCredentials(r *http.Request) (string, identity.Client, error) {
 			}
 		}
 	}
+	for _, field := range []struct{ header, attribute string }{
+		{header: "X-Emby-Client", attribute: "client"},
+		{header: "X-Emby-Client-Version", attribute: "version"},
+		{header: "X-Emby-Device-Id", attribute: "deviceid"},
+		{header: "X-Emby-Device-Name", attribute: "device"},
+	} {
+		for _, value := range r.Header.Values(field.header) {
+			if value == "" {
+				continue
+			}
+			if prior, exists := values[field.attribute]; exists && prior != value {
+				return "", identity.Client{}, fmt.Errorf("conflicting authorization attributes")
+			}
+			values[field.attribute] = value
+		}
+	}
 	token := values["token"]
-	candidates := append(r.Header.Values("X-Emby-Token"), r.URL.Query()["api_key"]...)
+	var candidates []string
+	for _, header := range []string{"X-Emby-Token", "X-MediaBrowser-Token"} {
+		candidates = append(candidates, r.Header.Values(header)...)
+	}
+	candidates = append(candidates, r.URL.Query()["api_key"]...)
 	for _, candidate := range candidates {
 		if candidate == "" {
 			continue

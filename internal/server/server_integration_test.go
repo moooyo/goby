@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -176,6 +177,10 @@ func stringValue(t *testing.T, object map[string]any, key string) string {
 
 func expectAPIError(t *testing.T, response *httptest.ResponseRecorder, status int, code string, emby bool) {
 	t.Helper()
+	if emby && status == http.StatusUnauthorized && (code == "authentication_required" || code == "invalid_credentials") {
+		expectEmbyTextError(t, response, status, "Access token is invalid or expired.")
+		return
+	}
 	expectStatus(t, response, status)
 	object := jsonObject(t, response)
 	field, codeField := "Error", "Code"
@@ -184,6 +189,20 @@ func expectAPIError(t *testing.T, response *httptest.ResponseRecorder, status in
 	}
 	if got := stringValue(t, objectValue(t, object, field), codeField); got != code {
 		t.Errorf("API error code = %q, want %q", got, code)
+	}
+}
+
+func expectEmbyTextError(t *testing.T, response *httptest.ResponseRecorder, status int, body string) {
+	t.Helper()
+	expectStatus(t, response, status)
+	if got := response.Header().Get("Content-Type"); got != "text/plain" {
+		t.Errorf("Emby authentication content type = %q, want text/plain", got)
+	}
+	if got := response.Header().Get("Content-Length"); got != strconv.Itoa(len(body)) {
+		t.Errorf("Emby authentication content length = %q, want %d", got, len(body))
+	}
+	if got := response.Body.String(); got != body {
+		t.Errorf("Emby authentication body = %q, want %q", got, body)
 	}
 }
 
@@ -366,7 +385,7 @@ func TestHTTPEmbyAuthenticationShapeTokenSourcesAndRevocation(t *testing.T) {
 	wrongPassword := f.request(t, http.MethodPost, "/emby/Users/AuthenticateByName", map[string]any{
 		"Username": "Administrator", "Pw": "wrong-password",
 	}, http.Header{"Authorization": {`Emby Client="Integration", DeviceId="device"`}})
-	expectAPIError(t, wrongPassword, http.StatusUnauthorized, "invalid_credentials", true)
+	expectEmbyTextError(t, wrongPassword, http.StatusUnauthorized, "Invalid username or password. Please try again.")
 	logout := f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, http.Header{"X-Emby-Token": {token}})
 	expectStatus(t, logout, http.StatusOK)
 	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Users/"+userID, nil, http.Header{"X-Emby-Token": {token}}), http.StatusUnauthorized, "invalid_credentials", true)

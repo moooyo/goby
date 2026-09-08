@@ -21,6 +21,7 @@ Implementation status: **M1 service foundation in progress**. The required stack
 | [Delivery and verification](planning/delivery-and-verification.md) | Dependencies, completion gates, remote verification, and unresolved evidence |
 | [Toolchain and hardware policy](development/toolchain.md) | Stable release pins, official sources, PostgreSQL integration, local build permission, and remote decode/encode verification |
 | [Source provenance](sources/README.md) | Fixed upstream revisions, snapshot hashes, and known document defects |
+| [Live reference baseline](research/reference-server.md) | Official Emby 4.9.5.0 isolation, audited HTTP captures and observed differences |
 
 ## Scope and evidence labels
 

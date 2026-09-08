@@ -11,6 +11,14 @@ import (
 )
 
 func (s *Server) itemUser(w http.ResponseWriter, r *http.Request) (string, bool) {
+	for _, name := range []string{"EnableImages", "EnableUserData"} {
+		if raw := r.URL.Query().Get(name); raw != "" {
+			if _, err := strconv.ParseBool(raw); err != nil {
+				apiError(w, r, 400, "invalid_input", name+" must be a boolean.")
+				return "", false
+			}
+		}
+	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	userID := r.PathValue("UserId")
 	queryUserID := r.URL.Query().Get("UserId")
@@ -52,6 +60,9 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 			item["CollectionType"] = entry.CollectionType
 		}
 		items = append(items, item)
+	}
+	for _, item := range items {
+		applyItemSwitches(item, r)
 	}
 	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": len(items)})
 }
@@ -153,6 +164,7 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 					item["CollectionType"] = lib.CollectionType
 				}
 			}
+			applyItemSwitches(item, r)
 			items = append(items, item)
 		}
 	}
@@ -190,6 +202,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 			dto["CollectionType"] = lib.CollectionType
 		}
 	}
+	applyItemSwitches(dto, r)
 	jsonResponse(w, 200, dto)
 }
 
@@ -236,6 +249,7 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 			if group && entry.Item.IsFolder {
 				dto["ChildCount"] = entry.ChildCount
 			}
+			applyItemSwitches(dto, r)
 			items = append(items, dto)
 		}
 	}
@@ -323,6 +337,9 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[string]any {
 	dto := map[string]any{"Id": item.ID, "Name": item.Name, "SortName": item.SortName, "Type": item.Type, "IsFolder": item.IsFolder, "ServerId": s.serverID, "DateCreated": item.CreatedAt, "ImageTags": map[string]string{}, "BackdropImageTags": []string{}}
+	if (detail || hasField(fields, "Path")) && item.Path != "" {
+		dto["Path"] = item.Path
+	}
 	if item.ParentID != "" {
 		dto["ParentId"] = item.ParentID
 	} else {
@@ -351,7 +368,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 			dto["MediaStreams"] = mediaStreamsDTO(item.Media.Streams)
 		}
 		if detail || hasField(fields, "MediaSources") {
-			dto["MediaSources"] = []map[string]any{{"Id": item.ID, "Name": item.Name, "Container": strings.Split(item.Media.Container, ",")[0], "Formats": strings.Split(item.Media.Container, ","), "RunTimeTicks": item.Media.DurationTicks, "Bitrate": item.Media.Bitrate, "Size": item.Media.Size, "MediaStreams": mediaStreamsDTO(item.Media.Streams), "SupportsDirectPlay": false, "SupportsDirectStream": false, "SupportsTranscoding": false, "RequiresOpening": false, "RequiresClosing": false}}
+			dto["MediaSources"] = []map[string]any{{"Id": item.ID, "Name": item.Name, "Path": item.Path, "Protocol": "File", "Container": strings.Split(item.Media.Container, ",")[0], "Formats": strings.Split(item.Media.Container, ","), "RunTimeTicks": item.Media.DurationTicks, "Bitrate": item.Media.Bitrate, "Size": item.Media.Size, "MediaStreams": mediaStreamsDTO(item.Media.Streams), "SupportsDirectPlay": false, "SupportsDirectStream": false, "SupportsTranscoding": false, "RequiresOpening": false, "RequiresClosing": false}}
 		}
 		if detail || hasField(fields, "Chapters") {
 			chapters := make([]map[string]any, 0, len(item.Media.Chapters))
@@ -362,6 +379,22 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		}
 	}
 	return dto
+}
+
+func applyItemSwitches(item map[string]any, r *http.Request) {
+	if value := r.URL.Query().Get("EnableImages"); value != "" {
+		enabled, _ := strconv.ParseBool(value)
+		if !enabled {
+			delete(item, "ImageTags")
+			delete(item, "BackdropImageTags")
+		}
+	}
+	if value := r.URL.Query().Get("EnableUserData"); value != "" {
+		enabled, _ := strconv.ParseBool(value)
+		if !enabled {
+			delete(item, "UserData")
+		}
+	}
 }
 
 func hasField(fields []string, name string) bool {

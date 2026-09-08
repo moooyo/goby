@@ -224,7 +224,7 @@ func (s *Server) embyCreateLibrary(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) embyDeleteLibrary(w http.ResponseWriter, r *http.Request) {
@@ -260,5 +260,5 @@ func (s *Server) embyRefreshLibraries(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

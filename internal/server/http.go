@@ -6,9 +6,29 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/moooyo/goby/internal/identity"
 )
+
+const (
+	embyInvalidTokenMessage  = "Access token is invalid or expired."
+	embyInvalidLoginMessage  = "Invalid username or password. Please try again."
+	embyMissingClientMessage = "Value cannot be null. (Parameter 'appName')"
+	embyMissingDeviceMessage = "Value cannot be null. (Parameter 'reportedDeviceId')"
+)
+
+// embyTextError preserves the authentication wire contract captured from Emby.
+// http.Error cannot be used because it adds a newline and a charset parameter.
+func embyTextError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Length", strconv.Itoa(len(message)))
+	w.WriteHeader(status)
+	if r.Method != http.MethodHead {
+		_, _ = w.Write([]byte(message))
+	}
+}
 
 func jsonResponse(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -48,6 +68,10 @@ func decodeBody(w http.ResponseWriter, r *http.Request, dst any) bool {
 func (s *Server) identityError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, identity.ErrInvalidCredentials), errors.Is(err, identity.ErrUnauthorized):
+		if strings.HasPrefix(r.URL.Path, "/emby/") {
+			embyTextError(w, r, http.StatusUnauthorized, embyInvalidTokenMessage)
+			return
+		}
 		apiError(w, r, 401, "invalid_credentials", "The credentials are invalid or no longer active.")
 	case errors.Is(err, identity.ErrAlreadyInitialized):
 		apiError(w, r, 409, "already_initialized", "The server has already been initialized.")
