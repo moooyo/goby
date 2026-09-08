@@ -1,0 +1,53 @@
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid #42aab1;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1600;
+  transform: translateY(-200%);
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: white;
+  color: #193a46;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.mono {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

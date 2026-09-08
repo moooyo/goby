@@ -1,0 +1,28 @@
+[Unit]
+Description=Goby media server
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=goby
+Group=goby
+EnvironmentFile=/etc/goby/goby.env
+ExecStart=/usr/local/bin/goby
+WorkingDirectory=/var/lib/goby
+StateDirectory=goby
+CacheDirectory=goby
+RuntimeDirectory=goby
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+CapabilityBoundingSet=
+RestrictSUIDSGID=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

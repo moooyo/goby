@@ -1,6 +1,6 @@
 # Emby API implementation scope
 
-Status: **planning only; zero implemented operations and no verified clients**.
+Status: **delivery scope**. See the [implemented surface](implemented.md) for current code and test evidence. No real media client has yet been verified against the full planned backend.
 
 The objective is an independent open-source Linux media backend that existing Emby-compatible clients can connect to. This includes browsing and playback APIs even though Goby's own React/MUI website is exclusively an administrator dashboard.
 

@@ -4,8 +4,9 @@ This catalog inventories the pinned official API description for a Linux-only Go
 with a React/MUI administrator dashboard. Playback remains available to external Emby-compatible
 clients; this project does not provide an end-user web playback application.
 
-All entries are source-derived and **planned, unimplemented**. Listing a route does not mean
-that its behavior has been implemented, tested, or shown compatible with a real client.
+All entries are source-derived; `planned-unimplemented` records the original research baseline.
+Current code and test evidence are tracked in the [implemented surface](implemented.md).
+Listing a route does not establish implementation or real-client compatibility.
 
 ## Source and offline navigation
 

@@ -1,0 +1,86 @@
+package config
+
+import (
+	"fmt"
+	"net/netip"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+)
+
+const GoVersion = "1.27.1"
+const FFmpegVersion = "9.0.1"
+
+type Config struct {
+	ListenAddress  string
+	DatabaseURL    string
+	PublicURL      string
+	ServerName     string
+	SetupToken     string
+	CookieSecure   bool
+	WebDirectory   string
+	FFmpegPath     string
+	FFprobePath    string
+	TrustedProxies []netip.Prefix
+}
+
+func Load() (Config, error) {
+	c := Config{
+		ListenAddress: env("GOBY_LISTEN", ":8096"),
+		DatabaseURL:   os.Getenv("GOBY_DATABASE_URL"),
+		PublicURL:     strings.TrimRight(env("GOBY_PUBLIC_URL", "http://localhost:8096"), "/"),
+		ServerName:    env("GOBY_SERVER_NAME", "Goby"),
+		SetupToken:    os.Getenv("GOBY_SETUP_TOKEN"),
+		WebDirectory:  env("GOBY_WEB_DIR", "web/admin/dist"),
+		FFmpegPath:    env("GOBY_FFMPEG", "ffmpeg"),
+		FFprobePath:   env("GOBY_FFPROBE", "ffprobe"),
+	}
+	var err error
+	for _, entry := range strings.Split(os.Getenv("GOBY_TRUSTED_PROXIES"), ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		prefix, parseErr := netip.ParsePrefix(entry)
+		if parseErr != nil {
+			return Config{}, fmt.Errorf("GOBY_TRUSTED_PROXIES must contain comma-separated IP CIDRs")
+		}
+		c.TrustedProxies = append(c.TrustedProxies, prefix.Masked())
+	}
+	c.CookieSecure, err = strconv.ParseBool(env("GOBY_COOKIE_SECURE", "true"))
+	if err != nil {
+		return Config{}, fmt.Errorf("GOBY_COOKIE_SECURE must be a boolean")
+	}
+	if err := c.Validate(); err != nil {
+		return Config{}, err
+	}
+	c.WebDirectory, err = filepath.Abs(c.WebDirectory)
+	return c, err
+}
+
+func (c Config) Validate() error {
+	u, err := url.Parse(c.DatabaseURL)
+	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") || u.Host == "" {
+		return fmt.Errorf("GOBY_DATABASE_URL must be a PostgreSQL connection URL")
+	}
+	u, err = url.Parse(c.PublicURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
+		return fmt.Errorf("GOBY_PUBLIC_URL must be an HTTP(S) origin without credentials, query, or path")
+	}
+	if strings.TrimSpace(c.ServerName) == "" || len(c.ServerName) > 128 {
+		return fmt.Errorf("GOBY_SERVER_NAME must contain 1 to 128 bytes")
+	}
+	if c.SetupToken != "" && len(c.SetupToken) < 24 {
+		return fmt.Errorf("GOBY_SETUP_TOKEN must contain at least 24 bytes")
+	}
+	return nil
+}
+
+func env(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
+}

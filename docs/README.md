@@ -9,6 +9,8 @@ Implementation status: **M1 service foundation in progress**. The required stack
 | Document | Purpose |
 | --- | --- |
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
+| [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
+| [Build and run](development/running.md) | Foundation configuration, PostgreSQL deployment, and remote verification |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |
