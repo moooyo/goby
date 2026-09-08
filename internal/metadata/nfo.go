@@ -18,6 +18,7 @@ const (
 	maxElements    = 16_384
 	maxAttributes  = 64
 	maxFieldBytes  = 64 * 1024
+	maxNameBytes   = 1024
 	maxEntries     = 1024
 	maxProviderKey = 64
 	maxProviderID  = 256
@@ -292,6 +293,11 @@ func extract(root *element) (Metadata, error) {
 		result.Name = fields["name"]
 	}
 	result.SortName = fields["sorttitle"]
+	// Catalog names participate in PostgreSQL B-tree indexes. Bound their
+	// decoded UTF-8 bytes before a valid NFO can make an entire scan fail.
+	if len(result.Name) > maxNameBytes || len(result.SortName) > maxNameBytes {
+		return Metadata{}, fmt.Errorf("NFO title and sort title must not exceed %d UTF-8 bytes", maxNameBytes)
+	}
 	result.OriginalTitle = fields["originaltitle"]
 	result.Overview = fields["plot"]
 	result.OfficialRating = fields["mpaa"]

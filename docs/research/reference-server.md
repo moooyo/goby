@@ -350,3 +350,81 @@ Only the new artwork fixtures use `response.bodyType="binary-base64"` when an ac
 The `export_artwork` stage exported only `artwork-*` records. Its remote audit checked exact response-header equality, JSON structure and primitive values, absence of all recorded credentials in exported text and decoded image bytes, and SHA-256 preservation of every original baseline file. Private raw records and credentials remain in the existing restricted reference data directory; only sanitized `artwork-*.json` exports were copied into the repository. Synthetic reference IDs and source-artwork paths are intentionally retained.
 
 The corresponding additional recorder stages are `artwork_prepare`, `artwork_refresh`, `artwork`, `artwork_scalars`, and `export_artwork`. They refuse to overwrite existing artwork evidence. All image generation, HTTP execution, and audit work ran through `ssh test-env`. The reference remained in its original private network namespace, and the existing Goby service was not restarted or scanned by this task.
+
+## Entity navigation and filtering extension
+
+The next extension contains 18 `entity-*.json` fixtures from the same isolated Emby 4.9.5.0 reference. Every request was an authenticated GET using the existing synthetic administrator. No user, media, NFO, library option, or server configuration was created or changed. The original 89 raw captures and 89 exports were hashed before capture and remained byte-for-byte unchanged after the final remote audit.
+
+### Entity lists and identifier types
+
+`GET /Genres`, `/Tags`, `/Studios`, and `/Persons`, each with the existing `UserId`, returned HTTP 200 with `Content-Type: application/json; charset=utf-8`. Each response was an object containing `Items` and numeric `TotalRecordCount`; none had a top-level `StartIndex` field.
+
+| Endpoint | Observed list items | List-item `Id` type | `TotalRecordCount` |
+| --- | --- | --- | --- |
+| `/Genres` | `BaseItemDto`-shaped objects with `Type: "Genre"`; Drama and Science Fiction | JSON string, `"21"` and `"22"` | 2 |
+| `/Tags` | Only `Name` and `Id`; local-artwork and reference | JSON string, `"24"` and `"25"` | 2 |
+| `/Studios` | `BaseItemDto`-shaped object with `Type: "Studio"`; Reference Studio | JSON string, `"23"` | 1 |
+| `/Persons` | `BaseItemDto`-shaped objects with `Type: "Person"`; Reference Actor and Reference Director | JSON string, `"19"` and `"20"` | 2 |
+
+The actual tag response was:
+
+```json
+{
+  "Items": [
+    {"Name": "local-artwork", "Id": "24"},
+    {"Name": "reference", "Id": "25"}
+  ],
+  "TotalRecordCount": 2
+}
+```
+
+There was no `Type`, `Count`, `UserData`, or image field on these tag entries. This agrees with the SDK's `UserLibrary.TagItem` shape. It differs from the embedded movie `TagItems` discussed above, whose IDs were JSON numbers. Similarly, `/Genres` and `/Studios` use string IDs while embedded `GenreItems` and `Studios` use numeric IDs. The underlying identifiers remained the same across those representations.
+
+Genre, Studio, and Person list items contained `Name`, `ServerId`, `Id`, `Type`, `UserData`, `ImageTags`, and `BackdropImageTags`. They did not contain `IsFolder`, `MediaType`, `ChildCount`, or per-entity media-count fields in the recorded default projection. The two Genre items had Primary image tags, while the Studio and Person entries had empty `ImageTags` objects. The capture did not request count-enabling fields.
+
+Evidence: `entity-list-{genres,tags,studios,persons}.json`. The SDK snapshot declares `QueryResult<BaseItemDto>` for Genres, Studios, and Persons, and `QueryResult<UserLibrary.TagItem>` for Tags; the response shape above was also observed directly.
+
+### Navigation by name and ID
+
+The following requests all returned HTTP 200 with a single JSON object, not an `Items` envelope:
+
+| Request, with the existing `UserId` where applicable | Observed object |
+| --- | --- |
+| `/Genres/Drama?UserId=...` | Genre detail, `Id: "21"`, `Type: "Genre"`, 24 properties |
+| `/Studios/Reference%20Studio?UserId=...` | Studio detail, `Id: "23"`, `Type: "Studio"`, 22 properties |
+| `/Persons/Reference%20Actor?UserId=...` | Person detail, `Id: "19"`, `Type: "Person"`, 22 properties |
+| `/Users/{userId}/Items/21` | Genre detail with the same property set as the name route |
+| `/Users/{userId}/Items/19` | Person detail with 23 properties; it additionally included `TagItems: []` compared with the name route |
+
+The details included `Etag`, dates, `SortName`, `ForcedSortName`, `ExternalUrls`, `ProviderIds`, `UserData`, display preferences, image fields, and lock fields where shown in the fixtures. `CanDelete` and `CanDownload` were explicitly false. They did not include `IsFolder`, `MediaType`, or count fields. A standalone Person has `Type: "Person"`; the actor/director relationship types belong to a media item's `People` entries.
+
+Evidence: `entity-name-{genres,studios,persons}.json` and `entity-item-detail-{genre,person}.json`. This confirms that the sampled embedded numeric Genre ID can be rendered as a path string and navigated through the ordinary user-item detail route. Direct Tag-ID and Studio-ID detail requests were not part of this bounded capture.
+
+### Item filters
+
+All item-filter requests used `/Items?UserId=...&Recursive=true`. Their HTTP 200 responses used the ordinary `Items`/`TotalRecordCount` envelope. Every positive result below contained only the existing movie `Id: "18"`, `Type: "Movie"`, `Name: "Reference Artwork Film"`.
+
+| Additional query | Result | Fixture |
+| --- | --- | --- |
+| `GenreIds=21` | One matching movie | `entity-filter-genreids.json` |
+| `TagIds=25` | One matching movie | `entity-filter-tagids.json` |
+| `StudioIds=23` | One matching movie | `entity-filter-studioids.json` |
+| `PersonIds=19` | One matching movie | `entity-filter-personids.json` |
+| `Genres=Drama|Science Fiction` | One matching movie | `entity-filter-genres-pipe.json` |
+| `Tags=reference|local-artwork` | One matching movie | `entity-filter-tags-pipe.json` |
+| `Genres=Drama|Missing Reference Genre` and `Tags=reference|Missing Reference Tag` | One matching movie despite a nonexistent alternative in each field | `entity-filter-mixed-positive-missing.json` |
+| `Genres=Drama` and `Tags=Missing Reference Tag` | `Items: []`, `TotalRecordCount: 0` | `entity-filter-negative-tag.json` |
+
+Pipe characters and spaces were URL-encoded by the recorder; the table shows decoded query values. The mixed positive/missing case is consistent with OR across alternatives inside each of the sampled name filters. The matching-genre/missing-tag case supports AND between those active filters and demonstrates that the negative tag was not simply ignored. Both observations apply to these named cases; they do not establish every combined-filter rule or multi-ID separator.
+
+The SDK explicitly documents pipe-separated `Genres`, `Tags`, and `StudioIds`. It does not explicitly describe OR/AND behavior. `GenreIds` and `TagIds` are incompletely exposed in the snapshot's GET parameter lists, so their successful GET behavior here is direct reference evidence rather than a deduction from those lists. Only one ID per ID-filter request was tested.
+
+### Paging and media-type parameter
+
+`GET /Genres?UserId=...&IncludeItemTypes=Movie&StartIndex=1&Limit=1` returned one Genre item, Science Fiction (`Id: "22"`), while `TotalRecordCount` remained 2. This confirms a zero-based starting offset and a count before paging for that request. It also records a successful Movie-filtered request, but this dataset does not independently establish exclusion behavior for another `IncludeItemTypes` value. Evidence: `entity-genres-movie-page.json`.
+
+### Integrity and scope
+
+The added stages are `entities_prepare`, `entity_lists`, `entity_navigation`, and `export_entities`. The recorder refuses to overwrite existing `entity-*` evidence. The final export selected only that prefix and remotely checked original response headers, JSON structure and number/string distinctions, and absence of the recorded password and tokens. SHA-256 checks preserved all 178 previous raw/export files. All 18 new fixtures retain the established JSON fixture structure and original synthetic IDs.
+
+No local runtime verification was performed. The reference stayed in its existing private network namespace, and no media scan or metadata refresh was requested. No Goby service or database operation was performed by this capture. Unknown entity names/IDs, Tag detail navigation, multiple numeric IDs, entity deletion, count fields, favorites, permission-restricted users, and further paging combinations remain outside this evidence set.

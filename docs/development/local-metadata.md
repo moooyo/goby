@@ -49,13 +49,23 @@ Every scan checks sidecars, including when media size and modification time allo
 - An inaccessible media root retains existing catalog records and their metadata. It is not interpreted as removal of every sidecar.
 - Removing a library removes catalog records while retaining media and sidecars on disk.
 
-The current task UI displays scan warnings. Metadata editing, field locks, online providers, and automatic watch-based refresh remain separate planned work. Updating descriptive tags or ratings does not add new query filters or access policies.
+The current task UI displays scan warnings. Metadata editing, field locks, online providers, and automatic watch-based refresh remain separate planned work. The entity filters below do not add parental-rating or other access policies.
+
+## Persistent catalog entities
+
+Migration `0004` assigns stable catalog identities to genres, tags, studios, and people. It backfills already stored NFO documents during the database upgrade without requiring another filesystem scan. Subsequent NFO writes and entity associations commit in the same catalog transaction; an association failure also rolls back the corresponding media/metadata write.
+
+Genre, tag, and studio references inside item DTOs use numeric 64-bit IDs. People inside item DTOs use decimal string IDs. Entity list/detail IDs are strings, including the minimal `{Name, Id}` objects returned by `/Tags`; this distinction matches the reference. Roles, credit types, and ordering belong to the item/person association, so one person can have several credits. Names normalize consistently in PostgreSQL; a fixed-size SHA-256 key permits long entity names, with the complete normalized value checked to prevent merging different names on a hash collision.
+
+`/Genres`, `/Tags`, `/Studios`, and `/Persons` expose only entities associated with the requesting user's visible library items. Genre, studio, and person names have detail routes; positive decimal entity IDs can also be read through `/Users/{UserId}/Items/{Id}`. Removing a sidecar or library removes the corresponding associations. Orphaned entity rows retain their identity for future reuse but are not returned by these browsing routes.
+
+Item queries support `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, `Genres`, `Tags`, `Studios`, `Person`, and `PersonTypes`. Name lists use `|`; ID lists accept `|` or commas. Values within a dimension use OR and separate dimensions use AND. Person identifiers/names and credit types must match the same credit association. Authorization is applied before filtering, counting, grouping, or pagination. These filters do not implement parental ratings, subfolder exclusions, or the rest of the upstream query surface.
 
 ## Input boundaries
 
 Sidecars are opened through the configured library root, checked as regular files, and read through the same file handle. Final symlinks and special files are rejected; Linux nonblocking opens prevent a replaced FIFO from indefinitely blocking the scanner. Identity, size, and modification checks detect changes during a read.
 
-The parser accepts UTF-8, an optional UTF-8 BOM, and an optional XML 1.0 declaration. It rejects DOCTYPE, directives, unsupported processing instructions, external entities, namespaced roots, invalid numeric/date values, and partial documents. Limits are 2 MiB per document, 64 nesting levels, 16,384 elements, 64 attributes per element, 64 KiB per field, and 1,024 entries per collection. It returns no partially parsed metadata on failure.
+The parser accepts UTF-8, an optional UTF-8 BOM, and an optional XML 1.0 declaration. It rejects DOCTYPE, directives, unsupported processing instructions, external entities, namespaced roots, invalid numeric/date values, and partial documents. Limits are 2 MiB per document, 64 nesting levels, 16,384 elements, 64 attributes per element, 64 KiB per field, and 1,024 entries per collection. Display and sort names have a stricter 1,024-byte UTF-8 limit so accepted metadata fits the catalog's PostgreSQL sort index; album/artist fallback names follow the same bound. It returns no partially parsed metadata on failure.
 
 ## Example
 

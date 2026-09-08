@@ -1,0 +1,104 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T23:21:52.077178+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Genres/Drama?UserId=fa0ec9ecc77b4fb487eceb8233c9a1fb",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "740"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Tue, 08 Sep 2026 23:21:51 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "Drama",
+      "ServerId": "ec69ef1cf84140e88489c30326529308",
+      "Id": "21",
+      "Etag": "89082c47eded12644c607c79bfd45904",
+      "DateCreated": "2026-09-08T23:05:43.0000000Z",
+      "DateModified": "2026-09-08T23:05:43.0000000Z",
+      "CanDelete": false,
+      "CanDownload": false,
+      "PresentationUniqueKey": "de3b297af2884735b2be4ec8483b21a1",
+      "SupportsSync": true,
+      "SortName": "Drama",
+      "ForcedSortName": "Drama",
+      "ExternalUrls": [],
+      "Taglines": [],
+      "RemoteTrailers": [],
+      "ProviderIds": {},
+      "Type": "Genre",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false
+      },
+      "DisplayPreferencesId": "7b6fd309fc021df5f3c55c3006a0b856",
+      "PrimaryImageAspectRatio": 1,
+      "ImageTags": {
+        "Primary": "333e31c1b6153ec70f71b464c11f1e86"
+      },
+      "BackdropImageTags": [],
+      "LockedFields": [],
+      "LockData": false
+    }
+  }
+}

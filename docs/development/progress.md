@@ -16,14 +16,14 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 isolated on test-env, 89 audited HTTP fixtures including 24 NFO/artwork captures; selected Ping/auth/CORS/projection/library responses corrected from these captures; [report](../research/reference-server.md) |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 isolated on test-env, 107 audited HTTP fixtures including NFO/artwork and entity navigation/filtering; selected responses corrected from these captures; [report](../research/reference-server.md) |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
-| M2b metadata and artwork | NFO increment complete; overall milestone in progress | Local NFO parser, atomic scanner integration, PostgreSQL persistence, and reference-calibrated DTO projections pass Linux tests and non-root deployed workflow checks; [verification](verification-m2b-nfo.md). Artwork delivery, persistent facet/person entities, richer metadata and reconciliation remain |
+| M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | M3 initial client playback | Pending | Direct playback, negotiation, subtitles, progress, session/events |
 | M4 conversion and hardware pipeline | Pending | Remux/transcode/HLS, tracks, hardware decode/encode, limits and recovery |
 | M5 administrator completion | Pending | Metadata, full policies, tasks/devices/keys/settings, backup and restore |
-| M6 compatibility release | Pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations and upgrade evidence |
+| M6 compatibility release | Pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations and upgrade evidence; revise startup/migration time budgets before high-volume metadata backfills |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
 
 ## Environment observations

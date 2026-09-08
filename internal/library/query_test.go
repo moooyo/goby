@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -80,6 +81,101 @@ func TestQueryItemsRejectsInvalidInputBeforeDatabaseAccess(t *testing.T) {
 				t.Fatalf("query error = %v, want ErrInvalidInput", err)
 			}
 		})
+	}
+}
+
+func TestQueryItemsValidatesEntityFiltersBeforeDatabaseAccess(t *testing.T) {
+	store := &Store{}
+	assertInvalid := func(t *testing.T, query Query) {
+		t.Helper()
+		if _, err := store.QueryItems(context.Background(), query); !errors.Is(err, ErrInvalidInput) {
+			t.Fatalf("entity query error = %v, want ErrInvalidInput", err)
+		}
+	}
+	for _, field := range []struct {
+		name string
+		set  func(*Query, []int64)
+	}{
+		{name: "GenreIds", set: func(q *Query, values []int64) { q.GenreIds = values }},
+		{name: "TagIds", set: func(q *Query, values []int64) { q.TagIds = values }},
+		{name: "StudioIds", set: func(q *Query, values []int64) { q.StudioIds = values }},
+	} {
+		t.Run(field.name, func(t *testing.T) {
+			for _, id := range []int64{0, -1} {
+				query := Query{UserID: "user"}
+				field.set(&query, []int64{id})
+				assertInvalid(t, query)
+			}
+			values := make([]int64, 1025)
+			for i := range values {
+				values[i] = 1
+			}
+			query := Query{UserID: "user"}
+			field.set(&query, values)
+			assertInvalid(t, query)
+			field.set(&query, values[:1024])
+			if _, err := normalizeItemQuery(query); err != nil {
+				t.Fatalf("1024 entity IDs error = %v", err)
+			}
+		})
+	}
+	for _, field := range []struct {
+		name  string
+		valid string
+		set   func(*Query, []string)
+	}{
+		{name: "Genres", valid: "Drama", set: func(q *Query, values []string) { q.Genres = values }},
+		{name: "Tags", valid: "Shared", set: func(q *Query, values []string) { q.Tags = values }},
+		{name: "Studios", valid: "Studio", set: func(q *Query, values []string) { q.Studios = values }},
+		{name: "PersonTypes", valid: "Actor", set: func(q *Query, values []string) { q.PersonTypes = values }},
+		{name: "PersonIds", valid: "1", set: func(q *Query, values []string) { q.PersonIds = values }},
+	} {
+		t.Run(field.name, func(t *testing.T) {
+			for _, value := range []string{"", " \t\n", "\u00a0", "bad\x00value", "bad\xffvalue"} {
+				query := Query{UserID: "user"}
+				field.set(&query, []string{value})
+				assertInvalid(t, query)
+			}
+			values := make([]string, 1025)
+			for i := range values {
+				values[i] = field.valid
+			}
+			query := Query{UserID: "user"}
+			field.set(&query, values)
+			assertInvalid(t, query)
+			field.set(&query, values[:1024])
+			if _, err := normalizeItemQuery(query); err != nil {
+				t.Fatalf("1024 entity values error = %v", err)
+			}
+		})
+	}
+	for _, value := range []string{" \t\n", "\u00a0", "bad\x00name", "bad\xffname"} {
+		assertInvalid(t, Query{UserID: "user", Person: value})
+	}
+	for _, value := range []string{"0", "-1", "+1", "01", " 1", "1 ", "1.0", "one", "9223372036854775808", "\uff11"} {
+		t.Run("PersonIds/"+value, func(t *testing.T) {
+			assertInvalid(t, Query{UserID: "user", PersonIds: []string{value}})
+		})
+	}
+}
+
+func TestNormalizeItemQueryPreservesEntityNamesForDatabaseNormalization(t *testing.T) {
+	query := Query{
+		UserID: "user", Genres: []string{" \u00a0DRAMA\u00a0 "}, Tags: []string{" MiXeD Tag "},
+		Studios: []string{" \u00a0Studio\u00a0 "}, Person: " \u00a0Person\u00a0 ",
+		GenreIds: []int64{1<<63 - 1}, TagIds: []int64{1<<63 - 1}, StudioIds: []int64{1<<63 - 1},
+		PersonIds: []string{"9223372036854775807"},
+	}
+	normalized, err := normalizeItemQuery(query)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(normalized.Genres, query.Genres) || !reflect.DeepEqual(normalized.Tags, query.Tags) ||
+		!reflect.DeepEqual(normalized.Studios, query.Studios) || normalized.Person != query.Person {
+		t.Fatalf("entity names were rewritten before SQL normalization: %+v", normalized)
+	}
+	if !reflect.DeepEqual(normalized.PersonIds, query.PersonIds) {
+		t.Fatalf("maximum person ID = %v, want %v", normalized.PersonIds, query.PersonIds)
 	}
 }
 
@@ -388,6 +484,212 @@ func TestItemQueriesPreserveAbsentAndNullLocalMetadata(t *testing.T) {
 			t.Errorf("read item %s metadata = %+v, %v, want nil metadata", id, item.Metadata, err)
 		}
 	}
+}
+
+func TestItemQueriesProjectEntityDisplayNamesAndCreditOrder(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryEntityQueryFixture(t, ctx, store.pool)
+	entityID := func(kind, name string) int64 {
+		return libraryQueryEntityID(t, ctx, store.pool, kind, name)
+	}
+	sharedPersonID := strconv.FormatInt(entityID("Person", "Shared Person"), 10)
+	otherPersonID := strconv.FormatInt(entityID("Person", "Other Person"), 10)
+	eight, zero, one := 8, 0, 1
+	want := ItemEntities{
+		Genres: []EntityRef{
+			{ID: entityID("Genre", "Zeta"), Name: "Zeta"},
+			{ID: entityID("Genre", "Drama"), Name: "dRAMA"},
+			{ID: entityID("Genre", "Alpha"), Name: "Alpha"},
+		},
+		Tags: []EntityRef{
+			{ID: entityID("Tag", "Alpha"), Name: "Alpha"},
+			{ID: entityID("Tag", "Shared"), Name: "sHARED"},
+			{ID: entityID("Tag", "z-last"), Name: "z-last"},
+		},
+		Studios: []EntityRef{
+			{ID: entityID("Studio", "Z Studio"), Name: "Z Studio"},
+			{ID: entityID("Studio", "Studio One"), Name: "sTUDIO One"},
+		},
+		People: []PersonRef{
+			{ID: otherPersonID, Name: "Other Person", Role: "Director", Type: "Director", SortOrder: &zero},
+			{ID: sharedPersonID, Name: "SHARED PERSON", Role: "Narrator", Type: "GuestStar", SortOrder: &one},
+			{ID: sharedPersonID, Name: "sHARED Person", Role: "Lead", Type: "Actor", SortOrder: &eight},
+			{ID: sharedPersonID, Name: "sHARED Person", Role: "Cameo", Type: "Actor"},
+		},
+	}
+	result, err := store.QueryItems(ctx, Query{UserID: "restricted", Ids: []string{"movie-a", "episode-b1"}})
+	if err != nil || result.TotalRecordCount != 1 || len(result.Items) != 1 {
+		t.Fatalf("entity projection query = %+v, %v, want one visible item", result, err)
+	}
+	if !reflect.DeepEqual(result.Items[0].Entities, want) {
+		t.Errorf("query entities = %+v, want %+v", result.Items[0].Entities, want)
+	}
+	item, err := store.GetItem(ctx, "restricted", "episode-b1")
+	if err != nil || !reflect.DeepEqual(item.Entities, want) {
+		t.Fatalf("item entities = %+v, %v, want %+v", item.Entities, err, want)
+	}
+	for _, id := range []string{"movie-a", "cross-library-child"} {
+		if _, err := store.GetItem(ctx, "restricted", id); !errors.Is(err, ErrNotFound) {
+			t.Errorf("hidden entity item %s error = %v, want ErrNotFound", id, err)
+		}
+	}
+	item, err = store.GetItem(ctx, "restricted", "audio-b")
+	if err != nil || len(item.Entities.Genres)+len(item.Entities.Tags)+len(item.Entities.Studios)+len(item.Entities.People) != 0 {
+		t.Fatalf("unassociated item entities = %+v, %v, want empty collections", item.Entities, err)
+	}
+}
+
+func TestQueryItemsCombinesEntityFiltersWithinVisibleItems(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryEntityQueryFixture(t, ctx, store.pool)
+	dramaID := libraryQueryEntityID(t, ctx, store.pool, "Genre", "Drama")
+	comedyID := libraryQueryEntityID(t, ctx, store.pool, "Genre", "Comedy")
+	sharedTagID := libraryQueryEntityID(t, ctx, store.pool, "Tag", "Shared")
+	studioOneID := libraryQueryEntityID(t, ctx, store.pool, "Studio", "Studio One")
+	sharedPersonID := strconv.FormatInt(libraryQueryEntityID(t, ctx, store.pool, "Person", "Shared Person"), 10)
+	tests := []struct {
+		name  string
+		query Query
+		ids   []string
+	}{
+		{name: "genre IDs browse beyond roots", query: Query{GenreIds: []int64{dramaID}}, ids: []string{"episode-b1"}},
+		{name: "genre names use SQL normalization", query: Query{Genres: []string{" dRaMa "}}, ids: []string{"episode-b1"}},
+		{name: "genre names are alternatives", query: Query{Genres: []string{"Drama", "Comedy"}}, ids: []string{"episode-b1", "episode-b2"}},
+		{name: "genre IDs are alternatives", query: Query{GenreIds: []int64{dramaID, comedyID}}, ids: []string{"episode-b1", "episode-b2"}},
+		{name: "genre ID and name constraints intersect", query: Query{GenreIds: []int64{dramaID}, Genres: []string{"Comedy"}}, ids: []string{}},
+		{name: "genre constraints can match different associations", query: Query{GenreIds: []int64{dramaID}, Genres: []string{"Alpha"}}, ids: []string{"episode-b1"}},
+		{name: "tag ID and name constraints intersect", query: Query{TagIds: []int64{sharedTagID}, Tags: []string{" movieonly "}}, ids: []string{}},
+		{name: "tag constraints can match different associations", query: Query{TagIds: []int64{sharedTagID}, Tags: []string{"Alpha"}}, ids: []string{"episode-b1"}},
+		{name: "studio ID and name constraints intersect", query: Query{StudioIds: []int64{studioOneID}, Studios: []string{"studio two"}}, ids: []string{}},
+		{name: "studio constraints can match different associations", query: Query{StudioIds: []int64{studioOneID}, Studios: []string{"z studio"}}, ids: []string{"episode-b1"}},
+		{name: "person IDs do not duplicate items", query: Query{PersonIds: []string{sharedPersonID}}, ids: []string{"episode-b1", "episode-b2"}},
+		{name: "person ID and name must identify the same person", query: Query{Person: " Other Person ", PersonIds: []string{sharedPersonID}}, ids: []string{}},
+		{
+			name: "different entity dimensions intersect",
+			query: Query{Genres: []string{"Drama", "Comedy"}, TagIds: []int64{sharedTagID},
+				StudioIds: []int64{studioOneID}, PersonIds: []string{sharedPersonID}},
+			ids: []string{"episode-b1"},
+		},
+		{name: "different dimensions cannot match different items", query: Query{Genres: []string{"Comedy"}, Studios: []string{"Studio One"}}, ids: []string{}},
+		{name: "person name and type share an association", query: Query{Person: "shared person", PersonTypes: []string{"Director"}}, ids: []string{"episode-b2"}},
+		{name: "person ID and type share an association", query: Query{PersonIds: []string{sharedPersonID}, PersonTypes: []string{"Director"}}, ids: []string{"episode-b2"}},
+		{name: "person name ID and type share an association", query: Query{Person: "Shared Person", PersonIds: []string{sharedPersonID}, PersonTypes: []string{"Director"}}, ids: []string{"episode-b2"}},
+		{name: "person type cannot bridge different name and ID matches", query: Query{Person: "Other Person", PersonIds: []string{sharedPersonID}, PersonTypes: []string{"Director"}}, ids: []string{}},
+		{name: "person types alone browse beyond roots", query: Query{PersonTypes: []string{"Actor"}}, ids: []string{"episode-b1", "movie-b"}},
+		{name: "person type alternatives retain all matching credits", query: Query{Person: "Shared Person", PersonTypes: []string{"Actor", "Director"}}, ids: []string{"episode-b1", "episode-b2"}},
+		{name: "later credit is preserved", query: Query{PersonIds: []string{sharedPersonID}, PersonTypes: []string{"GuestStar"}}, ids: []string{"episode-b1"}},
+		{name: "SQL trim preserves nonbreaking spaces", query: Query{Genres: []string{" \u00a0Spaced Genre\u00a0 "}}, ids: []string{"movie-b"}},
+		{name: "nonbreaking spaces remain part of the entity name", query: Query{Genres: []string{"Spaced Genre"}}, ids: []string{}},
+		{name: "genre ID cannot match a tag", query: Query{GenreIds: []int64{sharedTagID}}, ids: []string{}},
+		{name: "tag ID cannot match a genre", query: Query{TagIds: []int64{dramaID}}, ids: []string{}},
+		{name: "studio ID cannot match a genre", query: Query{StudioIds: []int64{dramaID}}, ids: []string{}},
+		{name: "person ID cannot match a studio", query: Query{PersonIds: []string{strconv.FormatInt(studioOneID, 10)}}, ids: []string{}},
+		{name: "explicit IDs still constrain entity filters", query: Query{Ids: []string{"movie-a", "episode-b2"}, Tags: []string{"Shared"}}, ids: []string{"episode-b2"}},
+		{name: "explicit parent still constrains entity filters", query: Query{ParentID: "library-b", Genres: []string{"Drama"}}, ids: []string{}},
+		{name: "recursive parent stays in its library", query: Query{ParentID: "series-b", Recursive: true, Genres: []string{"Drama"}}, ids: []string{"episode-b1"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.query.UserID = "restricted"
+			result, err := store.QueryItems(ctx, test.query)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := queryItemIDs(result.Items); !reflect.DeepEqual(got, test.ids) || result.TotalRecordCount != len(test.ids) {
+				t.Fatalf("entity query items = %v, total = %d, want %v", got, result.TotalRecordCount, test.ids)
+			}
+		})
+	}
+}
+
+func TestQueryItemsAppliesEntityACLBeforeCountsAndPagination(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryEntityQueryFixture(t, ctx, store.pool)
+	sharedPersonID := strconv.FormatInt(libraryQueryEntityID(t, ctx, store.pool, "Person", "Shared Person"), 10)
+	query := Query{UserID: "restricted", Tags: []string{"Shared"}, PersonIds: []string{sharedPersonID}, StartIndex: 1, Limit: 1}
+	result, err := store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 2 || !reflect.DeepEqual(queryItemIDs(result.Items), []string{"episode-b2"}) {
+		t.Fatalf("entity page = %+v, %v, want second visible item and total 2", result, err)
+	}
+	query.StartIndex = 99
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 2 || result.Items == nil || len(result.Items) != 0 {
+		t.Fatalf("empty entity page = %+v, %v, want empty items and visible total 2", result, err)
+	}
+	query.StartIndex, query.Limit = 0, 10
+	query.UserID = "admin"
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 4 || len(result.Items) != 4 {
+		t.Fatalf("administrator entity query = %+v, %v, want all four associated items", result, err)
+	}
+	query.UserID = "none"
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("denied entity query = %+v, %v, want no items", result, err)
+	}
+	query.UserID = "restricted"
+	query.Tags, query.PersonIds = nil, nil
+	query.Genres = []string{"Private Genre"}
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("hidden-only entity query = %+v, %v, want no items", result, err)
+	}
+	if _, err := store.pool.Exec(ctx, `UPDATE users SET policy = '{"EnableAllFolders":false}'::jsonb WHERE id = 'restricted'`); err != nil {
+		t.Fatal(err)
+	}
+	query.Genres = []string{"Drama"}
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("revoked entity query = %+v, %v, want no items", result, err)
+	}
+	if _, err := store.GetItem(ctx, "restricted", "episode-b1"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("revoked entity item error = %v, want ErrNotFound", err)
+	}
+}
+
+func seedLibraryEntityQueryFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	seedLibraryQueryFixture(t, ctx, pool)
+	for _, fixture := range []struct {
+		itemID   string
+		metadata string
+	}{
+		{itemID: "movie-a", metadata: `{
+			"Genres":["Drama","Private Genre"],"Tags":["Shared","Private Tag"],"Studios":["Studio One"],
+			"People":[{"Name":"Shared Person","Role":"Hidden","Type":"Actor"}]}`},
+		{itemID: "episode-b1", metadata: `{
+			"Genres":["Zeta","dRAMA","Alpha"],"Tags":["z-last","sHARED","Alpha"],"Studios":["Z Studio","sTUDIO One"],
+			"People":[
+				{"Name":"sHARED Person","Role":"Lead","Type":"Actor","SortOrder":8},
+				{"Name":"Other Person","Role":"Director","Type":"Director","SortOrder":0},
+				{"Name":"SHARED PERSON","Role":"Narrator","Type":"GuestStar","SortOrder":1},
+				{"Name":"sHARED Person","Role":"Cameo","Type":"Actor"}]}`},
+		{itemID: "episode-b2", metadata: `{
+			"Genres":["Comedy"],"Tags":["Shared","EpisodeOnly"],"Studios":["Studio Two"],
+			"People":[{"Name":"Shared Person","Type":"Director"}]}`},
+		{itemID: "movie-b", metadata: `{
+			"Genres":["Mystery","\u00a0Spaced Genre\u00a0"],"Tags":["MovieOnly"],"Studios":["Studio One"],
+			"People":[{"Name":"Other Person","Type":"Actor"}]}`},
+		{itemID: "cross-library-child", metadata: `{
+			"Genres":["Drama"],"Tags":["Shared"],"Studios":["Studio One"],
+			"People":[{"Name":"Shared Person","Type":"Actor"}]}`},
+	} {
+		if _, err := pool.Exec(ctx, `WITH changed AS (
+			UPDATE items SET local_metadata = $2::jsonb WHERE id = $1 RETURNING id, local_metadata
+		) SELECT sync_catalog_item_entities(id, local_metadata) FROM changed`, fixture.itemID, fixture.metadata); err != nil {
+			t.Fatalf("seed item %s entities: %v", fixture.itemID, err)
+		}
+	}
+}
+
+func libraryQueryEntityID(t *testing.T, ctx context.Context, pool *pgxpool.Pool, kind, name string) int64 {
+	t.Helper()
+	var id int64
+	if err := pool.QueryRow(ctx, `SELECT id FROM catalog_entities
+		WHERE kind = $1 AND normalized_name = lower(btrim($2::text))`, kind, name).Scan(&id); err != nil {
+		t.Fatalf("read %s entity %q: %v", kind, name, err)
+	}
+	return id
 }
 
 func queryItemIDs(items []Item) []string {

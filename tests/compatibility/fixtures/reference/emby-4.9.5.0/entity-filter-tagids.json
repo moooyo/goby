@@ -1,0 +1,97 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-08T23:21:52.094690+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items?UserId=fa0ec9ecc77b4fb487eceb8233c9a1fb&Recursive=true&TagIds=25",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "401"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Tue, 08 Sep 2026 23:21:51 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference Artwork Film",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "18",
+          "RunTimeTicks": 20000000,
+          "IsFolder": false,
+          "Type": "Movie",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "ImageTags": {
+            "Primary": "66dcea91e5ed256521d919b37c1e6c4d"
+          },
+          "BackdropImageTags": [
+            "ea3300eb80fb72fba2c9eff80d1a45b4"
+          ],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  }
+}

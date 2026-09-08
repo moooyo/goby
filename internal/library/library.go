@@ -47,6 +47,7 @@ type Item struct {
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
 	Metadata                                                      *metadata.Metadata
+	Entities                                                      ItemEntities
 }
 
 type Query struct {
@@ -55,6 +56,9 @@ type Query struct {
 	StartIndex, Limit                               int
 	IncludeItemTypes, Ids, MediaTypes               []string
 	ParentIndexNumber                               *int
+	GenreIds, TagIds, StudioIds                       []int64
+	PersonIds, Genres, Tags, Studios, PersonTypes      []string
+	Person                                          string
 }
 
 type ItemResult struct {

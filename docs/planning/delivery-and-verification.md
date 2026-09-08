@@ -1,6 +1,6 @@
 # Delivery plan and remote compatibility verification
 
-Status: **research baseline, service foundation, and initial ingestion delivered; metadata and artwork in progress**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
+Status: **service foundation, ingestion, local NFO, persistent entities, and indexed artwork increments delivered; playback pending**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
 
 ## Milestones and dependencies
 
@@ -52,7 +52,7 @@ Never use third-party servers listed in downloaded Swagger files as test targets
 | --- | --- | --- |
 | Bootstrap and identity | Fresh setup, setup already completed, public info, hidden users, correct advertised base URL, reverse proxy | Request/response and persisted state fixtures |
 | Authentication | Correct/incorrect password, disabled user, revoked token, logout, API key, token carriers, conflicting principals, rate limits | Status/body/header comparison; permission checks |
-| Authorization | User A requests user B state; library restrictions; artwork/stream/subtitle/download bypass attempts; admin-only writes | No protected metadata/bytes exposed; expected status semantics |
+| Authorization | User A requests user B state; library restrictions; image enumeration/stream/subtitle/download bypass attempts; admin-only writes | No protected metadata/media bytes exposed; indexed item image contents follow the separately recorded public ImageService contract |
 | Browse/search | Movies, series, seasons, episodes, albums, audio; Unicode names; empty library; filters, Fields, sort, pagination, Resume/Latest | Exact field types, envelopes, order, totals and user data |
 | Filesystem | Symlink escapes, long/Unicode paths, partial copies, rename/move, permission loss, NFS/SMB disconnect, inotify overflow | Stable identity; reconciliation; no accidental bulk removal |
 | HTTP media | GET/HEAD, full/range/suffix/invalid ranges, conditional requests, zero-length file, cancellation, proxy path prefix | Status/headers/length/range correctness and client playback |

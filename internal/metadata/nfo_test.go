@@ -144,6 +144,65 @@ func TestParseNFOTitleTakesPriorityOverMusicName(t *testing.T) {
 	assertNFOMetadata(t, parseNFOString(t, "<artist><title> </title><name>Fallback</name></artist>"), Metadata{Kind: "artist", Name: "Fallback"})
 }
 
+func TestParseNFOCatalogNamesHaveBoundedUTF8Bytes(t *testing.T) {
+	for _, field := range []struct{ root, tag string }{
+		{"movie", "title"}, {"tvshow", "title"}, {"episodedetails", "title"},
+		{"season", "title"}, {"album", "title"}, {"artist", "title"},
+		{"movie", "sorttitle"}, {"album", "name"}, {"artist", "name"},
+	} {
+		t.Run(field.root+"/"+field.tag, func(t *testing.T) {
+			for _, boundary := range []struct {
+				name, encoded, decoded string
+				accepted               bool
+			}{
+				{"ASCII at limit", strings.Repeat("a", 1024), strings.Repeat("a", 1024), true},
+				{"ASCII over limit", strings.Repeat("a", 1025), "", false},
+				{"two-byte at limit", strings.Repeat("\u00e9", 512), strings.Repeat("\u00e9", 512), true},
+				{"two-byte over limit", strings.Repeat("\u00e9", 512) + "a", "", false},
+				{"four-byte at limit", strings.Repeat("\U0001f431", 256), strings.Repeat("\U0001f431", 256), true},
+				{"four-byte over limit", strings.Repeat("\U0001f431", 256) + "a", "", false},
+				{"decoded entities at limit", strings.Repeat("&#233;", 512), strings.Repeat("\u00e9", 512), true},
+				{"decoded entities over limit", strings.Repeat("&#233;", 512) + "a", "", false},
+				{"trimmed at limit", " " + strings.Repeat("a", 1024) + " ", strings.Repeat("a", 1024), true},
+			} {
+				t.Run(boundary.name, func(t *testing.T) {
+					body := "<" + field.tag + ">" + boundary.encoded + "</" + field.tag + ">"
+					if !boundary.accepted {
+						// Other extracted fields must not escape when a catalog name
+						// fails its storage limit; assertNFOError checks zero output.
+						body = `<genre>Drama</genre><uniqueid type="imdb">tt123</uniqueid>` + body
+						assertNFOError(t, "<"+field.root+">"+body+"</"+field.root+">")
+						return
+					}
+					got := parseNFOString(t, "<"+field.root+">"+body+"</"+field.root+">")
+					value := got.Name
+					if field.tag == "sorttitle" {
+						value = got.SortName
+					}
+					if value != boundary.decoded || len(value) != 1024 {
+						t.Errorf("catalog name was truncated or changed: got %d bytes, want 1024", len(value))
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestParseNFOCatalogNameLimitDoesNotRestrictOtherText(t *testing.T) {
+	value := strings.Repeat("a", 64*1024)
+	input := "<movie><title>Short title</title>" +
+		"<originaltitle>" + value + "</originaltitle><plot>" + value + "</plot>" +
+		"<genre>" + value + "</genre><tag>" + value + "</tag><studio>" + value + "</studio>" +
+		"<actor><name>" + value + "</name><role>" + value + "</role></actor></movie>"
+	got := parseNFOString(t, input)
+	if got.Name != "Short title" || got.OriginalTitle != value || got.Overview != value ||
+		len(got.Genres) != 1 || got.Genres[0] != value || len(got.Tags) != 1 || got.Tags[0] != value ||
+		len(got.Studios) != 1 || got.Studios[0] != value || len(got.People) != 1 ||
+		got.People[0].Name != value || got.People[0].Role != value {
+		t.Error("catalog name storage limit changed another text field's 64 KiB contract")
+	}
+}
+
 func TestParseNFOProviderIDs(t *testing.T) {
 	t.Run("normalization and duplicates", func(t *testing.T) {
 		input := `<movie><imdbid>tt123</imdbid><uniqueid type="IMDB"> tt123 </uniqueid><tmdbid>456</tmdbid><tvdbid>789</tvdbid><uniqueid type="Vendor42">abc-123._:v2</uniqueid><uniqueid type="Vendor42">abc-123._:v2</uniqueid></movie>`

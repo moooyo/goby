@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
@@ -13,7 +15,20 @@ import (
 
 const itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
-	i.parent_index_number, i.created_at, i.media, i.local_metadata`
+	i.parent_index_number, i.created_at, i.media, i.local_metadata, ` + itemEntitiesColumn
+
+const itemEntitiesColumn = `(SELECT jsonb_build_object(
+	'Genres', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+		ORDER BY association.position, entity.id) FILTER (WHERE entity.kind = 'Genre'), '[]'::jsonb),
+	'Tags', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+		ORDER BY lower(association.display_name), entity.id, association.position) FILTER (WHERE entity.kind = 'Tag'), '[]'::jsonb),
+	'Studios', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+		ORDER BY association.position, entity.id) FILTER (WHERE entity.kind = 'Studio'), '[]'::jsonb),
+	'People', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id::text, 'Name', association.display_name,
+		'Role', association.role, 'Type', association.credit_type, 'SortOrder', association.sort_order)
+		ORDER BY association.sort_order ASC NULLS LAST, association.position, entity.id) FILTER (WHERE entity.kind = 'Person'), '[]'::jsonb)
+	) FROM item_entities association JOIN catalog_entities entity ON entity.id = association.entity_id
+	WHERE association.item_id = i.id)`
 
 const libraryColumns = `l.id, l.name, l.collection_type,
 	COALESCE((SELECT array_agg(r.path ORDER BY r.path) FROM library_roots r
@@ -265,7 +280,61 @@ func normalizeItemQuery(query Query) (Query, error) {
 			return Query{}, ErrInvalidInput
 		}
 	}
+	query, err = normalizeEntityFilters(query)
+	if err != nil {
+		return Query{}, err
+	}
 	return query, nil
+}
+
+func normalizeEntityFilters(query Query) (Query, error) {
+	for _, values := range [][]int64{query.GenreIds, query.TagIds, query.StudioIds} {
+		if len(values) > 1024 {
+			return Query{}, ErrInvalidInput
+		}
+		for _, id := range values {
+			if id <= 0 {
+				return Query{}, ErrInvalidInput
+			}
+		}
+	}
+	for _, values := range [][]string{query.Genres, query.Tags, query.Studios, query.PersonTypes} {
+		if len(values) > 1024 {
+			return Query{}, ErrInvalidInput
+		}
+		for _, name := range values {
+			if !validEntityFilterName(name) {
+				return Query{}, ErrInvalidInput
+			}
+		}
+	}
+	if query.Person != "" && !validEntityFilterName(query.Person) {
+		return Query{}, ErrInvalidInput
+	}
+	if len(query.PersonIds) > 1024 {
+		return Query{}, ErrInvalidInput
+	}
+	for _, value := range query.PersonIds {
+		id, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || id <= 0 || strconv.FormatInt(id, 10) != value {
+			return Query{}, ErrInvalidInput
+		}
+	}
+	// Keep names intact so filtering uses the same PostgreSQL normalization as
+	// the entity registry, including its treatment of non-ASCII whitespace.
+	query.GenreIds = append([]int64(nil), query.GenreIds...)
+	query.TagIds = append([]int64(nil), query.TagIds...)
+	query.StudioIds = append([]int64(nil), query.StudioIds...)
+	query.PersonIds = append([]string(nil), query.PersonIds...)
+	query.Genres = append([]string(nil), query.Genres...)
+	query.Tags = append([]string(nil), query.Tags...)
+	query.Studios = append([]string(nil), query.Studios...)
+	query.PersonTypes = append([]string(nil), query.PersonTypes...)
+	return query, nil
+}
+
+func validEntityFilterName(name string) bool {
+	return len(name) <= 65536 && utf8.ValidString(name) && strings.TrimSpace(name) != "" && !strings.ContainsRune(name, '\x00')
 }
 
 func normalizeQueryValues(values []string, allowed map[string]string) ([]string, error) {
@@ -307,7 +376,7 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 	} else if len(query.Ids) == 0 {
 		if query.Recursive {
 			conditions = append(conditions, "i.type <> 'CollectionFolder'")
-		} else {
+		} else if !hasEntityFilters(query) {
 			conditions = append(conditions, "i.parent_id IS NULL", "i.type = 'CollectionFolder'", "i.id = i.library_id")
 		}
 	}
@@ -332,7 +401,65 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 		args = append(args, "%"+escapeLikeLiteral(query.SearchTerm)+"%")
 		conditions = append(conditions, fmt.Sprintf("i.name ILIKE $%d ESCAPE E'\\\\'", len(args)))
 	}
+	conditions, args = addEntityConditions(query, conditions, args)
 	return prefix, strings.Join(conditions, " AND "), args
+}
+
+func hasEntityFilters(query Query) bool {
+	return len(query.GenreIds)+len(query.TagIds)+len(query.StudioIds)+len(query.PersonIds)+
+		len(query.Genres)+len(query.Tags)+len(query.Studios)+len(query.PersonTypes) != 0 || query.Person != ""
+}
+
+func addEntityConditions(query Query, conditions []string, args []any) ([]string, []any) {
+	for _, facet := range []struct {
+		kind  string
+		ids   []int64
+		names []string
+	}{
+		{kind: "Genre", ids: query.GenreIds, names: query.Genres},
+		{kind: "Tag", ids: query.TagIds, names: query.Tags},
+		{kind: "Studio", ids: query.StudioIds, names: query.Studios},
+	} {
+		matches := make([]string, 0, 2)
+		if len(facet.ids) != 0 {
+			args = append(args, facet.ids)
+			matches = append(matches, fmt.Sprintf("entity.id = ANY($%d::bigint[])", len(args)))
+		}
+		if len(facet.names) != 0 {
+			args = append(args, facet.names)
+			matches = append(matches, entityNameMatch("entity.normalized_name", len(args)))
+		}
+		for _, match := range matches {
+			conditions = append(conditions, `EXISTS (SELECT 1 FROM item_entities association
+				JOIN catalog_entities entity ON entity.id = association.entity_id
+				WHERE association.item_id = i.id AND entity.kind = '`+facet.kind+`'
+				AND (`+match+"))")
+		}
+	}
+	if query.Person == "" && len(query.PersonIds) == 0 && len(query.PersonTypes) == 0 {
+		return conditions, args
+	}
+	personConditions := []string{"association.item_id = i.id", "entity.kind = 'Person'"}
+	if query.Person != "" {
+		args = append(args, query.Person)
+		personConditions = append(personConditions, fmt.Sprintf("entity.normalized_name = lower(btrim($%d::text))", len(args)))
+	}
+	if len(query.PersonIds) != 0 {
+		args = append(args, query.PersonIds)
+		personConditions = append(personConditions, fmt.Sprintf("entity.id::text = ANY($%d::text[])", len(args)))
+	}
+	if len(query.PersonTypes) != 0 {
+		args = append(args, query.PersonTypes)
+		personConditions = append(personConditions, entityNameMatch("lower(btrim(association.credit_type))", len(args)))
+	}
+	conditions = append(conditions, `EXISTS (SELECT 1 FROM item_entities association
+		JOIN catalog_entities entity ON entity.id = association.entity_id
+		WHERE `+strings.Join(personConditions, " AND ")+")")
+	return conditions, args
+}
+
+func entityNameMatch(column string, parameter int) string {
+	return fmt.Sprintf("%s IN (SELECT lower(btrim(value)) FROM unnest($%d::text[]) AS names(value))", column, parameter)
 }
 
 func escapeLikeLiteral(value string) string {
@@ -354,10 +481,10 @@ func itemOrderSQL(query Query) string {
 
 func scanItem(row rowScanner, additional ...any) (Item, error) {
 	var item Item
-	var encoded, encodedMetadata []byte
+	var encoded, encodedMetadata, encodedEntities []byte
 	destinations := []any{&item.ID, &item.LibraryID, &item.ParentID, &item.Name, &item.SortName,
 		&item.Type, &item.Path, &item.Overview, &item.IsFolder, &item.IndexNumber,
-		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata}
+		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities}
 	err := row.Scan(append(destinations, additional...)...)
 	if err != nil {
 		return Item{}, err
@@ -372,6 +499,9 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 		if err := json.Unmarshal(encodedMetadata, &item.Metadata); err != nil {
 			return Item{}, fmt.Errorf("decode item local metadata: %w", err)
 		}
+	}
+	if err := json.Unmarshal(encodedEntities, &item.Entities); err != nil {
+		return Item{}, fmt.Errorf("decode item entities: %w", err)
 	}
 	return item, nil
 }

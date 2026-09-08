@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"sort"
 	"strconv"
@@ -63,6 +64,9 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, item)
 	}
+	if !s.applyIndexedImages(w, r, userID, items, false) {
+		return
+	}
 	for _, item := range items {
 		applyItemSwitches(item, r)
 	}
@@ -112,6 +116,9 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 	query.IncludeItemTypes = queryValues(values["IncludeItemTypes"])
 	query.Ids = queryValues(values["Ids"])
 	query.MediaTypes = queryValues(values["MediaTypes"])
+	if !readEntityFilters(w, r, &query) {
+		return query, false
+	}
 	return query, true
 }
 
@@ -170,6 +177,9 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 			items = append(items, item)
 		}
 	}
+	if !s.applyIndexedImages(w, r, query.UserID, items, false) {
+		return
+	}
 	if bare {
 		jsonResponse(w, 200, items)
 		return
@@ -188,6 +198,22 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 	}
 	item, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
 	if err != nil {
+		if errors.Is(err, library.ErrNotFound) {
+			if id, valid := positiveEntityID(r.PathValue("Id")); valid {
+				entity, entityErr := s.library.GetEntityByID(r.Context(), userID, id)
+				if entityErr != nil {
+					s.libraryError(w, r, entityErr)
+					return
+				}
+				dto := s.entityDTO(entity, queryValues(r.URL.Query()["Fields"]), true)
+				if entity.Type == "Person" {
+					dto["TagItems"] = []map[string]any{}
+				}
+				applyItemSwitches(dto, r)
+				jsonResponse(w, 200, dto)
+				return
+			}
+		}
 		s.libraryError(w, r, err)
 		return
 	}
@@ -203,6 +229,9 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		} else {
 			dto["CollectionType"] = lib.CollectionType
 		}
+	}
+	if !s.applyIndexedImages(w, r, userID, []map[string]any{dto}, true) {
+		return
 	}
 	applyItemSwitches(dto, r)
 	jsonResponse(w, 200, dto)
@@ -254,6 +283,9 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 			applyItemSwitches(dto, r)
 			items = append(items, dto)
 		}
+	}
+	if !s.applyIndexedImages(w, r, userID, items, false) {
+		return
 	}
 	jsonResponse(w, 200, items)
 }
@@ -356,7 +388,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	if detail || hasField(fields, "Overview") {
 		dto["Overview"] = item.Overview
 	}
-	addLocalMetadata(dto, item.Metadata, fields, detail)
+	addLocalMetadata(dto, item.Metadata, item.Entities, fields, detail)
 	if item.Media != nil {
 		mediaType := "Video"
 		if item.Type == "Audio" {
@@ -387,7 +419,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 // Descriptive metadata follows Fields/detail projection, as confirmed by the
 // NFO reference captures. The default item list omits these metadata values.
 // Display names, descriptions, and hierarchy indexes belong to the catalog item.
-func addLocalMetadata(dto map[string]any, source *metadata.Metadata, fields []string, detail bool) {
+func addLocalMetadata(dto map[string]any, source *metadata.Metadata, entities library.ItemEntities, fields []string, detail bool) {
 	var local metadata.Metadata
 	if source != nil {
 		local = *source
@@ -415,25 +447,35 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, fields []st
 		dto["ProviderIds"] = providers
 	}
 	if detail || hasField(fields, "Genres") {
-		dto["Genres"] = append([]string{}, local.Genres...)
-		dto["GenreItems"] = localMetadataNames(local.Genres)
+		genres := localMetadataRefs(local.Genres, entities.Genres)
+		names := make([]string, 0, len(genres))
+		for _, genre := range genres {
+			names = append(names, genre.Name)
+		}
+		dto["Genres"] = names
+		dto["GenreItems"] = metadataEntityDTOs(genres)
 	}
 	if detail || hasField(fields, "Tags") {
-		tags := append([]string(nil), local.Tags...)
+		tags := localMetadataRefs(local.Tags, entities.Tags)
 		sort.SliceStable(tags, func(i, j int) bool {
-			left, right := strings.ToLower(tags[i]), strings.ToLower(tags[j])
+			left, right := strings.ToLower(tags[i].Name), strings.ToLower(tags[j].Name)
 			if left == right {
-				return tags[i] < tags[j]
+				return tags[i].Name < tags[j].Name
 			}
 			return left < right
 		})
-		dto["TagItems"] = localMetadataNames(tags)
+		dto["TagItems"] = metadataEntityDTOs(tags)
 	}
 	if detail || hasField(fields, "Studios") {
-		dto["Studios"] = localMetadataNames(local.Studios)
+		dto["Studios"] = metadataEntityDTOs(localMetadataRefs(local.Studios, entities.Studios))
 	}
 	if detail || hasField(fields, "People") {
-		credits := append([]metadata.Person(nil), local.People...)
+		credits := append([]library.PersonRef(nil), entities.People...)
+		if len(credits) == 0 {
+			for _, person := range local.People {
+				credits = append(credits, library.PersonRef{Name: person.Name, Role: person.Role, Type: person.Type, SortOrder: person.SortOrder})
+			}
+		}
 		sort.SliceStable(credits, func(i, j int) bool {
 			left, right := credits[i].SortOrder, credits[j].SortOrder
 			if left == nil {
@@ -444,23 +486,39 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, fields []st
 		people := make([]map[string]any, 0, len(credits))
 		for _, credit := range credits {
 			person := map[string]any{"Name": credit.Name, "Type": credit.Type}
+			if credit.ID != "" {
+				person["Id"] = credit.ID
+			}
 			if credit.Role != "" {
 				person["Role"] = credit.Role
 			}
 			// BaseItemPerson has no SortOrder field. Preserve that order in the
-			// array without inventing person IDs or untracked image metadata.
+			// array and expose only IDs supplied by persistent associations.
 			people = append(people, person)
 		}
 		dto["People"] = people
 	}
 }
 
-func localMetadataNames(names []string) []map[string]any {
-	items := make([]map[string]any, 0, len(names))
+func localMetadataRefs(names []string, entities []library.EntityRef) []library.EntityRef {
+	if len(entities) != 0 {
+		return append([]library.EntityRef(nil), entities...)
+	}
+	items := make([]library.EntityRef, 0, len(names))
 	for _, name := range names {
-		// NameLongIdPair.Id must be a persistent int64 catalog identifier.
-		// Facet entities are not yet stored, so this partial mapping omits Id.
-		items = append(items, map[string]any{"Name": name})
+		items = append(items, library.EntityRef{Name: name})
+	}
+	return items
+}
+
+func metadataEntityDTOs(entities []library.EntityRef) []map[string]any {
+	items := make([]map[string]any, 0, len(entities))
+	for _, entity := range entities {
+		item := map[string]any{"Name": entity.Name}
+		if entity.ID > 0 {
+			item["Id"] = entity.ID
+		}
+		items = append(items, item)
 	}
 	return items
 }

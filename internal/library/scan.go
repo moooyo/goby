@@ -36,6 +36,7 @@ type scanState struct {
 	warnings            int
 	numberingConflicts  int
 	directoryIdentities map[string]os.FileInfo
+	imageDirectories    map[string]*imageDirectoryIndex
 }
 
 type storedFile struct {
@@ -135,6 +136,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	directoryKey := filepath.Clean(relative)
 	state.directoryIdentities[directoryKey] = info
 	defer delete(state.directoryIdentities, directoryKey)
+	defer func() { delete(state.imageDirectories, directoryKey) }()
 	// A directory containing audio files is the album boundary. Local metadata
 	// may describe this existing hierarchy but cannot choose a different kind.
 	folderType := current.folderType
@@ -314,6 +316,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		stored.sortName != sortName || stored.overview != overview || stored.indexNumber != indexNumber || stored.parentIndexNumber != parentIndex ||
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
+		if err := state.scanImages(stored.id, itemType, path, false); err != nil {
+			return err
+		}
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
@@ -331,7 +336,12 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 			return err
 		}
 	}
-	_, err = state.store.execOwned(state.task.ctx, `INSERT INTO items
+	tx, err := state.store.beginOwnedTx(state.task.ctx)
+	if err != nil {
+		return err
+	}
+	defer rollback(tx)
+	_, err = tx.Exec(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path,
 		 index_number, parent_index_number, media, file_identity, file_size, modified_at,
 		 overview, local_metadata, local_metadata_hash, local_metadata_path)
@@ -350,10 +360,19 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err != nil {
 		return err
 	}
+	if err := syncItemEntities(state.task.ctx, tx, id, localJSON); err != nil {
+		return err
+	}
+	if err := tx.Commit(state.task.ctx); err != nil {
+		return err
+	}
 	if stored.id == "" {
 		state.task.job.Added++
 	} else {
 		state.task.job.Updated++
+	}
+	if err := state.scanImages(id, itemType, path, false); err != nil {
+		return err
 	}
 	return state.store.persistProgress(state.task)
 }
@@ -386,7 +405,12 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err != nil {
 		return "", err
 	}
-	err = state.store.queryOwnedRow(state.task.ctx, `INSERT INTO items
+	tx, err := state.store.beginOwnedTx(state.task.ctx)
+	if err != nil {
+		return "", err
+	}
+	defer rollback(tx)
+	err = tx.QueryRow(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path, is_folder, index_number,
 		 overview, local_metadata, local_metadata_hash, local_metadata_path)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14)
@@ -399,7 +423,21 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		path = EXCLUDED.path, index_number = EXCLUDED.index_number, updated_at = now()
 		RETURNING id`, id, state.library.ID, state.root.id, parentID, name, sortName, itemType, path, relative, indexNumber,
 		overview, localJSON, local.hash, local.path).Scan(&id)
-	return id, err
+	if err != nil {
+		return "", err
+	}
+	if err := syncItemEntities(state.task.ctx, tx, id, localJSON); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(state.task.ctx); err != nil {
+		return "", err
+	}
+	if metadataPath != "" {
+		if err := state.scanImages(id, itemType, metadataPath, true); err != nil {
+			return "", err
+		}
+	}
+	return id, nil
 }
 
 const storedFileColumns = `id, root_id, relative_path, file_identity, file_size, modified_at, media, COALESCE(parent_id, ''), path, name, type,

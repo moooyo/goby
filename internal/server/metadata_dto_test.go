@@ -369,6 +369,70 @@ func TestMetadataDTOTagsSortByNameWithoutChangingSource(t *testing.T) {
 	}
 }
 
+func TestMetadataDTOPersistentEntityIDsUseReferenceWireTypes(t *testing.T) {
+	item := metadataDTOFixture(t)
+	zero, later := 0, 2
+	item.Entities = library.ItemEntities{
+		Genres: []library.EntityRef{{ID: 22, Name: "Science Fiction"}, {ID: 21, Name: "Drama"}},
+		Tags: []library.EntityRef{{ID: 25, Name: "reference"}, {ID: 24, Name: "local-artwork"}},
+		Studios: []library.EntityRef{{ID: 23, Name: "Reference Studio"}},
+		People: []library.PersonRef{
+			{ID: "20", Name: "Reference Director", Type: "Director", SortOrder: &later},
+			{ID: "19", Name: "Reference Actor", Type: "Actor", Role: "Lead", SortOrder: &zero},
+		},
+	}
+	before, err := json.Marshal(item.Entities)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := map[string]any{
+		"Genres": []any{"Science Fiction", "Drama"},
+		"GenreItems": []any{map[string]any{"Name": "Science Fiction", "Id": float64(22)}, map[string]any{"Name": "Drama", "Id": float64(21)}},
+		"TagItems": []any{map[string]any{"Name": "local-artwork", "Id": float64(24)}, map[string]any{"Name": "reference", "Id": float64(25)}},
+		"Studios": []any{map[string]any{"Name": "Reference Studio", "Id": float64(23)}},
+		"People": []any{
+			map[string]any{"Name": "Reference Actor", "Id": "19", "Type": "Actor", "Role": "Lead"},
+			map[string]any{"Name": "Reference Director", "Id": "20", "Type": "Director"},
+		},
+	}
+	for _, mode := range []struct {
+		name string
+		fields []string
+		detail bool
+	}{
+		{name: "requested_associations", fields: []string{"Genres", "Tags", "Studios", "People"}},
+		{name: "detail_associations", detail: true},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			dto, encoded := metadataDTOJSON(t, (&Server{}).itemDTO(item, mode.fields, mode.detail))
+			for field, value := range expected {
+				if !reflect.DeepEqual(dto[field], value) {
+					t.Errorf("persistent %s = %#v, want %#v", field, dto[field], value)
+				}
+			}
+			var wire struct {
+				GenreItems []struct { Name string; ID int64 `json:"Id"` }
+				TagItems []struct { Name string; ID int64 `json:"Id"` }
+				Studios []struct { Name string; ID int64 `json:"Id"` }
+				People []struct { Name, ID string }
+			}
+			if err := json.Unmarshal(encoded, &wire); err != nil {
+				t.Fatalf("entity identifiers do not use the reference JSON types: %v", err)
+			}
+		})
+	}
+	after, err := json.Marshal(item.Entities)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Errorf("DTO sorting changed persistent association data: %v", err)
+	}
+	defaultDTO := (&Server{}).itemDTO(item, nil, false)
+	for field := range expected {
+		if _, exists := defaultDTO[field]; exists {
+			t.Errorf("persistent association bypassed default field projection: %s", field)
+		}
+	}
+}
+
 func TestMetadataDTORespectsPathProjectionAndImageSwitches(t *testing.T) {
 	item := metadataDTOFixture(t)
 	api := &Server{serverID: "server-id"}

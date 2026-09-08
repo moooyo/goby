@@ -111,8 +111,8 @@ class Recorder:
             raise RuntimeError("Export changed a number, boolean, or null")
 
     def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False):
-        if name.startswith("artwork-") and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
-            raise RuntimeError(f"Refusing to overwrite artwork evidence: {name}")
+        if name.startswith(("artwork-", "entity-")) and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
+            raise RuntimeError(f"Refusing to overwrite extension evidence: {name}")
         request_headers = dict(BASE_HEADERS if headers is None else headers)
         if authenticated:
             request_headers["X-Emby-Token"] = self.credentials["REFERENCE_TOKEN"]
@@ -328,6 +328,71 @@ class Recorder:
             authenticated=True,
             note="Scalar field names are requested explicitly against the same NFO-backed movie. The NFO fixture does not contain an overview.",
         )
+
+    def entities_prepare(self) -> None:
+        baseline_file = PRIVATE / "entities-baseline-hashes.json"
+        if baseline_file.exists():
+            raise RuntimeError("Entity capture baseline is already recorded")
+        baseline = {}
+        for directory in (PRIVATE / "raw", EXPORT):
+            for path in sorted(directory.glob("*.json")):
+                baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        print(f"Recorded hashes of {len(baseline)} pre-existing raw/export fixtures; no server state changed.", flush=True)
+
+    def entity_lists(self) -> None:
+        if not (PRIVATE / "entities-baseline-hashes.json").exists():
+            raise RuntimeError("Entity baseline must be recorded before capture")
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        for route in ("Genres", "Tags", "Studios", "Persons"):
+            self.request(f"entity-list-{route.lower()}", "GET", f"/emby/{route}?UserId={user_id}", authenticated=True)
+
+    def entity_navigation(self) -> None:
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        original = json.loads((PRIVATE / "raw" / "artwork-nfo-detail.json").read_text())
+        movie = original["response"]["body"]
+        genre = next(item for item in movie["GenreItems"] if item["Name"] == "Drama")
+        tag = next(item for item in movie["TagItems"] if item["Name"] == "reference")
+        studio = movie["Studios"][0]
+        person = next(item for item in movie["People"] if item["Name"] == "Reference Actor")
+        for route, entity in (("Genres", genre), ("Studios", studio), ("Persons", person)):
+            encoded_name = urllib.parse.quote(entity["Name"], safe="")
+            self.request(f"entity-name-{route.lower()}", "GET", f"/emby/{route}/{encoded_name}?UserId={user_id}", authenticated=True)
+        for label, entity in (("genre", genre), ("person", person)):
+            self.request(f"entity-item-detail-{label}", "GET", f"/emby/Users/{user_id}/Items/{entity['Id']}", authenticated=True)
+        for parameter, entity in (("GenreIds", genre), ("TagIds", tag), ("StudioIds", studio), ("PersonIds", person)):
+            query = urllib.parse.urlencode({"UserId": user_id, "Recursive": "true", parameter: str(entity["Id"])})
+            self.request(f"entity-filter-{parameter.lower()}", "GET", "/emby/Items?" + query, authenticated=True)
+        for parameter, value in (("Genres", "Drama|Science Fiction"), ("Tags", "reference|local-artwork")):
+            query = urllib.parse.urlencode({"UserId": user_id, "Recursive": "true", parameter: value})
+            self.request(f"entity-filter-{parameter.lower()}-pipe", "GET", "/emby/Items?" + query, authenticated=True)
+        self.request(
+            "entity-genres-movie-page", "GET", f"/emby/Genres?UserId={user_id}&IncludeItemTypes=Movie&StartIndex=1&Limit=1",
+            authenticated=True,
+        )
+        query = urllib.parse.urlencode({
+            "UserId": user_id, "Recursive": "true", "Genres": "Drama|Missing Reference Genre",
+            "Tags": "reference|Missing Reference Tag",
+        })
+        self.request(
+            "entity-filter-mixed-positive-missing", "GET", "/emby/Items?" + query, authenticated=True,
+            note="Each name filter contains one existing matching value and one nonexistent value; no data was created to satisfy the missing values.",
+        )
+        query = urllib.parse.urlencode({
+            "UserId": user_id, "Recursive": "true", "Genres": "Drama", "Tags": "Missing Reference Tag",
+        })
+        self.request(
+            "entity-filter-negative-tag", "GET", "/emby/Items?" + query, authenticated=True,
+            note="The genre matches the synthetic movie but the tag does not exist; this distinguishes a restrictive negative tag from an ignored filter.",
+        )
+
+    def export_entities(self) -> None:
+        self.export(prefix="entity-")
+        baseline = json.loads((PRIVATE / "entities-baseline-hashes.json").read_text())
+        for name, expected in baseline.items():
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("A pre-existing baseline capture was changed")
+        print(f"Preserved all {len(baseline)} pre-existing raw/export fixture files byte-for-byte.", flush=True)
 
     def public(self, prefix="public") -> None:
         self.request(f"{prefix}-system-info", "GET", "/emby/System/Info/Public", headers={"Accept": "application/json"})
@@ -554,7 +619,7 @@ class Recorder:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork"])
+    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork", "entities_prepare", "entity_lists", "entity_navigation", "export_entities"])
     options = parser.parse_args()
     recorder = Recorder()
     getattr(recorder, options.stage)()

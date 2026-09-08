@@ -44,7 +44,7 @@ INITIAL = {
 UPDATED = {
     "Name": "NFO smoke revised title", "ProductionYear": 2003,
     "Overview": "Revised synthetic metadata with a different description.",
-    "Genres": ["Documentary"],
+    "Genres": ["Adventure", "Documentary"],
     "ProviderIds": {"Imdb": "tt9000002", "Tmdb": "9000002"},
 }
 
@@ -154,16 +154,21 @@ class API:
 
 
 class OwnedFixture:
-    def __init__(self, source: Path, source_hash: str) -> None:
+    def __init__(self, source: Path, source_hash: str, *, prefix="nfo-smoke-",
+                 marker_name=MARKER_NAME, extra_files=()) -> None:
         self.source = source
         self.directory: Path | None = None
-        self.marker = json.dumps({"owner": "goby-nfo-smoke-v1", "nonce": secrets.token_hex(16),
+        check(prefix in {"nfo-smoke-", "artwork-entities-smoke-"}, "Unsupported fixture ownership prefix")
+        check(all(Path(name).name == name and name not in {"", ".", ".."} for name in (marker_name, *extra_files)),
+              "Fixture file names must be simple basenames")
+        self.prefix, self.marker_name, self.extra_files = prefix, marker_name, tuple(extra_files)
+        self.marker = json.dumps({"owner": "goby-" + prefix.rstrip("-") + "-v1", "nonce": secrets.token_hex(16),
                                   "source_sha256": source_hash}, sort_keys=True)
 
     def prepare(self) -> None:
-        self.directory = Path(tempfile.mkdtemp(prefix="nfo-smoke-", dir=FIXTURE_ROOT))
+        self.directory = Path(tempfile.mkdtemp(prefix=self.prefix, dir=FIXTURE_ROOT))
         self.directory.chmod(0o755)
-        (self.directory / MARKER_NAME).write_text(self.marker, encoding="utf-8")
+        (self.directory / self.marker_name).write_text(self.marker, encoding="utf-8")
         shutil.copyfile(self.source, self.directory / MEDIA_NAME)
         (self.directory / MEDIA_NAME).chmod(0o644)
 
@@ -172,8 +177,8 @@ class OwnedFixture:
         directory = self.directory
         check(not directory.is_symlink() and directory.resolve(strict=True).parent == FIXTURE_ROOT,
               "Owned fixture resolved outside its allowed parent")
-        check(directory.name.startswith("nfo-smoke-"), "Owned fixture directory name did not match")
-        marker = directory / MARKER_NAME
+        check(directory.name.startswith(self.prefix), "Owned fixture directory name did not match")
+        marker = directory / self.marker_name
         check(stat.S_ISREG(marker.lstat().st_mode) and marker.read_text(encoding="utf-8") == self.marker,
               "Owned fixture marker did not match; cleanup refused")
         return directory
@@ -196,11 +201,11 @@ class OwnedFixture:
 
     def cleanup(self) -> None:
         directory = self.owned()
-        allowed = {MEDIA_NAME, NFO_NAME, MARKER_NAME}
+        allowed = {MEDIA_NAME, NFO_NAME, self.marker_name, *self.extra_files}
         entries = list(directory.iterdir())
         check(all(path.name in allowed and stat.S_ISREG(path.lstat().st_mode) for path in entries),
               "Unexpected files appeared in the owned fixture; cleanup refused")
-        for name in (NFO_NAME, MEDIA_NAME, MARKER_NAME):
+        for name in (NFO_NAME, MEDIA_NAME, *self.extra_files, self.marker_name):
             path = directory / name
             if path.exists():
                 path.unlink()
@@ -272,6 +277,7 @@ def main() -> int:
         library_id = created["Library"]["Id"]
         original_id = ""
         original_probe = None
+        genre_ids = {}
         for stage, expected in (("valid NFO", INITIAL), ("NFO-only update", UPDATED),
                                 ("malformed NFO retention", UPDATED), ("sidecar removal", None)):
             if stage == "NFO-only update":
@@ -301,8 +307,16 @@ def main() -> int:
                     check(item.get(key) == value and listed[0].get(key) == value, stage + ": " + key + " DTO mismatch")
                 for projected in (item, listed[0]):
                     genre_items = projected.get("GenreItems", [])
-                    check([genre.get("Name") for genre in genre_items] == expected["Genres"] and
-                          all("Id" not in genre for genre in genre_items), stage + ": partial GenreItems projection mismatch")
+                    check([genre.get("Name") for genre in genre_items] == expected["Genres"], stage + ": GenreItems names mismatch")
+                    for genre in genre_items:
+                        genre_id = genre.get("Id")
+                        check(type(genre_id) is int and genre_id > 0, stage + ": embedded genre ID is not a positive number")
+                        check(genre_ids.setdefault(genre["Name"], genre_id) == genre_id, stage + ": persistent genre ID changed")
+                entity_query = urlencode({"UserId": api.user_id, "ParentId": library_id, "IncludeItemTypes": "Movie", "Limit": 100})
+                entities = api.request("GET", "/emby/Genres?" + entity_query, emby=True)
+                check(entities.get("TotalRecordCount") == len(expected["Genres"]) and
+                      {entry.get("Name"): entry.get("Id") for entry in entities.get("Items", [])} ==
+                      {name: str(genre_ids[name]) for name in expected["Genres"]}, stage + ": genre list IDs do not match embedded references")
             else:
                 check(item.get("Name") == "NFO Smoke Media" and item.get("Overview") == "" and
                       item.get("ProductionYear") is None and item.get("Genres") == [] and item.get("ProviderIds") == {},
@@ -332,7 +346,8 @@ def main() -> int:
         api.request("GET", "/readyz", parse=False)
         summary["assertions"].append({"stage": stage, "media_preserved": True, "ready_status": 200})
         summary["probe_scope"] = "Stable HTTP technical fields; ffprobe invocation counts remain covered by Go tests."
-        summary["facet_scope"] = "GenreItems names verified; stable genre entity IDs remain unimplemented."
+        summary["facet_scope"] = "Positive embedded numeric genre IDs match queryable string entity IDs and remain stable across NFO updates."
+        summary["genre_ids"] = genre_ids
         summary["status"] = "passed"
     except Exception as error:
         summary["failed_stage"] = stage

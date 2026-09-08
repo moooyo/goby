@@ -2,7 +2,7 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation and catalog ingestion delivered; local metadata and artwork in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, and indexed artwork delivered; playback pending**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
 
 ## Reading order
 
@@ -12,6 +12,7 @@ Implementation status: **service foundation and catalog ingestion delivered; loc
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
 | [Build and run](development/running.md) | Foundation configuration, PostgreSQL deployment, and remote verification |
 | [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
+| [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |
