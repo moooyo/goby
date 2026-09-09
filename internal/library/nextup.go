@@ -14,6 +14,7 @@ import (
 // contract. Fields and image/user-data switches belong to the HTTP projection.
 type NextUpQuery struct {
 	UserID, SeriesID, ParentID string
+	ApplicationCredentialID    string
 	StartIndex, Limit          int
 }
 
@@ -32,7 +33,7 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 	if err != nil {
 		return ItemResult{}, err
 	}
-	tx, access, err := s.beginUserRead(ctx, query.UserID)
+	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -92,7 +93,7 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 }
 
 func normalizeNextUpQuery(query NextUpQuery) (NextUpQuery, error) {
-	if strings.TrimSpace(query.UserID) == "" || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
+	if strings.TrimSpace(query.UserID) == "" || !validSubject(Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}) || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
 		return NextUpQuery{}, ErrInvalidInput
 	}
 	for _, value := range []string{query.UserID, query.SeriesID, query.ParentID} {

@@ -1,0 +1,9 @@
+{
+  "owner": "goby-m5d-metadata-migration-regression-v1",
+  "status": "passed",
+  "top_level_tests_passed": 1,
+  "command": "go test -race -count=1 -v ./internal/library -run ^TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection$",
+  "package_duration": "1.191s",
+  "log_sha256": "bfd3ec35b1688b79a493f29da4c76a879f58678bdefede83733cf8c7b8da1795",
+  "production_changed": false
+}

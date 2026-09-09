@@ -267,7 +267,7 @@ func (s *Store) RevokeManagedSession(ctx context.Context, actor Principal, id st
 		return ManagedSessionRevocation{}, fmt.Errorf("lock managed session mutations: %w", err)
 	}
 	var targetUserID string
-	err = tx.QueryRow(ctx, "SELECT user_id FROM sessions WHERE id = $1", id).Scan(&targetUserID)
+	err = tx.QueryRow(ctx, "SELECT user_id FROM sessions WHERE id = $1 AND kind IN ('admin', 'emby')", id).Scan(&targetUserID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return ManagedSessionRevocation{}, fmt.Errorf("read managed session owner: %w", err)
 	}
@@ -289,7 +289,7 @@ func (s *Store) RevokeManagedSession(ctx context.Context, actor Principal, id st
 		return ManagedSessionRevocation{}, fmt.Errorf("read locked managed session accounts: %w", err)
 	}
 	rows, err = tx.Query(ctx, `SELECT id, user_id, kind FROM sessions
-		WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE`, []string{actor.SessionID, id})
+		WHERE id = ANY($1::text[]) AND kind IN ('admin', 'emby') ORDER BY id FOR UPDATE`, []string{actor.SessionID, id})
 	if err != nil {
 		return ManagedSessionRevocation{}, fmt.Errorf("lock managed authentication sessions: %w", err)
 	}

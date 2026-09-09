@@ -18,6 +18,10 @@ if ! id goby >/dev/null 2>&1; then
 fi
 install -d -m 755 "$deployment" "$deployment/admin"
 printf '%s\n' "$marker" > "$deployment/.goby-managed"
+if [[ -L /var/lib/goby-test ]]; then
+  echo "Refusing a symbolic link for the test state directory." >&2
+  exit 1
+fi
 install -d -m 750 -o goby -g goby /var/lib/goby-test
 set -a
 source /opt/goby-test/test.env
@@ -72,6 +76,22 @@ append_runtime_default GOBY_TRANSCODE_CACHE "$transcode_cache"
 append_runtime_default GOBY_TRANSCODE_MAX_CACHE_BYTES 134217728
 append_runtime_default GOBY_TRANSCODE_MAX_JOB_BYTES 33554432
 append_runtime_default GOBY_TRANSCODE_MIN_FREE_BYTES 16777216
+# Keep recoverable secrets in a private directory, even when the parent state
+# directory is group-readable. Existing vaults and master bytes are preserved.
+application_key_vault=/var/lib/goby-test/application-key-vault
+if [[ -L "$application_key_vault" ]]; then
+  echo "Refusing a symbolic link for the test application-key vault." >&2
+  exit 1
+fi
+if [[ -e "$application_key_vault" ]]; then
+  if [[ ! -d "$application_key_vault" || "$(stat -c %u "$application_key_vault")" != "$(id -u goby)" || "$(stat -c %a "$application_key_vault")" != 700 ]]; then
+    echo "The existing application-key vault must be a private goby-owned directory." >&2
+    exit 1
+  fi
+else
+  install -d -m 700 -o goby -g goby "$application_key_vault"
+fi
+append_runtime_default GOBY_API_KEY_MASTER_KEY_FILE "$application_key_vault/master.key"
 if [[ ! -f /opt/goby-test/browser.env ]]; then
   umask 077
   {
@@ -101,7 +121,7 @@ Restart=on-failure
 RestartSec=3s
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/dev/shm/goby-transcodes-test
+ReadWritePaths=/dev/shm/goby-transcodes-test /var/lib/goby-test/application-key-vault
 ProtectHome=true
 PrivateTmp=true
 CapabilityBoundingSet=

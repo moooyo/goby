@@ -68,6 +68,11 @@ func runSubtitleWorker(ctx context.Context, slots chan struct{}, work func() (Su
 // authorization, the primary media snapshot, and the sidecar bytes even when
 // an HTTP caller already holds a converted or conditional response cache.
 func (s *Store) ReadSubtitle(ctx context.Context, userID, itemID, mediaSourceID string, index int) (SubtitleContent, error) {
+	return s.ReadSubtitleFor(ctx, Subject{UserID: userID}, itemID, mediaSourceID, index)
+}
+
+// ReadSubtitleFor authorizes and checks both catalog sources before storage work.
+func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, mediaSourceID string, index int) (SubtitleContent, error) {
 	if strings.TrimSpace(itemID) == "" || strings.ContainsRune(itemID, '\x00') ||
 		strings.ContainsRune(mediaSourceID, '\x00') || index < 0 || index > maxSubtitleStreamIndex {
 		return SubtitleContent{}, ErrInvalidInput
@@ -76,7 +81,7 @@ func (s *Store) ReadSubtitle(ctx context.Context, userID, itemID, mediaSourceID 
 		return SubtitleContent{}, ErrUnavailable
 	}
 	return runSubtitleWorker(ctx, subtitleSourceWorkers, func() (SubtitleContent, error) {
-		primary, source, err := s.readSubtitleSnapshot(ctx, userID, itemID, mediaSourceID, index)
+		primary, source, err := s.readSubtitleSnapshotFor(ctx, subject, itemID, mediaSourceID, index)
 		if err != nil {
 			return SubtitleContent{}, err
 		}
@@ -116,7 +121,11 @@ func (s *Store) ReadSubtitle(ctx context.Context, userID, itemID, mediaSourceID 
 }
 
 func (s *Store) readSubtitleSnapshot(ctx context.Context, userID, itemID, sourceID string, index int) (indexedMediaSource, storedSubtitle, error) {
-	tx, access, err := s.beginUserRead(ctx, userID)
+	return s.readSubtitleSnapshotFor(ctx, Subject{UserID: userID}, itemID, sourceID, index)
+}
+
+func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, itemID, sourceID string, index int) (indexedMediaSource, storedSubtitle, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return indexedMediaSource{}, storedSubtitle{}, err
 	}

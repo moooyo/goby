@@ -1,0 +1,250 @@
+{
+  "all_preexisting_rows_raw_exact": true,
+  "baseline_application_key_clients": 2,
+  "baseline_application_keys": 2,
+  "catalog": {
+    "library_root_items": 5,
+    "raw_items": 21,
+    "recursive_content_items": 16
+  },
+  "checks": {
+    "client_capability_and_now_playing_isolation": true,
+    "direct_profile_negotiation": true,
+    "distinct_client_contexts": 6,
+    "idempotent_revocation_timestamp": true,
+    "keys_created": 2,
+    "native_cookie_and_csrf": true,
+    "native_header_and_cookie_denied": true,
+    "native_list_safe_fields_and_revoked_history": true,
+    "natural_ping_expiry_extension": true,
+    "parent_context_denials": 2,
+    "playback_get_post_user_defaults": true,
+    "real_range_bytes_per_context": 32,
+    "real_websockets_closed_by_parent_revoke": 2,
+    "revoked_reveal_status": 409,
+    "sibling_authorized_after_target_revoke": true,
+    "sibling_context_denials_after_logout": 2,
+    "sibling_logout_status": 204,
+    "sibling_secret_decryption": true,
+    "token_only_progress_ping_stop_context_restore": true,
+    "userless_catalog_and_explicit_user_projection": true,
+    "users_bare_array": true
+  },
+  "cleanup": {
+    "errors": [],
+    "new_credentials_revoked": 3,
+    "new_playbacks_stopped": 2,
+    "old_catalog_metadata_user_state_jobs_unchanged": true,
+    "proven": true
+  },
+  "deployment": {
+    "binary_sha256": "13857f9c33312bc13aef56d5d881c4a0fad23399ceb8a9dafa43e24c0fb2bad5",
+    "database_port": 5432,
+    "database_role": "goby_test",
+    "main_pid": 3494032,
+    "probe_version": 6,
+    "schema_version": 16,
+    "start_ticks": "22367653",
+    "uid": 995
+  },
+  "deployment_unchanged": true,
+  "elapsed_seconds": 1.064,
+  "expired_prepared_row_raw_exact": true,
+  "http_body_limit_bytes": 2097152,
+  "http_method_counts": {
+    "DELETE": 1,
+    "GET": 30,
+    "POST": 22
+  },
+  "http_request_limit": 200,
+  "http_retries": 0,
+  "limitations": [
+    "No encoder or profile-transcoding execution",
+    "No service restart; restart durability belongs to the isolated browser verifier"
+  ],
+  "output_scope": {
+    "attempt_marker": "m5d-deployed-application-keys-attempt-2.attempt.json",
+    "directory": "/opt/goby-test",
+    "report": "m5d-deployed-application-keys-attempt-2.json"
+  },
+  "owner": "goby-application-keys-deployed-m5d-v1",
+  "postgresql_forced_read_only": true,
+  "raw_response_files_written": false,
+  "snapshots": {
+    "after_cleanup": {
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 41,
+        "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+      },
+      "schema_migrations": {
+        "count": 16,
+        "sha256": "14cc122c6f869c0106899e4b861b865295d72fdb3a252d3c5851a5613698a4bc"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 86,
+        "sha256": "91a412458a1c69e4eb63fa386139b41499ad62d49b3def82d1924f11a68b6da7"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    },
+    "before": {
+      "application_key_clients": {
+        "count": 2,
+        "sha256": "45cebde6e844e3a66fca61fe2dcfc92ffc9581765bb4c98e1657e9424cf59d05"
+      },
+      "application_keys": {
+        "count": 2,
+        "sha256": "603966bb5a3a22aeed6a031a41e3a692275d27f4891a36d9c4d3416d7c47059a"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 28,
+        "sha256": "731c3cd2c55fdf3c9c12c3978163f3c0971a468fbb3b62f107c3767461eaad38"
+      },
+      "scan_jobs": {
+        "count": 41,
+        "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+      },
+      "schema_migrations": {
+        "count": 16,
+        "sha256": "14cc122c6f869c0106899e4b861b865295d72fdb3a252d3c5851a5613698a4bc"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 83,
+        "sha256": "2a6e48fd12c821ba870ae24d9ed96cb7c7200e4d1b043e51552e301f45f61e7b"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    }
+  },
+  "source": {
+    "audio_codec": "aac",
+    "file_type": "Movie",
+    "files_hashed": 1,
+    "maximum_file_bytes": 67108864,
+    "read_only_no_follow_no_atime": true,
+    "video_codec": "h264"
+  },
+  "source_unchanged": true,
+  "status": "passed",
+  "vault": {
+    "bytes": 32,
+    "directory_mode": "0700",
+    "mode": "0600",
+    "uid": 995
+  },
+  "vault_unchanged": true,
+  "verification_run": 2,
+  "workflow_limit_seconds": 180
+}

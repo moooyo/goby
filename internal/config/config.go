@@ -15,32 +15,34 @@ const GoVersion = "1.27.1"
 const FFmpegVersion = "9.0.1"
 
 type Config struct {
-	ListenAddress  string
-	DatabaseURL    string
-	PublicURL      string
-	ServerName     string
-	SetupToken     string
-	CookieSecure   bool
-	WebDirectory   string
-	FFmpegPath     string
-	FFprobePath    string
-	TrustedProxies []netip.Prefix
-	MediaRoots     []string
-	StartupTimeout time.Duration
-	Transcoding    TranscodingConfig
+	ListenAddress       string
+	DatabaseURL         string
+	PublicURL           string
+	ServerName          string
+	SetupToken          string
+	CookieSecure        bool
+	WebDirectory        string
+	FFmpegPath          string
+	FFprobePath         string
+	TrustedProxies      []netip.Prefix
+	MediaRoots          []string
+	StartupTimeout      time.Duration
+	APIKeyMasterKeyFile string
+	Transcoding         TranscodingConfig
 }
 
 func Load() (Config, error) {
 	c := Config{
-		ListenAddress: env("GOBY_LISTEN", ":8096"),
-		DatabaseURL:   os.Getenv("GOBY_DATABASE_URL"),
-		PublicURL:     strings.TrimRight(env("GOBY_PUBLIC_URL", "http://localhost:8096"), "/"),
-		ServerName:    env("GOBY_SERVER_NAME", "Goby"),
-		SetupToken:    os.Getenv("GOBY_SETUP_TOKEN"),
-		WebDirectory:  env("GOBY_WEB_DIR", "web/admin/dist"),
-		FFmpegPath:    env("GOBY_FFMPEG", "ffmpeg"),
-		FFprobePath:   env("GOBY_FFPROBE", "ffprobe"),
-		MediaRoots:    filepath.SplitList(os.Getenv("GOBY_MEDIA_ROOTS")),
+		ListenAddress:       env("GOBY_LISTEN", ":8096"),
+		DatabaseURL:         os.Getenv("GOBY_DATABASE_URL"),
+		PublicURL:           strings.TrimRight(env("GOBY_PUBLIC_URL", "http://localhost:8096"), "/"),
+		ServerName:          env("GOBY_SERVER_NAME", "Goby"),
+		SetupToken:          os.Getenv("GOBY_SETUP_TOKEN"),
+		WebDirectory:        env("GOBY_WEB_DIR", "web/admin/dist"),
+		FFmpegPath:          env("GOBY_FFMPEG", "ffmpeg"),
+		FFprobePath:         env("GOBY_FFPROBE", "ffprobe"),
+		MediaRoots:          filepath.SplitList(os.Getenv("GOBY_MEDIA_ROOTS")),
+		APIKeyMasterKeyFile: env("GOBY_API_KEY_MASTER_KEY_FILE", "application-key-master.key"),
 	}
 	var err error
 	for _, entry := range strings.Split(os.Getenv("GOBY_TRUSTED_PROXIES"), ",") {
@@ -70,6 +72,10 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	c.WebDirectory, err = filepath.Abs(c.WebDirectory)
+	if err != nil {
+		return Config{}, err
+	}
+	c.APIKeyMasterKeyFile, err = filepath.Abs(c.APIKeyMasterKeyFile)
 	return c, err
 }
 
@@ -90,6 +96,10 @@ func (c Config) Validate() error {
 	}
 	if c.StartupTimeout < time.Second || c.StartupTimeout > 30*time.Minute {
 		return fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
+	}
+	if strings.ContainsRune(c.APIKeyMasterKeyFile, '\x00') || len(c.APIKeyMasterKeyFile) > 4096 ||
+		(c.APIKeyMasterKeyFile != "" && (strings.TrimSpace(c.APIKeyMasterKeyFile) == "" || filepath.Base(c.APIKeyMasterKeyFile) == "." || filepath.Base(c.APIKeyMasterKeyFile) == string(filepath.Separator))) {
+		return fmt.Errorf("GOBY_API_KEY_MASTER_KEY_FILE must name a bounded persistent key file")
 	}
 	return c.Transcoding.Validate()
 }

@@ -1,0 +1,131 @@
+{
+  "application_diagnostics": "{\"time\":\"2026-09-10T05:18:05.152205759+08:00\",\"level\":\"INFO\",\"msg\":\"server listening\",\"address\":\"127.0.0.1:43255\",\"version\":\"0.1.0-dev\",\"database\":\"postgresql\"}\n{\"time\":\"2026-09-10T05:18:05.258097946+08:00\",\"level\":\"INFO\",\"msg\":\"administrator setup completed\",\"user_id\":\"[REDACTED]\"}\n{\"time\":\"2026-09-10T05:18:05.31487686+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":1}\n{\"time\":\"2026-09-10T05:18:05.318208401+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":2}\n{\"time\":\"2026-09-10T05:18:05.321057885+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":3}\n{\"time\":\"2026-09-10T05:18:05.323935728+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":4}\n{\"time\":\"2026-09-10T05:18:05.326784912+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":5}\n{\"time\":\"2026-09-10T05:18:05.329460789+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":6}\n{\"time\":\"2026-09-10T05:18:05.332201044+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":7}\n{\"time\":\"2026-09-10T05:18:05.334741045+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":8}\n{\"time\":\"2026-09-10T05:18:05.337063061+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":9}\n{\"time\":\"2026-09-10T05:18:05.339223741+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":10}\n{\"time\":\"2026-09-10T05:18:05.34142048+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":11}\n{\"time\":\"2026-09-10T05:18:05.343734155+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":12}\n{\"time\":\"2026-09-10T05:18:05.345912534+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":13}\n{\"time\":\"2026-09-10T05:18:05.348068964+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":14}\n{\"time\":\"2026-09-10T05:18:05.350168935+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":15}\n{\"time\":\"2026-09-10T05:18:05.352428432+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":16}\n{\"time\":\"2026-09-10T05:18:05.35464542+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":17}\n{\"time\":\"2026-09-10T05:18:05.356961937+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":18}\n{\"time\":\"2026-09-10T05:18:05.359339611+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":19}\n{\"time\":\"2026-09-10T05:18:05.361763575+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":20}\n{\"time\":\"2026-09-10T05:18:05.364134239+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":21}\n{\"time\":\"2026-09-10T05:18:05.366352227+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":22}\n{\"time\":\"2026-09-10T05:18:05.368523546+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":23}\n{\"time\":\"2026-09-10T05:18:05.370654186+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":24}\n{\"time\":\"2026-09-10T05:18:05.372898194+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":25}\n{\"time\":\"2026-09-10T05:18:05.375143752+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":26}\n{\"time\":\"2026-09-10T05:18:05.377489697+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":27}\n{\"time\":\"2026-09-10T05:18:05.379710715+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":28}\n{\"time\":\"2026-09-10T05:18:05.381879764+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":29}\n{\"time\":\"2026-09-10T05:18:05.384105102+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":30}\n{\"time\":\"2026-09-10T05:18:05.38677814+08:00\",\"level\":\"INFO\",\"msg\":\"application key revoked\",\"application_key_id\":30}\n{\"time\":\"2026-09-10T05:18:05.389094435+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":31}\n{\"time\":\"2026-09-10T05:18:05.391219947+08:00\",\"level\":\"INFO\",\"msg\":\"application key revoked\",\"application_key_id\":31}\n{\"time\":\"2026-09-10T05:18:05.393387955+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":32}\n{\"time\":\"2026-09-10T05:18:05.395726621+08:00\",\"level\":\"INFO\",\"msg\":\"application key revoked\",\"application_key_id\":32}\n{\"time\":\"2026-09-10T05:18:08.750853537+08:00\",\"level\":\"INFO\",\"msg\":\"application key created\",\"actor_credential_id\":\"[REDACTED]\",\"application_key_id\":33}\n",
+  "application_pids": [
+    3457600
+  ],
+  "assets_archive_sha256": "20929adc44871b5ce74ad57b8f3a0d82283005ddea4920afbc31953301a699ca",
+  "binary_sha256": "13857f9c33312bc13aef56d5d881c4a0fad23399ceb8a9dafa43e24c0fb2bad5",
+  "browser": {
+    "duration_ms": 3247.2400000000002,
+    "exit_code": 1,
+    "expected": 0,
+    "failures": [
+      "Error: locator.click: Target crashed \nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: 'API key created', exact: true }).getByRole('button', { name: 'Close', exact: true })\u001b[22m\n\n\n  355 |     await page.screenshot({ path: testInfo.outputPath('application-keys-created-masked.png'), fullPage: true,\n  356 |       animations: 'disabled', mask: [page.locator('input'), page.locator('textarea')] });\n> 357 |     await confirmation.getByRole('button', { name: 'Close', exact: true }).click();\n      |                                                                            ^\n  358 |     await expect(confirmation).toHaveCount(0);\n  359 |     await expect(page.getByRole('textbox', { name: 'Access token', exact: true })).toHaveCount(0);\n  360 |     await checkSecretsAndLayout(page, sensitive);\n    at /opt/goby-test/exec-scratch/[REDACTED]/browser/e2e/application-keys.spec.ts:357:76\n    at /opt/goby-test/exec-scratch/[REDACTED]/browser/e2e/application-keys.spec.ts:311:3"
+    ],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 1
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "application_uid": 995,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true,
+    "master_key_bytes": 32,
+    "master_key_mode": "0600",
+    "master_key_uid": 995,
+    "vault_directory_mode": "0700"
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5d_keys_20260909_211804_405b4a6945",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "failure": "The selected isolated browser journey did not pass without skips.",
+  "fixtures": {
+    "active_keys": 29,
+    "historical_revoked_keys": 3,
+    "private_manifest": true,
+    "real_keys_issued": 32,
+    "synthetic_credentials": false,
+    "users": 1
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 43255,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5d_role_20260909_211804_405b4a6945",
+  "run_id": "20260909_211804_405b4a6945",
+  "scenario": "administrator_application_keys",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3452400"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3452400"
+  },
+  "source_spec_sha256": "49f75a7fc809a75651ed3f48f0d5c8257a15d98bd250c07089607ef6b48f7dda",
+  "space_before": {
+    "/": 41537536,
+    "/dev/shm": 393957376,
+    "/dev/shm/goby-pg-m4c": 891682816,
+    "/opt/goby-test/exec-scratch": 69885952
+  },
+  "status": "failed",
+  "verifier_sha256": "cf7b748de4ede3c159ab828dbf2b5b585d369c46d9d5b44a786b76ece073bfe1"
+}

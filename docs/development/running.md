@@ -1,6 +1,6 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio PlaybackInfo selects supported HTTP/HLS TranscodingProfiles in their declared order. Progressive video, additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
 ## Build inputs
 
@@ -32,7 +32,8 @@ Do not run the application, tests, browser probes, or FFmpeg checks on the local
 5. Configure `GOBY_PUBLIC_URL` as the exact browser-facing origin. Deploy `/admin`, `/admin/v1`, and `/emby` on that origin. Set `GOBY_TRUSTED_PROXIES` to the actual proxy CIDRs and have the proxy append or replace `X-Forwarded-For` correctly, so login limits apply to individual clients. Forwarded headers from untrusted peers are ignored. This increment requires an origin without a subpath; reverse-proxy subpath support remains a compatibility task.
 6. Use HTTPS and secure cookies for remote access. `GOBY_COOKIE_SECURE=false` is an explicit setting for an isolated HTTP test instance, not the production default.
 7. Review [transcoding configuration](transcoding-configuration.md). Conversion is enabled by default, with a dedicated `/var/cache/goby/transcodes` cache beneath the systemd-managed private cache parent. Configure process/storage/output limits for the host; a custom cache needs a writable parent owned by `goby` and an appropriate service write exception. Configure hardware selections only with the matching driver and device access.
-8. Start the service. Migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
+8. Keep `GOBY_API_KEY_MASTER_KEY_FILE` in a persistent private directory owned by `goby`. The supplied unit creates `/var/lib/goby` with mode `0700`; its default master file is created lazily with mode `0600`. A custom parent must already exist, remain private and be writable through the service sandbox. Back up this file and PostgreSQL together; see [application-key operations](application-keys.md).
+9. Start the service. Migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
 
 An empty `GOBY_SETUP_TOKEN` prevents startup until setup has completed. After initialization, the deployment secret can be removed from the environment and the service restarted. Never include a real database password or setup token in Git.
 
@@ -51,6 +52,7 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_COOKIE_SECURE` | Secure administrator cookies, default `true` |
 | `GOBY_TRUSTED_PROXIES` | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`; empty by default |
 | `GOBY_WEB_DIR` | Built administrator asset directory, default `web/admin/dist` |
+| `GOBY_API_KEY_MASTER_KEY_FILE` | Persistent 32-byte application-key master file; default `application-key-master.key` resolved against the process working directory; see [key operations](application-keys.md) |
 | `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS and progressive audio workers |
 | `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans, exact audio timing inspection, and copied-video HLS timeline probes |
 | `GOBY_TRANSCODING_ENABLED` | Enable configured conversion, default `true`; set `false` to disable it |
@@ -92,9 +94,11 @@ Migration `0014` adds `item_metadata_state`, initializes it for existing items a
 
 M5c [login-session administration](../api/admin-sessions.md) uses the existing schema-14 authentication records. It adds no migration or probe rescan. The Sessions page lists and filters login history and revokes one selected login; current administrator authorization is checked in the transaction. Self-revocation signs the dashboard out. Active login validity is distinct from online presence, and a single revocation does not block a later sign-in on the same device.
 
+Migration `0015` adds the persisted `force_probe` scan-job mode with a false default for historical jobs. The administrator can explicitly [refresh cached media details](verification-m4g-media-refresh.md) to re-probe unchanged files and rebuild eligible private playback indexes. Ordinary same-version scans continue to reuse valid cached facts; the schema migration itself schedules no scan.
+
 The [audio adapter](audio-playback.md) implements Universal and legacy stream selection, while [Audio PlaybackInfo](audio-profile-playback.md) adds ordered HTTP/HLS DeviceProfiles and rechecks applicable conditions on projected output facts. The response preserves original MediaSource DTOs and emits a standard progressive URL with concrete output settings; negotiation starts or reserves no progressive encoding job. GET rechecks current source and permissions and accepts client-side `StartTimeTicks` changes for seeking. Its reader follows private append-only `stream.bin` until durable completion and the final bytes; partial failure aborts the HTTP response instead of reporting a normal end. Progressive HEAD starts no encoder and reports no estimated length. Integer source samples determine accurate WAV headers and output bounds, and audio HLS merges unproducible short tails while preserving total timeline duration. Additional audio timing/profile cases remain separate work.
 
-[Progressive video](progressive-video-playback.md) uses the same manager and the ordinary `/emby/Videos/{Id}/stream.mp4` route. Ordered video profiles select supported HTTP or HLS output. The MP4 subset supports H.264/AAC copy or encoding at zero start and H.264 encoding for nonzero seeks; copied-video nonzero seek is declined. Encoded seeks currently decode the source prefix, so long seeks can hit the 45-second startup deadline and still need performance work. Do not advertise general copied-video seeking, HDR tone mapping, or actual GPU execution from this increment.
+[Progressive video](progressive-video-playback.md) uses the same manager and the ordinary `/emby/Videos/{Id}/stream.mp4` route. Ordered video profiles select supported HTTP or HLS output. The MP4 subset supports H.264/AAC copy or encoding at zero start and H.264 encoding for nonzero seeks; copied-video nonzero seek is declined. [Verified video seeking](video-fast-seek.md) can skip prefix software video decoding when private restart evidence and runtime proof are valid. Other inputs retain linear decoding, and audio history remains linear, so long seeks can still hit the 45-second startup deadline. General copied-video seeking, HDR tone mapping, and actual GPU execution remain unverified.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 
@@ -106,7 +110,7 @@ Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8
 
 The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate `/opt/goby-test/browser.env`; neither is part of the repository. Tests create randomly named PostgreSQL schemas and clean up only those schemas.
 
-The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
+The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
 Remote test commands, after loading the protected test environment:
 
@@ -138,3 +142,19 @@ The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration test
 The current host also has an owned 512 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. Verification sets `GOTMPDIR` and `TMPDIR` to this executable scratch directory. This avoids consuming the constrained root filesystem without changing the shared `/dev/shm` mount's execution policy. The directory is dedicated to Goby verification and is not an application media or persistent-data location.
 
 See [environment evidence](test-env.md) for exact installed versions and the distinction between compiled hardware interfaces and real hardware execution.
+
+Migration `0016` adds independent application keys and their client contexts,
+with nullable user/context ownership in playback records. Existing users,
+logins, playback records and saved user data are retained. The administrator
+API keys page creates, reveals and revokes server-wide credentials; ordinary
+login-session management stays separate. See the [key API contract](../api/application-keys.md).
+
+The supplied systemd unit creates its persistent state directory with mode
+`0700`. The default application-key master file is created lazily there with
+mode `0600` by the service user. If selecting another path, create its private
+parent directory and grant that exact directory in the service sandbox.
+Preserve this master file together with PostgreSQL backups; replacing it cannot
+recover existing encrypted keys. Normal logins remain usable if the key vault
+is unavailable, and metadata-only key listing and revocation do not decrypt
+secrets. Product backup/restore and master-key rotation are separate unfinished
+features.

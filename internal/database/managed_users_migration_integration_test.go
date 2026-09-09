@@ -55,7 +55,7 @@ func managedUsersVersion12Baseline(t *testing.T, ctx context.Context, pool *pgxp
 	}
 }
 
-// Exclude only the newly introduced column; every historical field, including
+// Exclude newly introduced management and client-context columns; old fields, including
 // password digests, token digests, timestamps, policy, and configuration, stays
 // in the exact comparison. Snapshot contents are never printed on failure.
 func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
@@ -68,10 +68,10 @@ func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
-		'play', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM play_sessions t),
+		'play', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM play_sessions t),
 		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
-		'encodings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM encoding_jobs t),
-		'references', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, auth_session_id, device_id, client_nonce)
+		'encodings', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM encoding_jobs t),
+		'references', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY user_id, auth_session_id, device_id, client_nonce)
 			FROM client_playback_references t)
 	)::text`).Scan(&snapshot); err != nil {
 		t.Fatalf("snapshot managed user migration fixture: %v", err)
@@ -139,8 +139,8 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade managed users from version 12: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 15 {
-		t.Fatalf("managed user schema version = %d, want 15, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 16 {
+		t.Fatalf("managed user schema version = %d, want 16, error = %v", version, err)
 	}
 	if after := managedUsersLegacySnapshot(t, ctx, pool); after != before {
 		t.Error("managed user migration changed historical identity, settings, catalog, or playback state")

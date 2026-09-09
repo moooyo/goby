@@ -39,7 +39,12 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			return
 		}
 		principal := r.Context().Value(principalKey).(identity.Principal)
-		if body.SessionID != "" && body.SessionID != principal.SessionID {
+		principal, err := s.bindKeyPlaybackContext(r, principal, body.PlaySessionID)
+		if err != nil {
+			s.identityError(w, r, err)
+			return
+		}
+		if body.SessionID != "" && body.SessionID != clientSessionID(principal) {
 			apiError(w, r, http.StatusForbidden, "session_mismatch", "Playback reports must belong to the authenticated session.")
 			return
 		}
@@ -50,7 +55,9 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			s.playbackError(w, r, err)
 			return
 		}
-		s.notifier.Enqueue(principal.User.ID, data.ItemID, false)
+		if principal.User.ID != "" {
+			s.notifier.Enqueue(principal.User.ID, data.ItemID, false)
+		}
 		if event == "Stopped" {
 			s.hls.cancelMatching(principal.SessionID, play.ID)
 		} else {
@@ -71,6 +78,11 @@ func (s *Server) playbackPing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
+	principal, err = s.bindKeyPlaybackContext(r, principal, values["playsessionid"])
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
 	play, _, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{Event: "Ping", PlaySessionID: values["playsessionid"], ItemID: values["itemid"], MediaSourceID: values["mediasourceid"]})
 	if err != nil && !errors.Is(err, library.ErrNotFound) {
 		s.playbackError(w, r, err)
@@ -93,7 +105,7 @@ func (s *Server) setUserFlag(favorite, value bool) http.HandlerFunc {
 		var data library.UserData
 		var err error
 		if favorite {
-			data, err = s.library.SetFavorite(r.Context(), userID, r.PathValue("Id"), value)
+			data, err = s.library.SetFavoriteFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), value)
 		} else {
 			var datePlayed *time.Time
 			if raw := r.URL.Query().Get("DatePlayed"); raw != "" {
@@ -104,7 +116,7 @@ func (s *Server) setUserFlag(favorite, value bool) http.HandlerFunc {
 				}
 				datePlayed = &parsed
 			}
-			data, err = s.library.SetPlayed(r.Context(), userID, r.PathValue("Id"), value, datePlayed)
+			data, err = s.library.SetPlayedFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), value, datePlayed)
 		}
 		if err != nil {
 			s.playbackError(w, r, err)
@@ -124,6 +136,7 @@ func (s *Server) resumeItems(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	attachApplicationCredentialID(r, &query)
 	zeroLimit := query.Limit == 0
 	if zeroLimit {
 		query.Limit = 1

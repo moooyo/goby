@@ -101,7 +101,7 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	content, err := s.library.ReadSubtitle(ctx, principal.User.ID, r.PathValue("Id"), r.PathValue("MediaSourceId"), index)
+	content, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), r.PathValue("Id"), r.PathValue("MediaSourceId"), index)
 	if err != nil {
 		s.playbackError(w, r, err)
 		return

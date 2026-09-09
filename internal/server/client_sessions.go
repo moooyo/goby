@@ -79,7 +79,7 @@ func (s *Server) clientCapabilities(full bool) http.HandlerFunc {
 		// The reference binds capability reports to the current authenticated
 		// client, even when a stale or unknown Id hint is supplied. A hint must
 		// never grant permission to overwrite another authentication session.
-		if err := s.identity.UpdateClientCapabilities(r.Context(), principal, principal.SessionID, capabilities); err != nil {
+		if err := s.identity.UpdateClientCapabilities(r.Context(), principal, clientSessionID(principal), capabilities); err != nil {
 			s.clientSessionError(w, r, err)
 			return
 		}
@@ -103,6 +103,10 @@ func (s *Server) clientSessionDTO(session identity.ClientSession) map[string]any
 		"SupportedCommands":     append([]string{}, session.Capabilities.SupportedCommands...),
 		"SupportsRemoteControl": session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID), "AdditionalUsers": []any{},
 		"PlayState": idlePlayerStateDTO(), "PlaylistIndex": 0, "PlaylistLength": 0,
+	}
+	if session.Kind == identity.ApplicationKeyKind {
+		delete(result, "UserId")
+		delete(result, "UserName")
 	}
 	// An arbitrary client IconUrl is stored as a declaration but is not exposed
 	// as an automatically loaded remote image in other users' session views.
@@ -137,7 +141,7 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if userID := values["controllablebyuserid"]; userID != "" {
-		if userID != principal.User.ID && !principal.User.IsAdministrator {
+		if userID != principal.User.ID && !principal.CanManageServer() {
 			s.clientSessionError(w, r, identity.ErrClientSessionForbidden)
 			return
 		}
@@ -162,7 +166,8 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 	for _, session := range sessions {
 		authIDs = append(authIDs, session.SessionID)
 	}
-	playing, err := s.library.ListNowPlayingSessionsForAuth(r.Context(), principal.User.ID, principal.User.IsAdministrator, authIDs)
+	subject := librarySubject(principal, principal.User.ID)
+	playing, err := s.library.ListNowPlayingSessionsForSubject(r.Context(), subject, principal.CanManageServer(), authIDs)
 	if err != nil {
 		s.playbackError(w, r, err)
 		return
@@ -173,17 +178,21 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		if play.State != "Playing" && play.State != "Paused" {
 			continue
 		}
-		if _, exists := bySession[play.AuthSessionID]; exists {
+		id := play.AuthSessionID
+		if play.ApplicationKey {
+			id = play.ApplicationClientID
+		}
+		if _, exists := bySession[id]; exists {
 			continue
 		}
-		bySession[play.AuthSessionID] = play
+		bySession[id] = play
 		if !seen[play.ItemID] {
 			ids, seen[play.ItemID] = append(ids, play.ItemID), true
 		}
 	}
 	items, itemDTOs := map[string]map[string]any{}, []map[string]any{}
 	if len(ids) > 0 {
-		result, err := s.library.QueryItems(r.Context(), library.Query{UserID: principal.User.ID, Ids: ids, Recursive: true, Limit: len(ids)})
+		result, err := s.library.QueryItems(r.Context(), library.Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID, Ids: ids, Recursive: true, Limit: len(ids)})
 		if err != nil {
 			s.libraryError(w, r, err)
 			return

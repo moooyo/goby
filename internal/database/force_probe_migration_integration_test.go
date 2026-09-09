@@ -57,8 +57,8 @@ func TestForceProbeMigrationPreservesHistoryAndDefaultsToOrdinaryScanning(t *tes
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade force probe job policy: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 15 {
-		t.Fatalf("force probe migrated schema = %d, want 15, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 16 {
+		t.Fatalf("force probe migrated schema = %d, want 16, error=%v", version, err)
 	}
 	var after, oldHistory, name string
 	if err := pool.QueryRow(ctx, legacyJobs).Scan(&after); err != nil || after != before {

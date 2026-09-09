@@ -18,7 +18,8 @@ import (
 )
 
 func playbackOwner(principal identity.Principal) library.PlaybackOwner {
-	return library.PlaybackOwner{UserID: principal.User.ID, SessionID: principal.SessionID, DeviceID: principal.Client.DeviceID}
+	return library.PlaybackOwner{UserID: principal.User.ID, SessionID: principal.SessionID, DeviceID: principal.Client.DeviceID,
+		ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID}
 }
 
 func (s *Server) registerPlaybackRoutes(mux *http.ServeMux) {
@@ -118,7 +119,13 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if request.UserID != "" && request.UserID != principal.User.ID {
+	principal, err = s.bindKeyPlaybackContext(r, principal, request.CurrentPlaySessionID)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	r = r.WithContext(context.WithValue(r.Context(), principalKey, principal))
+	if !principal.IsApplicationKey() && request.UserID != "" && request.UserID != principal.User.ID {
 		apiError(w, r, http.StatusForbidden, "access_denied", "Playback information is bound to the authenticated user.")
 		return
 	}
@@ -126,14 +133,41 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "Playback item identifiers must agree.")
 		return
 	}
-	if deviceID := values["deviceid"]; deviceID != "" && deviceID != principal.Client.DeviceID {
+	if deviceID := values["deviceid"]; !principal.IsApplicationKey() && deviceID != "" && deviceID != principal.Client.DeviceID {
 		apiError(w, r, http.StatusForbidden, "device_mismatch", "Playback belongs to the authenticated device.")
 		return
 	}
-	request.ID, request.UserID = r.PathValue("Id"), principal.User.ID
+	request.ID = r.PathValue("Id")
+	if !principal.IsApplicationKey() {
+		request.UserID = principal.User.ID
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	file, source, err := s.library.OpenMedia(ctx, principal.User.ID, request.ID, request.MediaSourceID)
+	limits := hlsPrincipalLimits(s.cfg.Transcoding, principal)
+	targetConversionDisabled := false
+	if principal.IsApplicationKey() {
+		var target identity.User
+		if request.UserID != "" {
+			target, err = s.identity.GetUser(ctx, request.UserID)
+			if err != nil {
+				s.identityError(w, r, err)
+				return
+			}
+		}
+		if request.DeviceProfile != nil {
+			// Profile negotiation consumes target-user capabilities without turning
+			// that target into the credential or the owner of a playback session.
+			if request.UserID == "" && len(request.DeviceProfile.TranscodingProfiles) > 0 {
+				apiError(w, r, http.StatusBadRequest, "playback_user_required", "Profile-based application playback requires an explicit UserId.")
+				return
+			}
+			if request.UserID != "" {
+				limits = hlsApplicationTargetLimits(s.cfg.Transcoding, target)
+				targetConversionDisabled = !limits.AllowRemux && !limits.AllowAudioTranscode && !limits.AllowVideoTranscode
+			}
+		}
+	}
+	file, source, err := s.library.OpenMediaFor(ctx, librarySubject(principal, principal.User.ID), request.ID, request.MediaSourceID)
 	if err != nil {
 		s.playbackError(w, r, err)
 		return
@@ -149,7 +183,6 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	var conversion playback.ConversionDecision
 	if s.hls != nil && request.DeviceProfile != nil && len(request.DeviceProfile.TranscodingProfiles) > 0 {
-		limits := hlsUserLimits(s.cfg.Transcoding, principal.User)
 		if source.Item.Type == "Audio" {
 			conversion, err = playback.PlanAudioConversion(input, request, limits)
 		} else {
@@ -165,7 +198,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	formats := map[int]string{}
 	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
-		if _, err := s.library.ReadSubtitle(ctx, principal.User.ID, source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex); err != nil {
+		if _, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex); err != nil {
 			s.playbackError(w, r, err)
 			return
 		}
@@ -178,7 +211,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			index := *conversion.Output.DefaultSubtitleStreamIndex
-			if _, err := s.library.ReadSubtitle(ctx, principal.User.ID, source.Item.ID, source.SourceID, index); err != nil {
+			if _, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, index); err != nil {
 				s.playbackError(w, r, err)
 				return
 			}
@@ -195,7 +228,11 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats)
 	dto["SupportsDirectPlay"] = decision.DirectPlay
 	dto["SupportsDirectStream"] = decision.DirectStream
-	if decision.DefaultAudioStreamIndex != nil {
+	includeDefaultAudio := !principal.IsApplicationKey() || request.UserID != "" || request.DeviceProfile != nil || request.AudioStreamIndex != nil
+	if principal.IsApplicationKey() {
+		delete(dto, "DefaultAudioStreamIndex")
+	}
+	if includeDefaultAudio && decision.DefaultAudioStreamIndex != nil {
 		dto["DefaultAudioStreamIndex"] = *decision.DefaultAudioStreamIndex
 	}
 	if decision.DefaultSubtitleStreamIndex != nil && decision.SubtitleMethod != playback.SubtitleDeliveryMethodExternal {
@@ -259,7 +296,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	allDisabled := request.EnableDirectPlay != nil && !*request.EnableDirectPlay && request.EnableDirectStream != nil && !*request.EnableDirectStream && request.EnableTranscoding != nil && !*request.EnableTranscoding
-	if !decision.DirectPlay && !decision.DirectStream && !conversionAvailable && !allDisabled {
+	if !decision.DirectPlay && !decision.DirectStream && !conversionAvailable && !allDisabled && !targetConversionDisabled {
 		response["ErrorCode"] = "NoCompatibleStream"
 	}
 	jsonResponse(w, http.StatusOK, response)

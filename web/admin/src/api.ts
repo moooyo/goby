@@ -182,6 +182,52 @@ export interface RevokeSessionResponse {
   CurrentSessionRevoked: boolean;
 }
 
+export type ApplicationKeyStatus = "active" | "revoked";
+
+export interface ApplicationKey {
+  Id: string;
+  AppName: string;
+  CreatedAt: string;
+  LastUsedAt: string | null;
+  RevokedAt: string | null;
+  CreatedBy: string | null;
+  IPAddress: string;
+  Status: ApplicationKeyStatus;
+}
+
+export interface ApplicationKeysQuery {
+  SearchTerm?: string;
+  IncludeRevoked?: boolean;
+  StartIndex?: number;
+  Limit?: number;
+}
+
+export interface ApplicationKeysResponse {
+  Items: ApplicationKey[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+}
+
+export interface CreateApplicationKeyInput {
+  AppName: string;
+}
+
+export interface CreateApplicationKeyResponse {
+  Key: ApplicationKey;
+  AccessToken: string;
+}
+
+export interface RevealApplicationKeyResponse {
+  Id: string;
+  AccessToken: string;
+}
+
+export interface RevokeApplicationKeyResponse {
+  Id: string;
+  RevokedAt: string;
+}
+
 export interface OverviewResponse {
   Server: {
     Id: string;
@@ -204,6 +250,7 @@ export interface OverviewResponse {
     LibraryManagement: boolean;
     Playback: boolean;
     Transcoding: boolean;
+    ApplicationKeys: boolean;
   };
 }
 
@@ -586,6 +633,40 @@ function validateSessions(result: SessionsResponse, startIndex: number, limit: n
   }
 }
 
+const applicationKeyFields = new Set([
+  "Id", "AppName", "CreatedAt", "LastUsedAt", "RevokedAt", "CreatedBy", "IPAddress", "Status",
+]);
+const applicationKeysResponseFields = new Set(["Items", "TotalRecordCount", "StartIndex", "Limit"]);
+
+function validApplicationKeyId(value: unknown): value is string {
+  return typeof value === "string" && /^[1-9]\d*$/.test(value)
+    && value.length <= 19 && (value.length < 19 || value <= "9223372036854775807");
+}
+
+function validApplicationKey(value: unknown): value is ApplicationKey {
+  return isRecord(value) && Object.keys(value).every((field) => applicationKeyFields.has(field))
+    && validApplicationKeyId(value.Id) && Boolean(nonemptyString(value.AppName))
+    && validSessionTimestamp(value.CreatedAt)
+    && (value.LastUsedAt === null || validSessionTimestamp(value.LastUsedAt))
+    && (value.RevokedAt === null || validSessionTimestamp(value.RevokedAt))
+    && (value.CreatedBy === null || Boolean(nonemptyString(value.CreatedBy)))
+    && typeof value.IPAddress === "string"
+    && (value.Status === "active" || value.Status === "revoked")
+    && (value.Status === "revoked") === (value.RevokedAt !== null);
+}
+
+function validateApplicationKeys(result: ApplicationKeysResponse, startIndex: number, limit: number, includeRevoked: boolean): void {
+  if (!isRecord(result) || !Object.keys(result).every((field) => applicationKeysResponseFields.has(field))
+    || !Array.isArray(result.Items) || !Number.isSafeInteger(result.TotalRecordCount) || result.TotalRecordCount < 0
+    || result.StartIndex !== startIndex || result.Limit !== limit
+    || result.Items.length > limit || result.Items.length > Math.max(0, result.TotalRecordCount - startIndex)) throw invalidResponse();
+  const ids = new Set<string>();
+  for (const key of result.Items) {
+    if (!validApplicationKey(key) || ids.has(key.Id) || (!includeRevoked && key.Status === "revoked")) throw invalidResponse();
+    ids.add(key.Id);
+  }
+}
+
 async function mutateUser(
   path: string,
   method: "POST" | "PUT",
@@ -752,6 +833,47 @@ export const adminApi = {
       || typeof result.CurrentSessionRevoked !== "boolean"
       || (result.CurrentSessionRevoked && result.Kind !== "admin")) throw invalidResponse();
     if (result.CurrentSessionRevoked) expireSession(revision);
+    return result;
+  },
+
+  async getApplicationKeys(query: ApplicationKeysQuery = {}, options: RequestOptions = {}): Promise<ApplicationKeysResponse> {
+    const revision = sessionRevision;
+    const startIndex = query.StartIndex ?? 0;
+    const limit = query.Limit ?? 50;
+    const includeRevoked = query.IncludeRevoked ?? false;
+    const parameters = new URLSearchParams({ StartIndex: String(startIndex), Limit: String(limit), IncludeRevoked: String(includeRevoked) });
+    if (query.SearchTerm) parameters.set("SearchTerm", query.SearchTerm);
+    const result = await request<ApplicationKeysResponse>(`/api-keys?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateApplicationKeys(result, startIndex, limit, includeRevoked);
+    return result;
+  },
+
+  async createApplicationKey(input: CreateApplicationKeyInput, options: RequestOptions = {}): Promise<CreateApplicationKeyResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<CreateApplicationKeyResponse>("/api-keys", "POST", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || !validApplicationKey(result.Key) || result.Key.Status !== "active"
+      || !nonemptyString(result.AccessToken)) throw invalidResponse();
+    return result;
+  },
+
+  async revealApplicationKey(keyId: string, options: RequestOptions = {}): Promise<RevealApplicationKeyResponse> {
+    const revision = sessionRevision;
+    if (!validApplicationKeyId(keyId)) throw new ApiError("The API key ID is invalid.", { code: "invalid_key_id" });
+    const result = await mutate<RevealApplicationKeyResponse>(`/api-keys/${encodeURIComponent(keyId)}/reveal`, "POST", {}, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || result.Id !== keyId || !nonemptyString(result.AccessToken)) throw invalidResponse();
+    return result;
+  },
+
+  async revokeApplicationKey(keyId: string, options: RequestOptions = {}): Promise<RevokeApplicationKeyResponse> {
+    const revision = sessionRevision;
+    if (!validApplicationKeyId(keyId)) throw new ApiError("The API key ID is invalid.", { code: "invalid_key_id" });
+    const result = await mutate<RevokeApplicationKeyResponse>(`/api-keys/${encodeURIComponent(keyId)}/revoke`, "POST", {}, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || result.Id !== keyId || !validSessionTimestamp(result.RevokedAt)
+      || !Object.keys(result).every((field) => ["Id", "RevokedAt"].includes(field))) throw invalidResponse();
     return result;
   },
 

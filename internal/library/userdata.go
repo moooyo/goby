@@ -150,7 +150,12 @@ func lockUserData(ctx context.Context, tx pgx.Tx, userID, itemID string) (UserDa
 }
 
 func (s *Store) GetUserData(ctx context.Context, userID, itemID string) (UserData, error) {
-	items, err := s.GetUserDataBatch(ctx, userID, []string{itemID})
+	return s.GetUserDataFor(ctx, Subject{UserID: userID}, itemID)
+}
+
+// GetUserDataFor always requires an explicit target account.
+func (s *Store) GetUserDataFor(ctx context.Context, subject Subject, itemID string) (UserData, error) {
+	items, err := s.GetUserDataBatchFor(ctx, subject, []string{itemID})
 	if err != nil {
 		return UserData{}, err
 	}
@@ -164,15 +169,21 @@ func (s *Store) GetUserData(ctx context.Context, userID, itemID string) (UserDat
 // GetUserDataBatch returns authorized supported items, including their defaults.
 // Missing, unsupported, and invisible identifiers are absent from the map.
 func (s *Store) GetUserDataBatch(ctx context.Context, userID string, itemIDs []string) (map[string]UserData, error) {
-	if len(itemIDs) > 1000 {
+	return s.GetUserDataBatchFor(ctx, Subject{UserID: userID}, itemIDs)
+}
+
+// GetUserDataBatchFor projects an existing target within its catalog visibility.
+func (s *Store) GetUserDataBatchFor(ctx context.Context, subject Subject, itemIDs []string) (map[string]UserData, error) {
+	if strings.TrimSpace(subject.UserID) == "" || len(itemIDs) > 1000 {
 		return nil, ErrInvalidInput
 	}
+	userID := subject.UserID
 	for _, id := range itemIDs {
 		if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
 			return nil, ErrInvalidInput
 		}
 	}
-	tx, access, err := s.beginUserRead(ctx, userID)
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +220,16 @@ func (s *Store) GetUserDataBatch(ctx context.Context, userID string, itemIDs []s
 }
 
 func (s *Store) SetFavorite(ctx context.Context, userID, itemID string, favorite bool) (UserData, error) {
-	tx, access, err := s.beginStateWrite(ctx, userID, false)
+	return s.SetFavoriteFor(ctx, Subject{UserID: userID}, itemID, favorite)
+}
+
+// SetFavoriteFor updates only the explicitly selected account's item state.
+func (s *Store) SetFavoriteFor(ctx context.Context, subject Subject, itemID string, favorite bool) (UserData, error) {
+	if strings.TrimSpace(subject.UserID) == "" {
+		return UserData{}, ErrInvalidInput
+	}
+	userID := subject.UserID
+	tx, access, err := s.beginSubjectStateWrite(ctx, subject, false)
 	if err != nil {
 		return UserData{}, err
 	}
@@ -240,6 +260,15 @@ func (s *Store) SetFavorite(ctx context.Context, userID, itemID string, favorite
 // transaction. Leaf watched state ensures at least one play; clearing resets
 // history. Folder playback summaries are derived from their current leaves.
 func (s *Store) SetPlayed(ctx context.Context, userID, itemID string, played bool, datePlayed *time.Time) (UserData, error) {
+	return s.SetPlayedFor(ctx, Subject{UserID: userID}, itemID, played, datePlayed)
+}
+
+// SetPlayedFor retains same-library descendant updates for the explicit target.
+func (s *Store) SetPlayedFor(ctx context.Context, subject Subject, itemID string, played bool, datePlayed *time.Time) (UserData, error) {
+	if strings.TrimSpace(subject.UserID) == "" {
+		return UserData{}, ErrInvalidInput
+	}
+	userID := subject.UserID
 	if datePlayed != nil {
 		utc := datePlayed.UTC()
 		if utc.Year() < 1 || utc.Year() > 9999 {
@@ -247,7 +276,7 @@ func (s *Store) SetPlayed(ctx context.Context, userID, itemID string, played boo
 		}
 		datePlayed = &utc
 	}
-	tx, access, err := s.beginStateWrite(ctx, userID, false)
+	tx, access, err := s.beginSubjectStateWrite(ctx, subject, false)
 	if err != nil {
 		return UserData{}, err
 	}

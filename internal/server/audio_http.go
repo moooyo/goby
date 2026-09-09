@@ -45,8 +45,8 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if values["userid"] != "" && values["userid"] != principal.User.ID ||
-		values["deviceid"] != "" && values["deviceid"] != principal.Client.DeviceID {
+	if !principal.IsApplicationKey() && (values["userid"] != "" && values["userid"] != principal.User.ID ||
+		values["deviceid"] != "" && values["deviceid"] != principal.Client.DeviceID) {
 		s.audioError(w, r, library.ErrForbidden)
 		return
 	}
@@ -67,7 +67,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	prepare, cancelPrepare := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancelPrepare()
-	file, source, err := s.library.OpenMedia(prepare, principal.User.ID, r.PathValue("Id"), values["mediasourceid"])
+	file, source, err := s.library.OpenMediaFor(prepare, librarySubject(principal, principal.User.ID), r.PathValue("Id"), values["mediasourceid"])
 	if err != nil {
 		s.audioError(w, r, err)
 		return
@@ -83,7 +83,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
-	decision, err := audioRequestDecision(input, values, suffix, universal, hlsUserLimits(s.cfg.Transcoding, principal.User))
+	decision, err := audioRequestDecision(input, values, suffix, universal, hlsPrincipalLimits(s.cfg.Transcoding, principal))
 	if err != nil {
 		s.audioError(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 				s.audioError(w, r, err)
 				return
 			}
-			verified, current, err := s.library.OpenMedia(prepare, fresh.User.ID, source.Item.ID, source.SourceID)
+			verified, current, err := s.library.OpenMediaFor(prepare, librarySubject(fresh, fresh.User.ID), source.Item.ID, source.SourceID)
 			if err != nil {
 				s.audioError(w, r, err)
 				return

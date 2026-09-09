@@ -11,6 +11,7 @@ EnvironmentFile=/etc/goby/goby.env
 ExecStart=/usr/local/bin/goby
 WorkingDirectory=/var/lib/goby
 StateDirectory=goby
+StateDirectoryMode=0700
 CacheDirectory=goby
 CacheDirectoryMode=0700
 RuntimeDirectory=goby

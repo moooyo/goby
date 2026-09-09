@@ -184,7 +184,7 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	id := r.PathValue("Id")
-	if id != principal.User.ID && !principal.User.IsAdministrator {
+	if id != principal.User.ID && !principal.CanManageServer() {
 		apiError(w, r, 403, "access_denied", "The requested user is not accessible.")
 		return
 	}
@@ -198,7 +198,7 @@ func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if !principal.User.IsAdministrator {
+	if !principal.CanManageServer() {
 		apiError(w, r, 403, "administrator_required", "Administrator access is required.")
 		return
 	}
@@ -235,6 +235,18 @@ func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 	token, _, _ := parseEmbyCredentials(r)
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	if principal.IsApplicationKey() {
+		result, err := s.identity.RevokeApplicationKeyToken(r.Context(), principal, token)
+		if err != nil {
+			s.applicationKeyError(w, r, err)
+			return
+		}
+		s.retireApplicationKey(result)
+		noKeyCache(w)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if err := s.identity.Revoke(r.Context(), token); err != nil {
 		s.identityError(w, r, err)
 		return
@@ -243,7 +255,24 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		principal := r.Context().Value(principalKey).(identity.Principal)
 		s.eventHub.DisconnectSession(principal.SessionID)
 	}
-	principal := r.Context().Value(principalKey).(identity.Principal)
 	s.hls.cancelMatching(principal.SessionID, "")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) embyUsersBare(w http.ResponseWriter, r *http.Request) {
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	if !principal.CanManageServer() {
+		apiError(w, r, http.StatusForbidden, "administrator_required", "Administrator access is required.")
+		return
+	}
+	users, err := s.identity.ListUsers(r.Context())
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	items := make([]map[string]any, 0, len(users))
+	for _, user := range users {
+		items = append(items, s.userDTO(user))
+	}
+	jsonResponse(w, http.StatusOK, items)
 }

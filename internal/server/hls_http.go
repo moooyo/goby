@@ -92,7 +92,7 @@ func hlsStart(values map[string]string, fallback, duration int64) (int64, error)
 
 func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[string]string) (*hlsSession, *os.File, library.MediaFile, error) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if device := values["deviceid"]; device != "" && device != principal.Client.DeviceID {
+	if device := values["deviceid"]; !principal.IsApplicationKey() && device != "" && device != principal.Client.DeviceID {
 		return nil, nil, library.MediaFile{}, library.ErrForbidden
 	}
 	if id := values["gobyhlsid"]; id != "" {
@@ -142,12 +142,12 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		!time.Now().Before(play.ExpiresAt) || (play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
 		return nil, nil, library.MediaFile{}, library.ErrNotFound
 	}
-	file, source, err := s.library.OpenMedia(ctx, principal.User.ID, play.ItemID, play.MediaSourceID)
+	file, source, err := s.library.OpenMediaFor(ctx, librarySubject(principal, principal.User.ID), play.ItemID, play.MediaSourceID)
 	if err != nil {
 		return nil, nil, library.MediaFile{}, err
 	}
 	decision, err := hlsRequestConversion(values, playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, hlsUserLimits(s.cfg.Transcoding, principal.User))
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, hlsPrincipalLimits(s.cfg.Transcoding, principal))
 	if err != nil || decision.Plan == nil {
 		_ = file.Close()
 		if err == nil {
@@ -333,7 +333,7 @@ func (s *Server) stopHLSEncodings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if device, supplied := values["deviceid"]; !supplied || device != principal.Client.DeviceID {
+	if device, supplied := values["deviceid"]; !principal.IsApplicationKey() && (!supplied || device != principal.Client.DeviceID) {
 		s.hlsError(w, r, library.ErrForbidden)
 		return
 	}

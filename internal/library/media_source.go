@@ -102,6 +102,11 @@ func runMediaSourceWorker(ctx context.Context, slots chan struct{}, work func() 
 // The caller owns a successful descriptor at offset zero. File contents are not
 // hashed or read here, and a regular file remains mutable after it is returned.
 func (s *Store) OpenMedia(ctx context.Context, userID, itemID, mediaSourceID string) (*os.File, MediaFile, error) {
+	return s.OpenMediaFor(ctx, Subject{UserID: userID}, itemID, mediaSourceID)
+}
+
+// OpenMediaFor preserves source snapshot and containment checks for every subject.
+func (s *Store) OpenMediaFor(ctx context.Context, subject Subject, itemID, mediaSourceID string) (*os.File, MediaFile, error) {
 	if strings.TrimSpace(itemID) == "" || strings.ContainsRune(itemID, '\x00') || strings.ContainsRune(mediaSourceID, '\x00') {
 		return nil, MediaFile{}, ErrInvalidInput
 	}
@@ -109,7 +114,7 @@ func (s *Store) OpenMedia(ctx context.Context, userID, itemID, mediaSourceID str
 		return nil, MediaFile{}, ErrUnavailable
 	}
 	return runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
-		snapshot, err := s.readMediaSource(ctx, userID, itemID, mediaSourceID)
+		snapshot, err := s.readMediaSourceFor(ctx, subject, itemID, mediaSourceID)
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
@@ -122,16 +127,16 @@ func (s *Store) OpenMedia(ctx context.Context, userID, itemID, mediaSourceID str
 }
 
 func (s *Store) readMediaSource(ctx context.Context, userID, itemID, sourceID string) (indexedMediaSource, error) {
-	tx, access, err := s.beginUserRead(ctx, userID)
+	return s.readMediaSourceFor(ctx, Subject{UserID: userID}, itemID, sourceID)
+}
+
+func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID, sourceID string) (indexedMediaSource, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return indexedMediaSource{}, err
 	}
 	defer tx.Rollback(ctx)
-	var policy []byte
-	if err := tx.QueryRow(ctx, "SELECT policy FROM users WHERE id = $1", userID).Scan(&policy); err != nil {
-		return indexedMediaSource{}, fmt.Errorf("%w: read media playback policy: %w", ErrUnavailable, err)
-	}
-	if !playbackAllowed(policy) {
+	if !access.canPlay {
 		return indexedMediaSource{}, ErrForbidden
 	}
 	var snapshot indexedMediaSource

@@ -610,7 +610,7 @@ func TestStorePlaybackTerminalRetentionAndRequiredIndexes(t *testing.T) {
 		name, columns string
 		unique        bool
 	}{
-		{"play_sessions_current_source_idx", "(user_id, auth_session_id, device_id, item_id, media_source_id)", true},
+		{"play_sessions_current_source_idx", "(user_id, auth_session_id, application_client_id, device_id, item_id, media_source_id)", true},
 		{"play_sessions_owner_recent_idx", "(auth_session_id, created_at DESC, id)", false},
 		{"play_sessions_expiry_idx", "(expires_at, id)", false},
 		{"play_sessions_user_expiry_idx", "(user_id, expires_at, id)", false},

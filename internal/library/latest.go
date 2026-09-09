@@ -21,7 +21,7 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	if err != nil {
 		return nil, err
 	}
-	tx, access, err := s.beginUserRead(ctx, query.UserID)
+	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return nil, err
 	}

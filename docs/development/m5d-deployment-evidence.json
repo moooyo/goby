@@ -1,0 +1,180 @@
+{
+  "owner": "goby-m5d-deployment-evidence-v1",
+  "status": "passed",
+  "main_pid": 3494032,
+  "uid": 995,
+  "start_ticks": "22367653",
+  "binary_sha256": "13857f9c33312bc13aef56d5d881c4a0fad23399ceb8a9dafa43e24c0fb2bad5",
+  "previous_binary_sha256": "8f1c71d462b0534601cb148920470c5c5e6f312e62144fc2e0bdc0b39108358e",
+  "previous_pid": 3452400,
+  "schema_version": 16,
+  "all_preexisting_business_fields_preserved": true,
+  "old_playback_application_clients_null": true,
+  "new_key_tables_empty": true,
+  "vault_file_uid": 995,
+  "vault_file_mode": "0600",
+  "vault_file_bytes": 32,
+  "vault_directory_mode": "0700",
+  "master_key_provisioned_by_operator": true,
+  "writable_paths": [
+    "/dev/shm/goby-transcodes-test",
+    "/var/lib/goby-test/application-key-vault"
+  ],
+  "old_environment_assignments_preserved": true,
+  "tables_before": {
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "0eaeffce16c5c1aae5f2c19b29ed00f82dbc7103d1b1d5ba409211ae6000c3bf"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 28,
+      "sha256": "896115c6747c54552e47467a3f9bdcd3d804571e272077e5e1b232b6619ca95b"
+    },
+    "scan_jobs": {
+      "count": 41,
+      "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+    },
+    "schema_migrations": {
+      "count": 15,
+      "sha256": "cc48946a7ecb6e509a2c1b3ac97b089add015686581b29bcde71d9ef94cb5a14"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 80,
+      "sha256": "0b3283693be3f0c97359157e8c51cb3e307cd3230a6c9fb280fd675f6ac7ea94"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "tables_after": {
+    "application_key_clients": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "application_keys": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 28,
+      "sha256": "731c3cd2c55fdf3c9c12c3978163f3c0971a468fbb3b62f107c3767461eaad38"
+    },
+    "scan_jobs": {
+      "count": 41,
+      "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+    },
+    "schema_migrations": {
+      "count": 16,
+      "sha256": "14cc122c6f869c0106899e4b861b865295d72fdb3a252d3c5851a5613698a4bc"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 80,
+      "sha256": "0b3283693be3f0c97359157e8c51cb3e307cd3230a6c9fb280fd675f6ac7ea94"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "assets_archive_sha256": "20929adc44871b5ce74ad57b8f3a0d82283005ddea4920afbc31953301a699ca",
+  "current_asset_files": 40,
+  "retained_asset_files": 157,
+  "http_index_and_entry_verified": true,
+  "installed_go_module_and_migration_files": 353,
+  "backup_directory": "/dev/shm/goby-m5d-deployment-backup",
+  "database_dump_bytes": 154774,
+  "deployment_script_sha256": "e4ceac85fb37adf5e53a6781ba0a0580489fa84b45c8789a625ace056c52e9c3"
+}

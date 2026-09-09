@@ -36,6 +36,7 @@ func (s *Server) entityList(kind string) http.HandlerFunc {
 		if zeroLimit {
 			query.Limit = 1
 		}
+		attachApplicationCredentialID(r, &query)
 		result, err := s.library.ListEntities(r.Context(), kind, query)
 		if err != nil {
 			s.libraryError(w, r, err)
@@ -64,7 +65,7 @@ func (s *Server) entityByName(kind string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		entity, err := s.library.GetEntity(r.Context(), userID, kind, r.PathValue("Name"))
+		entity, err := s.library.GetEntityFor(r.Context(), requestLibrarySubject(r, userID), kind, r.PathValue("Name"))
 		if err != nil {
 			s.libraryError(w, r, err)
 			return

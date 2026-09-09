@@ -1,0 +1,85 @@
+{
+  "owner": "goby-m5d-full-race-attempt-1-v1",
+  "status": "failed",
+  "command": "go test -race -count=1 -v -p 2 ./...",
+  "go_exit_code": 1,
+  "ssh_wrapper_exit_code": 1,
+  "top_level_tests_passed": 1045,
+  "failed_tests": [
+    "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection"
+  ],
+  "skipped_tests": 0,
+  "race_findings": false,
+  "packages": [
+    {
+      "status": "?",
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "detail": "[no test files]"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "detail": "1.428s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/config",
+      "detail": "1.022s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "3.007s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/events",
+      "detail": "1.198s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "133.245s"
+    },
+    {
+      "status": "FAIL",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "25.872s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/media",
+      "detail": "5.118s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "detail": "1.516s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/playback",
+      "detail": "1.227s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "476.532s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "detail": "1.135s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "detail": "57.088s"
+    }
+  ],
+  "started_at": "2026-09-09T21:24:00Z",
+  "finished_at": "2026-09-09T21:32:39Z",
+  "log_sha256": "59034afb843427b6d61595082938c0c4b3d2387d19910dc9af3b00aaf5c2e93c",
+  "go_source_sha256": "34dea1f0abfe4f52588c75baa6bda23b00b50c7f8ff2855bd06beb6ea0701432",
+  "failure_reason": "A legacy metadata migration test still expected schema 15 after migration 16. Its historical-row assertions now exclude only new nullable client columns and also require the two new key tables to be empty. No production code changed for this correction."
+}

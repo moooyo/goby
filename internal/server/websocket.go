@@ -116,7 +116,8 @@ func (s *Server) clientSocket(w http.ResponseWriter, r *http.Request) {
 	runtime.mu.Unlock()
 	defer runtime.wg.Done()
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	sub, err := s.eventHub.Subscribe(events.Scope{UserID: principal.User.ID, SessionID: principal.SessionID, DeviceID: principal.Client.DeviceID})
+	clientID := clientSessionID(principal)
+	sub, err := s.eventHub.Subscribe(clientEventScope(principal))
 	if err != nil {
 		status := http.StatusTooManyRequests
 		if errors.Is(err, events.ErrClosed) {
@@ -161,14 +162,14 @@ func (s *Server) clientSocket(w http.ResponseWriter, r *http.Request) {
 		runtime.mu.Unlock()
 		return
 	}
-	runtime.ready[principal.SessionID]++
+	runtime.ready[clientID]++
 	runtime.mu.Unlock()
 	defer func() {
 		runtime.mu.Lock()
-		if runtime.ready[principal.SessionID] <= 1 {
-			delete(runtime.ready, principal.SessionID)
+		if runtime.ready[clientID] <= 1 {
+			delete(runtime.ready, clientID)
 		} else {
-			runtime.ready[principal.SessionID]--
+			runtime.ready[clientID]--
 		}
 		runtime.mu.Unlock()
 	}()
@@ -307,6 +308,9 @@ func (s *Server) socketEventPayload(ctx context.Context, principal identity.Prin
 		default:
 			return nil, nil
 		}
+	}
+	if principal.IsApplicationKey() {
+		return nil, nil
 	}
 	var envelope events.Envelope
 	var data struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -11,7 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
@@ -133,6 +136,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		plan.StartTicks = 0
 	}
 	key := hlsKey{scope: transcode.Scope{UserID: principal.User.ID, AuthSessionID: principal.SessionID, DeviceID: principal.Client.DeviceID,
+		ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID,
 		PlaySessionID: playID, ItemID: source.Item.ID, SourceID: source.SourceID}, stamp: source.ETag, plan: plan}
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -152,7 +156,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 	}
 	userCount, authCount := 0, 0
 	for _, prior := range h.sessions {
-		if prior.key.scope.UserID == key.scope.UserID {
+		if !key.scope.ApplicationKey && !prior.key.scope.ApplicationKey && prior.key.scope.UserID == key.scope.UserID {
 			userCount++
 		}
 		if prior.key.scope.AuthSessionID == key.scope.AuthSessionID {
@@ -183,7 +187,8 @@ func (h *hlsRuntime) find(id string, principal identity.Principal, itemID string
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	session := h.sessions[id]
-	if h.closing || session == nil || session.key.scope.UserID != principal.User.ID ||
+	if h.closing || session == nil || session.key.scope.ApplicationKey != principal.IsApplicationKey() || session.key.scope.UserID != principal.User.ID ||
+		session.key.scope.ApplicationClientID != principal.ClientSessionID ||
 		session.key.scope.AuthSessionID != principal.SessionID || session.key.scope.DeviceID != principal.Client.DeviceID ||
 		session.key.scope.ItemID != itemID {
 		return nil, transcode.ErrJobNotFound
@@ -261,10 +266,12 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 	if err != nil {
 		return nil, library.MediaFile{}, err
 	}
-	if fresh.User.ID != scope.UserID || fresh.SessionID != scope.AuthSessionID || fresh.Client.DeviceID != scope.DeviceID {
+	if fresh.IsApplicationKey() != scope.ApplicationKey || fresh.User.ID != scope.UserID ||
+		fresh.ClientSessionID != scope.ApplicationClientID ||
+		fresh.SessionID != scope.AuthSessionID || fresh.Client.DeviceID != scope.DeviceID {
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
-	limits := hlsUserLimits(s.cfg.Transcoding, fresh.User)
+	limits := hlsPrincipalLimits(s.cfg.Transcoding, fresh)
 	if !hlsPlanAllowed(plan, limits) {
 		return nil, library.MediaFile{}, library.ErrForbidden
 	}
@@ -276,7 +283,7 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		(play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
-	file, source, err := s.library.OpenMedia(ctx, scope.UserID, scope.ItemID, scope.SourceID)
+	file, source, err := s.library.OpenMediaFor(ctx, librarySubject(fresh, fresh.User.ID), scope.ItemID, scope.SourceID)
 	if err != nil {
 		return nil, library.MediaFile{}, err
 	}
@@ -285,6 +292,47 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
 	return file, source, nil
+}
+
+// Application credentials use the server's execution limits without borrowing
+// a user's playback policy. Login sessions continue to enforce persisted policy.
+func hlsPrincipalLimits(cfg config.TranscodingConfig, principal identity.Principal) playback.ConversionLimits {
+	if !principal.IsApplicationKey() {
+		return hlsUserLimits(cfg, principal.User)
+	}
+	return hlsServerLimits(cfg)
+}
+
+func hlsServerLimits(cfg config.TranscodingConfig) playback.ConversionLimits {
+	return playback.ConversionLimits{
+		MaxBitrate: cfg.MaxBitrate, MaxWidth: cfg.MaxWidth, MaxHeight: cfg.MaxHeight,
+		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware,
+		AllowRemux: cfg.Enabled, AllowAudioTranscode: cfg.Enabled, AllowVideoTranscode: cfg.Enabled,
+	}
+}
+
+// An application key's explicit profile target supplies conversion permissions,
+// not account authentication. Disabled accounts and the general playback flag
+// do not change these independently controlled negotiation capabilities.
+func hlsApplicationTargetLimits(cfg config.TranscodingConfig, target identity.User) playback.ConversionLimits {
+	limits := hlsServerLimits(cfg)
+	limits.AllowRemux, limits.AllowAudioTranscode, limits.AllowVideoTranscode = false, false, false
+	var policy map[string]json.RawMessage
+	if !cfg.Enabled || !utf8.Valid(target.Policy) || json.Unmarshal(target.Policy, &policy) != nil || policy == nil {
+		return limits
+	}
+	enabled := func(name string) bool {
+		raw, exists := policy[name]
+		if !exists {
+			return true
+		}
+		var value *bool
+		return json.Unmarshal(raw, &value) == nil && value != nil && *value
+	}
+	limits.AllowRemux = enabled("EnablePlaybackRemuxing")
+	limits.AllowAudioTranscode = enabled("EnableAudioPlaybackTranscoding")
+	limits.AllowVideoTranscode = enabled("EnableVideoPlaybackTranscoding")
+	return limits
 }
 
 func hlsPlanAllowed(plan transcode.Plan, limits playback.ConversionLimits) bool {

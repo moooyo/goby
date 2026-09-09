@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons"}
+	resources := []string{"System", "Users", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -58,6 +58,12 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	}
 	switch resource {
+	case "Auth":
+		literal(1, "Keys")
+		if len(parts) > 1 && parts[1] == "Keys" {
+			// The credential itself is opaque and case-sensitive.
+			literal(3, "Delete")
+		}
 	case "System":
 		literal(1, "Info", "Ping", "Configuration")
 		literal(2, "Public")

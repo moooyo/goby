@@ -43,7 +43,7 @@ func run(logger *slog.Logger) error {
 	if err := database.Migrate(startup, pool); err != nil {
 		return err
 	}
-	store := identity.New(pool)
+	store := identity.NewWithApplicationKeyVault(pool, identity.NewApplicationKeyVault(cfg.APIKeyMasterKeyFile))
 	initialized, err := store.Initialized(startup)
 	if err != nil {
 		return err

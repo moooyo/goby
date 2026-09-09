@@ -112,10 +112,15 @@ const storedImageOrder = ` ORDER BY CASE im.image_type
 // ListImages authorizes the item and reads its images in one policy snapshot.
 // Missing and unauthorized items return the same error, including empty items.
 func (s *Store) ListImages(ctx context.Context, userID, itemID string) ([]Image, error) {
+	return s.ListImagesFor(ctx, Subject{UserID: userID}, itemID)
+}
+
+// ListImagesFor authorizes image metadata with the supplied catalog subject.
+func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID string) ([]Image, error) {
 	if !validImageItemID(itemID) {
 		return nil, ErrInvalidInput
 	}
-	tx, access, err := s.beginUserRead(ctx, userID)
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +155,11 @@ func (s *Store) ListImages(ctx context.Context, userID, itemID string) ([]Image,
 // ImagesForItems batches at most 1000 identifiers and returns image entries only
 // for accessible catalog items, using the current database policy snapshot.
 func (s *Store) ImagesForItems(ctx context.Context, userID string, ids []string) (map[string][]Image, error) {
+	return s.ImagesForItemsFor(ctx, Subject{UserID: userID}, ids)
+}
+
+// ImagesForItemsFor batches image metadata in one authorized catalog snapshot.
+func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []string) (map[string][]Image, error) {
 	if len(ids) > 1000 {
 		return nil, ErrInvalidInput
 	}
@@ -158,7 +168,7 @@ func (s *Store) ImagesForItems(ctx context.Context, userID string, ids []string)
 			return nil, ErrInvalidInput
 		}
 	}
-	tx, access, err := s.beginUserRead(ctx, userID)
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return nil, err
 	}

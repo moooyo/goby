@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -70,17 +71,30 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 
 func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, _, err := parseEmbyCredentials(r)
+		token, client, err := parseEmbyCredentials(r)
 		if err != nil || token == "" {
 			embyTextError(w, r, http.StatusUnauthorized, embyInvalidTokenMessage)
 			return
 		}
-		principal, err := s.identity.Resolve(r.Context(), token, "emby")
+		principal, err := s.identity.ResolveEmbyForClient(r.Context(), token, client)
 		if err != nil {
+			if errors.Is(err, identity.ErrInvalidInput) {
+				apiError(w, r, http.StatusBadRequest, "invalid_client", "Check the client metadata and application key client-session limit.")
+				return
+			}
 			s.identityError(w, r, err)
 			return
 		}
-		if time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
+		if principal.IsApplicationKey() {
+			if playID := playbackContextHint(r); playID != "" {
+				principal, err = s.bindKeyPlaybackContext(r, principal, playID)
+				if err != nil {
+					s.identityError(w, r, err)
+					return
+				}
+			}
+		}
+		if principal.IsApplicationKey() || time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
 			if err := s.identity.TouchClientSession(r.Context(), principal); err != nil {
 				s.identityError(w, r, err)
 				return

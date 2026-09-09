@@ -445,7 +445,11 @@ func (s *Server) remoteGeneralCommand(named bool) http.HandlerFunc {
 func remoteCommandEnvelope(messageType string, data map[string]any, actor identity.Principal, target identity.ClientSession, includeTargetID bool) (events.Envelope, error) {
 	// IDs in client bodies never establish authority. The Data.Id seen in the
 	// captured full-command and Playstate messages is the target session ID.
-	data["ControllingUserId"] = actor.User.ID
+	if actor.IsApplicationKey() {
+		delete(data, "ControllingUserId")
+	} else {
+		data["ControllingUserId"] = actor.User.ID
+	}
 	if includeTargetID {
 		data["Id"] = target.SessionID
 	} else {
@@ -458,7 +462,12 @@ func remoteCommandEnvelope(messageType string, data map[string]any, actor identi
 	if len(encoded) > maxRemoteCommandBytes {
 		return events.Envelope{}, errRemoteCommandLimit
 	}
-	return events.Envelope{MessageType: messageType, Data: encoded}, nil
+	envelope := events.Envelope{MessageType: messageType, Data: encoded}
+	if actor.IsApplicationKey() {
+		envelope.Authority = events.Authority{CredentialID: actor.SessionID,
+			ClientSessionID: actor.ClientSessionID, ApplicationKeyID: actor.ApplicationKeyID}
+	}
+	return envelope, nil
 }
 
 func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, messageType string, data map[string]any, includeTargetID bool) {
@@ -482,7 +491,7 @@ func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, mes
 	}
 	target := targets[0]
 	if messageType == "Play" {
-		if err := s.authorizeRemotePlayItems(r.Context(), actor.User.ID, target.UserID, data["ItemIds"].([]string)); err != nil {
+		if err := s.authorizeRemotePlayItems(r.Context(), librarySubject(actor, actor.User.ID), clientSessionLibrarySubject(target), data["ItemIds"].([]string)); err != nil {
 			s.libraryError(w, r, err)
 			return
 		}
@@ -493,7 +502,7 @@ func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, mes
 		return
 	}
 	if s.eventHub != nil && s.hasClientControlTransport(target.SessionID) {
-		if _, err := s.eventHub.PublishSession(target.UserID, target.SessionID, envelope); err != nil {
+		if _, err := s.eventHub.PublishScope(targetEventScope(target), envelope); err != nil {
 			s.remoteCommandError(w, r, err)
 			return
 		}
@@ -503,7 +512,15 @@ func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, mes
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) authorizeRemotePlayItems(ctx context.Context, actorUserID, targetUserID string, ids []string) error {
+func clientSessionLibrarySubject(session identity.ClientSession) library.Subject {
+	subject := library.Subject{UserID: session.UserID}
+	if session.Kind == identity.ApplicationKeyKind {
+		subject.ApplicationCredentialID = session.CredentialID
+	}
+	return subject
+}
+
+func (s *Server) authorizeRemotePlayItems(ctx context.Context, actor, target library.Subject, ids []string) error {
 	if !validRemoteItemIDs(ids) {
 		return errRemoteCommandInput
 	}
@@ -514,10 +531,10 @@ func (s *Server) authorizeRemotePlayItems(ctx context.Context, actorUserID, targ
 			continue
 		}
 		checked[itemID] = true
-		if _, err := s.library.GetItem(ctx, actorUserID, itemID); err != nil {
+		if _, err := s.library.GetItemFor(ctx, actor, itemID); err != nil {
 			return err
 		}
-		item, err := s.library.GetItem(ctx, targetUserID, itemID)
+		item, err := s.library.GetItemFor(ctx, target, itemID)
 		if err != nil {
 			return err
 		}
@@ -529,8 +546,9 @@ func (s *Server) authorizeRemotePlayItems(ctx context.Context, actorUserID, targ
 }
 
 // authorizeRemoteSocketEvent closes the gap between queueing a command and
-// transport delivery. No raw token or controller login session is retained;
-// the controller account and receiver's current session are checked afresh.
+// transport delivery. No raw token is retained; ordinary controllers use their
+// current account while application controllers revalidate their client context
+// and parent credential from trusted publication metadata.
 func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identity.Principal, event events.Event) (bool, error) {
 	switch event.MessageType() {
 	case "Play", "Playstate", "GeneralCommand":
@@ -546,26 +564,51 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		return false, nil
 	}
 	id, supplied, err := remoteCommandString(fields, "id")
-	if err != nil || (supplied && id != receiver.SessionID) {
+	if err != nil || (supplied && id != clientSessionID(receiver)) {
 		return false, nil
 	}
-	controllerID, _, err := remoteCommandString(fields, "controllinguserid")
-	if err != nil || !validRemoteCommandText(controllerID, 256, true) {
-		return false, nil
-	}
-	controller, err := s.identity.GetUser(ctx, controllerID)
-	if errors.Is(err, identity.ErrNotFound) {
-		return false, nil
-	}
+	controllerID, controllerSupplied, err := remoteCommandString(fields, "controllinguserid")
 	if err != nil {
-		return false, err
-	}
-	if controller.IsDisabled || (controller.ID != receiver.User.ID && !controller.IsAdministrator) {
 		return false, nil
+	}
+	var controllerSubject library.Subject
+	if authority := event.Authority(); authority != (events.Authority{}) {
+		if controllerSupplied {
+			return false, nil
+		}
+		controller, err := s.identity.RevalidateSession(ctx, identity.Principal{
+			Kind: identity.ApplicationKeyKind, SessionID: authority.CredentialID,
+			ClientSessionID: authority.ClientSessionID, ApplicationKeyID: authority.ApplicationKeyID,
+		})
+		if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if !controller.IsApplicationKey() || !controller.CanManageServer() {
+			return false, nil
+		}
+		controllerSubject = librarySubject(controller, "")
+	} else {
+		if !validRemoteCommandText(controllerID, 256, true) {
+			return false, nil
+		}
+		controller, err := s.identity.GetUser(ctx, controllerID)
+		if errors.Is(err, identity.ErrNotFound) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if controller.IsDisabled || (controller.ID != receiver.User.ID && !controller.IsAdministrator) {
+			return false, nil
+		}
+		controllerSubject = library.Subject{UserID: controller.ID}
 	}
 	noPresenceFilter := 0
 	targets, err := s.identity.ListClientSessions(ctx, receiver, identity.ClientSessionFilter{
-		SessionID: receiver.SessionID, ActiveWithinSeconds: &noPresenceFilter, Limit: 1,
+		SessionID: clientSessionID(receiver), ActiveWithinSeconds: &noPresenceFilter, Limit: 1,
 	})
 	if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrClientSessionForbidden) {
 		return false, nil
@@ -581,7 +624,7 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		if json.Unmarshal(fields["itemids"], &ids) != nil || !validRemoteItemIDs(ids) {
 			return false, nil
 		}
-		if err := s.authorizeRemotePlayItems(ctx, controller.ID, receiver.User.ID, ids); err != nil {
+		if err := s.authorizeRemotePlayItems(ctx, controllerSubject, clientSessionLibrarySubject(targets[0]), ids); err != nil {
 			if errors.Is(err, library.ErrForbidden) || errors.Is(err, library.ErrNotFound) {
 				return false, nil
 			}

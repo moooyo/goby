@@ -61,10 +61,12 @@ func (s *Server) authorizeOriginal(ctx context.Context, principal identity.Princ
 	if err != nil {
 		return err
 	}
-	if fresh.User.ID != principal.User.ID || fresh.SessionID != principal.SessionID || fresh.Client.DeviceID != principal.Client.DeviceID {
+	if fresh.IsApplicationKey() != principal.IsApplicationKey() || fresh.User.ID != principal.User.ID ||
+		fresh.ClientSessionID != principal.ClientSessionID ||
+		fresh.SessionID != principal.SessionID || fresh.Client.DeviceID != principal.Client.DeviceID {
 		return library.ErrNotFound
 	}
-	verified, current, err := s.library.OpenMedia(ctx, fresh.User.ID, source.Item.ID, source.SourceID)
+	verified, current, err := s.library.OpenMediaFor(ctx, librarySubject(fresh, fresh.User.ID), source.Item.ID, source.SourceID)
 	if err != nil {
 		return err
 	}

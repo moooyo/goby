@@ -37,7 +37,7 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		values["static"] = "true"
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if values["userid"] != "" && values["userid"] != principal.User.ID || values["deviceid"] != "" && values["deviceid"] != principal.Client.DeviceID {
+	if !principal.IsApplicationKey() && (values["userid"] != "" && values["userid"] != principal.User.ID || values["deviceid"] != "" && values["deviceid"] != principal.Client.DeviceID) {
 		s.videoError(w, r, library.ErrForbidden)
 		return
 	}
@@ -51,7 +51,7 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 	}
 	prepare, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	file, source, err := s.library.OpenMedia(prepare, principal.User.ID, r.PathValue("Id"), values["mediasourceid"])
+	file, source, err := s.library.OpenMediaFor(prepare, librarySubject(principal, principal.User.ID), r.PathValue("Id"), values["mediasourceid"])
 	if err != nil {
 		s.videoError(w, r, err)
 		return
@@ -67,7 +67,7 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
-	decision, err := videoRequestDecision(input, values, container, hlsUserLimits(s.cfg.Transcoding, principal.User))
+	decision, err := videoRequestDecision(input, values, container, hlsPrincipalLimits(s.cfg.Transcoding, principal))
 	if err != nil {
 		s.videoError(w, r, err)
 		return

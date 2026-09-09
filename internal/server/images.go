@@ -88,7 +88,7 @@ func (s *Server) embyImages(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	images, err := s.library.ListImages(r.Context(), userID, r.PathValue("Id"))
+	images, err := s.library.ListImagesFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return

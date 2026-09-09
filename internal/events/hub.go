@@ -26,18 +26,19 @@ const (
 )
 
 var (
-	ErrClosed                 = errors.New("event hub is closed")
-	ErrUnsubscribed           = errors.New("event subscription is closed")
-	ErrSlowConsumer           = errors.New("event subscriber queue is full")
-	ErrSessionRevoked         = errors.New("event session was disconnected")
-	ErrUserRevoked            = errors.New("event user was disconnected")
-	ErrInvalidOptions         = errors.New("invalid event hub options")
-	ErrInvalidScope           = errors.New("invalid event scope")
-	ErrInvalidEvent           = errors.New("invalid event envelope")
-	ErrConnectionLimit        = errors.New("event connection limit reached")
-	ErrUserConnectionLimit    = errors.New("event user connection limit reached")
-	ErrSessionConnectionLimit = errors.New("event session connection limit reached")
-	ErrMessageTooLarge        = errors.New("event exceeds message size limit")
+	ErrClosed                    = errors.New("event hub is closed")
+	ErrUnsubscribed              = errors.New("event subscription is closed")
+	ErrSlowConsumer              = errors.New("event subscriber queue is full")
+	ErrSessionRevoked            = errors.New("event session was disconnected")
+	ErrUserRevoked               = errors.New("event user was disconnected")
+	ErrInvalidOptions            = errors.New("invalid event hub options")
+	ErrInvalidScope              = errors.New("invalid event scope")
+	ErrInvalidEvent              = errors.New("invalid event envelope")
+	ErrConnectionLimit           = errors.New("event connection limit reached")
+	ErrUserConnectionLimit       = errors.New("event user connection limit reached")
+	ErrCredentialConnectionLimit = errors.New("event credential connection limit reached")
+	ErrSessionConnectionLimit    = errors.New("event session connection limit reached")
+	ErrMessageTooLarge           = errors.New("event exceeds message size limit")
 )
 
 // Options bounds both connection counts and the encoded data retained by each
@@ -52,13 +53,25 @@ type Options struct {
 	MaxMessageBytes          int
 }
 
-// Scope is the immutable identity associated with a connection. SessionID is the
-// revocable authentication session identifier, never a token. DeviceID is optional
-// metadata and does not grant access to another user's or session's events.
+// Scope is the immutable identity associated with a connection. Application keys
+// have no user; their SessionID identifies a client context and CredentialID its
+// revocable parent. Ordinary sessions require a user and no CredentialID.
+// DeviceID is metadata and never grants access to another scope's events.
 type Scope struct {
-	UserID    string
-	SessionID string
-	DeviceID  string
+	UserID         string
+	SessionID      string
+	DeviceID       string
+	ApplicationKey bool
+	CredentialID   string
+}
+
+// Authority is trusted, in-memory publication metadata. It never appears in a
+// client message and cannot be supplied through a command's JSON body. An
+// application sender retains identifiers needed for current revalidation.
+type Authority struct {
+	CredentialID     string
+	ClientSessionID  string
+	ApplicationKeyID int64
 }
 
 // Envelope is encoded once per publish. An omitted MessageID is generated once
@@ -68,6 +81,7 @@ type Envelope struct {
 	MessageType string          `json:"MessageType"`
 	MessageID   string          `json:"MessageId"`
 	Data        json.RawMessage `json:"Data"`
+	Authority   Authority       `json:"-"`
 }
 
 // Event holds immutable JSON shared safely by recipient queues. Its zero value
@@ -76,21 +90,24 @@ type Event struct {
 	payload     string
 	messageType string
 	messageID   string
+	authority   Authority
 }
 
-func (e Event) Bytes() []byte       { return []byte(e.payload) }
-func (e Event) MessageType() string { return e.messageType }
-func (e Event) MessageID() string   { return e.messageID }
+func (e Event) Bytes() []byte        { return []byte(e.payload) }
+func (e Event) MessageType() string  { return e.messageType }
+func (e Event) MessageID() string    { return e.messageID }
+func (e Event) Authority() Authority { return e.authority }
 
 // Hub owns subscriptions without starting background goroutines. The mutex
 // protects every queue and close transition; publishing never waits for readers.
 type Hub struct {
-	mu            sync.Mutex
-	opts          Options
-	closed        bool
-	subscribers   map[*Subscription]struct{}
-	userCounts    map[string]int
-	sessionCounts map[string]int
+	mu               sync.Mutex
+	opts             Options
+	closed           bool
+	subscribers      map[*Subscription]struct{}
+	userCounts       map[string]int
+	credentialCounts map[string]int
+	sessionCounts    map[string]int
 }
 
 // Subscription receives a single user's events and exact-session messages.
@@ -132,15 +149,16 @@ func New(opts Options) (*Hub, error) {
 		return nil, fmt.Errorf("%w: message limit exceeds queue byte limit", ErrInvalidOptions)
 	}
 	return &Hub{
-		opts:          opts,
-		subscribers:   make(map[*Subscription]struct{}),
-		userCounts:    make(map[string]int),
-		sessionCounts: make(map[string]int),
+		opts:             opts,
+		subscribers:      make(map[*Subscription]struct{}),
+		userCounts:       make(map[string]int),
+		credentialCounts: make(map[string]int),
+		sessionCounts:    make(map[string]int),
 	}, nil
 }
 
 func (h *Hub) Subscribe(scope Scope) (*Subscription, error) {
-	if !validScopeField(scope.UserID, true) || !validScopeField(scope.SessionID, true) || !validScopeField(scope.DeviceID, false) {
+	if !validScope(scope) {
 		return nil, ErrInvalidScope
 	}
 	h.mu.Lock()
@@ -151,8 +169,11 @@ func (h *Hub) Subscribe(scope Scope) (*Subscription, error) {
 	if len(h.subscribers) >= h.opts.MaxConnections {
 		return nil, ErrConnectionLimit
 	}
-	if h.userCounts[scope.UserID] >= h.opts.MaxConnectionsPerUser {
+	if !scope.ApplicationKey && h.userCounts[scope.UserID] >= h.opts.MaxConnectionsPerUser {
 		return nil, ErrUserConnectionLimit
+	}
+	if scope.ApplicationKey && h.credentialCounts[scope.CredentialID] >= h.opts.MaxConnectionsPerUser {
+		return nil, ErrCredentialConnectionLimit
 	}
 	if h.sessionCounts[scope.SessionID] >= h.opts.MaxConnectionsPerSession {
 		return nil, ErrSessionConnectionLimit
@@ -165,7 +186,11 @@ func (h *Hub) Subscribe(scope Scope) (*Subscription, error) {
 		done:  make(chan struct{}),
 	}
 	h.subscribers[sub] = struct{}{}
-	h.userCounts[scope.UserID]++
+	if scope.ApplicationKey {
+		h.credentialCounts[scope.CredentialID]++
+	} else {
+		h.userCounts[scope.UserID]++
+	}
 	h.sessionCounts[scope.SessionID]++
 	return sub, nil
 }
@@ -176,7 +201,7 @@ func (h *Hub) PublishUser(userID string, envelope Envelope) (int, error) {
 	if !validScopeField(userID, true) {
 		return 0, ErrInvalidScope
 	}
-	return h.publish(userID, "", envelope)
+	return h.publish(Scope{UserID: userID}, true, envelope)
 }
 
 // PublishSession requires both identifiers to match, preventing a session target
@@ -185,10 +210,19 @@ func (h *Hub) PublishSession(userID, sessionID string, envelope Envelope) (int, 
 	if !validScopeField(userID, true) || !validScopeField(sessionID, true) {
 		return 0, ErrInvalidScope
 	}
-	return h.publish(userID, sessionID, envelope)
+	return h.publish(Scope{UserID: userID, SessionID: sessionID}, false, envelope)
 }
 
-func (h *Hub) publish(userID, sessionID string, envelope Envelope) (int, error) {
+// PublishScope requires an exact typed client identity. An application's parent
+// credential never expands a publication to sibling client contexts.
+func (h *Hub) PublishScope(scope Scope, envelope Envelope) (int, error) {
+	if !validScope(scope) {
+		return 0, ErrInvalidScope
+	}
+	return h.publish(scope, false, envelope)
+}
+
+func (h *Hub) publish(scope Scope, userBroadcast bool, envelope Envelope) (int, error) {
 	event, err := encodeEvent(envelope, h.opts.MaxMessageBytes)
 	if err != nil {
 		return 0, err
@@ -200,7 +234,8 @@ func (h *Hub) publish(userID, sessionID string, envelope Envelope) (int, error) 
 	}
 	delivered := 0
 	for sub := range h.subscribers {
-		if sub.scope.UserID != userID || (sessionID != "" && sub.scope.SessionID != sessionID) {
+		if sub.scope.ApplicationKey != scope.ApplicationKey || sub.scope.UserID != scope.UserID ||
+			sub.scope.CredentialID != scope.CredentialID || (!userBroadcast && sub.scope.SessionID != scope.SessionID) {
 			continue
 		}
 		if sub.count == len(sub.queue) || len(event.payload) > h.opts.QueueBytes-sub.bytes {
@@ -214,6 +249,22 @@ func (h *Hub) publish(userID, sessionID string, envelope Envelope) (int, error) 
 		delivered++
 	}
 	return delivered, nil
+}
+
+// DisconnectCredential closes every application client authenticated by a key,
+// or the single ordinary authentication session, without conflating delivery IDs.
+func (h *Hub) DisconnectCredential(credentialID string) {
+	if !validScopeField(credentialID, true) {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for sub := range h.subscribers {
+		if (sub.scope.ApplicationKey && sub.scope.CredentialID == credentialID) ||
+			(!sub.scope.ApplicationKey && sub.scope.SessionID == credentialID) {
+			h.remove(sub, ErrSessionRevoked)
+		}
+	}
 }
 
 // DisconnectSession closes current subscriptions; it is not a persistent
@@ -233,7 +284,7 @@ func (h *Hub) DisconnectUser(userID string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for sub := range h.subscribers {
-		if sub.scope.UserID == userID {
+		if !sub.scope.ApplicationKey && sub.scope.UserID == userID {
 			h.remove(sub, ErrUserRevoked)
 		}
 	}
@@ -324,7 +375,11 @@ func (h *Hub) remove(sub *Subscription, reason error) {
 		return
 	}
 	delete(h.subscribers, sub)
-	decrement(h.userCounts, sub.scope.UserID)
+	if sub.scope.ApplicationKey {
+		decrement(h.credentialCounts, sub.scope.CredentialID)
+	} else {
+		decrement(h.userCounts, sub.scope.UserID)
+	}
 	decrement(h.sessionCounts, sub.scope.SessionID)
 	sub.queue = nil
 	sub.head = 0
@@ -354,7 +409,21 @@ func validScopeField(value string, required bool) bool {
 		!strings.ContainsRune(value, '\x00') && (!required || strings.TrimSpace(value) != "")
 }
 
+func validScope(scope Scope) bool {
+	if !validScopeField(scope.SessionID, true) || !validScopeField(scope.DeviceID, false) {
+		return false
+	}
+	if scope.ApplicationKey {
+		return scope.UserID == "" && validScopeField(scope.CredentialID, true)
+	}
+	return scope.CredentialID == "" && validScopeField(scope.UserID, true)
+}
+
 func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
+	if envelope.Authority != (Authority{}) && (envelope.Authority.ApplicationKeyID <= 0 ||
+		!validScopeField(envelope.Authority.CredentialID, true) || !validScopeField(envelope.Authority.ClientSessionID, true)) {
+		return Event{}, ErrInvalidEvent
+	}
 	if len(envelope.Data) > maxBytes || len(envelope.MessageType) > maxBytes || len(envelope.MessageID) > maxBytes {
 		return Event{}, ErrMessageTooLarge
 	}
@@ -384,5 +453,6 @@ func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
 		payload:     string(payload),
 		messageType: envelope.MessageType,
 		messageID:   envelope.MessageID,
+		authority:   envelope.Authority,
 	}, nil
 }

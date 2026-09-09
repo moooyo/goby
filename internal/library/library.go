@@ -61,6 +61,7 @@ type Item struct {
 
 type Query struct {
 	UserID, ParentID, SearchTerm, SortBy, SortOrder string
+	ApplicationCredentialID                         string
 	Recursive                                       bool
 	StartIndex, Limit                               int
 	IncludeItemTypes, Ids, MediaTypes               []string

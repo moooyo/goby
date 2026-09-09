@@ -217,7 +217,14 @@ func normalizeManagerOptions(o Options) (Options, error) {
 }
 
 func validScope(scope Scope) bool {
-	for _, value := range []string{scope.UserID, scope.AuthSessionID, scope.PlaySessionID, scope.ItemID, scope.SourceID} {
+	if scope.ApplicationKey && scope.UserID != "" || !scope.ApplicationKey && !validManagerIdentifier(scope.UserID, 256, false) {
+		return false
+	}
+	if scope.ApplicationKey && !validManagerIdentifier(scope.ApplicationClientID, 256, false) ||
+		!scope.ApplicationKey && scope.ApplicationClientID != "" {
+		return false
+	}
+	for _, value := range []string{scope.AuthSessionID, scope.PlaySessionID, scope.ItemID, scope.SourceID} {
 		if !validManagerIdentifier(value, 256, false) {
 			return false
 		}
@@ -762,7 +769,8 @@ func (m *Manager) schedule() {
 		if j.finished || j.stopCode != "" {
 			continue
 		}
-		if !j.durable || m.running >= m.options.MaxJobs || m.runningUsers[j.record.Spec.Scope.UserID] >= m.options.MaxUserJobs ||
+		if !j.durable || m.running >= m.options.MaxJobs ||
+			(!j.record.Spec.Scope.ApplicationKey && m.runningUsers[j.record.Spec.Scope.UserID] >= m.options.MaxUserJobs) ||
 			m.runningAuth[j.record.Spec.Scope.AuthSessionID] >= m.options.MaxSessionJobs || m.bytes >= m.options.MaxBytes {
 			remaining = append(remaining, j)
 			continue
@@ -772,7 +780,9 @@ func (m *Manager) schedule() {
 		j.lastProgress = j.started
 		j.record.State, j.record.UpdatedAt = "running", j.started
 		m.running++
-		m.runningUsers[j.record.Spec.Scope.UserID]++
+		if !j.record.Spec.Scope.ApplicationKey {
+			m.runningUsers[j.record.Spec.Scope.UserID]++
+		}
 		m.runningAuth[j.record.Spec.Scope.AuthSessionID]++
 		close(j.launch)
 		m.notifyLocked(j)
@@ -920,11 +930,13 @@ func (m *Manager) finish(j *managedJob, runErr error) {
 	if j.running {
 		j.running = false
 		m.running--
-		m.runningUsers[j.record.Spec.Scope.UserID]--
-		m.runningAuth[j.record.Spec.Scope.AuthSessionID]--
-		if m.runningUsers[j.record.Spec.Scope.UserID] == 0 {
-			delete(m.runningUsers, j.record.Spec.Scope.UserID)
+		if !j.record.Spec.Scope.ApplicationKey {
+			m.runningUsers[j.record.Spec.Scope.UserID]--
+			if m.runningUsers[j.record.Spec.Scope.UserID] == 0 {
+				delete(m.runningUsers, j.record.Spec.Scope.UserID)
+			}
 		}
+		m.runningAuth[j.record.Spec.Scope.AuthSessionID]--
 		if m.runningAuth[j.record.Spec.Scope.AuthSessionID] == 0 {
 			delete(m.runningAuth, j.record.Spec.Scope.AuthSessionID)
 		}

@@ -35,11 +35,22 @@ func (s *Server) itemUser(w http.ResponseWriter, r *http.Request) (string, bool)
 	if userID == "" {
 		userID = principal.User.ID
 	}
-	if userID != principal.User.ID && !principal.User.IsAdministrator {
+	if userID != principal.User.ID && !principal.CanManageServer() {
 		apiError(w, r, 403, "access_denied", "The requested user's library is not accessible.")
 		return "", false
 	}
 	return userID, true
+}
+
+func requestLibrarySubject(r *http.Request, userID string) library.Subject {
+	principal, _ := r.Context().Value(principalKey).(identity.Principal)
+	return librarySubject(principal, userID)
+}
+
+// Query authority comes only from the authenticated principal. A requested
+// UserId selects a state projection and never supplies application authority.
+func attachApplicationCredentialID(r *http.Request, query *library.Query) {
+	query.ApplicationCredentialID = requestLibrarySubject(r, query.UserID).ApplicationCredentialID
 }
 
 func virtualRootID() string { return "goby-library-root" }
@@ -49,7 +60,7 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	libraries, err := s.library.ListUserLibraries(r.Context(), userID)
+	libraries, err := s.library.ListUserLibrariesFor(r.Context(), requestLibrarySubject(r, userID))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -78,7 +89,7 @@ func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	libraries, err := s.library.ListUserLibraries(r.Context(), userID)
+	libraries, err := s.library.ListUserLibrariesFor(r.Context(), requestLibrarySubject(r, userID))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -183,6 +194,7 @@ func (s *Server) embyItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query library.Query, bare bool) {
+	attachApplicationCredentialID(r, &query)
 	zeroLimit := query.Limit == 0
 	if zeroLimit {
 		query.Limit = 1
@@ -232,11 +244,12 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		s.embyRoot(w, r)
 		return
 	}
-	item, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	subject := requestLibrarySubject(r, userID)
+	item, err := s.library.GetItemFor(r.Context(), subject, r.PathValue("Id"))
 	if err != nil {
 		if errors.Is(err, library.ErrNotFound) {
 			if id, valid := positiveEntityID(r.PathValue("Id")); valid {
-				entity, entityErr := s.library.GetEntityByID(r.Context(), userID, id)
+				entity, entityErr := s.library.GetEntityByIDFor(r.Context(), subject, id)
 				if entityErr != nil {
 					s.libraryError(w, r, entityErr)
 					return
@@ -304,6 +317,7 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 	if zeroLimit {
 		query.Limit = 1
 	}
+	attachApplicationCredentialID(r, &query)
 	result, err := s.library.QueryLatest(r.Context(), query, group)
 	if err != nil {
 		s.libraryError(w, r, err)
@@ -331,7 +345,7 @@ func (s *Server) embySeasons(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	series, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	series, err := s.library.GetItemFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -358,7 +372,8 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	series, err := s.library.GetItem(r.Context(), userID, r.PathValue("Id"))
+	subject := requestLibrarySubject(r, userID)
+	series, err := s.library.GetItemFor(r.Context(), subject, r.PathValue("Id"))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -386,7 +401,7 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 		query.ParentIndexNumber = &number
 	}
 	if seasonID := r.URL.Query().Get("SeasonId"); seasonID != "" {
-		season, err := s.library.GetItem(r.Context(), userID, seasonID)
+		season, err := s.library.GetItemFor(r.Context(), subject, seasonID)
 		if err != nil {
 			s.libraryError(w, r, err)
 			return

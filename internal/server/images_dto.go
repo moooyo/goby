@@ -30,6 +30,7 @@ func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, user
 		enabledTypes[strings.ToLower(name)] = true
 	}
 	byID := make(map[string][]library.Image)
+	subject := requestLibrarySubject(r, userID)
 	for start := 0; start < len(items); start += 256 {
 		ids := make([]string, 0, min(256, len(items)-start))
 		for _, item := range items[start:min(start+256, len(items))] {
@@ -40,7 +41,7 @@ func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, user
 		if len(ids) == 0 {
 			continue
 		}
-		batch, err := s.library.ImagesForItems(r.Context(), userID, ids)
+		batch, err := s.library.ImagesForItemsFor(r.Context(), subject, ids)
 		if err != nil {
 			s.libraryError(w, r, err)
 			return false

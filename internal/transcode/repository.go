@@ -61,7 +61,7 @@ func (r *PGRepository) Recover(ctx context.Context) error {
 
 // Create starts only a queued job. The caller already verified current library
 // access and opened the indexed source; this repository independently locks and
-// rechecks the account, Emby authentication session, and active playback owner.
+// rechecks the optional account, typed credential, and active playback owner.
 // These locks serialize insertion with logout, disablement, and playback stop.
 func (r *PGRepository) Create(ctx context.Context, record Record) error {
 	plan, err := validateEncodingRecord(record)
@@ -78,17 +78,33 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 	defer rollbackEncoding(tx)
 	scope := record.Spec.Scope
 	var id string
-	if err := tx.QueryRow(ctx, `SELECT id FROM users WHERE id = $1 AND NOT is_disabled
+	if !scope.ApplicationKey {
+		if err := tx.QueryRow(ctx, `SELECT id FROM users WHERE id = $1 AND NOT is_disabled
 		AND jsonb_typeof(policy) = 'object'
 		AND (NOT (policy ? 'EnableMediaPlayback') OR policy -> 'EnableMediaPlayback' = 'true'::jsonb)
 		FOR SHARE`, scope.UserID).Scan(&id); err != nil {
-		return encodingAuthorizationError("authorize encoding account", err)
+			return encodingAuthorizationError("authorize encoding account", err)
+		}
 	}
-	if err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id = $2
-		AND device_id = $3 AND kind = 'emby' AND revoked_at IS NULL
-		AND expires_at > clock_timestamp() FOR SHARE`, scope.AuthSessionID, scope.UserID, scope.DeviceID).
+	if err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '')
+		AND revoked_at IS NULL
+		AND ((NOT $4::boolean AND kind = 'emby' AND device_id = $3 AND expires_at > clock_timestamp())
+			OR ($4::boolean AND kind = 'application_key' AND user_id IS NULL
+				AND EXISTS (SELECT 1 FROM application_keys application WHERE application.credential_id = sessions.id)))
+		FOR SHARE`, scope.AuthSessionID, scope.UserID, scope.DeviceID, scope.ApplicationKey).
 		Scan(&id); err != nil {
 		return encodingAuthorizationError("authorize encoding authentication session", err)
+	}
+	if scope.ApplicationKey {
+		if err := tx.QueryRow(ctx, `SELECT credential_id FROM application_keys WHERE credential_id = $1 FOR SHARE`,
+			scope.AuthSessionID).Scan(&id); err != nil {
+			return encodingAuthorizationError("authorize encoding application key", err)
+		}
+		if err := tx.QueryRow(ctx, `SELECT id FROM application_key_clients
+			WHERE id = $1 AND credential_id = $2 AND device_id = $3 FOR SHARE`,
+			scope.ApplicationClientID, scope.AuthSessionID, scope.DeviceID).Scan(&id); err != nil {
+			return encodingAuthorizationError("authorize encoding application client", err)
+		}
 	}
 	// Catalog deletion locks the item before cascading to playback rows. Take
 	// this key lock first as well, so the later item foreign-key check cannot
@@ -96,23 +112,24 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 	if err := tx.QueryRow(ctx, `SELECT id FROM items WHERE id = $1 FOR KEY SHARE`, scope.ItemID).Scan(&id); err != nil {
 		return encodingAuthorizationError("authorize encoding item existence", err)
 	}
-	if err := tx.QueryRow(ctx, `SELECT id FROM play_sessions WHERE id = $1 AND user_id = $2
+	if err := tx.QueryRow(ctx, `SELECT id FROM play_sessions WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '')
 		AND auth_session_id = $3 AND device_id = $4 AND item_id = $5 AND media_source_id = $6
+		AND application_client_id IS NOT DISTINCT FROM NULLIF($7, '')
 		AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp() FOR SHARE`,
-		scope.PlaySessionID, scope.UserID, scope.AuthSessionID, scope.DeviceID, scope.ItemID, scope.SourceID).
+		scope.PlaySessionID, scope.UserID, scope.AuthSessionID, scope.DeviceID, scope.ItemID, scope.SourceID, scope.ApplicationClientID).
 		Scan(&id); err != nil {
 		return encodingAuthorizationError("authorize encoding playback session", err)
 	}
 	result, err := tx.Exec(ctx, `INSERT INTO encoding_jobs (id, user_id, auth_session_id, device_id,
 		play_session_id, item_id, media_source_id, source_stamp, plan, state, output_bytes,
-		error_code, created_at, updated_at, last_access_at)
-		SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15
+		error_code, created_at, updated_at, last_access_at, application_client_id)
+		SELECT $1,NULLIF($2,''),$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15,NULLIF($16,'')
 		FROM sessions authentication JOIN play_sessions play ON play.id = $5
-		WHERE authentication.id = $3 AND authentication.expires_at > clock_timestamp()
+		WHERE authentication.id = $3 AND (authentication.kind = 'application_key' OR authentication.expires_at > clock_timestamp())
 		AND play.expires_at > clock_timestamp()`,
 		record.ID, scope.UserID, scope.AuthSessionID, scope.DeviceID, scope.PlaySessionID,
 		scope.ItemID, scope.SourceID, record.Spec.SourceStamp, plan, record.State, record.OutputBytes,
-		record.ErrorCode, record.CreatedAt.UTC(), record.UpdatedAt.UTC(), record.LastAccessAt.UTC())
+		record.ErrorCode, record.CreatedAt.UTC(), record.UpdatedAt.UTC(), record.LastAccessAt.UTC(), scope.ApplicationClientID)
 	if err != nil {
 		var constraint *pgconn.PgError
 		if errors.As(err, &constraint) && constraint.Code == "23505" {
@@ -150,10 +167,17 @@ func (r *PGRepository) Update(ctx context.Context, record Record) error {
 	var unchanged bool
 	err = tx.QueryRow(ctx, `SELECT state,
 		source_stamp = $8 AND plan = $9::jsonb AND created_at = $10
-		FROM encoding_jobs WHERE id = $1 AND user_id = $2 AND auth_session_id = $3
+		FROM encoding_jobs WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '') AND auth_session_id = $3
 		AND device_id = $4 AND play_session_id = $5 AND item_id = $6 AND media_source_id = $7
+		AND application_client_id IS NOT DISTINCT FROM NULLIF($12, '')
+		AND EXISTS (SELECT 1 FROM sessions authentication WHERE authentication.id = auth_session_id
+			AND authentication.user_id IS NOT DISTINCT FROM encoding_jobs.user_id
+			AND (($11::boolean AND authentication.kind = 'application_key' AND EXISTS (
+				SELECT 1 FROM application_key_clients client WHERE client.id = encoding_jobs.application_client_id
+				AND client.credential_id = authentication.id AND client.device_id = encoding_jobs.device_id))
+				OR (NOT $11::boolean AND authentication.kind = 'emby')))
 		FOR UPDATE`, record.ID, scope.UserID, scope.AuthSessionID, scope.DeviceID,
-		scope.PlaySessionID, scope.ItemID, scope.SourceID, record.Spec.SourceStamp, plan, record.CreatedAt.UTC()).
+		scope.PlaySessionID, scope.ItemID, scope.SourceID, record.Spec.SourceStamp, plan, record.CreatedAt.UTC(), scope.ApplicationKey, scope.ApplicationClientID).
 		Scan(&current, &unchanged)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrRecordNotFound
@@ -211,7 +235,10 @@ func validateEncodingRecord(record Record) ([]byte, error) {
 		return nil, ErrInvalidRecord
 	}
 	scope := record.Spec.Scope
-	for _, value := range []string{scope.UserID, scope.AuthSessionID, scope.PlaySessionID, scope.ItemID, scope.SourceID, record.Spec.SourceStamp} {
+	if !validScope(scope) {
+		return nil, ErrInvalidRecord
+	}
+	for _, value := range []string{scope.AuthSessionID, scope.PlaySessionID, scope.ItemID, scope.SourceID, record.Spec.SourceStamp} {
 		if !encodingIdentifier(value, false) {
 			return nil, ErrInvalidRecord
 		}

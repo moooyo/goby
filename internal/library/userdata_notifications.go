@@ -12,6 +12,7 @@ import (
 
 type UserDataNotificationQuery struct {
 	UserID, ItemID, AfterID string
+	ApplicationCredentialID string
 	Recursive               bool
 	Limit                   int
 }
@@ -31,7 +32,7 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 	if err != nil {
 		return UserDataNotificationResult{}, err
 	}
-	tx, access, err := s.beginUserRead(ctx, query.UserID)
+	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return UserDataNotificationResult{}, err
 	}
@@ -83,7 +84,7 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 }
 
 func normalizeUserDataNotificationQuery(query UserDataNotificationQuery) (UserDataNotificationQuery, error) {
-	if strings.TrimSpace(query.UserID) == "" || strings.TrimSpace(query.ItemID) == "" || query.Limit < 0 || query.Limit > 256 {
+	if strings.TrimSpace(query.UserID) == "" || !validSubject(Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}) || strings.TrimSpace(query.ItemID) == "" || query.Limit < 0 || query.Limit > 256 {
 		return UserDataNotificationQuery{}, ErrInvalidInput
 	}
 	for _, value := range []string{query.UserID, query.ItemID, query.AfterID} {

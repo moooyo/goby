@@ -185,7 +185,7 @@ func (s *Server) storageRoots(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) embyAdministrator(w http.ResponseWriter, r *http.Request) bool {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	if !principal.User.IsAdministrator {
+	if !principal.CanManageServer() {
 		apiError(w, r, 403, "administrator_required", "Administrator access is required.")
 		return false
 	}

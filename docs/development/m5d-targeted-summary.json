@@ -1,0 +1,53 @@
+{
+  "owner": "goby-m5d-targeted-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 1 ./internal/config ./internal/database ./internal/identity ./internal/library ./internal/transcode ./internal/events ./internal/server -run 'ApplicationKey|ApplicationClient|ApplicationRemote|ApplicationCredential'",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "top_level_tests_passed": 75,
+  "skipped_tests": 0,
+  "packages": [
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/config",
+      "detail": "1.009s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "1.097s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "19.112s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "2.533s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "detail": "1.281s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/events",
+      "detail": "1.132s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "47.296s"
+    }
+  ],
+  "log_sha256": "54a13c2c82b30079b5978b72b09df7d0ac355b169b47ffc0674e445540bcc99c",
+  "go_and_module_files": 337,
+  "verified_go_source_sha256": "e8f4a5ebfc9a4ec3564d895e01930d51b9f01ad2cc95cc0ba0d5c4ff16077ca2",
+  "schema_version": 16,
+  "probe_version": 6,
+  "integration_database_port": 15432,
+  "manifest_note": "The final manifest includes the subsequently corrected legacy metadata migration test; the separate regression log verifies that test."
+}

@@ -25,6 +25,12 @@ func (s *Store) QueryResume(ctx context.Context, query Query) (ItemResult, error
 // attachUserData loads one user's data for items already filtered by the caller's
 // ACL query. Stored state and folder summaries use batched reads in that transaction.
 func attachUserData(ctx context.Context, tx pgx.Tx, userID string, items []Item) error {
+	if userID == "" {
+		for index := range items {
+			items[index].UserData = nil
+		}
+		return nil
+	}
 	ids := make([]string, 0, len(items))
 	seen := make(map[string]bool, len(items))
 	for index := range items {

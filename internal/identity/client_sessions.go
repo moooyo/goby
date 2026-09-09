@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const (
@@ -44,17 +45,23 @@ type ClientCapabilities struct {
 	AppID                string          `json:"AppId,omitempty"`
 }
 
-// ClientSession is a safe projection of an Emby authentication session. A live
-// authentication session does not establish that media is currently playing.
+// ClientSession is a safe projection of an Emby login or application client.
+// CredentialID identifies the revocable parent; SessionID identifies the wire
+// client context. They are equal only for ordinary logins. A live client session
+// does not establish that media is currently playing.
 type ClientSession struct {
-	SessionID    string
-	UserID       string
-	UserName     string
-	Client       Client
-	CreatedAt    time.Time
-	LastSeenAt   time.Time
-	ExpiresAt    time.Time
-	Capabilities ClientCapabilities
+	SessionID        string
+	CredentialID     string
+	Kind             string
+	ApplicationKeyID int64
+	UserID           string
+	UserName         string
+	Client           Client
+	CreatedAt        time.Time
+	LastSeenAt       time.Time
+	LastUsedAt       *time.Time
+	ExpiresAt        time.Time
+	Capabilities     ClientCapabilities
 }
 
 // ClientSessionFilter constrains an already-authorized session list. An omitted
@@ -133,14 +140,21 @@ func (s *Store) UpdateClientCapabilities(ctx context.Context, principal Principa
 	if _, err := lockClientSession(ctx, tx, principal, true); err != nil {
 		return err
 	}
-	if targetSessionID != "" && targetSessionID != principal.SessionID {
+	if targetSessionID != "" && targetSessionID != clientSessionIdentity(principal) {
 		return ErrClientSessionForbidden
 	}
-	if _, err := tx.Exec(ctx, `UPDATE sessions SET client_capabilities = $2::jsonb,
+	table := "sessions"
+	if principal.IsApplicationKey() {
+		table = "application_key_clients"
+	}
+	if _, err := tx.Exec(ctx, `UPDATE `+table+` SET client_capabilities = $2::jsonb,
 		last_seen_at = CASE WHEN last_seen_at <= now() - ($3::bigint * interval '1 second')
-		THEN now() ELSE last_seen_at END WHERE id = $1`, principal.SessionID, encoded,
+		THEN now() ELSE last_seen_at END WHERE id = $1`, clientSessionIdentity(principal), encoded,
 		int64(ClientSessionTouchInterval/time.Second)); err != nil {
 		return fmt.Errorf("update client capabilities: %w", err)
+	}
+	if err := touchApplicationKeyUsage(ctx, tx, principal); err != nil {
+		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit client capability update: %w", err)
@@ -159,10 +173,17 @@ func (s *Store) TouchClientSession(ctx context.Context, principal Principal) err
 	if _, err := lockClientSession(ctx, tx, principal, true); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(ctx, `UPDATE sessions SET last_seen_at = now()
+	table := "sessions"
+	if principal.IsApplicationKey() {
+		table = "application_key_clients"
+	}
+	if _, err := tx.Exec(ctx, `UPDATE `+table+` SET last_seen_at = now()
 		WHERE id = $1 AND last_seen_at <= now() - ($2::bigint * interval '1 second')`,
-		principal.SessionID, int64(ClientSessionTouchInterval/time.Second)); err != nil {
+		clientSessionIdentity(principal), int64(ClientSessionTouchInterval/time.Second)); err != nil {
 		return fmt.Errorf("record client session activity: %w", err)
+	}
+	if err := touchApplicationKeyUsage(ctx, tx, principal); err != nil {
+		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit client session activity: %w", err)
@@ -170,7 +191,7 @@ func (s *Store) TouchClientSession(ctx context.Context, principal Principal) err
 	return nil
 }
 
-// ListClientSessions returns bounded active Emby sessions. Ordinary accounts
+// ListClientSessions returns bounded active Emby credentials. Ordinary accounts
 // see their own sessions; the current stored administrator role permits all
 // enabled accounts. Admin cookie sessions are never included or accepted.
 func (s *Store) ListClientSessions(ctx context.Context, principal Principal, filter ClientSessionFilter) ([]ClientSession, error) {
@@ -200,15 +221,29 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	if err != nil {
 		return nil, err
 	}
-	rows, err := tx.Query(ctx, `SELECT a.id, u.id, u.name, a.client_name,
-		a.device_id, a.device_name, a.client_version, a.created_at,
-		a.last_seen_at, a.expires_at, a.client_capabilities
+	rows, err := tx.Query(ctx, `WITH clients AS (
+		SELECT a.id, a.id AS credential_id, u.id AS user_id, u.name AS user_name,
+			a.client_name, a.device_id, a.device_name, a.client_version, a.created_at,
+			a.last_seen_at, a.expires_at, a.client_capabilities, a.kind, 0::bigint AS key_id,
+			NULL::timestamptz AS last_used_at
 		FROM sessions a JOIN users u ON u.id = a.user_id
 		WHERE a.kind = 'emby' AND a.revoked_at IS NULL AND a.expires_at > now()
 		AND NOT u.is_disabled AND ($1::boolean OR a.user_id = $2)
-		AND ($3 = '' OR a.id = $3) AND ($4 = '' OR a.device_id = $4)
-		AND ($5::bigint = 0 OR a.last_seen_at >= now() - ($5::bigint * interval '1 second'))
-		ORDER BY a.last_seen_at DESC, a.id LIMIT $6`, isAdmin, principal.User.ID,
+		UNION ALL
+		SELECT c.id, a.id, '', '', c.client_name, c.device_id, c.device_name,
+			c.client_version, c.created_at, c.last_seen_at, NULL::timestamptz,
+			c.client_capabilities, a.kind, k.id,
+			CASE WHEN k.last_used_at IS NOT NULL THEN c.last_seen_at END
+		FROM application_key_clients c JOIN sessions a ON a.id = c.credential_id
+		JOIN application_keys k ON k.credential_id = a.id
+		WHERE $1::boolean AND a.kind = 'application_key' AND a.user_id IS NULL
+		AND a.expires_at IS NULL AND a.revoked_at IS NULL
+	)
+	SELECT id, credential_id, user_id, user_name, client_name, device_id, device_name,
+		client_version, created_at, last_seen_at, expires_at, client_capabilities, kind, key_id, last_used_at
+	FROM clients WHERE ($3 = '' OR id = $3) AND ($4 = '' OR device_id = $4)
+	AND ($5::bigint = 0 OR last_seen_at >= now() - ($5::bigint * interval '1 second'))
+	ORDER BY last_seen_at DESC, id LIMIT $6`, isAdmin, principal.User.ID,
 		filter.SessionID, filter.DeviceID, activeSeconds, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list client sessions: %w", err)
@@ -218,11 +253,15 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	for rows.Next() {
 		var session ClientSession
 		var encoded []byte
-		if err := rows.Scan(&session.SessionID, &session.UserID, &session.UserName,
+		var expiresAt pgtype.Timestamptz
+		if err := rows.Scan(&session.SessionID, &session.CredentialID, &session.UserID, &session.UserName,
 			&session.Client.Name, &session.Client.DeviceID, &session.Client.Device,
 			&session.Client.Version, &session.CreatedAt, &session.LastSeenAt,
-			&session.ExpiresAt, &encoded); err != nil {
+			&expiresAt, &encoded, &session.Kind, &session.ApplicationKeyID, &session.LastUsedAt); err != nil {
 			return nil, fmt.Errorf("read client session: %w", err)
+		}
+		if expiresAt.Valid {
+			session.ExpiresAt = expiresAt.Time
 		}
 		// Read-time validation also prevents unsafe fields from a manual database
 		// change from reaching the session projection. JSONB adds whitespace.
@@ -249,7 +288,41 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 // Locks keep concurrent disable, demotion, and revocation from authorizing a
 // mutation with stale state. Client metadata and role claims are never trusted.
 func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, mutate bool) (bool, error) {
-	if principal.Kind != "emby" || principal.SessionID == "" || principal.User.ID == "" {
+	if principal.IsApplicationKey() {
+		locking := " FOR SHARE"
+		if mutate {
+			locking = " FOR UPDATE"
+		}
+		var credentialID string
+		err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1`+locking, principal.SessionID).Scan(&credentialID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, ErrUnauthorized
+		}
+		if err != nil {
+			return false, fmt.Errorf("lock client application credential: %w", err)
+		}
+		if err := CheckApplicationKey(ctx, tx, principal.SessionID, false); err != nil {
+			return false, err
+		}
+		var keyID int64
+		if err := tx.QueryRow(ctx, `SELECT id FROM application_keys WHERE credential_id = $1`, credentialID).Scan(&keyID); err != nil {
+			return false, fmt.Errorf("read client application key: %w", err)
+		}
+		if keyID != principal.ApplicationKeyID {
+			return false, ErrUnauthorized
+		}
+		var clientID string
+		err = tx.QueryRow(ctx, `SELECT id FROM application_key_clients
+			WHERE id = $1 AND credential_id = $2`+locking, principal.ClientSessionID, principal.SessionID).Scan(&clientID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, ErrUnauthorized
+		}
+		if err != nil {
+			return false, fmt.Errorf("lock application client context: %w", err)
+		}
+		return true, nil
+	}
+	if principal.Kind != "emby" || principal.ApplicationKeyID != 0 || principal.ClientSessionID != "" || principal.SessionID == "" || principal.User.ID == "" {
 		return false, ErrUnauthorized
 	}
 	var isAdmin bool
@@ -289,6 +362,31 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 		return false, ErrUnauthorized
 	}
 	return isAdmin, nil
+}
+
+func touchApplicationKeyUsage(ctx context.Context, tx pgx.Tx, principal Principal) error {
+	if !principal.IsApplicationKey() {
+		return nil
+	}
+	// The key record keeps its immutable app label and reported server ID while
+	// displaying the most recently used client's version and device name.
+	if _, err := tx.Exec(ctx, `UPDATE sessions a SET device_name = c.device_name,
+		client_version = c.client_version,
+		last_seen_at = CASE WHEN a.last_seen_at <= clock_timestamp() - ($3::bigint * interval '1 second')
+			THEN clock_timestamp() ELSE a.last_seen_at END
+		FROM application_key_clients c WHERE a.id = $1 AND c.id = $2 AND c.credential_id = a.id
+		AND (a.device_name IS DISTINCT FROM c.device_name OR a.client_version IS DISTINCT FROM c.client_version
+		OR a.last_seen_at <= clock_timestamp() - ($3::bigint * interval '1 second'))`,
+		principal.SessionID, principal.ClientSessionID, int64(ClientSessionTouchInterval/time.Second)); err != nil {
+		return fmt.Errorf("record application key client metadata: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `UPDATE application_keys SET last_used_at = clock_timestamp()
+		WHERE credential_id = $1 AND (last_used_at IS NULL
+		OR last_used_at <= clock_timestamp() - ($2::bigint * interval '1 second'))`,
+		principal.SessionID, int64(ClientSessionTouchInterval/time.Second)); err != nil {
+		return fmt.Errorf("record application key activity: %w", err)
+	}
+	return nil
 }
 
 func capabilityInputError(message string) error {

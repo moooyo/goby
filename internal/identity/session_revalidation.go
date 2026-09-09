@@ -12,7 +12,7 @@ import (
 )
 
 // RevalidateSession refreshes a principal that Resolve previously authenticated
-// as an Emby session. Callers must pass that trusted authentication context,
+// as an Emby login or application key. Callers must pass that trusted context,
 // never identifiers supplied by an unauthenticated client. This operation is
 // not an alternative login mechanism and does not require retaining the token.
 //
@@ -22,7 +22,19 @@ import (
 // not record activity or extend expiration; callers may use TouchClientSession
 // separately when the authenticated connection demonstrates activity.
 func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated Principal) (Principal, error) {
-	if previouslyAuthenticated.Kind != "emby" ||
+	if previouslyAuthenticated.IsApplicationKey() {
+		if !validRevalidationID(previouslyAuthenticated.SessionID) || !validRevalidationID(previouslyAuthenticated.ClientSessionID) {
+			return Principal{}, ErrUnauthorized
+		}
+		return scanApplicationKeyPrincipal(s.pool.QueryRow(ctx, `SELECT k.id, a.id, c.id,
+			c.client_name, c.device_id, c.device_name, c.client_version, c.last_seen_at
+			FROM sessions a JOIN application_keys k ON k.credential_id = a.id
+			JOIN application_key_clients c ON c.credential_id = a.id AND c.id = $3
+			WHERE a.id = $1 AND k.id = $2 AND a.kind = 'application_key'
+			AND a.user_id IS NULL AND a.expires_at IS NULL AND a.revoked_at IS NULL`,
+			previouslyAuthenticated.SessionID, previouslyAuthenticated.ApplicationKeyID, previouslyAuthenticated.ClientSessionID))
+	}
+	if previouslyAuthenticated.Kind != "emby" || previouslyAuthenticated.ApplicationKeyID != 0 || previouslyAuthenticated.ClientSessionID != "" ||
 		!validRevalidationID(previouslyAuthenticated.SessionID) ||
 		!validRevalidationID(previouslyAuthenticated.User.ID) {
 		return Principal{}, ErrUnauthorized

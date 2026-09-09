@@ -60,7 +60,7 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	if query.SortBy != "Name" && query.SortBy != "SortName" {
 		return EntityResult{}, ErrInvalidInput
 	}
-	tx, access, err := s.beginUserRead(ctx, query.UserID)
+	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return EntityResult{}, err
 	}
@@ -118,6 +118,11 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 // GetEntity resolves a kind and normalized name without exposing orphaned or
 // unauthorized records. Case normalization is performed by PostgreSQL.
 func (s *Store) GetEntity(ctx context.Context, userID, kind, name string) (Entity, error) {
+	return s.GetEntityFor(ctx, Subject{UserID: userID}, kind, name)
+}
+
+// GetEntityFor resolves an associated entity within the subject's catalog scope.
+func (s *Store) GetEntityFor(ctx context.Context, subject Subject, kind, name string) (Entity, error) {
 	kind, err := normalizeEntityKind(kind)
 	if err != nil {
 		return Entity{}, err
@@ -125,19 +130,24 @@ func (s *Store) GetEntity(ctx context.Context, userID, kind, name string) (Entit
 	if strings.TrimSpace(name) == "" || !utf8.ValidString(name) || strings.ContainsRune(name, '\x00') {
 		return Entity{}, ErrInvalidInput
 	}
-	return s.getEntity(ctx, userID, `entity.kind = $3 AND entity.normalized_hash = sha256(convert_to(lower(btrim($4::text)), 'UTF8'))
+	return s.getEntity(ctx, subject, `entity.kind = $3 AND entity.normalized_hash = sha256(convert_to(lower(btrim($4::text)), 'UTF8'))
 		AND entity.normalized_name = lower(btrim($4::text))`, kind, name)
 }
 
 func (s *Store) GetEntityByID(ctx context.Context, userID string, id int64) (Entity, error) {
+	return s.GetEntityByIDFor(ctx, Subject{UserID: userID}, id)
+}
+
+// GetEntityByIDFor does not expose orphaned catalog entities.
+func (s *Store) GetEntityByIDFor(ctx context.Context, subject Subject, id int64) (Entity, error) {
 	if id <= 0 {
 		return Entity{}, ErrInvalidInput
 	}
-	return s.getEntity(ctx, userID, "entity.id = $3", id)
+	return s.getEntity(ctx, subject, "entity.id = $3", id)
 }
 
-func (s *Store) getEntity(ctx context.Context, userID, condition string, values ...any) (Entity, error) {
-	tx, access, err := s.beginUserRead(ctx, userID)
+func (s *Store) getEntity(ctx context.Context, subject Subject, condition string, values ...any) (Entity, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return Entity{}, err
 	}

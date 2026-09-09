@@ -19,7 +19,7 @@ const (
 )
 
 // PrepareCorrelatedPlayback binds a client-generated reference to a distinct
-// internal play within its authenticated user/session/device scope. Reusing a
+// internal play within its authenticated credential/client/device scope. Reusing a
 // reference may refresh only the same live item/source. Terminal or deleted
 // targets cannot be rebound. Reserved play_ identifiers only resolve existing
 // internal sessions; they never become new client references.
@@ -89,8 +89,11 @@ func readOwnedPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, r
 
 func requireCorrelatedPlaybackAuthentication(ctx context.Context, tx pgx.Tx, owner PlaybackOwner) error {
 	var enabled bool
-	err := tx.QueryRow(ctx, `SELECT kind = 'emby' FROM sessions
-		WHERE id = $1 AND user_id = $2 AND device_id = $3`, owner.SessionID, owner.UserID, owner.DeviceID).Scan(&enabled)
+	err := tx.QueryRow(ctx, `SELECT (kind = 'emby' AND NOT $4::boolean AND device_id = $3)
+		OR (kind = 'application_key' AND $4::boolean AND EXISTS (
+			SELECT 1 FROM application_key_clients client WHERE client.id = $5 AND client.credential_id = sessions.id AND client.device_id = $3))
+		FROM sessions WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '')`,
+		owner.SessionID, owner.UserID, owner.DeviceID, owner.ApplicationKey, owner.ApplicationClientID).Scan(&enabled)
 	if errors.Is(err, pgx.ErrNoRows) || err == nil && !enabled {
 		return ErrForbidden
 	}
@@ -106,10 +109,14 @@ func lookupClientPlaybackReference(ctx context.Context, tx pgx.Tx, owner Playbac
 	var id *string
 	err := tx.QueryRow(ctx, `SELECT reference.play_session_id FROM client_playback_references reference
 		JOIN sessions authentication ON authentication.id = reference.auth_session_id
-			AND authentication.user_id = reference.user_id AND authentication.device_id = reference.device_id
-		WHERE reference.user_id = $1 AND reference.auth_session_id = $2 AND reference.device_id = $3
-		AND reference.client_nonce = $4 AND authentication.kind = 'emby'`,
-		owner.UserID, owner.SessionID, owner.DeviceID, reference).Scan(&id)
+			AND authentication.user_id IS NOT DISTINCT FROM reference.user_id
+		WHERE reference.user_id IS NOT DISTINCT FROM NULLIF($1, '') AND reference.auth_session_id = $2 AND reference.device_id = $3
+		AND reference.application_client_id IS NOT DISTINCT FROM NULLIF($6, '')
+		AND reference.client_nonce = $4 AND ((authentication.kind = 'emby' AND NOT $5::boolean AND authentication.device_id = reference.device_id)
+			OR (authentication.kind = 'application_key' AND $5::boolean AND EXISTS (
+				SELECT 1 FROM application_key_clients client WHERE client.id = reference.application_client_id
+				AND client.credential_id = authentication.id AND client.device_id = reference.device_id)))`,
+		owner.UserID, owner.SessionID, owner.DeviceID, reference, owner.ApplicationKey, owner.ApplicationClientID).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", false, nil
 	}
@@ -123,11 +130,12 @@ func lookupClientPlaybackReference(ctx context.Context, tx pgx.Tx, owner Playbac
 }
 
 // Call only while holding lockPlaybackCapacity, followed by the usual item data
-// lock. Both active-session and reference admission therefore serialize per user.
+// lock. Admission serializes per user or per userless application credential.
 func createCorrelatedPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData, reference string) (PlaySession, error) {
 	var authCount, userCount int
-	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2), count(*)
-		FROM client_playback_references WHERE user_id = $1`, owner.UserID, owner.SessionID).Scan(&authCount, &userCount); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2),
+		count(*) FILTER (WHERE user_id = NULLIF($1, '')) FROM client_playback_references
+		WHERE user_id = NULLIF($1, '') OR auth_session_id = $2`, owner.UserID, owner.SessionID).Scan(&authCount, &userCount); err != nil {
 		return PlaySession{}, fmt.Errorf("check client playback reference capacity: %w", err)
 	}
 	if authCount >= maxClientPlaybackReferencesPerAuth || userCount >= maxClientPlaybackReferencesPerUser {
@@ -138,26 +146,31 @@ func createCorrelatedPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwne
 		return PlaySession{}, err
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO client_playback_references
-		(user_id, auth_session_id, device_id, client_nonce, play_session_id)
-		VALUES ($1, $2, $3, $4, $5)`, owner.UserID, owner.SessionID, owner.DeviceID, reference, session.ID); err != nil {
+		(user_id, auth_session_id, device_id, client_nonce, play_session_id, application_client_id)
+		VALUES (NULLIF($1, ''), $2, $3, $4, $5, NULLIF($6, ''))`, owner.UserID, owner.SessionID, owner.DeviceID, reference, session.ID, owner.ApplicationClientID); err != nil {
 		return PlaySession{}, fmt.Errorf("bind client playback reference: %w", err)
 	}
 	return session, nil
 }
 
-func pruneInactiveClientPlaybackReferences(ctx context.Context, tx pgx.Tx, userID string) error {
+func pruneInactiveClientPlaybackReferences(ctx context.Context, tx pgx.Tx, owner PlaybackOwner) error {
 	// Disabling an account, stopping a play, or expiring a play does not permit
 	// nonce reuse. Only revoked/expired authentication makes its bindings inert.
 	_, err := tx.Exec(ctx, `WITH removable AS (
-		SELECT reference.user_id, reference.auth_session_id, reference.device_id, reference.client_nonce
+		SELECT reference.user_id, reference.auth_session_id, reference.device_id, reference.client_nonce, reference.application_client_id
 		FROM client_playback_references reference JOIN sessions authentication ON authentication.id = reference.auth_session_id
-		WHERE reference.user_id = $1 AND (authentication.revoked_at IS NOT NULL OR authentication.expires_at <= clock_timestamp())
+		WHERE reference.user_id IS NOT DISTINCT FROM NULLIF($1, '')
+		AND (NOT $3::boolean OR (reference.auth_session_id = $4 AND reference.application_client_id = $5))
+		AND (authentication.revoked_at IS NOT NULL OR authentication.expires_at <= clock_timestamp()
+			OR (authentication.kind = 'application_key' AND NOT EXISTS (
+				SELECT 1 FROM application_keys application WHERE application.credential_id = authentication.id)))
 		ORDER BY reference.auth_session_id, reference.device_id, reference.client_nonce
 		LIMIT $2 FOR UPDATE OF reference SKIP LOCKED
 	) DELETE FROM client_playback_references reference USING removable
-	WHERE reference.user_id = removable.user_id AND reference.auth_session_id = removable.auth_session_id
+	WHERE reference.user_id IS NOT DISTINCT FROM removable.user_id AND reference.auth_session_id = removable.auth_session_id
+	AND reference.application_client_id IS NOT DISTINCT FROM removable.application_client_id
 	AND reference.device_id = removable.device_id AND reference.client_nonce = removable.client_nonce`,
-		userID, clientPlaybackReferenceCleanupBatch)
+		owner.UserID, clientPlaybackReferenceCleanupBatch, owner.ApplicationKey, owner.SessionID, owner.ApplicationClientID)
 	if err != nil {
 		return fmt.Errorf("prune inactive client playback references: %w", err)
 	}

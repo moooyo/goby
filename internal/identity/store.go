@@ -69,23 +69,50 @@ type Credentials struct {
 	CreatedAt time.Time
 }
 
-// Principal describes an authenticated, active session and its current account.
+// Principal describes an authenticated credential and, for a login, its account.
+// SessionID is the actual shared credential ID, including for application keys;
+// it does not imply that the credential is a user login.
 type Principal struct {
-	User       User
-	SessionID  string
-	Client     Client
-	Kind       string
-	ExpiresAt  time.Time
-	LastSeenAt time.Time
+	User      User
+	SessionID string
+	// ClientSessionID identifies a userless application's client context. It is
+	// empty for logins, whose existing SessionID is also their client session ID.
+	ClientSessionID  string
+	ApplicationKeyID int64
+	Client           Client
+	Kind             string
+	ExpiresAt        time.Time
+	LastSeenAt       time.Time
 }
 
 // Store provides database-backed identity operations.
 type Store struct {
-	pool *pgxpool.Pool
+	pool                *pgxpool.Pool
+	applicationKeyVault *ApplicationKeyVault
 }
 
 func New(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
+}
+
+// NewWithApplicationKeyVault enables recoverable application-key management.
+// Ordinary authentication does not depend on the vault being available.
+func NewWithApplicationKeyVault(pool *pgxpool.Pool, vault *ApplicationKeyVault) *Store {
+	return &Store{pool: pool, applicationKeyVault: vault}
+}
+
+// IsApplicationKey distinguishes userless application credentials from logins.
+func (p Principal) IsApplicationKey() bool {
+	return p.Kind == ApplicationKeyKind && p.ApplicationKeyID > 0 && p.SessionID != "" && p.ClientSessionID != "" &&
+		p.User.ID == "" && p.User.Name == "" && !p.User.IsAdministrator && !p.User.IsDisabled &&
+		!p.User.HasPassword && p.User.CreatedAt.IsZero() && len(p.User.Policy) == 0
+}
+
+// CanManageServer describes the authenticated snapshot. Mutations must still
+// revalidate this authority in their own database transaction.
+func (p Principal) CanManageServer() bool {
+	return p.IsApplicationKey() || ((p.Kind == "admin" || p.Kind == "emby") &&
+		p.ApplicationKeyID == 0 && p.ClientSessionID == "" && p.SessionID != "" && p.User.ID != "" && p.User.IsAdministrator && !p.User.IsDisabled)
 }
 
 // Initialized remains true after setup even if account data is later removed.

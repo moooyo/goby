@@ -19,9 +19,11 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 	if zeroLimit {
 		query.Limit = 1
 	}
+	attachApplicationCredentialID(r, &query)
 	result, err := s.library.NextUp(r.Context(), library.NextUpQuery{
 		UserID: userID, SeriesID: r.URL.Query().Get("SeriesId"), ParentID: query.ParentID,
-		StartIndex: query.StartIndex, Limit: query.Limit,
+		ApplicationCredentialID: query.ApplicationCredentialID,
+		StartIndex:              query.StartIndex, Limit: query.Limit,
 	})
 	if err != nil {
 		s.libraryError(w, r, err)

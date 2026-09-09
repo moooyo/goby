@@ -15,6 +15,8 @@ import (
 
 type PlaybackOwner struct {
 	UserID, SessionID, DeviceID string
+	ApplicationClientID         string
+	ApplicationKey              bool
 }
 
 type PlaySession struct {
@@ -23,6 +25,8 @@ type PlaySession struct {
 	CreatedAt, UpdatedAt, ExpiresAt                                   time.Time
 	StartedAt, StoppedAt                                              *time.Time
 	PlayerState                                                       PlayerState
+	ApplicationKey                                                    bool
+	ApplicationClientID                                               string
 	counted                                                           bool
 	live                                                              bool
 }
@@ -38,17 +42,30 @@ type PlaybackReport struct {
 }
 
 const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
-	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp()`
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id`
 
 func scanPlaySession(row rowScanner) (PlaySession, error) {
 	var session PlaySession
 	var rawPlayerState []byte
-	err := row.Scan(&session.ID, &session.UserID, &session.AuthSessionID, &session.DeviceID,
+	var userID *string
+	var applicationClientID *string
+	err := row.Scan(&session.ID, &userID, &session.AuthSessionID, &session.DeviceID,
 		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
 		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
-		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live)
+		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID)
 	if err != nil {
 		return session, err
+	}
+	// Callers establish the credential kind before reading a playback owner.
+	session.ApplicationKey = userID == nil
+	if userID != nil {
+		session.UserID = *userID
+	}
+	if session.ApplicationKey != (applicationClientID != nil) {
+		return PlaySession{}, fmt.Errorf("%w: playback credential and client scopes are inconsistent", ErrUnavailable)
+	}
+	if applicationClientID != nil {
+		session.ApplicationClientID = *applicationClientID
 	}
 	session.PlayerState, err = decodePlayerState(rawPlayerState)
 	if err != nil {
@@ -58,28 +75,52 @@ func scanPlaySession(row rowScanner) (PlaySession, error) {
 }
 
 func validPlaybackOwner(owner PlaybackOwner) bool {
-	for _, value := range []string{owner.UserID, owner.SessionID} {
+	if owner.ApplicationKey && owner.UserID != "" || !owner.ApplicationKey && strings.TrimSpace(owner.UserID) == "" {
+		return false
+	}
+	if !owner.ApplicationKey && owner.ApplicationClientID != "" {
+		return false
+	}
+	identifiers := []string{owner.SessionID}
+	if owner.ApplicationKey {
+		identifiers = append(identifiers, owner.ApplicationClientID)
+	}
+	for _, value := range identifiers {
 		if strings.TrimSpace(value) == "" || len(value) > 256 || strings.ContainsRune(value, '\x00') || !utf8.ValidString(value) {
 			return false
 		}
 	}
-	return len(owner.DeviceID) <= 256 && !strings.ContainsRune(owner.DeviceID, '\x00') && utf8.ValidString(owner.DeviceID)
+	return len(owner.UserID) <= 256 && !strings.ContainsRune(owner.UserID, '\x00') && utf8.ValidString(owner.UserID) &&
+		len(owner.DeviceID) <= 256 && !strings.ContainsRune(owner.DeviceID, '\x00') && utf8.ValidString(owner.DeviceID)
 }
 
 func (s *Store) beginPlaybackWrite(ctx context.Context, owner PlaybackOwner) (pgx.Tx, libraryAccess, error) {
 	if !validPlaybackOwner(owner) {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
-	tx, access, err := s.beginStateWrite(ctx, owner.UserID, true)
+	subject := Subject{UserID: owner.UserID}
+	if owner.ApplicationKey {
+		subject.ApplicationCredentialID = owner.SessionID
+	}
+	tx, access, err := s.beginSubjectStateWrite(ctx, subject, true)
 	if err != nil {
 		return nil, libraryAccess{}, err
 	}
 	var sessionID string
-	err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication JOIN users account ON account.id = authentication.user_id
+	if owner.ApplicationKey {
+		err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication
+			JOIN application_keys application ON application.credential_id = authentication.id
+			JOIN application_key_clients client ON client.credential_id = authentication.id
+			WHERE authentication.id = $1 AND authentication.user_id IS NULL AND client.id = $2 AND client.device_id = $3
+			AND authentication.kind = 'application_key' AND authentication.revoked_at IS NULL
+			FOR SHARE OF authentication, application, client`, owner.SessionID, owner.ApplicationClientID, owner.DeviceID).Scan(&sessionID)
+	} else {
+		err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication JOIN users account ON account.id = authentication.user_id
 		WHERE authentication.id = $1 AND authentication.user_id = $2 AND authentication.device_id = $3
 		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp()
 		AND (authentication.kind <> 'admin' OR account.is_administrator)
 		FOR SHARE OF authentication`, owner.SessionID, owner.UserID, owner.DeviceID).Scan(&sessionID)
+	}
 	if err != nil {
 		rollback(tx)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -100,30 +141,40 @@ func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error 
 	}
 	defer rollback(tx)
 	if _, err := tx.Exec(ctx, `WITH expired AS (
-		SELECT play.id FROM play_sessions play WHERE play.user_id = $1
+		SELECT play.id FROM play_sessions play WHERE play.user_id IS NOT DISTINCT FROM NULLIF($1, '')
+		AND (NOT $4::boolean OR (play.auth_session_id = $5 AND play.application_client_id = $6))
 		AND play.state IN ('Prepared','Playing','Paused') AND (play.expires_at <= clock_timestamp() OR NOT EXISTS (
-			SELECT 1 FROM sessions authentication JOIN users account ON account.id = authentication.user_id
-			WHERE authentication.id = play.auth_session_id AND authentication.user_id = play.user_id
-			AND authentication.device_id = play.device_id AND authentication.revoked_at IS NULL
-			AND authentication.expires_at > clock_timestamp() AND (authentication.kind <> 'admin' OR account.is_administrator)
+			SELECT 1 FROM sessions authentication LEFT JOIN users account ON account.id = authentication.user_id
+			WHERE authentication.id = play.auth_session_id AND authentication.user_id IS NOT DISTINCT FROM play.user_id
+			AND authentication.revoked_at IS NULL
+			AND ((authentication.kind = 'application_key' AND play.user_id IS NULL
+				AND EXISTS (SELECT 1 FROM application_keys application WHERE application.credential_id = authentication.id)
+				AND EXISTS (SELECT 1 FROM application_key_clients client WHERE client.id = play.application_client_id
+					AND client.credential_id = authentication.id AND client.device_id = play.device_id))
+				OR (authentication.kind IN ('emby', 'admin') AND play.user_id IS NOT NULL AND play.application_client_id IS NULL
+					AND authentication.device_id = play.device_id
+					AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
+					AND (authentication.kind <> 'admin' OR account.is_administrator)))
 		) OR NOT EXISTS (SELECT 1 FROM items i WHERE i.id = play.item_id
 			AND ($2::boolean OR i.library_id = ANY($3::text[]))))
 		ORDER BY play.expires_at, play.id LIMIT 256 FOR UPDATE OF play SKIP LOCKED
 	) UPDATE play_sessions SET state = 'Expired', stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp()
-	WHERE id IN (SELECT id FROM expired)`, owner.UserID, access.all, access.folders); err != nil {
+	WHERE id IN (SELECT id FROM expired)`, owner.UserID, access.all, access.folders, owner.ApplicationKey, owner.SessionID, owner.ApplicationClientID); err != nil {
 		return fmt.Errorf("expire abandoned playback sessions: %w", err)
 	}
 	if _, err := tx.Exec(ctx, `WITH excess AS (
-		SELECT id FROM play_sessions WHERE user_id = $1 AND state IN ('Stopped','Expired')
+		SELECT id FROM play_sessions WHERE user_id IS NOT DISTINCT FROM NULLIF($1, '')
+		AND (NOT $2::boolean OR (auth_session_id = $3 AND application_client_id = $4)) AND state IN ('Stopped','Expired')
 		ORDER BY created_at DESC, id DESC OFFSET 256
 	), removable AS (
-		SELECT id FROM play_sessions WHERE user_id = $1 AND state IN ('Stopped','Expired')
+		SELECT id FROM play_sessions WHERE user_id IS NOT DISTINCT FROM NULLIF($1, '')
+		AND (NOT $2::boolean OR (auth_session_id = $3 AND application_client_id = $4)) AND state IN ('Stopped','Expired')
 		AND (expires_at < clock_timestamp() - interval '7 days' OR id IN (SELECT id FROM excess))
 		ORDER BY created_at, id LIMIT 256 FOR UPDATE SKIP LOCKED
-	) DELETE FROM play_sessions WHERE id IN (SELECT id FROM removable)`, owner.UserID); err != nil {
+	) DELETE FROM play_sessions WHERE id IN (SELECT id FROM removable)`, owner.UserID, owner.ApplicationKey, owner.SessionID, owner.ApplicationClientID); err != nil {
 		return fmt.Errorf("prune old playback sessions: %w", err)
 	}
-	if err := pruneInactiveClientPlaybackReferences(ctx, tx, owner.UserID); err != nil {
+	if err := pruneInactiveClientPlaybackReferences(ctx, tx, owner); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
@@ -146,11 +197,12 @@ func clampPosition(position, duration int64) int64 {
 
 func readOwnedCanonicalPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id string, lock bool) (PlaySession, error) {
 	statement := "SELECT " + playSessionColumns + ` FROM play_sessions
-		WHERE id = $1 AND user_id = $2 AND auth_session_id = $3 AND device_id = $4`
+		WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '') AND auth_session_id = $3 AND device_id = $4
+		AND application_client_id IS NOT DISTINCT FROM NULLIF($5, '')`
 	if lock {
 		statement += " FOR UPDATE"
 	}
-	session, err := scanPlaySession(tx.QueryRow(ctx, statement, id, owner.UserID, owner.SessionID, owner.DeviceID))
+	session, err := scanPlaySession(tx.QueryRow(ctx, statement, id, owner.UserID, owner.SessionID, owner.DeviceID, owner.ApplicationClientID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return PlaySession{}, ErrNotFound
 	}
@@ -170,9 +222,10 @@ func currentPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, ite
 		order = "CASE WHEN state IN ('Prepared','Playing','Paused') THEN 0 ELSE 1 END, " + order
 	}
 	session, err := scanPlaySession(tx.QueryRow(ctx, "SELECT "+playSessionColumns+` FROM play_sessions
-		WHERE user_id = $1 AND auth_session_id = $2 AND device_id = $3 AND item_id = $4 AND media_source_id = $5
+		WHERE user_id IS NOT DISTINCT FROM NULLIF($1, '') AND auth_session_id = $2 AND device_id = $3 AND item_id = $4 AND media_source_id = $5
+		AND application_client_id IS NOT DISTINCT FROM NULLIF($6, '')
 		AND NOT client_correlated `+
-		filter+" ORDER BY "+order+" LIMIT 1 FOR UPDATE", owner.UserID, owner.SessionID, owner.DeviceID, itemID, sourceID))
+		filter+" ORDER BY "+order+" LIMIT 1 FOR UPDATE", owner.UserID, owner.SessionID, owner.DeviceID, itemID, sourceID, owner.ApplicationClientID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return PlaySession{}, ErrNotFound
 	}
@@ -185,8 +238,10 @@ func createPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item
 
 func createPlaybackSession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData, correlated bool) (PlaySession, error) {
 	var authCount, userCount int
-	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2), count(*)
-		FROM play_sessions WHERE user_id = $1 AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp()`,
+	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2),
+		count(*) FILTER (WHERE user_id = NULLIF($1, ''))
+		FROM play_sessions WHERE (user_id = NULLIF($1, '') OR auth_session_id = $2)
+		AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp()`,
 		owner.UserID, owner.SessionID).Scan(&authCount, &userCount); err != nil {
 		return PlaySession{}, fmt.Errorf("check playback session capacity: %w", err)
 	}
@@ -200,21 +255,32 @@ func createPlaybackSession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, 
 	// A purpose prefix makes it impossible to confuse this with an auth session.
 	id = "play_" + id
 	session, err := scanPlaySession(tx.QueryRow(ctx, `INSERT INTO play_sessions
-		(id, user_id, auth_session_id, device_id, item_id, media_source_id, state, position_ticks, duration_ticks, expires_at, client_correlated)
-		VALUES ($1,$2,$3,$4,$5,$6,'Prepared',$7,$8,clock_timestamp() + interval '30 minutes',$9) RETURNING `+playSessionColumns,
-		id, owner.UserID, owner.SessionID, owner.DeviceID, item.id, sourceID, clampPosition(data.PlaybackPositionTicks, item.duration), item.duration, correlated))
+		(id, user_id, auth_session_id, device_id, item_id, media_source_id, state, position_ticks, duration_ticks, expires_at, client_correlated, application_client_id)
+		VALUES ($1,NULLIF($2,''),$3,$4,$5,$6,'Prepared',$7,$8,clock_timestamp() + interval '30 minutes',$9,NULLIF($10,'')) RETURNING `+playSessionColumns,
+		id, owner.UserID, owner.SessionID, owner.DeviceID, item.id, sourceID, clampPosition(data.PlaybackPositionTicks, item.duration), item.duration, correlated, owner.ApplicationClientID))
 	if err != nil {
 		return PlaySession{}, fmt.Errorf("create playback session: %w", err)
 	}
 	return session, nil
 }
 
-func lockPlaybackCapacity(ctx context.Context, tx pgx.Tx, userID string) error {
-	// Serialize only session creation for one user, including calls for different
-	// items. Reports keep their independent row locks and do not take this lock.
+func lockPlaybackCapacity(ctx context.Context, tx pgx.Tx, owner PlaybackOwner) error {
+	// User quotas cover all of their credentials. Userless credentials have
+	// independent buckets and never contend on an empty user identifier.
+	capacityID := "user:" + owner.UserID
+	if owner.ApplicationKey {
+		capacityID = "credential:" + owner.SessionID
+	}
 	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended(
-		current_schema() || chr(31) || 'goby.playback.capacity' || chr(31) || $1, 0))`, userID)
+		current_schema() || chr(31) || 'goby.playback.capacity' || chr(31) || $1, 0))`, capacityID)
 	return err
+}
+
+func lockPlaybackUserData(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, itemID string) (UserData, error) {
+	if owner.ApplicationKey {
+		return UserData{}, nil
+	}
+	return lockUserData(ctx, tx, owner.UserID, itemID)
 }
 
 func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
@@ -266,10 +332,10 @@ func (s *Store) preparePlayback(ctx context.Context, owner PlaybackOwner, itemID
 	if err != nil {
 		return PlaySession{}, err
 	}
-	if err := lockPlaybackCapacity(ctx, tx, owner.UserID); err != nil {
+	if err := lockPlaybackCapacity(ctx, tx, owner); err != nil {
 		return PlaySession{}, fmt.Errorf("lock playback session capacity: %w", err)
 	}
-	data, err := lockUserData(ctx, tx, owner.UserID, itemID)
+	data, err := lockPlaybackUserData(ctx, tx, owner, itemID)
 	if err != nil {
 		return PlaySession{}, err
 	}
@@ -349,35 +415,43 @@ func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id 
 // ListPlaybackSessions returns a bounded active-session view. The HTTP layer
 // decides whether to request administrator scope; the database rechecks it.
 func (s *Store) ListPlaybackSessions(ctx context.Context, ownerUserID string, administrator bool) ([]PlaySession, error) {
-	return s.listPlaybackSessions(ctx, ownerUserID, administrator, nil, false)
+	return s.listPlaybackSessions(ctx, Subject{UserID: ownerUserID}, administrator, nil, false)
 }
 
 // ListNowPlayingSessionsForAuth returns the latest Playing/Paused session per
 // selected authentication session. Prepared sessions cannot hide active media;
 // empty input selects no sessions, not every session.
 func (s *Store) ListNowPlayingSessionsForAuth(ctx context.Context, ownerUserID string, administrator bool, authSessionIDs []string) ([]PlaySession, error) {
-	if len(authSessionIDs) > 256 {
+	return s.ListNowPlayingSessionsForSubject(ctx, Subject{UserID: ownerUserID}, administrator, authSessionIDs)
+}
+
+// ListNowPlayingSessionsForSubject accepts normal authentication IDs and real
+// application client IDs, preserving each client's independent now playing.
+func (s *Store) ListNowPlayingSessionsForSubject(ctx context.Context, subject Subject, administrator bool, clientSessionIDs []string) ([]PlaySession, error) {
+	if len(clientSessionIDs) > 256 {
 		return nil, ErrInvalidInput
 	}
-	ids := make([]string, 0, len(authSessionIDs))
-	for _, id := range authSessionIDs {
+	ids := make([]string, 0, len(clientSessionIDs))
+	for _, id := range clientSessionIDs {
 		if strings.TrimSpace(id) == "" || len(id) > 256 || strings.ContainsRune(id, '\x00') || !utf8.ValidString(id) {
 			return nil, ErrInvalidInput
 		}
 		ids = append(ids, id)
 	}
-	return s.listPlaybackSessions(ctx, ownerUserID, administrator, ids, true)
+	return s.listPlaybackSessions(ctx, subject, administrator, ids, true)
 }
 
-func (s *Store) listPlaybackSessions(ctx context.Context, ownerUserID string, administrator bool, authSessionIDs []string, nowPlayingOnly bool) ([]PlaySession, error) {
-	tx, access, err := s.beginUserRead(ctx, ownerUserID)
+func (s *Store) listPlaybackSessions(ctx context.Context, subject Subject, administrator bool, authSessionIDs []string, nowPlayingOnly bool) ([]PlaySession, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(tx)
-	if administrator {
+	if subject.ApplicationCredentialID != "" {
+		administrator = true
+	} else if administrator {
 		var allowed bool
-		if err := tx.QueryRow(ctx, "SELECT is_administrator FROM users WHERE id = $1", ownerUserID).Scan(&allowed); err != nil {
+		if err := tx.QueryRow(ctx, "SELECT is_administrator FROM users WHERE id = $1", subject.UserID).Scan(&allowed); err != nil {
 			return nil, err
 		}
 		if !allowed {
@@ -389,23 +463,29 @@ func (s *Store) listPlaybackSessions(ctx context.Context, ownerUserID string, ad
 		columns[index] = "play." + strings.TrimSpace(column)
 	}
 	filter := ""
-	arguments := []any{administrator, ownerUserID, access.all, access.folders}
+	arguments := []any{administrator, subject.UserID, access.all, access.folders}
 	if authSessionIDs != nil {
-		filter = " AND play.auth_session_id = ANY($5::text[])"
+		filter = " AND COALESCE(play.application_client_id, play.auth_session_id) = ANY($5::text[])"
 		arguments = append(arguments, authSessionIDs)
 	}
 	selection := "SELECT "
 	states := "('Prepared','Playing','Paused')"
 	if nowPlayingOnly {
-		selection = "SELECT DISTINCT ON (play.auth_session_id) "
+		selection = "SELECT DISTINCT ON (play.auth_session_id, play.application_client_id) "
 		states = "('Playing','Paused')"
 	}
 	statement := selection + strings.Join(columns, ",") + ` FROM play_sessions play
-		JOIN sessions authentication ON authentication.id = play.auth_session_id AND authentication.user_id = play.user_id
-			AND authentication.device_id = play.device_id
-		JOIN users account ON account.id = play.user_id JOIN items i ON i.id = play.item_id
+		JOIN sessions authentication ON authentication.id = play.auth_session_id AND authentication.user_id IS NOT DISTINCT FROM play.user_id
+		LEFT JOIN application_key_clients client ON client.id = play.application_client_id
+			AND client.credential_id = authentication.id AND client.device_id = play.device_id
+		LEFT JOIN users account ON account.id = play.user_id JOIN items i ON i.id = play.item_id
 		WHERE play.state IN ` + states + ` AND play.expires_at > clock_timestamp()
-		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
+		AND authentication.revoked_at IS NULL
+		AND ((authentication.kind = 'application_key' AND play.user_id IS NULL AND client.id IS NOT NULL
+			AND EXISTS (SELECT 1 FROM application_keys application WHERE application.credential_id = authentication.id))
+		OR (authentication.kind IN ('admin','emby') AND play.user_id IS NOT NULL AND play.application_client_id IS NULL
+		AND authentication.device_id = play.device_id
+		AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
 		AND (authentication.kind <> 'admin' OR account.is_administrator)
 		AND jsonb_typeof(account.policy) = 'object'
 		AND (NOT (account.policy ? 'EnableMediaPlayback') OR account.policy -> 'EnableMediaPlayback' = 'true'::jsonb)
@@ -417,10 +497,10 @@ func (s *Store) listPlaybackSessions(ctx context.Context, ownerUserID string, ad
 					WHEN jsonb_typeof(account.policy -> 'EnabledFolders') = 'array' THEN account.policy -> 'EnabledFolders'
 					ELSE '[]'::jsonb END) AS folder(value) WHERE jsonb_typeof(folder.value) <> 'string')
 				AND (account.policy -> 'EnabledFolders') ? i.library_id
-			))
+			))))
 		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[]))` + filter
 	if nowPlayingOnly {
-		statement += " ORDER BY play.auth_session_id, play.updated_at DESC, play.id DESC"
+		statement += " ORDER BY play.auth_session_id, play.application_client_id, play.updated_at DESC, play.id DESC"
 		statement = "SELECT * FROM (" + statement + ") AS current_playback ORDER BY updated_at DESC, id DESC LIMIT 256"
 	} else {
 		statement += " ORDER BY play.updated_at DESC, play.id LIMIT 256"
@@ -520,12 +600,12 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		return PlaySession{}, UserData{}, err
 	}
 	if event == "Started" && report.PlaySessionID == "" {
-		if err := lockPlaybackCapacity(ctx, tx, owner.UserID); err != nil {
+		if err := lockPlaybackCapacity(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 	}
 	// Every event uses the same data-before-playback-row lock order.
-	data, err := lockUserData(ctx, tx, owner.UserID, report.ItemID)
+	data, err := lockPlaybackUserData(ctx, tx, owner, report.ItemID)
 	if err != nil {
 		return PlaySession{}, UserData{}, err
 	}
@@ -589,7 +669,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 	if err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("persist playback report: %w", err)
 	}
-	if event != "Ping" {
+	if event != "Ping" && !owner.ApplicationKey {
 		if countNow && data.PlayCount < math.MaxInt32 {
 			data.PlayCount++
 		}

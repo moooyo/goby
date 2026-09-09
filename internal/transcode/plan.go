@@ -64,12 +64,14 @@ type Plan struct {
 // Scope fixes every ownership dimension for a conversion. Identifiers are
 // correlation metadata supplied only after the caller has been authenticated.
 type Scope struct {
-	UserID        string `json:"UserId"`
-	AuthSessionID string `json:"AuthSessionId"`
-	DeviceID      string `json:"DeviceId"`
-	PlaySessionID string `json:"PlaySessionId"`
-	ItemID        string `json:"ItemId"`
-	SourceID      string `json:"SourceId"`
+	ApplicationKey      bool   `json:"ApplicationKey,omitempty"`
+	ApplicationClientID string `json:"ApplicationClientId,omitempty"`
+	UserID              string `json:"UserId"`
+	AuthSessionID       string `json:"AuthSessionId"`
+	DeviceID            string `json:"DeviceId"`
+	PlaySessionID       string `json:"PlaySessionId"`
+	ItemID              string `json:"ItemId"`
+	SourceID            string `json:"SourceId"`
 }
 
 type Spec struct {

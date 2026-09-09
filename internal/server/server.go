@@ -86,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
 	s.registerAdminUserRoutes(mux)
 	s.registerAdminSessionRoutes(mux)
+	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
 	s.registerLibraryRoutes(mux)
 	s.registerEntityRoutes(mux)
@@ -107,6 +108,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /emby/Users/AuthenticateByName", s.embyLogin)
 	mux.HandleFunc("POST /emby/Users/{Id}/Authenticate", s.embyLoginByID)
 	mux.HandleFunc("GET /emby/Users/{Id}", s.requireEmby(s.embyUser))
+	mux.HandleFunc("GET /emby/Users", s.requireEmby(s.embyUsersBare))
 	mux.HandleFunc("GET /emby/Users/Query", s.requireEmby(s.embyUsers))
 	mux.HandleFunc("POST /emby/Sessions/Logout", s.requireEmby(s.embyLogout))
 	mux.HandleFunc("/emby/", func(w http.ResponseWriter, r *http.Request) {

@@ -51,7 +51,7 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 	if err != nil {
 		return ItemResult{}, err
 	}
-	tx, access, err := s.beginUserRead(ctx, query.UserID)
+	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -108,10 +108,15 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 
 // GetItem returns the same error for missing and unauthorized item identifiers.
 func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
+	return s.GetItemFor(ctx, Subject{UserID: userID}, id)
+}
+
+// GetItemFor reads a catalog item using the credential's independent authority.
+func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Item, error) {
 	if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
 		return Item{}, ErrInvalidInput
 	}
-	tx, access, err := s.beginUserRead(ctx, userID)
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return Item{}, err
 	}
@@ -127,7 +132,7 @@ func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
 	}
 	item.CanPlay = access.canPlay
 	items := []Item{item}
-	if err := attachUserData(ctx, tx, userID, items); err != nil {
+	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
 		return Item{}, err
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
@@ -141,7 +146,12 @@ func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
 
 // ListUserLibraries returns only the libraries granted by the user's policy.
 func (s *Store) ListUserLibraries(ctx context.Context, userID string) ([]Library, error) {
-	tx, access, err := s.beginUserRead(ctx, userID)
+	return s.ListUserLibrariesFor(ctx, Subject{UserID: userID})
+}
+
+// ListUserLibrariesFor applies target library policy when a user is selected.
+func (s *Store) ListUserLibrariesFor(ctx context.Context, subject Subject) ([]Library, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +265,10 @@ func parseLibraryPolicy(data []byte) (libraryAccess, error) {
 }
 
 func normalizeItemQuery(query Query) (Query, error) {
-	if strings.TrimSpace(query.UserID) == "" || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
+	if !validSubject(Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}) || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
+		return Query{}, ErrInvalidInput
+	}
+	if query.UserID == "" && (query.IsPlayed != nil || query.IsFavorite != nil || query.Resumable) {
 		return Query{}, ErrInvalidInput
 	}
 	if query.ParentIndexNumber != nil && (*query.ParentIndexNumber < 0 || *query.ParentIndexNumber > 1<<31-1) {
