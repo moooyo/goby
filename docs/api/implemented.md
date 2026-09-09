@@ -6,7 +6,7 @@ The routes below exist in source. Authentication, permission and ingestion workf
 
 The official reference inventory contains 958 sanitized JSON records: the previous 828 plus 130 from the [metadata study](../research/metadata-reference.md), including 106 complete new HTTP captures. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
-The [M4f increment](../development/verification-m4f-video-seek.md) passed all twelve tested packages in the complete Linux race suite (940 top-level tests, no skips), the binary-upgrade audit, and five deployed library upgrades with an observed fast producer. The current database schema is 14 and probe cache version is 6. Its [private restart evidence](../development/video-fast-seek.md) adds no public HTTP route or proof parameter. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
+The [M5c increment](../development/verification-m5c-sessions.md) passed all twelve tested packages in the complete Linux race suite (954 top-level tests, no skips), isolated browser/restart acceptance, and the deployed native session workflow. The current database schema is 14 and probe cache version is 6. The preceding M4f [private restart evidence](../development/video-fast-seek.md) adds no public HTTP route or proof parameter. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
 
 ## Administrator API
 
@@ -19,6 +19,8 @@ All names are Goby-owned. JSON bodies and responses use the field names shown he
 | `POST /admin/v1/session` | `{Name, Password}` | `{User, CSRFToken}` and opaque HttpOnly cookie; administrator credentials required |
 | `GET /admin/v1/session` | Session cookie | `{User, CSRFToken}` |
 | `DELETE /admin/v1/session` | Cookie and `X-CSRF-Token` | `204`; revoke session and clear cookie |
+| `GET /admin/v1/sessions` | Administrator cookie; optional `UserId`, `Kind`, `Status`, `DeviceId`, `SearchTerm`, `StartIndex`, `Limit` | `{Items, TotalRecordCount, StartIndex, Limit}`; safe login metadata and current-session identity |
+| `POST /admin/v1/sessions/{id}/revoke` | Cookie, CSRF, empty JSON object, no query parameters | `{SessionId, UserId, Kind, RevokedAt, CurrentSessionRevoked}`; fresh actor checks, idempotent single-login revocation and post-commit runtime retirement |
 | `GET /admin/v1/overview` | Administrator cookie | Server identity, database status, real account/session counts, current feature flags |
 | `GET /admin/v1/capabilities` | Administrator cookie | Implementation flags and pinned toolchain targets; unavailable media/hardware features report false |
 | `GET /admin/v1/users` | Administrator cookie | `{Items: User[], TotalRecordCount}` |

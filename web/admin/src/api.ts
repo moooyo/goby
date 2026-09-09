@@ -135,6 +135,53 @@ export interface SessionResponse extends UserResponse {
   CSRFToken: string;
 }
 
+export type LoginSessionKind = "admin" | "emby";
+export type LoginSessionStatus = "active" | "revoked" | "disabled" | "expired";
+
+export interface LoginSession {
+  Id: string;
+  UserId: string;
+  UserName: string;
+  UserIsAdministrator: boolean;
+  UserIsDisabled: boolean;
+  Kind: LoginSessionKind;
+  Client: string;
+  DeviceId: string;
+  DeviceName: string;
+  ApplicationVersion: string;
+  CreatedAt: string;
+  LastSeenAt: string;
+  ExpiresAt: string;
+  RevokedAt: string | null;
+  Status: LoginSessionStatus;
+  IsCurrent: boolean;
+}
+
+export interface SessionsQuery {
+  UserId?: string;
+  Kind?: LoginSessionKind;
+  Status?: LoginSessionStatus | "all";
+  DeviceId?: string;
+  SearchTerm?: string;
+  StartIndex?: number;
+  Limit?: number;
+}
+
+export interface SessionsResponse {
+  Items: LoginSession[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+}
+
+export interface RevokeSessionResponse {
+  SessionId: string;
+  UserId: string;
+  Kind: LoginSessionKind;
+  RevokedAt: string;
+  CurrentSessionRevoked: boolean;
+}
+
 export interface OverviewResponse {
   Server: {
     Id: string;
@@ -509,6 +556,35 @@ function validateManagedUser(result: ManagedUserResponse): void {
       .every((value) => typeof value === "boolean")) throw invalidResponse();
 }
 
+function validSessionTimestamp(value: unknown): value is string {
+  return typeof value === "string"
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value)
+    && value.slice(0, 4) !== "0000" && Number.isFinite(Date.parse(value));
+}
+
+function validateSessions(result: SessionsResponse, startIndex: number, limit: number): void {
+  if (!isRecord(result) || !Array.isArray(result.Items)
+    || !Number.isSafeInteger(result.TotalRecordCount) || result.TotalRecordCount < 0
+    || result.StartIndex !== startIndex || result.Limit !== limit
+    || result.Items.length > limit || result.Items.length > result.TotalRecordCount) throw invalidResponse();
+  const ids = new Set<string>();
+  for (const session of result.Items) {
+    if (!isRecord(session) || !nonemptyString(session.Id) || !nonemptyString(session.UserId)
+      || ids.has(session.Id)
+      || ![session.UserName, session.Client, session.DeviceId, session.DeviceName, session.ApplicationVersion]
+        .every((value) => typeof value === "string")
+      || ![session.UserIsAdministrator, session.UserIsDisabled, session.IsCurrent]
+        .every((value) => typeof value === "boolean")
+      || !["admin", "emby"].includes(session.Kind)
+      || !["active", "revoked", "disabled", "expired"].includes(session.Status)
+      || ![session.CreatedAt, session.LastSeenAt, session.ExpiresAt].every(validSessionTimestamp)
+      || (session.RevokedAt !== null && !validSessionTimestamp(session.RevokedAt))
+      || (session.Status === "revoked") !== (session.RevokedAt !== null)
+      || (session.IsCurrent && session.Kind !== "admin")) throw invalidResponse();
+    ids.add(session.Id);
+  }
+}
+
 async function mutateUser(
   path: string,
   method: "POST" | "PUT",
@@ -649,6 +725,33 @@ export const adminApi = {
 
   getUsers(options: RequestOptions = {}): Promise<UsersResponse> {
     return request("/users", options);
+  },
+
+  async getSessions(query: SessionsQuery = {}, options: RequestOptions = {}): Promise<SessionsResponse> {
+    const revision = sessionRevision;
+    const startIndex = query.StartIndex ?? 0;
+    const limit = query.Limit ?? 50;
+    const parameters = new URLSearchParams({ StartIndex: String(startIndex), Limit: String(limit) });
+    for (const field of ["UserId", "Kind", "Status", "DeviceId", "SearchTerm"] as const) {
+      const value = query[field];
+      if (value) parameters.set(field, value);
+    }
+    const result = await request<SessionsResponse>(`/sessions?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateSessions(result, startIndex, limit);
+    return result;
+  },
+
+  async revokeSession(sessionId: string, options: RequestOptions = {}): Promise<RevokeSessionResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<RevokeSessionResponse>(`/sessions/${encodeURIComponent(sessionId)}/revoke`, "POST", {}, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || result.SessionId !== sessionId || !nonemptyString(result.UserId)
+      || !["admin", "emby"].includes(result.Kind) || !validSessionTimestamp(result.RevokedAt)
+      || typeof result.CurrentSessionRevoked !== "boolean"
+      || (result.CurrentSessionRevoked && result.Kind !== "admin")) throw invalidResponse();
+    if (result.CurrentSessionRevoked) expireSession(revision);
+    return result;
   },
 
   async createUser(input: CreateUserInput, options: RequestOptions = {}): Promise<UserResponse> {

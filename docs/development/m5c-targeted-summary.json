@@ -1,0 +1,29 @@
+{
+  "owner": "goby-m5c-targeted-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 1 ./internal/identity ./internal/server -run 'ManagedSession|AdminSession'",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "top_level_tests_passed": 15,
+  "skipped_tests": 0,
+  "started_at": "2026-09-09T19:04:29Z",
+  "finished_at": "2026-09-09T19:06:25Z",
+  "packages": [
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "18.822s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "90.325s"
+    }
+  ],
+  "log_sha256": "d6963cbf1f23f32ef09be5efdf9ff206ac72eebbc0e82082140597a8b5e4baf9",
+  "log_path": "/opt/goby-test/exec-scratch/m5c-targeted-20260910.log",
+  "go_and_module_files": 303,
+  "verified_go_source_sha256": "a0ad99dc2b4a129a2b5a0c623453d3d6665210f597cdb4fe4e23fca560605c59",
+  "integration_database_port": 15432,
+  "actual_gpu_execution_verified": false
+}

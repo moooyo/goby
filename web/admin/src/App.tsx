@@ -21,9 +21,10 @@ const OverviewPage = lazy(() => import('./OverviewPage').then((module) => ({ def
 const UsersPage = lazy(() => import('./UsersPage').then((module) => ({ default: module.UsersPage })));
 const LibrariesPage = lazy(() => import('./LibrariesPage').then((module) => ({ default: module.LibrariesPage })));
 const TasksPage = lazy(() => import('./TasksPage').then((module) => ({ default: module.TasksPage })));
+const SessionsPage = lazy(() => import('./SessionsPage').then((module) => ({ default: module.SessionsPage })));
 const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -32,7 +33,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -50,6 +51,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/users')) return 'users';
   if (path.endsWith('/libraries')) return 'libraries';
   if (path.endsWith('/tasks')) return 'tasks';
+  if (path.endsWith('/sessions')) return 'sessions';
   return 'overview';
 }
 
@@ -70,13 +72,13 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'users' as const, label: 'Users', icon: PeopleOutlineRounded },
           { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
           { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
+          { id: 'sessions' as const, label: 'Sessions', icon: SensorsRounded },
         ].map(({ id, label, icon: Icon }) => (
           <ListItemButton key={id} component="a" href={pageURL(id)} selected={selectedPage === id} aria-current={selectedPage === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
             <ListItemIcon><Icon sx={{ fontSize: 21 }} /></ListItemIcon><ListItemText primary={label} />
           </ListItemButton>
         ))}
         {[
-          { label: 'Sessions', icon: SensorsRounded },
           { label: 'Settings', icon: SettingsOutlined },
         ].map(({ label, icon: Icon }) => (
           <Tooltip key={label} title="Available in a future release" placement="right">
@@ -190,6 +192,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} onManageItems={(library) => navigate('metadata', undefined, library.Id)} />}
             {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} />}
+            {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>

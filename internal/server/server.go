@@ -85,6 +85,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/v1/users", s.requireAdmin(s.users))
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
 	s.registerAdminUserRoutes(mux)
+	s.registerAdminSessionRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
 	s.registerLibraryRoutes(mux)
 	s.registerEntityRoutes(mux)
