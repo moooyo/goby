@@ -116,6 +116,42 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 	query.IncludeItemTypes = queryValues(values["IncludeItemTypes"])
 	query.Ids = queryValues(values["Ids"])
 	query.MediaTypes = queryValues(values["MediaTypes"])
+	for _, flag := range []struct {
+		name   string
+		target **bool
+	}{{"IsPlayed", &query.IsPlayed}, {"IsFavorite", &query.IsFavorite}} {
+		if raw := values.Get(flag.name); raw != "" {
+			value, err := strconv.ParseBool(raw)
+			if err != nil {
+				apiError(w, r, 400, "invalid_input", flag.name+" must be a boolean.")
+				return query, false
+			}
+			*flag.target = &value
+		}
+	}
+	for _, filter := range queryValues(values["Filters"]) {
+		var target **bool
+		var value bool
+		switch strings.ToLower(filter) {
+		case "isplayed":
+			target, value = &query.IsPlayed, true
+		case "isunplayed":
+			target, value = &query.IsPlayed, false
+		case "isfavorite", "isfavoriteorlikes":
+			target, value = &query.IsFavorite, true
+		case "isresumable":
+			query.Resumable = true
+			continue
+		default:
+			apiError(w, r, 400, "unsupported_filter", "The requested user-data filter is not supported.")
+			return query, false
+		}
+		if *target != nil && **target != value {
+			apiError(w, r, 400, "invalid_input", "User-data filters must agree.")
+			return query, false
+		}
+		*target = &value
+	}
 	if !readEntityFilters(w, r, &query) {
 		return query, false
 	}
@@ -389,6 +425,9 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		dto["Overview"] = item.Overview
 	}
 	addLocalMetadata(dto, item.Metadata, item.Entities, fields, detail)
+	if item.UserData != nil {
+		dto["UserData"] = userDataDTO(*item.UserData, false)
+	}
 	if item.Media != nil {
 		mediaType := "Video"
 		if item.Type == "Audio" {
@@ -403,7 +442,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 			dto["MediaStreams"] = mediaStreamsDTO(item.Media.Streams)
 		}
 		if detail || hasField(fields, "MediaSources") {
-			dto["MediaSources"] = []map[string]any{{"Id": item.ID, "Name": item.Name, "Path": item.Path, "Protocol": "File", "Container": strings.Split(item.Media.Container, ",")[0], "Formats": strings.Split(item.Media.Container, ","), "RunTimeTicks": item.Media.DurationTicks, "Bitrate": item.Media.Bitrate, "Size": item.Media.Size, "MediaStreams": mediaStreamsDTO(item.Media.Streams), "SupportsDirectPlay": false, "SupportsDirectStream": false, "SupportsTranscoding": false, "RequiresOpening": false, "RequiresClosing": false}}
+			dto["MediaSources"] = []map[string]any{originalSourceDTO(item)}
 		}
 		if detail || hasField(fields, "Chapters") {
 			chapters := make([]map[string]any, 0, len(item.Media.Chapters))
@@ -555,6 +594,9 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 		switch kind {
 		case "video":
 			kind = "Video"
+			if stream.IsAttachedPicture {
+				kind = "EmbeddedImage"
+			}
 		case "audio":
 			kind = "Audio"
 		case "subtitle":
@@ -564,7 +606,7 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 		case "data":
 			kind = "Data"
 		}
-		item := map[string]any{"Index": stream.Index, "Type": kind, "Codec": stream.Codec, "Language": stream.Language, "Title": stream.Title, "DisplayTitle": stream.Title, "IsDefault": stream.IsDefault, "IsForced": stream.IsForced, "IsExternal": stream.IsExternal, "IsTextSubtitleStream": stream.IsTextSubtitleStream, "Profile": stream.Profile}
+		item := map[string]any{"Index": stream.Index, "Type": kind, "Codec": stream.Codec, "Language": stream.Language, "Title": stream.Title, "DisplayTitle": streamDisplayTitle(stream), "IsDefault": stream.IsDefault, "IsForced": stream.IsForced, "IsExternal": stream.IsExternal, "IsTextSubtitleStream": stream.IsTextSubtitleStream, "Profile": stream.Profile}
 		if stream.Width > 0 {
 			item["Width"] = stream.Width
 		}
@@ -586,6 +628,27 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 		if stream.PixelFormat != "" {
 			item["PixelFormat"] = stream.PixelFormat
 		}
+		for key, value := range map[string]string{"TimeBase": stream.TimeBase, "ChannelLayout": stream.ChannelLayout,
+			"ColorSpace": stream.ColorSpace, "ColorTransfer": stream.ColorTransfer, "ColorPrimaries": stream.ColorPrimaries} {
+			if value != "" {
+				item[key] = value
+			}
+		}
+		if stream.CodecTagString != "" {
+			item["CodecTag"] = stream.CodecTagString
+		}
+		if stream.BitDepth > 0 {
+			item["BitDepth"] = stream.BitDepth
+		}
+		if stream.RefFrames > 0 {
+			item["RefFrames"] = stream.RefFrames
+		}
+		if stream.InterlaceKnown {
+			item["IsInterlaced"] = stream.IsInterlaced
+		}
+		if stream.VideoRangeKnown {
+			item["VideoRange"] = stream.VideoRange
+		}
 		if numerator, denominator, ok := strings.Cut(stream.AverageFrameRate, "/"); ok {
 			n, nerr := strconv.ParseFloat(numerator, 64)
 			d, derr := strconv.ParseFloat(denominator, 64)
@@ -593,7 +656,36 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 				item["AverageFrameRate"] = n / d
 			}
 		}
+		if numerator, denominator, ok := strings.Cut(stream.RealFrameRate, "/"); ok {
+			n, nerr := strconv.ParseFloat(numerator, 64)
+			d, derr := strconv.ParseFloat(denominator, 64)
+			if nerr == nil && derr == nil && d > 0 {
+				item["RealFrameRate"] = n / d
+			}
+		}
 		items = append(items, item)
 	}
 	return items
+}
+
+func streamDisplayTitle(stream media.Stream) string {
+	if strings.TrimSpace(stream.Title) != "" {
+		return stream.Title
+	}
+	parts := make([]string, 0, 4)
+	if stream.Language != "" && stream.Language != "und" {
+		parts = append(parts, strings.ToUpper(stream.Language))
+	}
+	if stream.Codec != "" {
+		parts = append(parts, strings.ToUpper(stream.Codec))
+	}
+	if stream.Channels > 0 {
+		parts = append(parts, strconv.Itoa(stream.Channels)+" ch")
+	}
+	if stream.IsForced {
+		parts = append(parts, "Forced")
+	} else if stream.IsDefault {
+		parts = append(parts, "Default")
+	}
+	return strings.Join(parts, " / ")
 }

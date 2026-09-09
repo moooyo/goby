@@ -2,7 +2,11 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, and indexed artwork delivered; playback pending**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, and user state increments delivered; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+
+## Compatibility target
+
+The target is for general-purpose Emby-compatible clients to connect and play supported media without client modifications. Matching API paths alone does not establish playback compatibility: the shared protocol must also match authentication, DTOs, negotiation, media/subtitle delivery, and playback reporting. Official documentation provides the baseline; reference-server captures and real-client tests provide evidence. Work proceeds through common client flows without requiring the user to supply a client list. See the [compatibility definition](api/implementation-scope.md#what-compatibility-means) for the acceptance boundary.
 
 ## Reading order
 
@@ -13,6 +17,7 @@ Implementation status: **service foundation, catalog ingestion, local metadata, 
 | [Build and run](development/running.md) | Foundation configuration, PostgreSQL deployment, and remote verification |
 | [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
+| [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |

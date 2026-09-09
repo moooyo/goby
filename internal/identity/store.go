@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,11 +35,13 @@ const (
 	embyLifetime              = 30 * 24 * time.Hour
 	passwordCost              = bcrypt.DefaultCost
 	maxClientFieldBytes       = 256
+	userColumns               = "id, name, is_administrator, is_disabled, has_password, created_at, policy"
 	// The fixed cost matches stored hashes so unknown users still perform bcrypt.
 	fakePasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
 
-// User contains safe account metadata. Password hashes never leave Store.
+// User carries account metadata and an internal-only persisted policy snapshot.
+// Password hashes never leave Store, and policy is excluded from JSON encoding.
 type User struct {
 	ID              string
 	Name            string
@@ -46,6 +49,7 @@ type User struct {
 	IsDisabled      bool
 	HasPassword     bool
 	CreatedAt       time.Time
+	Policy          json.RawMessage `json:"-"`
 }
 
 // Client describes the application and device that requested a session.
@@ -131,7 +135,7 @@ func (s *Store) Bootstrap(ctx context.Context, name, password string) (User, err
 	user, err := scanUser(tx.QueryRow(ctx, `INSERT INTO users
 		(id, name, normalized_name, password_hash, has_password, is_administrator)
 		VALUES ($1, $2, $3, $4, true, true)
-		RETURNING id, name, is_administrator, is_disabled, has_password, created_at`, id, name, normalized, string(hash)))
+		RETURNING `+userColumns, id, name, normalized, string(hash)))
 	if err != nil {
 		return User{}, fmt.Errorf("create initial administrator: %w", err)
 	}
@@ -165,9 +169,7 @@ func (s *Store) Authenticate(ctx context.Context, name, password string, client 
 	}
 	var user User
 	var hash string
-	err = s.pool.QueryRow(ctx, `SELECT id, name, is_administrator, is_disabled,
-		has_password, created_at, password_hash FROM users WHERE normalized_name = $1`, normalized).
-		Scan(&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &hash)
+	user, err = scanUser(s.pool.QueryRow(ctx, "SELECT "+userColumns+", password_hash FROM users WHERE normalized_name = $1", normalized), &hash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		_ = bcrypt.CompareHashAndPassword([]byte(fakePasswordHash), []byte(password))
 		return Credentials{}, ErrInvalidCredentials
@@ -218,14 +220,14 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 	}
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, s.id, s.client_name, s.device_id, s.device_name,
+		u.has_password, u.created_at, u.policy, s.id, s.client_name, s.device_id, s.device_name,
 		s.client_version, s.kind, s.expires_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = $1 AND s.kind = $2 AND s.revoked_at IS NULL
 		AND s.expires_at > now() AND NOT u.is_disabled
 		AND ($2 <> 'admin' OR u.is_administrator)`, digest[:], kind).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
-			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt,
+			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt, &principal.User.Policy,
 			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
 			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -268,8 +270,7 @@ func (s *Store) ServerID(ctx context.Context) (string, error) {
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.pool.Query(ctx, `SELECT id, name, is_administrator, is_disabled,
-		has_password, created_at FROM users ORDER BY normalized_name, id`)
+	rows, err := s.pool.Query(ctx, "SELECT "+userColumns+" FROM users ORDER BY normalized_name, id")
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
 	}
@@ -289,8 +290,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 func (s *Store) GetUser(ctx context.Context, id string) (User, error) {
-	user, err := scanUser(s.pool.QueryRow(ctx, `SELECT id, name, is_administrator,
-		is_disabled, has_password, created_at FROM users WHERE id = $1`, id))
+	user, err := scanUser(s.pool.QueryRow(ctx, "SELECT "+userColumns+" FROM users WHERE id = $1", id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
 	}
@@ -320,7 +320,7 @@ func (s *Store) CreateUser(ctx context.Context, name, password string, isAdmin b
 	user, err := scanUser(s.pool.QueryRow(ctx, `INSERT INTO users
 		(id, name, normalized_name, password_hash, has_password, is_administrator)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, name, is_administrator, is_disabled, has_password, created_at`, id, name, normalized, string(hash), password != "", isAdmin))
+		RETURNING `+userColumns, id, name, normalized, string(hash), password != "", isAdmin))
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "users_normalized_name_key" {
 		return User{}, fmt.Errorf("%w: username is already in use", ErrInvalidInput)
@@ -335,9 +335,10 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanUser(row rowScanner) (User, error) {
+func scanUser(row rowScanner, extra ...any) (User, error) {
 	var user User
-	err := row.Scan(&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt)
+	columns := []any{&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &user.Policy}
+	err := row.Scan(append(columns, extra...)...)
 	return user, err
 }
 

@@ -1,4 +1,4 @@
-# Implemented API surface: catalog, local metadata, entities, and artwork
+# Implemented API surface: catalog, metadata, artwork, and original playback
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
@@ -48,6 +48,13 @@ The administrator UI refreshes active work at bounded intervals, pauses polling 
 | `GET /emby/Users/{Id}` | Current account or administrator; a different ordinary user's account is denied |
 | `GET /emby/Users/Query` | Administrator only; supports `StartIndex`/`Limit` and query-result envelope; other upstream filters remain to be implemented |
 | `POST /emby/Sessions/Logout` | Revokes the caller's token |
+| `GET`, `POST /emby/Items/{Id}/PlaybackInfo` | Authorized source facts and original-file negotiation; supported DeviceProfile constraints and explicit limits; no transcoding |
+| `GET`, `HEAD /emby/Videos/{Id}/stream`, `stream.{Container}`, `original.{Container}` | Original video bytes with standard ranges and conditional requests; current token, playback policy, library access, and source snapshot required |
+| `GET`, `HEAD /emby/Audio/{Id}/stream`, `stream.{Container}`, `original.{Container}` | Equivalent original audio delivery |
+| `POST /emby/Sessions/Playing`, `.../Progress`, `.../Stopped` | Bound playback-session reports, durable user state, idempotent terminal events; 204 empty success |
+| `POST /emby/Sessions/Playing/Ping` | Refresh an owned active playback session; 200 empty success pending runtime-reference confirmation |
+| `GET /emby/Users/{UserId}/Items/Resume` | User-specific positions, current library ACL, initial duration/percentage thresholds and deterministic ordering |
+| `POST`, `DELETE /emby/Users/{UserId}/PlayedItems/{Id}`, `.../FavoriteItems/{Id}`; `POST .../{Id}/Delete` | Per-user state; recursive folder watched changes and derived unplayed counts; flag-response DTO without ItemId/Key |
 | `GET /emby/Users/{UserId}/Views` | Authorized library roots with collection types |
 | `GET /emby/Users/{UserId}/Items/Root` | Stable virtual navigation root |
 | `GET /emby/Users/{UserId}/Items` and `GET /emby/Items` | ACL-filtered browsing/search, recursive parents, IDs/types/media-type filters, paging and selected sorts |
@@ -72,9 +79,11 @@ The `/emby` namespace supports token-client CORS, including the observed OPTIONS
 
 Administrator-cookie sessions and Emby-token sessions cannot be substituted for one another. Token secrets are stored as SHA-256 digests, sessions are revocable and expire, and current account disable/demotion state is checked when resolving a token. Emby user tokens currently have a 30-day lifetime; this is a Goby policy, not a proven Emby lifetime match.
 
-The initial Emby user projection disables media/transcode/deletion capabilities until those services exist. Unsupported Emby paths return an error. Full policy/configuration projections, query filters, device/session reporting, user edits, API keys, and the complete media API remain scheduled work. Error DTO/status details and version negotiation also need reference-server/client evidence.
+The Emby user projection reflects current `EnableMediaPlayback` and library-access policy; explicit playback denial also applies to administrators. Transcoding, remuxing, and deletion capabilities remain false. Unsupported Emby paths return an error. Full policy/configuration projections, query filters, device/session reporting, user edits, API keys, and the complete media API remain scheduled work. Error DTO/status details and version negotiation also need reference-server/client evidence.
 
-Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, `Path`, and `Chapters` projections. Default list results omit paths and probe structures; an explicit field selection or authorized item detail includes them as observed in the reference. Authorization is applied before any projection. `EnableImages=false` removes image fields, and `EnableUserData=false` suppresses user data when present. Source stream indices and probe sizes/ticks are preserved. Sources still advertise no playable delivery method until the playback stage. Indexed artwork populates image tags, with `ImageTypeLimit` and `EnableImageTypes` selection. Native media metadata retains FFmpeg format aliases; the current wire container uses the first alias and will be refined during playback negotiation.
+Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, `Path`, and `Chapters` projections. Default list results omit paths and probe structures; an explicit field selection or authorized item detail includes them as observed in the reference. Authorization is applied before any projection. `EnableImages=false` removes image fields, and `EnableUserData=false` suppresses user data when present. Source stream indices and probe sizes/ticks are preserved. Current probe snapshots can advertise original delivery when user policy permits; PlaybackInfo reopens and verifies the source before negotiation. Wire source IDs use `mediasource_{ItemId}`, and wire containers use canonical names such as `mp4` instead of an arbitrary first ffprobe alias. Indexed artwork populates image tags, with `ImageTypeLimit` and `EnableImageTypes` selection.
+
+The currently recognized Emby resources also accept root aliases and case variants of route literals. Dynamic IDs and escaped entity names are preserved. Media routes accept HEAD/Range/If-Range through the same authentication and CORS boundary. See [original playback and user state](../development/direct-playback.md) for negotiation, authorization, state transitions, resource limits, and the required rescan after upgrading probe data. External subtitle delivery and client-session/event APIs remain incomplete, so this increment alone does not establish general consumer-client acceptance.
 
 Local NFO data contributes `ProductionYear`, `PremiereDate`, `OriginalTitle`, `CommunityRating`, and `OfficialRating` when present, for detail requests or when selected with a same-named `Fields` value. These scalars are absent from the default item list, as confirmed by the NFO reference captures. Missing scalar values are omitted, while an explicit zero rating remains zero.
 
@@ -86,7 +95,7 @@ Indexed item image contents are public, as observed in the pinned reference, whi
 
 Library authorization currently implements administrator access plus `EnableAllFolders` and `EnabledFolders`. Counts and grouping occur after authorization filtering. Default ordinary users can access all libraries unless restricted. Subfolder exclusions, parental restrictions and the full policy editor remain work; this increment does not claim those policies are enforced.
 
-The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
+The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. User-state filters include `IsPlayed`, `IsFavorite`, and the documented initial `Filters` subset in the playback guide. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
 
 ## Delivery and health
 

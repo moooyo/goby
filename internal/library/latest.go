@@ -51,10 +51,22 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 		if err != nil {
 			return nil, fmt.Errorf("scan latest library item: %w", err)
 		}
+		latest.Item.CanPlay = access.canPlay
 		items = append(items, latest)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("read latest library items: %w", err)
+	}
+	rows.Close()
+	selectedItems := make([]Item, len(items))
+	for index := range items {
+		selectedItems[index] = items[index].Item
+	}
+	if err := attachUserData(ctx, tx, query.UserID, selectedItems); err != nil {
+		return nil, err
+	}
+	for index := range items {
+		items[index].Item = selectedItems[index]
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("complete latest library query: %w", err)

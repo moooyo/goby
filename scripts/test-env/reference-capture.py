@@ -29,6 +29,7 @@ DATA = Path("/opt/goby-test/emby-reference-data")
 PRIVATE = DATA / "private"
 EXPORT = DATA / "export"
 ENV_FILE = PRIVATE / "credentials.env"
+PLAYBACK_ENV_FILE = PRIVATE / "playback-m3-credentials.env"
 BASE_HEADERS = {
     "Accept": "application/json",
     "Authorization": (
@@ -45,16 +46,16 @@ def private_write(path: Path, value: str) -> None:
         stream.write(value)
 
 
-def read_credentials() -> dict[str, str]:
-    if not ENV_FILE.exists():
+def read_credentials(path: Path = ENV_FILE) -> dict[str, str]:
+    if not path.exists():
         return {}
-    if stat.S_IMODE(ENV_FILE.stat().st_mode) != 0o600:
+    if stat.S_IMODE(path.stat().st_mode) != 0o600:
         raise RuntimeError("Credential file must have mode 0600")
-    return dict(line.split("=", 1) for line in ENV_FILE.read_text().splitlines() if line)
+    return dict(line.split("=", 1) for line in path.read_text().splitlines() if line)
 
 
-def save_credentials(values: dict[str, str]) -> None:
-    private_write(ENV_FILE, "".join(f"{key}={value}\n" for key, value in values.items()))
+def save_credentials(values: dict[str, str], path: Path = ENV_FILE) -> None:
+    private_write(path, "".join(f"{key}={value}\n" for key, value in values.items()))
 
 
 class Recorder:
@@ -63,10 +64,13 @@ class Recorder:
         if (DATA / ".goby-managed").read_text().strip() != "goby-emby-reference-owned-v1":
             raise RuntimeError("Reference ownership marker does not match")
         self.credentials = read_credentials()
+        self.credential_path = ENV_FILE
+        self.client_headers = dict(BASE_HEADERS)
         self.secret_values = {
             value for key, value in self.credentials.items()
             if key in {"REFERENCE_PASSWORD", "REFERENCE_TOKEN"} and value
         }
+        self.secret_values.update(value for key, value in read_credentials(PLAYBACK_ENV_FILE).items() if key in {"REFERENCE_PASSWORD", "REFERENCE_TOKEN"} and value)
 
     def clean_text(self, value: str) -> str:
         for secret in self.secret_values:
@@ -77,7 +81,7 @@ class Recorder:
         )
 
     def sanitize(self, value, key=""):
-        if key.lower() in {"password", "pw", "accesstoken", "token", "x-emby-token", "x-mediabrowser-token"} and isinstance(value, str) and value:
+        if key.lower() in {"password", "pw", "newpw", "accesstoken", "token", "x-emby-token", "x-mediabrowser-token"} and isinstance(value, str) and value:
             return "[REDACTED_SECRET]"
         if isinstance(value, dict):
             return {child_key: self.sanitize(child_value, child_key) for child_key, child_value in value.items()}
@@ -101,7 +105,7 @@ class Recorder:
         elif isinstance(original, str):
             if not isinstance(exported, str):
                 raise RuntimeError("Export changed a string type")
-            allowed_sensitive_field = key.lower() in {"password", "pw", "accesstoken", "token", "x-emby-token", "x-mediabrowser-token"}
+            allowed_sensitive_field = key.lower() in {"password", "pw", "newpw", "accesstoken", "token", "x-emby-token", "x-mediabrowser-token"}
             allowed_secret = any(secret in original for secret in self.secret_values)
             allowed_path = str(DATA) in original or "/dev/shm/goby-emby-reference/package" in original
             allowed_query = bool(re.search(r"(?i)api_key=", original))
@@ -110,10 +114,10 @@ class Recorder:
         elif type(original) is not type(exported) or original != exported:
             raise RuntimeError("Export changed a number, boolean, or null")
 
-    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False):
-        if name.startswith(("artwork-", "entity-")) and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
+    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False, binary_media=False):
+        if name.startswith(("artwork-", "entity-", "playback-m3-", "folder-state-")) and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
             raise RuntimeError(f"Refusing to overwrite extension evidence: {name}")
-        request_headers = dict(BASE_HEADERS if headers is None else headers)
+        request_headers = dict(self.client_headers if headers is None else headers)
         if authenticated:
             request_headers["X-Emby-Token"] = self.credentials["REFERENCE_TOKEN"]
         if isinstance(body, (dict, list)):
@@ -138,6 +142,11 @@ class Recorder:
             image_format, width, height = self.image_dimensions(content)
             details = f"Wire image: {len(content)} bytes; SHA-256={hashlib.sha256(content).hexdigest()}; format={image_format}; dimensions={width}x{height}. Body is base64-encoded exact response bytes."
             note = f"{note} {details}" if note else details
+        elif binary_media and content and (content_type.startswith(("video/", "audio/")) or content_type.startswith("application/octet-stream")):
+            parsed = base64.b64encode(content).decode("ascii")
+            representation = "binary-base64"
+            details = f"Wire media body: {len(content)} bytes; SHA-256={hashlib.sha256(content).hexdigest()}. Body is base64-encoded exact response bytes."
+            note = f"{note} {details}" if note else details
         else:
             text = content.decode("utf-8", errors="replace")
             try:
@@ -151,7 +160,7 @@ class Recorder:
             self.secret_values.add(parsed["AccessToken"])
             if parsed.get("User", {}).get("Id"):
                 self.credentials["REFERENCE_USER_ID"] = parsed["User"]["Id"]
-            save_credentials(self.credentials)
+            save_credentials(self.credentials, self.credential_path)
         record = {
             "reference": {"product": "Emby Server", "version": "4.9.5.0", "capturedAt": started},
             "request": {"method": method, "path": path, "headers": request_headers, "body": body},
@@ -394,6 +403,284 @@ class Recorder:
                 raise RuntimeError("A pre-existing baseline capture was changed")
         print(f"Preserved all {len(baseline)} pre-existing raw/export fixture files byte-for-byte.", flush=True)
 
+    @staticmethod
+    def m3_profile() -> dict:
+        return {
+            "Name": "M3 MP4 H264 AAC client", "MaxStreamingBitrate": 200000000,
+            "DirectPlayProfiles": [{"Type": "Video", "Container": "mp4", "VideoCodec": "h264", "AudioCodec": "aac"}],
+            "TranscodingProfiles": [{"Container": "ts", "Type": "Video", "VideoCodec": "h264", "AudioCodec": "aac", "Protocol": "hls", "Context": "Streaming", "MaxAudioChannels": "2", "MinSegments": 1, "SegmentLength": 3}],
+            "SubtitleProfiles": [{"Format": "srt", "Method": "External"}, {"Format": "vtt", "Method": "External"}],
+        }
+
+    def playback_m3_begin(self) -> None:
+        baseline_file = PRIVATE / "playback-m3-baseline-hashes.json"
+        if baseline_file.exists():
+            raise RuntimeError("M3 baseline already exists")
+        baseline = {}
+        for directory in (PRIVATE / "raw", EXPORT):
+            for path in sorted(directory.glob("*.json")):
+                baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        print(f"Recorded {len(baseline)} pre-existing raw/export hashes.", flush=True)
+
+    def playback_m3_flags(self) -> None:
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        item_id = original["response"]["body"]["Id"]
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        path = f"/emby/Items/{item_id}/PlaybackInfo"
+        self.request("playback-m3-short-get", "GET", path + "?UserId=" + user_id, authenticated=True)
+        self.request("playback-m3-short-post-minimal", "POST", path, body={"UserId": user_id}, authenticated=True)
+        profile = self.m3_profile()
+        self.request("playback-m3-short-profile-match", "POST", path, body={"UserId": user_id, "DeviceProfile": profile}, authenticated=True)
+        mismatch = self.m3_profile()
+        mismatch["DirectPlayProfiles"][0]["VideoCodec"] = "hevc"
+        self.request("playback-m3-short-profile-mismatch", "POST", path, body={"UserId": user_id, "DeviceProfile": mismatch}, authenticated=True)
+        self.request("playback-m3-short-directstream-only", "POST", path, body={"UserId": user_id, "DeviceProfile": profile, "EnableDirectPlay": False, "EnableDirectStream": True, "EnableTranscoding": False}, authenticated=True)
+        self.request("playback-m3-short-all-disabled", "POST", path, body={"UserId": user_id, "DeviceProfile": profile, "EnableDirectPlay": False, "EnableDirectStream": False, "EnableTranscoding": False}, authenticated=True)
+
+    def playback_m3_prepare(self) -> None:
+        target = Path("/opt/goby-fixtures/playback-reference")
+        if target.exists() or PLAYBACK_ENV_FILE.exists():
+            raise RuntimeError("Dedicated playback source or credentials already exist")
+        if not (PRIVATE / "playback-m3-baseline-hashes.json").exists():
+            raise RuntimeError("M3 baseline must be recorded first")
+        target.mkdir(mode=0o755)
+        (target / ".goby-managed").write_text("goby-playback-reference-owned-v1\n")
+        movie = target / "Reference Playback M3.mp4"
+        ffmpeg = "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg"
+        subprocess.run([
+            ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
+            "-f", "lavfi", "-i", "color=c=black:s=160x90:r=1",
+            "-f", "lavfi", "-i", "anullsrc=r=8000:cl=mono", "-t", "600",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "40", "-pix_fmt", "yuv420p", "-g", "60", "-threads", "1",
+            "-c:a", "aac", "-b:a", "8k", "-ar", "8000", "-ac", "1",
+            "-metadata", "title=Reference Playback M3", "-movflags", "+faststart", str(movie),
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=90)
+        if movie.stat().st_size >= 2 * 1024 * 1024:
+            raise RuntimeError("Generated playback fixture exceeds the two-MiB limit")
+        subtitle = target / "Reference Playback M3.srt"
+        subtitle.write_text("1\n00:00:00,000 --> 00:00:02,000\nReference playback begins.\n\n2\n00:02:00,000 --> 00:02:02,000\nReference resume checkpoint.\n", encoding="utf-8")
+        for path in (movie, subtitle, target / ".goby-managed"):
+            path.chmod(0o644)
+        provenance = [{"path": str(path), "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in (movie, subtitle)]
+        private_write(PRIVATE / "playback-m3-source-provenance.json", json.dumps(provenance, indent=2) + "\n")
+        credentials = {"REFERENCE_USERNAME": "reference-playback-m3", "REFERENCE_PASSWORD": secrets.token_hex(32)}
+        save_credentials(credentials, PLAYBACK_ENV_FILE)
+        self.secret_values.add(credentials["REFERENCE_PASSWORD"])
+        print(f"Generated a 600-second H264/AAC MP4 ({movie.stat().st_size} bytes) and external SRT; dedicated credentials are private.", flush=True)
+
+    def playback_m3_rejection(self) -> None:
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        profile = self.m3_profile()
+        profile["DirectPlayProfiles"][0]["VideoCodec"] = "hevc"
+        self.request(
+            "playback-m3-short-mismatch-no-transcoding", "POST", f"/emby/Items/{original['response']['body']['Id']}/PlaybackInfo",
+            body={"UserId": self.credentials["REFERENCE_USER_ID"], "DeviceProfile": profile, "EnableTranscoding": False, "IsPlayback": True},
+            authenticated=True,
+        )
+
+    def playback_m3_factorial(self) -> None:
+        original = json.loads((PRIVATE / "raw" / "item-detail-default.json").read_text())
+        profile = self.m3_profile()
+        profile["DirectPlayProfiles"][0]["VideoCodec"] = "hevc"
+        for name, transcoding, is_playback in (("mismatch-transcoding-false-playback-false", False, False), ("mismatch-transcoding-true-playback-true", True, True)):
+            self.request(
+                "playback-m3-short-" + name, "POST", f"/emby/Items/{original['response']['body']['Id']}/PlaybackInfo",
+                body={"UserId": self.credentials["REFERENCE_USER_ID"], "DeviceProfile": profile, "EnableTranscoding": transcoding, "IsPlayback": is_playback},
+                authenticated=True,
+                note="Controlled follow-up: the mismatch profile and all other fields are unchanged; only EnableTranscoding/IsPlayback vary.",
+            )
+
+    def playback_m3_setup(self) -> None:
+        target = "/opt/goby-fixtures/playback-reference"
+        credentials = read_credentials(PLAYBACK_ENV_FILE)
+        if not credentials or credentials.get("REFERENCE_TOKEN"):
+            raise RuntimeError("Dedicated credential preparation is missing or setup is complete")
+        self.secret_values.add(credentials["REFERENCE_PASSWORD"])
+        options = {
+            "EnableRealtimeMonitor": False, "EnableChapterImageExtraction": False, "EnableMarkerDetection": False,
+            "ExtractChapterImagesDuringLibraryScan": False, "EnableMarkerDetectionDuringLibraryScan": False,
+            "DownloadImagesInAdvance": False, "SaveLocalMetadata": False, "SaveLocalThumbnailSets": False,
+            "SaveSubtitlesWithMedia": False, "SubtitleDownloadLanguages": [], "AutomaticRefreshIntervalDays": 0,
+            "EnableEmbeddedTitles": True, "TypeOptions": [{"Type": "Movie", "MetadataFetchers": [], "ImageFetchers": []}],
+        }
+        self.request("playback-m3-library-create", "POST", "/emby/Library/VirtualFolders", authenticated=True,
+                     body={"Name": "Reference Playback M3", "CollectionType": "movies", "RefreshLibrary": False, "Paths": [target], "LibraryOptions": options})
+        status_code, created = self.request("playback-m3-user-create", "POST", "/emby/Users/New", body={"Name": credentials["REFERENCE_USERNAME"]}, authenticated=True)
+        if status_code != 200 or not created.get("Id"):
+            raise RuntimeError("Dedicated playback user creation failed")
+        credentials["REFERENCE_USER_ID"] = created["Id"]
+        save_credentials(credentials, PLAYBACK_ENV_FILE)
+        status_code, _ = self.request("playback-m3-user-password", "POST", f"/emby/Users/{created['Id']}/Password",
+                                     body={"Id": created["Id"], "NewPw": credentials["REFERENCE_PASSWORD"], "ResetPassword": False}, authenticated=True)
+        if status_code not in {200, 204}:
+            raise RuntimeError("Dedicated playback password update failed")
+        _, libraries = self.request("playback-m3-library-query", "GET", "/emby/Library/VirtualFolders/Query", authenticated=True)
+        library = next(item for item in libraries["Items"] if item["Name"] == "Reference Playback M3")
+        private_write(PRIVATE / "playback-m3-library.json", json.dumps(library, indent=2) + "\n")
+        self.request("playback-m3-library-refresh", "POST", f"/emby/Items/{library['ItemId']}/Refresh?Recursive=true&MetadataRefreshMode=FullRefresh&ImageRefreshMode=FullRefresh",
+                     body={}, authenticated=True, note="Targeted refresh of the new dedicated library only; no full-server or Goby scan is requested.")
+        self.use_playback_m3_credentials()
+        status_code, result = self.request("playback-m3-user-login", "POST", "/emby/Users/AuthenticateByName",
+                                          body={"Username": self.credentials["REFERENCE_USERNAME"], "Pw": self.credentials["REFERENCE_PASSWORD"]})
+        if status_code != 200:
+            raise RuntimeError("Dedicated playback login failed")
+        self.credentials["REFERENCE_SESSION_ID"] = result["SessionInfo"]["Id"]
+        save_credentials(self.credentials, PLAYBACK_ENV_FILE)
+
+    def use_playback_m3_credentials(self) -> None:
+        self.credentials = read_credentials(PLAYBACK_ENV_FILE)
+        self.credential_path = PLAYBACK_ENV_FILE
+        self.client_headers = {"Accept": "application/json", "Authorization": BASE_HEADERS["Authorization"].replace("goby-reference-recorder", "goby-playback-m3-recorder")}
+        self.secret_values.update(value for key, value in self.credentials.items() if key in {"REFERENCE_PASSWORD", "REFERENCE_TOKEN"} and value)
+
+    def playback_m3_long_info(self) -> None:
+        self.use_playback_m3_credentials()
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        query = urllib.parse.urlencode({"UserId": user_id, "Recursive": "true", "Path": "/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4", "Fields": "Path,MediaSources,MediaStreams"})
+        _, result = self.request("playback-m3-long-item", "GET", "/emby/Items?" + query, authenticated=True)
+        if len(result.get("Items", [])) != 1:
+            raise RuntimeError("The new playback fixture is not ready as a single library item")
+        item = result["Items"][0]
+        _, info = self.request("playback-m3-long-info", "POST", f"/emby/Items/{item['Id']}/PlaybackInfo",
+                               body={"UserId": user_id, "DeviceProfile": self.m3_profile(), "IsPlayback": True}, authenticated=True)
+        context = {"ItemId": item["Id"], "MediaSourceId": info["MediaSources"][0]["Id"], "PlaySessionId": info["PlaySessionId"],
+                   "RunTimeTicks": info["MediaSources"][0]["RunTimeTicks"], "AudioStreamIndex": info["MediaSources"][0].get("DefaultAudioStreamIndex", 1)}
+        private_write(PRIVATE / "playback-m3-context.json", json.dumps(context, indent=2) + "\n")
+
+    def playback_m3_transport(self) -> None:
+        self.use_playback_m3_credentials()
+        context = json.loads((PRIVATE / "playback-m3-context.json").read_text())
+        query = urllib.parse.urlencode({"Static": "true", "MediaSourceId": context["MediaSourceId"], "PlaySessionId": context["PlaySessionId"]})
+        path = f"/emby/Videos/{context['ItemId']}/stream?" + query
+        self.request("playback-m3-media-full", "GET", path, authenticated=True, binary_media=True)
+        self.request("playback-m3-media-head", "HEAD", path, authenticated=True, binary_media=True)
+        for name, byte_range in (("range-first", "bytes=0-31"), ("range-suffix", "bytes=-32"), ("range-invalid", "bytes=9999999-")):
+            self.request("playback-m3-media-" + name, "GET", path, headers={**self.client_headers, "Range": byte_range}, authenticated=True, binary_media=True)
+        self.request("playback-m3-media-no-token", "GET", path, headers={"Range": "bytes=0-31"}, binary_media=True,
+                     note="No token is supplied, but the URL still contains a PlaySessionId created by authenticated negotiation.")
+        self.request("playback-m3-media-invalid-token", "GET", path, headers={"Range": "bytes=0-31", "X-Emby-Token": "invalid-reference-token"}, binary_media=True,
+                     note="The invalid token case retains the authenticated negotiation's MediaSourceId and PlaySessionId.")
+        self.request("playback-m3-media-root-alias", "GET", path.removeprefix("/emby"), headers={**self.client_headers, "Range": "bytes=0-31"}, authenticated=True, binary_media=True)
+        self.request("playback-m3-media-lowercase-alias", "GET", path.replace("/Videos/", "/videos/"), headers={**self.client_headers, "Range": "bytes=0-31"}, authenticated=True, binary_media=True)
+        info = json.loads((PRIVATE / "raw" / "playback-m3-long-info.json").read_text())
+        direct_url = info["response"]["body"]["MediaSources"][0]["DirectStreamUrl"]
+        if not direct_url.startswith("/videos/"):
+            raise RuntimeError("Unexpected server-generated direct URL")
+        self.request("playback-m3-media-original-alias", "GET", "/emby" + direct_url, headers={"Range": "bytes=0-31"}, binary_media=True,
+                     note="Exact server-generated original.mp4 URL, including its query token; no Static parameter or authorization header is added.")
+        head = json.loads((PRIVATE / "raw" / "playback-m3-media-head.json").read_text())
+        response_headers = {key.lower(): value for key, value in head["response"]["headers"]}
+        validator = response_headers.get("etag") or response_headers.get("last-modified")
+        if validator:
+            self.request("playback-m3-media-if-range", "GET", path, headers={**self.client_headers, "Range": "bytes=0-31", "If-Range": validator}, authenticated=True, binary_media=True)
+
+    def playback_m3_reports(self) -> None:
+        self.use_playback_m3_credentials()
+        context = json.loads((PRIVATE / "playback-m3-context.json").read_text())
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        item_id = context["ItemId"]
+        detail_path = f"/emby/Users/{user_id}/Items/{item_id}"
+        started = {
+            **context, "SessionId": self.credentials["REFERENCE_SESSION_ID"], "PositionTicks": 0,
+            "CanSeek": True, "IsPaused": False, "IsMuted": False, "VolumeLevel": 100,
+            "PlayMethod": "DirectStream", "SubtitleStreamIndex": -1, "PlaybackRate": 1,
+        }
+        self.request("playback-m3-started", "POST", "/emby/Sessions/Playing", body=started, authenticated=True)
+        self.request("playback-m3-detail-after-start", "GET", detail_path, authenticated=True)
+        progress = {**started, "PositionTicks": 1200000000, "EventName": "TimeUpdate"}
+        self.request("playback-m3-progress-120", "POST", "/emby/Sessions/Playing/Progress", body=progress, authenticated=True,
+                     note="Client-reported 120-second position; no real-time playback wait or decoding claim is made.")
+        self.request("playback-m3-detail-after-progress", "GET", detail_path, authenticated=True)
+        self.request("playback-m3-resume-after-progress", "GET", f"/emby/Users/{user_id}/Items/Resume?MediaTypes=Video&Limit=10", authenticated=True)
+        stopped = {key: value for key, value in context.items() if key in {"ItemId", "MediaSourceId", "PlaySessionId"}}
+        stopped.update({"SessionId": self.credentials["REFERENCE_SESSION_ID"], "PositionTicks": 1200000000, "Failed": False, "IsAutomated": False})
+        self.request("playback-m3-stopped-120", "POST", "/emby/Sessions/Playing/Stopped", body=stopped, authenticated=True)
+        self.request("playback-m3-detail-after-stop", "GET", detail_path, authenticated=True)
+        self.request("playback-m3-stopped-duplicate", "POST", "/emby/Sessions/Playing/Stopped", body=stopped, authenticated=True,
+                     note="Exact duplicate stop report for the same dedicated user and play session.")
+        self.request("playback-m3-detail-after-duplicate-stop", "GET", detail_path, authenticated=True)
+        for name, method, route in (
+            ("mark-played", "POST", "PlayedItems"), ("mark-unplayed", "DELETE", "PlayedItems"),
+            ("favorite-add", "POST", "FavoriteItems"), ("favorite-remove", "DELETE", "FavoriteItems"),
+        ):
+            self.request("playback-m3-" + name, method, f"/emby/Users/{user_id}/{route}/{item_id}", authenticated=True)
+        self.request("playback-m3-detail-final", "GET", detail_path, authenticated=True)
+
+    def export_playback_m3(self) -> None:
+        self.export(prefix="playback-m3-")
+        records = [json.loads(path.read_text()) for path in (PRIVATE / "raw").glob("playback-m3-*.json")]
+        if len(records) > 42:
+            raise RuntimeError("M3 capture exceeds the authorized fixture limit")
+        source_path = Path("/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4")
+        if source_path.exists():
+            source = source_path.read_bytes()
+            checked = 0
+            for record in records:
+                response = record["response"]
+                if response["bodyType"] != "binary-base64":
+                    continue
+                content = base64.b64decode(response["body"], validate=True)
+                headers = {key.lower(): value for key, value in response["headers"]}
+                content_range = headers.get("content-range")
+                if content_range:
+                    match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", content_range)
+                    if not match:
+                        raise RuntimeError("Unexpected recorded Content-Range")
+                    start, end, total = map(int, match.groups())
+                    if total != len(source) or content != source[start:end + 1]:
+                        raise RuntimeError("Recorded media bytes disagree with Content-Range")
+                elif content != source:
+                    raise RuntimeError("Recorded full media response differs from the source")
+                if int(headers["content-length"]) != len(content):
+                    raise RuntimeError("Recorded media Content-Length does not match the bytes")
+                checked += 1
+            print(f"Checked {checked} media bodies against the source and original length/range headers.", flush=True)
+        baseline = json.loads((PRIVATE / "playback-m3-baseline-hashes.json").read_text())
+        for name, expected in baseline.items():
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("A pre-existing M3 baseline file changed")
+        print(f"Preserved all {len(baseline)} pre-existing raw/export files byte-for-byte.", flush=True)
+
+    def folder_state_begin(self) -> None:
+        baseline_file = PRIVATE / "folder-state-baseline-hashes.json"
+        if baseline_file.exists():
+            raise RuntimeError("Folder-state baseline already exists")
+        baseline = {}
+        for directory in (PRIVATE / "raw", EXPORT):
+            for path in sorted(directory.glob("*.json")):
+                baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        print(f"Recorded {len(baseline)} pre-existing raw/export hashes.", flush=True)
+
+    def folder_state(self) -> None:
+        if not (PRIVATE / "folder-state-baseline-hashes.json").exists():
+            raise RuntimeError("Folder-state baseline must be recorded first")
+        self.use_playback_m3_credentials()
+        original = json.loads((PRIVATE / "raw" / "items-type-series.json").read_text())
+        series = next(item for item in original["response"]["body"]["Items"] if item["Name"] == "Example Series")
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        state_path = f"/emby/Users/{user_id}/PlayedItems/{series['Id']}"
+        episodes_path = f"/emby/Shows/{series['Id']}/Episodes?UserId={user_id}"
+        try:
+            self.request("folder-state-series-played", "POST", state_path, authenticated=True,
+                         note="Marks only the dedicated M3 user's existing synthetic series as played; no other user's state is targeted.")
+            self.request("folder-state-episodes-after-played", "GET", episodes_path, authenticated=True)
+        finally:
+            self.request("folder-state-series-unplayed", "DELETE", state_path, authenticated=True,
+                         note="Restores the dedicated M3 user's synthetic series to unplayed through the ordinary API.")
+        self.request("folder-state-episodes-after-unplayed", "GET", episodes_path, authenticated=True)
+
+    def export_folder_state(self) -> None:
+        self.export(prefix="folder-state-")
+        if len(list((PRIVATE / "raw").glob("folder-state-*.json"))) > 4:
+            raise RuntimeError("Folder-state capture exceeds the authorized fixture bound")
+        baseline = json.loads((PRIVATE / "folder-state-baseline-hashes.json").read_text())
+        for name, expected in baseline.items():
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("A pre-existing folder-state baseline file changed")
+        print(f"Preserved all {len(baseline)} pre-existing raw/export files byte-for-byte.", flush=True)
+
     def public(self, prefix="public") -> None:
         self.request(f"{prefix}-system-info", "GET", "/emby/System/Info/Public", headers={"Accept": "application/json"})
         self.request(f"{prefix}-users", "GET", "/emby/Users/Public", headers={"Accept": "application/json"})
@@ -619,7 +906,7 @@ class Recorder:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork", "entities_prepare", "entity_lists", "entity_navigation", "export_entities"])
+    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork", "entities_prepare", "entity_lists", "entity_navigation", "export_entities", "playback_m3_begin", "playback_m3_flags", "playback_m3_rejection", "playback_m3_factorial", "playback_m3_prepare", "playback_m3_setup", "playback_m3_long_info", "playback_m3_transport", "playback_m3_reports", "export_playback_m3", "folder_state_begin", "folder_state", "export_folder_state"])
     options = parser.parse_args()
     recorder = Recorder()
     getattr(recorder, options.stage)()

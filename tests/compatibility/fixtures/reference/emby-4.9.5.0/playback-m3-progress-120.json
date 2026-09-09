@@ -1,0 +1,78 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T00:02:47.243421+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Sessions/Playing/Progress",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-playback-m3-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "ItemId": "28",
+      "MediaSourceId": "mediasource_28",
+      "PlaySessionId": "d93b13161adb4bdd968f256a445510e8",
+      "RunTimeTicks": 6000000000,
+      "AudioStreamIndex": 1,
+      "SessionId": "7328e2d073aaffff95e1edd1ee8f3d6b",
+      "PositionTicks": 1200000000,
+      "CanSeek": true,
+      "IsPaused": false,
+      "IsMuted": false,
+      "VolumeLevel": 100,
+      "PlayMethod": "DirectStream",
+      "SubtitleStreamIndex": -1,
+      "PlaybackRate": 1,
+      "EventName": "TimeUpdate"
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Wed, 09 Sep 2026 00:02:46 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": "Client-reported 120-second position; no real-time playback wait or decoding claim is made."
+}

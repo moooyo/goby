@@ -26,6 +26,11 @@ const probeFormats = "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,avi,asf,flv,ogg," +
 	"bmp_pipe,webp_pipe,tiff_pipe,ass,srt,webvtt,lrc,subviewer,subviewer1," +
 	"microdvd,mpl2,jacosub,realtext,sami,stl,pjs,vplayer,aqtitle"
 
+// CacheVersion reports the version of facts produced by Probe and ProbeFile.
+func (p Prober) CacheVersion() int {
+	return CurrentProbeVersion
+}
+
 // Probe accepts regular local files only. Stream indexes are the original
 // ffprobe indexes and must not be replaced with positions in a filtered list.
 func (p Prober) Probe(ctx context.Context, path string) (Info, error) {
@@ -72,6 +77,7 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if !stat.Mode().IsRegular() {
 		return Info{}, fmt.Errorf("media input is not a regular file")
 	}
+	changeTime := FileChangeTime(stat)
 	executable := p.FFprobePath
 	if executable == "" {
 		executable = "ffprobe"
@@ -87,9 +93,18 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
+	after, err := file.Stat()
+	if err != nil {
+		return Info{}, fmt.Errorf("stat media file after probe: %w", err)
+	}
+	if !os.SameFile(stat, after) || stat.Size() != after.Size() ||
+		!stat.ModTime().Equal(after.ModTime()) || changeTime != FileChangeTime(after) {
+		return Info{}, fmt.Errorf("media file changed during probe")
+	}
 	// The held filesystem object is authoritative, including when the pathname
 	// was replaced or ffprobe reports a different format.size value.
 	info.Size = stat.Size()
+	info.FileChangeTimeNs = changeTime
 	return info, nil
 }
 
@@ -157,6 +172,50 @@ func (s scalar) integer() (int64, error) {
 	return value.Num().Int64(), nil
 }
 
+// probeBoolean preserves the distinction between false and an absent fact.
+type probeBoolean struct {
+	value bool
+	known bool
+}
+
+func (b *probeBoolean) UnmarshalJSON(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return err
+	}
+	*b = probeBoolean{}
+	switch value := value.(type) {
+	case nil:
+		return nil
+	case bool:
+		b.value, b.known = value, true
+		return nil
+	case string:
+		if scalar(value).missing() {
+			return nil
+		}
+		return b.parse(value)
+	case json.Number:
+		return b.parse(value.String())
+	default:
+		return fmt.Errorf("expected an ffprobe boolean scalar, got %T", value)
+	}
+}
+
+func (b *probeBoolean) parse(value string) error {
+	switch value {
+	case "true", "1":
+		b.value, b.known = true, true
+	case "false", "0":
+		b.value, b.known = false, true
+	default:
+		return fmt.Errorf("invalid ffprobe boolean value %q", value)
+	}
+	return nil
+}
+
 type probeDocument struct {
 	Format struct {
 		Name     string `json:"format_name"`
@@ -165,25 +224,39 @@ type probeDocument struct {
 		Size     scalar `json:"size"`
 	} `json:"format"`
 	Streams []struct {
-		Index       scalar            `json:"index"`
-		Codec       string            `json:"codec_name"`
-		CodecType   string            `json:"codec_type"`
-		Width       scalar            `json:"width"`
-		Height      scalar            `json:"height"`
-		Channels    scalar            `json:"channels"`
-		SampleRate  scalar            `json:"sample_rate"`
-		Bitrate     scalar            `json:"bit_rate"`
-		Profile     string            `json:"profile"`
-		Level       scalar            `json:"level"`
-		PixelFormat string            `json:"pix_fmt"`
-		FrameRate   string            `json:"avg_frame_rate"`
-		Duration    scalar            `json:"duration"`
-		DurationTS  scalar            `json:"duration_ts"`
-		TimeBase    scalar            `json:"time_base"`
-		Tags        map[string]string `json:"tags"`
-		Disposition struct {
-			Default scalar `json:"default"`
-			Forced  scalar `json:"forced"`
+		Index          scalar            `json:"index"`
+		Codec          string            `json:"codec_name"`
+		CodecType      string            `json:"codec_type"`
+		Width          scalar            `json:"width"`
+		Height         scalar            `json:"height"`
+		Channels       scalar            `json:"channels"`
+		SampleRate     scalar            `json:"sample_rate"`
+		Bitrate        scalar            `json:"bit_rate"`
+		Profile        string            `json:"profile"`
+		Level          scalar            `json:"level"`
+		RawBitDepth    scalar            `json:"bits_per_raw_sample"`
+		BitDepth       scalar            `json:"bits_per_sample"`
+		CodecTag       string            `json:"codec_tag"`
+		CodecTagString string            `json:"codec_tag_string"`
+		PixelFormat    string            `json:"pix_fmt"`
+		FrameRate      string            `json:"avg_frame_rate"`
+		RealFrameRate  string            `json:"r_frame_rate"`
+		ChannelLayout  string            `json:"channel_layout"`
+		RefFrames      scalar            `json:"refs"`
+		FieldOrder     string            `json:"field_order"`
+		IsAVC          probeBoolean      `json:"is_avc"`
+		ColorRange     string            `json:"color_range"`
+		ColorSpace     string            `json:"color_space"`
+		ColorTransfer  string            `json:"color_transfer"`
+		ColorPrimaries string            `json:"color_primaries"`
+		Duration       scalar            `json:"duration"`
+		DurationTS     scalar            `json:"duration_ts"`
+		TimeBase       scalar            `json:"time_base"`
+		Tags           map[string]string `json:"tags"`
+		Disposition    struct {
+			Default         scalar `json:"default"`
+			Forced          scalar `json:"forced"`
+			AttachedPicture scalar `json:"attached_pic"`
 		} `json:"disposition"`
 	} `json:"streams"`
 	Chapters []struct {
@@ -209,9 +282,10 @@ func parseProbe(data []byte) (Info, error) {
 		return Info{}, fmt.Errorf("ffprobe returned no media format or streams")
 	}
 	info := Info{
-		Container: document.Format.Name,
-		Streams:   make([]Stream, 0, len(document.Streams)),
-		Chapters:  make([]Chapter, 0, len(document.Chapters)),
+		ProbeVersion: CurrentProbeVersion,
+		Container:    document.Format.Name,
+		Streams:      make([]Stream, 0, len(document.Streams)),
+		Chapters:     make([]Chapter, 0, len(document.Chapters)),
 	}
 	var err error
 	info.DurationTicks, err = secondsToTicks(document.Format.Duration)
@@ -235,13 +309,34 @@ func parseProbe(data []byte) (Info, error) {
 			Language:             tagValue(source.Tags, "language"),
 			Title:                tagValue(source.Tags, "title"),
 			Profile:              source.Profile,
+			CodecTag:             source.CodecTag,
+			CodecTagString:       source.CodecTagString,
 			PixelFormat:          source.PixelFormat,
+			TimeBase:             string(source.TimeBase),
 			AverageFrameRate:     source.FrameRate,
+			RealFrameRate:        source.RealFrameRate,
+			ChannelLayout:        source.ChannelLayout,
+			FieldOrder:           source.FieldOrder,
+			IsAVC:                source.IsAVC.value,
+			IsAVCKnown:           source.IsAVC.known,
+			ColorRange:           source.ColorRange,
+			ColorSpace:           source.ColorSpace,
+			ColorTransfer:        source.ColorTransfer,
+			ColorPrimaries:       source.ColorPrimaries,
 			IsTextSubtitleStream: source.CodecType == "subtitle" && isTextSubtitle(source.Codec),
+		}
+		if stream.CodecType == "video" {
+			switch stream.FieldOrder {
+			case "progressive":
+				stream.InterlaceKnown = true
+			case "tt", "bb", "tb", "bt":
+				stream.IsInterlaced, stream.InterlaceKnown = true, true
+			}
 		}
 		if source.Index.missing() {
 			return Info{}, fmt.Errorf("stream %d has no index", position)
 		}
+		var rawBitDepth int
 		fields := []struct {
 			name   string
 			source scalar
@@ -253,6 +348,9 @@ func parseProbe(data []byte) (Info, error) {
 			{"channels", source.Channels, &stream.Channels},
 			{"sample_rate", source.SampleRate, &stream.SampleRate},
 			{"level", source.Level, &stream.Level},
+			{"bits_per_raw_sample", source.RawBitDepth, &rawBitDepth},
+			{"bits_per_sample", source.BitDepth, &stream.BitDepth},
+			{"refs", source.RefFrames, &stream.RefFrames},
 		}
 		for _, field := range fields {
 			value, err := field.source.integer()
@@ -260,6 +358,9 @@ func parseProbe(data []byte) (Info, error) {
 				return Info{}, invalidField(fmt.Sprintf("stream[%d].%s", position, field.name), err)
 			}
 			*field.target = int(value)
+		}
+		if rawBitDepth > 0 {
+			stream.BitDepth = rawBitDepth
 		}
 		if indexes[stream.Index] {
 			return Info{}, fmt.Errorf("ffprobe returned duplicate stream index %d", stream.Index)
@@ -279,6 +380,11 @@ func parseProbe(data []byte) (Info, error) {
 		}
 		stream.IsDefault = defaultValue == 1
 		stream.IsForced = forcedValue == 1
+		attachedPicture, err := source.Disposition.AttachedPicture.integer()
+		if err != nil || (attachedPicture != 0 && attachedPicture != 1) {
+			return Info{}, invalidField(fmt.Sprintf("stream[%d].disposition.attached_pic", position), err)
+		}
+		stream.IsAttachedPicture = attachedPicture == 1
 		duration, err := timestampTicks(source.DurationTS, source.TimeBase, source.Duration)
 		if err != nil || duration < 0 {
 			return Info{}, invalidField(fmt.Sprintf("stream[%d].duration", position), err)

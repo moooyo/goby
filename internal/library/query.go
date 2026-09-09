@@ -37,10 +37,15 @@ const libraryColumns = `l.id, l.name, l.collection_type,
 type libraryAccess struct {
 	all     bool
 	folders []string
+	canPlay bool
 }
 
 // QueryItems applies the current user policy before counting or paging items.
 func (s *Store) QueryItems(ctx context.Context, query Query) (ItemResult, error) {
+	return s.queryItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "")
+}
+
+func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (ItemResult, error) {
 	query, err := normalizeItemQuery(query)
 	if err != nil {
 		return ItemResult{}, err
@@ -62,9 +67,15 @@ func (s *Store) QueryItems(ctx context.Context, query Query) (ItemResult, error)
 		args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count library items: %w", err)
 	}
+	order := itemOrderSQL(query)
+	if resumeOrder {
+		args = append(args, query.UserID)
+		order = fmt.Sprintf(`(SELECT user_data.last_played_at FROM user_item_data user_data
+			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id) DESC NULLS LAST, i.id ASC`, len(args))
+	}
 	args = append(args, query.Limit, query.StartIndex)
 	statement := prefix + "SELECT " + itemColumns + " FROM items i WHERE " + filter +
-		" ORDER BY " + itemOrderSQL(query) + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+		" ORDER BY " + order + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query library items: %w", err)
@@ -75,10 +86,15 @@ func (s *Store) QueryItems(ctx context.Context, query Query) (ItemResult, error)
 		if err != nil {
 			return ItemResult{}, fmt.Errorf("scan library item: %w", err)
 		}
+		item.CanPlay = access.canPlay
 		result.Items = append(result.Items, item)
 	}
 	if err := rows.Err(); err != nil {
 		return ItemResult{}, fmt.Errorf("read library items: %w", err)
+	}
+	rows.Close()
+	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
+		return ItemResult{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemResult{}, fmt.Errorf("complete item query: %w", err)
@@ -105,10 +121,15 @@ func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
 	if err != nil {
 		return Item{}, fmt.Errorf("read library item: %w", err)
 	}
+	item.CanPlay = access.canPlay
+	items := []Item{item}
+	if err := attachUserData(ctx, tx, userID, items); err != nil {
+		return Item{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return Item{}, fmt.Errorf("complete item read: %w", err)
 	}
-	return item, nil
+	return items[0], nil
 }
 
 // ListUserLibraries returns only the libraries granted by the user's policy.
@@ -169,14 +190,16 @@ func (s *Store) beginUserRead(ctx context.Context, userID string) (pgx.Tx, libra
 		tx.Rollback(ctx)
 		return nil, libraryAccess{}, ErrForbidden
 	}
+	canPlay := playbackAllowed(policy)
 	if administrator {
-		return tx, libraryAccess{all: true, folders: []string{}}, nil
+		return tx, libraryAccess{all: true, folders: []string{}, canPlay: canPlay}, nil
 	}
 	access, err := parseLibraryPolicy(policy)
 	if err != nil {
 		tx.Rollback(ctx)
 		return nil, libraryAccess{}, err
 	}
+	access.canPlay = canPlay
 	return tx, access, nil
 }
 
@@ -402,6 +425,7 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 		conditions = append(conditions, fmt.Sprintf("i.name ILIKE $%d ESCAPE E'\\\\'", len(args)))
 	}
 	conditions, args = addEntityConditions(query, conditions, args)
+	conditions, args = addUserDataConditions(query, conditions, args)
 	return prefix, strings.Join(conditions, " AND "), args
 }
 

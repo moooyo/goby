@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -12,9 +13,66 @@ func (s *Server) userDTO(user identity.User) map[string]any {
 	return map[string]any{
 		"Id": user.ID, "Name": user.Name, "ServerId": s.serverID,
 		"HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword,
-		"Policy":        map[string]any{"IsAdministrator": user.IsAdministrator, "IsDisabled": user.IsDisabled, "EnableMediaPlayback": false, "EnableAudioPlaybackTranscoding": false, "EnableVideoPlaybackTranscoding": false, "EnableContentDeletion": false},
+		"Policy":        embyUserPolicy(user),
 		"Configuration": map[string]any{},
 	}
+}
+
+// This is a supported-policy projection, never an authorization source. Media
+// opening and playback events independently recheck current database policy.
+func embyUserPolicy(user identity.User) map[string]any {
+	var stored map[string]json.RawMessage
+	valid := json.Unmarshal(user.Policy, &stored) == nil && stored != nil
+	playback := false
+	if valid && !user.IsDisabled {
+		playback = true
+		if raw, exists := stored["EnableMediaPlayback"]; exists {
+			var enabled *bool
+			playback = json.Unmarshal(raw, &enabled) == nil && enabled != nil && *enabled
+		}
+	}
+	allFolders, folders := projectedLibraryAccess(user, stored, valid)
+	return map[string]any{
+		"IsAdministrator": user.IsAdministrator, "IsDisabled": user.IsDisabled,
+		"EnableMediaPlayback": playback, "EnableAllFolders": allFolders, "EnabledFolders": folders,
+		"EnableAudioPlaybackTranscoding": false, "EnableVideoPlaybackTranscoding": false,
+		"EnablePlaybackRemuxing": false, "EnableContentDeletion": false,
+	}
+}
+
+func projectedLibraryAccess(user identity.User, stored map[string]json.RawMessage, valid bool) (bool, []string) {
+	folders := []string{}
+	if user.IsDisabled {
+		return false, folders
+	}
+	// Library access grants administrators all folders before interpreting the
+	// folder policy. The playback switch above still applies to administrators.
+	if user.IsAdministrator {
+		return true, folders
+	}
+	if !valid {
+		return false, folders
+	}
+	all := true
+	if raw, exists := stored["EnableAllFolders"]; exists {
+		var enabled *bool
+		if json.Unmarshal(raw, &enabled) != nil || enabled == nil {
+			return false, folders
+		}
+		all = *enabled
+	}
+	if all {
+		return true, folders
+	}
+	if raw, exists := stored["EnabledFolders"]; exists {
+		if json.Unmarshal(raw, &folders) != nil {
+			return false, []string{}
+		}
+	}
+	if folders == nil {
+		folders = []string{}
+	}
+	return false, folders
 }
 
 func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {

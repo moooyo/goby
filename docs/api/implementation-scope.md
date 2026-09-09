@@ -6,6 +6,14 @@ The objective is an independent open-source Linux media backend that existing Em
 
 The full upstream inventory is [535 operations](catalog.md), with [local request/response models](models.md). That count describes the fixed SDK export, not the complete behavior of every Emby release. The newer baseline is **SDK 4.9.5.0 Release**; see [source provenance](../sources/README.md).
 
+## What compatibility means
+
+The target is a shared Emby-compatible backend that general-purpose clients can connect to, authenticate with, browse, and use to play supported media without modifying the client. An implemented route or a successful JSON response is insufficient: authentication and device/token conventions, DTO shapes and values, playback negotiation, actual HTTP media and subtitle delivery, and playback reports/resume behavior must work together.
+
+Official documentation and pinned SDK exports are the starting contract. Reference-server exchanges establish observed behavior, and real-client tests establish that complete workflows work. Claims remain bounded by the verified features, media profiles, and versions; implementing an API family alone does not prove every client can play.
+
+Common protocol flows guide implementation now; a user-provided client shortlist is not a prerequisite. Testing specific clients measures and improves coverage of the shared backend rather than defining a separately customized backend for each client. Goby's React/MUI dashboard remains administrator-only and contains no playback page; third-party clients provide the playback interface.
+
 ## Delivery definitions
 
 | Stage | Deliverable | Compatibility claim allowed after verification |

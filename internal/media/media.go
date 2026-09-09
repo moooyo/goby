@@ -5,18 +5,23 @@ import "time"
 
 const TicksPerSecond int64 = 10_000_000
 
+// CurrentProbeVersion identifies the media facts stored by this prober.
+const CurrentProbeVersion = 2
+
 type Prober struct {
 	FFprobePath string
 	Timeout     time.Duration
 }
 
 type Info struct {
-	Container     string
-	DurationTicks int64
-	Bitrate       int64
-	Size          int64
-	Streams       []Stream
-	Chapters      []Chapter
+	ProbeVersion     int
+	FileChangeTimeNs int64
+	Container        string
+	DurationTicks    int64
+	Bitrate          int64
+	Size             int64
+	Streams          []Stream
+	Chapters         []Chapter
 }
 
 type Stream struct {
@@ -32,8 +37,27 @@ type Stream struct {
 	Bitrate              int64
 	Profile              string
 	Level                int
+	BitDepth             int
+	CodecTag             string
+	CodecTagString       string
 	PixelFormat          string
+	TimeBase             string
 	AverageFrameRate     string
+	RealFrameRate        string
+	ChannelLayout        string
+	RefFrames            int
+	FieldOrder           string
+	IsInterlaced         bool
+	InterlaceKnown       bool
+	IsAVC                bool
+	IsAVCKnown           bool
+	IsAttachedPicture    bool
+	ColorRange           string
+	ColorSpace           string
+	ColorTransfer        string
+	ColorPrimaries       string
+	VideoRange           string
+	VideoRangeKnown      bool
 	IsDefault            bool
 	IsForced             bool
 	IsExternal           bool

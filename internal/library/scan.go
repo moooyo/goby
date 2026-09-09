@@ -232,6 +232,11 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	}
 	probe := stored.media
 	unchanged := probe != nil && stored.size == info.Size() && stored.modified != nil && stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
+	versioned, checksVersion := state.store.prober.(interface{ CacheVersion() int })
+	if checksVersion {
+		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&
+			probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs == media.FileChangeTime(info)
+	}
 	if !unchanged {
 		probed, probeErr := state.store.prober.ProbeFile(state.task.ctx, file)
 		if probeErr != nil {
@@ -245,7 +250,8 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		// A writer may modify the opened inode during probing. Preserve the old
 		// catalog entry until a later scan observes a consistent file snapshot.
 		after, statErr := file.Stat()
-		if statErr != nil || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) {
+		if statErr != nil || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) ||
+			(checksVersion && media.FileChangeTime(after) != media.FileChangeTime(info)) {
 			state.warnings++
 			return state.store.persistProgress(state.task)
 		}
@@ -307,7 +313,8 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	// names the opened file. A concurrent directory move is not NFO deletion.
 	currentInfo, pathErr := state.opened.Lstat(path)
 	if pathErr != nil || !currentInfo.Mode().IsRegular() || !os.SameFile(info, currentInfo) ||
-		currentInfo.Size() != info.Size() || !currentInfo.ModTime().Equal(info.ModTime()) {
+		currentInfo.Size() != info.Size() || !currentInfo.ModTime().Equal(info.ModTime()) ||
+		(checksVersion && media.FileChangeTime(currentInfo) != media.FileChangeTime(info)) {
 		state.warnings++
 		return state.store.persistProgress(state.task)
 	}

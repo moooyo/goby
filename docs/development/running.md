@@ -1,13 +1,13 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, and initial Emby authentication/browsing routes. Playback and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, and durable per-user playback state. Subtitles, conversion, client-session/events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
 
 ## Build inputs
 
 - Go 1.27.1; the module pins the supported toolchain minimum.
 - PostgreSQL, verified here with 17.11; connect using `GOBY_DATABASE_URL`.
 - Node compatible with the locked frontend dependencies. The initial frontend was built with Node 26.1.0; see [frontend instructions](../../web/admin/README.md).
-- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata. Hardware interfaces can be enumerated, but playback and hardware execution are not yet advertised.
+- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata. Original playback serves unchanged bytes; conversion and hardware execution are not yet advertised.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
@@ -61,6 +61,8 @@ The scanner supports movie, TV, music, and mixed libraries, with two concurrent 
 The scanner also reads [local NFO metadata](local-metadata.md). A normal library scan detects sidecar changes even when media probing is cached. Valid sidecar removal restores scanner-derived values; malformed or inaccessible sidecars retain the last valid metadata with a warning. Schema migration `0003` stores these local overrides separately from probe data. No new configuration variable is required.
 
 Migration `0004` backfills persistent genre/tag/studio/person identities from stored NFO data. Migration `0005` stores [local artwork](local-artwork.md); existing files become indexed during a library scan. Image conversion uses a bounded in-memory cache and needs no writable cache directory. Indexed image contents are public under the compatible ImageService contract; image enumeration still requires authentication and library access. No arbitrary path or URL can be requested through the image-content route.
+
+Migration `0006` adds durable playback sessions and user state. Run a normal scan of existing libraries after upgrading: probe version 2 includes Linux ctime and extra codec facts needed for original-file delivery. Older snapshots remain unavailable for playback until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Scans are not automatically scheduled by this upgrade.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 

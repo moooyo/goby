@@ -428,3 +428,151 @@ The SDK explicitly documents pipe-separated `Genres`, `Tags`, and `StudioIds`. I
 The added stages are `entities_prepare`, `entity_lists`, `entity_navigation`, and `export_entities`. The recorder refuses to overwrite existing `entity-*` evidence. The final export selected only that prefix and remotely checked original response headers, JSON structure and number/string distinctions, and absence of the recorded password and tokens. SHA-256 checks preserved all 178 previous raw/export files. All 18 new fixtures retain the established JSON fixture structure and original synthetic IDs.
 
 No local runtime verification was performed. The reference stayed in its existing private network namespace, and no media scan or metadata refresh was requested. No Goby service or database operation was performed by this capture. Unknown entity names/IDs, Tag detail navigation, multiple numeric IDs, entity deletion, count fields, favorites, permission-restricted users, and further paging combinations remain outside this evidence set.
+
+## M3 playback negotiation, transfer, and reporting extension
+
+This extension adds 42 `playback-m3-*.json` fixtures, including the two explicitly authorized controlled negotiation follow-ups. All server execution and audit work ran on `test-env` inside the existing private network namespace. The original 107 raw captures and 107 exports retained their SHA-256 hashes. Existing media, NFO files, libraries, and users were not used for playback-state mutations; reports and manual user-data changes used a newly created dedicated account and media item.
+
+### Dedicated media and account
+
+A new owned directory, `/opt/goby-fixtures/playback-reference`, contains a synthetic 600-second black H.264/AAC MP4 and a same-basename external SRT. The video was generated without real-time pacing using the existing FFmpeg 9.0.1 installation, at 160x90 and one frame per second, with mono 8 kHz audio. No package or codec dependency was installed.
+
+| File | Size | SHA-256 |
+| --- | --- | --- |
+| `Reference Playback M3.mp4` | 56379 bytes | `997af268405a91e01685afa52d70a892c767e0e7135d25f6a33087cfb72de1c3` |
+| `Reference Playback M3.srt` | 121 bytes | `d801087b005e02b1fac35140024ebfb0e2e9ce4ab0578dd242721e15f8676797` |
+
+The directory has its own `.goby-managed` marker. An independent `Reference Playback M3` movies library was added with online fetchers, realtime monitoring, and local metadata writes disabled. Only that new library received a targeted recursive refresh. The existing network sandbox independently prevented external access. The actual returned library defaults were `MinResumePct=2`, `MaxResumePct=90`, and `MinResumeDurationSeconds=120`; the recorder did not override them.
+
+The administrator created the dedicated `reference-playback-m3` account using `POST /Users/New`, then set its password with `POST /Users/{Id}/Password` and JSON `Id`, `NewPw`, `ResetPassword=false`. User creation returned 200; the password update returned 204; normal username/password authentication returned 200. The new account uses device ID `goby-playback-m3-recorder`, separate from the administrator's recorder device.
+
+Its credentials are kept in `private/playback-m3-credentials.env`, mode `0600 root:root`; the original administrator credential file remains separate. The sanitizer loads both credential sets and redacts `NewPw` as well as other password/token fields. No credentials were printed or copied to the workspace.
+
+The new library item was `Id: "28"`, its media source was `Id: "mediasource_28"`, and its returned `RunTimeTicks` was exactly `6000000000`. At the final checkpoint the root filesystem still had approximately 373 MiB free and tmpfs approximately 1.6 GiB free; the reference service remained active with `PrivateNetwork=yes`.
+
+### PlaybackInfo defaults and controlled capability cases
+
+The short-file negotiation cases used the existing two-second movie `Id: "18"` and its current source ID `mediasource_18`. These calls did not send playback reports for the existing account. The matching profile declared MP4, H.264, and AAC direct playback, an H.264/AAC HLS transcoding profile, external SRT/WebVTT subtitles, and `MaxStreamingBitrate=200000000`. The mismatch profile differed only by declaring HEVC instead of H.264 in its direct-play video codec field.
+
+Every sampled request returned HTTP 200 with `MediaSources` and `PlaySessionId`. No sampled response contained `ErrorCode`, including the all-disabled and mismatch-with-transcoding-disabled cases.
+
+| Request/body variation | SupportsDirectPlay | SupportsDirectStream | SupportsTranscoding | Returned URLs |
+| --- | --- | --- | --- | --- |
+| GET with required `UserId`, no profile | true | true | true | Neither URL present |
+| Minimal POST with `UserId` | true | true | true | Neither URL present |
+| Matching profile, enable flags omitted | true | true | true | `DirectStreamUrl` points to `original.mp4` |
+| HEVC mismatch profile, flags and `IsPlayback` omitted | false | false | true | Both `DirectStreamUrl` and `TranscodingUrl` point to the same HLS master |
+| Matching profile; direct play false, direct stream true, transcoding false | false | true | false | `DirectStreamUrl` points to `original.mp4` |
+| Matching profile; all three enable flags false | false | false | false | Neither URL present; source still returned |
+| HEVC mismatch; `EnableTranscoding=false`, `IsPlayback=true` | true | true | false | `DirectStreamUrl` points to `original.mp4` |
+| Same mismatch; `EnableTranscoding=false`, `IsPlayback=false` | true | true | false | Same original-file URL shape |
+| Same mismatch; `EnableTranscoding=true`, `IsPlayback=true` | false | false | true | Both URLs point to the same HLS master |
+
+The last two requests isolate the two changed booleans against the earlier cases. In this tested profile, the original-file fallback follows `EnableTranscoding=false`, rather than the `IsPlayback` switch. This is an observation of the server's returned flags, not evidence that a HEVC-only decoder can play H.264. Complex profile conditions, wildcards, device policies, HDR, and unsupported source types were not exercised.
+
+The original-file URL has this exact shape:
+
+```text
+/videos/{itemId}/original.mp4?DeviceId=...&MediaSourceId=...&PlaySessionId=...&api_key=...
+```
+
+Its query consists only of `DeviceId`, `MediaSourceId`, `PlaySessionId`, and `api_key`; it has no `Static`, `Container`, or `UserId` parameter. The mismatch HLS URLs additionally contained the encoding/segment parameters recorded in the fixtures and `TranscodeReasons=VideoCodecNotSupported`. In that case `DirectStreamUrl` was populated even though `SupportsDirectStream=false`.
+
+Evidence: all `playback-m3-short-*.json` files. The observed source-ID strings are retained as identifiers; this sample does not establish a universal source-ID construction rule.
+
+### Long-source streams and external subtitle descriptor
+
+The dedicated account's matching-profile POST returned the original MP4 URL and all three support flags true. Its video stream had `Codec: "h264"`, `Profile: "Constrained Baseline"`, `Level: 10`, and `VideoRange: "SDR"`. Audio was stream index 1, codec AAC, profile LC, one channel, 8000 Hz. `DefaultAudioStreamIndex` was 1; `DefaultSubtitleStreamIndex` was absent.
+
+The external subtitle was returned as stream index 2 with:
+
+```json
+{
+  "Codec": "srt",
+  "Type": "Subtitle",
+  "Index": 2,
+  "IsExternal": true,
+  "IsTextSubtitleStream": true,
+  "SupportsExternalStream": true,
+  "DeliveryMethod": "External",
+  "DeliveryUrl": "/Videos/28/mediasource_28/Subtitles/2/0/Stream.srt?api_key=[REDACTED_TOKEN]",
+  "Protocol": "File"
+}
+```
+
+The full descriptor also includes its synthetic path and false/default stream flags. This extension captured the descriptor, not a subtitle download or timing test. Evidence: `playback-m3-long-item.json` and `playback-m3-long-info.json`.
+
+### Static media delivery, authentication, and aliases
+
+The main stream URL was `/emby/Videos/28/stream?Static=true&MediaSourceId=mediasource_28&PlaySessionId=...`. No `Container` query was required for this tested static request. All authenticated requests used the dedicated user; unauthenticated/invalid-token cases retained the same source and play-session identifiers.
+
+| Request | Status | Recorded result |
+| --- | --- | --- |
+| Authenticated full GET | 200 | `video/mp4`, 56379 bytes; body SHA-256 matches the synthetic source |
+| Authenticated HEAD | 200 | Same `Content-Type` and `Content-Length`, empty body |
+| `Range: bytes=0-31` | 206 | 32 bytes; `Content-Range: bytes 0-31/56379` |
+| `Range: bytes=-32` | 206 | **Reference deviation:** 33 leading bytes; `Content-Range: bytes 0-32/56379`, not the final 32 bytes |
+| `Range: bytes=9999999-` | 416 | `text/plain`, 94-byte exception message; no `Content-Range` header |
+| No authentication token, with first-byte range | 401 | `Access token is invalid or expired.` |
+| Invalid `X-Emby-Token`, with first-byte range | 401 | Same error, despite the retained negotiated `PlaySessionId` |
+| Root `/Videos/28/stream`, valid token and range | 206 | Same first 32 bytes |
+| Lowercase `/emby/videos/28/stream`, valid token and range | 206 | Same first 32 bytes |
+| Exact generated `/emby/videos/28/original.mp4?...&api_key=...`, no added auth header or Static parameter | 206 | Same first 32 bytes, using the generated query token |
+| `Range: bytes=0-31` plus matching `If-Range` ETag from HEAD | 206 | Same first 32 bytes |
+
+Successful static responses included `Accept-Ranges: bytes`, `Cache-Control: private, no-transform`, and a quoted ETag. Matching `If-Range` used that exact ETag. Mismatched validators, conditional 304, multipart ranges, and empty files were not tested. The suffix-range result is preserved as an upstream deviation; it must not be described as successful standard suffix-range handling.
+
+The out-of-range body was:
+
+```text
+Exception of type 'MediaBrowser.Common.Extensions.RangeRequestOutOfRangeException' was thrown.
+```
+
+Only one full file body was fetched. Successful additional media GETs used small ranges. A remote audit decoded all seven media-body fixtures and confirmed that each byte sequence matched the source slice declared by its original response `Content-Range`, including the anomalous leading-byte suffix result. It also checked each recorded `Content-Length`. Evidence: `playback-m3-media-*.json`.
+
+### Dedicated-user playback and user-data observations
+
+The report chain used the dedicated account's session ID, the negotiated play-session ID, item/source IDs, `PlayMethod: "DirectStream"`, and a source duration of 600 seconds. Started reported position zero. Progress reported `EventName: "TimeUpdate"` and position `1200000000` ticks. No real-time 120-second wait or media decoding was performed; this tests client-report handling.
+
+| Observation point | Position ticks | PlayCount | Played | Other observed fields |
+| --- | --- | --- | --- | --- |
+| Detail immediately after Started | 0 | 1 | false | `LastPlayedDate` present; `PlayedPercentage` absent |
+| Detail after Progress at 120 seconds | 1200000000 | 1 | false | `PlayedPercentage: 20`, `LastPlayedDate` present |
+| Resume list immediately after that Progress | 1200000000 | **0** | false | One returned item; `PlayedPercentage: 20`; `LastPlayedDate` absent |
+| Detail after Stopped at 120 seconds | 1200000000 | 1 | false | Percentage 20 and date present |
+| Detail after an exact duplicate Stopped report | 1200000000 | 1 | false | Same captured values as after the first stop |
+
+Started, Progress, Stopped, and duplicate Stopped all returned HTTP 204 with empty bodies. The Resume result used the normal `Items`/`TotalRecordCount` envelope and `TotalRecordCount: 1`.
+
+The Resume list's zero count and omitted date differed from the adjacent item-detail response. This trace does not determine whether that difference comes from projection, caching, or persistence timing. It is not evidence that the stored play count was reset: later details still showed count 1. The requests occurred within the same second, so the repeated `LastPlayedDate` value does not establish its update cadence. The duplicate-stop observation covers one exact duplicate for the same owned session, not every idempotence or out-of-order case.
+
+Manual changes were then applied only to this account and item:
+
+| Request | Status | Returned `UserItemDataDto` state |
+| --- | --- | --- |
+| `POST /Users/{userId}/PlayedItems/28` | 200 | Position 0, count 1, played true, favorite false, date present |
+| `DELETE /Users/{userId}/PlayedItems/28` | 200 | Position 0, count 0, played false, favorite false; date omitted |
+| `POST /Users/{userId}/FavoriteItems/28` | 200 | Position 0, count 0, played false, favorite true |
+| `DELETE /Users/{userId}/FavoriteItems/28` | 200 | Position 0, count 0, played false, favorite false |
+
+The final detail agreed with the final zero-count, unplayed, nonfavorite state and omitted `LastPlayedDate`. These mutation responses were standalone user-data objects, not item details or collection envelopes. The first manual played operation preserved the existing count of 1; repeat manual operations were not tested.
+
+Evidence: `playback-m3-started.json`, `playback-m3-progress-120.json`, `playback-m3-stopped-*.json`, `playback-m3-detail-*.json`, `playback-m3-resume-after-progress.json`, `playback-m3-mark-*.json`, and `playback-m3-favorite-*.json`.
+
+### M3 integrity and remaining boundaries
+
+The added stages are `playback_m3_begin`, `playback_m3_flags`, `playback_m3_rejection`, `playback_m3_factorial`, `playback_m3_prepare`, `playback_m3_setup`, `playback_m3_long_info`, `playback_m3_transport`, `playback_m3_reports`, and `export_playback_m3`. Existing named evidence cannot be overwritten. Export selects only the `playback-m3-` prefix, enforces the authorized 42-fixture bound, and preserves all prior raw/export hashes.
+
+Media bodies use the established `binary-base64` representation; original headers and JSON types remain intact. The final remote audit checked credentials from both accounts, decoded media bodies, source/range correspondence, header values, and the 214 original baseline hashes. Both credential files remained mode 0600. No local build, test, or runtime probe was performed for this capture, and the Goby service/database was not operated by it.
+
+Real player interoperability, unknown or omitted play-session IDs, duplicate Started, late Progress after Stop, completion-threshold boundaries, pause/rate extrapolation, multiple concurrent playback sessions, denied user policies, nondefault audio selection, actual subtitle delivery, and transcoded media correctness remain unverified. These fixtures establish reference responses for the documented inputs; they do not claim Goby playback compatibility.
+
+## Watched-state propagation from a series
+
+Four additional `folder-state-*.json` fixtures use only the dedicated M3 account against the existing synthetic `Example Series`. Its current library access already permitted the requests, so no policy change was needed. The sequence marked the series played, read its episodes, marked the series unplayed again, and read its episodes to confirm restoration. The original administrator and other users were not targeted.
+
+Both `POST /Users/{userId}/PlayedItems/{seriesId}` and the corresponding DELETE returned HTTP 200 with a standalone user-data object. After POST, that object had `Played: true`, `UnplayedItemCount: 0`, and `PlayCount: 0`. `GET /Shows/{seriesId}/Episodes?UserId=...` then returned all three episodes across two seasons with `UserData.Played: true`. After DELETE, the series response had `Played: false` and `UnplayedItemCount: 3`; all three episodes subsequently had `Played: false`.
+
+This confirms that the sampled series operation affected descendant episodes rather than only the parent series. The default episode-list projection showed zero `PlayCount` and omitted dates in both reads; no episode-detail count or date inference should be made from those fields. Season-node details and partially restricted library policies were not sampled.
+
+The four requests are `folder-state-series-played.json`, `folder-state-episodes-after-played.json`, `folder-state-series-unplayed.json`, and `folder-state-episodes-after-unplayed.json`. The dedicated user's series and episodes were restored to unplayed through the ordinary API. No media, NFO, vendor code, or server configuration changed. The remote export audit preserved all 298 previous raw/export files by SHA-256, kept original headers and JSON types, and removed credentials. The supporting stages are `folder_state_begin`, `folder_state`, and `export_folder_state`; the extension is limited to these four fixtures.

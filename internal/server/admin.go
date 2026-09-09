@@ -79,7 +79,7 @@ func (s *Server) adminLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func implementedFeatures() map[string]bool {
-	return map[string]bool{"UserManagement": true, "LibraryManagement": true, "Playback": false, "Transcoding": false, "HardwareDecoding": false, "HardwareEncoding": false}
+	return map[string]bool{"UserManagement": true, "LibraryManagement": true, "Playback": true, "Transcoding": false, "HardwareDecoding": false, "HardwareEncoding": false}
 }
 
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) {

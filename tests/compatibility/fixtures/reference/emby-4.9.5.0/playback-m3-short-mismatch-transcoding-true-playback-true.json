@@ -1,0 +1,208 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T00:02:47.090779+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Items/18/PlaybackInfo",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-reference-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "UserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "DeviceProfile": {
+        "Name": "M3 MP4 H264 AAC client",
+        "MaxStreamingBitrate": 200000000,
+        "DirectPlayProfiles": [
+          {
+            "Type": "Video",
+            "Container": "mp4",
+            "VideoCodec": "hevc",
+            "AudioCodec": "aac"
+          }
+        ],
+        "TranscodingProfiles": [
+          {
+            "Container": "ts",
+            "Type": "Video",
+            "VideoCodec": "h264",
+            "AudioCodec": "aac",
+            "Protocol": "hls",
+            "Context": "Streaming",
+            "MaxAudioChannels": "2",
+            "MinSegments": 1,
+            "SegmentLength": 3
+          }
+        ],
+        "SubtitleProfiles": [
+          {
+            "Format": "srt",
+            "Method": "External"
+          },
+          {
+            "Format": "vtt",
+            "Method": "External"
+          }
+        ]
+      },
+      "EnableTranscoding": true,
+      "IsPlayback": true
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "2818"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 00:02:46 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "MediaSources": [
+        {
+          "Chapters": [],
+          "Protocol": "File",
+          "Id": "mediasource_18",
+          "Path": "/opt/goby-fixtures/movies/Goby Sample (2026).mp4",
+          "Type": "Default",
+          "Container": "mp4",
+          "Size": 90299,
+          "Name": "Goby Sample (2026)",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 20000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": false,
+          "SupportsDirectPlay": false,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/12288",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 280500,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 24,
+              "RealFrameRate": 24,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 70056,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 361196,
+          "RequiredHttpHeaders": {},
+          "DirectStreamUrl": "/videos/18/master.m3u8?DeviceId=goby-reference-recorder&MediaSourceId=mediasource_18&PlaySessionId=96bbcd5bdb254d0baecbea36d48b5d34&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=aac&VideoBitrate=199929944&AudioBitrate=70056&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&SegmentContainer=ts&SegmentLength=3&MinSegments=1&BreakOnNonKeyFrames=False&TranscodeReasons=VideoCodecNotSupported",
+          "AddApiKeyToDirectStreamUrl": false,
+          "TranscodingUrl": "/videos/18/master.m3u8?DeviceId=goby-reference-recorder&MediaSourceId=mediasource_18&PlaySessionId=96bbcd5bdb254d0baecbea36d48b5d34&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=aac&VideoBitrate=199929944&AudioBitrate=70056&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&SegmentContainer=ts&SegmentLength=3&MinSegments=1&BreakOnNonKeyFrames=False&TranscodeReasons=VideoCodecNotSupported",
+          "TranscodingSubProtocol": "hls",
+          "TranscodingContainer": "ts",
+          "ReadAtNativeFramerate": false,
+          "DefaultAudioStreamIndex": 1,
+          "ItemId": "18"
+        }
+      ],
+      "PlaySessionId": "96bbcd5bdb254d0baecbea36d48b5d34"
+    }
+  },
+  "observation": "Controlled follow-up: the mismatch profile and all other fields are unchanged; only EnableTranscoding/IsPlayback vary."
+}

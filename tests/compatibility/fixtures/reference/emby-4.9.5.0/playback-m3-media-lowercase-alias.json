@@ -1,0 +1,86 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T00:02:47.164221+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/videos/28/stream?Static=true&MediaSourceId=mediasource_28&PlaySessionId=d93b13161adb4bdd968f256a445510e8",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-playback-m3-recorder\", Version=\"0.1.0\"",
+      "Range": "bytes=0-31",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 206,
+    "headers": [
+      [
+        "Content-Length",
+        "32"
+      ],
+      [
+        "Content-Type",
+        "video/mp4"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 00:02:46 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "private, no-transform"
+      ],
+      [
+        "Content-Range",
+        "bytes 0-31/56379"
+      ],
+      [
+        "ETag",
+        "\"ecb836cad2e849780355f4f990f68df0\""
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "binary-base64",
+    "body": "AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDE="
+  },
+  "observation": "Wire media body: 32 bytes; SHA-256=b1c35f1e6d75af66f96c70ff2572346caa6812dee411ad1134cffb50e33fba5c. Body is base64-encoded exact response bytes."
+}

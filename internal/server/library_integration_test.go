@@ -260,7 +260,7 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 		}
 	}
 	stat, err := os.Stat(secondFile)
-	if err != nil || source["Size"] != float64(stat.Size()) || source["Container"] != "mov" || detail["RunTimeTicks"] != float64(125*media.TicksPerSecond) {
+	if err != nil || source["Size"] != float64(stat.Size()) || source["Container"] != "mp4" || detail["RunTimeTicks"] != float64(125*media.TicksPerSecond) {
 		t.Fatalf("media source size, container, or duration changed: %#v, stat error = %v", source, err)
 	}
 	overview := jsonObject(t, f.request(t, http.MethodGet, "/admin/v1/overview", nil, nil, cookie))

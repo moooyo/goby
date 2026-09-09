@@ -1,0 +1,528 @@
+package library
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/media"
+)
+
+type PlaybackOwner struct {
+	UserID, SessionID, DeviceID string
+}
+
+type PlaySession struct {
+	ID, UserID, AuthSessionID, DeviceID, ItemID, MediaSourceID, State string
+	PositionTicks, DurationTicks                                      int64
+	CreatedAt, UpdatedAt, ExpiresAt                                   time.Time
+	StartedAt, StoppedAt                                              *time.Time
+	counted                                                           bool
+	live                                                              bool
+}
+
+// Event reports use database-lock processing order. Position may move backward for seeks;
+// stopped sessions ignore all later events and cannot be revived by progress.
+// Authentication identities and client-reported durations are not report fields.
+type PlaybackReport struct {
+	PlaySessionID, ItemID, MediaSourceID, Event string
+	PositionTicks                               *int64
+	IsPaused                                    bool
+}
+
+const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, counted, expires_at > clock_timestamp()`
+
+func scanPlaySession(row rowScanner) (PlaySession, error) {
+	var session PlaySession
+	err := row.Scan(&session.ID, &session.UserID, &session.AuthSessionID, &session.DeviceID,
+		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
+		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
+		&session.StartedAt, &session.StoppedAt, &session.counted, &session.live)
+	return session, err
+}
+
+func validPlaybackOwner(owner PlaybackOwner) bool {
+	for _, value := range []string{owner.UserID, owner.SessionID} {
+		if strings.TrimSpace(value) == "" || len(value) > 256 || strings.ContainsRune(value, '\x00') || !utf8.ValidString(value) {
+			return false
+		}
+	}
+	return len(owner.DeviceID) <= 256 && !strings.ContainsRune(owner.DeviceID, '\x00') && utf8.ValidString(owner.DeviceID)
+}
+
+func (s *Store) beginPlaybackWrite(ctx context.Context, owner PlaybackOwner) (pgx.Tx, libraryAccess, error) {
+	if !validPlaybackOwner(owner) {
+		return nil, libraryAccess{}, ErrInvalidInput
+	}
+	tx, access, err := s.beginStateWrite(ctx, owner.UserID, true)
+	if err != nil {
+		return nil, libraryAccess{}, err
+	}
+	var sessionID string
+	err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication JOIN users account ON account.id = authentication.user_id
+		WHERE authentication.id = $1 AND authentication.user_id = $2 AND authentication.device_id = $3
+		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp()
+		AND (authentication.kind <> 'admin' OR account.is_administrator)
+		FOR SHARE OF authentication`, owner.SessionID, owner.UserID, owner.DeviceID).Scan(&sessionID)
+	if err != nil {
+		rollback(tx)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, libraryAccess{}, ErrForbidden
+		}
+		return nil, libraryAccess{}, fmt.Errorf("authorize playback authentication session: %w", err)
+	}
+	return tx, access, nil
+}
+
+// Cleanup has its own short transaction and never locks user_item_data. This
+// avoids reversing the report lock order (user data before a playback row).
+// At most 256 terminal rows are deleted per call; active sessions are capped.
+func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error {
+	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	if err != nil {
+		return err
+	}
+	defer rollback(tx)
+	if _, err := tx.Exec(ctx, `WITH expired AS (
+		SELECT play.id FROM play_sessions play WHERE play.user_id = $1
+		AND play.state IN ('Prepared','Playing','Paused') AND (play.expires_at <= clock_timestamp() OR NOT EXISTS (
+			SELECT 1 FROM sessions authentication JOIN users account ON account.id = authentication.user_id
+			WHERE authentication.id = play.auth_session_id AND authentication.user_id = play.user_id
+			AND authentication.device_id = play.device_id AND authentication.revoked_at IS NULL
+			AND authentication.expires_at > clock_timestamp() AND (authentication.kind <> 'admin' OR account.is_administrator)
+		) OR NOT EXISTS (SELECT 1 FROM items i WHERE i.id = play.item_id
+			AND ($2::boolean OR i.library_id = ANY($3::text[]))))
+		ORDER BY play.expires_at, play.id LIMIT 256 FOR UPDATE OF play SKIP LOCKED
+	) UPDATE play_sessions SET state = 'Expired', stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp()
+	WHERE id IN (SELECT id FROM expired)`, owner.UserID, access.all, access.folders); err != nil {
+		return fmt.Errorf("expire abandoned playback sessions: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `WITH excess AS (
+		SELECT id FROM play_sessions WHERE user_id = $1 AND state IN ('Stopped','Expired')
+		ORDER BY created_at DESC, id DESC OFFSET 256
+	), removable AS (
+		SELECT id FROM play_sessions WHERE user_id = $1 AND state IN ('Stopped','Expired')
+		AND (expires_at < clock_timestamp() - interval '7 days' OR id IN (SELECT id FROM excess))
+		ORDER BY created_at, id LIMIT 256 FOR UPDATE SKIP LOCKED
+	) DELETE FROM play_sessions WHERE id IN (SELECT id FROM removable)`, owner.UserID); err != nil {
+		return fmt.Errorf("prune old playback sessions: %w", err)
+	}
+	return tx.Commit(ctx)
+}
+
+func sourceForItem(itemID, requested string) (string, error) {
+	expected := media.SourceID(itemID)
+	if requested != "" && requested != expected {
+		return "", ErrNotFound
+	}
+	return expected, nil
+}
+
+func clampPosition(position, duration int64) int64 {
+	if position > duration {
+		return duration
+	}
+	return position
+}
+
+func readOwnedPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id string, lock bool) (PlaySession, error) {
+	statement := "SELECT " + playSessionColumns + ` FROM play_sessions
+		WHERE id = $1 AND user_id = $2 AND auth_session_id = $3 AND device_id = $4`
+	if lock {
+		statement += " FOR UPDATE"
+	}
+	session, err := scanPlaySession(tx.QueryRow(ctx, statement, id, owner.UserID, owner.SessionID, owner.DeviceID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return PlaySession{}, ErrNotFound
+	}
+	if err != nil {
+		return PlaySession{}, fmt.Errorf("read owned playback session: %w", err)
+	}
+	return session, nil
+}
+
+func currentPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, itemID, sourceID string, includeStopped bool) (PlaySession, error) {
+	filter := "AND state IN ('Prepared','Playing','Paused')"
+	if includeStopped {
+		filter = ""
+	}
+	order := "created_at DESC, id DESC"
+	if includeStopped {
+		order = "CASE WHEN state IN ('Prepared','Playing','Paused') THEN 0 ELSE 1 END, " + order
+	}
+	session, err := scanPlaySession(tx.QueryRow(ctx, "SELECT "+playSessionColumns+` FROM play_sessions
+		WHERE user_id = $1 AND auth_session_id = $2 AND device_id = $3 AND item_id = $4 AND media_source_id = $5 `+
+		filter+" ORDER BY "+order+" LIMIT 1 FOR UPDATE", owner.UserID, owner.SessionID, owner.DeviceID, itemID, sourceID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return PlaySession{}, ErrNotFound
+	}
+	return session, err
+}
+
+func createPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
+	var authCount, userCount int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2), count(*)
+		FROM play_sessions WHERE user_id = $1 AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp()`,
+		owner.UserID, owner.SessionID).Scan(&authCount, &userCount); err != nil {
+		return PlaySession{}, fmt.Errorf("check playback session capacity: %w", err)
+	}
+	if authCount >= 32 || userCount >= 128 {
+		return PlaySession{}, ErrBusy
+	}
+	id, err := randomID()
+	if err != nil {
+		return PlaySession{}, err
+	}
+	// A purpose prefix makes it impossible to confuse this with an auth session.
+	id = "play_" + id
+	session, err := scanPlaySession(tx.QueryRow(ctx, `INSERT INTO play_sessions
+		(id, user_id, auth_session_id, device_id, item_id, media_source_id, state, position_ticks, duration_ticks, expires_at)
+		VALUES ($1,$2,$3,$4,$5,$6,'Prepared',$7,$8,clock_timestamp() + interval '30 minutes') RETURNING `+playSessionColumns,
+		id, owner.UserID, owner.SessionID, owner.DeviceID, item.id, sourceID, clampPosition(data.PlaybackPositionTicks, item.duration), item.duration))
+	if err != nil {
+		return PlaySession{}, fmt.Errorf("create playback session: %w", err)
+	}
+	return session, nil
+}
+
+func lockPlaybackCapacity(ctx context.Context, tx pgx.Tx, userID string) error {
+	// Serialize only session creation for one user, including calls for different
+	// items. Reports keep their independent row locks and do not take this lock.
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended(
+		current_schema() || chr(31) || 'goby.playback.capacity' || chr(31) || $1, 0))`, userID)
+	return err
+}
+
+func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
+	// Select by active state without an expiry predicate, then decide while the
+	// row is locked. A deadline crossing between SQL statements cannot hide an
+	// active-state row that still occupies the unique source key.
+	session, err := currentPlaySession(ctx, tx, owner, item.id, sourceID, false)
+	if err == nil && session.live {
+		return session, nil
+	}
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return PlaySession{}, err
+	}
+	if err == nil {
+		if _, err := tx.Exec(ctx, `UPDATE play_sessions SET state = 'Expired',
+			stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp() WHERE id = $1`, session.ID); err != nil {
+			return PlaySession{}, err
+		}
+	}
+	return createPlaySession(ctx, tx, owner, item, sourceID, data)
+}
+
+func (s *Store) PreparePlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string) (PlaySession, error) {
+	if err := s.cleanupPlayback(ctx, owner); err != nil {
+		return PlaySession{}, err
+	}
+	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	defer rollback(tx)
+	item, err := lockStateItem(ctx, tx, access, itemID, true)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	sourceID, err := sourceForItem(itemID, mediaSourceID)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	if err := lockPlaybackCapacity(ctx, tx, owner.UserID); err != nil {
+		return PlaySession{}, fmt.Errorf("lock playback session capacity: %w", err)
+	}
+	data, err := lockUserData(ctx, tx, owner.UserID, itemID)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	var session PlaySession
+	if currentPlaySessionID != "" {
+		session, err = readOwnedPlaySession(ctx, tx, owner, currentPlaySessionID, true)
+		if err != nil || session.ItemID != itemID || session.MediaSourceID != sourceID || session.State == "Stopped" || session.State == "Expired" || !session.live {
+			if err != nil {
+				return PlaySession{}, err
+			}
+			return PlaySession{}, ErrNotFound
+		}
+	} else {
+		session, err = activeOrNewPlayback(ctx, tx, owner, item, sourceID, data)
+		if err != nil {
+			return PlaySession{}, err
+		}
+	}
+	session, err = scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET updated_at = clock_timestamp(),
+		expires_at = clock_timestamp() + interval '30 minutes',
+		position_ticks = CASE WHEN state = 'Prepared' THEN LEAST(position_ticks, $2) ELSE position_ticks END,
+		duration_ticks = CASE WHEN state = 'Prepared' THEN $2 ELSE duration_ticks END
+		WHERE id = $1 RETURNING `+playSessionColumns, session.ID, item.duration))
+	if err != nil {
+		return PlaySession{}, fmt.Errorf("refresh prepared playback session: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return PlaySession{}, fmt.Errorf("commit prepared playback session: %w", err)
+	}
+	return session, nil
+}
+
+// GetPlaybackSession authorizes operations that require a live prepared or
+// active session, such as future conversion jobs. Original-file reads use
+// current token, account, library, and source authorization independently of
+// playback state. Terminal sessions still accept idempotent event reports.
+func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id string) (PlaySession, error) {
+	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	defer rollback(tx)
+	session, err := readOwnedPlaySession(ctx, tx, owner, id, false)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	if _, err := lockStateItem(ctx, tx, access, session.ItemID, true); err != nil {
+		return PlaySession{}, err
+	}
+	session, err = readOwnedPlaySession(ctx, tx, owner, id, true)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	if _, err := sourceForItem(session.ItemID, session.MediaSourceID); err != nil {
+		return PlaySession{}, err
+	}
+	if session.State == "Stopped" || session.State == "Expired" || !session.live {
+		return PlaySession{}, ErrNotFound
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return PlaySession{}, fmt.Errorf("complete playback session validation: %w", err)
+	}
+	return session, nil
+}
+
+// ListPlaybackSessions returns a bounded active-session view. The HTTP layer
+// decides whether to request administrator scope; the database rechecks it.
+func (s *Store) ListPlaybackSessions(ctx context.Context, ownerUserID string, administrator bool) ([]PlaySession, error) {
+	tx, access, err := s.beginUserRead(ctx, ownerUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rollback(tx)
+	if administrator {
+		var allowed bool
+		if err := tx.QueryRow(ctx, "SELECT is_administrator FROM users WHERE id = $1", ownerUserID).Scan(&allowed); err != nil {
+			return nil, err
+		}
+		if !allowed {
+			return nil, ErrForbidden
+		}
+	}
+	columns := strings.Split(playSessionColumns, ",")
+	for index, column := range columns {
+		columns[index] = "play." + strings.TrimSpace(column)
+	}
+	rows, err := tx.Query(ctx, "SELECT "+strings.Join(columns, ",")+` FROM play_sessions play
+		JOIN sessions authentication ON authentication.id = play.auth_session_id AND authentication.user_id = play.user_id
+			AND authentication.device_id = play.device_id
+		JOIN users account ON account.id = play.user_id JOIN items i ON i.id = play.item_id
+		WHERE play.state IN ('Prepared','Playing','Paused') AND play.expires_at > clock_timestamp()
+		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
+		AND (authentication.kind <> 'admin' OR account.is_administrator)
+		AND jsonb_typeof(account.policy) = 'object'
+		AND (NOT (account.policy ? 'EnableMediaPlayback') OR account.policy -> 'EnableMediaPlayback' = 'true'::jsonb)
+		AND (account.is_administrator OR NOT (account.policy ? 'EnableAllFolders')
+			OR account.policy -> 'EnableAllFolders' = 'true'::jsonb OR (
+				account.policy -> 'EnableAllFolders' = 'false'::jsonb
+				AND jsonb_typeof(account.policy -> 'EnabledFolders') = 'array'
+				AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(CASE
+					WHEN jsonb_typeof(account.policy -> 'EnabledFolders') = 'array' THEN account.policy -> 'EnabledFolders'
+					ELSE '[]'::jsonb END) AS folder(value) WHERE jsonb_typeof(folder.value) <> 'string')
+				AND (account.policy -> 'EnabledFolders') ? i.library_id
+			))
+		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[]))
+		ORDER BY play.updated_at DESC, play.id LIMIT 256`, administrator, ownerUserID, access.all, access.folders)
+	if err != nil {
+		return nil, fmt.Errorf("list active playback sessions: %w", err)
+	}
+	defer rows.Close()
+	result := make([]PlaySession, 0)
+	for rows.Next() {
+		session, err := scanPlaySession(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, session)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func canonicalPlaybackEvent(event string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(event)) {
+	case "started":
+		return "Started", nil
+	case "progress":
+		return "Progress", nil
+	case "ping":
+		return "Ping", nil
+	case "stopped":
+		return "Stopped", nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+// stopPosition is Goby's explicit initial completion policy, using the observed
+// reference defaults of 2% minimum, 90% maximum and 120 seconds minimum length.
+// Progress reports keep their raw bounded position; normalization occurs on stop.
+func stopPosition(position, duration int64) (int64, bool) {
+	if duration <= 0 || position <= 0 {
+		return 0, false
+	}
+	minimum := duration/100*2 + (duration%100*2+99)/100
+	completion := duration/100*90 + (duration%100*90+99)/100
+	if position >= completion {
+		return 0, true
+	}
+	if duration < 120*media.TicksPerSecond || position < minimum {
+		return 0, false
+	}
+	return position, false
+}
+
+func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report PlaybackReport) (PlaySession, UserData, error) {
+	event, err := canonicalPlaybackEvent(report.Event)
+	if err != nil || (report.PositionTicks != nil && *report.PositionTicks < 0) {
+		return PlaySession{}, UserData{}, ErrInvalidInput
+	}
+	if event == "Started" && report.PlaySessionID == "" {
+		if err := s.cleanupPlayback(ctx, owner); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+	}
+	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	if err != nil {
+		return PlaySession{}, UserData{}, err
+	}
+	defer rollback(tx)
+	if report.PlaySessionID != "" {
+		identified, err := readOwnedPlaySession(ctx, tx, owner, report.PlaySessionID, false)
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		if (report.ItemID != "" && report.ItemID != identified.ItemID) ||
+			(report.MediaSourceID != "" && report.MediaSourceID != identified.MediaSourceID) {
+			return PlaySession{}, UserData{}, ErrNotFound
+		}
+		report.ItemID, report.MediaSourceID = identified.ItemID, identified.MediaSourceID
+	}
+	item, err := lockStateItem(ctx, tx, access, report.ItemID, true)
+	if err != nil {
+		return PlaySession{}, UserData{}, err
+	}
+	sourceID, err := sourceForItem(report.ItemID, report.MediaSourceID)
+	if err != nil {
+		return PlaySession{}, UserData{}, err
+	}
+	if event == "Started" && report.PlaySessionID == "" {
+		if err := lockPlaybackCapacity(ctx, tx, owner.UserID); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+	}
+	// Every event uses the same data-before-playback-row lock order.
+	data, err := lockUserData(ctx, tx, owner.UserID, report.ItemID)
+	if err != nil {
+		return PlaySession{}, UserData{}, err
+	}
+	var session PlaySession
+	if report.PlaySessionID != "" {
+		session, err = readOwnedPlaySession(ctx, tx, owner, report.PlaySessionID, true)
+	} else if event == "Started" {
+		session, err = activeOrNewPlayback(ctx, tx, owner, item, sourceID, data)
+	} else {
+		session, err = currentPlaySession(ctx, tx, owner, report.ItemID, sourceID, true)
+	}
+	if err != nil {
+		return PlaySession{}, UserData{}, err
+	}
+	if session.State == "Stopped" || session.State == "Expired" {
+		if err := tx.Commit(ctx); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		return session, data, nil
+	}
+	if !session.live {
+		session, err = scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET state = 'Expired',
+			stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp() WHERE id = $1 RETURNING `+playSessionColumns, session.ID))
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		return session, data, nil
+	}
+	if event == "Started" && session.StartedAt != nil {
+		if err := tx.Commit(ctx); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		return session, data, nil
+	}
+	position := clampPosition(session.PositionTicks, item.duration)
+	if report.PositionTicks != nil && event != "Ping" {
+		position = clampPosition(*report.PositionTicks, item.duration)
+	}
+	countNow := !session.counted && (event == "Started" || event == "Progress" || (event == "Stopped" && position > 0))
+	counted := session.counted || countNow
+	state := session.State
+	if event == "Started" || event == "Progress" {
+		state = "Playing"
+		if report.IsPaused {
+			state = "Paused"
+		}
+	} else if event == "Stopped" {
+		state = "Stopped"
+	}
+	session, err = scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET state = $2,
+		position_ticks = $3, duration_ticks = $4, counted = $5,
+		started_at = CASE WHEN $6 THEN COALESCE(started_at, clock_timestamp()) ELSE started_at END,
+		stopped_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE stopped_at END,
+		expires_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE clock_timestamp() + interval '30 minutes' END,
+		updated_at = clock_timestamp() WHERE id = $1 RETURNING `+playSessionColumns,
+		session.ID, state, position, item.duration, counted, countNow))
+	if err != nil {
+		return PlaySession{}, UserData{}, fmt.Errorf("persist playback report: %w", err)
+	}
+	if event != "Ping" {
+		if countNow && data.PlayCount < math.MaxInt32 {
+			data.PlayCount++
+		}
+		data.PlaybackPositionTicks = position
+		if event == "Stopped" {
+			var completed bool
+			data.PlaybackPositionTicks, completed = stopPosition(position, item.duration)
+			data.Played = data.Played || completed
+		}
+		data, err = scanUserData(tx.QueryRow(ctx, `UPDATE user_item_data SET playback_position_ticks = $3,
+			play_count = $4, played = $5, last_played_at = CASE WHEN $6 THEN clock_timestamp() ELSE last_played_at END,
+			updated_at = clock_timestamp() WHERE user_id = $1 AND item_id = $2 RETURNING `+userDataColumns,
+			owner.UserID, item.id, data.PlaybackPositionTicks, data.PlayCount, data.Played, countNow))
+		if err != nil {
+			return PlaySession{}, UserData{}, fmt.Errorf("persist playback user data: %w", err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return PlaySession{}, UserData{}, fmt.Errorf("commit playback report: %w", err)
+	}
+	return session, data, nil
+}

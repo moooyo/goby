@@ -48,6 +48,8 @@ type Item struct {
 	Media                                                         *media.Info
 	Metadata                                                      *metadata.Metadata
 	Entities                                                      ItemEntities
+	UserData                                                      *UserData
+	CanPlay                                                       bool
 }
 
 type Query struct {
@@ -56,9 +58,11 @@ type Query struct {
 	StartIndex, Limit                               int
 	IncludeItemTypes, Ids, MediaTypes               []string
 	ParentIndexNumber                               *int
-	GenreIds, TagIds, StudioIds                       []int64
-	PersonIds, Genres, Tags, Studios, PersonTypes      []string
+	GenreIds, TagIds, StudioIds                     []int64
+	PersonIds, Genres, Tags, Studios, PersonTypes   []string
 	Person                                          string
+	IsPlayed, IsFavorite                            *bool
+	Resumable                                       bool
 }
 
 type ItemResult struct {

@@ -1,0 +1,141 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T00:27:46.867346+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Shows/12/Episodes?UserId=b9ea5322ce7342a283da085981dc454d",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Test\", DeviceId=\"goby-playback-m3-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "1265"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 00:27:46 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Goby sample movie",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "15",
+          "RunTimeTicks": 20000000,
+          "IndexNumber": 1,
+          "ParentIndexNumber": 1,
+          "IsFolder": false,
+          "Type": "Episode",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": true
+          },
+          "SeriesName": "Example Series",
+          "SeriesId": "12",
+          "SeasonId": "13",
+          "SeasonName": "Season 1",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        },
+        {
+          "Name": "Goby sample movie",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "16",
+          "RunTimeTicks": 20000000,
+          "IndexNumber": 2,
+          "ParentIndexNumber": 1,
+          "IsFolder": false,
+          "Type": "Episode",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": true
+          },
+          "SeriesName": "Example Series",
+          "SeriesId": "12",
+          "SeasonId": "13",
+          "SeasonName": "Season 1",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        },
+        {
+          "Name": "Goby sample movie",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "17",
+          "RunTimeTicks": 20000000,
+          "IndexNumber": 1,
+          "ParentIndexNumber": 2,
+          "IsFolder": false,
+          "Type": "Episode",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": true
+          },
+          "SeriesName": "Example Series",
+          "SeriesId": "12",
+          "SeasonId": "14",
+          "SeasonName": "Season 2",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 3
+    }
+  }
+}
