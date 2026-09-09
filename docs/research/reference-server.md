@@ -5,8 +5,8 @@ Status recorded at `2026-09-08T22:37:09Z` on the authorized Linux `test-env` hos
 Later bounded studies are documented separately: [HLS](hls-reference.md),
 [Universal/progressive audio](audio-reference.md), [audio profiles](audio-profile-reference.md),
 and [progressive-video profiles](video-progressive-reference.md), followed by
-[metadata updates and locks](metadata-reference.md). The retained corpus now
-contains 958 JSON records, including supporting observations and
+[metadata updates and locks](metadata-reference.md) and [application keys](api-key-reference.md). The retained corpus now
+contains 1006 JSON records, including supporting observations and
 preserved incomplete responses; historical counts below describe their original
 capture boundaries. The M4e video extension adds 92 records with 61 complete HTTP
 captures and does not establish general copied-video seek correctness.

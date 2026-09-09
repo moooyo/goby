@@ -57,3 +57,10 @@ forced replacement and reset. Native Goby locks must not be described as matchin
 all observed Emby mutation semantics.
 
 Do not replay setup/library mutations against arbitrary servers. Differential checks should normalize explicitly chosen nondeterministic fields without changing casing, array/object shape, status, content type, null/omission distinctions, or numeric values.
+
+The [application-key study](../../../../../docs/research/api-key-reference.md) adds
+48 records under the keys-m5d prefix: 47 complete HTTP exchanges and one audit.
+The keys are independent of user logins; creation, carriers, list DTOs, permissions,
+pagination anomalies, deletion and logout are recorded. All four newly issued
+keys and both dedicated logins were retired; all 958 older records and known
+source paths retained their hashes. This study does not verify key playback.
