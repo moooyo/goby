@@ -1,0 +1,79 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:35:49.236801+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder-other",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "5vDqS4fSaJ7q+/rMTNUSoQ=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder-other HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: 5vDqS4fSaJ7q+/rMTNUSoQ==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:35:48 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "h5SsXgN5/geKOmIGbQ3w1noWKsM="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 01:35:48 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: h5SsXgN5/geKOmIGbQ3w1noWKsM=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T01:35:50.238799+00:00",
+      "elapsedMs": 1002.152,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T01:35:50.239542+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 1002.844,
+  "unparsedBufferedBytes": 0
+}

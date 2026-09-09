@@ -1,0 +1,76 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:35:49.314196+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Videos/40/mediasource_40/Subtitles/2/0/Stream.srt?api_key=[REDACTED_TOKEN]",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "617"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:35:48 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "public, no-transform"
+      ],
+      [
+        "ETag",
+        "\"9862effb2be8215f22b1681bd463bd42\""
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "1\r\n00:00:00,000 --> 00:00:05,000\r\nBefore the window.\r\n\r\n2\r\n00:00:08,000 --> 00:00:10,000\r\nEnds exactly at start.\r\n\r\n3\r\n00:00:09,000 --> 00:00:12,000\r\n<i>Café — naïve façade.</i>\r\nSecond line &amp; markup.\r\n\r\n4\r\n00:00:10,000 --> 00:00:11,000\r\nStarts exactly at start.\r\n\r\n5\r\n00:00:12,500 --> 00:00:15,250\r\n<b>Inside the window.</b>\r\n\r\n6\r\n00:00:18,000 --> 00:00:22,000\r\nCrosses the end.\r\n\r\n7\r\n00:00:19,500 --> 00:00:20,000\r\nEnds exactly at end.\r\n\r\n8\r\n00:00:20,000 --> 00:00:21,000\r\nStarts exactly at end.\r\n\r\n9\r\n00:00:22,000 --> 00:00:25,000\r\nAfter the window.\r\n\r\n10\r\n00:00:30,000 --> 00:00:33,000\r\nLater window.\r\n\r\n"
+  }
+}

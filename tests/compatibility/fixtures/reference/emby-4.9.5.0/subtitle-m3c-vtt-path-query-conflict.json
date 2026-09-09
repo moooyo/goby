@@ -1,0 +1,81 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:42:21.159804+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Videos/40/mediasource_40/Subtitles/2/100000000/Stream.vtt?StartPositionTicks=0&EndPositionTicks=200000000&CopyTimestamps=true",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Session Test\", DeviceId=\"goby-session-m3b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "372"
+      ],
+      [
+        "Content-Type",
+        "text/vtt"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:42:20 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "public, no-transform"
+      ],
+      [
+        "ETag",
+        "\"407b88d043f1ba14c92659451a1a8ad2\""
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "WEBVTT\n\n00:00.000 --> 00:05.000\nBefore the window.\n\n00:08.000 --> 00:10.000\nEnds exactly at start.\n\n00:09.000 --> 00:12.000\n<i>Café — naïve façade.</i>\nSecond line &amp; markup.\n\n00:10.000 --> 00:11.000\nStarts exactly at start.\n\n00:12.500 --> 00:15.250\n<b>Inside the window.</b>\n\n00:18.000 --> 00:22.000\nCrosses the end.\n\n00:19.500 --> 00:20.000\nEnds exactly at end.\n"
+  },
+  "observation": "Path start is 10 seconds while query start is zero; all other window controls match the recorded true case."
+}

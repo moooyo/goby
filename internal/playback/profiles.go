@@ -31,7 +31,8 @@ var (
 
 // Source contains already obtained facts about an original local media file.
 // Its caller owns availability and permission checks. MediaSourceID defaults
-// to media.SourceID(ItemID) when omitted.
+// to media.SourceID(ItemID) when omitted. Streams may also contain verified,
+// indexed external subtitle metadata with stable global stream indices.
 type Source struct {
 	ItemID, MediaSourceID, Path, ItemType string
 	Info                                  media.Info
@@ -52,12 +53,15 @@ type Reason struct {
 // explicit request limits; ClientMustValidate requires the client to decide
 // container/codec compatibility. Selected nondefault audio remains in the
 // complete original file and requires client-side track selection.
+// SubtitleFormat names an indexed external text subtitle's selected srt/vtt
+// representation; the caller still authorizes and delivers that separate file.
 type Decision struct {
 	DirectPlay, DirectStream, ProfileEvaluated, ClientMustValidate bool
 	OriginalCompatible, ProfileMatched                             bool
 	RequiresAudioTrackSelection                                    bool
 	DefaultAudioStreamIndex, DefaultSubtitleStreamIndex            *int
 	SubtitleMethod                                                 SubtitleDeliveryMethod
+	SubtitleFormat                                                 string
 	Reasons                                                        []Reason
 }
 
@@ -181,10 +185,13 @@ func Evaluate(source Source, request Request) (Decision, error) {
 			}
 		}
 	}
+	subtitleSupported := selection.subtitle == nil
 	if selection.subtitle != nil {
-		decision.SubtitleMethod = selectSubtitleMethod(source, request.DeviceProfile, selection.subtitle)
-		if decision.SubtitleMethod != SubtitleDeliveryMethodEmbed {
-			decline("subtitle_delivery_unsupported", "SubtitleStreamIndex", "The selected subtitle requires unsupported extraction, external delivery, or burn-in.")
+		decision.SubtitleMethod, decision.SubtitleFormat = selectSubtitleDelivery(source, request.DeviceProfile, selection.subtitle)
+		subtitleSupported = decision.SubtitleMethod == SubtitleDeliveryMethodEmbed ||
+			decision.SubtitleMethod == SubtitleDeliveryMethodExternal && decision.SubtitleFormat != ""
+		if !subtitleSupported {
+			decline("subtitle_delivery_unsupported", "SubtitleStreamIndex", "The selected subtitle requires unsupported delivery, extraction, or burn-in.")
 		}
 	}
 	compatible, hardFailure, profileMismatch := true, false, false
@@ -198,7 +205,7 @@ func Evaluate(source Source, request Request) (Decision, error) {
 	}
 	decision.OriginalCompatible = compatible
 	decision.ProfileMatched = decision.ProfileEvaluated && kind != "" && !profileMismatch &&
-		(selection.subtitle == nil || decision.SubtitleMethod == SubtitleDeliveryMethodEmbed)
+		subtitleSupported
 	allowed := compatible
 	// Controlled reference samples establish that explicitly disabling
 	// transcoding requests the original file despite a codec profile mismatch.
@@ -327,9 +334,12 @@ func matchesList(selector, actual string) bool {
 	return false
 }
 
-func selectSubtitleMethod(source Source, profile *DeviceProfile, stream *media.Stream) SubtitleDeliveryMethod {
+func selectSubtitleDelivery(source Source, profile *DeviceProfile, stream *media.Stream) (SubtitleDeliveryMethod, string) {
+	if stream.IsExternal {
+		return selectExternalSubtitle(source, profile, stream)
+	}
 	if profile == nil {
-		return ""
+		return "", ""
 	}
 	container := media.CanonicalContainer(source.Info, source.Path)
 	for _, candidate := range profile.SubtitleProfiles {
@@ -337,11 +347,47 @@ func selectSubtitleMethod(source Source, profile *DeviceProfile, stream *media.S
 			!matchesList(candidate.Language, stream.Language) {
 			continue
 		}
-		if !stream.IsExternal && candidate.Method == SubtitleDeliveryMethodEmbed {
-			return SubtitleDeliveryMethodEmbed
+		if candidate.Method == SubtitleDeliveryMethodEmbed {
+			return SubtitleDeliveryMethodEmbed, ""
 		}
 	}
-	return ""
+	return "", ""
+}
+
+func selectExternalSubtitle(source Source, profile *DeviceProfile, stream *media.Stream) (SubtitleDeliveryMethod, string) {
+	if !stream.IsTextSubtitleStream {
+		return "", ""
+	}
+	var native, converted string
+	switch strings.ToLower(stream.Codec) {
+	case "srt":
+		native, converted = "srt", "vtt"
+	case "webvtt":
+		native, converted = "vtt", "srt"
+	default:
+		return "", ""
+	}
+	if profile == nil {
+		// This describes indexed delivery facts, not proof that an unknown
+		// client supports the subtitle format. Evaluate retains that distinction.
+		return SubtitleDeliveryMethodExternal, native
+	}
+	container := media.CanonicalContainer(source.Info, source.Path)
+	// Prefer any applicable native-format candidate over every conversion
+	// candidate, regardless of the order in which the client lists profiles.
+	for _, format := range []string{native, converted} {
+		for _, candidate := range profile.SubtitleProfiles {
+			if candidate.Method != SubtitleDeliveryMethodExternal || !matchesList(candidate.Format, format) ||
+				!matchesList(candidate.Container, container) || !matchesList(candidate.Language, stream.Language) {
+				continue
+			}
+			if candidate.Protocol != "" && !strings.EqualFold(candidate.Protocol, "http") && !strings.EqualFold(candidate.Protocol, "https") {
+				continue
+			}
+			return SubtitleDeliveryMethodExternal, format
+		}
+	}
+	return "", ""
 }
 
 func validateRequest(source Source, request Request) error {

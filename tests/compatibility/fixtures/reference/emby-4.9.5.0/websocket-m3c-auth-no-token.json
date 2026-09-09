@@ -1,0 +1,79 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:35:46.226082+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?deviceId=goby-websocket-m3c-recorder",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "7WTzatP3PDByk/6YL7elvw=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?deviceId=goby-websocket-m3c-recorder HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: 7WTzatP3PDByk/6YL7elvw==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:35:45 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "aVPsv4Sx/YayLsdEe9Ku0gvVAcM="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 01:35:45 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: aVPsv4Sx/YayLsdEe9Ku0gvVAcM=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T01:35:47.227647+00:00",
+      "elapsedMs": 1001.709,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T01:35:47.227926+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 1001.976,
+  "unparsedBufferedBytes": 0
+}

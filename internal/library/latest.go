@@ -65,6 +65,9 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	if err := attachUserData(ctx, tx, query.UserID, selectedItems); err != nil {
 		return nil, err
 	}
+	if err := attachSubtitles(ctx, tx, selectedItems); err != nil {
+		return nil, err
+	}
 	for index := range items {
 		items[index].Item = selectedItems[index]
 	}

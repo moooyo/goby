@@ -160,6 +160,11 @@ func (s *Store) readMediaSource(ctx context.Context, userID, itemID, sourceID st
 		return indexedMediaSource{}, fmt.Errorf("%w: media source has no valid indexed snapshot", ErrUnavailable)
 	}
 	item.CanPlay = true
+	items := []Item{item}
+	if err := attachSubtitles(ctx, tx, items); err != nil {
+		return indexedMediaSource{}, err
+	}
+	item = items[0]
 	snapshot.mediaFile.Item = item
 	snapshot.mediaFile.SourceID = expectedSourceID
 	snapshot.mediaFile.ModifiedAt = modified.UTC()

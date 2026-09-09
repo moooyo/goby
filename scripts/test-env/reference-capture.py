@@ -117,8 +117,8 @@ class Recorder:
         elif type(original) is not type(exported) or original != exported:
             raise RuntimeError("Export changed a number, boolean, or null")
 
-    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False, binary_media=False):
-        if name.startswith(("artwork-", "entity-", "playback-m3-", "folder-state-", "session-m3b-", "nextup-m3b-", "nextup-long-", "nextup-capability-")) and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
+    def request(self, name, method, path, *, body=None, headers=None, authenticated=False, note=None, binary_image=False, binary_media=False, exact_wire=False):
+        if name.startswith(("artwork-", "entity-", "playback-m3-", "folder-state-", "session-m3b-", "nextup-m3b-", "nextup-long-", "nextup-capability-", "subtitle-m3c-", "subtitle-vtt-source-")) and ((PRIVATE / "raw" / f"{name}.json").exists() or (EXPORT / f"{name}.json").exists()):
             raise RuntimeError(f"Refusing to overwrite extension evidence: {name}")
         request_headers = dict(self.client_headers if headers is None else headers)
         if authenticated:
@@ -138,6 +138,8 @@ class Recorder:
         status_code = response.status
         response_headers = response.getheaders()
         connection.close()
+        if exact_wire:
+            private_write(PRIVATE / "wire" / f"{name}.b64", base64.b64encode(content).decode("ascii"))
         content_type = dict((key.lower(), value) for key, value in response_headers).get("content-type", "")
         if binary_image and content and content_type.startswith("image/"):
             parsed = base64.b64encode(content).decode("ascii")
@@ -151,13 +153,20 @@ class Recorder:
             details = f"Wire media body: {len(content)} bytes; SHA-256={hashlib.sha256(content).hexdigest()}. Body is base64-encoded exact response bytes."
             note = f"{note} {details}" if note else details
         else:
-            text = content.decode("utf-8", errors="replace")
             try:
-                parsed = json.loads(text)
-                representation = "json"
-            except json.JSONDecodeError:
-                parsed = text
-                representation = "text"
+                text = content.decode("utf-8", errors="strict" if exact_wire else "replace")
+            except UnicodeDecodeError:
+                text = None
+            if text is None:
+                parsed = base64.b64encode(content).decode("ascii")
+                representation = "binary-base64"
+            else:
+                try:
+                    parsed = json.loads(text)
+                    representation = "json"
+                except json.JSONDecodeError:
+                    parsed = text
+                    representation = "text"
         if isinstance(parsed, dict) and parsed.get("AccessToken"):
             self.credentials["REFERENCE_TOKEN"] = parsed["AccessToken"]
             self.secret_values.add(parsed["AccessToken"])
@@ -1052,6 +1061,239 @@ class Recorder:
                 raise RuntimeError("Existing evidence changed during the capability control")
         print(f"Preserved all {len(baseline)} pre-existing raw/export files byte-for-byte.", flush=True)
 
+    def subtitle_m3c_prepare(self) -> None:
+        baseline_file = PRIVATE / "subtitle-m3c-baseline-hashes.json"
+        target = Path("/opt/goby-fixtures/subtitle-reference")
+        if baseline_file.exists() or target.exists():
+            raise RuntimeError("Subtitle M3c preparation already exists")
+        baseline = {}
+        for directory in (PRIVATE / "raw", EXPORT):
+            for path in sorted(directory.glob("*.json")):
+                baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        target.mkdir(mode=0o755)
+        target.chmod(0o755)
+        marker = target / ".goby-managed"
+        marker.write_text("goby-subtitle-reference-owned-v1\n")
+        marker.chmod(0o644)
+        folder = target / "Reference Subtitle M3c (2026)"
+        folder.mkdir(mode=0o755)
+        folder.chmod(0o755)
+        source = Path("/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4")
+        movie = folder / "Reference Subtitle M3c (2026).mp4"
+        shutil.copyfile(source, movie)
+        movie.chmod(0o644)
+        cues = [
+            ("00:00:00,000", "00:00:05,000", "Before the window."),
+            ("00:00:08,000", "00:00:10,000", "Ends exactly at start."),
+            ("00:00:09,000", "00:00:12,000", "<i>Caf\u00e9 \u2014 na\u00efve fa\u00e7ade.</i>\nSecond line &amp; markup."),
+            ("00:00:10,000", "00:00:11,000", "Starts exactly at start."),
+            ("00:00:12,500", "00:00:15,250", "<b>Inside the window.</b>"),
+            ("00:00:18,000", "00:00:22,000", "Crosses the end."),
+            ("00:00:19,500", "00:00:20,000", "Ends exactly at end."),
+            ("00:00:20,000", "00:00:21,000", "Starts exactly at end."),
+            ("00:00:22,000", "00:00:25,000", "After the window."),
+            ("00:00:30,000", "00:00:33,000", "Later window."),
+        ]
+        text = "".join(f"{index}\r\n{start} --> {end}\r\n{value.replace(chr(10), chr(13) + chr(10))}\r\n\r\n" for index, (start, end, value) in enumerate(cues, 1))
+        subtitle = folder / "Reference Subtitle M3c (2026).en.srt"
+        subtitle.write_bytes(text.encode("utf-8"))
+        subtitle.chmod(0o644)
+        provenance = {"encoding": "UTF-8 without BOM", "lineEndings": "CRLF", "cueCount": len(cues),
+                      "files": [{"path": str(path), "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in (movie, subtitle)]}
+        if movie.read_bytes() != source.read_bytes():
+            raise RuntimeError("Copied subtitle media differs from the source")
+        private_write(PRIVATE / "subtitle-m3c-provenance.json", json.dumps(provenance, indent=2) + "\n")
+        print(f"Prepared one copied 600-second MP4 and a {subtitle.stat().st_size}-byte UTF-8/CRLF SRT with {len(cues)} boundary cues.", flush=True)
+
+    def subtitle_m3c_setup(self) -> None:
+        old = json.loads((PRIVATE / "raw" / "playback-m3-library-query.json").read_text())["response"]["body"]["Items"]
+        library = next(item for item in old if item["Name"] == "Reference Playback M3")
+        options = json.loads(json.dumps(library["LibraryOptions"]))
+        target = "/opt/goby-fixtures/subtitle-reference"
+        options["PathInfos"] = [{"Path": target}]
+        self.request("subtitle-m3c-library-create", "POST", "/emby/Library/VirtualFolders", authenticated=True,
+                     body={"Name": "Reference Subtitle M3c", "CollectionType": "movies", "RefreshLibrary": False, "Paths": [target], "LibraryOptions": options})
+        _, result = self.request("subtitle-m3c-library-query", "GET", "/emby/Library/VirtualFolders/Query", authenticated=True)
+        created = next(item for item in result["Items"] if item["Name"] == "Reference Subtitle M3c")
+        private_write(PRIVATE / "subtitle-m3c-library.json", json.dumps(created, indent=2) + "\n")
+        self.request("subtitle-m3c-library-refresh", "POST", f"/emby/Items/{created['ItemId']}/Refresh?Recursive=true&MetadataRefreshMode=FullRefresh&ImageRefreshMode=FullRefresh",
+                     body={}, authenticated=True, note="Targeted refresh of the new subtitle fixture library; older media and settings are unchanged.")
+
+    def subtitle_m3c_descriptor(self) -> None:
+        self.use_session_m3b_credentials()
+        time.sleep(2)
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        path = "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).mp4"
+        query = urllib.parse.urlencode({"UserId": user_id, "Recursive": "true", "Path": path, "Fields": "Path,MediaSources,MediaStreams"})
+        _, items = self.request("subtitle-m3c-item", "GET", "/emby/Items?" + query, authenticated=True)
+        if len(items.get("Items", [])) != 1:
+            raise RuntimeError("The new subtitle movie is not ready")
+        item_id = items["Items"][0]["Id"]
+        _, result = self.request("subtitle-m3c-playbackinfo", "POST", f"/emby/Items/{item_id}/PlaybackInfo",
+                                 body={"UserId": user_id, "DeviceProfile": self.m3_profile(), "IsPlayback": True}, authenticated=True)
+        source = result["MediaSources"][0]
+        stream = next(item for item in source["MediaStreams"] if item["Type"] == "Subtitle")
+        context = {"ItemId": item_id, "MediaSourceId": source["Id"], "Index": stream["Index"], "DeliveryUrl": stream["DeliveryUrl"]}
+        private_write(PRIVATE / "subtitle-m3c-context.json", json.dumps(context, indent=2) + "\n")
+        profile = self.m3_profile()
+        profile["SubtitleProfiles"] = [{"Format": "vtt", "Method": "External"}]
+        self.request("subtitle-m3c-playbackinfo-vtt-only", "POST", f"/emby/Items/{item_id}/PlaybackInfo",
+                     body={"UserId": user_id, "DeviceProfile": profile, "SubtitleStreamIndex": stream["Index"], "IsPlayback": True}, authenticated=True)
+
+    def subtitle_m3c_delivery(self) -> None:
+        self.use_session_m3b_credentials()
+        context = json.loads((PRIVATE / "subtitle-m3c-context.json").read_text())
+        item_id, source_id, index = context["ItemId"], context["MediaSourceId"], context["Index"]
+        generated = "/emby" + context["DeliveryUrl"]
+        base = f"/emby/Videos/{item_id}/{source_id}/Subtitles/{index}"
+        self.request("subtitle-m3c-generated-get", "GET", generated, headers={}, exact_wire=True)
+        self.request("subtitle-m3c-generated-head", "HEAD", generated, headers={}, exact_wire=True)
+        self.request("subtitle-m3c-videos-no-offset-srt", "GET", base + "/Stream.srt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-items-no-offset-srt", "GET", base.replace("/Videos/", "/Items/") + "/Stream.srt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-items-path-zero-srt", "GET", base.replace("/Videos/", "/Items/") + "/0/Stream.srt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-no-token", "GET", base + "/0/Stream.srt", headers={}, exact_wire=True)
+        self.request("subtitle-m3c-invalid-token", "GET", base + "/0/Stream.srt", headers={"X-Emby-Token": "invalid-reference-token"}, exact_wire=True)
+        self.request("subtitle-m3c-wrong-source", "GET", base.replace("/" + source_id + "/", "/missing-subtitle-source/") + "/0/Stream.srt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-wrong-index", "GET", f"/emby/Videos/{item_id}/{source_id}/Subtitles/99/0/Stream.srt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-vtt-get", "GET", base + "/Stream.vtt", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-vtt-head", "HEAD", base + "/Stream.vtt", authenticated=True, exact_wire=True)
+
+    def subtitle_m3c_windows(self) -> None:
+        self.use_session_m3b_credentials()
+        context = json.loads((PRIVATE / "subtitle-m3c-context.json").read_text())
+        base = f"/emby/Videos/{context['ItemId']}/{context['MediaSourceId']}/Subtitles/{context['Index']}"
+        self.request("subtitle-m3c-window-unprimed-no-token", "GET", base + "/Stream.srt?EndPositionTicks=200000000&StartPositionTicks=100000000",
+                     headers={}, exact_wire=True, note="This exact window URL is first requested without any token, cookie, or authenticated header, before the matching authenticated matrix request.")
+        for output_format in ("srt", "vtt"):
+            for route_kind in ("query", "path"):
+                path = base + ("/100000000" if route_kind == "path" else "") + "/Stream." + output_format
+                query = {"EndPositionTicks": "200000000"}
+                if route_kind == "query":
+                    query["StartPositionTicks"] = "100000000"
+                for mode in ("omitted", "true", "false"):
+                    params = dict(query)
+                    if mode != "omitted":
+                        params["CopyTimestamps"] = mode
+                    self.request(f"subtitle-m3c-{output_format}-{route_kind}-copy-{mode}", "GET", path + "?" + urllib.parse.urlencode(params), authenticated=True, exact_wire=True)
+        for output_format in ("srt", "vtt"):
+            self.request(f"subtitle-m3c-{output_format}-path-query-conflict", "GET", base + f"/100000000/Stream.{output_format}?StartPositionTicks=0&EndPositionTicks=200000000&CopyTimestamps=true",
+                         authenticated=True, exact_wire=True, note="Path start is 10 seconds while query start is zero; all other window controls match the recorded true case.")
+        self.request("subtitle-m3c-srt-start-only", "GET", base + "/Stream.srt?StartPositionTicks=100000000&CopyTimestamps=true", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-vtt-start-only", "GET", base + "/Stream.vtt?StartPositionTicks=100000000&CopyTimestamps=false", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-reversed-window", "GET", base + "/Stream.srt?StartPositionTicks=200000000&EndPositionTicks=100000000", authenticated=True, exact_wire=True)
+        self.request("subtitle-m3c-empty-window", "GET", base + "/Stream.srt?StartPositionTicks=400000000&EndPositionTicks=500000000", authenticated=True, exact_wire=True)
+
+    def export_subtitle_m3c(self) -> None:
+        self.export(prefix="subtitle-m3c-")
+        records = list((PRIVATE / "raw").glob("subtitle-m3c-*.json"))
+        if len(records) > 36:
+            raise RuntimeError("Subtitle capture exceeds its authorized bound")
+        checked = 0
+        source_file = Path("/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).en.srt")
+        source = source_file.read_bytes()
+        comparisons = {}
+        for path in records:
+            wire_file = PRIVATE / "wire" / (path.stem + ".b64")
+            if not wire_file.exists():
+                non_wire = {"subtitle-m3c-library-create", "subtitle-m3c-library-query", "subtitle-m3c-library-refresh", "subtitle-m3c-item", "subtitle-m3c-playbackinfo", "subtitle-m3c-playbackinfo-vtt-only"}
+                if path.stem not in non_wire:
+                    raise RuntimeError("A required subtitle wire capture is missing")
+                continue
+            record = json.loads(path.read_text())
+            wire = base64.b64decode(wire_file.read_text(), validate=True)
+            response = record["response"]
+            if response["bodyType"] == "text" and response["body"].encode("utf-8") != wire:
+                raise RuntimeError("Subtitle text decoding changed the original bytes")
+            if response["bodyType"] == "binary-base64" and base64.b64decode(response["body"], validate=True) != wire:
+                raise RuntimeError("Subtitle binary body differs from the original bytes")
+            if response["bodyType"] == "json" and json.loads(wire.decode("utf-8")) != response["body"]:
+                raise RuntimeError("Subtitle JSON body differs from the wire data")
+            headers = {key.lower(): value for key, value in response["headers"]}
+            if record["request"]["method"] != "HEAD" and "content-length" in headers and int(headers["content-length"]) != len(wire):
+                raise RuntimeError("Subtitle Content-Length disagrees with the original bytes")
+            if any(secret.encode() in wire for secret in self.secret_values):
+                raise RuntimeError("Subtitle wire body unexpectedly contains a credential")
+            comparisons[path.stem] = {"bytes": len(wire), "sha256": hashlib.sha256(wire).hexdigest(), "equalsSource": wire == source,
+                                     "utf8Bom": wire.startswith(b"\xef\xbb\xbf"), "crlfCount": wire.count(b"\r\n"), "lfCount": wire.count(b"\n")}
+            checked += 1
+        private_write(PRIVATE / "subtitle-m3c-wire-summary.json", json.dumps(comparisons, indent=2) + "\n")
+        for get_name, head_name in (("subtitle-m3c-generated-get", "subtitle-m3c-generated-head"), ("subtitle-m3c-vtt-get", "subtitle-m3c-vtt-head")):
+            get_file = PRIVATE / "raw" / (get_name + ".json")
+            head_file = PRIVATE / "raw" / (head_name + ".json")
+            if get_file.exists() and head_file.exists():
+                get_record = json.loads(get_file.read_text())
+                head_record = json.loads(head_file.read_text())
+                get_headers = {key.lower(): value for key, value in get_record["response"]["headers"]}
+                head_headers = {key.lower(): value for key, value in head_record["response"]["headers"]}
+                print(json.dumps({"head": head_name, "bodyBytes": comparisons[head_name]["bytes"], "getContentType": get_headers.get("content-type"), "headContentType": head_headers.get("content-type"), "getContentLength": get_headers.get("content-length"), "headContentLength": head_headers.get("content-length")}), flush=True)
+        baseline = json.loads((PRIVATE / "subtitle-m3c-baseline-hashes.json").read_text())
+        protected = 0
+        for name, expected in baseline.items():
+            if Path(name).name.startswith("websocket-m3c-"):
+                continue
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("Old evidence changed during subtitle capture")
+            protected += 1
+        if len(records) == 36 and checked != 30:
+            raise RuntimeError("The complete subtitle matrix must include 30 wire captures")
+        print(f"Audited {checked} exact subtitle wire bodies and preserved {protected} original raw/export files; concurrent new WebSocket records are owned by their separate capture task.", flush=True)
+
+    def subtitle_vtt_source_prepare(self) -> None:
+        baseline_file = PRIVATE / "subtitle-vtt-source-baseline-hashes.json"
+        target = Path("/opt/goby-fixtures/subtitle-reference")
+        if (target / ".goby-managed").read_text().strip() != "goby-subtitle-reference-owned-v1":
+            raise RuntimeError("Subtitle fixture ownership marker does not match")
+        folder = target / "Reference Subtitle M3c (2026)"
+        output = folder / "Reference Subtitle M3c (2026).en.forced.vtt"
+        if baseline_file.exists() or output.exists():
+            raise RuntimeError("Native VTT control already exists")
+        baseline = {}
+        for directory in (PRIVATE / "raw", EXPORT):
+            for path in sorted(directory.glob("*.json")):
+                if not path.name.startswith("websocket-m3c-"):
+                    baseline[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+        private_write(baseline_file, json.dumps(baseline, indent=2) + "\n")
+        provenance = json.loads((PRIVATE / "subtitle-m3c-provenance.json").read_text())
+        for source in provenance["files"]:
+            if hashlib.sha256(Path(source["path"]).read_bytes()).hexdigest() != source["sha256"]:
+                raise RuntimeError("The original subtitle fixture changed")
+        content = base64.b64decode((PRIVATE / "wire" / "subtitle-m3c-vtt-get.b64").read_text(), validate=True)
+        if hashlib.sha256(content).hexdigest() != "7e5ffe9d66f192edd002c6cee076df43e8c0d07b2feed56a8c167aad8c32e0bb":
+            raise RuntimeError("Captured VTT bytes differ from the audited body")
+        target.chmod(0o755)
+        folder.chmod(0o755)
+        output.write_bytes(content)
+        output.chmod(0o644)
+        private_write(PRIVATE / "subtitle-vtt-source-provenance.json", json.dumps({"path": str(output), "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "sourceCapture": "subtitle-m3c-vtt-get"}, indent=2) + "\n")
+        print(f"Prepared one {len(content)}-byte native forced VTT source; protected {len(baseline)} preceding HTTP raw/export files.", flush=True)
+
+    def subtitle_vtt_source_capture(self) -> None:
+        library = json.loads((PRIVATE / "subtitle-m3c-library.json").read_text())
+        context = json.loads((PRIVATE / "subtitle-m3c-context.json").read_text())
+        self.request("subtitle-vtt-source-library-refresh", "POST", f"/emby/Items/{library['ItemId']}/Refresh?Recursive=true&MetadataRefreshMode=FullRefresh&ImageRefreshMode=FullRefresh",
+                     body={}, authenticated=True, note="Only the owned subtitle library receives a targeted refresh after adding the separate native VTT sidecar; original SRT and MP4 bytes are unchanged.")
+        time.sleep(2)
+        self.use_session_m3b_credentials()
+        user_id = self.credentials["REFERENCE_USER_ID"]
+        query = urllib.parse.urlencode({"UserId": user_id, "Ids": context["ItemId"], "Fields": "Path,MediaSources,MediaStreams"})
+        self.request("subtitle-vtt-source-item", "GET", "/emby/Items?" + query, authenticated=True)
+        self.request("subtitle-vtt-source-playbackinfo", "POST", f"/emby/Items/{context['ItemId']}/PlaybackInfo",
+                     body={"UserId": user_id, "DeviceProfile": self.m3_profile(), "IsPlayback": True}, authenticated=True)
+
+    def export_subtitle_vtt_source(self) -> None:
+        self.export(prefix="subtitle-vtt-source-")
+        if len(list((PRIVATE / "raw").glob("subtitle-vtt-source-*.json"))) != 3:
+            raise RuntimeError("Native VTT control must have exactly three HTTP fixtures")
+        baseline = json.loads((PRIVATE / "subtitle-vtt-source-baseline-hashes.json").read_text())
+        for name, expected in baseline.items():
+            if hashlib.sha256(Path(name).read_bytes()).hexdigest() != expected:
+                raise RuntimeError("Existing evidence changed during native VTT control")
+        for source in json.loads((PRIVATE / "subtitle-m3c-provenance.json").read_text())["files"]:
+            if hashlib.sha256(Path(source["path"]).read_bytes()).hexdigest() != source["sha256"]:
+                raise RuntimeError("Original subtitle media bytes changed during native VTT control")
+        print(f"Preserved all {len(baseline)} preceding HTTP raw/export files and both original subtitle media hashes; concurrent WebSocket records were not modified.", flush=True)
+
     def public(self, prefix="public") -> None:
         self.request(f"{prefix}-system-info", "GET", "/emby/System/Info/Public", headers={"Accept": "application/json"})
         self.request(f"{prefix}-users", "GET", "/emby/Users/Public", headers={"Accept": "application/json"})
@@ -1224,11 +1466,17 @@ class Recorder:
     def export(self, prefix=None) -> None:
         records = [(path.stem, json.loads(path.read_text())) for path in sorted((PRIVATE / "raw").glob("*.json"))]
         for _, record in records:
+            if not isinstance(record, dict):
+                continue
+            request = record.get("request") or {}
+            raw_headers = request.get("headers") or {}
+            headers = dict(raw_headers) if isinstance(raw_headers, (dict, list)) else {}
             for header_name in ("X-Emby-Token", "X-MediaBrowser-Token"):
-                token = record["request"]["headers"].get(header_name)
+                token = headers.get(header_name) or headers.get(header_name.lower())
                 if token:
                     self.secret_values.add(token)
-            result = record["response"]["body"]
+            response = record.get("response") or {}
+            result = response.get("body")
             if isinstance(result, dict) and result.get("AccessToken"):
                 self.secret_values.add(result["AccessToken"])
         selected = [(name, record) for name, record in records if prefix is None or name.startswith(prefix)]
@@ -1277,7 +1525,7 @@ class Recorder:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork", "entities_prepare", "entity_lists", "entity_navigation", "export_entities", "playback_m3_begin", "playback_m3_flags", "playback_m3_rejection", "playback_m3_factorial", "playback_m3_prepare", "playback_m3_setup", "playback_m3_long_info", "playback_m3_transport", "playback_m3_reports", "export_playback_m3", "folder_state_begin", "folder_state", "export_folder_state", "session_m3b_begin", "session_m3b_setup", "session_m3b_lists", "session_m3b_caps", "session_m3b_ping", "nextup_m3b", "nextup_m3b_split_begin", "nextup_m3b_split", "nextup_m3b_playback_begin", "nextup_m3b_playback", "export_session_m3b", "nextup_long_prepare", "nextup_long_setup", "nextup_long_capture", "export_nextup_long", "nextup_capability_begin", "nextup_capability", "export_nextup_capability"])
+    parser.add_argument("stage", choices=["public", "setup", "authentication", "auth_carriers", "final_two", "library", "queries", "sample_filter", "playback", "hls", "export", "artwork_prepare", "artwork_refresh", "artwork", "artwork_scalars", "export_artwork", "entities_prepare", "entity_lists", "entity_navigation", "export_entities", "playback_m3_begin", "playback_m3_flags", "playback_m3_rejection", "playback_m3_factorial", "playback_m3_prepare", "playback_m3_setup", "playback_m3_long_info", "playback_m3_transport", "playback_m3_reports", "export_playback_m3", "folder_state_begin", "folder_state", "export_folder_state", "session_m3b_begin", "session_m3b_setup", "session_m3b_lists", "session_m3b_caps", "session_m3b_ping", "nextup_m3b", "nextup_m3b_split_begin", "nextup_m3b_split", "nextup_m3b_playback_begin", "nextup_m3b_playback", "export_session_m3b", "nextup_long_prepare", "nextup_long_setup", "nextup_long_capture", "export_nextup_long", "nextup_capability_begin", "nextup_capability", "export_nextup_capability", "subtitle_m3c_prepare", "subtitle_m3c_setup", "subtitle_m3c_descriptor", "subtitle_m3c_delivery", "subtitle_m3c_windows", "export_subtitle_m3c", "subtitle_vtt_source_prepare", "subtitle_vtt_source_capture", "export_subtitle_vtt_source"])
     options = parser.parse_args()
     recorder = Recorder()
     getattr(recorder, options.stage)()

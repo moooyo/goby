@@ -96,6 +96,9 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
 		return ItemResult{}, err
 	}
+	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
+		return ItemResult{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemResult{}, fmt.Errorf("complete item query: %w", err)
 	}
@@ -124,6 +127,9 @@ func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
 	item.CanPlay = access.canPlay
 	items := []Item{item}
 	if err := attachUserData(ctx, tx, userID, items); err != nil {
+		return Item{}, err
+	}
+	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return Item{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

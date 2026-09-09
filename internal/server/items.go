@@ -196,7 +196,7 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 	items := make([]map[string]any, 0, len(result.Items))
 	if !zeroLimit {
 		for _, entry := range result.Items {
-			item := s.itemDTO(entry, fields, false)
+			item := s.itemDTOForRequest(r, entry, fields, false)
 			if entry.Type == "CollectionFolder" {
 				lib, err := s.library.GetLibrary(r.Context(), entry.LibraryID)
 				if err != nil {
@@ -253,7 +253,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	dto := s.itemDTO(item, queryValues(r.URL.Query()["Fields"]), true)
+	dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), true)
 	if item.Type == "CollectionFolder" {
 		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)
 		if err != nil {
@@ -312,7 +312,7 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 	items := make([]map[string]any, 0, len(result))
 	if !zeroLimit {
 		for _, entry := range result {
-			dto := s.itemDTO(entry.Item, queryValues(r.URL.Query()["Fields"]), false)
+			dto := s.itemDTOForRequest(r, entry.Item, queryValues(r.URL.Query()["Fields"]), false)
 			if group && entry.Item.IsFolder {
 				dto["ChildCount"] = entry.ChildCount
 			}
@@ -439,7 +439,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 			dto["VideoType"] = "VideoFile"
 		}
 		if detail || hasField(fields, "MediaStreams") {
-			dto["MediaStreams"] = mediaStreamsDTO(item.Media.Streams)
+			dto["MediaStreams"] = itemMediaStreamsDTO(item)
 		}
 		if detail || hasField(fields, "MediaSources") {
 			dto["MediaSources"] = []map[string]any{originalSourceDTO(item)}

@@ -1,9 +1,9 @@
 # Original-file playback and durable user state
 
 This increment implements original local-file delivery. It does not complete the
-entire M3 milestone: external subtitles, client events, remuxing, transcoding,
-and real consumer-client acceptance remain open. Client-session capabilities and
-NextUp are described in their subsequent increment guides.
+entire M3 milestone: client events, remuxing, transcoding, broader subtitle handling,
+and real consumer-client acceptance remain open. Client-session capabilities,
+NextUp, and external SRT/WebVTT are described in their subsequent increment guides.
 Goby's React/MUI dashboard remains an administrator application without a player.
 
 ## Client flow
@@ -43,7 +43,8 @@ client still decides whether it can decode that source. An explicit
 a profile-only mismatch. It does not bypass authorization, invalid track indexes,
 explicit request limits, or unsupported external/burned-in subtitle delivery.
 Selected audio tracks remain in the original file and require client-side track
-selection. Only embedded subtitle delivery is currently evaluated.
+selection. Embedded delivery can use tracks already in the source. Separately
+indexed external text tracks can use the subsequent [SRT/WebVTT delivery service](external-subtitles.md).
 
 When conversion would be necessary, no conversion URL is emitted. A request with
 no supported direct method receives `ErrorCode=NoCompatibleStream`, except that

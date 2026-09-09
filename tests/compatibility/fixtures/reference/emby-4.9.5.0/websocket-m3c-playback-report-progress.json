@@ -1,0 +1,195 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:36:23.573367+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "xqK+ENe6SAtLKZrkZaRDWA=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: xqK+ENe6SAtLKZrkZaRDWA==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:36:22 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "HyPLfs0W5Gr1/Hr07RChJuM9594="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 01:36:22 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: HyPLfs0W5Gr1/Hr07RChJuM9594=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T01:36:24.075325+00:00",
+      "elapsedMs": 502.104,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 288,
+      "text": "{\"MessageType\":\"UserDataChanged\",\"MessageId\":\"3552ec83fb6a4f4a856a8ef40c75b786\",\"Data\":{\"UserId\":\"5760844f98b54d16b1c13073e5c9d73f\",\"UserDataList\":[{\"PlaybackPositionTicks\":0,\"PlayCount\":1,\"IsFavorite\":false,\"LastPlayedDate\":\"2026-09-09T01:36:23.0000000Z\",\"Played\":false,\"ItemId\":\"28\"}]}}",
+      "json": {
+        "MessageType": "UserDataChanged",
+        "MessageId": "3552ec83fb6a4f4a856a8ef40c75b786",
+        "Data": {
+          "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+          "UserDataList": [
+            {
+              "PlaybackPositionTicks": 0,
+              "PlayCount": 1,
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-09T01:36:23.0000000Z",
+              "Played": false,
+              "ItemId": "28"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:24.580171+00:00",
+      "elapsedMs": 1006.905,
+      "direction": "client-to-server",
+      "opcode": 1,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 403,
+      "text": "{\"MessageType\":\"ReportPlaybackProgress\",\"Data\":{\"ItemId\":\"28\",\"MediaSourceId\":\"mediasource_28\",\"PlaySessionId\":\"ec601ecab7e74b49ba09afafc96388b6\",\"SessionId\":\"3051be5bda6e822e1f0a9c80cb6a5100\",\"PositionTicks\":1200000000,\"CanSeek\":true,\"IsPaused\":false,\"IsMuted\":false,\"VolumeLevel\":100,\"PlayMethod\":\"DirectStream\",\"SubtitleStreamIndex\":-1,\"AudioStreamIndex\":1,\"PlaybackRate\":1,\"EventName\":\"TimeUpdate\"}}",
+      "json": {
+        "MessageType": "ReportPlaybackProgress",
+        "Data": {
+          "ItemId": "28",
+          "MediaSourceId": "mediasource_28",
+          "PlaySessionId": "ec601ecab7e74b49ba09afafc96388b6",
+          "SessionId": "3051be5bda6e822e1f0a9c80cb6a5100",
+          "PositionTicks": 1200000000,
+          "CanSeek": true,
+          "IsPaused": false,
+          "IsMuted": false,
+          "VolumeLevel": 100,
+          "PlayMethod": "DirectStream",
+          "SubtitleStreamIndex": -1,
+          "AudioStreamIndex": 1,
+          "PlaybackRate": 1,
+          "EventName": "TimeUpdate"
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:27.083465+00:00",
+      "elapsedMs": 3510.218,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 288,
+      "text": "{\"MessageType\":\"UserDataChanged\",\"MessageId\":\"df60be6ff206409fb1a5da1c42fe6f7a\",\"Data\":{\"UserId\":\"5760844f98b54d16b1c13073e5c9d73f\",\"UserDataList\":[{\"PlaybackPositionTicks\":0,\"PlayCount\":1,\"IsFavorite\":false,\"LastPlayedDate\":\"2026-09-09T01:36:23.0000000Z\",\"Played\":false,\"ItemId\":\"28\"}]}}",
+      "json": {
+        "MessageType": "UserDataChanged",
+        "MessageId": "df60be6ff206409fb1a5da1c42fe6f7a",
+        "Data": {
+          "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+          "UserDataList": [
+            {
+              "PlaybackPositionTicks": 0,
+              "PlayCount": 1,
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-09T01:36:23.0000000Z",
+              "Played": false,
+              "ItemId": "28"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:27.297631+00:00",
+      "elapsedMs": 3724.412,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 255,
+      "text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"ecf6ebc62d844b27871b99a849985b70\",\"Data\":{\"FoldersAddedTo\":[\"38\",\"39\"],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[\"37\",\"38\",\"39\",\"40\"],\"ItemsRemoved\":[],\"ItemsUpdated\":[],\"CollectionFolders\":[\"37\"],\"IsEmpty\":false}}",
+      "json": {
+        "MessageType": "LibraryChanged",
+        "MessageId": "ecf6ebc62d844b27871b99a849985b70",
+        "Data": {
+          "FoldersAddedTo": [
+            "38",
+            "39"
+          ],
+          "FoldersRemovedFrom": [],
+          "ItemsAdded": [
+            "37",
+            "38",
+            "39",
+            "40"
+          ],
+          "ItemsRemoved": [],
+          "ItemsUpdated": [],
+          "CollectionFolders": [
+            "37"
+          ],
+          "IsEmpty": false
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:27.588786+00:00",
+      "elapsedMs": 4015.57,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T01:36:27.589430+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 4016.177,
+  "unparsedBufferedBytes": 0
+}

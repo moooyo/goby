@@ -1,0 +1,99 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:35:51.244144+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "OPWbXx7dzvw9NYehRsYJ+g=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: OPWbXx7dzvw9NYehRsYJ+g==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:35:50 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "IUmAxbAYhOztZY7I91oM3CN1RZA="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 01:35:50 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: IUmAxbAYhOztZY7I91oM3CN1RZA=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T01:36:01.255294+00:00",
+      "elapsedMs": 10011.34,
+      "direction": "client-to-server",
+      "opcode": 9,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 23,
+      "payloadBase64": "Z29ieS13ZWJzb2NrZXQtbTNjLXBpbmc="
+    },
+    {
+      "at": "2026-09-09T01:36:01.257938+00:00",
+      "elapsedMs": 10013.946,
+      "direction": "server-to-client",
+      "opcode": 10,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 23,
+      "payloadBase64": "Z29ieS13ZWJzb2NrZXQtbTNjLXBpbmc="
+    },
+    {
+      "at": "2026-09-09T01:36:03.257855+00:00",
+      "elapsedMs": 12013.898,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T01:36:03.258424+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 12014.436,
+  "unparsedBufferedBytes": 0
+}

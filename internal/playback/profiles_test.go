@@ -268,7 +268,7 @@ func TestEvaluateSubtitleDelivery(t *testing.T) {
 		{"wrong subtitle format", profileTestPtr(12), &SubtitleProfile{Format: "ass", Container: "mp4", Method: SubtitleDeliveryMethodEmbed}, false},
 		{"wrong subtitle container", profileTestPtr(12), &SubtitleProfile{Format: "subrip", Container: "mkv", Method: SubtitleDeliveryMethodEmbed}, false},
 		{"subtitle burning is unavailable", profileTestPtr(12), &SubtitleProfile{Format: "subrip", Method: SubtitleDeliveryMethodEncode}, false},
-		{"external subtitle delivery is deferred", profileTestPtr(12), &SubtitleProfile{Format: "subrip", Method: SubtitleDeliveryMethodExternal}, false},
+		{"embedded subtitle extraction is unavailable", profileTestPtr(12), &SubtitleProfile{Format: "subrip", Method: SubtitleDeliveryMethodExternal}, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			request := profileTestRequest()

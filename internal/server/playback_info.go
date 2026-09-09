@@ -141,10 +141,18 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	request.MediaSourceID = source.SourceID
 	decision, err := playback.Evaluate(playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: *source.Item.Media}, request)
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, request)
 	if err != nil {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The playback request or media facts cannot be evaluated.")
 		return
+	}
+	formats := map[int]string{}
+	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
+		if _, err := s.library.ReadSubtitle(ctx, principal.User.ID, source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex); err != nil {
+			s.playbackError(w, r, err)
+			return
+		}
+		formats[*decision.DefaultSubtitleStreamIndex] = decision.SubtitleFormat
 	}
 	session, err := s.library.PreparePlayback(ctx, playbackOwner(principal), source.Item.ID, source.SourceID, request.CurrentPlaySessionID)
 	if err != nil {
@@ -152,12 +160,14 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dto := originalSourceDTO(source.Item)
+	token, _, _ := parseEmbyCredentials(r)
+	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats)
 	dto["SupportsDirectPlay"] = decision.DirectPlay
 	dto["SupportsDirectStream"] = decision.DirectStream
 	if decision.DefaultAudioStreamIndex != nil {
 		dto["DefaultAudioStreamIndex"] = *decision.DefaultAudioStreamIndex
 	}
-	if decision.DefaultSubtitleStreamIndex != nil {
+	if decision.DefaultSubtitleStreamIndex != nil && decision.SubtitleMethod != playback.SubtitleDeliveryMethodExternal {
 		dto["DefaultSubtitleStreamIndex"] = *decision.DefaultSubtitleStreamIndex
 	}
 	if decision.DirectStream && (request.DeviceProfile != nil || request.EnableDirectPlay != nil || request.EnableDirectStream != nil || (request.IsPlayback != nil && *request.IsPlayback)) {
@@ -186,7 +196,7 @@ func originalSourceDTO(item library.Item) map[string]any {
 	available := item.CanPlay && info.ProbeVersion == media.CurrentProbeVersion && info.FileChangeTimeNs > 0
 	dto := map[string]any{"Id": media.SourceID(item.ID), "ItemId": item.ID, "Name": name, "Path": item.Path,
 		"Protocol": "File", "Type": "Default", "Container": media.CanonicalContainer(*info, item.Path), "Formats": []string{},
-		"RunTimeTicks": info.DurationTicks, "Bitrate": info.Bitrate, "Size": info.Size, "MediaStreams": mediaStreamsDTO(info.Streams),
+		"RunTimeTicks": info.DurationTicks, "Bitrate": info.Bitrate, "Size": info.Size, "MediaStreams": itemMediaStreamsDTO(item),
 		"SupportsDirectPlay": available, "SupportsDirectStream": available, "SupportsTranscoding": false,
 		"RequiresOpening": false, "RequiresClosing": false, "RequiresLooping": false, "IsInfiniteStream": false,
 		"IsRemote": false, "HasMixedProtocols": false, "SupportsProbing": true, "RequiredHttpHeaders": map[string]string{},

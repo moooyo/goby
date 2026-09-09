@@ -708,3 +708,91 @@ Only the long series' first episode was then marked played for the same dedicate
 The final series DELETE returned `UnplayedItemCount: 3` and `Played: false`. A final Simple capabilities POST restored `Audio` and `VolumeDown` and returned HTTP 204, without supplying a profile. No additional case was attempted after this result.
 
 The export audited these eight records remotely and preserved all 448 preceding raw/export files, covering the original 224 HTTP fixtures. The supporting stages are `nextup_capability_begin`, `nextup_capability`, and `export_nextup_capability`. Separately, the long-fixture generator now explicitly applies mode 0755 to its newly created root and season directories after creation, so the recorder's restrictive umask does not prevent the unprivileged Goby service from reading those synthetic fixtures. Image/media contents and their hashes are unchanged; files retain mode 0644.
+
+## M3c external SRT delivery and WebVTT conversion
+
+This extension adds 36 `subtitle-m3c-*.json` HTTP fixtures against the same official 4.9.5.0 server in its private network namespace. It resolves the principal delivery and timing questions listed above for one external UTF-8 SRT source. It does not establish support for every subtitle format, character encoding, embedded stream, or client.
+
+### Owned source and scope
+
+A new owned directory, `/opt/goby-fixtures/subtitle-reference`, contains one copy of the existing 600-second synthetic MP4 and a newly generated ten-cue English SRT. The root and movie directory explicitly use mode 0755; the ownership marker and two fixture files use 0644. No old media bytes, NFO, user watch state, library options, or Goby process changed. The separate `Reference Subtitle M3c` library reused the provider-disabled movie options and received only a targeted refresh. Requests after library setup used the existing dedicated `reference-session-m3b` account, with no policy change.
+
+| Input | Size and provenance |
+| --- | --- |
+| Copied H.264/AAC MP4 | 56379 bytes; SHA-256 `997af268405a91e01685afa52d70a892c767e0e7135d25f6a33087cfb72de1c3`; runtime 6000000000 ticks |
+| `Reference Subtitle M3c (2026).en.srt` | 617 bytes; SHA-256 `f559a4e972dc1332690a34d6afbb5687bb6aa14d9244460c9e7fc82bb9546b76`; UTF-8 without BOM; 41 CRLF sequences |
+
+The source cue intervals, in seconds, are `0-5`, `8-10`, `9-12`, `10-11`, `12.5-15.25`, `18-22`, `19.5-20`, `20-21`, `22-25`, and `30-33`. The `9-12` cue has two lines, non-ASCII text, an `<i>` span, and literal `&amp;`; the `12.5-15.25` cue has a `<b>` span. These inputs make equality at both window boundaries and cues crossing either boundary observable without modifying previous sources.
+
+### Descriptor and profile negotiation
+
+The new movie is item `"40"`, source `"mediasource_40"`. Its external subtitle has numeric `Index: 2` in the complete MediaStreams array, `Codec: "srt"`, `Language: "en"`, `Type: "Subtitle"`, `IsExternal: true`, `IsTextSubtitleStream: true`, and `SupportsExternalStream: true`. The item query included the source path but did not include a delivery URL. PlaybackInfo added `DeliveryMethod: "External"`, `DeliveryUrl`, `IsExternalUrl: false`, and `IsChunkedResponse: false`.
+
+Both PlaybackInfo POSTs supplied the matching MP4/H.264/AAC direct-play profile and `IsPlayback: true`. With SRT and VTT external subtitle support, the returned URL was `/Videos/40/mediasource_40/Subtitles/2/0/Stream.srt?api_key=...`. With only `{ "Format": "vtt", "Method": "External" }` and explicit `SubtitleStreamIndex: 2`, the URL changed to `/Videos/40/mediasource_40/Subtitles/2/0/Stream.vtt?api_key=...`, while the stream's `Codec` remained `srt`. The response describes the stored stream codec separately from the requested delivery format.
+
+Both responses kept `SupportsDirectPlay`, `SupportsDirectStream`, and `SupportsTranscoding` true and supplied the original MP4 direct-stream URL. Neither response included `DefaultSubtitleStreamIndex`, including the explicit-index request. Absence must not be converted into an observed `-1` or `2` value. Evidence: `subtitle-m3c-item.json`, `subtitle-m3c-playbackinfo.json`, and `subtitle-m3c-playbackinfo-vtt-only.json`.
+
+### Routes, authentication, and response bytes
+
+The generated URL was resolved under the `/emby` API base, retaining its query token. It returned HTTP 200 for GET and HEAD. The following additional GET forms also returned 200 with the same original SRT bytes:
+
+- `/emby/Videos/40/mediasource_40/Subtitles/2/Stream.srt`
+- `/emby/Items/40/mediasource_40/Subtitles/2/Stream.srt`
+- `/emby/Items/40/mediasource_40/Subtitles/2/0/Stream.srt`
+
+| Response | Content-Type | Content-Length | Body |
+| --- | --- | --- | --- |
+| SRT GET without a time window | `text/plain` | `617` | Exactly the input bytes, including CRLF, numbering, markup, and non-ASCII text |
+| Corresponding SRT HEAD | `text/plain` | `617` | Zero bytes |
+| Converted VTT GET without a time window | `text/vtt` | `502` | UTF-8 without BOM, 32 LF characters and no CRLF |
+| Corresponding VTT HEAD | `text/vtt` | `502` | Zero bytes |
+| Nonexistent source or subtitle index `99` | `text/plain` | `0` | HTTP 200 with an empty body |
+
+Successful content responses advertised `Accept-Ranges: bytes`, `Cache-Control: public, no-transform`, and an ETag. The nonexistent source/index responses used no-cache headers and omitted ETag and Accept-Ranges. Conditional and Range requests were not exercised in this extension; advertised headers alone do not prove their full behavior.
+
+The anonymous and invalid-token controls deliberately constructed `/emby/Videos/40/mediasource_40/Subtitles/2/0/Stream.srt` with no query string. The anonymous request had no recorded headers; the invalid-token request had only `X-Emby-Token: invalid-reference-token`. Neither carried an `api_key`, valid authorization header, or cookie. Both returned HTTP 200 with the complete original SRT. Each request used a separate HTTP connection.
+
+To exclude prior authenticated access to the exact URL as the explanation, a new window URL was first requested anonymously: `/emby/Videos/40/mediasource_40/Subtitles/2/Stream.srt?EndPositionTicks=200000000&StartPositionTicks=100000000`. It returned 200 and the same 328 bytes as the subsequent authenticated request. This establishes the observed public delivery behavior in this isolated configuration. It does not establish all library-policy combinations or authorize weakening Goby's token, library, and playback access checks. Goby's stricter delivery authorization is a deliberate policy difference; generated delivery URLs should carry the caller's API token. Evidence: `subtitle-m3c-no-token.json`, `subtitle-m3c-invalid-token.json`, and `subtitle-m3c-window-unprimed-no-token.json`.
+
+### Time-window behavior
+
+The matrix independently varied SRT/VTT, path/query start, and `CopyTimestamps` omitted/true/false. Every matrix request used `StartPositionTicks=100000000` and `EndPositionTicks=200000000`, or the equivalent `100000000` path segment. All returned 200. Path and query start forms produced identical bytes for each matching format and CopyTimestamps value. Omitted CopyTimestamps was byte-identical to false.
+
+| Source interval | `CopyTimestamps=true` | Omitted or false |
+| --- | --- | --- |
+| `0-5`, `8-10`, `9-12` | Excluded | Excluded |
+| `10-11` | `10-11` | `0-1` |
+| `12.5-15.25` | `12.5-15.25` | `2.5-5.25` |
+| `18-22` | `18-22` | `8-12` |
+| `19.5-20` | `19.5-20` | `9.5-10` |
+| `20-21` | Excluded | `10-11` |
+| `22-25` | Excluded | `12-15` |
+| `30-33` | Excluded | Excluded |
+
+The observed rule is consistent with filtering out cues whose original start is less than Start, subtracting Start from both timestamps when CopyTimestamps is false, then excluding cues whose resulting start is greater than or equal to End. End is therefore applied in the output timestamp coordinate system in these samples. This ordering is an inference from the controlled results, not a claim about inspected vendor implementation.
+
+The cue crossing Start (`9-12`) is discarded entirely. A retained cue crossing End (`18-22` with CopyTimestamps true) is not clipped. Start equality is included; End equality is excluded. A nominally reversed request, Start=20 seconds and End=10 seconds with CopyTimestamps omitted, also returned 200: the original `20-21` and `22-25` cues became `0-1` and `2-5`; original `30-33` became start 10 and was excluded. Treating every End less than Start as an invalid absolute interval would not match this response.
+
+A path start of 10 seconds combined with query `StartPositionTicks=0`, End=20 seconds, and CopyTimestamps=true returned the first seven source cues, beginning at zero. The query value took precedence in this conflict. Omitting End retained every cue beginning at or after Start, including the final `30-33` cue. An empty SRT window from 40 to 50 seconds returned 200, `text/plain`, and zero bytes.
+
+The four-cue CopyTimestamps=true bodies were 221 bytes in SRT and 196 bytes in VTT. The six-cue omitted/false bodies were 328 and 287 bytes, respectively. Evidence: `subtitle-m3c-{srt,vtt}-{query,path}-copy-*.json`, `subtitle-m3c-*-path-query-conflict.json`, the two `*-start-only.json` files, `subtitle-m3c-reversed-window.json`, and `subtitle-m3c-empty-window.json`.
+
+### Text serialization and integrity
+
+Converted VTT omitted the SRT numeric identifiers, began with `WEBVTT\n\n`, and used `mm:ss.mmm` timestamps for these sub-hour cues. Cue blocks were separated by a blank line, and the last payload ended with one LF, without a final blank line. Markup and non-ASCII text survived, and multiline cue text used LF. The complete VTT body has SHA-256 `7e5ffe9d66f192edd002c6cee076df43e8c0d07b2feed56a8c167aad8c32e0bb`.
+
+Windowed SRT was reserialized with consecutive numbering beginning at 1, `hh:mm:ss,mmm` timestamps, LF structure separators, and two LF characters after the last cue. The path/query-conflict sample retained the original CRLF inside the multiline cue payload while its surrounding structure used LF. By contrast, same-format SRT without time transformation retained the complete original byte stream. The study did not include a BOM-bearing or UTF-16 source, so their exact reference behavior remains unverified. All cue times were less than one minute; minute rollover, hour formatting, and an empty VTT document were not sampled.
+
+The recorder saved 30 private wire-body captures before text decoding. The remote audit reconstructed each text body as UTF-8 and required byte equality with the captured body; binary bodies and JSON structures had corresponding preservation checks. All non-HEAD Content-Length values matched the captured byte length, and both HEAD comparisons retained the corresponding GET length and content type with zero body bytes. Original response headers, JSON types and numbers, and credential removal were audited before copying sanitized exports into the repository. Known synthetic paths and random reference IDs remain intact; private host details and credentials use the established sanitizer.
+
+All 464 files belonging to the preceding 232 raw/export fixture pairs retained their SHA-256 values. New `websocket-m3c-*` files were concurrently owned by a separate capture task and were neither rewritten nor included as immutable members of this earlier 232-fixture baseline. The exporter now accepts either mapping or pair-array request headers when reading other captures for known credential values, without changing the selected fixture schema. The six new stages are `subtitle_m3c_prepare`, `subtitle_m3c_setup`, `subtitle_m3c_descriptor`, `subtitle_m3c_delivery`, `subtitle_m3c_windows`, and `export_subtitle_m3c`. No local runtime verification, vendor implementation inspection, WebSocket probe, or Git publication was performed by this extension.
+
+## Native VTT descriptor control
+
+Three additional `subtitle-vtt-source-*.json` fixtures resolve whether a native WebVTT sidecar uses `vtt` or `webvtt` in the response DTO. The previously captured 502-byte VTT body was saved without changes as `Reference Subtitle M3c (2026).en.forced.vtt` in the same owned movie directory. Its SHA-256 remains `7e5ffe9d66f192edd002c6cee076df43e8c0d07b2feed56a8c167aad8c32e0bb`; the file uses mode 0644 and both enclosing fixture directories use 0755. Original SRT and MP4 bytes were unchanged. Only this new subtitle library received a targeted refresh.
+
+The item query and subsequent matching-profile PlaybackInfo both reported the new sidecar with `Codec: "vtt"`, `Language: "en"`, `IsForced: true`, `IsDefault: false`, `DisplayTitle: "English (Forced VTT)"`, and numeric `Index: 2`. PlaybackInfo returned its `/Videos/40/mediasource_40/Subtitles/2/0/Stream.vtt?api_key=...` delivery URL. The existing SRT stream moved to index 3 and received the corresponding SRT URL containing `/Subtitles/3/`.
+
+This confirms native VTT's wire codec spelling in the sampled version and demonstrates that external stream indices can change after a library refresh adds a sidecar. The earlier 36 fixtures describe the prior one-sidecar state and remain immutable; their index-2 SRT descriptor is not a promise about the current two-sidecar state. No new delivery or timing matrix was run.
+
+The remote export audit preserved all 536 preceding HTTP raw/export files, including the original 232 pairs and all 36 M3c pairs, and verified both original source hashes. Concurrent WebSocket records were not modified. All three new records passed the existing header, JSON type/number, and credential checks. Supporting stages are `subtitle_vtt_source_prepare`, `subtitle_vtt_source_capture`, and `export_subtitle_vtt_source`.

@@ -82,6 +82,9 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
 		return ItemResult{}, err
 	}
+	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
+		return ItemResult{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemResult{}, fmt.Errorf("complete next-up query: %w", err)
 	}

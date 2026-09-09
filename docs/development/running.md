@@ -1,6 +1,6 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, durable per-user playback state, client capabilities/session views, and NextUp queries. Subtitles, conversion, client events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, and NextUp queries. Embedded/additional subtitles, conversion, client events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
 
 ## Build inputs
 
@@ -65,6 +65,8 @@ Migration `0004` backfills persistent genre/tag/studio/person identities from st
 Migration `0006` adds durable playback sessions and user state. Run a normal scan of existing libraries after upgrading: probe version 2 includes Linux ctime and extra codec facts needed for original-file delivery. Older snapshots remain unavailable for playback until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Scans are not automatically scheduled by this upgrade.
 
 Migration `0007` adds validated client capability snapshots to authentication sessions; `0008` adds validated player hints to playback sessions. These upgrades need no new configuration or rescan beyond the earlier probe-version requirement. [Client sessions](client-sessions.md) distinguishes online presence, login expiration, current playback, and supported declarations. [NextUp](next-up.md) documents series-directed behavior and the remaining global-query reference gap.
+
+Migration `0009` adds indexed [external subtitles](external-subtitles.md). Run a normal library scan to discover existing SRT/WebVTT sidecars; no FFmpeg extraction is needed for these standalone text formats. Every subtitle download checks the current source and account permissions, including before returning 304. Native VTT uses wire Codec=vtt, and both native and converted delivery URLs carry the current user's token.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 

@@ -30,7 +30,7 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 	items := make([]map[string]any, 0, len(result.Items))
 	if !zeroLimit {
 		for _, item := range result.Items {
-			dto := s.itemDTO(item, queryValues(r.URL.Query()["Fields"]), false)
+			dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), false)
 			applyItemSwitches(dto, r)
 			items = append(items, dto)
 		}

@@ -20,6 +20,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
+| [External subtitles](development/external-subtitles.md) | Sidecar indexing, SRT/WebVTT delivery, time semantics, authorization and resource limits |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |
@@ -31,6 +32,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Toolchain and hardware policy](development/toolchain.md) | Stable release pins, official sources, PostgreSQL integration, local build permission, and remote decode/encode verification |
 | [Source provenance](sources/README.md) | Fixed upstream revisions, snapshot hashes, and known document defects |
 | [Live reference baseline](research/reference-server.md) | Official Emby 4.9.5.0 isolation, audited HTTP captures and observed differences |
+| [WebSocket reference](research/websocket-reference.md) | Audited upgrade paths, token-scoped events, message envelopes and limits of observed behavior |
 
 ## Scope and evidence labels
 

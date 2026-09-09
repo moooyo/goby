@@ -1,0 +1,337 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:45:09.867924+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items?UserId=2118172027b94fd18c3ca6e55478d6d3&Ids=40&Fields=Path%2CMediaSources%2CMediaStreams",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Session Test\", DeviceId=\"goby-session-m3b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "5696"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:45:09 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference Playback M3",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "40",
+          "Container": "mp4",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_40",
+              "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).mp4",
+              "Type": "Default",
+              "Container": "mp4",
+              "Size": 56379,
+              "Name": "Reference Playback M3",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 6000000000,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "h264",
+                  "CodecTag": "avc1",
+                  "Language": "und",
+                  "TimeBase": "1/16384",
+                  "VideoRange": "SDR",
+                  "DisplayTitle": "SD H264",
+                  "NalLengthSize": "4",
+                  "IsInterlaced": false,
+                  "BitRate": 95,
+                  "BitDepth": 8,
+                  "RefFrames": 1,
+                  "IsDefault": true,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Height": 90,
+                  "Width": 160,
+                  "AverageFrameRate": 1,
+                  "RealFrameRate": 1,
+                  "Profile": "Constrained Baseline",
+                  "Type": "Video",
+                  "AspectRatio": "16:9",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "PixelFormat": "yuv420p",
+                  "Level": 10,
+                  "IsAnamorphic": false,
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                },
+                {
+                  "Codec": "aac",
+                  "CodecTag": "mp4a",
+                  "Language": "und",
+                  "TimeBase": "1/8000",
+                  "DisplayTitle": "AAC mono (Default)",
+                  "IsInterlaced": false,
+                  "ChannelLayout": "mono",
+                  "BitRate": 253,
+                  "Channels": 1,
+                  "SampleRate": 8000,
+                  "IsDefault": true,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Profile": "LC",
+                  "Type": "Audio",
+                  "Index": 1,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                },
+                {
+                  "Codec": "vtt",
+                  "Language": "en",
+                  "DisplayTitle": "English (Forced VTT)",
+                  "DisplayLanguage": "English",
+                  "IsInterlaced": false,
+                  "IsDefault": false,
+                  "IsForced": true,
+                  "IsHearingImpaired": false,
+                  "Type": "Subtitle",
+                  "Index": 2,
+                  "IsExternal": true,
+                  "IsTextSubtitleStream": true,
+                  "SupportsExternalStream": true,
+                  "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).en.forced.vtt",
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                },
+                {
+                  "Codec": "srt",
+                  "Language": "en",
+                  "DisplayTitle": "English (SRT)",
+                  "DisplayLanguage": "English",
+                  "IsInterlaced": false,
+                  "IsDefault": false,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Type": "Subtitle",
+                  "Index": 3,
+                  "IsExternal": true,
+                  "IsTextSubtitleStream": true,
+                  "SupportsExternalStream": true,
+                  "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).en.srt",
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 751,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 1,
+              "ItemId": "40"
+            }
+          ],
+          "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).mp4",
+          "RunTimeTicks": 6000000000,
+          "Size": 56379,
+          "Bitrate": 751,
+          "IsFolder": false,
+          "Type": "Movie",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/16384",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 95,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 1,
+              "RealFrameRate": 1,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/8000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 253,
+              "Channels": 1,
+              "SampleRate": 8000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "vtt",
+              "Language": "en",
+              "DisplayTitle": "English (Forced VTT)",
+              "DisplayLanguage": "English",
+              "IsInterlaced": false,
+              "IsDefault": false,
+              "IsForced": true,
+              "IsHearingImpaired": false,
+              "Type": "Subtitle",
+              "Index": 2,
+              "IsExternal": true,
+              "IsTextSubtitleStream": true,
+              "SupportsExternalStream": true,
+              "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).en.forced.vtt",
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "srt",
+              "Language": "en",
+              "DisplayTitle": "English (SRT)",
+              "DisplayLanguage": "English",
+              "IsInterlaced": false,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Subtitle",
+              "Index": 3,
+              "IsExternal": true,
+              "IsTextSubtitleStream": true,
+              "SupportsExternalStream": true,
+              "Path": "/opt/goby-fixtures/subtitle-reference/Reference Subtitle M3c (2026)/Reference Subtitle M3c (2026).en.srt",
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  }
+}

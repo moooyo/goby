@@ -37,6 +37,7 @@ type scanState struct {
 	numberingConflicts  int
 	directoryIdentities map[string]os.FileInfo
 	imageDirectories    map[string]*imageDirectoryIndex
+	subtitleDirectories map[string]*subtitleDirectoryIndex
 }
 
 type storedFile struct {
@@ -137,6 +138,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	state.directoryIdentities[directoryKey] = info
 	defer delete(state.directoryIdentities, directoryKey)
 	defer func() { delete(state.imageDirectories, directoryKey) }()
+	defer func() { delete(state.subtitleDirectories, directoryKey) }()
 	// A directory containing audio files is the album boundary. Local metadata
 	// may describe this existing hierarchy but cannot choose a different kind.
 	folderType := current.folderType
@@ -323,6 +325,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		stored.sortName != sortName || stored.overview != overview || stored.indexNumber != indexNumber || stored.parentIndexNumber != parentIndex ||
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
+		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
+			return err
+		}
 		if err := state.scanImages(stored.id, itemType, path, false); err != nil {
 			return err
 		}
@@ -377,6 +382,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		state.task.job.Added++
 	} else {
 		state.task.job.Updated++
+	}
+	if err := state.scanSubtitles(id, path, probe); err != nil {
+		return err
 	}
 	if err := state.scanImages(id, itemType, path, false); err != nil {
 		return err

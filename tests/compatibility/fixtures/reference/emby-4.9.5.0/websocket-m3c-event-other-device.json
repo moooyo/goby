@@ -1,0 +1,131 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:36:06.681516+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder-other",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "msdsXIag8bumac3f20hFUw=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder-other HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: msdsXIag8bumac3f20hFUw==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:36:05 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "eOHMimh1XSv8PrY+yFGpZOSYAiY="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 01:36:05 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: eOHMimh1XSv8PrY+yFGpZOSYAiY=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T01:36:08.392856+00:00",
+      "elapsedMs": 1711.557,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 239,
+      "text": "{\"MessageType\":\"UserDataChanged\",\"MessageId\":\"eb5e02bec6084f228993c1ae5e584097\",\"Data\":{\"UserId\":\"5760844f98b54d16b1c13073e5c9d73f\",\"UserDataList\":[{\"PlaybackPositionTicks\":0,\"PlayCount\":0,\"IsFavorite\":true,\"Played\":false,\"ItemId\":\"28\"}]}}",
+      "json": {
+        "MessageType": "UserDataChanged",
+        "MessageId": "eb5e02bec6084f228993c1ae5e584097",
+        "Data": {
+          "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+          "UserDataList": [
+            {
+              "PlaybackPositionTicks": 0,
+              "PlayCount": 0,
+              "IsFavorite": true,
+              "Played": false,
+              "ItemId": "28"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:11.398884+00:00",
+      "elapsedMs": 4717.588,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 240,
+      "text": "{\"MessageType\":\"UserDataChanged\",\"MessageId\":\"07c1cf6678e04f6dbd8bbd6e6d513ba7\",\"Data\":{\"UserId\":\"5760844f98b54d16b1c13073e5c9d73f\",\"UserDataList\":[{\"PlaybackPositionTicks\":0,\"PlayCount\":0,\"IsFavorite\":false,\"Played\":false,\"ItemId\":\"28\"}]}}",
+      "json": {
+        "MessageType": "UserDataChanged",
+        "MessageId": "07c1cf6678e04f6dbd8bbd6e6d513ba7",
+        "Data": {
+          "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+          "UserDataList": [
+            {
+              "PlaybackPositionTicks": 0,
+              "PlayCount": 0,
+              "IsFavorite": false,
+              "Played": false,
+              "ItemId": "28"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T01:36:13.698956+00:00",
+      "elapsedMs": 7017.614,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T01:36:13.699268+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 7017.926,
+  "unparsedBufferedBytes": 0
+}

@@ -1,0 +1,80 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:42:21.091697+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Videos/40/mediasource_40/Subtitles/2/Stream.srt?EndPositionTicks=200000000&StartPositionTicks=100000000",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Session Test\", DeviceId=\"goby-session-m3b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "328"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:42:20 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "public, no-transform"
+      ],
+      [
+        "ETag",
+        "\"4a67febc6f37b0381150bde8e4f20b1c\""
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "1\n00:00:00,000 --> 00:00:01,000\nStarts exactly at start.\n\n2\n00:00:02,500 --> 00:00:05,250\n<b>Inside the window.</b>\n\n3\n00:00:08,000 --> 00:00:12,000\nCrosses the end.\n\n4\n00:00:09,500 --> 00:00:10,000\nEnds exactly at end.\n\n5\n00:00:10,000 --> 00:00:11,000\nStarts exactly at end.\n\n6\n00:00:12,000 --> 00:00:15,000\nAfter the window.\n\n"
+  }
+}

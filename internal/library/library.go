@@ -49,6 +49,7 @@ type Item struct {
 	Metadata                                                      *metadata.Metadata
 	Entities                                                      ItemEntities
 	UserData                                                      *UserData
+	Subtitles                                                     []Subtitle
 	CanPlay                                                       bool
 }
 
