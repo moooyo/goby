@@ -2,9 +2,9 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, and Universal/progressive audio are implemented; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Progressive video, progressive PlaybackInfo profile coverage, additional audio timing/input profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain required work.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, Universal/progressive audio, and audio PlaybackInfo profile selection are implemented; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Progressive video, additional audio timing/input profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain required work.
 
-The reference corpus currently contains **610 records**: 436 earlier records and 174 records from the [audio reference study](research/audio-reference.md). These include supporting probe/provenance observations as well as HTTP captures; they are not counts of implemented endpoints or successful client workflows. Migration `0012` and probe cache version 3 are covered in the upgrade instructions below.
+The reference corpus currently contains **736 records**: 436 earlier records, 174 from the [audio reference study](research/audio-reference.md), and 126 from the [audio profile study](research/audio-profile-reference.md). These include supporting probe/provenance observations and an explicitly incomplete response as well as complete HTTP captures; they are not counts of implemented endpoints or successful client workflows. Migration `0012` and probe cache version 4 are covered in the upgrade instructions below.
 
 ## Compatibility target
 
@@ -21,6 +21,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Universal and progressive audio](development/audio-playback.md) | Original/progressive/HLS selection, supported audio outputs, exact timing, streaming failures and current limits |
+| [Audio profile negotiation](development/audio-profile-playback.md) | Ordered PlaybackInfo profiles, projected constraints, standard media URLs and current-policy execution |
 | [Client playback references](development/client-playback-references.md) | Scoped client nonces, canonical playback identities, tombstones and migration 0012 |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
 | [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
@@ -43,6 +44,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [WebSocket reference](research/websocket-reference.md) | Audited upgrade paths, token-scoped events, message envelopes and limits of observed behavior |
 | [HLS reference](research/hls-reference.md) | Full VOD manifests, seek hints, successful transcode segments, preserved remux failures and cleanup |
 | [Audio reference](research/audio-reference.md) | Universal defaults, original delivery, progressive seeking, AAC/TS HLS and preserved reference inconsistencies |
+| [Audio profile reference](research/audio-profile-reference.md) | HTTP/HLS profile order, protocol/context defaults, exact output conditions and measured response completeness |
 
 ## Scope and evidence labels
 

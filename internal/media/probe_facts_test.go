@@ -196,7 +196,7 @@ func TestParseProbeRejectsMalformedExtendedFacts(t *testing.T) {
 }
 
 func TestProbeFactVersionAndLegacyCache(t *testing.T) {
-	if CurrentProbeVersion != 3 || (Prober{}).CacheVersion() != CurrentProbeVersion {
+	if CurrentProbeVersion != 4 || (Prober{}).CacheVersion() != CurrentProbeVersion {
 		t.Fatalf("unexpected probe cache version: %d", (Prober{}).CacheVersion())
 	}
 	var legacy Info

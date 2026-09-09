@@ -1,0 +1,73 @@
+{
+  "kind": "incomplete-http-observation",
+  "note": "The first GET response body was persisted before source-path sanitizer auditing failed. Headers and status were not persisted. The request is not repeated.",
+  "wireFile": "audio-profile-m4d-flac-get-minimal-info.b64",
+  "responseBody": {
+    "MediaSources": [
+      {
+        "Chapters": [],
+        "Protocol": "File",
+        "Id": "mediasource_48",
+        "Path": "/reference-audio-source/Reference Audio M4c.flac",
+        "Type": "Default",
+        "Container": "flac",
+        "Size": 716925,
+        "Name": "Reference Audio M4c",
+        "IsRemote": false,
+        "HasMixedProtocols": false,
+        "RunTimeTicks": 60000000,
+        "SupportsTranscoding": true,
+        "SupportsDirectStream": true,
+        "SupportsDirectPlay": true,
+        "IsInfiniteStream": false,
+        "RequiresOpening": false,
+        "RequiresClosing": false,
+        "RequiresLooping": false,
+        "SupportsProbing": true,
+        "MediaStreams": [
+          {
+            "Codec": "flac",
+            "TimeBase": "1/96000",
+            "DisplayTitle": "FLAC stereo",
+            "IsInterlaced": false,
+            "ChannelLayout": "stereo",
+            "BitRate": 955900,
+            "BitDepth": 24,
+            "Channels": 2,
+            "SampleRate": 96000,
+            "IsDefault": false,
+            "IsForced": false,
+            "IsHearingImpaired": false,
+            "Type": "Audio",
+            "Index": 0,
+            "IsExternal": false,
+            "IsTextSubtitleStream": false,
+            "SupportsExternalStream": false,
+            "Protocol": "File",
+            "ExtendedVideoType": "None",
+            "ExtendedVideoSubType": "None",
+            "ExtendedVideoSubTypeDescription": "None",
+            "AttachmentSize": 0
+          }
+        ],
+        "Formats": [],
+        "Bitrate": 955900,
+        "RequiredHttpHeaders": {},
+        "AddApiKeyToDirectStreamUrl": false,
+        "ReadAtNativeFramerate": false,
+        "DefaultAudioStreamIndex": 0,
+        "ItemId": "48"
+      }
+    ],
+    "PlaySessionId": "5d57562f500d47a08f7a12f9efe8b9aa"
+  },
+  "observation": {
+    "wireBytes": 1215,
+    "wireSha256": "f4488dc4ff28c9450d37068bc3c2386f9960c12ff9400e4d3f87b89a771a3043"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:07.631012+00:00"
+  }
+}

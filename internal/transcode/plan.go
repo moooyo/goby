@@ -38,7 +38,10 @@ type Plan struct {
 	AudioBitDepth          int     `json:"AudioBitDepth,omitempty"`
 	AudioSourceSampleRate  int     `json:"AudioSourceSampleRate,omitempty"`
 	AudioSourceSampleCount int64   `json:"AudioSourceSampleCount,omitempty"`
-	SegmentSeconds         int     `json:"SegmentSeconds"`
+	// Sample seeking decodes from the beginning and trims in the input sample
+	// domain. It is used when the source demuxer cannot establish a precise seek.
+	AudioSampleSeek bool `json:"AudioSampleSeek,omitempty"`
+	SegmentSeconds  int  `json:"SegmentSeconds"`
 	// VOD mode uses explicit source-time cut points and globally stable output
 	// numbers. Empty mode retains the measured EVENT output used by the engine.
 	SegmentMode         string   `json:"SegmentMode,omitempty"`

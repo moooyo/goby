@@ -1,0 +1,639 @@
+{
+  "kind": "derived-url-contract-observation",
+  "note": "Derived from captured PlaybackInfo responses, retaining original query-key casing. This performs no HTTP requests.",
+  "cases": [
+    {
+      "case": "flac-all-disabled",
+      "urls": {}
+    },
+    {
+      "case": "flac-codec-exact",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key",
+            "audiochannels"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "audiochannels": [
+              "1"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-codec-limits",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key",
+            "audiochannels"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "96000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "audiochannels": [
+              "1"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-context-empty",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-context-omitted",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-context-static",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream",
+          "hasApiKey": true,
+          "parameterNames": [
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-direct-stream-only",
+      "urls": {
+        "DirectStreamUrl": {
+          "endpointLeaf": "original.flac",
+          "hasApiKey": true,
+          "parameterNames": [
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "api_key"
+          ],
+          "audioParameters": {}
+        }
+      }
+    },
+    {
+      "case": "flac-hls-first",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "master.m3u8",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "BreakOnNonKeyFrames",
+            "DeviceId",
+            "MediaSourceId",
+            "MinSegments",
+            "PlaySessionId",
+            "SegmentContainer",
+            "SegmentLength",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "aac"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "SegmentLength": [
+              "3"
+            ],
+            "MinSegments": [
+              "1"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-http-aac",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.aac",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "aac"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-http-first",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-http-m4a",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.m4a",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "aac"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-http-mp3",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-http-mp3-start-reuse",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "StartTimeTicks",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "StartTimeTicks": [
+              "20000000"
+            ],
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-max-channels-one",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "1"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-post-minimal",
+      "urls": {}
+    },
+    {
+      "case": "flac-protocol-empty",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "flac-protocol-omitted",
+      "urls": {
+        "TranscodingUrl": {
+          "endpointLeaf": "stream.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "AudioBitrate",
+            "AudioCodec",
+            "AudioStreamIndex",
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "TranscodeReasons",
+            "TranscodingMaxAudioChannels",
+            "allowAudioStreamCopy",
+            "api_key"
+          ],
+          "audioParameters": {
+            "AudioCodec": [
+              "mp3"
+            ],
+            "AudioBitrate": [
+              "128000"
+            ],
+            "AudioStreamIndex": [
+              "0"
+            ],
+            "TranscodingMaxAudioChannels": [
+              "2"
+            ],
+            "TranscodeReasons": [
+              "DirectPlayError"
+            ],
+            "allowAudioStreamCopy": [
+              "false"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "case": "mp3-direct-match",
+      "urls": {
+        "DirectStreamUrl": {
+          "endpointLeaf": "original.mp3",
+          "hasApiKey": true,
+          "parameterNames": [
+            "DeviceId",
+            "MediaSourceId",
+            "PlaySessionId",
+            "api_key"
+          ],
+          "audioParameters": {}
+        }
+      }
+    },
+    {
+      "case": "mp3-get-minimal",
+      "urls": {}
+    },
+    {
+      "case": "system",
+      "urls": {}
+    }
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:57:31.470371+00:00"
+  }
+}

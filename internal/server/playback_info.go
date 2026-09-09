@@ -140,21 +140,26 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	request.MediaSourceID = source.SourceID
-	decision, err := playback.Evaluate(playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, request)
+	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
+	decision, err := playback.Evaluate(input, request)
 	if err != nil {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The playback request or media facts cannot be evaluated.")
 		return
 	}
 	var conversion playback.ConversionDecision
 	if s.hls != nil && request.DeviceProfile != nil && len(request.DeviceProfile.TranscodingProfiles) > 0 {
-		conversion, err = playback.PlanConversion(playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-			Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, request, hlsUserLimits(s.cfg.Transcoding, principal.User))
+		limits := hlsUserLimits(s.cfg.Transcoding, principal.User)
+		if source.Item.Type == "Audio" {
+			conversion, err = playback.PlanAudioConversion(input, request, limits)
+		} else {
+			conversion, err = playback.PlanConversion(input, request, limits)
+		}
 		if err != nil {
-			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested HLS profile cannot be evaluated.")
+			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested conversion profile cannot be evaluated.")
 			return
 		}
-		if conversion.Plan != nil && source.Item.Type == "Audio" && exactAudioCoverage(*source.Item.Media, conversion.Plan.AudioStreamIndex) == nil {
+		if conversion.Plan != nil && source.Item.Type == "Audio" && exactAudioCoverage(input.Info, conversion.Plan.AudioStreamIndex) == nil {
 			conversion.Plan = nil
 		}
 	}
@@ -206,36 +211,51 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		dto["DirectStreamUrl"] = "/" + resource + "/" + url.PathEscape(source.Item.ID) + "/original." + source.Container + "?" + query.Encode()
 	}
 	response := map[string]any{"MediaSources": []map[string]any{dto}, "PlaySessionId": session.ID}
+	conversionAvailable := false
 	if conversion.Plan != nil && (request.EnableTranscoding == nil || *request.EnableTranscoding || (conversion.Method == "DirectStream" && !decision.DirectStream)) {
 		start := int64(0)
 		if request.StartTimeTicks != nil {
 			start = *request.StartTimeTicks
 		}
-		hls, err := s.hls.register(principal, source, session.ID, conversion, start)
-		if err != nil {
-			if !decision.DirectPlay && !decision.DirectStream {
-				s.hlsError(w, r, err)
-				return
-			}
+		var streamURL, container, protocol string
+		if conversion.Plan.OutputMode == "progressive" {
+			// The concrete output settings survive a normal client-side seek URL
+			// change. The media route rechecks current source facts and policy;
+			// negotiation does not reserve capacity or start an encoder.
+			streamURL = audioPlaybackURL(source.Item.ID, source.SourceID, session.ID, principal.Client.DeviceID, token, *conversion.Plan)
+			container, protocol = conversion.Plan.Container, "http"
 		} else {
-			resource := "Videos"
-			if source.Item.Type == "Audio" {
-				resource = "Audio"
+			hls, err := s.hls.register(principal, source, session.ID, conversion, start)
+			if err != nil {
+				if !decision.DirectPlay && !decision.DirectStream {
+					s.hlsError(w, r, err)
+					return
+				}
+			} else {
+				resource := "Videos"
+				if source.Item.Type == "Audio" {
+					resource = "Audio"
+				}
+				streamURL = hlsSessionURL(hls, resource, "master.m3u8", token, start)
+				container, protocol = "ts", "hls"
 			}
-			url := hlsSessionURL(hls, resource, "master.m3u8", token, start)
+		}
+		if streamURL != "" {
 			if request.EnableTranscoding == nil || *request.EnableTranscoding {
 				dto["SupportsTranscoding"] = true
-				dto["TranscodingUrl"] = url
-				dto["TranscodingContainer"] = "ts"
-				dto["TranscodingSubProtocol"] = "hls"
+				dto["TranscodingUrl"] = streamURL
+				dto["TranscodingContainer"] = container
+				dto["TranscodingSubProtocol"] = protocol
+				conversionAvailable = true
 			} else if conversion.Method == "DirectStream" && !decision.DirectStream {
 				dto["SupportsDirectStream"] = true
-				dto["DirectStreamUrl"] = url
+				dto["DirectStreamUrl"] = streamURL
+				conversionAvailable = true
 			}
 		}
 	}
 	allDisabled := request.EnableDirectPlay != nil && !*request.EnableDirectPlay && request.EnableDirectStream != nil && !*request.EnableDirectStream && request.EnableTranscoding != nil && !*request.EnableTranscoding
-	if !decision.DirectPlay && !decision.DirectStream && conversion.Plan == nil && !allDisabled {
+	if !decision.DirectPlay && !decision.DirectStream && !conversionAvailable && !allDisabled {
 		response["ErrorCode"] = "NoCompatibleStream"
 	}
 	jsonResponse(w, http.StatusOK, response)

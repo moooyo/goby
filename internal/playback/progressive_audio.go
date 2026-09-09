@@ -137,6 +137,12 @@ func PlanProgressiveAudio(source Source, request ProgressiveAudioRequest, limits
 			audio.Codec == "opus" && audio.SampleRate != 48_000 {
 			copyAllowed = false
 		}
+		// Ogg page seeks can retain a valid sample count at the wrong source
+		// position. A nonzero conversion start needs decoded sample trimming;
+		// an explicit copy cannot silently become an inaccurate packet seek.
+		if media.CanonicalContainer(source.Info, source.Path) == "ogg" && request.StartTimeTicks != 0 {
+			copyAllowed = false
+		}
 		// AAC in other containers may use ASC features that ADTS cannot carry.
 		// Codec/profile names alone do not establish framing compatibility.
 		if container == "aac" && media.CanonicalContainer(source.Info, source.Path) != "aac" {
@@ -410,6 +416,7 @@ func progressiveAudioPlan(source Source, request ProgressiveAudioRequest, contai
 	return transcode.Plan{OutputMode: "progressive", Container: container, AudioCodec: codec,
 		VideoStreamIndex: -1, AudioStreamIndex: streamIndex, AudioSourceSampleRate: sourceSampleRate,
 		AudioSourceSampleCount: sourceSamples,
+		AudioSampleSeek:        codec != "copy" && sourceSamples > 0 && media.CanonicalContainer(source.Info, source.Path) == "ogg",
 		StartTicks:             request.StartTimeTicks, DurationTicks: source.Info.DurationTicks}
 }
 

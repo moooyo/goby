@@ -150,7 +150,7 @@ func TestProbeActualAudioUnprovenSourcesRetainMetadata(t *testing.T) {
 			encoding: []string{"-c:a", "aac", "-b:a", "32k", "-output_ts_offset", "0.125"},
 		},
 		{
-			name: "unsupported_opus", extension: ".ogg", codec: "opus",
+			name: "unsupported_webm_opus", extension: ".webm", codec: "opus",
 			encoding: []string{"-c:a", "libopus", "-b:a", "32k"},
 		},
 	}

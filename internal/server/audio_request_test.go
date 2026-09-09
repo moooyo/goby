@@ -138,6 +138,38 @@ func TestAudioUniversalCeilingsAndTrackSelectionCanRejectOriginalDelivery(t *tes
 	}
 }
 
+func TestAudioTranscodingChannelCeilingAppliesOnlyToConvertedOutput(t *testing.T) {
+	source := audioRequestTestSource("flac", "flac")
+	original := audioRequestTestResult(t, source, map[string]string{
+		"Container": "flac", "TranscodingMaxAudioChannels": "1",
+	}, "", true)
+	if !original.Original {
+		t.Fatal("a conversion-only channel ceiling rejected a compatible original")
+	}
+	for _, protocol := range []string{"http", "hls"} {
+		for _, ceilings := range [][2]string{{"1", "6"}, {"6", "1"}} {
+			converted := audioRequestTestResult(t, source, map[string]string{
+				"Container": "mp3", "TranscodingProtocol": protocol, "MaxAudioChannels": ceilings[0], "TranscodingMaxAudioChannels": ceilings[1],
+			}, "", true)
+			channels := 0
+			if converted.Progressive != nil {
+				channels = converted.Progressive.Plan.AudioChannels
+			} else if converted.HLS != nil {
+				channels = converted.HLS.Plan.AudioChannels
+			}
+			if channels != 1 {
+				t.Fatal("audio conversion ignored the stricter independent channel ceiling")
+			}
+		}
+		_, err := audioRequestDecision(source, map[string]string{
+			"Container": "mp3", "TranscodingProtocol": protocol, "AudioChannels": "2", "TranscodingMaxAudioChannels": "1",
+		}, "", true, audioRequestTestLimits())
+		if !errors.Is(err, errAudioRequestUnsupported) {
+			t.Fatalf("exact audio channels exceeded the conversion ceiling: %v", err)
+		}
+	}
+}
+
 func TestAudioUniversalBareFormatsAllowOriginalButRespectBitrateCeilings(t *testing.T) {
 	for _, format := range []struct{ container, codec string }{
 		{"mp3", "mp3"}, {"flac", "flac"}, {"aac", "aac"}, {"wav", "pcm_s16le"},

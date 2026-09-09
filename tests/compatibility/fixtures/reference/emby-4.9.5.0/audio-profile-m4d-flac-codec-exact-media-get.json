@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/audio/48/stream.mp3?DeviceId=goby-audio-profile-m4d-recorder&MediaSourceId=mediasource_48&PlaySessionId=db0a67dda7314379ab3a6e7c7c3adb81&api_key=[REDACTED_TOKEN]&AudioCodec=mp3&AudioBitrate=128000&AudioStreamIndex=0&TranscodingMaxAudioChannels=2&audiochannels=1&TranscodeReasons=DirectPlayError&allowAudioStreamCopy=false",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "2022"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 05:56:12 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-b2288074-a913-4602-8350-0ca5014fe6c0_1graph.txt\" -f flac -i \"/reference-audio-source/Reference Audio M4c.flac\" -map 0:0 -vn -sn -c:a:0 libmp3lame -ab:a:0 128000 -ac:a:0 1 -f mp3 -id3v2_version 3 -write_id3v1 1 \"/transcoding-temp/04A05B/04A05B.mp3\"\n\n13:56:13.033 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n13:56:13.033   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n13:56:13.033 Execution Date: 2026-09-09 13:56:13\n13:56:13.033 Input #0, flac, from '/reference-audio-source/Reference Audio M4c.flac':\n13:56:13.033   Metadata:\n13:56:13.033     title           : Reference Audio FLAC\n13:56:13.033     artist          : Goby Audio Reference\n13:56:13.033     album           : Goby M4c Audio\n13:56:13.033     encoder         : Lavf63.1.101\n13:56:13.033   Duration: 00:00:06.00, start: 0.000000, bitrate: 955 kb/s\n13:56:13.033   Stream #0:0: Audio: flac, 96000 Hz, stereo, s32 (24 bit)\n13:56:13.034 Stream mapping:\n13:56:13.034   Stream #0:0 -> #0:0 (flac (native) -> mp3 (libmp3lame))\n13:56:13.034 Press [q] to stop, [?] for help\n13:56:13.036 Output #0, mp3, to '/transcoding-temp/04A05B/04A05B.mp3':\n13:56:13.036   Metadata:\n13:56:13.036     TIT2            : Reference Audio FLAC\n13:56:13.036     TPE1            : Goby Audio Reference\n13:56:13.036     TALB            : Goby M4c Audio\n13:56:13.036     TSSE            : Lavf59.27.100\n13:56:13.036   Stream #0:0: Audio: mp3, 48000 Hz, mono, s32p, 128 kb/s\n13:56:13.036     Metadata:\n13:56:13.036       encoder         : Lavc59.37.100 libmp3lame\n13:56:13.036 elapsed=00:00:00.00 size=       1kB time=00:00:00.00 bitrate=N/A throttle=off speed=   0x    \nelapsed=00:00:00.03 size=      95kB time=00:00:06.00 bitrate= 129.4kbits/s throttle=off speed= 169x    \nvideo:0kB audio:94kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.671273%\nEXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 2022,
+    "wireSha256": "8ec78f190d7fd9e6b6a54756a7a81e222977a0da330003f979e06805925048cd",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:13.081309+00:00"
+  }
+}

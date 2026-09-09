@@ -41,7 +41,7 @@ func ValidatePlan(p Plan) error {
 	if p.OutputMode != "" {
 		return invalid("output mode")
 	}
-	if p.AudioBitDepth != 0 || p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0 {
+	if p.AudioBitDepth != 0 || !p.AudioSampleSeek && (p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0) {
 		return invalid("audio bit depth")
 	}
 	if p.Container != "ts" && p.Container != "mpegts" {
@@ -118,6 +118,12 @@ func ValidatePlan(p Plan) error {
 	if p.AudioCodec != "aac" && p.AudioCodec != "mp3" && (p.AudioBitrate != 0 || p.AudioChannels != 0 || p.AudioSampleRate != 0) {
 		return invalid("audio options require encoding")
 	}
+	if p.AudioSampleSeek {
+		_, sampleRate := progressiveAudioDimensions(p)
+		if _, _, _, err := audioSampleSeekWindow(p, sampleRate); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -191,14 +197,18 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		args = append(args, "-hwaccel", decode, "-hwaccel_device", "goby", "-hwaccel_output_format", decode)
 	}
 	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats)
-	if p.StartTicks > 0 {
+	if p.StartTicks > 0 && !p.AudioSampleSeek {
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
 	}
 	end := p.DurationTicks
 	if p.EndTicks > 0 {
 		end = p.EndTicks
 	}
-	args = append(args, "-i", "/proc/self/fd/3", "-t", tickSeconds(end-p.StartTicks), "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
+	args = append(args, "-i", "/proc/self/fd/3")
+	if !p.AudioSampleSeek {
+		args = append(args, "-t", tickSeconds(end-p.StartTicks))
+	}
+	args = append(args, "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
 	if p.VideoStreamIndex >= 0 {
 		args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex))
 	} else {
@@ -262,6 +272,9 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 			sampleRate = 48000
 		}
 		args = append(args, "-c:a", codec, "-threads:a", threadCount, "-b:a", strconv.FormatInt(bitrate, 10), "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(sampleRate))
+		if p.AudioSampleSeek {
+			args = append(args, "-af", audioSampleSeekFilter(p, sampleRate))
+		}
 		if p.AudioCodec == "aac" {
 			args = append(args, "-profile:a", "aac_low")
 		}

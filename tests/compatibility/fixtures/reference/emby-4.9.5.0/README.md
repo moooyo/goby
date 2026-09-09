@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 610 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 736 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -29,5 +29,14 @@ for experiment scope, source hashes, positive decoding results and preserved
 failures. M4c adds 174 audio records to the preceding 436. Large audio/TS bodies
 can be represented by bounded binary summaries and hashes rather than embedded
 media; exact private wire captures were audited separately on the test host.
+
+The [M4d audio profile study](../../../../../docs/research/audio-profile-reference.md)
+adds 126 separately prefixed records to the preceding 610. It contains 87 complete
+HTTP captures, supporting observations/probes, and one explicitly incomplete
+body-only response whose headers/status were not retained. Do not treat that
+body observation as a complete HTTP contract. Reference failures and truncated
+successful responses remain recorded; only complete decoded media provides
+positive playback evidence. All earlier raw/export pairs and source hashes
+were unchanged by the extension.
 
 Do not replay setup/library mutations against arbitrary servers. Differential checks should normalize explicitly chosen nondeterministic fields without changing casing, array/object shape, status, content type, null/omission distinctions, or numeric values.

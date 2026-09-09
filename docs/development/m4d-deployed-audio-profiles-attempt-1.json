@@ -1,0 +1,269 @@
+{
+  "assertions": [
+    {
+      "canonical_scope_preserved": true,
+      "codec_bitrate_ceiling": 96000,
+      "declared_audio_bitrate": 96000,
+      "full": {
+        "channels": 1,
+        "codec": "mp3",
+        "decode_exit": 0,
+        "decoded_samples": 145152,
+        "decoded_seconds": 6.048,
+        "probe_exit": 0,
+        "sample_rate": 24000
+      },
+      "head_content_length_omitted": true,
+      "head_encoding_jobs_created": 0,
+      "other_plan_and_source_fields_unchanged": true,
+      "persisted_plan_start_ticks": [
+        0,
+        20000000
+      ],
+      "relative_standard_audio_url": true,
+      "same_url_seek_two_seconds": {
+        "channels": 1,
+        "codec": "mp3",
+        "decode_exit": 0,
+        "decoded_samples": 97344,
+        "decoded_seconds": 4.056,
+        "probe_exit": 0,
+        "sample_rate": 24000
+      },
+      "seek_evidence_limit": "The periodic fixture does not independently identify the audible source position",
+      "source_dto_unchanged": true,
+      "stage": "FLAC to mono 24000 Hz MP3 under codec-profile bitrate ceiling"
+    },
+    {
+      "channels": 1,
+      "codec": "pcm_s16le",
+      "decode_exit": 0,
+      "decoded_samples": 289792,
+      "decoded_seconds": 6.037333,
+      "head_encoding_jobs_created": 0,
+      "probe_exit": 0,
+      "sample_rate": 48000,
+      "source_dto_unchanged": true,
+      "stage": "PlaybackInfo ADTS to WAV preserves every presentation sample"
+    },
+    {
+      "negotiation_encoding_jobs_created": 0,
+      "orders": [
+        {
+          "requested_order": [
+            "http",
+            "hls"
+          ],
+          "selected_protocol": "http"
+        },
+        {
+          "requested_order": [
+            "hls",
+            "http"
+          ],
+          "selected_protocol": "hls"
+        }
+      ],
+      "source_dto_unchanged": true,
+      "stage": "mixed audio profile ordering"
+    }
+  ],
+  "cleanup_errors": [
+    "Owned audio-profile login revocation failed"
+  ],
+  "deployment": {
+    "ffmpeg": "9.0.1",
+    "non_root": true,
+    "probe_version": 4,
+    "schema_version": 12,
+    "transcoding_enabled": true
+  },
+  "error": "PlaybackInfo did not emit the standard relative audio route",
+  "failed_stage": "copy delivery flags retain their distinct URL contracts",
+  "original_source_dtos_unchanged": true,
+  "owned_audio_source_hashes_unchanged": {
+    "aac": "ae7f1c88684f05ec883b327dd2b1fae17445b3dfaba446c02613c2f70ac46160",
+    "flac": "843ce1829f3ef1807233e4a0ed874d9132fa87f581b07298576ac18ea4216c81",
+    "mp3": "75697f6abbda787e48de57462fef4c75c2decaa07576ef95d2105fd8151ed61b",
+    "tail": "98f562694fcd89cef333a4f472ea366f86ba9aee557f4032c6810ebf79ef7ed2",
+    "wav": "37fc3c2a29ff734981c1217003888b8aa7207fcf4c9f498c19fe9535ce36c8b5"
+  },
+  "owned_session_revoked_and_encoders_inactive": true,
+  "owned_user_data_unchanged": true,
+  "owner": "goby-audio-profiles-m4d-verification-v1",
+  "private_tmpfs_scratch_removed": true,
+  "status": "failed",
+  "upgrade_after": {
+    "after": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "dae85d30332a4c71b14b6b47c5621ca4b24ba48352b2e87bf2c473eccc7890ab",
+      "probe_versions": {
+        "4": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "all_media_probe_version": 4,
+    "all_user_state_preserved": true,
+    "before": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "dae85d30332a4c71b14b6b47c5621ca4b24ba48352b2e87bf2c473eccc7890ab",
+      "probe_versions": {
+        "3": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "scans": [
+      {
+        "added": 0,
+        "fixture": "direct",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "hls",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "nextup",
+        "scanned": 3,
+        "status": "completed",
+        "updated": 3
+      },
+      {
+        "added": 0,
+        "fixture": "subtitle",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "audio",
+        "scanned": 5,
+        "status": "completed",
+        "updated": 5
+      }
+    ],
+    "status": "passed"
+  },
+  "upgrade_before": {
+    "all_user_state_rows": 15,
+    "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+    "fixture_file_bytes": 3049219,
+    "fixture_file_count": 20,
+    "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+    "item_count": 21,
+    "library_count": 5,
+    "media_count": 11,
+    "metadata_sha256": "dae85d30332a4c71b14b6b47c5621ca4b24ba48352b2e87bf2c473eccc7890ab",
+    "probe_versions": {
+      "3": 11
+    },
+    "selected_user_state_rows": 15
+  },
+  "upgrade_preservation_on_exit": {
+    "all_user_state_preserved": true,
+    "before": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "dae85d30332a4c71b14b6b47c5621ca4b24ba48352b2e87bf2c473eccc7890ab",
+      "probe_versions": {
+        "3": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "completed_scan_count": 5,
+    "expected_scan_count": 5,
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "observed": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "dae85d30332a4c71b14b6b47c5621ca4b24ba48352b2e87bf2c473eccc7890ab",
+      "probe_versions": {
+        "4": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "observed_probe_versions": {
+      "4": 11
+    },
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "status": "preserved"
+  },
+  "upgrade_scans": [
+    {
+      "added": 0,
+      "fixture": "direct",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "hls",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "nextup",
+      "scanned": 3,
+      "status": "completed",
+      "updated": 3
+    },
+    {
+      "added": 0,
+      "fixture": "subtitle",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "audio",
+      "scanned": 5,
+      "status": "completed",
+      "updated": 5
+    }
+  ]
+}

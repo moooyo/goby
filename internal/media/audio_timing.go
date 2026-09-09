@@ -52,7 +52,7 @@ func audioTimingSupport(info Info) (audioOnly bool, reason string) {
 	knownFormat := false
 	for _, format := range strings.Split(strings.ToLower(info.Container), ",") {
 		switch strings.TrimSpace(format) {
-		case "mp3", "aac", "flac", "wav", "mov", "mp4", "m4a":
+		case "mp3", "aac", "flac", "wav", "mov", "mp4", "m4a", "ogg":
 			knownFormat = true
 		case "3gp", "3g2", "mj2":
 			// These aliases accompany the mov/mp4/m4a demuxer name.
@@ -71,6 +71,12 @@ func audioTimingSupport(info Info) (audioOnly bool, reason string) {
 			return true, "invalid_scan"
 		}
 		codec := strings.ToLower(stream.Codec)
+		if strings.EqualFold(info.Container, "ogg") {
+			if codec != "opus" && codec != "vorbis" && codec != "flac" {
+				return true, "unsupported_codec"
+			}
+			continue
+		}
 		switch codec {
 		case "mp3", "aac", "flac", "alac":
 		default:
@@ -93,19 +99,27 @@ type audioTimingRecord struct {
 	PacketPos  scalar `json:"pkt_pos"`
 	Samples    scalar `json:"nb_samples"`
 	SampleRate scalar `json:"sample_rate"`
+	Flags      string `json:"flags"`
 	SideData   []struct {
+		Type           string `json:"side_data_type"`
 		SkipSamples    scalar `json:"skip_samples"`
 		DiscardPadding scalar `json:"discard_padding"`
 	} `json:"side_data_list"`
 }
 
 type audioTimingPacket struct {
-	position   int64
-	start      *big.Rat
-	end        *big.Rat
-	duration   *big.Rat
-	padding    int64
-	hasSamples bool
+	ordinal         int64
+	position        int64
+	start           *big.Rat
+	end             *big.Rat
+	duration        *big.Rat
+	padding         int64
+	hasSamples      bool
+	samples         int64
+	firstFrame      *big.Rat
+	lastFrame       *big.Rat
+	expectedSamples int64
+	expectedStart   *big.Rat
 }
 
 type audioTimingStream struct {
@@ -117,15 +131,20 @@ type audioTimingStream struct {
 	samples           int64
 	lastPacketPos     int64
 	nextPacketPTS     int64
-	lastFramePos      int64
+	lastFrameOrdinal  int64
 	firstFrame        *big.Rat
 	nextFrame         *big.Rat
 	firstPacket       *big.Rat
 	lastPacket        *big.Rat
 	maxPacketDuration *big.Rat
-	pending           map[int64]*audioTimingPacket
 	queue             []*audioTimingPacket
 	head              int
+	ogg               bool
+	expectedPackets   int64
+	opusSamples       []uint16
+	opusPreSkip       int64
+	skipRemaining     int64
+	vorbisMaxSamples  int64
 }
 
 type audioTimingScan struct {
@@ -139,12 +158,19 @@ type audioTimingScan struct {
 // parseAudioTiming keeps only one JSON record and a bounded packet association
 // window. It never mutates info unless every audio stream is proven exact.
 func parseAudioTiming(reader io.Reader, info Info) (Info, error) {
+	return parseAudioTimingWithOgg(reader, info, nil)
+}
+
+func parseAudioTimingWithOgg(reader io.Reader, info Info, ogg *oggAudioEvidence) (Info, error) {
 	audioOnly, reason := audioTimingSupport(info)
 	if !audioOnly {
 		return info, unprovenAudioTiming("not_audio_only")
 	}
 	if reason != "" {
 		return info, unprovenAudioTiming(reason)
+	}
+	if strings.EqualFold(info.Container, "ogg") && ogg == nil {
+		return info, unprovenAudioTiming("ogg_structure_unverified")
 	}
 	scan := &audioTimingScan{
 		streams: make(map[int]*audioTimingStream),
@@ -162,13 +188,26 @@ func parseAudioTiming(reader io.Reader, info Info) (Info, error) {
 		if err != nil || base.Sign() <= 0 || stream.SampleRate <= 0 || stream.SampleRate > 768000 {
 			return info, unprovenAudioTiming("invalid_scan")
 		}
-		scan.streams[stream.Index] = &audioTimingStream{
+		state := &audioTimingStream{
 			position: position,
 			codec:    strings.ToLower(stream.Codec),
 			rate:     int64(stream.SampleRate),
 			base:     base,
-			pending:  make(map[int64]*audioTimingPacket),
 		}
+		if ogg != nil {
+			if base.Cmp(new(big.Rat).SetFrac64(1, state.rate)) != 0 || ogg.PacketCounts[stream.Index] <= 0 {
+				return info, unprovenAudioTiming("ogg_timing_unverified")
+			}
+			state.ogg, state.expectedPackets = true, ogg.PacketCounts[stream.Index]
+			state.opusSamples, state.opusPreSkip = ogg.OpusSamples[stream.Index], ogg.OpusPreSkip[stream.Index]
+			state.skipRemaining = state.opusPreSkip
+			state.vorbisMaxSamples = int64(ogg.VorbisMaxPacketSamples[stream.Index])
+			if state.codec == "opus" && int64(len(state.opusSamples)) != state.expectedPackets ||
+				state.codec == "vorbis" && state.vorbisMaxSamples <= 0 {
+				return info, unprovenAudioTiming("ogg_timing_unverified")
+			}
+		}
+		scan.streams[stream.Index] = state
 	}
 	decoder := json.NewDecoder(reader)
 	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
@@ -246,13 +285,24 @@ func (scan *audioTimingScan) packet(stream *audioTimingStream, record audioTimin
 	position, posErr := audioTimingInteger(record.Position, true)
 	pts, ptsErr := audioTimingInteger(record.PTS, true)
 	duration, durationErr := audioTimingInteger(record.Duration, true)
-	padding, paddingErr := audioTimingPadding(record)
+	skip, discard, paddingErr := audioTimingTrim(record)
+	padding := skip + discard
 	if paddingErr != nil {
 		return paddingErr
 	}
 	if posErr != nil || ptsErr != nil || durationErr != nil ||
-		position < 0 || duration <= 0 || (stream.packets > 0 && position <= stream.lastPacketPos) {
+		position < 0 || duration <= 0 || (stream.packets > 0 &&
+		(position < stream.lastPacketPos || !stream.ogg && position == stream.lastPacketPos)) || len(record.Flags) > 64 {
 		return unprovenAudioTiming("invalid_scan")
+	}
+	if strings.Contains(record.Flags, "C") {
+		return unprovenAudioTiming("corrupt_packet")
+	}
+	for _, side := range record.SideData {
+		if strings.EqualFold(side.Type, "New Extradata") || strings.EqualFold(side.Type, "Param Change") ||
+			stream.ogg && stream.packets > 0 && strings.EqualFold(side.Type, "Strings Metadata") {
+			return unprovenAudioTiming("audio_parameters_changed")
+		}
 	}
 	if pts > math.MaxInt64-duration {
 		return unprovenAudioTiming("timing_overflow")
@@ -264,11 +314,34 @@ func (scan *audioTimingScan) packet(stream *audioTimingStream, record audioTimin
 		return unprovenAudioTiming("scan_limit")
 	}
 	packet := &audioTimingPacket{
+		ordinal:  stream.packets + 1,
 		position: position,
 		start:    new(big.Rat).Mul(new(big.Rat).SetInt64(pts), stream.base),
 		end:      new(big.Rat).Mul(new(big.Rat).SetInt64(pts+duration), stream.base),
 		duration: new(big.Rat).Mul(new(big.Rat).SetInt64(duration), stream.base),
 		padding:  padding,
+	}
+	if stream.ogg {
+		if packet.ordinal > stream.expectedPackets {
+			return unprovenAudioTiming("ogg_packet_count_mismatch")
+		}
+		if stream.codec == "vorbis" && duration > stream.vorbisMaxSamples {
+			return unprovenAudioTiming("ogg_packet_duration")
+		}
+		if stream.codec == "opus" {
+			raw := int64(stream.opusSamples[stream.packets])
+			last := packet.ordinal == stream.expectedPackets
+			if raw <= 0 || raw > 5760 || skip != 0 && (stream.packets != 0 || skip != stream.opusPreSkip) ||
+				stream.packets == 0 && skip != stream.opusPreSkip || discard > 0 && !last || discard > raw ||
+				duration != max(int64(1), raw-discard) {
+				return unprovenAudioTiming("ogg_opus_trim")
+			}
+			used := min(raw, stream.skipRemaining)
+			stream.skipRemaining -= used
+			packet.expectedSamples = max(int64(0), raw-used-discard)
+			packet.expectedStart = new(big.Rat).Add(packet.start, new(big.Rat).SetFrac64(used, stream.rate))
+			packet.duration = new(big.Rat).SetFrac64(raw, stream.rate)
+		}
 	}
 	stream.packets++
 	stream.lastPacketPos = position
@@ -276,7 +349,6 @@ func (scan *audioTimingScan) packet(stream *audioTimingStream, record audioTimin
 	if stream.maxPacketDuration == nil || packet.duration.Cmp(stream.maxPacketDuration) > 0 {
 		stream.maxPacketDuration = packet.duration
 	}
-	stream.pending[position] = packet
 	stream.queue = append(stream.queue, packet)
 	scan.pending++
 	return nil
@@ -301,15 +373,31 @@ func (scan *audioTimingScan) frame(stream *audioTimingStream, record audioTiming
 	if samples > maxAudioFrameSamples {
 		return unprovenAudioTiming("scan_limit")
 	}
-	if stream.firstFrame != nil && position < stream.lastFramePos {
-		return unprovenAudioTiming("unproven_packet_mapping")
-	}
-	packet := stream.pending[position]
-	if packet == nil {
-		return unprovenAudioTiming("unproven_packet_mapping")
-	}
 	start := new(big.Rat).Mul(new(big.Rat).SetInt64(pts), stream.base)
 	end := new(big.Rat).Add(start, new(big.Rat).SetFrac64(samples, stream.rate))
+	var packet *audioTimingPacket
+	positionKnown := false
+	for _, candidate := range stream.queue[stream.head:] {
+		if candidate.position != position {
+			continue
+		}
+		positionKnown = true
+		if start.Cmp(candidate.start) >= 0 && end.Cmp(candidate.end) <= 0 {
+			if packet != nil {
+				return unprovenAudioTiming("unproven_packet_mapping")
+			}
+			packet = candidate
+		}
+	}
+	if packet == nil {
+		if positionKnown {
+			return unprovenAudioTiming("packet_frame_mismatch")
+		}
+		return unprovenAudioTiming("unproven_packet_mapping")
+	}
+	if packet.ordinal < stream.lastFrameOrdinal {
+		return unprovenAudioTiming("unproven_packet_mapping")
+	}
 	if stream.nextFrame != nil && start.Cmp(stream.nextFrame) != 0 {
 		return unprovenAudioTiming("non_contiguous_frames")
 	}
@@ -323,7 +411,7 @@ func (scan *audioTimingScan) frame(stream *audioTimingStream, record audioTiming
 	if stream.samples > math.MaxInt64-samples {
 		return unprovenAudioTiming("timing_overflow")
 	}
-	for stream.head < len(stream.queue) && stream.queue[stream.head].position < position {
+	for stream.head < len(stream.queue) && stream.queue[stream.head].ordinal < packet.ordinal {
 		if err := scan.retire(stream, stream.queue[stream.head]); err != nil {
 			return err
 		}
@@ -340,13 +428,34 @@ func (scan *audioTimingScan) frame(stream *audioTimingStream, record audioTiming
 	}
 	stream.nextFrame = end
 	stream.lastPacket = packet.start
-	stream.lastFramePos = position
+	stream.lastFrameOrdinal = packet.ordinal
 	stream.samples += samples
 	packet.hasSamples = true
+	packet.samples += samples
+	if packet.firstFrame == nil {
+		packet.firstFrame = start
+	}
+	packet.lastFrame = end
 	return nil
 }
 
 func (scan *audioTimingScan) retire(stream *audioTimingStream, packet *audioTimingPacket) error {
+	if stream.ogg {
+		switch {
+		case stream.codec == "opus":
+			if packet.samples != packet.expectedSamples || packet.hasSamples &&
+				(packet.firstFrame.Cmp(packet.expectedStart) != 0 || packet.lastFrame.Cmp(packet.end) != 0) {
+				return unprovenAudioTiming("ogg_frame_coverage")
+			}
+		case !packet.hasSamples && stream.codec == "vorbis" && packet.ordinal == 1:
+			// FFmpeg's Vorbis decoder internally discards its first decoded block
+			// to initialize overlap-add. The validated header bounds its duration.
+		case !packet.hasSamples || packet.firstFrame.Cmp(packet.start) != 0 || packet.lastFrame.Cmp(packet.end) != 0:
+			return unprovenAudioTiming("ogg_frame_coverage")
+		}
+		scan.pending--
+		return nil
+	}
 	if !packet.hasSamples {
 		rawSamples := new(big.Rat).Mul(packet.duration, new(big.Rat).SetInt64(stream.rate))
 		if !rawSamples.IsInt() || !rawSamples.Num().IsInt64() {
@@ -362,7 +471,6 @@ func (scan *audioTimingScan) retire(stream *audioTimingStream, packet *audioTimi
 			return unprovenAudioTiming("unproven_packet_drop")
 		}
 	}
-	delete(stream.pending, packet.position)
 	scan.pending--
 	return nil
 }
@@ -370,6 +478,9 @@ func (scan *audioTimingScan) retire(stream *audioTimingStream, packet *audioTimi
 func (scan *audioTimingScan) finish(info Info) (Info, error) {
 	var origin *big.Rat
 	for _, stream := range scan.streams {
+		if stream.ogg && stream.packets != stream.expectedPackets {
+			return info, unprovenAudioTiming("ogg_packet_count_mismatch")
+		}
 		if stream.firstFrame == nil || stream.samples <= 0 {
 			return info, unprovenAudioTiming("no_audio_frames")
 		}
@@ -430,27 +541,45 @@ func audioTimingInteger(value scalar, required bool) (int64, error) {
 }
 
 func audioTimingPadding(record audioTimingRecord) (int64, error) {
+	skip, discard, err := audioTimingTrim(record)
+	return skip + discard, err
+}
+
+func audioTimingTrim(record audioTimingRecord) (int64, int64, error) {
 	if len(record.SideData) > 64 {
-		return 0, unprovenAudioTiming("scan_limit")
+		return 0, 0, unprovenAudioTiming("scan_limit")
 	}
-	var padding int64
+	var skip, discard int64
 	found := false
 	for _, side := range record.SideData {
+		if len(side.Type) > 128 {
+			return 0, 0, unprovenAudioTiming("invalid_scan")
+		}
 		if !side.SkipSamples.missing() || !side.DiscardPadding.missing() {
 			if found {
-				return 0, unprovenAudioTiming("invalid_scan")
+				return 0, 0, unprovenAudioTiming("invalid_scan")
 			}
 			found = true
 		}
-		for _, value := range []scalar{side.SkipSamples, side.DiscardPadding} {
-			samples, err := audioTimingInteger(value, false)
-			if err != nil || samples < 0 || padding > math.MaxInt64-samples {
-				return 0, unprovenAudioTiming("invalid_scan")
-			}
-			padding += samples
+		sideSkip, err := audioTimingInteger(side.SkipSamples, false)
+		if err != nil || sideSkip < 0 {
+			return 0, 0, unprovenAudioTiming("invalid_scan")
+		}
+		sideDiscard, err := audioTimingInteger(side.DiscardPadding, false)
+		if err != nil || sideDiscard < 0 {
+			return 0, 0, unprovenAudioTiming("invalid_scan")
+		}
+		if !side.SkipSamples.missing() {
+			skip = sideSkip
+		}
+		if !side.DiscardPadding.missing() {
+			discard = sideDiscard
+		}
+		if skip > math.MaxInt64-discard {
+			return 0, 0, unprovenAudioTiming("invalid_scan")
 		}
 	}
-	return padding, nil
+	return skip, discard, nil
 }
 
 // audioTimingTicks rounds outward so a finite tick grid never removes samples.

@@ -1,0 +1,59 @@
+{
+  "kind": "audio-profile-observation",
+  "case": "flac-context-static",
+  "sourceKind": "flac",
+  "method": "POST",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "flac",
+    "SupportsDirectPlay": false,
+    "SupportsDirectStream": false,
+    "SupportsTranscoding": true,
+    "DefaultAudioStreamIndex": 0,
+    "AddApiKeyToDirectStreamUrl": false,
+    "RunTimeTicks": 60000000
+  },
+  "omittedSourceFields": [
+    "TranscodingContainer",
+    "TranscodingSubProtocol",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "playSessionIdPresent": true,
+  "errorCode": null,
+  "hasTranscodingUrl": true,
+  "hasDirectStreamUrl": false,
+  "nativeAudioStreams": [
+    {
+      "Index": 0,
+      "Codec": "flac",
+      "Channels": 2,
+      "SampleRate": 96000,
+      "BitDepth": 24
+    }
+  ],
+  "selectedUrlField": "TranscodingUrl",
+  "urlHasApiKey": true,
+  "urlParameterNames": [
+    "DeviceId",
+    "MediaSourceId",
+    "PlaySessionId",
+    "TranscodeReasons",
+    "allowAudioStreamCopy",
+    "api_key"
+  ],
+  "urlAudioParameters": {},
+  "mediaHeadStatus": 200,
+  "initialMediaGetStatus": 500,
+  "retryMediaGetStatus": 500,
+  "delivery": {
+    "redirectStatuses": [],
+    "finalStatus": 500,
+    "finalContentType": "text/plain",
+    "finalBytes": 1214
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:12.662660+00:00"
+  }
+}

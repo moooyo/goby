@@ -42,6 +42,11 @@ func validateProgressivePlan(p Plan) error {
 	if _, err := ProgressiveOutputSamples(p, timingRate); err != nil {
 		return err
 	}
+	if p.AudioSampleSeek {
+		if _, _, _, err := audioSampleSeekWindow(p, timingRate); err != nil {
+			return err
+		}
+	}
 	if p.SegmentSeconds != 0 || p.SegmentMode != "" || p.SegmentStartNumber != 0 || p.EndTicks != 0 || p.SegmentTimes != "" || p.ReferenceStartTicks != 0 {
 		return invalid("HLS options")
 	}
@@ -143,10 +148,14 @@ func buildProgressiveArgs(p Plan, threads int) []string {
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y", "-progress", "pipe:1", "-stats_period", "0.5",
 		"-filter_threads", threadCount, "-filter_complex_threads", threadCount, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats}
-	if seek := progressiveSampleSeekTicks(p); seek > 0 {
+	if seek := progressiveSampleSeekTicks(p); seek > 0 && !p.AudioSampleSeek {
 		args = append(args, "-ss", tickSeconds(seek))
 	}
-	args = append(args, "-i", "/proc/self/fd/3", "-t", tickSeconds(p.DurationTicks-p.StartTicks), "-map", "0:"+strconv.Itoa(p.AudioStreamIndex), "-vn", "-sn", "-dn", "-map_metadata", "-1", "-map_metadata:s:a", "-1", "-map_chapters", "-1", "-metadata_header_padding", "0")
+	args = append(args, "-i", "/proc/self/fd/3")
+	if !p.AudioSampleSeek {
+		args = append(args, "-t", tickSeconds(p.DurationTicks-p.StartTicks))
+	}
+	args = append(args, "-map", "0:"+strconv.Itoa(p.AudioStreamIndex), "-vn", "-sn", "-dn", "-map_metadata", "-1", "-map_metadata:s:a", "-1", "-map_chapters", "-1", "-metadata_header_padding", "0")
 	codec := p.AudioCodec
 	switch codec {
 	case "mp3":
@@ -165,7 +174,11 @@ func buildProgressiveArgs(p Plan, threads int) []string {
 		}
 		args = append(args, "-threads:a", threadCount, "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(rate), "-channel_layout", layout)
 		samples, _ := ProgressiveOutputSamples(p, rate)
-		args = append(args, "-af", "aresample="+strconv.Itoa(rate)+",atrim=end_sample="+strconv.FormatInt(samples, 10)+",asetpts=N/SR/TB")
+		filter := "aresample=" + strconv.Itoa(rate) + ",atrim=end_sample=" + strconv.FormatInt(samples, 10) + ",asetpts=N/SR/TB"
+		if p.AudioSampleSeek {
+			filter = audioSampleSeekFilter(p, rate)
+		}
+		args = append(args, "-af", filter)
 		if p.AudioCodec != "flac" && p.AudioCodec != "pcm_s16le" {
 			bitrate := p.AudioBitrate
 			if bitrate == 0 {

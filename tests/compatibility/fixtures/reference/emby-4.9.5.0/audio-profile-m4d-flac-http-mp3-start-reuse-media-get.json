@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/audio/48/stream.mp3?DeviceId=goby-audio-profile-m4d-recorder&MediaSourceId=mediasource_48&StartTimeTicks=20000000&PlaySessionId=ea8a2bd18b484425b77fd53e43c72503&api_key=[REDACTED_TOKEN]&AudioCodec=mp3&AudioBitrate=128000&AudioStreamIndex=0&TranscodingMaxAudioChannels=2&TranscodeReasons=DirectPlayError&allowAudioStreamCopy=false",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "2041"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 05:56:07 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-68a59952-bf3a-4f49-8e3f-ae8a4219d4c0_1graph.txt\" -f flac -ss 00:00:02.000 -i \"/reference-audio-source/Reference Audio M4c.flac\" -map 0:0 -vn -sn -c:a:0 libmp3lame -ab:a:0 128000 -ac:a:0 2 -f mp3 -id3v2_version 3 -write_id3v1 1 \"/transcoding-temp/FC0090/FC0090.mp3\"\n\n13:56:07.949 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n13:56:07.949   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n13:56:07.949 Execution Date: 2026-09-09 13:56:07\n13:56:07.950 Input #0, flac, from '/reference-audio-source/Reference Audio M4c.flac':\n13:56:07.950   Metadata:\n13:56:07.950     title           : Reference Audio FLAC\n13:56:07.950     artist          : Goby Audio Reference\n13:56:07.950     album           : Goby M4c Audio\n13:56:07.950     encoder         : Lavf63.1.101\n13:56:07.950   Duration: 00:00:06.00, start: 0.000000, bitrate: 955 kb/s\n13:56:07.950   Stream #0:0: Audio: flac, 96000 Hz, stereo, s32 (24 bit)\n13:56:07.951 Stream mapping:\n13:56:07.951   Stream #0:0 -> #0:0 (flac (native) -> mp3 (libmp3lame))\n13:56:07.951 Press [q] to stop, [?] for help\n13:56:07.953 Output #0, mp3, to '/transcoding-temp/FC0090/FC0090.mp3':\n13:56:07.953   Metadata:\n13:56:07.953     TIT2            : Reference Audio FLAC\n13:56:07.953     TPE1            : Goby Audio Reference\n13:56:07.953     TALB            : Goby M4c Audio\n13:56:07.953     TSSE            : Lavf59.27.100\n13:56:07.953   Stream #0:0: Audio: mp3, 48000 Hz, stereo, s32p, 128 kb/s\n13:56:07.953     Metadata:\n13:56:07.953       encoder         : Lavc59.37.100 libmp3lame\n13:56:07.953 elapsed=00:00:00.00 size=       1kB time=00:00:00.00 bitrate=N/A throttle=off speed=   0x    \nelapsed=00:00:00.02 size=      64kB time=00:00:04.00 bitrate= 130.0kbits/s throttle=off speed= 145x    \nvideo:0kB audio:63kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 1.002914%\nEXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 2041,
+    "wireSha256": "5bb0305c389d6c0d0989c5fa722fbe5f3f132c0207867740cca1c9fdc7adbe62",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:08.000072+00:00"
+  }
+}

@@ -143,7 +143,6 @@ func TestHLSRequestRejectsInvalidOrUnsupportedExplicitConstraints(t *testing.T) 
 	}{
 		{"width-conflict", map[string]string{"Width": "640", "MaxWidth": "1280"}, errHLSRequestInvalid},
 		{"height-conflict", map[string]string{"Height": "360", "MaxHeight": "720"}, errHLSRequestInvalid},
-		{"channels-conflict", map[string]string{"MaxAudioChannels": "2", "TranscodingMaxAudioChannels": "6"}, errHLSRequestInvalid},
 		{"framerate-conflict", map[string]string{"Framerate": "24", "MaxFramerate": "30"}, errHLSRequestInvalid},
 		{"field-case-conflict", map[string]string{"VideoCodec": "h264", "videocodec": "hevc"}, errHLSRequestInvalid},
 		{"segment-zero", map[string]string{"SegmentLength": "0"}, errHLSRequestInvalid},
@@ -200,6 +199,29 @@ func TestHLSRequestRejectsInvalidOrUnsupportedExplicitConstraints(t *testing.T) 
 	limits.AllowAudioTranscode, limits.AllowVideoTranscode = false, false
 	if decision, err := hlsRequestConversion(map[string]string{"EnableAutoStreamCopy": "false"}, hlsRequestTestSource(), limits); !errors.Is(err, errHLSRequestUnsupported) || decision.Plan != nil {
 		t.Error("explicit conversion flags bypassed user conversion permissions")
+	}
+}
+
+func TestHLSRequestExactAudioChannelsRemainIndependentFromTheirCeiling(t *testing.T) {
+	decision := hlsRequestTestPlan(t, map[string]string{
+		"AudioStreamIndex": "9", "AudioCodec": "aac", "AudioChannels": "2", "MaxAudioChannels": "6",
+	}, hlsRequestTestSource(), hlsRequestTestLimits())
+	if decision.Plan.AudioStreamIndex != 9 || decision.Plan.AudioCodec != "aac" || decision.Plan.AudioChannels != 2 {
+		t.Fatal("the exact channel target was replaced by its larger ceiling")
+	}
+	_, err := hlsRequestConversion(map[string]string{
+		"AudioStreamIndex": "9", "AudioCodec": "aac", "AudioChannels": "3", "MaxAudioChannels": "2",
+	}, hlsRequestTestSource(), hlsRequestTestLimits())
+	if !errors.Is(err, errHLSRequestUnsupported) {
+		t.Fatalf("incompatible exact target and ceiling should decline output, got %v", err)
+	}
+	for _, ceilings := range [][2]string{{"2", "6"}, {"6", "2"}} {
+		decision := hlsRequestTestPlan(t, map[string]string{
+			"AudioStreamIndex": "9", "AudioCodec": "aac", "MaxAudioChannels": ceilings[0], "TranscodingMaxAudioChannels": ceilings[1],
+		}, hlsRequestTestSource(), hlsRequestTestLimits())
+		if decision.Plan.AudioChannels != 2 {
+			t.Fatal("independent audio channel ceilings did not select their stricter bound")
+		}
 	}
 }
 

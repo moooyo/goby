@@ -1,0 +1,70 @@
+{
+  "kind": "audio-profile-observation",
+  "case": "flac-direct-stream-only",
+  "sourceKind": "flac",
+  "method": "POST",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "flac",
+    "SupportsDirectPlay": false,
+    "SupportsDirectStream": true,
+    "SupportsTranscoding": false,
+    "DefaultAudioStreamIndex": 0,
+    "AddApiKeyToDirectStreamUrl": false,
+    "RunTimeTicks": 60000000
+  },
+  "omittedSourceFields": [
+    "TranscodingContainer",
+    "TranscodingSubProtocol",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "playSessionIdPresent": true,
+  "errorCode": null,
+  "hasTranscodingUrl": false,
+  "hasDirectStreamUrl": true,
+  "nativeAudioStreams": [
+    {
+      "Index": 0,
+      "Codec": "flac",
+      "Channels": 2,
+      "SampleRate": 96000,
+      "BitDepth": 24
+    }
+  ],
+  "selectedUrlField": "DirectStreamUrl",
+  "urlHasApiKey": true,
+  "urlParameterNames": [
+    "DeviceId",
+    "MediaSourceId",
+    "PlaySessionId",
+    "api_key"
+  ],
+  "urlAudioParameters": {},
+  "mediaHeadStatus": 200,
+  "initialMediaGetStatus": 200,
+  "delivery": {
+    "redirectStatuses": [],
+    "finalStatus": 200,
+    "finalContentType": "audio/flac",
+    "finalBytes": 716925,
+    "delivery": "progressive_or_original",
+    "media": {
+      "probeExit": 0,
+      "decodeExit": 0,
+      "codec": "flac",
+      "sampleRate": "96000",
+      "bitsPerRawSample": "24",
+      "channels": 2,
+      "duration": "6.000000",
+      "decodedSeconds": 6.0
+    },
+    "matchesSourceKinds": [
+      "flac"
+    ]
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:12.732582+00:00"
+  }
+}

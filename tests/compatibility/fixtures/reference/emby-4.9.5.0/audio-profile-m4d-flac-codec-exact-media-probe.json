@@ -1,0 +1,100 @@
+{
+  "kind": "remote-media-probe",
+  "sourceFixture": "audio-profile-m4d-flac-codec-exact-media",
+  "input": {
+    "bytes": 81920,
+    "sha256": "db04463c0ce757e240ba9966f0bb853036a6a3860fefc511977bb5e4bc5464d5"
+  },
+  "ffprobe": {
+    "exitCode": 0,
+    "body": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "mp3",
+          "codec_long_name": "MP3 (MPEG audio layer 3)",
+          "codec_type": "audio",
+          "codec_tag_string": "[0][0][0][0]",
+          "codec_tag": "0x0000",
+          "mime_codec_string": "mp4a.40.34",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/14112000",
+          "start_pts": 324870,
+          "start_time": "0.023021",
+          "duration_ts": 84672000,
+          "duration": "6.000000",
+          "bit_rate": "128000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        }
+      ],
+      "format": {
+        "filename": "/reference-audio-profile-private/private/probe/audio-profile-m4d-flac-codec-exact-media.media",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mp3",
+        "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+        "start_time": "0.023021",
+        "duration": "6.000000",
+        "size": "81920",
+        "bit_rate": "109226",
+        "probe_score": 52,
+        "tags": {
+          "title": "Reference Audio FLAC",
+          "artist": "Goby Audio Reference",
+          "album": "Goby M4c Audio",
+          "encoder": "Lavf59.27.100"
+        }
+      }
+    },
+    "stderr": ""
+  },
+  "ffmpegDecode": {
+    "exitCode": 0,
+    "stderr": "",
+    "progress": {
+      "bitrate": "N/A",
+      "total_size": "N/A",
+      "out_time_us": "5064979",
+      "out_time_ms": "5064979",
+      "out_time": "00:00:05.064979",
+      "dup_frames": "0",
+      "drop_frames": "0",
+      "speed": "1.06e+03x",
+      "progress": "end"
+    },
+    "scope": "Complete real audio response or emitted HLS graph; software decoding."
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:13.302664+00:00"
+  }
+}

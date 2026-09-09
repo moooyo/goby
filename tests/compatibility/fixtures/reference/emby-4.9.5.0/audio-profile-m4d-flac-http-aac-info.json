@@ -1,0 +1,159 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Items/48/PlaybackInfo",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Audio Reference Recorder\", Device=\"Linux Audio Test\", DeviceId=\"goby-audio-profile-m4d-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "UserId": "c7d44baf46104f59ac2f4ca3dadda77f",
+      "MediaSourceId": "mediasource_48",
+      "IsPlayback": true,
+      "EnableDirectPlay": false,
+      "EnableDirectStream": false,
+      "EnableTranscoding": true,
+      "AllowAudioStreamCopy": false,
+      "MaxStreamingBitrate": 128000,
+      "DeviceProfile": {
+        "Name": "Goby audio profile reference",
+        "MaxStreamingBitrate": 128000,
+        "DirectPlayProfiles": [],
+        "TranscodingProfiles": [
+          {
+            "Type": "Audio",
+            "Context": "Streaming",
+            "Container": "aac",
+            "AudioCodec": "aac",
+            "MaxAudioChannels": "2",
+            "Protocol": "http"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "1620"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 05:56:08 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "MediaSources": [
+        {
+          "Chapters": [],
+          "Protocol": "File",
+          "Id": "mediasource_48",
+          "Path": "/reference-audio-source/Reference Audio M4c.flac",
+          "Type": "Default",
+          "Container": "flac",
+          "Size": 716925,
+          "Name": "Reference Audio M4c",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 60000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": false,
+          "SupportsDirectPlay": false,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "flac",
+              "TimeBase": "1/96000",
+              "DisplayTitle": "FLAC stereo",
+              "IsInterlaced": false,
+              "ChannelLayout": "stereo",
+              "BitRate": 955900,
+              "BitDepth": 24,
+              "Channels": 2,
+              "SampleRate": 96000,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Audio",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 955900,
+          "RequiredHttpHeaders": {},
+          "AddApiKeyToDirectStreamUrl": false,
+          "TranscodingUrl": "/audio/48/stream.aac?DeviceId=goby-audio-profile-m4d-recorder&MediaSourceId=mediasource_48&PlaySessionId=b4694bfee1ef45faa214ca4f2d6f0235&api_key=[REDACTED_TOKEN]&AudioCodec=aac&AudioBitrate=128000&AudioStreamIndex=0&TranscodingMaxAudioChannels=2&TranscodeReasons=DirectPlayError&allowAudioStreamCopy=false",
+          "TranscodingSubProtocol": "http",
+          "TranscodingContainer": "aac",
+          "ReadAtNativeFramerate": false,
+          "DefaultAudioStreamIndex": 0,
+          "ItemId": "48"
+        }
+      ],
+      "PlaySessionId": "b4694bfee1ef45faa214ca4f2d6f0235"
+    }
+  },
+  "observation": {
+    "wireBytes": 1620,
+    "wireSha256": "3eb6680837ae50fa28d18048ab94a0b0d89410cf8b6337d062e744f630443605",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:09.596478+00:00"
+  }
+}

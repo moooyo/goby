@@ -1,0 +1,39 @@
+{
+  "kind": "audio-profile-observation",
+  "case": "flac-post-minimal",
+  "sourceKind": "flac",
+  "method": "POST",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "flac",
+    "SupportsDirectPlay": true,
+    "SupportsDirectStream": true,
+    "SupportsTranscoding": true,
+    "DefaultAudioStreamIndex": 0,
+    "AddApiKeyToDirectStreamUrl": false,
+    "RunTimeTicks": 60000000
+  },
+  "omittedSourceFields": [
+    "TranscodingContainer",
+    "TranscodingSubProtocol",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "playSessionIdPresent": true,
+  "errorCode": null,
+  "hasTranscodingUrl": false,
+  "hasDirectStreamUrl": false,
+  "nativeAudioStreams": [
+    {
+      "Index": 0,
+      "Codec": "flac",
+      "Channels": 2,
+      "SampleRate": 96000,
+      "BitDepth": 24
+    }
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:07.642575+00:00"
+  }
+}

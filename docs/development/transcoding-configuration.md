@@ -92,11 +92,16 @@ remains unverified on the current GPU-free test host.
 
 ## Audio upgrade and response limits
 
-Migration `0012` adds scoped client playback references; probe cache version 3
-requires normal rescans of existing libraries. A configured encoder does not
+Migration `0012` adds scoped client playback references; current probe cache
+version **4** requires normal rescans of existing libraries, including version 3
+snapshots. The profile/Ogg increment adds no database migration or environment
+variable. A configured encoder does not
 substitute for current source timing or authorization. Complete continuous audio
 coverage and integer sample facts govern converted length, including accurate
-WAV headers; unsupported timing cases can retain original delivery after rescan.
+WAV headers. The supported Ogg Opus/Vorbis/modern FLAC subset requires physical-page
+and codec/header integrity plus complete packet/frame evidence. Chaining and
+Matroska/WebM quantized-clock timing remain unproven; supported original-file
+delivery is retained after rescan when conversion cannot establish exact timing.
 
 HLS and progressive consumers share the same manager quotas and reader leases.
 Progressive responses also share the server's 64 original/audio response slots,
@@ -106,10 +111,18 @@ HTTP response. These HTTP limits are current implementation bounds rather than
 additional environment variables. Detailed lifecycle and supported output formats
 are in [audio playback](audio-playback.md).
 
-Progressive video, progressive DeviceProfile negotiation through PlaybackInfo,
-additional input/timing cases, packed-audio HLS and richer subtitle/output support
-remain unfinished. Startup settings and an available encoder do not establish
-complete third-party-client compatibility or hard resource isolation.
+[Audio PlaybackInfo](audio-profile-playback.md) uses these same limits for ordered
+HTTP/HLS profiles and serializes constructible progressive settings into the
+standard stream URL. It reserves no progressive encoding capacity; GET performs
+fresh admission, and HEAD starts no encoder. Exact audio targets and independent
+channel ceilings remain distinct, including `TranscodingMaxAudioChannels`, which
+only constrains Universal/legacy selection after an original file has been ruled
+out.
+
+Progressive video, additional input/timing/profile cases, packed-audio HLS and
+richer subtitle/output support remain unfinished. Startup settings and an
+available encoder do not establish complete third-party-client compatibility or
+hard resource isolation.
 
 ## Dedicated test deployment
 

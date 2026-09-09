@@ -22,9 +22,17 @@ func runAudioTimingProbe(ctx context.Context, timeout time.Duration, executable 
 	}
 	processContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	var ogg *oggAudioEvidence
+	if strings.EqualFold(info.Container, "ogg") {
+		var err error
+		ogg, err = probeOggAudioEvidence(processContext, file, info.Streams)
+		if err != nil {
+			return Info{}, err
+		}
+	}
 	command := exec.CommandContext(processContext, executable,
 		"-v", "error", "-threads", "1", "-select_streams", "a", "-show_packets", "-show_frames",
-		"-show_entries", "packet=stream_index,pts,duration,pos:packet_side_data=side_data_type,skip_samples,discard_padding:"+
+		"-show_entries", "packet=stream_index,pts,duration,pos,flags:packet_side_data=side_data_type,skip_samples,discard_padding:"+
 			"frame=stream_index,pts,best_effort_timestamp,nb_samples,pkt_pos,sample_rate",
 		"-of", "json", "-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats,
 		"-i", "/proc/self/fd/3")
@@ -42,7 +50,7 @@ func runAudioTimingProbe(ctx context.Context, timeout time.Duration, executable 
 		return Info{}, fmt.Errorf("start audio scan: %w", err)
 	}
 	bounded := &io.LimitedReader{R: stdout, N: maxAudioProbeOutput + 1}
-	accurate, parseErr := parseAudioTiming(bounded, info)
+	accurate, parseErr := parseAudioTimingWithOgg(bounded, info, ogg)
 	interrupted := processContext.Err()
 	if parseErr != nil {
 		cancel()

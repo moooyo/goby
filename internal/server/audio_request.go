@@ -33,9 +33,10 @@ type audioContainerCapability struct {
 }
 
 type audioRequestOptions struct {
-	request  playback.ProgressiveAudioRequest
-	static   *bool
-	autoCopy *bool
+	request                     playback.ProgressiveAudioRequest
+	static                      *bool
+	autoCopy                    *bool
+	transcodingMaxAudioChannels *int
 }
 
 func audioSelector(value string) (string, error) {
@@ -165,6 +166,7 @@ func audioParseOptions(values map[string]string) (audioRequestOptions, error) {
 		{"audiostreamindex", 0, &options.request.AudioStreamIndex},
 		{"audiochannels", 1, &options.request.AudioChannels},
 		{"maxaudiochannels", 1, &options.request.MaxAudioChannels},
+		{"transcodingmaxaudiochannels", 1, &options.transcodingMaxAudioChannels},
 		{"audiosamplerate", 1, &options.request.AudioSampleRate},
 		{"maxsamplerate", 1, &options.request.MaxSampleRate},
 		{"audiobitdepth", 1, &options.request.AudioBitDepth},
@@ -376,6 +378,12 @@ func audioRequestDecision(source playback.Source, values map[string]string, suff
 	if originalCandidate && audioOriginalFits(source, *selected, options.request) {
 		result.Original = true
 		return result, nil
+	}
+	// The transcoding ceiling applies only after original-file selection. It
+	// does not reject compatible originals or replace an exact output target.
+	if ceiling := options.transcodingMaxAudioChannels; ceiling != nil &&
+		(options.request.MaxAudioChannels == nil || *ceiling < *options.request.MaxAudioChannels) {
+		options.request.MaxAudioChannels = ceiling
 	}
 	if source.Info.DurationTicks <= 0 || result.StartTicks >= source.Info.DurationTicks {
 		return result, errAudioRequestUnsupported

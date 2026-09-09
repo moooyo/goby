@@ -288,7 +288,9 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 		{[]string{"audiobitrate"}, 1, 1_000_000_000, playback.ProfileConditionValueAudioBitrate, true, false},
 		{[]string{"maxwidth", "width"}, 1, 8192, playback.ProfileConditionValueWidth, false, false},
 		{[]string{"maxheight", "height"}, 1, 8192, playback.ProfileConditionValueHeight, false, false},
-		{[]string{"maxaudiochannels", "transcodingmaxaudiochannels", "audiochannels"}, 1, 8, playback.ProfileConditionValueAudioChannels, true, false},
+		{[]string{"maxaudiochannels"}, 1, 8, playback.ProfileConditionValueAudioChannels, true, false},
+		{[]string{"transcodingmaxaudiochannels"}, 1, 8, playback.ProfileConditionValueAudioChannels, true, false},
+		{[]string{"audiochannels"}, 1, 8, playback.ProfileConditionValueAudioChannels, true, true},
 		{[]string{"audiosamplerate"}, 1, 384_000, playback.ProfileConditionValueAudioSampleRate, true, true},
 	} {
 		value, err := hlsQueryInteger(values, field.min, field.max, field.names...)

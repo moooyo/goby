@@ -1,0 +1,97 @@
+{
+  "kind": "audio-profile-observation",
+  "case": "flac-hls-first",
+  "sourceKind": "flac",
+  "method": "POST",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "flac",
+    "SupportsDirectPlay": false,
+    "SupportsDirectStream": false,
+    "SupportsTranscoding": true,
+    "TranscodingContainer": "ts",
+    "TranscodingSubProtocol": "hls",
+    "DefaultAudioStreamIndex": 0,
+    "AddApiKeyToDirectStreamUrl": false,
+    "RunTimeTicks": 60000000
+  },
+  "omittedSourceFields": [
+    "DefaultSubtitleStreamIndex"
+  ],
+  "playSessionIdPresent": true,
+  "errorCode": null,
+  "hasTranscodingUrl": true,
+  "hasDirectStreamUrl": false,
+  "nativeAudioStreams": [
+    {
+      "Index": 0,
+      "Codec": "flac",
+      "Channels": 2,
+      "SampleRate": 96000,
+      "BitDepth": 24
+    }
+  ],
+  "selectedUrlField": "TranscodingUrl",
+  "urlHasApiKey": true,
+  "urlParameterNames": [
+    "AudioBitrate",
+    "AudioCodec",
+    "AudioStreamIndex",
+    "BreakOnNonKeyFrames",
+    "DeviceId",
+    "MediaSourceId",
+    "MinSegments",
+    "PlaySessionId",
+    "SegmentContainer",
+    "SegmentLength",
+    "TranscodeReasons",
+    "TranscodingMaxAudioChannels",
+    "allowAudioStreamCopy",
+    "api_key"
+  ],
+  "urlAudioParameters": {
+    "AudioCodec": [
+      "aac"
+    ],
+    "AudioBitrate": [
+      "128000"
+    ],
+    "TranscodingMaxAudioChannels": [
+      "2"
+    ],
+    "SegmentLength": [
+      "3"
+    ],
+    "MinSegments": [
+      "1"
+    ]
+  },
+  "mediaHeadStatus": 200,
+  "initialMediaGetStatus": 200,
+  "delivery": {
+    "redirectStatuses": [],
+    "finalStatus": 200,
+    "finalContentType": "application/vnd.apple.mpegurl",
+    "finalBytes": 501,
+    "delivery": "hls",
+    "segmentStatuses": [
+      200,
+      200
+    ],
+    "media": {
+      "probeExit": 0,
+      "decodeExit": 0,
+      "codec": "aac",
+      "sampleRate": "96000",
+      "bitsPerRawSample": null,
+      "channels": 2,
+      "duration": "6.000000",
+      "decodedSeconds": 6.016
+    }
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:13.799178+00:00"
+  }
+}

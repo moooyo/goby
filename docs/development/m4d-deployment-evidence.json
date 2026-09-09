@@ -1,0 +1,32 @@
+{
+  "owner": "goby-m4d-deployment-evidence-v1",
+  "status": "passed",
+  "service": {
+    "MainPID": "3288722",
+    "User": "goby",
+    "ActiveState": "active",
+    "SubState": "running"
+  },
+  "process_uids": [
+    995,
+    995,
+    995,
+    995
+  ],
+  "binary_sha256": "5d9a802ca35f3ddcd3ba07a21238639ddaf5844fe021d2e952f44b2b95d856a3",
+  "running_executable_matches_binary": true,
+  "tested_go_and_module_files": 238,
+  "tested_source_sha256": "f24c85fff9e94db454a743a8d0d72fada14b984214c386f7f27b0a61258f7fc2",
+  "deployed_source_matches_tested_source": true,
+  "database": {
+    "schema_version": 12,
+    "media_count": 11,
+    "current_probe_records": 11
+  },
+  "application_database_port": 5432,
+  "integration_database_port": 15432,
+  "reference_records": 736,
+  "new_audio_profile_records": 126,
+  "prior_binary_sha256": "dcf3364dbacd521ca6cd3bc04e0a3ad5dd897dd9be14e5bb9c193b18fba97a7a",
+  "actual_gpu_execution_verified": false
+}

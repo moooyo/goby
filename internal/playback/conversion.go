@@ -32,6 +32,10 @@ type ConversionDecision struct {
 	Plan         *transcode.Plan
 	Method       string
 	Reasons      []Reason
+	// Only PlanAudioConversion selects across delivery protocols. Older HLS
+	// entry points leave these fields empty rather than implying index zero.
+	SelectedProtocol     string
+	SelectedProfileIndex *int
 }
 
 // PlanConversion chooses a bounded MPEG-TS HLS conversion that the supplied
@@ -380,6 +384,26 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 	}
 	if selection.subtitle != nil {
 		projected.Info.Streams = append(projected.Info.Streams, *selection.subtitle)
+	}
+	if kind == DlnaProfileTypeAudio && media.CanonicalContainer(source.Info, source.Path) == "ogg" {
+		// A demuxer page seek can land at the wrong decoded sample while
+		// preserving the expected duration. Ogg conversions must trim the
+		// measured input sample window after decoding from the beginning.
+		if selection.audio == nil {
+			return fail("conversion_ogg_audio_required", "AudioStreamIndex", "Ogg HLS conversion requires an audio stream.")
+		}
+		timing := selection.audio.AudioTiming
+		if audioCopy || timing == nil || !timing.Exact || !source.Info.AudioDurationExact ||
+			timing.StartTicks != 0 || timing.EndTicks != source.Info.DurationTicks || timing.SampleCount <= 0 ||
+			timing.PacketCount <= 0 || selection.audio.SampleRate <= 0 {
+			return fail("conversion_ogg_sample_timing_required", "AudioTiming", "Ogg HLS conversion requires a complete measured audio sample timeline and permitted encoding.")
+		}
+		duration, known := progressiveCeilProduct(timing.SampleCount, media.TicksPerSecond, int64(selection.audio.SampleRate))
+		if !known || duration != source.Info.DurationTicks {
+			return fail("conversion_ogg_sample_timing_inconsistent", "AudioTiming", "The measured Ogg samples do not describe the complete selected presentation.")
+		}
+		plan.AudioSampleSeek = true
+		plan.AudioSourceSampleCount, plan.AudioSourceSampleRate = timing.SampleCount, selection.audio.SampleRate
 	}
 	// Conditions are interpreted against the candidate's output codec and
 	// container. Restrictive numeric conditions can reduce encoder targets;

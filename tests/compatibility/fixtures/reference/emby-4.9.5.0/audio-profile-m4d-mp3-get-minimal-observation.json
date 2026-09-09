@@ -1,0 +1,38 @@
+{
+  "kind": "audio-profile-observation",
+  "case": "mp3-get-minimal",
+  "sourceKind": "mp3",
+  "method": "GET",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "mp3",
+    "SupportsDirectPlay": true,
+    "SupportsDirectStream": true,
+    "SupportsTranscoding": true,
+    "DefaultAudioStreamIndex": 0,
+    "AddApiKeyToDirectStreamUrl": false,
+    "RunTimeTicks": 60342860
+  },
+  "omittedSourceFields": [
+    "TranscodingContainer",
+    "TranscodingSubProtocol",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "playSessionIdPresent": true,
+  "errorCode": null,
+  "hasTranscodingUrl": false,
+  "hasDirectStreamUrl": false,
+  "nativeAudioStreams": [
+    {
+      "Index": 0,
+      "Codec": "mp3",
+      "Channels": 2,
+      "SampleRate": 44100
+    }
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:07.637177+00:00"
+  }
+}

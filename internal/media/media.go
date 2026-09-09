@@ -6,7 +6,7 @@ import "time"
 const TicksPerSecond int64 = 10_000_000
 
 // CurrentProbeVersion identifies the media facts stored by this prober.
-const CurrentProbeVersion = 3
+const CurrentProbeVersion = 4
 
 type Prober struct {
 	FFprobePath string

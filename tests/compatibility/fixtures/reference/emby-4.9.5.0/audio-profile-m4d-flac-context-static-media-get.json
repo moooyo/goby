@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/audio/48/stream?DeviceId=goby-audio-profile-m4d-recorder&MediaSourceId=mediasource_48&PlaySessionId=6a5b8cab2d124368b013857748bfd8a5&api_key=[REDACTED_TOKEN]&TranscodeReasons=DirectPlayError&allowAudioStreamCopy=false",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "1213"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 05:56:11 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-1afca0bc-52f3-4b24-8e6f-10675bf26df9_1graph.txt\" -f flac -i \"/reference-audio-source/Reference Audio M4c.flac\" -map 0:0 -vn -sn -c:a:0 copy \"/transcoding-temp/0B34B7/0B34B7\"\n\n13:56:12.351 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n13:56:12.351   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n13:56:12.351 Execution Date: 2026-09-09 13:56:12\n13:56:12.352 Input #0, flac, from '/reference-audio-source/Reference Audio M4c.flac':\n13:56:12.352   Metadata:\n13:56:12.352     title           : Reference Audio FLAC\n13:56:12.352     artist          : Goby Audio Reference\n13:56:12.352     album           : Goby M4c Audio\n13:56:12.352     encoder         : Lavf63.1.101\n13:56:12.352   Duration: 00:00:06.00, start: 0.000000, bitrate: 955 kb/s\n13:56:12.352   Stream #0:0: Audio: flac, 96000 Hz, stereo, s32 (24 bit)\n13:56:12.352 [NULL @ 0x80d5280] Unable to find a suitable output format for '/transcoding-temp/0B34B7/0B34B7'\n13:56:12.352 /transcoding-temp/0B34B7/0B34B7: Invalid argument\n13:56:12.352 EXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 1213,
+    "wireSha256": "95a5ee34656ff9220fa3846baaa04bd8e434dd37d2b13b8b95c08224b4ca153e",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T05:56:12.403776+00:00"
+  }
+}
