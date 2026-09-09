@@ -1,0 +1,44 @@
+{
+  "kind": "metadata-state-observation",
+  "source": "metadata-m5b-manual-edit-confirmed-name-lock-after.json",
+  "fields": {
+    "Name": "M5b Direct Edit Under Name Lock",
+    "SortName": "M5b Direct Edit Under Name Lock",
+    "ForcedSortName": "M5b Direct Edit Under Name Lock",
+    "OriginalTitle": null,
+    "Overview": null,
+    "ProductionYear": null,
+    "PremiereDate": null,
+    "EndDate": null,
+    "CommunityRating": null,
+    "CriticRating": null,
+    "OfficialRating": null,
+    "CustomRating": null,
+    "ProviderIds": {},
+    "Genres": [],
+    "Tags": null,
+    "TagItems": [],
+    "Studios": [],
+    "People": [],
+    "LockedFields": [
+      "Name"
+    ],
+    "LockData": false,
+    "Taglines": [],
+    "ProductionLocations": [],
+    "PreferredMetadataLanguage": null,
+    "PreferredMetadataCountryCode": null,
+    "IndexNumber": null,
+    "ParentIndexNumber": null,
+    "SortIndexNumber": null,
+    "SortParentIndexNumber": null,
+    "DisplayOrder": null,
+    "Status": null,
+    "DateCreated": "2026-09-09T08:14:48.0000000Z"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:20:48.282102+00:00"
+  }
+}

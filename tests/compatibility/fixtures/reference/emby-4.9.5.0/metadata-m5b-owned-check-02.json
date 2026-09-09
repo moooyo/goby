@@ -1,0 +1,105 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items?UserId=fa0ec9ecc77b4fb487eceb8233c9a1fb&ParentId=52&Recursive=true&Ids=54&Fields=Path%2COverview%2CProviderIds%2CGenres%2CTags&Limit=2",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Metadata Reference\", Device=\"Metadata M5b Owned Fixture\", DeviceId=\"goby-metadata-m5b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "510"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 08:17:09 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "M5b NFO Source Alpha",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "54",
+          "Path": "/reference-metadata-m5b-source/Metadata M5b Owned (2026).mp4",
+          "Overview": "M5b NFO source overview alpha.",
+          "Genres": [],
+          "RunTimeTicks": 6000000,
+          "ProviderIds": {},
+          "IsFolder": false,
+          "Type": "Movie",
+          "GenreItems": [],
+          "TagItems": [],
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "wireBytes": 510,
+    "wireSha256": "33d5acf4b55e45940c2b80046108812347cb5ffc8385b64304a8017e97b2204c",
+    "failureType": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:17:09.786195+00:00"
+  }
+}

@@ -174,8 +174,8 @@ func TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds(t *testing.T
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade encoding plans from version 10: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 13 {
-		t.Fatalf("upgraded schema version = %d, want 13, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 14 {
+		t.Fatalf("upgraded schema version = %d, want 14, error = %v", version, err)
 	}
 	if after := encodingVODDataSnapshot(t, ctx, pool); after != before {
 		t.Error("encoding plan migration changed existing jobs or related data")
@@ -189,8 +189,8 @@ func TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds(t *testing.T
 	if oldHistory != historyBefore {
 		t.Error("encoding plan migration changed historical migration rows or applied timestamps")
 	}
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 13 {
-		t.Fatalf("upgraded migration count = %d, want 13, error = %v", count, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 14 {
+		t.Fatalf("upgraded migration count = %d, want 14, error = %v", count, err)
 	}
 	if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 11").Scan(&latestName); err != nil || latestName != "0011_encoding_vod_plans.sql" {
 		t.Fatalf("version 11 migration name = %q, error = %v", latestName, err)

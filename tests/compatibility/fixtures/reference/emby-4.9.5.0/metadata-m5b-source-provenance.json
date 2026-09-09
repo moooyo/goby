@@ -1,0 +1,21 @@
+{
+  "kind": "owned-source-provenance",
+  "mediaBytes": 1555,
+  "mediaSha256": "a77cfad48ca0cd7f0ca525d2441633d4ef0c3ffd906f04a61cb594efbefc4f9e",
+  "format": "MP4/H.264",
+  "durationSeconds": 0.6,
+  "dimensions": [
+    64,
+    36
+  ],
+  "sourcePath": "/reference-metadata-m5b-source/Metadata M5b Owned (2026).mp4",
+  "sourceOwnershipMarker": "goby-metadata-m5b-owned-v1",
+  "preservedRecordPairs": 828,
+  "preservedMediaFiles": 237,
+  "referencePID": 3131777,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:14:48.208350+00:00"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "kind": "metadata-state-observation",
+  "source": "metadata-m5b-locked-sort-and-tagitems-after.json",
+  "fields": {
+    "Name": "M5b Locked Sort Name",
+    "SortName": "M5b Locked Forced Input",
+    "ForcedSortName": "M5b Locked Forced Input",
+    "OriginalTitle": "M5b Original Title",
+    "Overview": "M5b manual overview.",
+    "ProductionYear": 2012,
+    "PremiereDate": "2012-03-04T00:00:00.0000000Z",
+    "EndDate": null,
+    "CommunityRating": 7.25,
+    "CriticRating": 83,
+    "OfficialRating": "PG-13",
+    "CustomRating": "M5b Custom Rating",
+    "ProviderIds": {
+      "MetadataM5b": "owned-provider-one"
+    },
+    "Genres": [
+      "M5b Owned Genre"
+    ],
+    "Tags": null,
+    "TagItems": [
+      {
+        "Name": "M5b Tag Item Control",
+        "Id": 60
+      }
+    ],
+    "Studios": [
+      {
+        "Name": "M5b Owned Studio",
+        "Id": 58
+      }
+    ],
+    "People": [
+      {
+        "Name": "M5b Owned Actor",
+        "Id": "55",
+        "Role": "M5b Role",
+        "Type": "Actor"
+      },
+      {
+        "Name": "M5b Owned Director",
+        "Id": "56",
+        "Type": "Director"
+      }
+    ],
+    "LockedFields": [
+      "SortName"
+    ],
+    "LockData": false,
+    "Taglines": [],
+    "ProductionLocations": [],
+    "PreferredMetadataLanguage": null,
+    "PreferredMetadataCountryCode": null,
+    "IndexNumber": null,
+    "ParentIndexNumber": null,
+    "SortIndexNumber": null,
+    "SortParentIndexNumber": null,
+    "DisplayOrder": null,
+    "Status": null,
+    "DateCreated": "2026-09-09T08:14:48.0000000Z"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:18:35.784452+00:00"
+  }
+}

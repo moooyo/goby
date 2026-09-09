@@ -1,0 +1,353 @@
+{
+  "all_preexisting_rows_unchanged": true,
+  "authorized_authentication_changes": {
+    "created_admin_sessions": 1,
+    "other_sessions_unchanged": true,
+    "own_session_revoked": true
+  },
+  "catalog": {
+    "all_controls_empty": true,
+    "all_effective_equal_automatic": true,
+    "all_revision_one": true,
+    "detail_envelope_fields": 11,
+    "libraries": [
+      {
+        "default_paging_type_search": "passed",
+        "item_count": 2,
+        "item_identity_sha256": "1c921f6dd9fc1bf7870d004ba23e1e6617801094905409bdbd5c48e6983a9034",
+        "library_ordinal": 1
+      },
+      {
+        "default_paging_type_search": "passed",
+        "item_count": 6,
+        "item_identity_sha256": "5638b9ec399feb652b6647cb706048010de945ed34f4da4bdf4878b1fde7d5a1",
+        "library_ordinal": 2
+      },
+      {
+        "default_paging_type_search": "passed",
+        "item_count": 6,
+        "item_identity_sha256": "4f2d56f097eb22ad82f51a6aaded165d84c1c2410d0459d4308eb9697819d22f",
+        "library_ordinal": 3
+      },
+      {
+        "default_paging_type_search": "passed",
+        "item_count": 1,
+        "item_identity_sha256": "dd025fff58fd01209bf9031a9dcb9e3908b7b8f6fbdf5f29bab5659835af1975",
+        "library_ordinal": 4
+      },
+      {
+        "default_paging_type_search": "passed",
+        "item_count": 1,
+        "item_identity_sha256": "c12027e967624c4fef982e62b9762bae41ea5abc9655689efd500c2c4a268a03",
+        "library_ordinal": 5
+      }
+    ],
+    "library_count": 5,
+    "non_root_item_count": 16,
+    "nullable_and_collection_shapes": "passed",
+    "probe_version": 5,
+    "probed_media_count": 11
+  },
+  "cleanup_errors": [],
+  "deployment": {
+    "binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+    "main_pid": 3379452,
+    "schema_version": 14,
+    "uid": 995
+  },
+  "get_requests_all_tables_unchanged": true,
+  "http_method_counts": {
+    "DELETE": 1,
+    "GET": 39,
+    "POST": 1
+  },
+  "http_retries": 0,
+  "metadata_editing_capability": true,
+  "owner": "goby-metadata-deployed-read-m5b-v1",
+  "revoked_cookie_metadata_status": 401,
+  "scope": "Deployed native catalog reads only; writes/rescans were accepted separately by browser tests using the same binary",
+  "snapshots": {
+    "after_catalog_reads": {
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 28,
+        "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 27,
+        "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+      },
+      "scan_jobs": {
+        "count": 31,
+        "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+      },
+      "schema_migrations": {
+        "count": 14,
+        "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+      },
+      "sessions": {
+        "count": 74,
+        "sha256": "62adbf585353afec0baf3e4496250de86f674539203a34bbf199380bd201362b"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+      }
+    },
+    "after_login": {
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 28,
+        "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 27,
+        "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+      },
+      "scan_jobs": {
+        "count": 31,
+        "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+      },
+      "schema_migrations": {
+        "count": 14,
+        "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+      },
+      "sessions": {
+        "count": 74,
+        "sha256": "62adbf585353afec0baf3e4496250de86f674539203a34bbf199380bd201362b"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+      }
+    },
+    "after_logout": {
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 28,
+        "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 27,
+        "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+      },
+      "scan_jobs": {
+        "count": 31,
+        "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+      },
+      "schema_migrations": {
+        "count": 14,
+        "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+      },
+      "sessions": {
+        "count": 74,
+        "sha256": "b4f7b06c36a611fc180f783edd96a8d5bf5d49445a62957c3ac6e81247226373"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+      }
+    },
+    "before_login": {
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 28,
+        "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 27,
+        "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+      },
+      "scan_jobs": {
+        "count": 31,
+        "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+      },
+      "schema_migrations": {
+        "count": 14,
+        "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+      },
+      "sessions": {
+        "count": 73,
+        "sha256": "00d72bcda580466e7bf1327ede711656fe3203e9fcde94c103b16202a9132147"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+      }
+    }
+  },
+  "source_media_or_nfo_opened": false,
+  "status": "passed"
+}

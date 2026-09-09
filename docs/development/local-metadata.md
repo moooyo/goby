@@ -49,7 +49,9 @@ Every scan checks sidecars, including when media size and modification time allo
 - An inaccessible media root retains existing catalog records and their metadata. It is not interpreted as removal of every sidecar.
 - Removing a library removes catalog records while retaining media and sidecars on disk.
 
-The current task UI displays scan warnings. Metadata editing, field locks, online providers, and automatic watch-based refresh remain separate planned work. The entity filters below do not add parental-rating or other access policies.
+The task UI displays scan warnings. [Native metadata editing and field locks](../api/admin-metadata.md) now save a separate administrator layer over the latest accepted source snapshot. Normal NFO updates and removal continue to update that source; manual overrides and locked values remain until explicitly removed. Online providers and automatic watch-based refresh remain planned work. The entity filters below do not add parental-rating or other access policies.
+
+Migration `0014` initializes metadata state without rewriting existing catalog or NFO rows. It retains the original sparse projection when no administrator controls apply. Updating an unrelated source field preserves unknown extensions in unchanged fields, including existing person credits. Only effective metadata drives the current entity associations, and those changes commit with the item update. Identical file rescans compare against automatic values rather than manual display values, so an existing title or episode-number override alone does not falsely report the file as updated.
 
 ## Persistent catalog entities
 

@@ -1,0 +1,42 @@
+{
+  "kind": "metadata-state-observation",
+  "source": "metadata-m5b-named-nfo-control-after-2.json",
+  "fields": {
+    "Name": "M5b NFO Source Alpha",
+    "SortName": "M5b NFO Source Alpha",
+    "ForcedSortName": "M5b NFO Source Alpha",
+    "OriginalTitle": null,
+    "Overview": "M5b NFO source overview alpha.",
+    "ProductionYear": 2001,
+    "PremiereDate": null,
+    "EndDate": null,
+    "CommunityRating": null,
+    "CriticRating": null,
+    "OfficialRating": null,
+    "CustomRating": null,
+    "ProviderIds": {},
+    "Genres": [],
+    "Tags": null,
+    "Studios": [],
+    "People": [],
+    "LockedFields": [],
+    "LockData": false,
+    "Taglines": [],
+    "ProductionLocations": [],
+    "PreferredMetadataLanguage": null,
+    "PreferredMetadataCountryCode": null,
+    "IndexNumber": null,
+    "ParentIndexNumber": null,
+    "SortIndexNumber": null,
+    "SortParentIndexNumber": null,
+    "DisplayOrder": null,
+    "Status": null,
+    "DateCreated": "2026-09-09T08:14:48.0000000Z"
+  },
+  "waitedSeconds": 2.5,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:16:57.955797+00:00"
+  }
+}

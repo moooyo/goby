@@ -1,0 +1,22 @@
+{
+  "kind": "capture-audit-observation",
+  "newRecordsBeforeAudit": 129,
+  "completeHTTP": 106,
+  "incompleteHTTP": 0,
+  "supportingObservationsBeforeAudit": 23,
+  "wireBytes": 312355,
+  "preservedOldRecordFiles": 1656,
+  "preservedOldRecords": 828,
+  "preservedOldMediaFiles": 237,
+  "sourceBytes": 1723,
+  "referencePID": 3131777,
+  "oldHashesUnchanged": true,
+  "oldLibraryOptionsUnchanged": true,
+  "ownedLibraryRetained": true,
+  "note": "Only the new marked micro-library is retained. The pinned delete route omits targeting parameters, so no undocumented delete was guessed.",
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:21:02.917417+00:00"
+  }
+}

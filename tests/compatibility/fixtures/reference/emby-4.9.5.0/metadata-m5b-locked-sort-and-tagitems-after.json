@@ -1,0 +1,271 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users/fa0ec9ecc77b4fb487eceb8233c9a1fb/Items/54",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Metadata Reference\", Device=\"Metadata M5b Owned Fixture\", DeviceId=\"goby-metadata-m5b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "3692"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 08:18:35 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "M5b Locked Sort Name",
+      "OriginalTitle": "M5b Original Title",
+      "ServerId": "ec69ef1cf84140e88489c30326529308",
+      "Id": "54",
+      "Etag": "5e410bb70a2f6e74fadf4633497c0d2b",
+      "DateCreated": "2026-09-09T08:14:48.0000000Z",
+      "DateModified": "2026-09-09T08:14:48.0000000Z",
+      "CanDelete": true,
+      "CanDownload": true,
+      "PresentationUniqueKey": "585ace27216635c16a715c2980b5e69e",
+      "SupportsSync": true,
+      "Container": "mp4",
+      "SortName": "M5b Locked Forced Input",
+      "ForcedSortName": "M5b Locked Forced Input",
+      "PremiereDate": "2012-03-04T00:00:00.0000000Z",
+      "ExternalUrls": [],
+      "MediaSources": [
+        {
+          "Chapters": [],
+          "Protocol": "File",
+          "Id": "mediasource_54",
+          "Path": "/reference-metadata-m5b-source/Metadata M5b Owned (2026).mp4",
+          "Type": "Default",
+          "Container": "mp4",
+          "Size": 1555,
+          "Name": "Metadata M5b Owned (2026)",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 6000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": true,
+          "SupportsDirectPlay": true,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/10240",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 9093,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 36,
+              "Width": 64,
+              "AverageFrameRate": 10,
+              "RealFrameRate": 10,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 20733,
+          "RequiredHttpHeaders": {},
+          "AddApiKeyToDirectStreamUrl": false,
+          "ReadAtNativeFramerate": false,
+          "ItemId": "54"
+        }
+      ],
+      "CriticRating": 83,
+      "ProductionLocations": [],
+      "Path": "/reference-metadata-m5b-source/Metadata M5b Owned (2026).mp4",
+      "OfficialRating": "PG-13",
+      "CustomRating": "M5b Custom Rating",
+      "Overview": "M5b manual overview.",
+      "Taglines": [],
+      "Genres": [
+        "M5b Owned Genre"
+      ],
+      "CommunityRating": 7.25,
+      "RunTimeTicks": 6000000,
+      "Size": 1555,
+      "FileName": "Metadata M5b Owned (2026).mp4",
+      "Bitrate": 20733,
+      "ProductionYear": 2012,
+      "RemoteTrailers": [],
+      "ProviderIds": {
+        "MetadataM5b": "owned-provider-one"
+      },
+      "IsFolder": false,
+      "ParentId": "53",
+      "Type": "Movie",
+      "People": [
+        {
+          "Name": "M5b Owned Actor",
+          "Id": "55",
+          "Role": "M5b Role",
+          "Type": "Actor"
+        },
+        {
+          "Name": "M5b Owned Director",
+          "Id": "56",
+          "Type": "Director"
+        }
+      ],
+      "Studios": [
+        {
+          "Name": "M5b Owned Studio",
+          "Id": 58
+        }
+      ],
+      "GenreItems": [
+        {
+          "Name": "M5b Owned Genre",
+          "Id": 57
+        }
+      ],
+      "TagItems": [
+        {
+          "Name": "M5b Tag Item Control",
+          "Id": 60
+        }
+      ],
+      "LocalTrailerCount": 0,
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false
+      },
+      "DisplayPreferencesId": "dbf7709c41faaa746463d67978eb863d",
+      "MediaStreams": [
+        {
+          "Codec": "h264",
+          "CodecTag": "avc1",
+          "Language": "und",
+          "TimeBase": "1/10240",
+          "VideoRange": "SDR",
+          "DisplayTitle": "SD H264",
+          "NalLengthSize": "4",
+          "IsInterlaced": false,
+          "BitRate": 9093,
+          "BitDepth": 8,
+          "RefFrames": 1,
+          "IsDefault": true,
+          "IsForced": false,
+          "IsHearingImpaired": false,
+          "Height": 36,
+          "Width": 64,
+          "AverageFrameRate": 10,
+          "RealFrameRate": 10,
+          "Profile": "Constrained Baseline",
+          "Type": "Video",
+          "AspectRatio": "16:9",
+          "Index": 0,
+          "IsExternal": false,
+          "IsTextSubtitleStream": false,
+          "SupportsExternalStream": false,
+          "Protocol": "File",
+          "PixelFormat": "yuv420p",
+          "Level": 10,
+          "IsAnamorphic": false,
+          "ExtendedVideoType": "None",
+          "ExtendedVideoSubType": "None",
+          "ExtendedVideoSubTypeDescription": "None",
+          "AttachmentSize": 0
+        }
+      ],
+      "PartCount": 1,
+      "ImageTags": {},
+      "BackdropImageTags": [],
+      "Chapters": [],
+      "MediaType": "Video",
+      "LockedFields": [
+        "SortName"
+      ],
+      "LockData": false,
+      "Width": 64,
+      "Height": 36
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "wireBytes": 3692,
+    "wireSha256": "299be7ca6a99592abce51321b35e6ab05857a7a94feda909c31bf46294fbea08",
+    "failureType": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:18:35.783379+00:00"
+  }
+}

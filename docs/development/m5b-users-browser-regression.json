@@ -1,0 +1,114 @@
+{
+  "application_pids": [
+    3372751,
+    3372907
+  ],
+  "assets_archive_sha256": "b46cf5b31f66707046f58e08c6b9da6ba536ef78cb88d1f4fa1034bcfa3fdc08",
+  "binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+  "browser": {
+    "duration_ms": 12868.857,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "application_uid": 995,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true,
+    "restart_preserved_account_and_library_snapshot": "bd5ef0b200f0477a471a3afe614ae50b83f6c99b16f5daa72a9b6c8d63131033"
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5a_ui_20260909_085751_2c1d774033",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 48095,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5a_role_20260909_085751_2c1d774033",
+  "run_id": "20260909_085751_2c1d774033",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "source_spec_sha256": "dae3b4e04579f31b6224d14d50a9f0a6b022843028fe5bc66e85d39391c786d5",
+  "space_before": {
+    "/": 48091136,
+    "/dev/shm": 1401221120,
+    "/dev/shm/goby-pg-m4c": 845258752,
+    "/opt/goby-test/exec-scratch": 140816384
+  },
+  "status": "passed"
+}

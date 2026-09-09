@@ -1,0 +1,128 @@
+{
+  "application_diagnostics": "{\"time\":\"2026-09-09T16:52:33.154274886+08:00\",\"level\":\"INFO\",\"msg\":\"server listening\",\"address\":\"127.0.0.1:60453\",\"version\":\"0.1.0-dev\",\"database\":\"postgresql\"}\n{\"time\":\"2026-09-09T16:52:33.249916832+08:00\",\"level\":\"INFO\",\"msg\":\"administrator setup completed\",\"user_id\":\"[REDACTED]\"}\n{\"time\":\"2026-09-09T16:52:37.80585682+08:00\",\"level\":\"INFO\",\"msg\":\"library created\",\"actor_id\":\"[REDACTED]\",\"library_id\":\"[REDACTED]\"}\n{\"time\":\"2026-09-09T16:52:38.918790904+08:00\",\"level\":\"INFO\",\"msg\":\"library created\",\"actor_id\":\"[REDACTED]\",\"library_id\":\"[REDACTED]\"}\n{\"time\":\"2026-09-09T16:52:39.722050323+08:00\",\"level\":\"INFO\",\"msg\":\"library created\",\"actor_id\":\"[REDACTED]\",\"library_id\":\"[REDACTED]\"}\n{\"time\":\"2026-09-09T16:52:43.889235526+08:00\",\"level\":\"INFO\",\"msg\":\"administrator metadata mutation\",\"actor_id\":\"[REDACTED]\",\"item_id\":\"[REDACTED]\",\"revision\":\"2\"}\n",
+  "application_pids": [
+    3345314
+  ],
+  "assets_archive_sha256": "b46cf5b31f66707046f58e08c6b9da6ba536ef78cb88d1f4fa1034bcfa3fdc08",
+  "binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+  "browser": {
+    "duration_ms": 9848.538,
+    "exit_code": 1,
+    "expected": 0,
+    "failures": [
+      "Error: locator.click: Error: strict mode violation: getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Close', exact: true }) resolved to 2 elements:\n    1) <button tabindex=\"0\" type=\"button\" title=\"Close\" aria-label=\"Close\" class=\"MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall css-ua4dbp\">\u2026</button> aka getByRole('button', { name: 'Close', description: 'Close' })\n    2) <button tabindex=\"0\" type=\"button\" class=\"MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-sizeMedium MuiButton-colorSecondary MuiButton-disableElevation css-6smzt4\">\u2026</button> aka getByText('Close')\n\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Close', exact: true })\u001b[22m\n\n\n  361 |\n  362 | async function closeEditor(page: Page): Promise<void> {\n> 363 |   await editor(page).getByRole('button', { name: 'Close', exact: true }).click();\n      |                                                                          ^\n  364 |   await expect(editor(page)).not.toBeVisible();\n  365 | }\n  366 |\n    at closeEditor (/opt/goby-test/exec-scratch/[REDACTED]/browser/e2e/metadata-management.spec.ts:363:74)\n    at /opt/goby-test/exec-scratch/[REDACTED]/browser/e2e/metadata-management.spec.ts:510:11\n    at /opt/goby-test/exec-scratch/[REDACTED]/browser/e2e/metadata-management.spec.ts:464:3"
+    ],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 1
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "application_uid": 995,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5b_metadata_20260909_085232_ad15ad8c42",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "failure": "The selected isolated browser journey did not pass without skips.",
+  "fixtures": {
+    "all_media_sha256": "c9e25066a19489b8d5f042044d56a22ca188483f9ef98a1bf05ce95ab77394be",
+    "episode_count": 2,
+    "initial_episode_nfo_sha256": "52c5b34b8057f3620f1441b6fc670b5e91440e5bc5d057d8af853d5a53350f5f",
+    "initial_movie_nfo_sha256": "4e3e4b359a6a9968494816b667113424e347d7d3cf3f3947e60a3532f15efed3",
+    "media_bytes_each": 6667,
+    "movie_count": 26,
+    "root_owned_read_only_to_application": true
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 60453,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5b_role_20260909_085232_ad15ad8c42",
+  "run_id": "20260909_085232_ad15ad8c42",
+  "scenario": "administrator_metadata",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "source_spec_sha256": "f7173c621f0588f528f91e32f1907e47c9796afc77f6b9a03639c70fbeb2ae49",
+  "space_before": {
+    "/": 48091136,
+    "/dev/shm": 1764634624,
+    "/dev/shm/goby-pg-m4c": 875429888,
+    "/opt/goby-test/exec-scratch": 315846656
+  },
+  "status": "failed",
+  "verifier_sha256": "f6766c080a84f853f749e28755c03915794cd706032c35069a0183ab9ca00194"
+}

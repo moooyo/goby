@@ -1,0 +1,45 @@
+{
+  "kind": "metadata-state-observation",
+  "source": "metadata-m5b-name-lock-full-refresh-after-2.json",
+  "fields": {
+    "Name": "M5b Locked Manual Name",
+    "SortName": "M5b NFO Name Two",
+    "ForcedSortName": "M5b NFO Name Two",
+    "OriginalTitle": "M5b Original Title",
+    "Overview": "M5b NFO overview two.",
+    "ProductionYear": 2015,
+    "PremiereDate": null,
+    "EndDate": null,
+    "CommunityRating": null,
+    "CriticRating": null,
+    "OfficialRating": null,
+    "CustomRating": null,
+    "ProviderIds": {
+      "MetadataM5b": "owned-provider-one"
+    },
+    "Genres": [],
+    "Tags": null,
+    "TagItems": [],
+    "Studios": [],
+    "People": [],
+    "LockedFields": [],
+    "LockData": false,
+    "Taglines": [],
+    "ProductionLocations": [],
+    "PreferredMetadataLanguage": null,
+    "PreferredMetadataCountryCode": null,
+    "IndexNumber": null,
+    "ParentIndexNumber": null,
+    "SortIndexNumber": null,
+    "SortParentIndexNumber": null,
+    "DisplayOrder": null,
+    "Status": null,
+    "DateCreated": "2026-09-09T08:14:48.0000000Z"
+  },
+  "waitedSeconds": 2.5,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:18:55.134878+00:00"
+  }
+}

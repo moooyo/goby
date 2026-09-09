@@ -1,0 +1,40 @@
+{
+  "owner": "goby-m5b-deployment-evidence-v1",
+  "status": "passed",
+  "service": {
+    "MainPID": "3379452",
+    "User": "goby",
+    "ActiveState": "active",
+    "SubState": "running"
+  },
+  "process_uids": [
+    995,
+    995,
+    995,
+    995
+  ],
+  "binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+  "running_executable_matches_binary": true,
+  "tested_go_and_module_files": 281,
+  "deployed_source_matches_tested_source": true,
+  "tested_source_sha256": "3717491238ebbfd1283e85b31eb866490e71943449589f521a0b084ac4620387",
+  "database": {
+    "schema_version": 14,
+    "item_count": 21,
+    "metadata_state_count": 21,
+    "media_count": 11,
+    "current_probe_records": 11,
+    "user_state_rows": 15
+  },
+  "application_database_port": 5432,
+  "integration_database_port": 15432,
+  "reference_records": 958,
+  "new_metadata_records": 130,
+  "administrator_assets_archive_sha256": "b46cf5b31f66707046f58e08c6b9da6ba536ef78cb88d1f4fa1034bcfa3fdc08",
+  "administrator_assets_verified": 31,
+  "live_admin_index_matches_tested_assets": true,
+  "live_admin_javascript_matches_tested_assets": true,
+  "prior_binary_sha256": "2008e104bca56920721a45c8342260a09e0f2c326f60e6a0d6386074d8e8a3ac",
+  "private_pre_migration_backup_sha256": "321c16cac3aca74ff07d225bc434920949f012553b920d8c5c5da6baf8dca729",
+  "actual_gpu_execution_verified": false
+}

@@ -1,0 +1,130 @@
+{
+  "application_pids": [
+    3364331,
+    3367051
+  ],
+  "assets_archive_sha256": "b46cf5b31f66707046f58e08c6b9da6ba536ef78cb88d1f4fa1034bcfa3fdc08",
+  "binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+  "browser": {
+    "duration_ms": 31870.432,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "application_uid": 995,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true,
+    "original_media_bytes_unchanged": true,
+    "restart_preserved_account_and_library_snapshot": "bffb5a514f6eb1fd95bcfbc47f87aee0155fd7f648f20736ce995f946edd1319",
+    "restart_preserved_metadata_and_entities": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5b_metadata_20260909_085505_39994542b2",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "fixtures": {
+    "all_media_sha256": "c9e25066a19489b8d5f042044d56a22ca188483f9ef98a1bf05ce95ab77394be",
+    "episode_count": 2,
+    "final_episode_nfo_sha256": "b88c3b2c042cf50555c7324acbb0b5c4d15d4a1253b9e117f2e801dbf877b459",
+    "final_movie_nfo_sha256": "4d62e88ff79d8aa334135b852d1330a44ee96ae01e4b641bc87cb2687b522966",
+    "initial_episode_nfo_sha256": "52c5b34b8057f3620f1441b6fc670b5e91440e5bc5d057d8af853d5a53350f5f",
+    "initial_movie_nfo_sha256": "4e3e4b359a6a9968494816b667113424e347d7d3cf3f3947e60a3532f15efed3",
+    "media_bytes_each": 6667,
+    "movie_count": 26,
+    "root_owned_read_only_to_application": true
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 54039,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5b_role_20260909_085505_39994542b2",
+  "run_id": "20260909_085505_39994542b2",
+  "scenario": "administrator_metadata",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3330261"
+  },
+  "source_spec_sha256": "7cc3f0c6615c5b08d661f74d368be8183216e67c9e70ef4e96239e971a58a08b",
+  "space_before": {
+    "/": 48091136,
+    "/dev/shm": 1515905024,
+    "/dev/shm/goby-pg-m4c": 842801152,
+    "/opt/goby-test/exec-scratch": 120868864
+  },
+  "status": "passed",
+  "verifier_sha256": "f6766c080a84f853f749e28755c03915794cd706032c35069a0183ab9ca00194"
+}

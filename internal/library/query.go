@@ -15,7 +15,8 @@ import (
 
 const itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
-	i.parent_index_number, i.created_at, i.media, i.local_metadata, ` + itemEntitiesColumn
+	i.parent_index_number, i.created_at, i.media,
+	COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata), ` + itemEntitiesColumn
 
 const itemEntitiesColumn = `(SELECT jsonb_build_object(
 	'Genres', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)

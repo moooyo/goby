@@ -186,6 +186,10 @@ def sanitize_text(value, known_secrets):
 
 
 class Runner:
+    browser_spec = "users-management.spec.ts"
+    screenshot_names = ("users-management-desktop.png", "users-management-mobile.png")
+    browser_timeout_seconds = 240
+
     def __init__(self, args):
         self.args = args
         self.run_id = time.strftime("%Y%m%d_%H%M%S", time.gmtime()) + "_" + secrets.token_hex(5)
@@ -234,8 +238,8 @@ class Runner:
         self.postgres, self.goby = pwd.getpwnam("postgres"), pwd.getpwnam("goby")
         require(self.goby.pw_uid != 0, "The dedicated application account must be unprivileged.")
         require(self.args.snapshot.is_dir() and
-                (self.args.snapshot / "web/admin/e2e/users-management.spec.ts").is_file(),
-                "The ready source snapshot is missing the managed-user browser spec.")
+                (self.args.snapshot / "web/admin/e2e" / self.browser_spec).is_file(),
+                "The ready source snapshot is missing the selected browser spec.")
         require((NODE_MODULES / "@playwright/test/cli.js").is_file() and BROWSER_CACHE.is_dir(),
                 "Reusable browser dependencies are unavailable; this verifier does not install software.")
         node_version = command(["/usr/bin/node", "--version"])
@@ -276,7 +280,7 @@ class Runner:
         self.report["binary_sha256"] = self.args.binary_sha256
         self.report["node_version"] = node_version
         self.report["playwright_version"] = playwright["version"]
-        self.report["source_spec_sha256"] = file_digest(self.args.snapshot / "web/admin/e2e/users-management.spec.ts")
+        self.report["source_spec_sha256"] = file_digest(self.args.snapshot / "web/admin/e2e" / self.browser_spec)
         self.report["shared_service_before"] = service_state()
         self.report["space_before"] = {str(path): free_bytes(path) for path in (Path("/"), Path("/dev/shm"), EXEC_ROOT, PG_BASE)}
 
@@ -371,7 +375,7 @@ class Runner:
         self.browser_work = self.output / "browser"
         self.browser_work.mkdir(mode=0o700)
         (self.browser_work / "e2e").mkdir(mode=0o700)
-        for relative in ("package.json", "playwright.config.ts", "e2e/users-management.spec.ts"):
+        for relative in ("package.json", "playwright.config.ts", "e2e/" + self.browser_spec):
             shutil.copyfile(self.args.snapshot / "web/admin" / relative, self.browser_work / relative)
         (self.browser_work / "node_modules").symlink_to(NODE_MODULES, target_is_directory=True)
         self.browser_temp = self.output / "browser-temp"
@@ -431,26 +435,29 @@ class Runner:
                 "The dedicated administrator was not created correctly.")
         self.report["checks"]["fresh_dedicated_administrator"] = True
 
-    def run_browser(self):
-        environment = dict(BASE_ENV, **{
+    def browser_environment(self):
+        return dict(BASE_ENV, **{
             "PLAYWRIGHT_BROWSERS_PATH": str(BROWSER_CACHE), "CI": "1", "FORCE_COLOR": "0",
             "GOBY_SMOKE_USERS_DISPOSABLE_DATABASE": "1", "GOBY_SMOKE_USERS_DEDICATED_ADMIN": "1",
             "GOBY_SMOKE_BASE_URL": self.origin, "GOBY_SMOKE_NAME": self.admin_name,
             "GOBY_SMOKE_PASSWORD": self.admin_password, "GOBY_SMOKE_MEDIA_PATH": str(self.runtime / "media"),
             "TMPDIR": str(self.browser_temp), RUN_ENV: self.run_id,
         })
+
+    def run_browser(self):
+        environment = self.browser_environment()
         stdout = self.output / "browser-private.json"
         stderr = self.output / "browser-private.stderr"
         with stdout.open("wb") as out, stderr.open("wb") as err:
             stdout.chmod(0o600)
             stderr.chmod(0o600)
             self.browser = subprocess.Popen(["/usr/bin/node", str(NODE_MODULES / "@playwright/test/cli.js"),
-                                             "test", "e2e/users-management.spec.ts", "--config", "playwright.config.ts",
+                                             "test", "e2e/" + self.browser_spec, "--config", "playwright.config.ts",
                                              "--reporter=json", "--output", str(self.results)],
                                             cwd=self.browser_work, env=environment, stdin=subprocess.DEVNULL,
                                             stdout=out, stderr=err, start_new_session=True)
             try:
-                code = self.browser.wait(timeout=240)
+                code = self.browser.wait(timeout=self.browser_timeout_seconds)
             except subprocess.TimeoutExpired:
                 raise VerificationError("The isolated browser journey exceeded its time budget.") from None
         raw = stdout.read_text(encoding="utf-8")
@@ -478,7 +485,7 @@ class Runner:
         failures.extend(sanitize_text(error.get("message", "Browser runner failed."), self.secrets)
                         for error in result.get("errors", []))
         self.report["browser"]["failures"] = [failure[:8192] for failure in failures[:8]]
-        for name in ("users-management-desktop.png", "users-management-mobile.png"):
+        for name in self.screenshot_names:
             matches = list(self.results.rglob(name))
             require(len(matches) <= 1, "The browser emitted duplicate explicit screenshot artifacts.")
             if matches:
@@ -486,7 +493,7 @@ class Runner:
                 (self.output / name).chmod(0o600)
         require(code == 0 and stats.get("expected") == 1 and stats.get("unexpected") == 0 and
                 stats.get("skipped") == 0 and stats.get("flaky") == 0 and not result.get("errors"),
-                "The isolated managed-user browser journey did not pass without skips.")
+                "The selected isolated browser journey did not pass without skips.")
 
     def account_snapshot(self):
         statement = """SELECT jsonb_build_object(

@@ -21,8 +21,9 @@ const OverviewPage = lazy(() => import('./OverviewPage').then((module) => ({ def
 const UsersPage = lazy(() => import('./UsersPage').then((module) => ({ default: module.UsersPage })));
 const LibrariesPage = lazy(() => import('./LibrariesPage').then((module) => ({ default: module.LibrariesPage })));
 const TasksPage = lazy(() => import('./TasksPage').then((module) => ({ default: module.TasksPage })));
+const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -31,21 +32,34 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items' };
+
+function metadataLibraryFromLocation(): string | undefined {
+  const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
+  if (!match) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
+}
 
 function pageFromLocation(): Page {
   const path = window.location.pathname.replace(/\/+$/, '');
+  if (metadataLibraryFromLocation() !== undefined) return 'metadata';
   if (path.endsWith('/users')) return 'users';
   if (path.endsWith('/libraries')) return 'libraries';
   if (path.endsWith('/tasks')) return 'tasks';
   return 'overview';
 }
 
-function pageURL(page: Page): string {
+function pageURL(page: Page, libraryId?: string): string {
+  if (page === 'metadata') return libraryId ? `/admin/libraries/${encodeURIComponent(libraryId)}/items` : '/admin/libraries';
   return page === 'overview' ? '/admin/' : `/admin/${page}`;
 }
 
 function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, event?: MouseEvent<HTMLAnchorElement>) => void }) {
+  const selectedPage = page === 'metadata' ? 'libraries' : page;
   return (
     <Stack component="nav" aria-label="Administration" sx={{ height: '100%', bgcolor: colors.deep, color: 'white', p: 2.5 }}>
       <Box sx={{ px: 0.75, pt: 1, pb: 5 }}><Brand light /></Box>
@@ -57,7 +71,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
           { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
         ].map(({ id, label, icon: Icon }) => (
-          <ListItemButton key={id} component="a" href={pageURL(id)} selected={page === id} aria-current={page === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
+          <ListItemButton key={id} component="a" href={pageURL(id)} selected={selectedPage === id} aria-current={selectedPage === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
             <ListItemIcon><Icon sx={{ fontSize: 21 }} /></ListItemIcon><ListItemText primary={label} />
           </ListItemButton>
         ))}
@@ -84,7 +98,9 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
 
 function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: () => void; onUserUpdated: (user: User) => void }) {
   const [page, setPage] = useState<Page>(pageFromLocation);
+  const [metadataLibraryId, setMetadataLibraryId] = useState<string | undefined>(metadataLibraryFromLocation);
   const currentPage = useRef(page);
+  const currentMetadataLibrary = useRef(metadataLibraryId);
   const navigationGuard = useRef<UserNavigationGuard | undefined>(undefined);
   const setNavigationGuard = useCallback((guard: UserNavigationGuard | undefined) => { navigationGuard.current = guard; }, []);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,12 +112,15 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
   useEffect(() => {
     const changed = () => {
       const next = pageFromLocation();
-      if (next !== currentPage.current && navigationGuard.current && !navigationGuard.current()) {
-        window.history.pushState(null, '', pageURL(currentPage.current));
+      const nextLibrary = metadataLibraryFromLocation();
+      if ((next !== currentPage.current || nextLibrary !== currentMetadataLibrary.current) && navigationGuard.current && !navigationGuard.current()) {
+        window.history.pushState(null, '', pageURL(currentPage.current, currentMetadataLibrary.current));
         return;
       }
       currentPage.current = next;
+      currentMetadataLibrary.current = nextLibrary;
       setPage(next);
+      setMetadataLibraryId(nextLibrary);
     };
     window.addEventListener('popstate', changed);
     return () => window.removeEventListener('popstate', changed);
@@ -111,15 +130,18 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
     document.title = `${pageTitles[page]} · Goby administration`;
   }, [page]);
 
-  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>) {
+  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>, libraryId?: string) {
     if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0)) return;
     event?.preventDefault();
-    if (page !== next && navigationGuard.current && !navigationGuard.current()) return;
-    if (page !== next) window.history.pushState(null, '', pageURL(next));
+    const changing = page !== next || metadataLibraryId !== libraryId;
+    if (changing && navigationGuard.current && !navigationGuard.current()) return;
+    if (changing) window.history.pushState(null, '', pageURL(next, libraryId));
     currentPage.current = next;
+    currentMetadataLibrary.current = libraryId;
     setPage(next);
+    setMetadataLibraryId(libraryId);
     setMobileOpen(false);
-    if (page !== next) {
+    if (changing) {
       window.scrollTo({ top: 0, behavior: 'instant' });
       if (mobileOpen) focusAfterDrawer.current = true;
       else requestAnimationFrame(() => document.getElementById('main-content')?.focus());
@@ -165,7 +187,8 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
           <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
             {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
             {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} />}
+            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} onManageItems={(library) => navigate('metadata', undefined, library.Id)} />}
+            {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} />}
           </Suspense>
         </Box>

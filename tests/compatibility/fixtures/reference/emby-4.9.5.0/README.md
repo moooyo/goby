@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 828 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio/video studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 958 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video and metadata studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -48,5 +48,12 @@ preroll. Neither HTTP 200 nor an encoder exit code establishes correct playback.
 All earlier raw/export pairs and the source hash were preserved. The separate
 Goby copied-video diagnostics under `docs/research/video-copy-seek` do not add to
 this official-reference count.
+
+The [M5b metadata study](../../../../../docs/research/metadata-reference.md) adds
+130 records: 106 complete HTTP exchanges and 24 observations. It uses a new tiny
+owned library and preserves all preceding 828 records and existing media hashes.
+The captures distinguish `SortName`/`ForcedSortName`, field locks, NFO refresh,
+forced replacement and reset. Native Goby locks must not be described as matching
+all observed Emby mutation semantics.
 
 Do not replay setup/library mutations against arbitrary servers. Differential checks should normalize explicitly chosen nondeterministic fields without changing casing, array/object shape, status, content type, null/omission distinctions, or numeric values.

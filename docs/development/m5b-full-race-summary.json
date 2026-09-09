@@ -1,0 +1,88 @@
+{
+  "owner": "goby-m5b-full-race-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 2 ./...",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "started_at": "2026-09-09T08:52:33Z",
+  "finished_at": "2026-09-09T08:59:08Z",
+  "skipped_tests": 0,
+  "top_level_tests_passed": 888,
+  "packages": [
+    {
+      "status": "?",
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "detail": "[no test files]"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "detail": "1.424s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/config",
+      "detail": "1.019s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "2.830s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/events",
+      "detail": "1.076s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "97.212s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "23.227s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/media",
+      "detail": "4.485s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "detail": "1.523s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/playback",
+      "detail": "1.185s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "333.087s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "detail": "1.112s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "detail": "52.869s"
+    }
+  ],
+  "log_sha256": "6c9b1ac8b7c41fcce4fd514bdf3757743cb3c5f1501c3494c263d53b1baf6bf7",
+  "log_path": "/opt/goby-test/exec-scratch/m5b-full-race.log",
+  "go_and_module_files": 281,
+  "verified_go_source_sha256": "3717491238ebbfd1283e85b31eb866490e71943449589f521a0b084ac4620387",
+  "media_pipeline_baseline": "4100e8373a52dd264297f1f28352b27064759587",
+  "probe_version": 5,
+  "scope": "M5b metadata increment; separate unfinished video-seek implementation excluded",
+  "application_database_port": 5432,
+  "integration_database_port": 15432,
+  "actual_gpu_execution_verified": false
+}

@@ -42,6 +42,87 @@ export interface ResetUserPasswordInput {
   Password: string;
 }
 
+export interface MetadataPerson {
+  Name: string;
+  Role: string;
+  Type: string;
+  SortOrder: number | null;
+}
+
+export interface MetadataValues {
+  Name: string;
+  SortName: string;
+  Overview: string;
+  OriginalTitle: string;
+  OfficialRating: string;
+  ProductionYear: number | null;
+  PremiereDate: string | null;
+  CommunityRating: number | null;
+  ProviderIds: Record<string, string>;
+  Genres: string[];
+  Tags: string[];
+  Studios: string[];
+  People: MetadataPerson[];
+  IndexNumber: number | null;
+  ParentIndexNumber: number | null;
+}
+
+export type MetadataFieldName = keyof MetadataValues;
+
+export interface MetadataItemIdentity {
+  Id: string;
+  LibraryId: string;
+  ParentId: string;
+  ParentName: string;
+  Name: string;
+  Type: string;
+  Path: string;
+  IsFolder: boolean;
+}
+
+export interface MetadataDetail {
+  Item: MetadataItemIdentity;
+  Revision: string;
+  Automatic: MetadataValues;
+  Effective: MetadataValues;
+  Overrides: Partial<MetadataValues>;
+  LockedValues: Partial<MetadataValues>;
+  LockedFields: MetadataFieldName[];
+  EditableFields: MetadataFieldName[];
+  InactiveFields: MetadataFieldName[];
+  LastEditedBy: string;
+  LastEditedAt: string | null;
+}
+
+export interface MetadataUpdateInput {
+  Revision: string;
+  Overrides: Partial<MetadataValues>;
+  LockedFields: MetadataFieldName[];
+}
+
+export interface MetadataItemSummary extends MetadataItemIdentity {
+  ProductionYear: number | null;
+  IndexNumber: number | null;
+  ParentIndexNumber: number | null;
+  HasOverrides: boolean;
+  LockedFieldCount: number;
+}
+
+export interface MetadataItemsResponse {
+  Library: { Id: string; Name: string; CollectionType: string };
+  Items: MetadataItemSummary[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+}
+
+export interface MetadataItemsQuery {
+  SearchTerm?: string;
+  Types?: string[];
+  StartIndex?: number;
+  Limit?: number;
+}
+
 export interface BootstrapResponse {
   Initialized: boolean;
 }
@@ -443,6 +524,94 @@ async function mutateUser(
   return result;
 }
 
+const metadataFieldNames: MetadataFieldName[] = [
+  "Name", "SortName", "Overview", "OriginalTitle", "OfficialRating", "ProductionYear",
+  "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People",
+  "IndexNumber", "ParentIndexNumber",
+];
+const metadataFieldSet = new Set<string>(metadataFieldNames);
+
+function validMetadataInteger(value: unknown, minimum = 0, maximum = 2147483647): boolean {
+  return value === null || (typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum);
+}
+
+function validMetadataTimestamp(value: unknown): boolean {
+  return value === null || (typeof value === "string"
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value)
+    && value.slice(0, 4) !== "0000" && Number.isFinite(Date.parse(value)));
+}
+
+function validMetadataValue(field: string, value: unknown): boolean {
+  switch (field) {
+    case "Name": case "SortName": case "Overview": case "OriginalTitle": case "OfficialRating":
+      return typeof value === "string";
+    case "ProductionYear":
+      return validMetadataInteger(value, 1, 9999);
+    case "IndexNumber": case "ParentIndexNumber":
+      return validMetadataInteger(value);
+    case "PremiereDate":
+      return validMetadataTimestamp(value);
+    case "CommunityRating":
+      return value === null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10);
+    case "ProviderIds":
+      return isRecord(value) && Object.values(value).every((identifier) => typeof identifier === "string");
+    case "Genres": case "Tags": case "Studios":
+      return Array.isArray(value) && value.every((name) => typeof name === "string");
+    case "People":
+      return Array.isArray(value) && value.every((person) => isRecord(person)
+        && typeof person.Name === "string" && typeof person.Role === "string" && typeof person.Type === "string"
+        && validMetadataInteger(person.SortOrder));
+    default:
+      return false;
+  }
+}
+
+function validMetadataValues(value: unknown, sparse: boolean): boolean {
+  return isRecord(value)
+    && Object.entries(value).every(([field, entry]) => metadataFieldSet.has(field) && validMetadataValue(field, entry))
+    && (sparse || metadataFieldNames.every((field) => Object.hasOwn(value, field)));
+}
+
+function validMetadataFields(value: unknown): value is MetadataFieldName[] {
+  return Array.isArray(value) && value.every((field) => typeof field === "string" && metadataFieldSet.has(field))
+    && new Set(value).size === value.length;
+}
+
+function validMetadataIdentity(value: unknown): value is MetadataItemIdentity {
+  return isRecord(value) && Boolean(nonemptyString(value.Id)) && Boolean(nonemptyString(value.LibraryId))
+    && [value.ParentId, value.ParentName, value.Name, value.Type, value.Path].every((entry) => typeof entry === "string")
+    && typeof value.IsFolder === "boolean";
+}
+
+function validateMetadataDetail(value: MetadataDetail, itemId: string): void {
+  if (!isRecord(value) || !validMetadataIdentity(value.Item) || value.Item.Id !== itemId
+    || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
+    || value.Revision.length > 19 || (value.Revision.length === 19 && value.Revision > "9223372036854775807")
+    || !validMetadataValues(value.Automatic, false) || !validMetadataValues(value.Effective, false)
+    || !validMetadataValues(value.Overrides, true) || !validMetadataValues(value.LockedValues, true)
+    || !validMetadataFields(value.LockedFields) || !validMetadataFields(value.EditableFields) || !validMetadataFields(value.InactiveFields)
+    || typeof value.LastEditedBy !== "string" || !validMetadataTimestamp(value.LastEditedAt)) throw invalidResponse();
+  if (value.LockedFields.length !== Object.keys(value.LockedValues).length
+    || !value.LockedFields.every((field) => Object.hasOwn(value.LockedValues, field))) throw invalidResponse();
+}
+
+function validateMetadataItems(value: MetadataItemsResponse, libraryId: string, startIndex: number, limit: number): void {
+  if (!isRecord(value) || !isRecord(value.Library) || value.Library.Id !== libraryId
+    || typeof value.Library.Name !== "string" || typeof value.Library.CollectionType !== "string"
+    || !Array.isArray(value.Items) || !Number.isSafeInteger(value.TotalRecordCount) || value.TotalRecordCount < 0
+    || value.StartIndex !== startIndex || value.Limit !== limit || value.Items.length > limit
+    || value.Items.length > value.TotalRecordCount) throw invalidResponse();
+  const ids = new Set<string>();
+  for (const item of value.Items) {
+    if (!validMetadataIdentity(item) || item.LibraryId !== libraryId || ids.has(item.Id)
+      || !validMetadataInteger(item.ProductionYear, 1, 9999)
+      || !validMetadataInteger(item.IndexNumber) || !validMetadataInteger(item.ParentIndexNumber)
+      || typeof item.HasOverrides !== "boolean" || !Number.isInteger(item.LockedFieldCount)
+      || item.LockedFieldCount < 0 || item.LockedFieldCount > metadataFieldNames.length) throw invalidResponse();
+    ids.add(item.Id);
+  }
+}
+
 export const adminApi = {
   getBootstrap(options: RequestOptions = {}): Promise<BootstrapResponse> {
     return request("/bootstrap", { ...options, public: true });
@@ -510,6 +679,35 @@ export const adminApi = {
 
   getLibraries(options: RequestOptions = {}): Promise<LibrariesResponse> {
     return request("/libraries", options);
+  },
+
+  async getLibraryItems(libraryId: string, query: MetadataItemsQuery = {}, options: RequestOptions = {}): Promise<MetadataItemsResponse> {
+    const revision = sessionRevision;
+    const startIndex = query.StartIndex ?? 0;
+    const limit = query.Limit ?? 50;
+    const parameters = new URLSearchParams({ StartIndex: String(startIndex), Limit: String(limit) });
+    if (query.SearchTerm) parameters.set("SearchTerm", query.SearchTerm);
+    if (query.Types?.length) parameters.set("Types", query.Types.join(","));
+    const result = await request<MetadataItemsResponse>(`/libraries/${encodeURIComponent(libraryId)}/items?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateMetadataItems(result, libraryId, startIndex, limit);
+    return result;
+  },
+
+  async getItemMetadata(itemId: string, options: RequestOptions = {}): Promise<MetadataDetail> {
+    const revision = sessionRevision;
+    const result = await request<MetadataDetail>(`/items/${encodeURIComponent(itemId)}/metadata`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateMetadataDetail(result, itemId);
+    return result;
+  },
+
+  async updateItemMetadata(itemId: string, input: MetadataUpdateInput, options: RequestOptions = {}): Promise<MetadataDetail> {
+    const revision = sessionRevision;
+    const result = await mutate<MetadataDetail>(`/items/${encodeURIComponent(itemId)}/metadata`, "PUT", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateMetadataDetail(result, itemId);
+    return result;
   },
 
   createLibrary(input: LibraryInput, options: RequestOptions = {}): Promise<LibraryResponse> {

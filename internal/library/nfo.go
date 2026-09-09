@@ -21,6 +21,7 @@ const maxLocalNFOBytes = 2 * 1024 * 1024
 type localMetadata struct {
 	value      *metadata.Metadata
 	hash, path string
+	raw        []byte
 }
 
 // localNFO reads the first present candidate. Invalid preferred files do not
@@ -48,7 +49,7 @@ func (state *scanState) localNFO(candidates []string, kind string, previous loca
 			return previous
 		}
 		digest := sha256.Sum256(data)
-		return localMetadata{value: &value, hash: hex.EncodeToString(digest[:]), path: filepath.ToSlash(candidate)}
+		return localMetadata{value: &value, hash: hex.EncodeToString(digest[:]), path: filepath.ToSlash(candidate), raw: previous.raw}
 	}
 	return localMetadata{}
 }
@@ -192,7 +193,46 @@ func encodeLocalMetadata(local localMetadata) ([]byte, error) {
 	if local.value == nil {
 		return nil, nil
 	}
-	return json.Marshal(local.value)
+	// Preserve future source fields while refreshing every field understood by
+	// this scanner. RawMessage also preserves unknown integers without float64.
+	object, err := metadataSourceObject(local.raw)
+	if err != nil {
+		return nil, err
+	}
+	known, err := json.Marshal(local.value)
+	if err != nil {
+		return nil, err
+	}
+	values, err := metadataSourceObject(known)
+	if err != nil {
+		return nil, err
+	}
+	// If a known field did not change, retain its original representation too.
+	// This includes extensions inside credits or other future nested objects.
+	// Changed fields are replaced as a unit so an extension cannot accidentally
+	// move from an old credit to a different person after an NFO update.
+	var previousKnown map[string]json.RawMessage
+	if len(local.raw) != 0 {
+		var previous metadata.Metadata
+		if err := json.Unmarshal(local.raw, &previous); err != nil {
+			return nil, err
+		}
+		encoded, err := json.Marshal(previous)
+		if err != nil {
+			return nil, err
+		}
+		previousKnown, err = metadataSourceObject(encoded)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for field, value := range values {
+		if _, exists := object[field]; exists && bytes.Equal(previousKnown[field], value) {
+			continue
+		}
+		object[field] = value
+	}
+	return json.Marshal(object)
 }
 
 func decodeLocalMetadata(raw []byte, local *localMetadata) error {
@@ -200,5 +240,6 @@ func decodeLocalMetadata(raw []byte, local *localMetadata) error {
 		return nil
 	}
 	local.value = &metadata.Metadata{}
+	local.raw = append([]byte(nil), raw...)
 	return json.Unmarshal(raw, local.value)
 }

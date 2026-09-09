@@ -1,0 +1,56 @@
+{
+  "owner": "goby-m5b-migration-audit-v1",
+  "phase": "after",
+  "schema_version": 14,
+  "application_database_port": 5432,
+  "tables": {
+    "server_settings": {
+      "count": 2,
+      "sha256": "79c783f650a4d6eb62d7be34d60df286f00f0bd0b77965cef76804ce5b742853"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "f639af6867c2ca4b5239187dca6fb7111670018d12b3f31077350dfccb47efb0"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "7fd1939c8a9f6e72cbf83ed1aeecd5c7e8d140df718c93dd73beffd5840433b3"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "73f5d58e72d293cd15dfccfc4c7fcba497d6221edcd0c456c8a51d5bc609a9c4"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "a654705fc203face68a0c4a78e875e6f9e8d74f55709f1873d2cda37b7c0c941"
+    },
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "f50061773497132ee9dfab57bdbeb8907754684c9f6ba4cea513287934f724b6"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "64141262978c84cc35a727f9b53a52b5b5eb23acafdd4715b26b33705eb50927"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "3cfdea15c62e4b576295983a1d1905ff95a110c6c0a88a1e95eee8add081cb94"
+    }
+  },
+  "status": "passed",
+  "existing_rows_preserved": true,
+  "initialized_metadata_state": {
+    "rows": 21,
+    "default_states": 21,
+    "source_projection_preserved": 21,
+    "source_keys_match": 21
+  }
+}

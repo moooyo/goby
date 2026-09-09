@@ -47,6 +47,7 @@ type storedFile struct {
 	modified                                                                               *time.Time
 	media                                                                                  *media.Info
 	local                                                                                  localMetadata
+	automatic                                                                              *MetadataValues
 }
 
 func (s *Store) scanLibrary(task *scanTask) (string, error) {
@@ -321,8 +322,24 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return state.store.persistProgress(state.task)
 	}
 	fullPath := filepath.Join(state.root.path, path)
-	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || stored.name != name || stored.itemType != itemType ||
-		stored.sortName != sortName || stored.overview != overview || stored.indexNumber != indexNumber || stored.parentIndexNumber != parentIndex ||
+	previousName, previousSort, previousOverview := stored.name, stored.sortName, stored.overview
+	previousIndex, previousParentIndex := stored.indexNumber, stored.parentIndexNumber
+	if stored.automatic != nil {
+		previousName, previousSort, previousOverview = stored.automatic.Name, stored.automatic.SortName, stored.automatic.Overview
+		if stored.itemType == "Episode" {
+			previousIndex, previousParentIndex = 0, 0
+			if stored.automatic.IndexNumber != nil {
+				previousIndex = *stored.automatic.IndexNumber
+			}
+			if stored.automatic.ParentIndexNumber != nil {
+				previousParentIndex = *stored.automatic.ParentIndexNumber
+			}
+		}
+	}
+	// Compare accepted automatic facts, not the overlaid display fields. A
+	// manual title or episode number must not make every cached scan a write.
+	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || previousName != name || stored.itemType != itemType ||
+		previousSort != sortName || previousOverview != overview || previousIndex != indexNumber || previousParentIndex != parentIndex ||
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
@@ -372,7 +389,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err != nil {
 		return err
 	}
-	if err := syncItemEntities(state.task.ctx, tx, id, localJSON); err != nil {
+	if err := syncScannedMetadata(state.task.ctx, tx, id); err != nil {
 		return err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
@@ -441,7 +458,7 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err != nil {
 		return "", err
 	}
-	if err := syncItemEntities(state.task.ctx, tx, id, localJSON); err != nil {
+	if err := syncScannedMetadata(state.task.ctx, tx, id); err != nil {
 		return "", err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
@@ -456,13 +473,16 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 }
 
 const storedFileColumns = `id, root_id, relative_path, file_identity, file_size, modified_at, media, COALESCE(parent_id, ''), path, name, type,
-	sort_name, overview, index_number, parent_index_number, local_metadata, local_metadata_hash, local_metadata_path`
+	sort_name, overview, index_number, parent_index_number, local_metadata, local_metadata_hash, local_metadata_path,
+	(SELECT jsonb_build_object('Name', ms.automatic->'Name', 'SortName', ms.automatic->'SortName',
+		'Overview', ms.automatic->'Overview', 'IndexNumber', ms.automatic->'IndexNumber',
+		'ParentIndexNumber', ms.automatic->'ParentIndexNumber') FROM item_metadata_state ms WHERE ms.item_id = items.id)`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
 	var item storedFile
-	var raw, localRaw []byte
+	var raw, localRaw, automaticRaw []byte
 	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType,
-		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path)
+		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw)
 	if err != nil {
 		return storedFile{}, err
 	}
@@ -474,6 +494,13 @@ func readStoredFile(row rowScanner) (storedFile, error) {
 	}
 	if err := decodeLocalMetadata(localRaw, &item.local); err != nil {
 		return storedFile{}, err
+	}
+	if len(automaticRaw) != 0 && string(automaticRaw) != "null" {
+		automatic, err := decodeMetadataValues(automaticRaw)
+		if err != nil {
+			return storedFile{}, err
+		}
+		item.automatic = &automatic
 	}
 	return item, nil
 }

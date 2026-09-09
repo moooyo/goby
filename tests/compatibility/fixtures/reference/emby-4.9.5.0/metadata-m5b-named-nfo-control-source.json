@@ -1,0 +1,11 @@
+{
+  "kind": "owned-source-observation",
+  "nfoPath": "/reference-metadata-m5b-source/Metadata M5b Owned (2026).nfo",
+  "nfoSha256": "5405ef77b65ef7142e3b945a050186cd00d6933dabaf7366edbbc5790ce11fc2",
+  "note": "The flat library initially ignored movie.nfo. This owned-only control uses the matching media basename.",
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T08:16:55.431313+00:00"
+  }
+}

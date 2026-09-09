@@ -7,6 +7,7 @@ import FolderOpenOutlined from '@mui/icons-material/FolderOpenOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
+import ListAltRounded from '@mui/icons-material/ListAltRounded';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, StorageRootsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
@@ -137,7 +138,7 @@ function DeleteLibraryDialog({ library, onClose, onDeleted }: { library: Library
   );
 }
 
-export function LibrariesPage({ onTasks }: { onTasks: () => void }) {
+export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void; onManageItems: (library: Library) => void }) {
   const [libraries, setLibraries] = useState<LibrariesResponse>();
   const [roots, setRoots] = useState<StorageRootsResponse>();
   const [error, setError] = useState<unknown>(null);
@@ -218,14 +219,17 @@ export function LibrariesPage({ onTasks }: { onTasks: () => void }) {
             <Stack component="ul" aria-label="Media libraries" spacing={2} sx={{ listStyle: 'none', p: 0, m: 0 }}>
               {libraries.Items.map((library) => (
                 <Paper component="li" key={library.Id} variant="outlined" sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+                  <Stack direction={{ xs: 'column', md: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
                     <Stack direction="row" sx={{ gap: 1.5, alignItems: 'center', minWidth: 0 }}>
                       <Box sx={{ bgcolor: '#E8F3F3', color: 'primary.main', borderRadius: 2, p: 1.3, display: 'flex' }}><VideoLibraryOutlined /></Box>
                       <Box sx={{ minWidth: 0 }}><Typography component="h3" variant="h3" sx={{ overflowWrap: 'anywhere' }}>{library.Name}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>{collectionName(library.CollectionType)}</Typography></Box>
                     </Stack>
-                    <Stack direction="row" sx={{ gap: 1, flexShrink: 0 }}>
-                      <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
-                      <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
+                    <Stack direction="row" sx={{ gap: 1.5, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
+                      <Button variant="contained" size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}>Manage items</Button>
+                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                        <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
+                        <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
+                      </Stack>
                     </Stack>
                   </Stack>
                   <Stack spacing={1} sx={{ mt: 2.5, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
