@@ -10,10 +10,17 @@ import (
 )
 
 func (s *Server) userDTO(user identity.User) map[string]any {
+	policy := embyUserPolicy(user)
+	if s.hls != nil {
+		limits := hlsUserLimits(s.cfg.Transcoding, user)
+		policy["EnablePlaybackRemuxing"] = limits.AllowRemux
+		policy["EnableAudioPlaybackTranscoding"] = limits.AllowAudioTranscode
+		policy["EnableVideoPlaybackTranscoding"] = limits.AllowVideoTranscode
+	}
 	return map[string]any{
 		"Id": user.ID, "Name": user.Name, "ServerId": s.serverID,
 		"HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword,
-		"Policy":        embyUserPolicy(user),
+		"Policy":        policy,
 		"Configuration": map[string]any{},
 	}
 }
@@ -236,5 +243,7 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		principal := r.Context().Value(principalKey).(identity.Principal)
 		s.eventHub.DisconnectSession(principal.SessionID)
 	}
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	s.hls.cancelMatching(principal.SessionID, "")
 	w.WriteHeader(http.StatusOK)
 }

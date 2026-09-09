@@ -43,7 +43,7 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			apiError(w, r, http.StatusForbidden, "session_mismatch", "Playback reports must belong to the authenticated session.")
 			return
 		}
-		_, data, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
+		play, data, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
 			PlaySessionID: body.PlaySessionID, ItemID: body.ItemID, MediaSourceID: body.MediaSourceID,
 			Event: event, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused, PlayerState: &body.PlayerStateUpdate})
 		if err != nil {
@@ -51,6 +51,11 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			return
 		}
 		s.notifier.Enqueue(principal.User.ID, data.ItemID, false)
+		if event == "Stopped" {
+			s.hls.cancelMatching(principal.SessionID, play.ID)
+		} else {
+			s.hls.touchMatching(principal.SessionID, play.ID)
+		}
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -66,10 +71,13 @@ func (s *Server) playbackPing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	_, _, err = s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{Event: "Ping", PlaySessionID: values["playsessionid"], ItemID: values["itemid"], MediaSourceID: values["mediasourceid"]})
+	play, _, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{Event: "Ping", PlaySessionID: values["playsessionid"], ItemID: values["itemid"], MediaSourceID: values["mediasourceid"]})
 	if err != nil && !errors.Is(err, library.ErrNotFound) {
 		s.playbackError(w, r, err)
 		return
+	}
+	if err == nil {
+		s.hls.touchMatching(principal.SessionID, play.ID)
 	}
 	// Unknown or foreign play-session keys are inert, matching the captured
 	// reference while disclosing no ownership information or changing state.

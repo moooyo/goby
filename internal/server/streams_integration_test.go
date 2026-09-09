@@ -454,7 +454,8 @@ func TestHTTPOriginalStreamsRejectConversionAndInvalidSelectors(t *testing.T) {
 			{"conversion", "stream?Static=false", http.StatusNotImplemented},
 			{"original-conversion", "original." + item.container + "?Static=false", http.StatusNotImplemented},
 			{"codec-request", "stream?VideoCodec=hevc", http.StatusNotImplemented},
-			{"playlist-alias", "master.m3u8?Static=true", http.StatusNotFound},
+			// HLS has a separate handler; this fixture deliberately disables it.
+			{"disabled-hls-service", "master.m3u8?Static=true", http.StatusServiceUnavailable},
 			{"real-filename-is-not-an-alias", url.PathEscape(filepath.Base(item.path)) + "?Static=true", http.StatusNotFound},
 			{"container-conversion", "stream.avi?Static=true", http.StatusUnsupportedMediaType},
 			{"conflicting-container", "stream." + item.container + "?Static=true&Container=avi", http.StatusBadRequest},

@@ -12,6 +12,7 @@ ExecStart=/usr/local/bin/goby
 WorkingDirectory=/var/lib/goby
 StateDirectory=goby
 CacheDirectory=goby
+CacheDirectoryMode=0700
 RuntimeDirectory=goby
 Restart=on-failure
 RestartSec=5s

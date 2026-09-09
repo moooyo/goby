@@ -1,11 +1,14 @@
 # Linux conversion engine
 
-The M4a engine provides conversion planning, PostgreSQL job records, bounded
-FFmpeg execution, and an owned HLS output cache. Its planner-to-segment path is
-verified with real Linux media. Connecting this engine to the Emby HLS HTTP graph
-and implementing the complete VOD seek strategy remain required work. The current
-server therefore continues to advertise its existing original-file playback
-surface, not a completed HLS transcoding API.
+The conversion engine provides planning, PostgreSQL job records, bounded FFmpeg
+execution, and an owned HLS output cache. Its planner-to-segment path is verified
+with real Linux media. The M4b [HLS adapter](hls-playback.md) connects it to playback
+negotiation, complete source timelines, authorized segment URLs, seek production,
+and cleanup. [Startup configuration](transcoding-configuration.md) enables the
+service by default and supplies cache, concurrency, output and hardware policy.
+Progressive conversion, universal audio, broader codecs and subtitles, hard
+resource isolation, actual GPU execution and real-client acceptance remain active
+requirements.
 
 ## Plans and output facts
 
@@ -50,18 +53,30 @@ caller's file offset. The manager owns and eventually closes the accepted source
 
 Arguments use explicit stream mapping, disabled subtitle/data/metadata mapping,
 a local protocol/demuxer allowlist, bounded thread settings, fixed output names,
-and no shell. The job directory starts empty. HLS uses `temp_file` publication,
-an append-only EVENT playlist, and retained completed MPEG-TS segments. Encoded
-video forces keyframes at the selected segment interval. Stream copy retains
-source keyframe spacing; neither synthetic equal-length segments nor unsupported
-independent-segment guarantees are invented. See the official [HLS muxer
-documentation](https://ffmpeg.org/ffmpeg-formats.html#hls).
+and no shell. The job directory starts empty. The original EVENT mode uses the
+HLS muxer with `temp_file` publication and retained MPEG-TS segments. The HTTP VOD
+path uses the segment muxer with explicit source-time cut points and stable global
+segment numbers. Its publisher validates and atomically exposes finalized output;
+private worker lists and temporary segments are never downloadable. Encoded video
+forces keyframes at the configured cuts. Stream copy retains source keyframe
+spacing; neither synthetic equal-length segments nor unsupported independent-
+segment guarantees are invented. See the official [HLS muxer documentation](https://ffmpeg.org/ffmpeg-formats.html#hls)
+and the [VOD timing and publication contract](hls-playback.md#full-timeline-and-seek).
+
+VOD segments restart MPEG-TS transport continuity counters. Their initial packets
+carry transport discontinuity indicators; the public VOD manifest also marks
+every non-first segment with `EXT-X-DISCONTINUITY`. Strict continuous decoding
+must pass across these declared boundaries, including output from different
+producer windows. Single-segment decoding alone cannot verify this contract.
 
 The measured playlist parser validates this closed output subset, exact segment
 names, sequence, decimal durations, and completion state. URI rewriting preserves
 those facts and accepts only bounded relative server URLs. It rejects external
 resources, path traversal, temporary files, unsupported key/map features, and
 tag injection. An unfinished event is never relabeled as a complete VOD.
+The client-facing VOD manifest comes from the complete source timeline, separately
+from the measured internal worker list; seeking can produce a requested range
+without truncating that public manifest.
 
 The runner processes `-progress pipe:1` incrementally with a bounded line size;
 normal progress can continue for hours without accumulating memory. Stderr keeps
@@ -105,8 +120,9 @@ permissions, filters, quality, and concurrent workloads remain unverified.
 
 ## Persistence and resource ownership
 
-Migration `0010` adds `encoding_jobs` to PostgreSQL. Creation rechecks the enabled
-user, Emby authentication/session/device, and active playback owner under locks,
+Migration `0010` adds `encoding_jobs` to PostgreSQL; `0011` expands the bounded
+plan JSON capacity to 128 KiB for immutable VOD source cut points. Creation
+rechecks the enabled user, Emby authentication/session/device, and active playback owner under locks,
 and checks expiry again at insertion. Records fix every scope dimension, source
 stamp, plan, and creation time. Status progresses from queued to running and a
 terminal result; completed/failed/cancelled/interrupted records cannot revive.
@@ -132,7 +148,9 @@ The manager's initial defaults are:
 | Time budgets | 30 s startup, 30 s without progress, 2 min idle, 4 h total runtime |
 | Monitoring interval | 250 ms |
 
-All limits are bounded options. Periodic byte/free-space checks can overshoot
+All limits are bounded options. The [configuration reference](transcoding-configuration.md)
+maps startup environment settings to manager limits and documents the private
+systemd cache parent and test deployment policy. Periodic byte/free-space checks can overshoot
 between observations; filesystem quotas or delegated cgroups are required for
 hard operating-system ceilings. Thread settings alone do not isolate CPU,
 memory, process count, or GPU resources.
@@ -147,19 +165,20 @@ owned output. Reader leases defer deletion until readers close.
 `Ensure` takes ownership of every supplied input, including duplicate/error paths.
 Identical scope/source/plan requests reuse work. `WaitReady` requires a published
 playlist and a complete segment. `Open` requires the exact scope and a generated
-filename; the API must still revalidate token, library, playback policy, and source
-before each call. Cancellation, startup/no-progress/idle/runtime limits, cache
+filename; the HTTP adapter additionally revalidates token, library, playback policy,
+and source before serving output, including cached and conditional requests.
+Cancellation, startup/no-progress/idle/runtime limits, cache
 failure, and shutdown reclaim owned resources. Caller timeouts do not abandon
 background cleanup. Conversion never updates watched or playback-position data.
 
-## Next integration work
+## VOD integration and remaining work
 
 The [reference study](../research/hls-reference.md) establishes full VOD manifests
 and stable global segment numbers, with `EXT-X-START` seek hints. Its successful
 segments also establish usable codec/packet evidence; its remux failures are not
-a behavior to reproduce. Before advertising HLS, the HTTP layer still needs the
-complete master/media/segment graph, full-duration seek scheduling, authenticated
-child URLs, per-request authorization/source checks, current transcode policy,
-ActiveEncodings cleanup, configuration/deployment integration, and real-client
-acceptance. The measured engine playlist is an internal artifact, not a shortcut
-around those requirements. The remaining M4/M5/M6 scope stays active.
+a behavior to reproduce. The [HTTP adapter](hls-playback.md) uses complete source
+timelines and bounded VOD producers with explicit cuts and global numbers.
+Its full-duration manifests are distinct from the measured internal worker list.
+Progressive conversion, universal audio, richer subtitle/codec profiles, hard
+worker isolation, actual hardware execution, and real third-party-client release
+acceptance remain required. The M4/M5/M6 scope stays active.

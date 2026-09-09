@@ -37,6 +37,11 @@ type indexedMediaSource struct {
 
 var mediaSourceWorkers = make(chan struct{}, 4)
 
+// ErrSourceChanged distinguishes a confirmed metadata/identity mismatch from
+// transient filesystem or database unavailability. Callers still receive
+// ErrUnavailable as well, preserving the existing delivery error contract.
+var ErrSourceChanged = errors.New("indexed media source changed")
+
 type mediaSourceWorkResult struct {
 	file   *os.File
 	source MediaFile
@@ -234,8 +239,11 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	defer parent.Close()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
-	if err != nil || !snapshot.matches(before) {
-		return nil, fmt.Errorf("%w: indexed media changed before opening; rescan required", ErrUnavailable)
+	if err != nil {
+		return nil, fmt.Errorf("%w: indexed media metadata cannot be read", ErrUnavailable)
+	}
+	if !snapshot.matches(before) {
+		return nil, fmt.Errorf("%w: %w before opening; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	file, err := openScanFile(parent, name)
 	if err != nil {
@@ -248,8 +256,11 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 		}
 	}()
 	opened, err := file.Stat()
-	if err != nil || !snapshot.matches(opened) || !sameMediaSourceFile(before, opened) {
-		return nil, fmt.Errorf("%w: indexed media changed while opening; rescan required", ErrUnavailable)
+	if err != nil {
+		return nil, fmt.Errorf("%w: open media metadata cannot be read", ErrUnavailable)
+	}
+	if !snapshot.matches(opened) || !sameMediaSourceFile(before, opened) {
+		return nil, fmt.Errorf("%w: %w while opening; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	currentRoot, err := s.openLibraryRoot(snapshot.root)
 	if err != nil {
@@ -269,9 +280,12 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	}
 	current, err := currentParent.Lstat(name)
 	after, afterErr := file.Stat()
-	if err != nil || afterErr != nil || !snapshot.matches(current) || !snapshot.matches(after) ||
+	if err != nil || afterErr != nil {
+		return nil, fmt.Errorf("%w: media metadata cannot be rechecked", ErrUnavailable)
+	}
+	if !snapshot.matches(current) || !snapshot.matches(after) ||
 		!sameMediaSourceFile(opened, current) || !sameMediaSourceFile(opened, after) {
-		return nil, fmt.Errorf("%w: media pathname or file changed while opening; rescan required", ErrUnavailable)
+		return nil, fmt.Errorf("%w: %w while rechecking; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		return nil, fmt.Errorf("%w: media descriptor cannot be positioned", ErrUnavailable)

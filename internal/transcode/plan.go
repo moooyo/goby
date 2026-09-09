@@ -18,22 +18,29 @@ type Hardware struct {
 // selects the source-time origin of this output. No token, input path, arbitrary
 // FFmpeg argument, or client-provided filter expression belongs in a plan.
 type Plan struct {
-	Container        string   `json:"Container"`
-	VideoCodec       string   `json:"VideoCodec,omitempty"`
-	AudioCodec       string   `json:"AudioCodec,omitempty"`
-	VideoStreamIndex int      `json:"VideoStreamIndex"`
-	AudioStreamIndex int      `json:"AudioStreamIndex"`
-	StartTicks       int64    `json:"StartTicks"`
-	DurationTicks    int64    `json:"DurationTicks"`
-	Width            int      `json:"Width,omitempty"`
-	Height           int      `json:"Height,omitempty"`
-	FrameRate        float64  `json:"FrameRate,omitempty"`
-	VideoBitrate     int64    `json:"VideoBitrate,omitempty"`
-	AudioBitrate     int64    `json:"AudioBitrate,omitempty"`
-	AudioChannels    int      `json:"AudioChannels,omitempty"`
-	AudioSampleRate  int      `json:"AudioSampleRate,omitempty"`
-	SegmentSeconds   int      `json:"SegmentSeconds"`
-	Hardware         Hardware `json:"Hardware"`
+	Container        string  `json:"Container"`
+	VideoCodec       string  `json:"VideoCodec,omitempty"`
+	AudioCodec       string  `json:"AudioCodec,omitempty"`
+	VideoStreamIndex int     `json:"VideoStreamIndex"`
+	AudioStreamIndex int     `json:"AudioStreamIndex"`
+	StartTicks       int64   `json:"StartTicks"`
+	DurationTicks    int64   `json:"DurationTicks"`
+	Width            int     `json:"Width,omitempty"`
+	Height           int     `json:"Height,omitempty"`
+	FrameRate        float64 `json:"FrameRate,omitempty"`
+	VideoBitrate     int64   `json:"VideoBitrate,omitempty"`
+	AudioBitrate     int64   `json:"AudioBitrate,omitempty"`
+	AudioChannels    int     `json:"AudioChannels,omitempty"`
+	AudioSampleRate  int     `json:"AudioSampleRate,omitempty"`
+	SegmentSeconds   int     `json:"SegmentSeconds"`
+	// VOD mode uses explicit source-time cut points and globally stable output
+	// numbers. Empty mode retains the measured EVENT output used by the engine.
+	SegmentMode         string   `json:"SegmentMode,omitempty"`
+	SegmentStartNumber  int      `json:"SegmentStartNumber,omitempty"`
+	EndTicks            int64    `json:"EndTicks,omitempty"`
+	SegmentTimes        string   `json:"SegmentTimes,omitempty"`
+	ReferenceStartTicks int64    `json:"ReferenceStartTicks,omitempty"`
+	Hardware            Hardware `json:"Hardware"`
 }
 
 // Scope fixes every ownership dimension for a conversion. Identifiers are

@@ -1,0 +1,25 @@
+{
+  "configured_user": "goby",
+  "effective_user": "goby",
+  "main_pid": 3176023,
+  "non_root": true,
+  "process_uids": [
+    995,
+    995,
+    995,
+    995
+  ],
+  "schema": {
+    "latest_migration": "0011_encoding_vod_plans.sql",
+    "migration_count": 11,
+    "schema_version": 11
+  },
+  "service": "goby-foundation-test.service",
+  "service_active": "active",
+  "service_started": "Wed 2026-09-09 12:12:18 CST",
+  "service_substate": "running",
+  "source_bytes": 967651,
+  "source_sha256": "332bce27f1e97d71d3ef7cffa59d8cf70cbcc51380a6b600e05048107432de4d",
+  "status": "passed",
+  "verification_output_mode": "0o600"
+}

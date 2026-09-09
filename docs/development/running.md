@@ -1,13 +1,13 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, and NextUp queries. Embedded/additional subtitles, conversion, client events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Progressive conversion, universal audio, embedded/additional subtitles, broader output formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement.
 
 ## Build inputs
 
 - Go 1.27.1; the module pins the supported toolchain minimum.
 - PostgreSQL, verified here with 17.11; connect using `GOBY_DATABASE_URL`.
 - Node compatible with the locked frontend dependencies. The initial frontend was built with Node 26.1.0; see [frontend instructions](../../web/admin/README.md).
-- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata. Original playback serves unchanged bytes; conversion and hardware execution are not yet advertised.
+- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata, and copied-video HLS uses packet seekpoints. Original playback serves unchanged bytes; supported HLS conversion uses bounded FFmpeg workers. Hardware decode/encode can be configured but actual GPU execution remains unverified.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
@@ -31,11 +31,12 @@ Do not run the application, tests, browser probes, or FFmpeg checks on the local
 4. Copy [the environment example](../../deploy/linux/.env.example) to `/etc/goby/goby.env`, restrict it to the service manager, and replace all example secrets. A systemd `EnvironmentFile` may remain root-readable only because systemd reads it before switching to the service user.
 5. Configure `GOBY_PUBLIC_URL` as the exact browser-facing origin. Deploy `/admin`, `/admin/v1`, and `/emby` on that origin. Set `GOBY_TRUSTED_PROXIES` to the actual proxy CIDRs and have the proxy append or replace `X-Forwarded-For` correctly, so login limits apply to individual clients. Forwarded headers from untrusted peers are ignored. This increment requires an origin without a subpath; reverse-proxy subpath support remains a compatibility task.
 6. Use HTTPS and secure cookies for remote access. `GOBY_COOKIE_SECURE=false` is an explicit setting for an isolated HTTP test instance, not the production default.
-7. Start the service. Migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
+7. Review [transcoding configuration](transcoding-configuration.md). Conversion is enabled by default, with a dedicated `/var/cache/goby/transcodes` cache beneath the systemd-managed private cache parent. Configure process/storage/output limits for the host; a custom cache needs a writable parent owned by `goby` and an appropriate service write exception. Configure hardware selections only with the matching driver and device access.
+8. Start the service. Migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
 
 An empty `GOBY_SETUP_TOKEN` prevents startup until setup has completed. After initialization, the deployment secret can be removed from the environment and the service restarted. Never include a real database password or setup token in Git.
 
-The systemd unit deliberately does not hide every device with `PrivateDevices=true`; later GPU profiles need configured render/NVIDIA device access. That does not imply that GPU access or hardware playback has already been verified.
+The systemd unit deliberately does not hide every device with `PrivateDevices=true`; configured VAAPI/QSV/CUDA/NVENC paths require the corresponding render/NVIDIA device access. Device access is not granted automatically, and actual hardware execution remains unverified on the current test host.
 
 ## Configuration
 
@@ -50,9 +51,14 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_COOKIE_SECURE` | Secure administrator cookies, default `true` |
 | `GOBY_TRUSTED_PROXIES` | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`; empty by default |
 | `GOBY_WEB_DIR` | Built administrator asset directory, default `web/admin/dist` |
-| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; consumed by subsequent media stages |
-| `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; consumed by subsequent media stages |
+| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS conversion workers |
+| `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans and copied-video HLS timeline probes |
+| `GOBY_TRANSCODING_ENABLED` | Enable configured conversion, default `true`; set `false` to disable it |
+| `GOBY_TRANSCODE_CACHE` | Dedicated conversion cache, default `/var/cache/goby/transcodes` |
+| `GOBY_HW_DECODER`, `GOBY_HW_ENCODER`, `GOBY_HW_DEVICE` | Independent hardware selections; software decoding/encoding and no device by default |
 | `GOBY_MEDIA_ROOTS` | Administrator-approved media directories; colon-separated on Linux; empty by default |
+
+The [transcoding configuration reference](transcoding-configuration.md) lists every `GOBY_TRANSCODE_*` setting and accepted range. Defaults allow two running jobs, one per user/authentication session, two configured FFmpeg threads, a 20 GiB cache, an 8 GiB per-job limit, and a 512 MiB free-space reserve. Output planning defaults to 20 Mbps, 1920x1080, and up to eight audio channels. These admission and periodic monitoring limits are not hard filesystem or cgroup ceilings. Settings are loaded at startup, and invalid explicit settings fail even when conversion is disabled.
 
 Configure media roots before creating a library. The service must be able to traverse and read those directories; the root endpoint checks actual directory readability under the service identity. Libraries can select only directories within the configured roots. An unavailable mount prevents its scan, retains existing catalog data, and does not prevent the identity/dashboard service from starting.
 
@@ -70,7 +76,9 @@ Migration `0009` adds indexed [external subtitles](external-subtitles.md). Run a
 
 [WebSocket events and remote control](websocket-events.md) use the existing authentication and catalog schema; no new migration or rescan is needed. A reverse proxy must forward the RFC 6455 upgrade for `/embywebsocket` (or a supported alias) and permit long-lived connections with protocol Ping/Pong. These connections require an Emby token, never an administrator cookie. In-memory notifications are not replayed after reconnect or service restart; clients must refresh current state through the HTTP APIs.
 
-Migration `0010` adds durable encoding-job records for the [conversion engine](transcode-engine.md). The engine has verified Linux process/cache management and real output decoding; its Emby HLS adapter and configuration are still being integrated. This migration does not enable a client-facing conversion capability, start an encoder, or require a media rescan.
+Migration `0010` adds durable encoding-job records for the [conversion engine](transcode-engine.md); `0011` expands bounded plan JSON to 128 KiB for immutable VOD source cut points. The [HLS adapter](hls-playback.md) now connects playback negotiation to full-duration manifests, authenticated segments, stable global numbering, seek production, and encoding cleanup for video and audio HLS. Compatible results advertise the supported delivery after applying the configured limits and current user permissions. Negotiation does not start an encoder; workers start when segment production is needed.
+
+These migrations require no additional rescan beyond the existing probe-version requirement. Enabled conversion initializes its owned cache and recovers interrupted job records during startup. Output revisions and timelines remain in memory, so clients must negotiate again after a restart; durable authentication and user progress remain in PostgreSQL. Progressive `Static=false`, universal-audio conversion, live/adaptive playlists, fMP4, and HLS subtitle delivery are not implemented by this adapter.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 
@@ -82,7 +90,7 @@ Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8
 
 The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate `/opt/goby-test/browser.env`; neither is part of the repository. Tests create randomly named PostgreSQL schemas and clean up only those schemas.
 
-The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
+The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
 Remote test commands, after loading the protected test environment:
 

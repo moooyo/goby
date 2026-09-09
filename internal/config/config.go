@@ -27,6 +27,7 @@ type Config struct {
 	TrustedProxies []netip.Prefix
 	MediaRoots     []string
 	StartupTimeout time.Duration
+	Transcoding    TranscodingConfig
 }
 
 func Load() (Config, error) {
@@ -61,6 +62,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
 	}
+	c.Transcoding, err = loadTranscoding()
+	if err != nil {
+		return Config{}, err
+	}
 	if err := c.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -86,7 +91,7 @@ func (c Config) Validate() error {
 	if c.StartupTimeout < time.Second || c.StartupTimeout > 30*time.Minute {
 		return fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
 	}
-	return nil
+	return c.Transcoding.Validate()
 }
 
 func env(name, fallback string) string {

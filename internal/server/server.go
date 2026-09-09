@@ -31,6 +31,7 @@ type Server struct {
 	eventHub      *events.Hub
 	sockets       *socketRuntime
 	notifier      *userDataNotifier
+	hls           *hlsRuntime
 }
 
 func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
@@ -48,6 +49,13 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	app.hls, err = newHLSRuntime(ctx, app)
+	if err != nil {
+		app.sockets.cancel()
+		_ = hub.Close()
+		_ = catalog.Close(ctx)
+		return nil, err
+	}
 	app.notifier = newUserDataNotifier(catalog, hub)
 	return app, nil
 }
@@ -77,6 +85,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerClientSessionRoutes(mux)
 	s.registerSubtitleRoutes(mux)
 	s.registerRemoteCommandRoutes(mux)
+	s.registerHLSRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})

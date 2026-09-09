@@ -82,6 +82,17 @@ func implementedFeatures() map[string]bool {
 	return map[string]bool{"UserManagement": true, "LibraryManagement": true, "Playback": true, "Transcoding": false, "HardwareDecoding": false, "HardwareEncoding": false}
 }
 
+func (s *Server) runtimeFeatures() map[string]bool {
+	features := implementedFeatures()
+	if s.hls != nil {
+		features["Transcoding"] = true
+		hardware := s.cfg.Transcoding.Hardware
+		features["HardwareDecoding"] = hardware.Decode != "" && hardware.Decode != "software"
+		features["HardwareEncoding"] = hardware.Encode != "" && hardware.Encode != "software"
+	}
+	return features
+}
+
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 	var userCount, sessionCount, libraryCount, itemCount int
 	err := s.db.QueryRow(r.Context(), `SELECT (SELECT count(*) FROM users),
@@ -97,15 +108,23 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		"Server":   map[string]string{"Id": s.serverID, "Name": s.cfg.ServerName, "Version": s.version},
 		"Database": map[string]string{"Status": "connected", "Engine": "PostgreSQL"},
 		"Counts":   map[string]int{"Users": userCount, "Libraries": libraryCount, "Items": itemCount, "ActiveSessions": sessionCount},
-		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": implementedFeatures(),
+		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": s.runtimeFeatures(),
 	})
 }
 
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
+	decode, encode := []string{}, []string{}
+	hardware := s.cfg.Transcoding.Hardware
+	if s.hls != nil && hardware.Decode != "" && hardware.Decode != "software" {
+		decode = append(decode, hardware.Decode)
+	}
+	if s.hls != nil && hardware.Encode != "" && hardware.Encode != "software" {
+		encode = append(encode, hardware.Encode)
+	}
 	jsonResponse(w, 200, map[string]any{
-		"ServerVersion": s.version, "Features": implementedFeatures(),
+		"ServerVersion": s.version, "Features": s.runtimeFeatures(),
 		"Toolchain": map[string]string{"Go": config.GoVersion, "FFmpeg": config.FFmpegVersion},
-		"Hardware":  map[string]any{"Verified": false, "Configured": false, "Decode": []string{}, "Encode": []string{}},
+		"Hardware":  map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Decode": decode, "Encode": encode},
 	})
 }
 

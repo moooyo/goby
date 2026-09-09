@@ -57,7 +57,7 @@ func (s *Server) closeSockets(ctx context.Context) error {
 			s.notifier.Close()
 			runtime.wg.Wait()
 			// Cleanup continues even if an individual Close caller times out.
-			runtime.shutdownErr = s.library.Close(context.Background())
+			runtime.shutdownErr = errors.Join(s.hls.Close(context.Background()), s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

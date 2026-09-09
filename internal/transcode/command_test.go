@@ -152,3 +152,51 @@ func hasArgumentPair(args []string, flag, value string) bool {
 	}
 	return false
 }
+
+func TestBuildArgsVODUsesSourceRelativeCutsAndGlobalNumbers(t *testing.T) {
+	p := Plan{Container: "ts", VideoCodec: "copy", AudioCodec: "copy", VideoStreamIndex: 0, AudioStreamIndex: 1,
+		DurationTicks: 12 * ticksPerSecond, StartTicks: 6 * ticksPerSecond, EndTicks: 11 * ticksPerSecond,
+		SegmentSeconds: 3, SegmentMode: "vod", SegmentStartNumber: 2, SegmentTimes: "90000000"}
+	args, err := BuildArgs(p, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, pair := range [][2]string{{"-f", "segment"}, {"-segment_times", "3.0000000"}, {"-initial_offset", "7.0000000"},
+		{"-segment_start_number", "2"}, {"-t", "5.0000000"}, {"-segment_list", "segment-list.m3u8"},
+		{"-segment_format_options", "mpegts_copyts=1:mpegts_flags=+initial_discontinuity"}, {"-bsf:a", "noise=drop='lt(pts,0)'"}} {
+		if !hasArgumentPair(args, pair[0], pair[1]) {
+			t.Errorf("missing %q %q", pair[0], pair[1])
+		}
+	}
+	if args[len(args)-1] != "segment-%06d.ts.tmp" || slices.Contains(args, "-output_ts_offset") {
+		t.Fatal("VOD output must be private until closed")
+	}
+	p.StartTicks, p.ReferenceStartTicks, p.SegmentTimes, p.SegmentStartNumber = 0, 213330, "20213330,40213330", 0
+	args, err = BuildArgs(p, 1)
+	if err != nil || !hasArgumentPair(args, "-segment_times", "2.0000000,4.0000000") {
+		t.Fatalf("reference offset: %v, %v", args, err)
+	}
+	for name, change := range map[string]func(*Plan){
+		"past end":         func(p *Plan) { p.SegmentTimes = "120000000" },
+		"duplicate":        func(p *Plan) { p.SegmentTimes = "30000000,30000000" },
+		"descending":       func(p *Plan) { p.SegmentTimes = "60000000,30000000" },
+		"leading zero":     func(p *Plan) { p.SegmentTimes = "030000000" },
+		"trailing comma":   func(p *Plan) { p.SegmentTimes = "30000000," },
+		"before reference": func(p *Plan) { p.SegmentTimes = "10" },
+		"wrong mode":       func(p *Plan) { p.SegmentMode = "live" },
+		"excess numbering": func(p *Plan) { p.SegmentStartNumber = MaxPlaylistSegments },
+		"reversed window":  func(p *Plan) { p.EndTicks = p.StartTicks },
+	} {
+		t.Run(name, func(t *testing.T) {
+			q := p
+			change(&q)
+			if name == "reversed window" {
+				q.StartTicks = 3 * ticksPerSecond
+				q.EndTicks = 2 * ticksPerSecond
+			}
+			if err := ValidatePlan(q); !errors.Is(err, ErrInvalidPlan) {
+				t.Fatalf("got %v", err)
+			}
+		})
+	}
+}

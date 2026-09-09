@@ -248,7 +248,10 @@ func conversionModeAllowed(selection selectedStreams, kind DlnaProfileType, requ
 		return false
 	}
 	if videoCopy && audioCopy {
-		return limits.AllowRemux && !isFalse(request.EnableDirectStream)
+		// A client may accept a remux through its transcoding delivery URL even
+		// when direct streaming is disabled. The delivery flags do not grant
+		// permission to remux; that independent user policy remains mandatory.
+		return limits.AllowRemux && (!isFalse(request.EnableDirectStream) || !isFalse(request.EnableTranscoding))
 	}
 	return !isFalse(request.EnableTranscoding)
 }

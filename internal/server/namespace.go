@@ -74,7 +74,10 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(3, "Subtitles")
 	case "Videos", "Audio":
 		literal(1, "ActiveEncodings")
-		literal(2, "stream")
+		literal(2, "stream", "master.m3u8", "main.m3u8", "hls1")
+		if len(parts) > 1 && parts[1] == "ActiveEncodings" {
+			literal(2, "Delete")
+		}
 		literal(3, "Subtitles")
 	case "Sessions":
 		literal(1, "Playing", "Logout", "Capabilities")

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -521,5 +522,84 @@ func TestEncodingRepositoryParentDeletionHonorsExistingRetention(t *testing.T) {
 		if err := pool.QueryRow(ctx, fmt.Sprintf("SELECT count(*) FROM %s", pgx.Identifier{table}.Sanitize())).Scan(&count); err != nil || count != 2 {
 			t.Errorf("playback history deletion changed %s count = %d: %v", table, count, err)
 		}
+	}
+}
+
+func encodingVODCutTimes(start int64, count int) string {
+	var cuts strings.Builder
+	for index := 1; index <= count; index++ {
+		if index > 1 {
+			cuts.WriteByte(',')
+		}
+		cuts.WriteString(strconv.FormatInt(start+int64(index)*30_000_000, 10))
+	}
+	return cuts.String()
+}
+
+func TestEncodingRepositoryPersistsLargeImmutableVODPlans(t *testing.T) {
+	ctx, pool, repository, first, _ := encodingRepositoryFixture(t)
+	record := encodingFixtureRecord(t, first)
+	plan := &record.Spec.Plan
+	plan.SegmentMode, plan.SegmentStartNumber = "vod", 6
+	plan.StartTicks, plan.EndTicks, plan.DurationTicks = 180_000_000, 45_210_000_000, 60_000_000_000
+	plan.SegmentTimes = encodingVODCutTimes(plan.StartTicks, 1500)
+	encoded, err := json.Marshal(*plan)
+	if err != nil || len(encoded) <= 8192 || len(encoded) > transcode.MaxPlanBytes || len(plan.SegmentTimes) > 64*1024 {
+		t.Fatalf("large VOD fixture has unexpected encoded size %d: %v", len(encoded), err)
+	}
+	if _, err := pool.Exec(ctx, "UPDATE play_sessions SET duration_ticks = $2 WHERE id = $1", first.PlaySessionID, plan.DurationTicks); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Create(ctx, record); err != nil {
+		t.Fatalf("persist a legal VOD plan beyond the previous 8 KiB limit: %v", err)
+	}
+	if stored := encodingStoredRecord(t, ctx, pool, record.ID); !reflect.DeepEqual(stored, record) {
+		t.Fatal("large VOD cut points or immutable source fields changed on persistence")
+	}
+	record.State, record.OutputBytes = "running", 4096
+	if err := repository.Update(ctx, record); err != nil {
+		t.Fatalf("update a large VOD encoding: %v", err)
+	}
+	for _, test := range []struct {
+		name string
+		edit func(*transcode.Plan)
+	}{
+		{"global segment number", func(p *transcode.Plan) { p.SegmentStartNumber++ }},
+		{"source start", func(p *transcode.Plan) { p.StartTicks++ }},
+		{"window end", func(p *transcode.Plan) { p.EndTicks++ }},
+		{"source cut points", func(p *transcode.Plan) { _, p.SegmentTimes, _ = strings.Cut(p.SegmentTimes, ",") }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			changed := record
+			test.edit(&changed.Spec.Plan)
+			if err := repository.Update(ctx, changed); !errors.Is(err, transcode.ErrRecordConflict) {
+				t.Errorf("immutable VOD window change returned %v", err)
+			}
+		})
+	}
+	if stored := encodingStoredRecord(t, ctx, pool, record.ID); !reflect.DeepEqual(stored, record) {
+		t.Fatal("rejected VOD window changes altered the persisted plan")
+	}
+}
+
+func TestEncodingRepositoryRejectsVODPlansBeyondPersistedSizeLimit(t *testing.T) {
+	ctx, pool, repository, first, _ := encodingRepositoryFixture(t)
+	record := encodingFixtureRecord(t, first)
+	record.Spec.Plan.SegmentMode = "vod"
+	record.Spec.Plan.DurationTicks = 1_000_000_000_000
+	record.Spec.Plan.EndTicks = 900_000_000_000
+	record.Spec.Plan.SegmentTimes = encodingVODCutTimes(0, 15000)
+	encoded, err := json.Marshal(record.Spec.Plan)
+	if err != nil || len(encoded) <= transcode.MaxPlanBytes {
+		t.Fatalf("oversized VOD fixture has unexpected encoded size %d: %v", len(encoded), err)
+	}
+	// The cut-list bound is deliberately narrower than MaxPlanBytes, so a plan
+	// exceeding the storage budget must already be rejected by semantic checks.
+	if err := repository.Create(ctx, record); !errors.Is(err, transcode.ErrInvalidRecord) {
+		t.Errorf("oversized VOD plan returned %v", err)
+	}
+	var count int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM encoding_jobs").Scan(&count); err != nil || count != 0 {
+		t.Errorf("oversized VOD plan persisted %d encodings: %v", count, err)
 	}
 }

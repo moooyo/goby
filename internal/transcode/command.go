@@ -20,11 +20,12 @@ var (
 )
 
 const (
-	ticksPerSecond   = int64(10_000_000)
-	maxDurationTicks = 30 * 24 * 60 * 60 * ticksPerSecond
-	maxStreamIndex   = 4095
-	maxThreads       = 64
-	inputFormats     = "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,avi,asf,flv,ogg," +
+	ticksPerSecond       = int64(10_000_000)
+	maxDurationTicks     = 30 * 24 * 60 * 60 * ticksPerSecond
+	maxStreamIndex       = 4095
+	maxThreads           = 64
+	maxSegmentTimesBytes = 64 * 1024
+	inputFormats         = "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,avi,asf,flv,ogg," +
 		"mp3,flac,wav,aiff,aac,ac3,eac3,dts,truehd,ape,wv,tta,tak,mpc,mpc8,dsf,iff,amr," +
 		"mpeg,mpegts,mpegvideo,h264,hevc,av1,ivf,mjpeg"
 )
@@ -42,6 +43,9 @@ func ValidatePlan(p Plan) error {
 	}
 	if p.SegmentSeconds < 1 || p.SegmentSeconds > 10 {
 		return invalid("segment duration")
+	}
+	if _, err := planSegmentTimes(p); err != nil {
+		return err
 	}
 	if p.VideoStreamIndex < -1 || p.VideoStreamIndex > maxStreamIndex || p.AudioStreamIndex < -1 || p.AudioStreamIndex > maxStreamIndex ||
 		(p.VideoStreamIndex < 0 && p.AudioStreamIndex < 0) || (p.VideoStreamIndex >= 0 && p.VideoStreamIndex == p.AudioStreamIndex) {
@@ -145,7 +149,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		return nil, ErrInvalidThreads
 	}
 	threadCount := strconv.Itoa(threads)
-	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "warning", "-y",
+	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y",
 		"-progress", "pipe:1", "-stats_period", "0.5", "-filter_threads", threadCount,
 		"-filter_complex_threads", threadCount}
 	decode, encode := hardwareSelection(p.Hardware)
@@ -178,7 +182,11 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	if p.StartTicks > 0 {
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
 	}
-	args = append(args, "-i", "/proc/self/fd/3", "-t", tickSeconds(p.DurationTicks-p.StartTicks), "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
+	end := p.DurationTicks
+	if p.EndTicks > 0 {
+		end = p.EndTicks
+	}
+	args = append(args, "-i", "/proc/self/fd/3", "-t", tickSeconds(end-p.StartTicks), "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
 	if p.VideoStreamIndex >= 0 {
 		args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex))
 	} else {
@@ -197,8 +205,16 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		case "vaapi", "qsv", "nvenc":
 			codec = "h264_" + encode
 		}
+		forcedFrames := "expr:gte(t,n_forced*" + strconv.Itoa(p.SegmentSeconds) + ")"
+		if p.SegmentMode == "vod" {
+			forcedFrames = "0"
+			cuts, _ := planSegmentTimes(p)
+			for _, cut := range cuts {
+				forcedFrames += "," + tickSeconds(cut-p.StartTicks)
+			}
+		}
 		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-vf", videoFilter(p, decode, encode), "-bf", "0",
-			"-force_key_frames", "expr:gte(t,n_forced*"+strconv.Itoa(p.SegmentSeconds)+")")
+			"-force_key_frames", forcedFrames)
 		if p.FrameRate > 0 {
 			args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
 		}
@@ -238,6 +254,38 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 			args = append(args, "-profile:a", "aac_low")
 		}
 	}
+	if p.SegmentMode == "vod" {
+		if p.AudioStreamIndex >= 0 {
+			// Demuxer seeking may retain substantial audio pre-roll. Drop only
+			// packets before this run's source origin; never use output -ss,
+			// which can also discard a keyframe whose decode timestamp is negative.
+			args = append(args, "-bsf:a", "noise=drop='lt(pts,0)'")
+		}
+		args = append(args, "-avoid_negative_ts", "disabled", "-max_muxing_queue_size", "1024", "-f", "segment",
+			// Each segment has a new MPEG-TS muxer and continuity-counter
+			// origin. Declare that transport reset on every PID's first packet;
+			// the HLS manifest separately declares the actual segment boundaries.
+			"-segment_format", "mpegts", "-segment_format_options", "mpegts_copyts=1:mpegts_flags=+initial_discontinuity", "-reset_timestamps", "0",
+			// Segment scheduling converts the first reference timestamp to
+			// integer microseconds. One microsecond prevents that rounding from
+			// skipping an otherwise exact cut (notably MP3's 47/48000 origin).
+			"-segment_time_delta", "0.000001",
+			"-initial_offset", tickSeconds(p.StartTicks+ticksPerSecond), "-segment_start_number", strconv.Itoa(p.SegmentStartNumber),
+			"-segment_list", "segment-list.m3u8", "-segment_list_type", "m3u8")
+		cuts, _ := planSegmentTimes(p)
+		if len(cuts) > 0 {
+			times := make([]string, len(cuts))
+			for i, cut := range cuts {
+				times[i] = tickSeconds(cut - p.StartTicks - p.ReferenceStartTicks)
+			}
+			args = append(args, "-segment_times", strings.Join(times, ","))
+		} else {
+			// A single requested segment must not fall back to the muxer's
+			// default periodic split, even if it contains many source keyframes.
+			args = append(args, "-segment_time", tickSeconds(end-p.StartTicks+ticksPerSecond))
+		}
+		return append(args, "segment-%06d.ts.tmp"), nil
+	}
 	// Stream copy retains the source's keyframe spacing. Neither mode claims
 	// independent segments without inspecting the encoded result; split_by_time
 	// is deliberately absent because it can create undecodable segment starts.
@@ -246,6 +294,42 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		"-hls_playlist_type", "event", "-hls_flags", "temp_file", "-start_number", "0",
 		"-hls_segment_filename", "segment-%06d.ts", "main.m3u8")
 	return args, nil
+}
+
+func planSegmentTimes(p Plan) ([]int64, error) {
+	invalid := func() ([]int64, error) { return nil, fmt.Errorf("%w: segment timeline", ErrInvalidPlan) }
+	if p.SegmentMode == "" {
+		if p.SegmentStartNumber != 0 || p.EndTicks != 0 || p.SegmentTimes != "" || p.ReferenceStartTicks != 0 {
+			return invalid()
+		}
+		return nil, nil
+	}
+	end := p.DurationTicks
+	if p.EndTicks > 0 {
+		end = p.EndTicks
+	}
+	if p.SegmentMode != "vod" || p.EndTicks < 0 || end > p.DurationTicks || end <= p.StartTicks ||
+		p.SegmentStartNumber < 0 || p.SegmentStartNumber >= MaxPlaylistSegments || len(p.SegmentTimes) > maxSegmentTimesBytes ||
+		p.ReferenceStartTicks < 0 || p.ReferenceStartTicks >= end-p.StartTicks {
+		return invalid()
+	}
+	if p.SegmentTimes == "" {
+		return nil, nil
+	}
+	parts := strings.Split(p.SegmentTimes, ",")
+	if len(parts)+p.SegmentStartNumber >= MaxPlaylistSegments {
+		return invalid()
+	}
+	result := make([]int64, len(parts))
+	previous := p.StartTicks + p.ReferenceStartTicks
+	for i, part := range parts {
+		cut, err := strconv.ParseInt(part, 10, 64)
+		if err != nil || strconv.FormatInt(cut, 10) != part || cut <= previous || cut >= end {
+			return invalid()
+		}
+		result[i], previous = cut, cut
+	}
+	return result, nil
 }
 
 func tickSeconds(ticks int64) string {

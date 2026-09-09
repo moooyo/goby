@@ -453,6 +453,20 @@ func (m *Manager) lookupLocked(scope Scope, id string) (*managedJob, error) {
 	return j, nil
 }
 
+// Snapshot returns the current in-memory status without refreshing its idle
+// lease. A stopped or failed job returns both its record and its classified
+// error. A completed job can therefore retain State "completed" while returning
+// ErrJobCancelled after its cached output has been explicitly invalidated.
+func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	j, err := m.lookupLocked(scope, id)
+	if err != nil {
+		return Record{}, err
+	}
+	return j.record, jobError(j)
+}
+
 // WaitReady waits for an atomically published playlist and at least one
 // completed segment. It does not expose FFmpeg temporary output files.
 func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record, error) {
@@ -513,50 +527,112 @@ func (m *Manager) Open(ctx context.Context, scope Scope, id, name string) (*Read
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		m.mu.Lock()
-		j, err := m.lookupLocked(scope, id)
+		attempt, err := m.tryOpen(scope, id, name)
 		if err == nil {
-			err = jobError(j)
-		}
-		if err != nil {
-			m.mu.Unlock()
-			return nil, err
-		}
-		if m.readers >= m.options.MaxReaders || j.readers >= m.options.MaxJobReaders {
-			m.mu.Unlock()
-			return nil, ErrBusy
-		}
-		j.readers++
-		m.readers++
-		m.touchLocked(j)
-		changed, finished := j.changed, j.finished
-		m.mu.Unlock()
-		m.filesMu.Lock()
-		file, openErr := m.cache.OpenJobFile(id, name)
-		m.filesMu.Unlock()
-		if openErr == nil {
-			info, statErr := file.Stat()
-			if statErr != nil || info.Size() <= 0 || info.Size() > m.options.MaxJobBytes || (name == "main.m3u8" && info.Size() > 1<<20) {
-				_ = file.Close()
-				m.releaseReader(j)
-				return nil, ErrOutputUnavailable
+			if err := ctx.Err(); err != nil {
+				_ = attempt.handle.Close()
+				return nil, err
 			}
-			return &ReadHandle{File: file, release: func() { m.releaseReader(j) }}, nil
+			return attempt.handle, nil
 		}
-		m.releaseReader(j)
-		if !errors.Is(openErr, os.ErrNotExist) || finished {
-			return nil, ErrOutputUnavailable
+		if !attempt.pending || !errors.Is(err, ErrOutputUnavailable) {
+			return nil, err
 		}
 		timer := time.NewTimer(m.options.pollInterval)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
 			return nil, ctx.Err()
-		case <-changed:
+		case <-attempt.changed:
 			timer.Stop()
 		case <-timer.C:
 		}
 	}
+}
+
+// TryOpen performs one output lookup without waiting for startup or a future
+// segment. It returns ErrOutputUnavailable until the job is ready and the final
+// requested file exists. Filesystem access and manager locks still synchronize
+// normally; this method performs no database authorization. The caller must
+// revalidate its current token, user policy, source, and library permission.
+func (m *Manager) TryOpen(scope Scope, id, name string) (*ReadHandle, error) {
+	attempt, err := m.tryOpen(scope, id, name)
+	return attempt.handle, err
+}
+
+type outputAttempt struct {
+	handle  *ReadHandle
+	changed <-chan struct{}
+	pending bool
+}
+
+func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
+	var attempt outputAttempt
+	if !validOutputName(name) {
+		return attempt, ErrOutputUnavailable
+	}
+	m.mu.Lock()
+	j, err := m.lookupLocked(scope, id)
+	if err == nil {
+		err = jobError(j)
+	}
+	if err != nil {
+		m.mu.Unlock()
+		return attempt, err
+	}
+	m.touchLocked(j)
+	attempt.changed = j.changed
+	if !j.ready {
+		attempt.pending = !j.finished
+		m.mu.Unlock()
+		return attempt, ErrOutputUnavailable
+	}
+	if m.readers >= m.options.MaxReaders || j.readers >= m.options.MaxJobReaders {
+		m.mu.Unlock()
+		return attempt, ErrBusy
+	}
+	j.readers++
+	m.readers++
+	m.mu.Unlock()
+	m.filesMu.Lock()
+	file, openErr := m.cache.OpenJobFile(id, name)
+	m.filesMu.Unlock()
+	if openErr == nil {
+		info, statErr := file.Stat()
+		if statErr != nil || info.Size() <= 0 || info.Size() > m.options.MaxJobBytes || (name == "main.m3u8" && info.Size() > 1<<20) {
+			openErr = ErrOutputUnavailable
+		}
+	}
+	// Pinning prevents reclamation during the filesystem operation. Recheck
+	// cancellation and shutdown before publishing the newly opened handle.
+	m.mu.Lock()
+	current, err := m.lookupLocked(scope, id)
+	if err == nil && current != j {
+		err = ErrJobNotFound
+	}
+	if err == nil {
+		err = jobError(j)
+	}
+	if err == nil {
+		attempt.changed = j.changed
+		if !j.ready {
+			attempt.pending = !j.finished
+			err = ErrOutputUnavailable
+		} else if openErr != nil {
+			attempt.pending = errors.Is(openErr, os.ErrNotExist) && !j.finished
+			err = ErrOutputUnavailable
+		}
+	}
+	m.mu.Unlock()
+	if err != nil {
+		if file != nil {
+			_ = file.Close()
+		}
+		m.releaseReader(j)
+		return attempt, err
+	}
+	attempt.handle = &ReadHandle{File: file, release: func() { m.releaseReader(j) }}
+	return attempt, nil
 }
 
 func (m *Manager) releaseReader(j *managedJob) {
@@ -595,6 +671,30 @@ func (m *Manager) Cancel(ctx context.Context, scope Scope) error {
 		case <-done:
 		}
 	}
+	return nil
+}
+
+// CancelJob invalidates exactly one job without waiting for its process to
+// exit. Other jobs with the same scope, including a replacement seek producer,
+// remain usable. Completed jobs retain their durable completion history, while
+// their cached files are reclaimed after all already-open readers close.
+func (m *Manager) CancelJob(id string, scope Scope) error {
+	if !validScope(scope) {
+		return ErrInvalidScope
+	}
+	m.mu.Lock()
+	j, err := m.lookupLocked(scope, id)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
+	if j.finished {
+		m.invalidateFinishedLocked(j, "cancelled")
+	} else {
+		m.stopLocked(j, "cancelled")
+	}
+	m.mu.Unlock()
+	m.signal()
 	return nil
 }
 

@@ -22,6 +22,10 @@ var (
 	ErrRecordUnauthorized = errors.New("encoding scope is no longer authorized")
 )
 
+// MaxPlanBytes bounds the persisted JSON representation of an encoding plan.
+// Individual fields, including VOD cut points, have narrower semantic limits.
+const MaxPlanBytes = 128 * 1024
+
 // Repository persists bounded status projections, never a media file or token.
 // Recover must run only after the server acquires exclusive catalog ownership.
 type Repository interface {
@@ -221,7 +225,7 @@ func validateEncodingRecord(record Record) ([]byte, error) {
 		return nil, ErrInvalidRecord
 	}
 	plan, err := json.Marshal(record.Spec.Plan)
-	if err != nil || len(plan) > 8192 {
+	if err != nil || len(plan) > MaxPlanBytes {
 		return nil, ErrInvalidRecord
 	}
 	return plan, nil

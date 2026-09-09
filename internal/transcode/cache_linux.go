@@ -578,5 +578,12 @@ func validOutputName(name string) bool {
 }
 
 func validCacheFileName(name string) bool {
+	switch name {
+	case "segment-list.m3u8", "segment-list.m3u8.tmp", "main.m3u8.publish.tmp":
+		// The VOD runner publishes final segments before exposing its public
+		// playlist. These exact private names are accounted and recoverable,
+		// but validOutputName deliberately excludes all of them.
+		return true
+	}
 	return len(name) <= 255 && validOutputName(strings.TrimSuffix(name, ".tmp"))
 }

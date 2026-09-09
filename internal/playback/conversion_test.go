@@ -96,7 +96,7 @@ func TestPlanConversionAuthorizationsAndCopyFlags(t *testing.T) {
 	}{
 		{"all permissions absent", func(_ *Request, limits *ConversionLimits) { *limits = ConversionLimits{} }, "", "", true},
 		{"transcoding disabled still permits remux", func(request *Request, _ *ConversionLimits) { request.EnableTranscoding = profileTestPtr(false) }, "copy", "copy", false},
-		{"direct stream disabled requires an encoder", func(request *Request, _ *ConversionLimits) { request.EnableDirectStream = profileTestPtr(false) }, "copy", "aac", false},
+		{"direct stream disabled preserves remux through transcoding delivery", func(request *Request, _ *ConversionLimits) { request.EnableDirectStream = profileTestPtr(false) }, "copy", "copy", false},
 		{"both conversion modes disabled", func(request *Request, _ *ConversionLimits) {
 			request.EnableDirectStream = profileTestPtr(false)
 			request.EnableTranscoding = profileTestPtr(false)
@@ -130,6 +130,64 @@ func TestPlanConversionAuthorizationsAndCopyFlags(t *testing.T) {
 			decision := conversionTestPlan(t, conversionTestSource(), request, limits)
 			if decision.Plan.VideoCodec != test.video || decision.Plan.AudioCodec != test.audio {
 				t.Fatalf("got %+v, expected video=%s audio=%s", decision.Plan, test.video, test.audio)
+			}
+		})
+	}
+}
+
+func TestPlanConversionTranscodingDeliveryCanUseAuthorizedRemux(t *testing.T) {
+	// The hls-m4a-remux-playbackinfo reference advertises transcoding delivery
+	// with both direct delivery flags disabled while its HLS payload is remuxed.
+	for _, test := range []struct {
+		name         string
+		mutate       func(*Request, *ConversionLimits)
+		video, audio string
+		decline      bool
+	}{
+		{"remux without encoder permissions", func(_ *Request, limits *ConversionLimits) {
+			limits.AllowAudioTranscode, limits.AllowVideoTranscode = false, false
+		}, "copy", "copy", false},
+		{"remux policy cannot be replaced by transcoding delivery", func(_ *Request, limits *ConversionLimits) {
+			limits.AllowRemux = false
+		}, "copy", "aac", false},
+		{"missing remux and encoder permissions", func(_ *Request, limits *ConversionLimits) {
+			*limits = ConversionLimits{}
+		}, "", "", true},
+		{"every delivery mode disabled", func(request *Request, _ *ConversionLimits) {
+			request.EnableTranscoding = profileTestPtr(false)
+		}, "", "", true},
+		{"explicit video copy prohibition", func(request *Request, _ *ConversionLimits) {
+			request.AllowVideoStreamCopy = profileTestPtr(false)
+		}, "h264", "copy", false},
+		{"explicit audio copy prohibition", func(request *Request, _ *ConversionLimits) {
+			request.AllowAudioStreamCopy = profileTestPtr(false)
+		}, "copy", "aac", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			source, request, limits := conversionTestSource(), conversionTestRequest(), conversionTestLimits()
+			request.DeviceProfile.DirectPlayProfiles = nil
+			request.EnableDirectPlay, request.EnableDirectStream, request.EnableTranscoding = profileTestPtr(false), profileTestPtr(false), profileTestPtr(true)
+			request.AllowVideoStreamCopy, request.AllowAudioStreamCopy = profileTestPtr(true), profileTestPtr(true)
+			test.mutate(&request, &limits)
+			wantOriginal, err := Evaluate(source, request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var decision ConversionDecision
+			if test.decline {
+				decision = conversionTestDeclined(t, source, request, limits)
+			} else {
+				decision = conversionTestPlan(t, source, request, limits)
+				wantMethod := "Transcode"
+				if test.video == "copy" && test.audio == "copy" {
+					wantMethod = "DirectStream"
+				}
+				if decision.Plan.VideoCodec != test.video || decision.Plan.AudioCodec != test.audio || decision.Method != wantMethod {
+					t.Fatalf("delivery flags changed the physical conversion or bypassed policy: %+v", decision)
+				}
+			}
+			if !reflect.DeepEqual(decision.Original, wantOriginal) || decision.Original.DirectPlay || decision.Original.DirectStream {
+				t.Fatalf("HLS delivery changed the independent original-file decision: %+v", decision.Original)
 			}
 		})
 	}

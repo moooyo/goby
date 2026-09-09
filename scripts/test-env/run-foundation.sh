@@ -40,6 +40,38 @@ if [[ ! -f /opt/goby-test/runtime.env ]]; then
     printf 'GOBY_SETUP_TOKEN=%s\n' "$(openssl rand -hex 32)"
   } >> /opt/goby-test/runtime.env
 fi
+# This cache is separate from media fixtures and unrelated host data. The engine
+# keeps its own marker inside the cache; deployment ownership stays outside it.
+transcode_cache=/dev/shm/goby-transcodes-test
+transcode_cache_owner=/opt/goby-test/transcode-cache.owner
+transcode_cache_marker=goby-foundation-transcode-cache-v1
+if [[ -L "$transcode_cache" || -L "$transcode_cache_owner" ]]; then
+  echo "Refusing a symbolic link for the test transcode cache or its owner record." >&2
+  exit 1
+fi
+if [[ -e "$transcode_cache_owner" && ( ! -f "$transcode_cache_owner" || "$(cat "$transcode_cache_owner")" != "$transcode_cache_marker" ) ]]; then
+  echo "Test transcode cache ownership marker does not match." >&2
+  exit 1
+fi
+if [[ -e "$transcode_cache" && ( ! -d "$transcode_cache" || ! -f "$transcode_cache_owner" ) ]]; then
+  echo "Refusing to claim an unmanaged test transcode cache." >&2
+  exit 1
+fi
+install -d -m 700 -o goby -g goby "$transcode_cache"
+if [[ ! -f "$transcode_cache_owner" ]]; then
+  (umask 077; printf '%s\n' "$transcode_cache_marker" > "$transcode_cache_owner")
+fi
+append_runtime_default() {
+  local name=$1 value=$2
+  if ! grep -Eq "^[[:space:]]*${name}[[:space:]]*=" /opt/goby-test/runtime.env; then
+    printf '%s=%s\n' "$name" "$value" >> /opt/goby-test/runtime.env
+  fi
+}
+append_runtime_default GOBY_TRANSCODING_ENABLED true
+append_runtime_default GOBY_TRANSCODE_CACHE "$transcode_cache"
+append_runtime_default GOBY_TRANSCODE_MAX_CACHE_BYTES 134217728
+append_runtime_default GOBY_TRANSCODE_MAX_JOB_BYTES 33554432
+append_runtime_default GOBY_TRANSCODE_MIN_FREE_BYTES 16777216
 if [[ ! -f /opt/goby-test/browser.env ]]; then
   umask 077
   {
@@ -69,6 +101,7 @@ Restart=on-failure
 RestartSec=3s
 NoNewPrivileges=true
 ProtectSystem=strict
+ReadWritePaths=/dev/shm/goby-transcodes-test
 ProtectHome=true
 PrivateTmp=true
 CapabilityBoundingSet=

@@ -222,6 +222,46 @@ func TestCacheRequiresNonemptyPublishedOutputs(t *testing.T) {
 	}
 }
 
+func TestCacheAccountsPrivateVODFilesWithoutServingThem(t *testing.T) {
+	cache := newTestCache(t)
+	if err := cache.CreateJob(cacheTestJobA); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cache.RootPath(), cacheTestJobA)
+	privateNames := []string{"segment-list.m3u8", "segment-list.m3u8.tmp", "main.m3u8.publish.tmp"}
+	const privateBody = "private playlist bytes"
+	for _, name := range privateNames {
+		writeCacheTestFile(t, filepath.Join(path, name), privateBody)
+		if validOutputName(name) {
+			t.Fatalf("private output name is public: %s", name)
+		}
+		file, err := cache.OpenJobFile(cacheTestJobA, name)
+		if file != nil {
+			_ = file.Close()
+		}
+		if !errors.Is(err, ErrCacheInvalid) {
+			t.Fatalf("private file was exposed: %s, %v", name, err)
+		}
+	}
+	writeCacheTestFile(t, filepath.Join(path, "segment-000010.ts"), "segment bytes")
+	bytes, ready, err := cache.ScanJob(cacheTestJobA)
+	wantBytes := int64(len(privateNames)*len(privateBody) + len("segment bytes"))
+	if err != nil || ready || bytes != wantBytes {
+		t.Fatalf("private playlist accounting: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	writeCacheTestFile(t, filepath.Join(path, "main.m3u8"), "#EXTM3U\n")
+	bytes, ready, err = cache.ScanJob(cacheTestJobA)
+	if err != nil || !ready || bytes != wantBytes+8 {
+		t.Fatalf("published VOD accounting: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	if err := cache.Recover(); err != nil {
+		t.Fatalf("private VOD files prevented recovery: %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("recovered VOD job remains: %v", err)
+	}
+}
+
 func TestCacheRejectsUnrecognizedAndLinkedJobContent(t *testing.T) {
 	for _, kind := range []string{"unknown", "nested", "symlink", "hardlink", "fifo"} {
 		t.Run(kind, func(t *testing.T) {
@@ -486,6 +526,11 @@ func TestCacheValidatesJobAndOutputNames(t *testing.T) {
 	}
 	if validCacheFileName("main.m3u8.tmp.tmp") {
 		t.Fatal("multiple temporary suffixes accepted")
+	}
+	for _, name := range []string{"segment-list.m3u8.tmp.tmp", "main.m3u8.publish", "main.m3u8.publish.tmp.tmp", "segment-list-1.m3u8", "Segment-list.m3u8"} {
+		if validCacheFileName(name) {
+			t.Errorf("unexpected private filename accepted: %q", name)
+		}
 	}
 }
 

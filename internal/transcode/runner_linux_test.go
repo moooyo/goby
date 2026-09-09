@@ -5,9 +5,11 @@ package transcode
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -432,4 +434,366 @@ func runTranscodeTestHelper(mode string) int {
 	default:
 		return 95
 	}
+}
+
+func TestVODPublicationWaitsForClosedSegments(t *testing.T) {
+	directory := t.TempDir()
+	p := commandPlan()
+	p.SegmentMode = "vod"
+	p.DurationTicks = 6 * ticksPerSecond
+	p.SegmentStartNumber = 2
+	p.SegmentTimes = "30000000"
+	publisher := &vodPublisher{directory: directory, plan: p}
+	packet := make([]byte, 188)
+	packet[0], packet[3] = 0x47, 0x10
+	write := func(name string, data []byte) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(directory, name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("segment-000002.ts.tmp", packet)
+	private := "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-ALLOW-CACHE:YES\n#EXT-X-TARGETDURATION:3\n#EXTINF:3.000000,\nsegment-000002.ts.tmp\n"
+	write("segment-list.m3u8", []byte(private))
+	if err := publisher.publish(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(directory, "main.m3u8")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("open segment was published")
+	}
+	write("segment-000003.ts.tmp", packet)
+	if err := publisher.publish(false); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(directory, "main.m3u8"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err := ParseMediaPlaylist(data)
+	if err != nil || list.Sequence != 2 || len(list.Segments) != 1 || list.Ended {
+		t.Fatalf("partial publication: %+v, %v", list, err)
+	}
+	write("segment-list.m3u8", []byte(private+"#EXTINF:3.000000,\nsegment-000003.ts.tmp\n#EXT-X-ENDLIST\n"))
+	if err := publisher.publish(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(directory, "segment-000003.ts")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("final segment was published before exit")
+	}
+	if err := publisher.publish(true); err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(filepath.Join(directory, "main.m3u8"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err = ParseMediaPlaylist(data)
+	if err != nil || !list.Ended || list.Type != "VOD" || list.Sequence != 2 || len(list.Segments) != 2 || list.Segments[0].Discontinuity || !list.Segments[1].Discontinuity {
+		t.Fatalf("final publication: %+v, %v", list, err)
+	}
+}
+
+func TestVODPublicationRejectsTruncatedTransportAndRetainsIOFailure(t *testing.T) {
+	directory := t.TempDir()
+	p := commandPlan()
+	p.SegmentMode = "vod"
+	if err := os.WriteFile(filepath.Join(directory, "segment-000000.ts.tmp"), []byte("truncated"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	private := "#EXTM3U\n#EXT-X-TARGETDURATION:12\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:12.000000,\nsegment-000000.ts.tmp\n#EXT-X-ENDLIST\n"
+	if err := os.WriteFile(filepath.Join(directory, "segment-list.m3u8"), []byte(private), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := (&vodPublisher{directory: directory, plan: p}).publish(true); err == nil {
+		t.Fatal("truncated segment was published")
+	}
+	canceled := false
+	tail := &stderrTail{cancel: func() { canceled = true }}
+	_, _ = tail.Write([]byte("[error] Error writing trai"))
+	_, _ = tail.Write([]byte("ler: No space left on device\n"))
+	_, _ = tail.Write(bytes.Repeat([]byte("x"), maxStderrTail*2))
+	if !tail.failed || !canceled {
+		t.Fatal("I/O failure was lost with the rolling diagnostic tail")
+	}
+}
+
+func TestRunActualVODSeekPreservesGlobalTimeline(t *testing.T) {
+	ffmpeg, ffprobe := os.Getenv("GOBY_FFMPEG"), os.Getenv("GOBY_FFPROBE")
+	if ffmpeg == "" || ffprobe == "" {
+		t.Skip("GOBY_FFMPEG and GOBY_FFPROBE are required for actual VOD verification")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	dir := t.TempDir()
+	mp4, ts := filepath.Join(dir, "source.mp4"), filepath.Join(dir, "source.ts")
+	run := func(args ...string) []byte {
+		t.Helper()
+		data, err := exec.CommandContext(ctx, args[0], args[1:]...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("media command: %v: %s", err, data)
+		}
+		return data
+	}
+	run(ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-filter_threads", "1", "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=24:duration=9", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=9", "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-threads:v", "1", "-pix_fmt", "yuv420p", "-g", "48", "-keyint_min", "48", "-sc_threshold", "0", "-bf", "2", "-c:a", "aac", "-threads:a", "1", "-t", "9", mp4)
+	run(ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-i", mp4, "-map", "0", "-c", "copy", ts)
+	for _, source := range []string{mp4, ts} {
+		for _, mode := range []string{"copy", "encode", "audio-aac", "audio-mp3"} {
+			t.Run(filepath.Ext(source)+"/"+mode, func(t *testing.T) {
+				var facts struct {
+					Format struct {
+						Duration string `json:"duration"`
+					} `json:"format"`
+				}
+				if err := json.Unmarshal(run(ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "json", source), &facts); err != nil {
+					t.Fatal(err)
+				}
+				seconds, err := strconv.ParseFloat(facts.Format.Duration, 64)
+				if err != nil {
+					t.Fatal(err)
+				}
+				duration := int64(math.Round(seconds * float64(ticksPerSecond)))
+				input, err := os.Open(source)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer input.Close()
+				keys, err := Keyframes(ctx, ffprobe, input, 0, duration)
+				if err != nil {
+					t.Fatal(err)
+				}
+				timeline, err := BuildTimeline(duration, 3, keys, mode == "copy")
+				if err != nil {
+					t.Fatal(err)
+				}
+				last := len(timeline.Segments) - 1
+				results := map[int]map[int64][]vodStreamFact{}
+				paths := map[int]map[int64]string{}
+				var fullPlaylist MediaPlaylist
+				var fullManifestPath string
+				for _, first := range []int{0, 1} {
+					p := Plan{Container: "ts", VideoCodec: "copy", AudioCodec: "copy", VideoStreamIndex: 0, AudioStreamIndex: 1, DurationTicks: duration, SegmentSeconds: 3, SegmentMode: "vod", SegmentStartNumber: first, StartTicks: timeline.Segments[first].StartTicks, EndTicks: timeline.Segments[last].StartTicks + timeline.Segments[last].DurationTicks}
+					cuts, err := timeline.BoundaryTicks(first, last)
+					if err != nil {
+						t.Fatal(err)
+					}
+					parts := make([]string, len(cuts))
+					for i, v := range cuts {
+						parts[i] = strconv.FormatInt(v, 10)
+					}
+					p.SegmentTimes = strings.Join(parts, ",")
+					if mode == "copy" && first == 0 {
+						p.ReferenceStartTicks = keys[0]
+					}
+					if mode == "encode" {
+						p.VideoCodec, p.AudioCodec, p.FrameRate, p.Width, p.Height, p.VideoBitrate, p.AudioBitrate, p.AudioChannels, p.AudioSampleRate = "h264", "aac", 24, 128, 72, 256000, 96000, 2, 48000
+					}
+					if strings.HasPrefix(mode, "audio-") {
+						p.VideoCodec, p.VideoStreamIndex = "", -1
+						p.AudioCodec, p.AudioBitrate, p.AudioChannels, p.AudioSampleRate = strings.TrimPrefix(mode, "audio-"), 96000, 2, 48000
+					}
+					rootPath := t.TempDir()
+					if err := os.Mkdir(filepath.Join(rootPath, "job"), 0700); err != nil {
+						t.Fatal(err)
+					}
+					rootFD, err := os.Open(rootPath)
+					if err != nil {
+						t.Fatal(err)
+					}
+					output := fmt.Sprintf("/proc/%d/fd/%d/job", os.Getpid(), rootFD.Fd())
+					result, err := Run(ctx, ffmpeg, output, input, p, 1, nil)
+					rootFD.Close()
+					if err != nil {
+						t.Fatalf("VOD %s/%d: %v: %s", mode, first, err, result.StderrTail)
+					}
+					playlistBytes, err := os.ReadFile(filepath.Join(rootPath, "job", "main.m3u8"))
+					if err != nil {
+						t.Fatal(err)
+					}
+					playlist, err := ParseMediaPlaylist(playlistBytes)
+					if err != nil || !playlist.Ended || playlist.Type != "VOD" || playlist.Sequence != int64(first) || len(playlist.Segments) != last-first+1 {
+						t.Fatalf("VOD manifest: %+v: %v", playlist, err)
+					}
+					results[first] = map[int64][]vodStreamFact{}
+					paths[first] = map[int64]string{}
+					if first == 0 {
+						fullPlaylist = playlist
+						fullManifestPath = filepath.Join(rootPath, "job", "main.m3u8")
+					}
+					for i, segment := range playlist.Segments {
+						if segment.Discontinuity != (i > 0) {
+							t.Fatal("generated playlist does not declare its local transport boundaries")
+						}
+						path := filepath.Join(rootPath, "job", segment.Name)
+						paths[first][segment.Number] = path
+						assertTransportResetDeclared(t, path)
+						var probe struct {
+							Streams []vodStreamFact `json:"streams"`
+						}
+						if err := json.Unmarshal(run(ffprobe, "-v", "error", "-show_entries", "stream=codec_type,codec_name,start_time,duration", "-of", "json", path), &probe); err != nil {
+							t.Fatal(err)
+						}
+						results[first][segment.Number] = probe.Streams
+						decode := []string{ffmpeg, "-v", "error", "-nostdin", "-threads", "1", "-i", path, "-map", "0:a:0"}
+						if p.VideoStreamIndex >= 0 {
+							decode = append(decode, "-map", "0:v:0")
+						}
+						decode = append(decode, "-threads", "1", "-f", "null", "-")
+						if data := run(decode...); len(data) != 0 {
+							t.Fatalf("standalone decoding: %s", data)
+						}
+					}
+					if first == 1 {
+						bounded := p
+						bounded.SegmentTimes = ""
+						bounded.EndTicks = timeline.Segments[first].StartTicks + timeline.Segments[first].DurationTicks
+						boundedOutput := t.TempDir()
+						result, err := Run(ctx, ffmpeg, boundedOutput, input, bounded, 1, nil)
+						if err != nil {
+							t.Fatalf("bounded VOD: %v: %s", err, result.StderrTail)
+						}
+						data, err := os.ReadFile(filepath.Join(boundedOutput, "main.m3u8"))
+						if err != nil {
+							t.Fatal(err)
+						}
+						one, err := ParseMediaPlaylist(data)
+						if err != nil || len(one.Segments) != 1 || one.Sequence != int64(first) || !one.Ended {
+							t.Fatalf("bounded VOD playlist: %+v: %v", one, err)
+						}
+						if math.Abs(float64(one.Segments[0].DurationTicks-timeline.Segments[first].DurationTicks)/float64(ticksPerSecond)) > .15 {
+							t.Fatalf("bounded duration: %+v", one)
+						}
+					}
+				}
+				for number, seek := range results[1] {
+					zero := results[0][number]
+					wantStreams := 2
+					if strings.HasPrefix(mode, "audio-") {
+						wantStreams = 1
+					}
+					if len(zero) != wantStreams || len(seek) != wantStreams {
+						t.Fatalf("missing AV streams: %v/%v", zero, seek)
+					}
+					for i := range zero {
+						zs, _ := strconv.ParseFloat(zero[i].Start, 64)
+						ss, _ := strconv.ParseFloat(seek[i].Start, 64)
+						zd, _ := strconv.ParseFloat(zero[i].Duration, 64)
+						sd, _ := strconv.ParseFloat(seek[i].Duration, 64)
+						if zero[i].Codec != seek[i].Codec || math.Abs(zs-ss) > .15 || math.Abs(zd-sd) > .15 {
+							t.Fatalf("segment %d %s timeline differs: zero=%+v seek=%+v", number, zero[i].Type, zero[i], seek[i])
+						}
+						if zero[i].Type == "video" {
+							want := 1 + float64(timeline.Segments[number].StartTicks)/float64(ticksPerSecond)
+							if math.Abs(ss-want) > 1.0/24+.002 {
+								t.Fatalf("segment %d video PTS=%f want source position %f", number, ss, want)
+							}
+						}
+					}
+					t.Logf("%s/%s segment %d zero=%+v seek=%+v", filepath.Ext(source), mode, number, zero, seek)
+				}
+				var wholeFrames int
+				for _, layout := range []string{"whole", "mixed"} {
+					var manifest strings.Builder
+					fmt.Fprintf(&manifest, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n", fullPlaylist.TargetDuration)
+					for i, segment := range fullPlaylist.Segments {
+						// Every segment was independently muxed. This is the same
+						// transport discontinuity declared by the public VOD API;
+						// timestamps continue to use the original source timeline.
+						if i > 0 {
+							manifest.WriteString("#EXT-X-DISCONTINUITY\n")
+						}
+						producer := 0
+						if layout == "mixed" && i > 0 && i < len(fullPlaylist.Segments)-1 {
+							producer = 1
+						}
+						fmt.Fprintf(&manifest, "#EXTINF:%s,\n%s\n", tickSeconds(segment.DurationTicks), paths[producer][segment.Number])
+					}
+					manifest.WriteString("#EXT-X-ENDLIST\n")
+					manifestPath := fullManifestPath
+					if layout == "mixed" {
+						manifestPath = filepath.Join(t.TempDir(), "main.m3u8")
+						if err := os.WriteFile(manifestPath, []byte(manifest.String()), 0600); err != nil {
+							t.Fatal(err)
+						}
+					}
+					frames, elapsed := decodeContinuousVOD(t, ctx, ffmpeg, manifestPath, !strings.HasPrefix(mode, "audio-"))
+					if elapsed < duration-ticksPerSecond/4 || elapsed > duration+ticksPerSecond/4 {
+						t.Fatalf("%s HLS ended at %d ticks, source duration %d", layout, elapsed, duration)
+					}
+					if layout == "whole" {
+						wholeFrames = frames
+					} else if frames != wholeFrames {
+						t.Fatalf("mixed producer HLS decoded %d frames, whole decoded %d", frames, wholeFrames)
+					}
+					t.Logf("%s/%s continuous %s HLS: frames=%d, ticks=%d", filepath.Ext(source), mode, layout, frames, elapsed)
+				}
+			})
+		}
+	}
+}
+
+type vodStreamFact struct {
+	Type     string `json:"codec_type"`
+	Codec    string `json:"codec_name"`
+	Start    string `json:"start_time"`
+	Duration string `json:"duration"`
+}
+
+func assertTransportResetDeclared(t *testing.T, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) == 0 || len(data)%188 != 0 {
+		t.Fatal("invalid transport packet framing")
+	}
+	seen := map[int]bool{}
+	for offset := 0; offset < len(data); offset += 188 {
+		packet := data[offset : offset+188]
+		pid := int(packet[1]&31)<<8 | int(packet[2])
+		if pid == 8191 || seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		if packet[0] != 0x47 || packet[3]&0x20 == 0 || packet[4] == 0 || packet[5]&0x80 == 0 {
+			t.Fatalf("PID %d resets continuity without a transport discontinuity indicator", pid)
+		}
+	}
+}
+
+func decodeContinuousVOD(t *testing.T, ctx context.Context, ffmpeg, manifest string, video bool) (int, int64) {
+	t.Helper()
+	args := []string{"-hide_banner", "-nostdin", "-loglevel", "error", "-xerror", "-threads", "1", "-protocol_whitelist", "file,pipe", "-allowed_extensions", "m3u8,ts", "-prefer_x_start", "0", "-f", "hls", "-i", manifest, "-map", "0:a:0"}
+	if video {
+		args = append(args, "-map", "0:v:0")
+	}
+	args = append(args, "-threads", "1", "-fps_mode", "passthrough", "-progress", "pipe:1", "-nostats", "-f", "null", "-")
+	cmd := exec.CommandContext(ctx, ffmpeg, args...)
+	var output, diagnostic bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &output, &diagnostic
+	if err := cmd.Run(); err != nil || diagnostic.Len() != 0 {
+		t.Fatalf("strict continuous HLS decode: %v: %s", err, diagnostic.String())
+	}
+	var frames int
+	var elapsed int64
+	ended := false
+	for _, line := range strings.Split(output.String(), "\n") {
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		switch key {
+		case "frame":
+			frames, _ = strconv.Atoi(value)
+		case "out_time_us":
+			microseconds, _ := strconv.ParseInt(value, 10, 64)
+			elapsed = microseconds * 10
+		case "progress":
+			ended = value == "end"
+		}
+	}
+	if !ended || video && frames == 0 || elapsed <= 0 {
+		t.Fatalf("incomplete continuous HLS progress: %s", output.String())
+	}
+	return frames, elapsed
 }

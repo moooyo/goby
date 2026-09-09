@@ -2,7 +2,7 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, and initial events/remote-control increments delivered; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, and authenticated HLS VOD conversion with seeking delivered; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Progressive conversion, universal audio, broader subtitle/output support, hard resource isolation, and actual GPU execution remain required work.
 
 ## Compatibility target
 
@@ -14,13 +14,15 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | --- | --- |
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
-| [Build and run](development/running.md) | Foundation configuration, PostgreSQL deployment, and remote verification |
+| [Build and run](development/running.md) | Startup configuration, PostgreSQL deployment, migrations, and remote verification |
 | [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
 | [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
-| [Conversion engine](development/transcode-engine.md) | Planner, PostgreSQL jobs, bounded FFmpeg execution, hardware selection and pending HLS integration |
+| [Conversion engine](development/transcode-engine.md) | Planner, PostgreSQL jobs, bounded FFmpeg execution, hardware selection and HLS VOD production |
+| [HLS playback](development/hls-playback.md) | Full VOD manifests, global segment addressing, seek production, authentication and cleanup |
+| [Transcoding configuration](development/transcoding-configuration.md) | Startup settings, hardware choices, cache ownership and Linux service deployment |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
 | [External subtitles](development/external-subtitles.md) | Sidecar indexing, SRT/WebVTT delivery, time semantics, authorization and resource limits |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |

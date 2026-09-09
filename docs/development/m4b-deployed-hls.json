@@ -1,0 +1,144 @@
+{
+  "assertions": [
+    {
+      "source_bytes": 967651,
+      "source_hash_matches": true,
+      "source_height": 180,
+      "source_seconds": 15,
+      "source_width": 320,
+      "stage": "owned normal-frame-rate source scan"
+    },
+    {
+      "discontinuity_before_segments": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "output_height": 90,
+      "output_width": 160,
+      "segment_seconds": 3,
+      "source_global_segments": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "stage": "six-second hint and complete authenticated VOD graph",
+      "start_hint_seconds": 6,
+      "token_bearing_children": true,
+      "vod_seconds": 15
+    },
+    {
+      "output_pts_base_seconds": 1,
+      "request_order": [
+        2,
+        3,
+        0,
+        4
+      ],
+      "segments": [
+        {
+          "audio_codec": "aac",
+          "audio_start_pts": 7.016,
+          "decoded_seconds": 3.002667,
+          "height": 90,
+          "http_status": 200,
+          "segment": 2,
+          "video_codec": "h264",
+          "video_frames": 72,
+          "video_start_pts": 7.0,
+          "width": 160
+        },
+        {
+          "audio_codec": "aac",
+          "audio_start_pts": 10.002667,
+          "decoded_seconds": 3.010667,
+          "height": 90,
+          "http_status": 200,
+          "segment": 3,
+          "video_codec": "h264",
+          "video_frames": 72,
+          "video_start_pts": 10.0,
+          "width": 160
+        },
+        {
+          "audio_codec": "aac",
+          "audio_start_pts": 1.0,
+          "decoded_seconds": 3.008,
+          "height": 90,
+          "http_status": 200,
+          "segment": 0,
+          "video_codec": "h264",
+          "video_frames": 72,
+          "video_start_pts": 1.0,
+          "width": 160
+        },
+        {
+          "audio_codec": "aac",
+          "audio_start_pts": 13.010667,
+          "decoded_seconds": 3.018667,
+          "height": 90,
+          "http_status": 200,
+          "segment": 4,
+          "video_codec": "h264",
+          "video_frames": 72,
+          "video_start_pts": 13.0,
+          "width": 160
+        }
+      ],
+      "stage": "middle neighbor backward and tail segment decoding"
+    },
+    {
+      "decodes": [
+        {
+          "decoded_seconds": 15.018667,
+          "input": "private_master_to_real_http_main_and_segments",
+          "seek_seconds": 0,
+          "video_frames": 360
+        },
+        {
+          "decoded_seconds": 9.018667,
+          "input": "private_master_to_real_http_main_and_segments",
+          "seek_seconds": 6,
+          "video_frames": 216
+        }
+      ],
+      "software_av_decode": true,
+      "stage": "real FFmpeg HLS demuxer full graph and seek"
+    },
+    {
+      "conditional_get": 304,
+      "different_session_same_user": 404,
+      "head": 200,
+      "missing_and_invalid_token": 401,
+      "stage": "cached segment HEAD conditional authentication and ownership",
+      "user_data_dto_unchanged": true
+    },
+    {
+      "delete": 204,
+      "post_delete": 204,
+      "retired_children": 404,
+      "stage": "DELETE and POST active encoding cleanup",
+      "user_data_dto_unchanged": true,
+      "zero_hint_preserves_full_vod": true
+    },
+    {
+      "logged_out_child": 401,
+      "logout": 200,
+      "stage": "Stopped and Logout HLS cleanup",
+      "stopped": 204,
+      "stopped_child": 404,
+      "user_data_dto_unchanged": true
+    }
+  ],
+  "cleanup_errors": [],
+  "http_response_bytes": 1803519,
+  "owned_library_retained": true,
+  "owned_private_scratch_removed": true,
+  "owned_user_data_dto_unchanged": true,
+  "private_library_record_mode": "0600",
+  "source_media_and_marker_unchanged": true,
+  "status": "passed"
+}

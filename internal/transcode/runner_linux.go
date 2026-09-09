@@ -3,8 +3,10 @@
 package transcode
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -58,7 +60,7 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	processCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	progress := &progressWriter{callback: onProgress, cancel: cancel}
-	stderr := &stderrTail{}
+	stderr := &stderrTail{cancel: cancel}
 	cmd := exec.CommandContext(processCtx, resolved, args...)
 	cmd.Dir = directory
 	cmd.ExtraFiles = []*os.File{input}
@@ -92,6 +94,29 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if err := cmd.Start(); err != nil {
 		return result, ErrStart
 	}
+	var publisher *vodPublisher
+	var publishStop, publishDone chan struct{}
+	if plan.SegmentMode == "vod" {
+		publisher = &vodPublisher{directory: directory, plan: plan}
+		publishStop, publishDone = make(chan struct{}), make(chan struct{})
+		go func() {
+			defer close(publishDone)
+			ticker := time.NewTicker(25 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-publishStop:
+					return
+				case <-ticker.C:
+					if err := publisher.publish(false); err != nil {
+						publisher.err = err
+						cancel()
+						return
+					}
+				}
+			}
+		}()
+	}
 	// Keep the exited leader waitable: its PID also identifies our process
 	// group and must not be recycled until every group signal has been sent.
 	// exec's context watcher can signal/close pipes, but only Cmd.Wait reaps.
@@ -109,6 +134,13 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	retired = true
 	groupMu.Unlock()
 	err = cmd.Wait()
+	if publisher != nil {
+		close(publishStop)
+		<-publishDone
+		if publisher.err == nil && err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed {
+			publisher.err = publisher.publish(true)
+		}
+	}
 	result.StderrTail = stderr.String()
 	if cmd.ProcessState != nil {
 		result.ExitCode = cmd.ProcessState.ExitCode()
@@ -120,7 +152,7 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if progress.err != nil {
 		return result, ErrProgress
 	}
-	if waitErr != nil || err != nil {
+	if waitErr != nil || err != nil || stderr.failed || publisher != nil && publisher.err != nil {
 		return result, ErrProcess
 	}
 	return result, nil
@@ -282,10 +314,29 @@ func (w *progressWriter) consumeLine() bool {
 
 type stderrTail struct {
 	buffer []byte
+	failed bool
+	cancel context.CancelFunc
 }
 
 func (w *stderrTail) Write(p []byte) (int, error) {
 	n := len(p)
+	// FFmpeg's segment muxer can overwrite a trailer I/O error with a later
+	// successful list operation. Keep a durable error signal independently
+	// of its eventual exit code and of the bounded diagnostic tail.
+	prefix := w.buffer
+	if len(prefix) > 128 {
+		prefix = prefix[len(prefix)-128:]
+	}
+	scan := append(append([]byte(nil), prefix...), p...)
+	if bytes.Contains(scan, []byte("[fatal]")) ||
+		bytes.Contains(scan, []byte("No space left on device")) || bytes.Contains(scan, []byte("Input/output error")) ||
+		bytes.Contains(scan, []byte("Error writing trailer")) || bytes.Contains(scan, []byte("Error muxing")) ||
+		bytes.Contains(scan, []byte("Error writing packet")) || bytes.Contains(scan, []byte("Error closing file")) {
+		w.failed = true
+		if w.cancel != nil {
+			w.cancel()
+		}
+	}
 	if n >= maxStderrTail {
 		w.buffer = append(w.buffer[:0], p[n-maxStderrTail:]...)
 		return n, nil
@@ -300,3 +351,178 @@ func (w *stderrTail) Write(p []byte) (int, error) {
 }
 
 func (w *stderrTail) String() string { return string(w.buffer) }
+
+// vodPublisher exposes only completed local segments. FFmpeg atomically
+// publishes its private list just before closing the corresponding segment;
+// seeing the next file proves that the previous descriptor has been closed.
+// The final segment is eligible only after the process has exited and drained.
+type vodPublisher struct {
+	directory string
+	plan      Plan
+	published int
+	lastList  string
+	err       error
+}
+
+func (p *vodPublisher) publish(finished bool) error {
+	dir, err := os.Open(p.directory)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	file, err := cacheOpenRegular(dir, "segment-list.m3u8", syscall.O_RDONLY, 0)
+	if errors.Is(err, os.ErrNotExist) && !finished {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	data, err := io.ReadAll(io.LimitReader(file, MaxPlaylistBytes+1))
+	_ = file.Close()
+	if err != nil {
+		return err
+	}
+	if len(data) > MaxPlaylistBytes {
+		return ErrInvalidPlaylist
+	}
+	if !finished && !bytes.Contains(data, []byte("#EXTINF:")) {
+		return nil
+	}
+	list, err := parsePrivateSegmentList(data, p.plan.SegmentStartNumber)
+	if err != nil {
+		return err
+	}
+	cuts, _ := planSegmentTimes(p.plan)
+	expected := len(cuts) + 1
+	if len(list.Segments) > expected || finished && (!list.Ended || len(list.Segments) != expected) {
+		return ErrInvalidPlaylist
+	}
+	ready := 0
+	for i, segment := range list.Segments {
+		if i < p.published {
+			ready++
+			continue
+		}
+		if !finished {
+			next := fmt.Sprintf("segment-%06d.ts.tmp", segment.Number+1)
+			nextFile, nextErr := cacheOpenRegular(dir, next, syscall.O_RDONLY, 0)
+			if errors.Is(nextErr, os.ErrNotExist) {
+				break
+			}
+			if nextErr != nil {
+				return nextErr
+			}
+			_ = nextFile.Close()
+		}
+		if err := validateTransportSegment(dir, segment.Name+".tmp"); err != nil {
+			return err
+		}
+		if err := syscall.Renameat(int(dir.Fd()), segment.Name+".tmp", int(dir.Fd()), segment.Name); err != nil {
+			return err
+		}
+		p.published++
+		ready++
+	}
+	if ready == 0 {
+		return nil
+	}
+	var output strings.Builder
+	fmt.Fprintf(&output, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:%d\n#EXT-X-TARGETDURATION:%d\n", p.plan.SegmentStartNumber, list.TargetDuration)
+	complete := finished && ready == expected && list.Ended
+	if complete {
+		output.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
+	} else {
+		output.WriteString("#EXT-X-PLAYLIST-TYPE:EVENT\n")
+	}
+	for i, segment := range list.Segments[:ready] {
+		if i > 0 {
+			output.WriteString("#EXT-X-DISCONTINUITY\n")
+		}
+		fmt.Fprintf(&output, "#EXTINF:%s,\n%s\n", tickSeconds(segment.DurationTicks), segment.Name)
+	}
+	if complete {
+		output.WriteString("#EXT-X-ENDLIST\n")
+	}
+	if output.Len() > MaxPlaylistBytes {
+		return ErrInvalidPlaylist
+	}
+	if output.String() == p.lastList {
+		return nil
+	}
+	publication, err := cacheOpenRegular(dir, "main.m3u8.publish.tmp", syscall.O_WRONLY|syscall.O_CREAT|syscall.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := io.WriteString(publication, output.String())
+	if writeErr == nil {
+		writeErr = publication.Sync()
+	}
+	closeErr := publication.Close()
+	if writeErr != nil || closeErr != nil {
+		return errors.Join(writeErr, closeErr)
+	}
+	if err := syscall.Renameat(int(dir.Fd()), "main.m3u8.publish.tmp", int(dir.Fd()), "main.m3u8"); err != nil {
+		return err
+	}
+	p.lastList = output.String()
+	return nil
+}
+
+func parsePrivateSegmentList(data []byte, sequence int) (MediaPlaylist, error) {
+	if len(data) > MaxPlaylistBytes {
+		return MediaPlaylist{}, ErrInvalidPlaylist
+	}
+	var normalized strings.Builder
+	seenCache := false
+	for _, line := range strings.Split(string(data), "\n") {
+		if line == "#EXT-X-ALLOW-CACHE:YES" {
+			if seenCache {
+				return MediaPlaylist{}, ErrInvalidPlaylist
+			}
+			seenCache = true
+			continue
+		}
+		if strings.HasPrefix(line, "#EXT-X-MEDIA-SEQUENCE:") {
+			value := strings.TrimPrefix(line, "#EXT-X-MEDIA-SEQUENCE:")
+			number, err := strconv.ParseInt(value, 10, 32)
+			if err != nil || number < 0 || strconv.FormatInt(number, 10) != value {
+				return MediaPlaylist{}, ErrInvalidPlaylist
+			}
+			line = "#EXT-X-MEDIA-SEQUENCE:" + strconv.Itoa(sequence)
+		}
+		if line != "" && !strings.HasPrefix(line, "#") {
+			if !strings.HasSuffix(line, ".ts.tmp") {
+				return MediaPlaylist{}, ErrInvalidPlaylist
+			}
+			line = strings.TrimSuffix(line, ".tmp")
+		}
+		normalized.WriteString(line)
+		normalized.WriteByte('\n')
+	}
+	return ParseMediaPlaylist([]byte(normalized.String()))
+}
+
+func validateTransportSegment(dir *os.File, name string) error {
+	file, err := cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Size() < 188 || info.Size()%188 != 0 {
+		return ErrProcess
+	}
+	var packet [188]byte
+	for _, offset := range []int64{0, info.Size() - 188} {
+		if _, err := file.ReadAt(packet[:], offset); err != nil {
+			return err
+		}
+		if packet[0] != 0x47 || packet[1]&0x80 != 0 || packet[3]&0x30 == 0 {
+			return ErrProcess
+		}
+	}
+	return nil
+}
