@@ -31,8 +31,12 @@ type Plan struct {
 	// Progressive video uses the probed container clock even when a track is
 	// disabled. The explicit known bit distinguishes an actual zero origin from
 	// a missing timestamp; neither field is populated from client arguments.
-	SourceFormatStartKnown bool    `json:"SourceFormatStartKnown,omitempty"`
-	SourceFormatStartTicks int64   `json:"SourceFormatStartTicks,omitempty"`
+	SourceFormatStartKnown bool  `json:"SourceFormatStartKnown,omitempty"`
+	SourceFormatStartTicks int64 `json:"SourceFormatStartTicks,omitempty"`
+	// This bounded private candidate is comparable preparation data, never a
+	// completed restart proof. Run must revalidate it against its borrowed source
+	// and actual FFmpeg executable before changing the linear decode path.
+	VideoSeekCandidate     string  `json:"VideoSeekCandidate,omitempty"`
 	Width                  int     `json:"Width,omitempty"`
 	Height                 int     `json:"Height,omitempty"`
 	FrameRate              float64 `json:"FrameRate,omitempty"`

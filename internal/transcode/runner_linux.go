@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/moooyo/goby/internal/media"
 )
 
 const (
@@ -56,6 +58,18 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	resolved, err := exec.LookPath(executable)
 	if err != nil || !filepath.IsAbs(resolved) {
 		return result, ErrStart
+	}
+	if progressiveVideoSeekPreflightEnabled(plan) {
+		verification, err := media.VerifyVideoSeekCandidate(ctx, resolved, input, plan.VideoSeekCandidate, threads)
+		if ctx.Err() != nil {
+			return result, ctx.Err()
+		}
+		if err != nil || !transcodeSourceUnchanged(input, info) {
+			return result, ErrInvalidInput
+		}
+		if verification.Verified {
+			args = buildProgressiveVideoArgsWithSeek(plan, threads, verification.InputSeekTicks)
+		}
 	}
 	processCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

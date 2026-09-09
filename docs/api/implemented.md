@@ -6,7 +6,7 @@ The routes below exist in source. Authentication, permission and ingestion workf
 
 The official reference inventory contains 958 sanitized JSON records: the previous 828 plus 130 from the [metadata study](../research/metadata-reference.md), including 106 complete new HTTP captures. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
-The [M5b increment](../development/verification-m5b-metadata.md) passed all twelve tested packages in the complete Linux race suite (888 top-level tests, no skips), metadata and user browser workflows, and the deployed migration. The current database schema is 14 and probe cache version is 5. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
+The [M4f increment](../development/verification-m4f-video-seek.md) passed all twelve tested packages in the complete Linux race suite (940 top-level tests, no skips), the binary-upgrade audit, and five deployed library upgrades with an observed fast producer. The current database schema is 14 and probe cache version is 6. Its [private restart evidence](../development/video-fast-seek.md) adds no public HTTP route or proof parameter. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
 
 ## Administrator API
 

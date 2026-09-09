@@ -1,0 +1,559 @@
+{
+  "accepted_deployment_unchanged": true,
+  "assertions": [
+    {
+      "encoding_jobs_created": 0,
+      "head_body_bytes": 0,
+      "method": "Read-only sampling of accepted service descendants through proc; short-lived children may be missed",
+      "observation_errors": 0,
+      "observed_process_counts": {
+        "identity": 0,
+        "index": 0,
+        "other": 0,
+        "probe": 0,
+        "producer": 0,
+        "proof": 0
+      },
+      "proof_absence_boundary": "No tool was observed during planning; deterministic no-tool invocation is covered by the separate instrumented server integration test",
+      "public_private_fields_absent": true,
+      "samples": 62,
+      "stage": "PlaybackInfo and HEAD without producer or proof work"
+    }
+  ],
+  "baseline_boundary": "After accepted schema-14 deployment, before probe-five-to-six scans; schema migration preservation is independently audited",
+  "business_preservation": {
+    "all_other_old_business_rows_preserved": true,
+    "all_user_data_preserved": true,
+    "allowed_old_playback_expirations": 1,
+    "complete_snapshot": {
+      "item_semantics_sha256": "c648f3f5c8c3796dc75e179c10b61e12dcdd12d1c55437b600d7141e99fc3703",
+      "library_semantics_sha256": "03dd6ca44cad38cd8bdb07fb4c527341cc6fba8c49e19dc4efda0a87ea9f1b3f",
+      "metadata_semantics_sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e",
+      "tables": {
+        "catalog_entities": {
+          "count": 7,
+          "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+        },
+        "client_playback_references": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "encoding_jobs": {
+          "count": 29,
+          "sha256": "ac560380c75a7b32cdd454829b73cc8f7bb6085b09ac259babbea72940946d14"
+        },
+        "item_entities": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "item_images": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "item_metadata_state": {
+          "count": 21,
+          "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+        },
+        "item_subtitles": {
+          "count": 2,
+          "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+        },
+        "items": {
+          "count": 21,
+          "sha256": "5b24fa58d81b723132a67c44cb9c12daa67e16e33cf0dcf3bb52f56f08d8b7e8"
+        },
+        "libraries": {
+          "count": 5,
+          "sha256": "123e2a338327f71025ad1c89999fcef4dc975e47cc79601427bced8a45a47d9f"
+        },
+        "library_roots": {
+          "count": 5,
+          "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+        },
+        "play_sessions": {
+          "count": 28,
+          "sha256": "7ab87b33150a29c8596e579d7561eed7e9b189df0dce2ec825342ad195100495"
+        },
+        "scan_jobs": {
+          "count": 36,
+          "sha256": "379fb1952664c639d22e90568ef54e80ac41e6a9d11357d1492b6cd8836ed025"
+        },
+        "schema_migrations": {
+          "count": 14,
+          "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+        },
+        "server_settings": {
+          "count": 2,
+          "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+        },
+        "sessions": {
+          "count": 76,
+          "sha256": "f4e036dda79b004da0d02653e93617d7a36562f54d8a210418a88296cd8fa450"
+        },
+        "user_item_data": {
+          "count": 15,
+          "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+        },
+        "users": {
+          "count": 10,
+          "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+        }
+      }
+    },
+    "forbidden_old_prune_candidates": {
+      "old_playback_rows": 0,
+      "old_reference_rows": 0
+    },
+    "metadata_empty_controls_count": 21,
+    "metadata_revision_one_count": 21,
+    "metadata_revisions_controls_effective_preserved": true,
+    "metadata_state_count": 21,
+    "observed_old_playback_expirations": 1
+  },
+  "cleanup_errors": [],
+  "complete_snapshot_before": {
+    "item_semantics_sha256": "c648f3f5c8c3796dc75e179c10b61e12dcdd12d1c55437b600d7141e99fc3703",
+    "library_semantics_sha256": "03dd6ca44cad38cd8bdb07fb4c527341cc6fba8c49e19dc4efda0a87ea9f1b3f",
+    "metadata_semantics_sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e",
+    "tables": {
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "encoding_jobs": {
+        "count": 28,
+        "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 27,
+        "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+      },
+      "scan_jobs": {
+        "count": 31,
+        "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+      },
+      "schema_migrations": {
+        "count": 14,
+        "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+      },
+      "sessions": {
+        "count": 74,
+        "sha256": "b4f7b06c36a611fc180f783edd96a8d5bf5d49445a62957c3ac6e81247226373"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+      }
+    }
+  },
+  "deployment": {
+    "binary_sha256": "5eaf10c9f7ea80aa97c4d3e7d0750c3b26f998671388702ad8d4d1b9be58445d",
+    "database_port": 5432,
+    "database_read_only": true,
+    "main_pid": 3412620,
+    "postgresql_version_num": 170011,
+    "probe_version": 6,
+    "schema_version": 14,
+    "uid": 995
+  },
+  "fast_execution": {
+    "actual_fast_execution_proven": true,
+    "independent_linear_audio": true,
+    "method": "Read-only sampling of accepted service descendants through proc; short-lived children may be missed",
+    "native_indexed_argument": true,
+    "observation_errors": 0,
+    "observed_process_counts": {
+      "identity": 1,
+      "index": 0,
+      "other": 0,
+      "probe": 0,
+      "producer": 1,
+      "proof": 1
+    },
+    "output_seek_ticks": 63700000,
+    "relative_input_seek_ticks": 60000000,
+    "same_inherited_source_twice": true,
+    "samples": 51,
+    "status": "observed"
+  },
+  "finished_at": "2026-09-09T19:27:28.287430+00:00",
+  "http_requests": {
+    "DELETE": 2,
+    "GET": 45,
+    "HEAD": 1,
+    "POST": 9
+  },
+  "http_response_bytes": 440281,
+  "media": {
+    "audio_channels": 2,
+    "audio_codec": "aac",
+    "audio_end_seconds": 8.6400003,
+    "audio_sample_rate": 48000,
+    "audio_start_seconds": 0.0,
+    "bytes": 440281,
+    "complete_strict_decode": true,
+    "copied_frame_sequence_identical": false,
+    "decoded_audio_frames": 405,
+    "decoded_seconds": 8.64,
+    "first_video_pts_seconds": 0.004964,
+    "height": 90,
+    "http_status": 200,
+    "private_query_injection_ignored": true,
+    "range_ignored_status": 200,
+    "scene_positions": [
+      {
+        "expected_source_frame": 153,
+        "mean_absolute_luma_error": 0.217,
+        "nearest_source_frame": 153,
+        "output_frame": 0,
+        "position_tolerance_frames": 1
+      },
+      {
+        "expected_source_frame": 256,
+        "mean_absolute_luma_error": 0.3229,
+        "nearest_source_frame": 256,
+        "output_frame": 103,
+        "position_tolerance_frames": 1
+      },
+      {
+        "expected_source_frame": 359,
+        "mean_absolute_luma_error": 0.3299,
+        "nearest_source_frame": 359,
+        "output_frame": 206,
+        "position_tolerance_frames": 1
+      }
+    ],
+    "sha256": "df477a6da976a08ad59d05ef023f7d294fb13c987c6805ae0187230ff01831d9",
+    "start_ticks": 63700000,
+    "stored_candidate_equals_current_scan_selection": true,
+    "video_codec": "h264",
+    "video_frames": 207,
+    "width": 160
+  },
+  "original_dto_and_user_data_preserved": true,
+  "owned_playback_scopes_with_revoked_authentication": 1,
+  "owned_session_revoked_and_encoders_inactive": true,
+  "owned_tmpfs_output_removed": true,
+  "owner": "goby-video-fast-seek-m4f-verification-v1",
+  "player_reports_sent": 0,
+  "preservation_after_cleanup": {
+    "all_user_state_preserved": true,
+    "before": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "completed_scan_count": 5,
+    "expected_scan_count": 5,
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "observed": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "6": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "observed_probe_versions": {
+      "6": 11
+    },
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "status": "preserved"
+  },
+  "probe_six_after_cleanup": {
+    "after": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "6": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "all_media_probe_version": 6,
+    "all_user_state_preserved": true,
+    "baseline_boundary": "After schema-14 deployment, before normal probe-five-to-six scans",
+    "before": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "metadata_revisions_controls_and_effective_preserved": true,
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "scans": [
+      {
+        "added": 0,
+        "fixture": "direct",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "hls",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "nextup",
+        "scanned": 3,
+        "status": "completed",
+        "updated": 3
+      },
+      {
+        "added": 0,
+        "fixture": "subtitle",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "audio",
+        "scanned": 5,
+        "status": "completed",
+        "updated": 5
+      }
+    ],
+    "status": "passed",
+    "technical_item_exceptions": [
+      "updated_at",
+      "probed_at",
+      "media.ProbeVersion",
+      "media.VideoSeekIndexes"
+    ],
+    "technical_metadata_exceptions": []
+  },
+  "scope": "One normal scan of each existing owned library and one nonzero progressive-video GET; no new fixture, user, library, player report, or historical row deletion",
+  "source": {
+    "bytes": 967651,
+    "candidate_window_entries": 3,
+    "native_restart_entries": 5,
+    "private_index_count": 1,
+    "seconds": 15,
+    "sha256": "332bce27f1e97d71d3ef7cffa59d8cf70cbcc51380a6b600e05048107432de4d",
+    "source_format_clock_known": true,
+    "video_frames": 360
+  },
+  "status": "passed",
+  "upgrade_after": {
+    "after": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "6": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "all_media_probe_version": 6,
+    "all_user_state_preserved": true,
+    "baseline_boundary": "After schema-14 deployment, before normal probe-five-to-six scans",
+    "before": {
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "metadata_revisions_controls_and_effective_preserved": true,
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "scans": [
+      {
+        "added": 0,
+        "fixture": "direct",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "hls",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "nextup",
+        "scanned": 3,
+        "status": "completed",
+        "updated": 3
+      },
+      {
+        "added": 0,
+        "fixture": "subtitle",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "audio",
+        "scanned": 5,
+        "status": "completed",
+        "updated": 5
+      }
+    ],
+    "status": "passed",
+    "technical_item_exceptions": [
+      "updated_at",
+      "probed_at",
+      "media.ProbeVersion",
+      "media.VideoSeekIndexes"
+    ],
+    "technical_metadata_exceptions": []
+  },
+  "upgrade_before": {
+    "all_user_state_rows": 15,
+    "all_user_state_sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc",
+    "fixture_file_bytes": 3049219,
+    "fixture_file_count": 20,
+    "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+    "item_count": 21,
+    "library_count": 5,
+    "media_count": 11,
+    "metadata_sha256": "a260b2e057f2dc1f7ca69b7b891848f23108e93c8a712ee39ddd734d4b0a54c1",
+    "probe_versions": {
+      "5": 11
+    },
+    "selected_user_state_rows": 15
+  },
+  "upgrade_scans": [
+    {
+      "added": 0,
+      "fixture": "direct",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "hls",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "nextup",
+      "scanned": 3,
+      "status": "completed",
+      "updated": 3
+    },
+    {
+      "added": 0,
+      "fixture": "subtitle",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "audio",
+      "scanned": 5,
+      "status": "completed",
+      "updated": 5
+    }
+  ]
+}

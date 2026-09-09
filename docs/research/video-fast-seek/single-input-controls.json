@@ -1,0 +1,122 @@
+{
+  "sources": [
+    {
+      "container": "mp4",
+      "bytes": 1073207,
+      "sha256": "d7801c938452de32e6c9ba8e11a28a29c8f23d2892d65963829866cecd8304bb",
+      "origin": 0.0,
+      "idr_count": 90,
+      "index_seconds": 0.0164427770068869,
+      "index_warning": "[filter_units @ 0x55dfba1fe880] 4 bytes left at end of AVCC header.\n",
+      "candidate_absolute_pts": 120.0,
+      "landing_absolute_pts": 120.0,
+      "preflight_seconds": 0.005037110997363925,
+      "preflight_warning": "[filter_units @ 0x5616adad1680] 4 bytes left at end of AVCC header.\n"
+    },
+    {
+      "container": "mkv",
+      "bytes": 1062311,
+      "sha256": "443cef941a3a494164ec599f4610d83ae1cd567829b4dfbdb1d531295838d95f",
+      "origin": 0.0,
+      "idr_count": 90,
+      "index_seconds": 0.016523514001164585,
+      "index_warning": "[filter_units @ 0x55b0cc4929c0] 4 bytes left at end of AVCC header.\n",
+      "candidate_absolute_pts": 120.0,
+      "landing_absolute_pts": 118.0,
+      "preflight_seconds": 0.004623779997928068,
+      "preflight_warning": "[filter_units @ 0x55852a252f00] 4 bytes left at end of AVCC header.\n"
+    },
+    {
+      "container": "ts",
+      "bytes": 1846912,
+      "sha256": "c728dc86704fba7350d885fadbab52f4847c29caaecb74fd58ec34824a11568e",
+      "origin": 1.545333,
+      "idr_count": 90,
+      "index_seconds": 0.019878694001818076,
+      "index_warning": "",
+      "candidate_absolute_pts": 121.56666666666666,
+      "landing_absolute_pts": 121.56666666666666,
+      "preflight_seconds": 0.005703603994334117,
+      "preflight_warning": ""
+    }
+  ],
+  "controls": [
+    {
+      "container": "mp4",
+      "linear": {
+        "exit": 0,
+        "elapsed": 0.09509972500381991,
+        "stderr": "",
+        "bytes": 38119
+      },
+      "fast": {
+        "exit": 0,
+        "elapsed": 0.026785630005178973,
+        "stderr": "",
+        "bytes": 38113
+      },
+      "video_framehash_equal": true,
+      "audio_sample_count_equal": true,
+      "audio_comparison": {
+        "lag_samples": 0,
+        "normalized_mse": 0.09532052840518891
+      }
+    },
+    {
+      "container": "mkv",
+      "linear": {
+        "exit": 0,
+        "elapsed": 0.0975414760177955,
+        "stderr": "",
+        "bytes": 38260
+      },
+      "fast": {
+        "exit": 0,
+        "elapsed": 0.027397374011343345,
+        "stderr": "",
+        "bytes": 38218
+      },
+      "video_framehash_equal": true,
+      "audio_sample_count_equal": true,
+      "audio_comparison": {
+        "lag_samples": 8,
+        "normalized_mse": 0.062436933972903744
+      }
+    },
+    {
+      "container": "ts",
+      "linear": {
+        "exit": 0,
+        "elapsed": 0.11690235300920904,
+        "stderr": "",
+        "bytes": 38159
+      },
+      "fast": {
+        "exit": 0,
+        "elapsed": 0.02742643401143141,
+        "stderr": "",
+        "bytes": 38145
+      },
+      "video_framehash_equal": true,
+      "audio_sample_count_equal": true,
+      "audio_comparison": {
+        "lag_samples": 0,
+        "normalized_mse": 0.04881893356280166
+      }
+    }
+  ],
+  "readrate_control": {
+    "linear": {
+      "timeout": true,
+      "elapsed": 5.008278850000352,
+      "bytes": 0
+    },
+    "fast": {
+      "exit": 0,
+      "elapsed": 1.0261852389958221,
+      "stderr": "",
+      "bytes": 38113
+    }
+  },
+  "total_retained_bytes": 3982462
+}

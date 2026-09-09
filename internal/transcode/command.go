@@ -44,6 +44,9 @@ func ValidatePlan(p Plan) error {
 	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
 		return invalid("source format clock")
 	}
+	if p.VideoSeekCandidate != "" {
+		return invalid("progressive video seek candidate")
+	}
 	if p.AudioBitDepth != 0 || !p.AudioSampleSeek && (p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0) {
 		return invalid("audio bit depth")
 	}

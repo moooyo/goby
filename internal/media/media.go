@@ -6,11 +6,14 @@ import "time"
 const TicksPerSecond int64 = 10_000_000
 
 // CurrentProbeVersion identifies the media facts stored by this prober.
-const CurrentProbeVersion = 5
+const CurrentProbeVersion = 6
 
 type Prober struct {
 	FFprobePath string
-	Timeout     time.Duration
+	FFmpegPath  string
+	// AnalyzeVideoSeek enables optional, bounded seek indexing during scanning.
+	AnalyzeVideoSeek bool
+	Timeout          time.Duration
 }
 
 type Info struct {
@@ -31,6 +34,8 @@ type Info struct {
 	Size                    int64
 	Streams                 []Stream
 	Chapters                []Chapter
+	// VideoSeekIndexes are private decoder restart evidence, never public DTOs.
+	VideoSeekIndexes []VideoSeekIndex
 }
 
 type Stream struct {

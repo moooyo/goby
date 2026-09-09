@@ -1,12 +1,12 @@
 # Documentation guide
 
-Research date: **2026-09-09, Asia/Shanghai**.
+Research and verification updated: **2026-09-10, Asia/Shanghai**.
 
 Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, Universal/progressive audio, progressive MP4 video, ordered audio/video PlaybackInfo profiles, native user management, and persistent administrator metadata editing are implemented; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Nonzero video-copy seeking, efficient long-source seeking, additional input/timing profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain work.
 
-The official reference corpus contains **958 records**: the previous 828 plus 130 from the [metadata update/lock study](research/metadata-reference.md), including 106 complete new HTTP captures and 24 observations. Records also include supporting probes and earlier preserved incomplete responses; they are not counts of implemented endpoints or successful client workflows. Current schema **14** adds metadata state without requiring a rescan. Probe cache version **5** still requires a normal rescan when upgrading older probe snapshots.
+The official reference corpus contains **958 records**: the previous 828 plus 130 from the [metadata update/lock study](research/metadata-reference.md), including 106 complete new HTTP captures and 24 observations. Records also include supporting probes and earlier preserved incomplete responses; they are not counts of implemented endpoints or successful client workflows. Current schema **14** adds metadata state without requiring a rescan. Probe cache version **6** adds private restart indexes and requires a normal rescan when upgrading older probe snapshots.
 
-The [M5b verification](development/verification-m5b-metadata.md) passed the complete Linux race suite (888 top-level tests, no skips), the metadata browser workflow and user-management regression, and a deployed schema-14 upgrade preserving existing rows. Earlier [video/user verification](development/verification-m4e-video-and-users.md) records the media workflow. [Implementation progress](development/progress.md) distinguishes completed increments from the remaining full compatibility and administrator milestones.
+The [M4f verification](development/verification-m4f-video-seek.md) passed the complete Linux race suite (940 top-level tests, no skips), the binary upgrade, and five deployed library upgrades with real fast producer evidence and preserved metadata/user state. Its [operating contract](development/video-fast-seek.md) separates verified software video restart from linear audio I/O and hardware decoding. The preceding [M5b verification](development/verification-m5b-metadata.md) records metadata browser and migration acceptance. [Implementation progress](development/progress.md) distinguishes completed increments from the remaining full compatibility and administrator milestones.
 
 ## Compatibility target
 
@@ -18,6 +18,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | --- | --- |
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
+| [Verified video seeking](development/video-fast-seek.md) | Private restart evidence, decoder scope, linear audio history, and resource/cache limits |
 | [Administrator metadata API](api/admin-metadata.md) | Library item management, automatic/manual/locked layers, revisions and type changes |
 | [Build and run](development/running.md) | Startup configuration, PostgreSQL deployment, migrations, and remote verification |
 | [Native user management](api/admin-users.md) | Revision-checked account/policy edits, password reset, last-administrator protection and session revocation |

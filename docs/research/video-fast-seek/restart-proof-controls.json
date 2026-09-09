@@ -1,0 +1,55 @@
+[
+  {
+    "name": "mp4",
+    "idr_count": 90,
+    "decoded_keys": 90,
+    "all_idr_images_equal_full_decode": true,
+    "candidate": "120",
+    "actual": "120",
+    "landing_packet_and_picture_verified": true,
+    "index_seconds": 0.025216089008608833,
+    "preflight_seconds": 0.0069762979983352125,
+    "warning": "[filter_units @ 0x557dd359e940] 4 bytes left at end of AVCC header.\n",
+    "preflight_warning": "[filter_units @ 0x555a9665c680] 4 bytes left at end of AVCC header.\n"
+  },
+  {
+    "name": "mkv",
+    "idr_count": 90,
+    "decoded_keys": 90,
+    "all_idr_images_equal_full_decode": true,
+    "candidate": "120",
+    "actual": "118",
+    "landing_packet_and_picture_verified": true,
+    "index_seconds": 0.02895971600082703,
+    "preflight_seconds": 0.007112095016054809,
+    "warning": "[filter_units @ 0x5620c903fc80] 4 bytes left at end of AVCC header.\n",
+    "preflight_warning": "[filter_units @ 0x55aca31e6000] 4 bytes left at end of AVCC header.\n"
+  },
+  {
+    "name": "ts",
+    "idr_count": 90,
+    "decoded_keys": 90,
+    "all_idr_images_equal_full_decode": true,
+    "candidate": "3647/30",
+    "actual": "3647/30",
+    "landing_packet_and_picture_verified": true,
+    "index_seconds": 0.03360053297365084,
+    "preflight_seconds": 0.009201893000863492,
+    "warning": "",
+    "preflight_warning": ""
+  },
+  {
+    "name": "vfr",
+    "idr_count": 4,
+    "decoded_keys": 4,
+    "all_idr_images_equal_full_decode": true,
+    "candidate": "2",
+    "actual": "2",
+    "landing_packet_and_picture_verified": true,
+    "index_seconds": 0.0056993789912667125,
+    "preflight_seconds": 0.0054093479993753135,
+    "warning": "[filter_units @ 0x5590da03a380] 4 bytes left at end of AVCC header.\n",
+    "preflight_warning": "[filter_units @ 0x560ec098cd40] 4 bytes left at end of AVCC header.\n",
+    "visible_vfr_frames_equal": true
+  }
+]

@@ -25,11 +25,15 @@ func validateProgressiveVideoPlan(p Plan) error {
 	if p.VideoCodec == "copy" && p.StartTicks != 0 {
 		return invalid("video copy seek")
 	}
+	if err := validateProgressiveVideoSeekCandidate(p); err != nil {
+		return err
+	}
 	// Reuse the HLS engine's closed stream, video, hardware, and resource limits.
 	// Only its output-specific fields differ; no caller option bypasses checks.
 	video := p
 	video.OutputMode, video.Container, video.SegmentSeconds = "", "ts", 1
 	video.SourceFormatStartKnown, video.SourceFormatStartTicks = false, 0
+	video.VideoSeekCandidate = ""
 	if err := ValidatePlan(video); err != nil {
 		return err
 	}
@@ -48,17 +52,39 @@ func validateProgressiveVideoPlan(p Plan) error {
 }
 
 func buildProgressiveVideoArgs(p Plan, threads int) []string {
+	// Constructing a plan or previewing arguments must never authorize a fast
+	// restart. Only Run can supply a positive value after its fresh preflight.
+	return buildProgressiveVideoArgsWithSeek(p, threads, 0)
+}
+
+func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64) []string {
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y", "-progress", "pipe:1", "-stats_period", "0.5",
 		"-filter_threads", threadCount, "-filter_complex_threads", threadCount, "-copyts"}
 	args, decode, encode := appendHardwareInputArgs(args, p.Hardware)
 	// FFmpeg may otherwise change its effective input origin when a track is
 	// disabled. Use one probed container clock for every stream and selection.
-	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats,
-		"-itsoffset", signedTickSeconds(-p.SourceFormatStartTicks), "-i", "/proc/self/fd/3")
+	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats)
+	if inputSeekTicks > 0 {
+		// Reuse the preflighted argument exactly. An observed earlier landing
+		// is evidence about this argument, not a replacement seek argument.
+		args = append(args, "-seek_timestamp", "1", "-noaccurate_seek", "-ss", signedTickSeconds(p.SourceFormatStartTicks+inputSeekTicks))
+	}
+	args = append(args, "-itsoffset", signedTickSeconds(-p.SourceFormatStartTicks), "-i", "/proc/self/fd/3")
+	audioInput := "0:"
+	if inputSeekTicks > 0 && p.AudioStreamIndex >= 0 {
+		// Reopen the same inherited source independently. Linear audio keeps
+		// decoder history and the existing sample/timestamp behavior, while
+		// discarded video avoids the expensive prefix video decoding. This
+		// path may still read the audio input's container linearly.
+		args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats,
+			"-discard:v", "all", "-itsoffset", signedTickSeconds(-p.SourceFormatStartTicks), "-i", "/proc/self/fd/3")
+		audioInput = "1:"
+	}
 	if p.StartTicks > 0 {
-		// Decode from the beginning. Input seeking into TS/MKV can lose the
-		// reference frames or keep different amounts of audio/video pre-roll.
+		// Trim presentation on the shared source clock, whether video starts
+		// from the beginning or from a freshly verified restart. Audio retains
+		// the same linear decoding history in both cases.
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
 	}
 	args = append(args, "-t", tickSeconds(p.DurationTicks-p.StartTicks), "-map", "0:"+strconv.Itoa(p.VideoStreamIndex),
@@ -89,7 +115,7 @@ func buildProgressiveVideoArgs(p Plan, threads int) []string {
 	if p.AudioStreamIndex < 0 {
 		args = append(args, "-an")
 	} else {
-		args = append(args, "-map", "0:"+strconv.Itoa(p.AudioStreamIndex), "-map_metadata:s:a", "-1", "-tag:a", "mp4a")
+		args = append(args, "-map", audioInput+strconv.Itoa(p.AudioStreamIndex), "-map_metadata:s:a", "-1", "-tag:a", "mp4a")
 		if p.AudioCodec == "copy" {
 			// Transport-stream AAC needs its ADTS framing converted before the
 			// delayed immutable moov is written. MP4/MKV AAC is also accepted.

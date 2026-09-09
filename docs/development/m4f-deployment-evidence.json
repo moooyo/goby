@@ -1,0 +1,161 @@
+{
+  "owner": "goby-m4f-deployment-evidence-v1",
+  "status": "passed",
+  "binary_sha256": "5eaf10c9f7ea80aa97c4d3e7d0750c3b26f998671388702ad8d4d1b9be58445d",
+  "previous_binary_sha256": "210c6c075cd80db403c1a28f1a5672d9cdbdb93a81ef76dbba61dc4d83eea197",
+  "previous_pid": 3379452,
+  "main_pid": 3412620,
+  "uid": 995,
+  "schema_version": 14,
+  "probe_versions_before_normal_scan": {
+    "5": 11
+  },
+  "all_17_tables_unchanged": true,
+  "tables_before": {
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 28,
+      "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 27,
+      "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+    },
+    "scan_jobs": {
+      "count": 31,
+      "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+    },
+    "schema_migrations": {
+      "count": 14,
+      "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+    },
+    "sessions": {
+      "count": 74,
+      "sha256": "b4f7b06c36a611fc180f783edd96a8d5bf5d49445a62957c3ac6e81247226373"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+    }
+  },
+  "tables_after": {
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "5b92dbc0bbe271bd802e3f945764735a8ae786de315c27b4e38f18d84e347597"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 28,
+      "sha256": "0e85d9f22ac1c2f7b1417c516abfae95a2dfd5f5ec18d6764fd9044853cd4351"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "c1d58516ff54e666b0054f097b99f3c95d42c477623e5b59d7cb27c67d40a25e"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "66314ef475683aeda937f6ece2e6921668a4caac9f332c7c43e360e3e7168321"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "f2bfcf9c019d6a43f506fb10b9865326e0748c5f9b6d1ed3263460d9342a7824"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "090bde298a94c5619b1254c6f3dac52b81612d87d3bcc5deb0d6d2b1078fbc40"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 27,
+      "sha256": "53f2ab5d126eefed8afe8bee79230b08e55ef0538b650be1da4d42fa1cdc69e8"
+    },
+    "scan_jobs": {
+      "count": 31,
+      "sha256": "9c8e52eab2c263cb1a532282048b44e3ba57700ffdd26041335df76f21f8d21d"
+    },
+    "schema_migrations": {
+      "count": 14,
+      "sha256": "e8e2a7ac9c34ff11d939ea741c98c13e1cdd8aa8ac37e54316223367143fe656"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "fc11affb480ea869522b99ffa16c5c293e5e55c940a96eb895c55e969f176ec5"
+    },
+    "sessions": {
+      "count": 74,
+      "sha256": "b4f7b06c36a611fc180f783edd96a8d5bf5d49445a62957c3ac6e81247226373"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "5cedfb7144e99141dcd0d1be35faebb01970cbce747c027ea0f00084d6d125dc"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "dbd351c486fcd45280024152bc55eb21f480f2fdb9abf68435c53227d3d98f9e"
+    }
+  },
+  "verified_go_and_module_files": 298,
+  "administrator_assets_unchanged": true,
+  "administrator_asset_files": 111,
+  "current_build_asset_files": 31,
+  "backup_directory": "/dev/shm/goby-m4f-deployment-backup",
+  "backup_database_bytes": 86282,
+  "backup_database_sha256": "8413fdc5ef162225afb265dada2b9d666001980ddcbea5d032a171459996a95e"
+}

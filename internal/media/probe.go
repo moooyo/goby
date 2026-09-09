@@ -115,6 +115,12 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 			}
 		}
 	}
+	if p.AnalyzeVideoSeek && strings.TrimSpace(p.FFmpegPath) != "" {
+		info.VideoSeekIndexes, err = AnalyzeVideoSeekIndexes(ctx, p.FFmpegPath, file, info)
+		if err != nil {
+			return Info{}, fmt.Errorf("analyze video seek evidence: %w", err)
+		}
+	}
 	after, err := file.Stat()
 	if err != nil {
 		return Info{}, fmt.Errorf("stat media file after probe: %w", err)

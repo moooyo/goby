@@ -1,0 +1,84 @@
+{
+  "owner": "goby-m4f-full-race-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 2 ./...",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "top_level_tests_passed": 940,
+  "skipped_tests": 0,
+  "started_at": "2026-09-09T19:14:55Z",
+  "finished_at": "2026-09-09T19:21:11Z",
+  "packages": [
+    {
+      "status": "?",
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "detail": "[no test files]"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "detail": "1.498s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/config",
+      "detail": "1.020s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "2.859s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/events",
+      "detail": "1.078s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "96.574s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "23.204s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/media",
+      "detail": "5.380s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "detail": "1.508s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/playback",
+      "detail": "1.235s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "336.432s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "detail": "1.121s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "detail": "55.699s"
+    }
+  ],
+  "log_sha256": "32f413c4b75719976d81caf1f15b532607ac6b69ae273a05dc250e8e29e8a898",
+  "log_path": "/opt/goby-test/exec-scratch/m4f-full-race.log",
+  "go_and_module_files": 298,
+  "verified_go_source_sha256": "0f5e2a93d1b5719bc693bc99b8ddbb2fb3af34f718d729dff02dad6f62f85e7c",
+  "integration_database_port": 15432,
+  "actual_gpu_execution_verified": false
+}

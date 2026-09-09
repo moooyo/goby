@@ -163,22 +163,31 @@ an automatic encoder substitution. Renegotiate a supported encoded result, or
 request a permitted H.264 conversion, for that seek. A normal codec request may
 fall back to encoding only when the current user permits it.
 
-The encoded seek path decodes from the beginning instead of using an input
-demuxer seek that may retain different pre-roll for different tracks. It retains
-one common source clock for audio and video. Explicit frame-rate conversion
+The fallback encoded seek path decodes from the beginning, retaining one common
+source clock for audio and video. Eligible M4f software video decoding can use a
+freshly verified input restart while audio independently retains its linear
+history; an unproven demuxer landing does not authorize that optimization.
+Explicit frame-rate conversion
 changes frame pacing; without it, encoding preserves source timestamp pacing
 instead of claiming an invented constant frame rate. Packet priming, encoder
 padding, and output track intervals require actual media measurements; no general
 sample-exact A/V or perceptual synchronization claim follows from a successful
 HTTP response.
 
-## Format-clock origin and probe version 5
+## Format-clock origin and current probe cache
 
-Probe cache version 5 stores FFprobe's explicitly reported format-clock origin in
+Probe cache version 5 introduced FFprobe's explicitly reported format-clock origin in
 `FormatStartTicks` and `FormatStartKnown`. Known zero, positive, and negative
 origins are distinct from an absent origin. This fact is independent of the
 first audible sample, an individual stream's first packet, and the audio-only
 `PresentationOriginTicks` measurement.
+
+Current probe version 6 retains those facts and adds optional private H.264
+restart indexes. The [M4f operating contract](video-fast-seek.md) describes the
+verified software-decoder input seek and independent linear audio input. Missing
+or unproven evidence keeps the preceding linear path; hardware decoding still
+uses that path. A normal scan upgrades older probe caches. These additions do
+not change the public playback URL or authorize a client-supplied proof.
 
 The progressive video plan requires a verified bounded format origin and applies
 its offset consistently to every selected track. Missing origin data cannot be

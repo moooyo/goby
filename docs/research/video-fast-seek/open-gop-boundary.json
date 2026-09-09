@@ -1,0 +1,18 @@
+[
+  {
+    "decoded_idr": false,
+    "return": 0,
+    "idr_rows": [
+      "0,       -512,          0,      512,     2217, a7797a297b700386067f7c79314d16931ec274a37528b7215dd11c8f831e4e01"
+    ],
+    "warning": "[filter_units @ 0x55d3d057ebc0] 4 bytes left at end of AVCC header.\n"
+  },
+  {
+    "decoded_idr": true,
+    "return": 69,
+    "idr_rows": [
+      "0,          0,          0,      512,    21600, 76da4d2b5fd86424a2284812a1f9c02a721c7b3165a1853d47ccc5ed2d5ce3b7"
+    ],
+    "warning": "[filter_units @ 0x55b194dc46c0] 4 bytes left at end of AVCC header.\n[h264 @ 0x55b194d64500] no frame!\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Error submitting packet to decoder: Invalid data found when processing input\n[h264 @ 0x55b194d64500] no frame!\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Error submitting packet to decoder: Invalid data found when processing input\n[h264 @ 0x55b194d64500] no frame!\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Error submitting packet to decoder: Invalid data found when processing input\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Decode error rate 0.75 exceeds maximum 0.666667\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Task finished with error code: -1145393733 (Error number -1145393733 occurred)\n[vist#0:0/h264 @ 0x55b194d60dc0] [dec:h264 @ 0x55b194dba280] Terminating thread with return code -1145393733 (Error number -1145393733 occurred)\n"
+  }
+]

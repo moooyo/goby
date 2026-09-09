@@ -107,6 +107,9 @@ func PlanVideoConversion(source Source, request Request, limits ConversionLimits
 		}
 		selected.Original = original
 		selected.SelectedProtocol, selected.SelectedProfileIndex = protocol, &index
+		if protocol == "http" {
+			attachProgressiveVideoSeekCandidate(source, selected.Plan)
+		}
 		return selected, nil
 	}
 	result.Reasons = appendConversionReasons(result.Reasons, *conversionReason("no_supported_video_profile", "TranscodingProfiles", "No declared video profile has an authorized output satisfying the client constraints."))
@@ -116,6 +119,10 @@ func PlanVideoConversion(source Source, request Request, limits ConversionLimits
 func planHTTPVideoProfile(source Source, request Request, profile TranscodingProfile, limits ConversionLimits, selection selectedStreams, search *videoProfileBudget) ConversionDecision {
 	var result ConversionDecision
 	var unverified *ConversionDecision
+	// Restart evidence cannot affect profile compatibility. Select it once for
+	// the final accepted plan, rather than revalidating a large scan index for
+	// every bounded profile-search attempt. This value copy leaves Source intact.
+	source.Info.VideoSeekIndexes = nil
 	if selection.subtitle != nil || !httpVideoProfileOptionsSupported(profile) {
 		result.Reasons = []Reason{*conversionReason("video_profile_options_unsupported", "TranscodingProfiles", "The progressive profile requires delivery behavior not represented by the video execution plan.")}
 		return result

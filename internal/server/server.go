@@ -40,7 +40,11 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if err != nil {
 		return nil, err
 	}
-	catalog, err := library.New(db, media.Prober{FFprobePath: cfg.FFprobePath, Timeout: 30 * time.Second}, cfg.MediaRoots)
+	// Optional restart analysis belongs to scanning, independently of whether
+	// conversion is currently enabled. Unsupported analysis retains the normal
+	// probe facts; playback requests only read cached evidence.
+	catalog, err := library.New(db, media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath,
+		AnalyzeVideoSeek: true, Timeout: 30 * time.Second}, cfg.MediaRoots)
 	if err != nil {
 		return nil, err
 	}

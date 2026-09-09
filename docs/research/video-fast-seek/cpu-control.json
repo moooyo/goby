@@ -1,0 +1,24 @@
+{
+  "source_bytes": 2627320,
+  "size": "3840x2160",
+  "rate": 24,
+  "duration": 150,
+  "seek": 120.37,
+  "output_seconds": 2,
+  "generation_seconds": 33.4693153440021,
+  "results": [
+    {
+      "dual": false,
+      "elapsed": 9.784391823981423,
+      "bytes": 11864,
+      "warnings": ""
+    },
+    {
+      "dual": true,
+      "elapsed": 0.2594385110132862,
+      "bytes": 11864,
+      "warnings": ""
+    }
+  ],
+  "limitation": "Uniform-color fixture measures prefix video decode work only; content correctness is established with separate nonperiodic fixtures. No universal 45-second startup claim."
+}

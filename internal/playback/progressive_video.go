@@ -177,6 +177,7 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 			if transcode.ValidatePlan(candidate) != nil {
 				continue
 			}
+			attachProgressiveVideoSeekCandidate(source, &candidate)
 			result.Plan, result.Method = &candidate, "DirectStream"
 			if !videoCopy || !audioCopy {
 				result.Method = "Transcode"
