@@ -27,6 +27,7 @@ type Server struct {
 	library       *library.Store
 	images        *imageCache
 	streamSlots   chan struct{}
+	originals     *originalStreamRuntime
 	subtitleSlots chan struct{}
 	eventHub      *events.Hub
 	sockets       *socketRuntime
@@ -49,8 +50,10 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	app.originals = newOriginalStreamRuntime()
 	app.hls, err = newHLSRuntime(ctx, app)
 	if err != nil {
+		app.originals.stop()
 		app.sockets.cancel()
 		_ = hub.Close()
 		_ = catalog.Close(ctx)
@@ -77,6 +80,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/v1/capabilities", s.requireAdmin(s.capabilities))
 	mux.HandleFunc("GET /admin/v1/users", s.requireAdmin(s.users))
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
+	s.registerAdminUserRoutes(mux)
 	s.registerLibraryRoutes(mux)
 	s.registerEntityRoutes(mux)
 	s.registerImageRoutes(mux)

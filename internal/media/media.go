@@ -6,7 +6,7 @@ import "time"
 const TicksPerSecond int64 = 10_000_000
 
 // CurrentProbeVersion identifies the media facts stored by this prober.
-const CurrentProbeVersion = 4
+const CurrentProbeVersion = 5
 
 type Prober struct {
 	FFprobePath string
@@ -18,6 +18,10 @@ type Info struct {
 	FileChangeTimeNs int64
 	Container        string
 	DurationTicks    int64
+	// Format start is the demuxer's explicitly reported clock origin. It is
+	// independent of the first audible sample and remains unknown when absent.
+	FormatStartTicks int64
+	FormatStartKnown bool
 	// Audio-only sources require an exact sample/packet scan before conversion.
 	// Unproven sources retain their original metadata and byte-stream access.
 	AudioDurationExact      bool

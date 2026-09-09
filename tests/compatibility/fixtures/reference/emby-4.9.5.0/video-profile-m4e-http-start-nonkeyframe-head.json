@@ -1,0 +1,85 @@
+{
+  "request": {
+    "method": "HEAD",
+    "path": "/videos/43/stream.mp4?DeviceId=goby-video-profile-m4e-recorder&MediaSourceId=mediasource_43&PlaySessionId=00b13686952343808b0f986eeb67d0b8&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=aac&VideoBitrate=435707&AudioBitrate=64293&MaxWidth=160&MaxHeight=90&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&TranscodeReasons=ContainerBitrateExceedsLimit%2CDirectPlayError&allowVideoStreamCopy=false&allowAudioStreamCopy=false&StartTimeTicks=63700000",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "937500"
+      ],
+      [
+        "Content-Type",
+        "video/mp4"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 06:54:20 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "none"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Pragma",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "wireBytes": 0,
+    "wireSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "note": "Follows the emitted same-origin URL; no extra authentication header."
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:54:20.951728+00:00"
+  }
+}

@@ -1,0 +1,562 @@
+{
+  "kind": "remote-video-probe",
+  "ffprobe": {
+    "exitCode": 0,
+    "stderr": "[mov,mp4,m4a,3gp,3g2,mj2 @ 0x562d870435c0] stream 1, offset 0x2c1f9: partial file\n",
+    "body": {
+      "packets": [
+        {
+          "stream_index": 0,
+          "pts_time": "0.000000",
+          "dts_time": "0.000000",
+          "duration_time": "0.041667",
+          "flags": "K__",
+          "data_hash": "SHA256:134a4d76b178c6c535d2a41e87981ef44dd13c2b2c4eef242c27d1dc542ed4c5"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.041667",
+          "dts_time": "0.041667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:15000b3985b225d06780c54de49830505379d2903a13e1242b4b8008c85020df"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.083333",
+          "dts_time": "0.083333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:ee2293edcb84bb0970eefe4e924fb6b571813621c5245d2f38c861f74ce5b01e"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.125000",
+          "dts_time": "0.125000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:2a9f06e1b5b6c9b9dded61a9039c0ac41c9fcb007f39e7c05e2ce12a18b5134d"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.166667",
+          "dts_time": "0.166667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:8219add15d9f5e6d88b939c9f1ec2a534b3c8b087ceb4cd0fe16bf5ecd3b4283"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.208333",
+          "dts_time": "0.208333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:4b453b8dd5ca522a93d974900d02882f6d8730b484dbc4ae0d0edf3b05eea91d"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.250000",
+          "dts_time": "0.250000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:c36c609c02290419f76189feecc0af0888e162a95cc4551d945be6a44987527a"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.291667",
+          "dts_time": "0.291667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:63e0664313c1561f3e8e3b2f4c464b70e8bd9a519c2d7d0f11281cde8f2eb067"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.333333",
+          "dts_time": "0.333333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:ae7bd9a1167288d9d624b2945f897c806232b58f382e4c9b013682eb5df7e712"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.375000",
+          "dts_time": "0.375000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:5a39f522290447d5a160b2bc522b8bfd7d28c8aad1f3462afa7a109fda3f7fde"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.416667",
+          "dts_time": "0.416667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:4f0f11e68cba8450687042576f8750ff971e7adb6b09d84015d5facd182963b8"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.458333",
+          "dts_time": "0.458333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:9407250a7dd8896e8f77aaad2a4de297b6c10b389a4ed8eb6d7741f6f36fed87"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.500000",
+          "dts_time": "0.500000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:d923d21afe0a80ceda3033ffe1b8d973dc609c5ff60862742be2333d58257387"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.541667",
+          "dts_time": "0.541667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:69f8ce8b26fef328b58f261a474cdb207addf91188167ea0ae1e5ef81d1c948f"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.583333",
+          "dts_time": "0.583333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:622bbf852aae50577b25f0a3999590cb6b5e4da11d8216f1d1b9d11e0e7195aa"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.625000",
+          "dts_time": "0.625000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:f0b3409817b639142ad13583992e49fbb357a3c691b4f74e1daa5bc35b3f7228"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.666667",
+          "dts_time": "0.666667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:1c13928e51b5faf1cbdc368c51367bba5525145e12534baf391f1beecf9d37e7"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.708333",
+          "dts_time": "0.708333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:70ba1a8b73aadea76b14e75d1dfe80b617a72bf09d5610cb6a77e5add333ef37"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.750000",
+          "dts_time": "0.750000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:8eb2e53950fddc312a52b011e6f9cee02d62281a2188471cc15c8fc0fc6fa345"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.791667",
+          "dts_time": "0.791667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:a194cc0dbd5928129008839934d0b5c9ea238d4e5abffb83fe50060b6df0df78"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.833333",
+          "dts_time": "0.833333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:d09d09332ba604dc467254b12704ca631354dcfab3901463282280bb7a9ad99a"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.875000",
+          "dts_time": "0.875000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:131a7cc091bbcb8459a0f100934bbad1b167c0aaebb3ab24e41b9023b6c76e42"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.916667",
+          "dts_time": "0.916667",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:e2120300b7991638b7ce8c9d570e41bbdeb8c9aaed8aeb458f25e327530dc21a"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "0.958333",
+          "dts_time": "0.958333",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:95ba0454734edc768db5d83d1b6ce089447814b75fac47e4b430a4f1d39d2fbf"
+        },
+        {
+          "stream_index": 0,
+          "pts_time": "1.000000",
+          "dts_time": "1.000000",
+          "duration_time": "0.041667",
+          "flags": "___",
+          "data_hash": "SHA256:286bc94cb3821f60a06088fb0b322a9de1caacc9ecf03478a13d4339c786b280"
+        }
+      ],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "Constrained Baseline",
+          "codec_type": "video",
+          "codec_tag_string": "avc1",
+          "codec_tag": "0x31637661",
+          "mime_codec_string": "avc1.42c00c",
+          "width": 320,
+          "height": 180,
+          "coded_width": 320,
+          "coded_height": 180,
+          "has_b_frames": 0,
+          "sample_aspect_ratio": "1:1",
+          "display_aspect_ratio": "16:9",
+          "pix_fmt": "yuv420p",
+          "level": 12,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "is_avc": "true",
+          "nal_length_size": "4",
+          "id": "0x1",
+          "r_frame_rate": "24/1",
+          "avg_frame_rate": "24/1",
+          "time_base": "1/12288",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 36864,
+          "duration": "3.000000",
+          "bit_rate": "475251",
+          "bits_per_raw_sample": "8",
+          "nb_read_packets": "25",
+          "extradata_size": 38,
+          "extradata_hash": "SHA256:a45ec9cb94cb34cca1797fcb9f6cf635ddf09c45ede2d5bbb4b750c0d6eab926",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "encoder": "Lavc63.1.101 libx264"
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "codec_type": "audio",
+          "codec_tag_string": "mp4a",
+          "codec_tag": "0x6134706d",
+          "mime_codec_string": "mp4a.40.2",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x2",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/48000",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 144384,
+          "duration": "3.008000",
+          "bit_rate": "64191",
+          "extradata_size": 5,
+          "extradata_hash": "SHA256:643b0e23faf2831be78dddd3de11c0f1b4aac4d4f762554c9bdaab7cc1e9e409",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "SoundHandler"
+          }
+        }
+      ],
+      "format": {
+        "filename": "/reference-video-profile-private/private/probe/video-profile-m4e-copy-start-nonkeyframe-media.media",
+        "nb_streams": 2,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "3.008000",
+        "size": "81920",
+        "bit_rate": "217872",
+        "probe_score": 100,
+        "tags": {
+          "major_brand": "isom",
+          "minor_version": "512",
+          "compatible_brands": "isomiso6iso2avc1mp41",
+          "encoder": "Lavf59.27.100"
+        }
+      }
+    }
+  },
+  "decodedFrames": {
+    "exitCode": 0,
+    "stderr": "[mov,mp4,m4a,3gp,3g2,mj2 @ 0x55c45eab0400] stream 1, offset 0x2c1f9: partial file\n",
+    "body": {
+      "frames": [
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.000000",
+          "best_effort_timestamp_time": "0.000000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.041667",
+          "best_effort_timestamp_time": "0.041667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.083333",
+          "best_effort_timestamp_time": "0.083333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.125000",
+          "best_effort_timestamp_time": "0.125000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.166667",
+          "best_effort_timestamp_time": "0.166667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.208333",
+          "best_effort_timestamp_time": "0.208333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.250000",
+          "best_effort_timestamp_time": "0.250000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.291667",
+          "best_effort_timestamp_time": "0.291667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.333333",
+          "best_effort_timestamp_time": "0.333333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.375000",
+          "best_effort_timestamp_time": "0.375000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.416667",
+          "best_effort_timestamp_time": "0.416667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.458333",
+          "best_effort_timestamp_time": "0.458333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.500000",
+          "best_effort_timestamp_time": "0.500000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.541667",
+          "best_effort_timestamp_time": "0.541667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.583333",
+          "best_effort_timestamp_time": "0.583333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.625000",
+          "best_effort_timestamp_time": "0.625000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.666667",
+          "best_effort_timestamp_time": "0.666667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.708333",
+          "best_effort_timestamp_time": "0.708333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.750000",
+          "best_effort_timestamp_time": "0.750000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.791667",
+          "best_effort_timestamp_time": "0.791667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.833333",
+          "best_effort_timestamp_time": "0.833333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.875000",
+          "best_effort_timestamp_time": "0.875000",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.916667",
+          "best_effort_timestamp_time": "0.916667",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "0.958333",
+          "best_effort_timestamp_time": "0.958333",
+          "duration_time": "0.041667"
+        },
+        {
+          "media_type": "video",
+          "stream_index": 0,
+          "pts_time": "1.000000",
+          "best_effort_timestamp_time": "1.000000",
+          "duration_time": "0.041667"
+        }
+      ]
+    }
+  },
+  "ffmpegDecode": {
+    "exitCode": 0,
+    "stderr": "[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0x556983cb7400] stream 1, offset 0x2c1f9: partial file\n",
+    "progress": {
+      "frame": "25",
+      "fps": "0.00",
+      "stream_0_0_q": "-0.0",
+      "bitrate": "N/A",
+      "total_size": "N/A",
+      "out_time_us": "1041667",
+      "out_time_ms": "1041667",
+      "out_time": "00:00:01.041667",
+      "dup_frames": "0",
+      "drop_frames": "0",
+      "speed": " 213x",
+      "progress": "end"
+    }
+  },
+  "ffmpegVideoFrameHashes": {
+    "exitCode": 183,
+    "stdout": "#format: frame checksums\n#version: 2\n#hash: MD5\n#software: Lavf63.1.101\n#tb 0: 1/24\n#media_type 0: video\n#codec_id 0: rawvideo\n#dimensions 0: 320x180\n#sar 0: 1/1\n#stream#, dts,        pts, duration,     size, hash\n0,          0,          0,        1,    86400, 3d5f1013eb4f204b80e278b862756e05\n0,          1,          1,        1,    86400, 25d4d6f81b32287d790174c865be8c93\n0,          2,          2,        1,    86400, ffdcd72e8a17bcab7a61e1e1a37d50b3\n0,          3,          3,        1,    86400, 416f1457321e6a2ddedd6012a28dcec5\n0,          4,          4,        1,    86400, 6e99f1a087f001c1ddeeb3c4da93300c\n0,          5,          5,        1,    86400, 9b0c3fdfbb06bd66a65ad1d291ccc0f4\n0,          6,          6,        1,    86400, 3fb154d6f5047879d0112100e76fb518\n0,          7,          7,        1,    86400, fd66a70d5fd494a8f3bd726f51cf5538\n0,          8,          8,        1,    86400, d0082ab72ce8605fdd7c57c83f36cb88\n0,          9,          9,        1,    86400, 099587400b2f2ecb4724ee149ed395c9\n0,         10,         10,        1,    86400, 759f9830347b4c6554a76e97202a3b70\n0,         11,         11,        1,    86400, 9bcf1de9dfc89df561f599f54e40787a\n0,         12,         12,        1,    86400, 57f2afa17875233008da29f7c26e50ae\n0,         13,         13,        1,    86400, 8f126d939fc9219e25c56caf61171d26\n0,         14,         14,        1,    86400, e1445dcd8409cfafde84c621800709db\n0,         15,         15,        1,    86400, fc8791afef7676353870e92557be6cde\n0,         16,         16,        1,    86400, e2e153e94713879d7400e277b9247568\n0,         17,         17,        1,    86400, b58ace3ad20a0d7ade9b9519592a0464\n0,         18,         18,        1,    86400, ede8b1476845b85a1190b708b5614805\n0,         19,         19,        1,    86400, 64c6e8cfc8cf05d76faeb82fd3f9a843\n0,         20,         20,        1,    86400, 4f517f4352b9320d8426aed6c82df368\n0,         21,         21,        1,    86400, be5d6897a8e9eca99d54887bd00b9222\n0,         22,         22,        1,    86400, be17ce35cd812d3e73621f413a2d21f1\n0,         23,         23,        1,    86400, b5b0f573ae77a53328f055f8c4d19838\n0,         24,         24,        1,    86400, 0cfa448e76f4daead9d08640aab8a9da\n0,         25,         25,        1,    86400, 2e8aed1fcf3c00d74d80c2f16381e41c\n0,         26,         26,        1,    86400, 4d4b92183b93f766296ca0132d5a7bf9\n0,         27,         27,        1,    86400, 805d819c191282fcd96f171cc742fc8c\n0,         28,         28,        1,    86400, 997fa5c2145b6957e9f60fdd115d1d61\n0,         29,         29,        1,    86400, 9b6ecac8e9d30476124aa2056c22829b\n",
+    "stderr": "[h264 @ 0x555bbebe0900] Invalid NAL unit size (2094 > 1559).\n[h264 @ 0x555bbebe0900] missing picture in access unit with size 1563\n[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0x555bbebdac40] corrupt input packet in stream 0\n[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0x555bbebdac40] Task finished with error code: -1094995529 (Invalid data found when processing input)\n[in#0/mov,mp4,m4a,3gp,3g2,mj2 @ 0x555bbebdac40] Terminating thread with return code -1094995529 (Invalid data found when processing input)\n"
+  },
+  "mp4TimingBoxes": {
+    "isISOBaseMedia": true,
+    "parseError": "A video box exceeds its captured response",
+    "tracks": []
+  },
+  "scope": "Complete returned bytes or real emitted HLS graph, with strict xerror.",
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:54:20.942579+00:00"
+  }
+}

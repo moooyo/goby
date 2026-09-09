@@ -124,7 +124,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		serveOriginalMedia(w, r, file, source)
+		s.serveOriginalMedia(w, r, file, source)
 		return
 	}
 	var conversion playback.ConversionDecision
@@ -156,7 +156,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	owned := file
 	file = nil
-	s.serveProgressiveAudio(w, r, session, owned)
+	s.serveProgressiveMedia(w, r, session, owned)
 }
 
 // Conversion must not turn an estimated duration or a delayed/shorter track
@@ -196,12 +196,16 @@ func progressiveAudioMIME(container string) string {
 	}
 }
 
-// serveProgressiveAudio owns input. A header-only request validates the plan
+// serveProgressiveMedia owns input. A header-only request validates the plan
 // and permissions but starts no encoder and invents no output Content-Length.
-func (s *Server) serveProgressiveAudio(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File) {
+func (s *Server) serveProgressiveMedia(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File) {
+	respondError := s.audioError
+	if session.key.plan.Container == "mp4" {
+		respondError = s.videoError
+	}
 	if !s.hls.enter() {
 		_ = input.Close()
-		s.audioError(w, r, transcode.ErrManagerClosed)
+		respondError(w, r, transcode.ErrManagerClosed)
 		return
 	}
 	defer s.hls.requests.Done()
@@ -221,11 +225,11 @@ func (s *Server) serveProgressiveAudio(w http.ResponseWriter, r *http.Request, s
 			if permanentHLSError(err) {
 				s.hls.retire(session)
 			}
-			s.audioError(w, r, err)
+			respondError(w, r, err)
 			return
 		}
 		_ = verified.Close()
-		setProgressiveAudioHeaders(w, session.key.plan.Container)
+		setProgressiveMediaHeaders(w, session.key.plan.Container)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -260,7 +264,7 @@ func (s *Server) serveProgressiveAudio(w http.ResponseWriter, r *http.Request, s
 		if cause := context.Cause(work); cause != nil {
 			err = cause
 		}
-		s.audioError(w, r, err)
+		respondError(w, r, err)
 		return
 	}
 	defer release()
@@ -272,11 +276,11 @@ func (s *Server) serveProgressiveAudio(w http.ResponseWriter, r *http.Request, s
 		if permanentHLSError(err) {
 			s.hls.retire(session)
 		}
-		s.audioError(w, r, err)
+		respondError(w, r, err)
 		return
 	}
 	_ = verified.Close()
-	setProgressiveAudioHeaders(w, session.key.plan.Container)
+	setProgressiveMediaHeaders(w, session.key.plan.Container)
 	w.WriteHeader(http.StatusOK)
 	buffer := make([]byte, 32*1024)
 	for {
@@ -312,8 +316,12 @@ func (s *Server) serveProgressiveAudio(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
-func setProgressiveAudioHeaders(w http.ResponseWriter, container string) {
-	w.Header().Set("Content-Type", progressiveAudioMIME(container))
+func setProgressiveMediaHeaders(w http.ResponseWriter, container string) {
+	contentType := progressiveAudioMIME(container)
+	if container == "mp4" {
+		contentType = "video/mp4"
+	}
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Cache-Control", "no-cache, no-store, no-transform, must-revalidate")
 	w.Header().Set("Accept-Ranges", "none")
 	w.Header().Del("Content-Length")

@@ -41,6 +41,9 @@ func ValidatePlan(p Plan) error {
 	if p.OutputMode != "" {
 		return invalid("output mode")
 	}
+	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
+		return invalid("source format clock")
+	}
 	if p.AudioBitDepth != 0 || !p.AudioSampleSeek && (p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0) {
 		return invalid("audio bit depth")
 	}
@@ -170,32 +173,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y",
 		"-progress", "pipe:1", "-stats_period", "0.5", "-filter_threads", threadCount,
 		"-filter_complex_threads", threadCount}
-	decode, encode := hardwareSelection(p.Hardware)
-	backend := encode
-	if backend == "nvenc" {
-		backend = "cuda"
-	}
-	if backend == "software" {
-		backend = decode
-	}
-	device := p.Hardware.Device
-	if device == "" {
-		device = "/dev/dri/renderD128"
-		if backend == "cuda" {
-			device = "0"
-		}
-	}
-	switch backend {
-	case "vaapi":
-		args = append(args, "-init_hw_device", "vaapi=goby:"+device, "-filter_hw_device", "goby")
-	case "qsv":
-		args = append(args, "-init_hw_device", "vaapi=gobyva:"+device, "-init_hw_device", "qsv=goby@gobyva", "-filter_hw_device", "goby")
-	case "cuda":
-		args = append(args, "-init_hw_device", "cuda=goby:"+device, "-filter_hw_device", "goby")
-	}
-	if decode != "software" {
-		args = append(args, "-hwaccel", decode, "-hwaccel_device", "goby", "-hwaccel_output_format", decode)
-	}
+	args, decode, encode := appendHardwareInputArgs(args, p.Hardware)
 	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats)
 	if p.StartTicks > 0 && !p.AudioSampleSeek {
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
@@ -240,14 +218,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		if p.FrameRate > 0 {
 			args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
 		}
-		switch encode {
-		case "software":
-			args = append(args, "-preset", "veryfast", "-pix_fmt", "yuv420p", "-sc_threshold", "0", "-flags", "+cgop")
-		case "qsv":
-			args = append(args, "-idr_interval", "0", "-forced_idr", "1")
-		case "nvenc":
-			args = append(args, "-forced-idr", "1")
-		}
+		args = appendVideoEncoderOptions(args, encode)
 		bitrate := p.VideoBitrate
 		if bitrate == 0 {
 			bitrate = 4_000_000
@@ -319,6 +290,48 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		"-hls_playlist_type", "event", "-hls_flags", "temp_file", "-start_number", "0",
 		"-hls_segment_filename", "segment-%06d.ts", "main.m3u8")
 	return args, nil
+}
+
+func appendHardwareInputArgs(args []string, hardware Hardware) ([]string, string, string) {
+	decode, encode := hardwareSelection(hardware)
+	backend := encode
+	if backend == "nvenc" {
+		backend = "cuda"
+	}
+	if backend == "software" {
+		backend = decode
+	}
+	device := hardware.Device
+	if device == "" {
+		device = "/dev/dri/renderD128"
+		if backend == "cuda" {
+			device = "0"
+		}
+	}
+	switch backend {
+	case "vaapi":
+		args = append(args, "-init_hw_device", "vaapi=goby:"+device, "-filter_hw_device", "goby")
+	case "qsv":
+		args = append(args, "-init_hw_device", "vaapi=gobyva:"+device, "-init_hw_device", "qsv=goby@gobyva", "-filter_hw_device", "goby")
+	case "cuda":
+		args = append(args, "-init_hw_device", "cuda=goby:"+device, "-filter_hw_device", "goby")
+	}
+	if decode != "software" {
+		args = append(args, "-hwaccel", decode, "-hwaccel_device", "goby", "-hwaccel_output_format", decode)
+	}
+	return args, decode, encode
+}
+
+func appendVideoEncoderOptions(args []string, encode string) []string {
+	switch encode {
+	case "software":
+		return append(args, "-preset", "veryfast", "-pix_fmt", "yuv420p", "-sc_threshold", "0", "-flags", "+cgop")
+	case "qsv":
+		return append(args, "-idr_interval", "0", "-forced_idr", "1")
+	case "nvenc":
+		return append(args, "-forced-idr", "1")
+	}
+	return args
 }
 
 func planSegmentTimes(p Plan) ([]int64, error) {

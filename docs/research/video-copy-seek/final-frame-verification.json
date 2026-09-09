@@ -1,0 +1,119 @@
+{
+  "frame_verification": [
+    {
+      "name": "delay.mp4",
+      "decode_exit": 0,
+      "all_presented_frames_match": true,
+      "count": 93,
+      "first": [
+        57,
+        58,
+        59
+      ],
+      "last": [
+        147,
+        148,
+        149
+      ],
+      "stderr": ""
+    },
+    {
+      "name": "delay_aac.mp4",
+      "decode_exit": 0,
+      "all_presented_frames_match": true,
+      "count": 93,
+      "first": [
+        57,
+        58,
+        59
+      ],
+      "last": [
+        147,
+        148,
+        149
+      ],
+      "stderr": ""
+    },
+    {
+      "name": "ts-prior-key-offset-copy.mp4",
+      "decode_exit": 0,
+      "all_presented_frames_match": true,
+      "count": 93,
+      "first": [
+        57,
+        58,
+        59
+      ],
+      "last": [
+        147,
+        148,
+        149
+      ],
+      "stderr": ""
+    },
+    {
+      "name": "ts-from-zero-offset-copy.mp4",
+      "decode_exit": 0,
+      "all_presented_frames_match": true,
+      "count": 93,
+      "first": [
+        57,
+        58,
+        59
+      ],
+      "last": [
+        147,
+        148,
+        149
+      ],
+      "stderr": ""
+    },
+    {
+      "name": "ts-from-zero-offset-aac.mp4",
+      "decode_exit": 0,
+      "all_presented_frames_match": true,
+      "count": 93,
+      "first": [
+        57,
+        58,
+        59
+      ],
+      "last": [
+        147,
+        148,
+        149
+      ],
+      "stderr": ""
+    }
+  ],
+  "open_gop_key_nals": [
+    {
+      "pts": "0.000000",
+      "nal_types": [
+        6,
+        5
+      ]
+    },
+    {
+      "pts": "2.000000",
+      "nal_types": [
+        6,
+        1
+      ]
+    },
+    {
+      "pts": "4.000000",
+      "nal_types": [
+        6,
+        1
+      ]
+    },
+    {
+      "pts": "6.000000",
+      "nal_types": [
+        6,
+        1
+      ]
+    }
+  ]
+}

@@ -25,7 +25,13 @@ func ProgressiveContainerSupportsCodec(container, codec string) bool {
 }
 
 func validateProgressivePlan(p Plan) error {
+	if p.Container == "mp4" {
+		return validateProgressiveVideoPlan(p)
+	}
 	invalid := func(field string) error { return fmt.Errorf("%w: progressive %s", ErrInvalidPlan, field) }
+	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
+		return invalid("source format clock")
+	}
 	if p.OutputMode != "progressive" || p.VideoStreamIndex != -1 || p.VideoCodec != "" || p.AudioStreamIndex < 0 || p.AudioStreamIndex > maxStreamIndex {
 		return invalid("streams")
 	}
@@ -145,6 +151,9 @@ func validateProgressivePlan(p Plan) error {
 }
 
 func buildProgressiveArgs(p Plan, threads int) []string {
+	if p.Container == "mp4" {
+		return buildProgressiveVideoArgs(p, threads)
+	}
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y", "-progress", "pipe:1", "-stats_period", "0.5",
 		"-filter_threads", threadCount, "-filter_complex_threads", threadCount, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats}

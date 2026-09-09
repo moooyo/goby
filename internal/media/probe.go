@@ -240,10 +240,11 @@ func (b *probeBoolean) parse(value string) error {
 
 type probeDocument struct {
 	Format struct {
-		Name     string `json:"format_name"`
-		Duration scalar `json:"duration"`
-		Bitrate  scalar `json:"bit_rate"`
-		Size     scalar `json:"size"`
+		Name      string `json:"format_name"`
+		Duration  scalar `json:"duration"`
+		StartTime scalar `json:"start_time"`
+		Bitrate   scalar `json:"bit_rate"`
+		Size      scalar `json:"size"`
 	} `json:"format"`
 	Streams []struct {
 		Index          scalar            `json:"index"`
@@ -310,6 +311,16 @@ func parseProbe(data []byte) (Info, error) {
 		Chapters:     make([]Chapter, 0, len(document.Chapters)),
 	}
 	var err error
+	if len(document.Format.StartTime) > 256 {
+		return Info{}, invalidField("format.start_time", fmt.Errorf("numeric value is too long"))
+	}
+	if !document.Format.StartTime.missing() {
+		info.FormatStartTicks, err = secondsToTicks(document.Format.StartTime)
+		if err != nil {
+			return Info{}, invalidField("format.start_time", err)
+		}
+		info.FormatStartKnown = true
+	}
 	info.DurationTicks, err = secondsToTicks(document.Format.Duration)
 	if err != nil || info.DurationTicks < 0 {
 		return Info{}, invalidField("format.duration", err)

@@ -1,10 +1,12 @@
 # Original-file playback and durable user state
 
-This increment implements original local-file delivery. It does not complete the
-entire M3 milestone: client events, remuxing, transcoding, broader subtitle handling,
-and real consumer-client acceptance remain open. Client-session capabilities,
-NextUp, and external SRT/WebVTT are described in their subsequent increment guides.
-Goby's React/MUI dashboard remains an administrator application without a player.
+This guide describes the original-file representation and durable playback state.
+Subsequent increments also implement [client events](websocket-events.md),
+[HLS conversion](hls-playback.md), [progressive audio](audio-playback.md), and
+[progressive video](progressive-video-playback.md). Their representation and
+seeking rules do not change the original-file byte contract below. Broader
+subtitle support and complete consumer-client compatibility remain work. Goby's
+React/MUI dashboard remains an administrator application without a player.
 
 ## Client flow
 
@@ -30,9 +32,11 @@ ID and is bound to the authenticated user, device, item, and source.
 
 ## Negotiation boundary
 
-Both `SupportsDirectPlay` and `SupportsDirectStream` describe delivery of the
-complete original file in this increment. DirectStream does not imply remuxing.
-`SupportsTranscoding` is always false. The evaluator checks container/codec
+For an original-file decision, `SupportsDirectPlay` and `SupportsDirectStream`
+describe the complete original file. That use of DirectStream does not imply
+remuxing. The original source projection initializes `SupportsTranscoding=false`;
+PlaybackInfo can separately advertise a constructible configured conversion.
+The original evaluator checks container/codec
 profiles, stream selection, known required conditions, and explicit bitrate or
 channel limits. Unknown optional facts remain unverified; unknown required facts
 decline the applicable capability. Missing `IsRequired` defaults to false.
@@ -46,8 +50,11 @@ Selected audio tracks remain in the original file and require client-side track
 selection. Embedded delivery can use tracks already in the source. Separately
 indexed external text tracks can use the subsequent [SRT/WebVTT delivery service](external-subtitles.md).
 
-When conversion would be necessary, no conversion URL is emitted. A request with
-no supported direct method receives `ErrorCode=NoCompatibleStream`, except that
+Audio and Video PlaybackInfo independently evaluate the client's ordered HTTP/HLS
+output profiles and may return a standard conversion URL. They retain the
+original `MediaSources` facts, rather than relabeling the source as converted
+media. A request with no supported direct or conversion method receives
+`ErrorCode=NoCompatibleStream`, except that
 explicitly disabling all three methods returns the source with all flags false,
 as observed in the reference. Detailed profile-condition combinations are Goby
 design choices until broader reference/client coverage establishes exact parity.
@@ -58,8 +65,12 @@ design choices until broader reference/client coverage establishes exact parity.
 and conditional requests. MIME types and container names come from probe facts
 and a compatible filename extension. `stream`, `stream.{Container}`, and
 `original.{Container}` are delivery aliases, never arbitrary filesystem paths.
-Requests requiring container conversion are rejected. Start-position ticks do
-not truncate an original container; the client seeks using its demuxer or ranges.
+An original-file request never performs container conversion. Standard stream
+routes can select supported progressive delivery; audio additionally supports its
+HLS protocol selection, while video HLS uses its separate endpoints. Explicit
+`Static=true` and `original.{Container}` retain original bytes.
+Start-position ticks do not truncate an original container; the client seeks
+using its demuxer or ranges.
 
 Every request resolves its token, current user state, library access, playback
 policy, and indexed source before serving bytes or returning 304. Administrator
@@ -67,6 +78,23 @@ cookies cannot authenticate these routes. `EnableMediaPlayback=false` also
 applies to administrators. An original-file URL's `PlaySessionId` is correlation
 data, not a bearer credential or authorization bypass; reports enforce its owner
 binding separately. A valid user token remains necessary even with that ID.
+
+Long original-file responses revalidate the current token, library/playback
+permission, and source snapshot on a five-second watcher cycle. A confirmed
+permanent denial cancels that response, closes its source descriptor, and sets
+the write deadline to interrupt a blocked network write. Unrelated users' media
+responses are not cancelled. This is not instantaneous revocation or a promise
+to retract bytes already buffered by the client. A transient database/storage
+error or a timed-out observation retains the existing grant; later cycles retry.
+Failure after headers aborts HTTP/1 or resets HTTP/2 instead of completing a
+truncated body successfully. Watcher cleanup completes before connection reuse.
+
+[Native administrator user management](../api/admin-users.md) can edit supported
+library/playback policy, disable accounts, and reset passwords under revision and
+last-enabled-administrator checks. Password reset and disabling revoke all target
+authentication sessions; demotion revokes administrator cookies while retained
+Emby sessions use the new role. New requests immediately resolve current stored
+authority; existing responses follow the bounded observation behavior above.
 
 The service opens approved roots and the indexed file through anchored Linux file
 descriptors. It validates inode, size, mtime, and ctime against the scan snapshot,
@@ -126,10 +154,23 @@ authentication session.
 
 ## Upgrade requirement
 
-Probe cache version 2 adds Linux ctime and additional codec facts. Existing media
-must undergo a normal library scan after upgrading before it can be opened for
-playback. The scanner detects the older cache and probes those files again.
-Automatic scheduling of this scan is not yet implemented. Account/dashboard
-availability is independent of the scan; old probe data is not silently trusted
-for streaming. No additional configuration variables or frontend assets are
-required for this increment.
+The current database schema is 13, through `0013_managed_users.sql`; the managed
+user revision does not replace the playback-state or scoped-nonce migrations.
+Current probe cache version 5 retains Linux ctime, codec facts, supported exact
+audio timing, and a separately verified format-clock origin for progressive
+video. Existing libraries, including probe version 4, must undergo a normal scan
+after upgrading before indexed media or external subtitles can be opened. The
+scanner detects old caches and probes those files again; migrations do not
+schedule this scan automatically. Account/dashboard availability is independent
+of it, and old probe data is not silently trusted for streaming.
+
+A current snapshot without exact audio timing or a known format origin can still
+support authorized original-file playback. It cannot make the corresponding
+conversion promise. The audio-only presentation origin and the video format
+clock are separate facts; missing format origin is not assumed zero.
+
+M5a store/database/native HTTP and active original-response revocation tests
+passed on Linux, including interruption of blocked writes and continued delivery
+for another user. The [complete M4e/M5a verification](verification-m4e-video-and-users.md)
+also passed the full race suite, deployed migration and media workflow, and
+administrator browser acceptance.

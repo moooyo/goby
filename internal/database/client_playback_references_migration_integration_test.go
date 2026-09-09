@@ -27,7 +27,7 @@ func clientPlaybackLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
-		'users', (SELECT jsonb_agg(to_jsonb(u) ORDER BY id) FROM users u),
+		'users', (SELECT jsonb_agg(to_jsonb(u) - 'management_revision' ORDER BY id) FROM users u),
 		'auth', (SELECT jsonb_agg(to_jsonb(a) ORDER BY id) FROM sessions a),
 		'play', (SELECT jsonb_agg(to_jsonb(p) - 'client_correlated' ORDER BY id) FROM play_sessions p),
 		'userdata', (SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id, item_id) FROM user_item_data d)
@@ -65,8 +65,8 @@ func TestMigrateClientPlaybackReferencesPreservesDefaultsAndRetainsScopedTombsto
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade client playback references: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 12 {
-		t.Fatalf("client playback schema version = %d, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 13 {
+		t.Fatalf("client playback schema version = %d, want 13, error = %v", version, err)
 	}
 	if after := clientPlaybackLegacySnapshot(t, ctx, pool); before != after {
 		t.Error("client playback migration changed existing identity, playback, or user-data values")

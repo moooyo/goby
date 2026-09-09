@@ -1,0 +1,138 @@
+{
+  "kind": "video-profile-observation",
+  "case": "original-compatible",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "mp4",
+    "SupportsDirectPlay": true,
+    "SupportsDirectStream": true,
+    "SupportsTranscoding": true,
+    "DefaultAudioStreamIndex": 1,
+    "RunTimeTicks": 150000000,
+    "AddApiKeyToDirectStreamUrl": false
+  },
+  "omittedSourceFields": [
+    "TranscodingContainer",
+    "TranscodingSubProtocol",
+    "DefaultVideoStreamIndex",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "hasTranscodingUrl": false,
+  "hasDirectStreamUrl": true,
+  "hasPlaySessionId": true,
+  "errorCode": null,
+  "returnedUrl": {
+    "endpointLeaf": "original.mp4",
+    "parameterNames": [
+      "DeviceId",
+      "MediaSourceId",
+      "PlaySessionId",
+      "api_key"
+    ],
+    "hasApiKey": true,
+    "mediaParameters": {}
+  },
+  "selectedUrlField": "DirectStreamUrl",
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "delivery": {
+    "finalStatus": 200,
+    "redirectStatuses": [],
+    "wireBytes": 967651,
+    "contentType": "video/mp4",
+    "sourceBytesMatch": true,
+    "media": {
+      "probeExit": 0,
+      "frameProbeExit": 0,
+      "decodeExit": 0,
+      "decodeStderrEmpty": true,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "width": 320,
+      "height": 180,
+      "frameRate": "24/1",
+      "audioSampleRate": "48000",
+      "audioChannels": 1,
+      "formatName": "mov,mp4,m4a,3gp,3g2,mj2",
+      "formatDuration": "15.000000",
+      "videoFrames": 360,
+      "audioFrames": 704,
+      "audioSamples": 720000,
+      "decodeProgressFrames": 360,
+      "decodeProgressSeconds": 15.0,
+      "decodedPresentation": {
+        "video": {
+          "firstPTS": 0.0,
+          "endPTS": 15.0
+        },
+        "audio": {
+          "firstPTS": 0.0,
+          "endPTS": 14.999999666666666
+        }
+      },
+      "packetPayloadDigests": {
+        "video": "af1401e34fc660990f729d8af54f8eb1e4b4b6f20d7875dbd77d7cfbc7d5388f",
+        "audio": "4fa969502aed9ebe0680618463b10b8e871ec7600cd417e2c581598b98c7611c"
+      },
+      "frameHashExit": 0,
+      "mp4TimingBoxes": {
+        "isISOBaseMedia": true,
+        "tracks": [
+          {
+            "editListPresent": true,
+            "trackId": 1,
+            "editListVersion": 0,
+            "editList": [
+              {
+                "segmentDuration": 720000,
+                "mediaTime": 0,
+                "mediaRateInteger": 1,
+                "mediaRateFraction": 0
+              }
+            ],
+            "mediaTimescale": 12288
+          },
+          {
+            "editListPresent": true,
+            "trackId": 2,
+            "editListVersion": 0,
+            "editList": [
+              {
+                "segmentDuration": 720000,
+                "mediaTime": 1024,
+                "mediaRateInteger": 1,
+                "mediaRateFraction": 0
+              }
+            ],
+            "mediaTimescale": 48000
+          }
+        ],
+        "fragmentCount": 0,
+        "movieTimescale": 48000
+      },
+      "firstDecodedVideoSourceFrameMatches": [
+        0
+      ],
+      "firstDecodedVideoSourceSeconds": 0.0,
+      "firstPacketSourcePTSMatches": {
+        "video": [
+          "0.000000"
+        ],
+        "audio": [
+          "-0.021333"
+        ]
+      },
+      "audioMinusVideoStartSeconds": 0.0,
+      "audioMinusVideoEndSeconds": -0.0
+    },
+    "packetPayloadMatchesSource": {
+      "video": true,
+      "audio": true
+    }
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:53:02.811803+00:00"
+  }
+}

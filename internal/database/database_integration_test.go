@@ -90,15 +90,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		}
 	}
 	version, err := database.SchemaVersion(ctx, pool)
-	if err != nil || version != 12 {
-		t.Fatalf("schema version after concurrent migration = %d, want 12, error = %v", version, err)
+	if err != nil || version != 13 {
+		t.Fatalf("schema version after concurrent migration = %d, want 13, error = %v", version, err)
 	}
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("count applied migrations: %v", err)
 	}
-	if count != 12 {
-		t.Fatalf("migration history count = %d, want 12", count)
+	if count != 13 {
+		t.Fatalf("migration history count = %d, want 13", count)
 	}
 	before := migrationHistory(t, ctx, pool)
 	if err := database.Migrate(ctx, pool); err != nil {
@@ -107,8 +107,8 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if after := migrationHistory(t, ctx, pool); after != before {
 		t.Errorf("repeated migration changed history: before = %s, after = %s", before, after)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 12 {
-		t.Errorf("schema version after repeated migration = %d, want 12, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 13 {
+		t.Errorf("schema version after repeated migration = %d, want 13, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
 	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references"} {

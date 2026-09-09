@@ -145,7 +145,7 @@ func (o *progressiveObserver) inspect(final bool) error {
 		if o.plan.AudioCodec == "copy" && o.plan.StartTicks > 0 && o.plan.Container == "ogg" && oggFLACIdentification(prefix) {
 			return ErrInvalidProgressiveStream
 		}
-		ready, err = ProgressiveAudioReady(o.plan.Container, prefix)
+		ready, err = ProgressiveMediaReady(o.plan, prefix)
 		if err != nil {
 			return err
 		}

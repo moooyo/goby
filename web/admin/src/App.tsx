@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { Avatar, Box, Button, Chip, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Paper, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
@@ -14,6 +14,7 @@ import { adminApi, ApiError, clearSession, isAbortError, onSessionExpired } from
 import type { User } from './api';
 import { Brand, ErrorNotice, LoadingView } from './components';
 import { colors } from './theme';
+import type { UserNavigationGuard } from './userDraftNavigation';
 
 const AuthPage = lazy(() => import('./AuthPage').then((module) => ({ default: module.AuthPage })));
 const OverviewPage = lazy(() => import('./OverviewPage').then((module) => ({ default: module.OverviewPage })));
@@ -81,8 +82,11 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
   );
 }
 
-function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
+function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: () => void; onUserUpdated: (user: User) => void }) {
   const [page, setPage] = useState<Page>(pageFromLocation);
+  const currentPage = useRef(page);
+  const navigationGuard = useRef<UserNavigationGuard | undefined>(undefined);
+  const setNavigationGuard = useCallback((guard: UserNavigationGuard | undefined) => { navigationGuard.current = guard; }, []);
   const [mobileOpen, setMobileOpen] = useState(false);
   const focusAfterDrawer = useRef(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -90,7 +94,15 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    const changed = () => setPage(pageFromLocation());
+    const changed = () => {
+      const next = pageFromLocation();
+      if (next !== currentPage.current && navigationGuard.current && !navigationGuard.current()) {
+        window.history.pushState(null, '', pageURL(currentPage.current));
+        return;
+      }
+      currentPage.current = next;
+      setPage(next);
+    };
     window.addEventListener('popstate', changed);
     return () => window.removeEventListener('popstate', changed);
   }, []);
@@ -102,7 +114,9 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>) {
     if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0)) return;
     event?.preventDefault();
+    if (page !== next && navigationGuard.current && !navigationGuard.current()) return;
     if (page !== next) window.history.pushState(null, '', pageURL(next));
+    currentPage.current = next;
     setPage(next);
     setMobileOpen(false);
     if (page !== next) {
@@ -150,7 +164,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
           {error != null && <Box sx={{ mb: 3 }}><ErrorNotice error={error} /></Box>}
           <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
             {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
-            {page === 'users' && <UsersPage currentUser={user} />}
+            {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} />}
           </Suspense>
@@ -197,6 +211,6 @@ export function App() {
 
   if (state.mode === 'loading') return <LoadingView />;
   if (state.mode === 'error') return <Stack component="main" sx={{ justifyContent: 'center', alignItems: 'center', minHeight: '100dvh', p: 3 }}><Paper variant="outlined" sx={{ p: 4, width: '100%', maxWidth: 560 }}><Brand /><Typography variant="h3" component="h1" sx={{ mt: 4, mb: 2 }}>Could not connect to your server</Typography><ErrorNotice error={state.error} /><Button variant="contained" onClick={reload} sx={{ mt: 3 }}>Try again</Button></Paper></Stack>;
-  if (state.mode === 'ready') return <Dashboard user={state.user} onLogout={() => setState({ mode: 'login' })} />;
+  if (state.mode === 'ready') return <Dashboard user={state.user} onLogout={() => setState({ mode: 'login' })} onUserUpdated={(user) => setState((current) => current.mode === 'ready' && current.user.Id === user.Id ? { ...current, user } : current)} />;
   return <Suspense fallback={<LoadingView label="Loading sign in" />}><AuthPage key={state.mode} mode={state.mode} initialName={state.mode === 'login' ? state.name : undefined} notice={state.mode === 'login' ? state.notice : undefined} onSession={(session) => setState({ mode: 'ready', user: session.User })} onSetup={(name) => setState({ mode: 'login', name, notice: 'Your administrator account is ready. Sign in to continue.' })} onReload={reload} /></Suspense>;
 }

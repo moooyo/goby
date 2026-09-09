@@ -1,0 +1,127 @@
+{
+  "kind": "video-profile-observation",
+  "case": "copy-copy",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "mp4",
+    "SupportsDirectPlay": false,
+    "SupportsDirectStream": false,
+    "SupportsTranscoding": true,
+    "TranscodingContainer": "mp4",
+    "TranscodingSubProtocol": "http",
+    "DefaultAudioStreamIndex": 1,
+    "RunTimeTicks": 150000000,
+    "AddApiKeyToDirectStreamUrl": false
+  },
+  "omittedSourceFields": [
+    "DefaultVideoStreamIndex",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "hasTranscodingUrl": true,
+  "hasDirectStreamUrl": false,
+  "hasPlaySessionId": true,
+  "errorCode": null,
+  "returnedUrl": {
+    "endpointLeaf": "stream.mp4",
+    "parameterNames": [
+      "AudioBitrate",
+      "AudioCodec",
+      "AudioStreamIndex",
+      "DeviceId",
+      "MediaSourceId",
+      "PlaySessionId",
+      "TranscodeReasons",
+      "TranscodingMaxAudioChannels",
+      "VideoBitrate",
+      "VideoCodec",
+      "api_key"
+    ],
+    "hasApiKey": true,
+    "mediaParameters": {
+      "VideoCodec": [
+        "h264"
+      ],
+      "AudioCodec": [
+        "aac"
+      ],
+      "VideoBitrate": [
+        "1935707"
+      ],
+      "AudioBitrate": [
+        "64293"
+      ],
+      "AudioStreamIndex": [
+        "1"
+      ],
+      "TranscodingMaxAudioChannels": [
+        "2"
+      ],
+      "TranscodeReasons": [
+        "DirectPlayError"
+      ]
+    }
+  },
+  "selectedUrlField": "TranscodingUrl",
+  "headStatus": 200,
+  "initialGetStatus": 500,
+  "retryStatus": 200,
+  "captureRecovery": "The first strict MP4 box observation rejected truncated bytes after HTTP capture and scoped cleanup. Only retained bytes were reprocessed; no HTTP request was repeated.",
+  "delivery": {
+    "finalStatus": 200,
+    "wireBytes": 81920,
+    "contentType": "video/mp4",
+    "redirectStatuses": [],
+    "sourceBytesMatch": false,
+    "media": {
+      "probeExit": 0,
+      "frameProbeExit": 0,
+      "decodeExit": 0,
+      "decodeStderrEmpty": false,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "width": 320,
+      "height": 180,
+      "frameRate": "24/1",
+      "audioSampleRate": "48000",
+      "audioChannels": 1,
+      "formatName": "mov,mp4,m4a,3gp,3g2,mj2",
+      "formatDuration": "3.029333",
+      "videoFrames": 25,
+      "audioFrames": 0,
+      "audioSamples": 0,
+      "decodeProgressFrames": 25,
+      "decodeProgressSeconds": 1.041667,
+      "decodedPresentation": {
+        "video": {
+          "firstPTS": 0.0,
+          "endPTS": 1.041667
+        }
+      },
+      "packetPayloadDigests": {
+        "video": "f0b04fd6cabad4760bee8539d5133ace445cb388baa773fbaee9ac285608e360",
+        "audio": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "frameHashExit": 183,
+      "mp4TimingBoxes": {
+        "isISOBaseMedia": true,
+        "parseError": "A video box exceeds its captured response",
+        "tracks": []
+      },
+      "firstDecodedVideoSourceFrameMatches": [
+        0
+      ],
+      "firstDecodedVideoSourceSeconds": 0.0,
+      "firstPacketSourcePTSMatches": {
+        "video": [
+          "0.000000"
+        ],
+        "audio": []
+      }
+    }
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:54:14.481233+00:00"
+  }
+}

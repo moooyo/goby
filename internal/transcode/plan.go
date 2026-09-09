@@ -19,15 +19,20 @@ type Hardware struct {
 // FFmpeg argument, or client-provided filter expression belongs in a plan.
 type Plan struct {
 	// Empty mode preserves HLS output. Progressive mode produces one append-only
-	// audio stream; its container and codec must pass the closed runner matrix.
-	OutputMode             string  `json:"OutputMode,omitempty"`
-	Container              string  `json:"Container"`
-	VideoCodec             string  `json:"VideoCodec,omitempty"`
-	AudioCodec             string  `json:"AudioCodec,omitempty"`
-	VideoStreamIndex       int     `json:"VideoStreamIndex"`
-	AudioStreamIndex       int     `json:"AudioStreamIndex"`
-	StartTicks             int64   `json:"StartTicks"`
-	DurationTicks          int64   `json:"DurationTicks"`
+	// audio stream or fragmented MP4 video, subject to the closed runner matrix.
+	OutputMode       string `json:"OutputMode,omitempty"`
+	Container        string `json:"Container"`
+	VideoCodec       string `json:"VideoCodec,omitempty"`
+	AudioCodec       string `json:"AudioCodec,omitempty"`
+	VideoStreamIndex int    `json:"VideoStreamIndex"`
+	AudioStreamIndex int    `json:"AudioStreamIndex"`
+	StartTicks       int64  `json:"StartTicks"`
+	DurationTicks    int64  `json:"DurationTicks"`
+	// Progressive video uses the probed container clock even when a track is
+	// disabled. The explicit known bit distinguishes an actual zero origin from
+	// a missing timestamp; neither field is populated from client arguments.
+	SourceFormatStartKnown bool    `json:"SourceFormatStartKnown,omitempty"`
+	SourceFormatStartTicks int64   `json:"SourceFormatStartTicks,omitempty"`
 	Width                  int     `json:"Width,omitempty"`
 	Height                 int     `json:"Height,omitempty"`
 	FrameRate              float64 `json:"FrameRate,omitempty"`

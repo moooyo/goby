@@ -1,0 +1,275 @@
+{
+  "kind": "derived-mp4-initialization-observation",
+  "cases": {
+    "source": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": true,
+          "trackId": 1,
+          "editListVersion": 0,
+          "editList": [
+            {
+              "segmentDuration": 720000,
+              "mediaTime": 0,
+              "mediaRateInteger": 1,
+              "mediaRateFraction": 0
+            }
+          ],
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": true,
+          "trackId": 2,
+          "editListVersion": 0,
+          "editList": [
+            {
+              "segmentDuration": 720000,
+              "mediaTime": 1024,
+              "mediaRateInteger": 1,
+              "mediaRateFraction": 0
+            }
+          ],
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 0,
+      "movieTimescale": 48000
+    },
+    "context-empty-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "copy-copy-retry": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "parseError": "A video box exceeds its captured response",
+      "completeTopLevelBoxesBeforeError": 3,
+      "fragmentCount": 1,
+      "movieTimescale": 1000
+    },
+    "copy-start-nonkeyframe-retry": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "parseError": "A video box exceeds its captured response",
+      "completeTopLevelBoxesBeforeError": 3,
+      "fragmentCount": 1,
+      "movieTimescale": 1000
+    },
+    "http-first-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "http-mp4-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "http-mp4-range": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "http-start-nonkeyframe-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 2,
+      "movieTimescale": 1000
+    },
+    "original-compatible-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": true,
+          "trackId": 1,
+          "editListVersion": 0,
+          "editList": [
+            {
+              "segmentDuration": 720000,
+              "mediaTime": 0,
+              "mediaRateInteger": 1,
+              "mediaRateFraction": 0
+            }
+          ],
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": true,
+          "trackId": 2,
+          "editListVersion": 0,
+          "editList": [
+            {
+              "segmentDuration": 720000,
+              "mediaTime": 1024,
+              "mediaRateInteger": 1,
+              "mediaRateFraction": 0
+            }
+          ],
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 0,
+      "movieTimescale": 48000
+    },
+    "protocol-empty-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "protocol-omitted-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    },
+    "video-copy-audio-encode-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 5,
+      "movieTimescale": 1000
+    },
+    "video-copy-audio-encode-start-get": {
+      "isISOBaseMedia": true,
+      "tracks": [
+        {
+          "editListPresent": false,
+          "trackId": 1,
+          "mediaTimescale": 12288
+        },
+        {
+          "editListPresent": false,
+          "trackId": 2,
+          "mediaTimescale": 48000
+        }
+      ],
+      "fragmentCount": 3,
+      "movieTimescale": 1000
+    }
+  },
+  "playbackInfoResponses": 12,
+  "allPlaySessionIdsPresent": true,
+  "allPlaySessionIdsUnique": true,
+  "note": "Complete boxes preceding an invalid/truncated media-data box remain observable. parseError is retained; incomplete outputs are not classified as valid MP4. This final summary selects PlaybackInfo by request route; the earlier derived summary's filename selector also counted System/Info/Public and is superseded for identity counts.",
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:56:46.615538+00:00"
+  }
+}

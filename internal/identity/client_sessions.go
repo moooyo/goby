@@ -252,21 +252,41 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 	if principal.Kind != "emby" || principal.SessionID == "" || principal.User.ID == "" {
 		return false, ErrUnauthorized
 	}
-	locking := " FOR SHARE OF a, u"
-	if mutate {
-		locking = " FOR UPDATE OF a FOR SHARE OF u"
-	}
 	var isAdmin bool
-	err := tx.QueryRow(ctx, `SELECT u.is_administrator
-		FROM sessions a JOIN users u ON u.id = a.user_id
-		WHERE a.id = $1 AND a.user_id = $2 AND a.kind = 'emby'
-		AND a.revoked_at IS NULL AND a.expires_at > now() AND NOT u.is_disabled`+locking,
-		principal.SessionID, principal.User.ID).Scan(&isAdmin)
+	// Account mutations and playback state writes lock the account before its
+	// sessions. Keep this order explicit instead of relying on a join plan's
+	// row-lock order, which could deadlock with administrator changes.
+	err := tx.QueryRow(ctx, `SELECT is_administrator FROM users
+		WHERE id = $1 AND NOT is_disabled FOR SHARE`, principal.User.ID).Scan(&isAdmin)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, ErrUnauthorized
 	}
 	if err != nil {
-		return false, fmt.Errorf("authorize client session: %w", err)
+		return false, fmt.Errorf("authorize client account: %w", err)
+	}
+	locking := " FOR SHARE"
+	if mutate {
+		locking = " FOR UPDATE"
+	}
+	var sessionID string
+	err = tx.QueryRow(ctx, `SELECT id FROM sessions
+		WHERE id = $1 AND user_id = $2 AND kind = 'emby'`+locking,
+		principal.SessionID, principal.User.ID).Scan(&sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, ErrUnauthorized
+	}
+	if err != nil {
+		return false, fmt.Errorf("lock client session: %w", err)
+	}
+	// Evaluate expiration after any row-lock wait. The account and session now
+	// remain fixed until this transaction finishes.
+	var active bool
+	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp()
+		FROM sessions WHERE id = $1`, sessionID).Scan(&active); err != nil {
+		return false, fmt.Errorf("revalidate locked client session: %w", err)
+	}
+	if !active {
+		return false, ErrUnauthorized
 	}
 	return isAdmin, nil
 }

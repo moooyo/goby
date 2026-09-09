@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/videos/43/stream.mp4?DeviceId=goby-video-profile-m4e-recorder&MediaSourceId=mediasource_43&PlaySessionId=7631d70f4af8496391dcc952e0a479cc&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=aac&VideoBitrate=1935707&AudioBitrate=64293&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&TranscodeReasons=DirectPlayError",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "3441"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 06:53:02 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-directstream-5f1482bd-f1ce-487a-8c4b-5476abcc2798_1graph.txt\" -copyts -start_at_zero -f mp4 -c:v:0 h264 -noautorotate -i \"/reference-video-source/Reference HLS Normal (2026).mp4\" -map 0:0 -map 0:1 -sn -c:v:0 copy -c:a:0 copy -disposition:a:0 default -avoid_negative_ts disabled -f mp4 -map_metadata g -map_chapters -1 -movflags +empty_moov+frag_keyframe \"/transcoding-temp/02DD32/02DD32.mp4\"\n\n14:53:02.823 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n14:53:02.823   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n14:53:02.823 Execution Date: 2026-09-09 14:53:02\n14:53:02.825 Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/reference-video-source/Reference HLS Normal (2026).mp4':\n14:53:02.825   Metadata:\n14:53:02.825     major_brand     : isom\n14:53:02.825     minor_version   : 512\n14:53:02.825     compatible_brands: isomiso2avc1mp41\n14:53:02.825     encoder         : Lavf63.1.101\n14:53:02.825   Duration: 00:00:15.00, start: 0.000000, bitrate: 516 kb/s\n14:53:02.825   Stream #0:0[0x1](und): Video: h264 (Constrained Baseline) (avc1 / 0x31637661), yuv420p(progressive), 320x180 [SAR 1:1 DAR 16:9], 446 kb/s, Level 12, 24 fps, 24 tbr, 12288 tbn (default)\n14:53:02.825     Metadata:\n14:53:02.825       handler_name    : VideoHandler\n14:53:02.825       vendor_id       : [0][0][0][0]\n14:53:02.825       encoder         : Lavc63.1.101 libx264\n14:53:02.825   Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, mono, fltp, 64 kb/s (default)\n14:53:02.825     Metadata:\n14:53:02.825       handler_name    : SoundHandler\n14:53:02.825       vendor_id       : [0][0][0][0]\n14:53:02.825 [mp4 @ 0x161f580] No meaningful edit list will be written when using empty_moov without delay_moov\n14:53:02.826 Output #0, mp4, to '/transcoding-temp/02DD32/02DD32.mp4':\n14:53:02.826   Metadata:\n14:53:02.826     major_brand     : isom\n14:53:02.826     minor_version   : 512\n14:53:02.826     compatible_brands: isomiso2avc1mp41\n14:53:02.826     encoder         : Lavf59.27.100\n14:53:02.826   Stream #0:0(und): Video: h264 (Constrained Baseline) (avc1 / 0x31637661), yuv420p(progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 446 kb/s, Level 12, 24 fps, 24 tbr, 12288 tbn (default)\n14:53:02.826     Metadata:\n14:53:02.826       handler_name    : VideoHandler\n14:53:02.826       vendor_id       : [0][0][0][0]\n14:53:02.826       encoder         : Lavc63.1.101 libx264\n14:53:02.826   Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, mono, fltp, 64 kb/s (default)\n14:53:02.826     Metadata:\n14:53:02.826       handler_name    : SoundHandler\n14:53:02.826       vendor_id       : [0][0][0][0]\n14:53:02.826 Stream mapping:\n14:53:02.826   Stream #0:0 -> #0:0 (copy)\n14:53:02.826   Stream #0:1 -> #0:1 (copy)\n14:53:02.826 Press [q] to stop, [?] for help\n14:53:02.826 elapsed=00:00:00.00 frame=    0 fps=0.0 q=-1.0 size=       0kB time=00:00:00.00 bitrate=N/A throttle=off speed=N/A    \n14:53:02.826 [mp4 @ 0x161f580] Track 1 starts with a nonzero dts -1024, while the moov already has been written. Set the delay_moov flag to handle this case.\nelapsed=00:00:00.00 frame=  360 fps=0.0 q=-1.0 Lsize=     943kB time=00:00:00.06 bitrate=128270.3kbits/s throttle=off speed=  38x    \nvideo:818kB audio:118kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.770222%\nEXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 3441,
+    "wireSha256": "0cf1f4ba361efa09d4090eeff818553271f40b0f87fd0dc8d171ed484e498db6",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:53:02.876112+00:00"
+  }
+}

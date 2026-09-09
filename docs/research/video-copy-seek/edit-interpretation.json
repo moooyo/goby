@@ -1,0 +1,317 @@
+{
+  "movie_timescale": 1536000,
+  "edits": [
+    [
+      "/moov/trak/edts/elst",
+      0,
+      5959680
+    ],
+    [
+      "/moov/trak/edts/elst",
+      0,
+      5959680
+    ]
+  ],
+  "runs": [
+    {
+      "file": "delay.mp4",
+      "mode": "default",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 48
+        },
+        {
+          "pts": "1",
+          "source_index": 49
+        },
+        {
+          "pts": "2",
+          "source_index": 50
+        },
+        {
+          "pts": "3",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay.mp4",
+      "mode": "copyts",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "-9",
+          "source_index": 48
+        },
+        {
+          "pts": "-8",
+          "source_index": 49
+        },
+        {
+          "pts": "-7",
+          "source_index": 50
+        },
+        {
+          "pts": "-6",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay.mp4",
+      "mode": "explicit-presentation-zero",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay-finite-edit.mp4",
+      "mode": "default",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 48
+        },
+        {
+          "pts": "1",
+          "source_index": 49
+        },
+        {
+          "pts": "2",
+          "source_index": 50
+        },
+        {
+          "pts": "3",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay-finite-edit.mp4",
+      "mode": "copyts",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "-9",
+          "source_index": 48
+        },
+        {
+          "pts": "-8",
+          "source_index": 49
+        },
+        {
+          "pts": "-7",
+          "source_index": 50
+        },
+        {
+          "pts": "-6",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay-finite-edit.mp4",
+      "mode": "explicit-presentation-zero",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay_aac.mp4",
+      "mode": "default",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 48
+        },
+        {
+          "pts": "1",
+          "source_index": 49
+        },
+        {
+          "pts": "2",
+          "source_index": 50
+        },
+        {
+          "pts": "3",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay_aac.mp4",
+      "mode": "copyts",
+      "exit": 0,
+      "frames": 102,
+      "first": [
+        {
+          "pts": "-9",
+          "source_index": 48
+        },
+        {
+          "pts": "-8",
+          "source_index": 49
+        },
+        {
+          "pts": "-7",
+          "source_index": 50
+        },
+        {
+          "pts": "-6",
+          "source_index": 51
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "delay_aac.mp4",
+      "mode": "explicit-presentation-zero",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "nonfragmented.mp4",
+      "mode": "default",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "nonfragmented.mp4",
+      "mode": "copyts",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "file": "nonfragmented.mp4",
+      "mode": "explicit-presentation-zero",
+      "exit": 0,
+      "frames": 93,
+      "first": [
+        {
+          "pts": "0",
+          "source_index": 57
+        },
+        {
+          "pts": "1",
+          "source_index": 58
+        },
+        {
+          "pts": "2",
+          "source_index": 59
+        },
+        {
+          "pts": "3",
+          "source_index": 60
+        }
+      ],
+      "stderr": ""
+    }
+  ]
+}

@@ -193,15 +193,22 @@ func (s *Store) Authenticate(ctx context.Context, name, password string, client 
 	}
 	// Recheck account state and the password hash while issuing the token, so a
 	// concurrent disable, demotion, or password update cannot issue stale access.
+	// Return that same locked account snapshot in the authentication response.
 	var expiresAt, createdAt time.Time
-	err = s.pool.QueryRow(ctx, `INSERT INTO sessions
+	user, err = scanUser(s.pool.QueryRow(ctx, `WITH account AS MATERIALIZED (
+		SELECT `+userColumns+` FROM users
+		WHERE id = $2 AND password_hash = $10 AND NOT is_disabled
+		AND ($4 <> 'admin' OR is_administrator) FOR SHARE
+	), issued AS (
+		INSERT INTO sessions
 		(id, user_id, token_hash, kind, client_name, device_id, device_name, client_version, expires_at)
 		SELECT $1, id, $3, $4, $5, $6, $7, $8, now() + ($9::bigint * interval '1 second')
-		FROM users WHERE id = $2 AND password_hash = $10 AND NOT is_disabled
-		AND ($4 <> 'admin' OR is_administrator)
-		FOR SHARE
-		RETURNING expires_at, created_at`, sessionID, user.ID, digest[:], kind,
-		client.Name, client.DeviceID, client.Device, client.Version, int64(lifetime/time.Second), hash).Scan(&expiresAt, &createdAt)
+		FROM account RETURNING expires_at, created_at
+	)
+	SELECT account.id, account.name, account.is_administrator, account.is_disabled,
+		account.has_password, account.created_at, account.policy, issued.expires_at, issued.created_at
+		FROM account CROSS JOIN issued`, sessionID, user.ID, digest[:], kind,
+		client.Name, client.DeviceID, client.Device, client.Version, int64(lifetime/time.Second), hash), &expiresAt, &createdAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Credentials{}, ErrInvalidCredentials
 	}

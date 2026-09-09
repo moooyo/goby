@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "database_oid": 624678,
+  "role_oid": 624677,
+  "owned_database_removed": true,
+  "owned_role_removed": true,
+  "preexisting_database_catalog_unchanged": true,
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_exactly": true
+}

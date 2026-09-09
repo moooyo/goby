@@ -1,0 +1,491 @@
+{
+  "assertions": [
+    {
+      "negotiation_encoding_jobs_created": 0,
+      "orders": [
+        {
+          "requested_order": [
+            "http",
+            "hls"
+          ],
+          "selected_protocol": "http"
+        },
+        {
+          "requested_order": [
+            "hls",
+            "http"
+          ],
+          "selected_protocol": "hls"
+        },
+        {
+          "requested_order": [
+            "omitted",
+            "hls"
+          ],
+          "selected_protocol": "http"
+        },
+        {
+          "requested_order": [
+            "empty",
+            "hls"
+          ],
+          "selected_protocol": "http"
+        }
+      ],
+      "original_source_dto_preserved": true,
+      "progressive_head_jobs_created": 0,
+      "stage": "HTTP and omitted protocol defaults preserve mixed profile order"
+    },
+    {
+      "full": {
+        "audio_channels": 1,
+        "audio_codec": "aac",
+        "audio_end_seconds": 15.0186663,
+        "audio_sample_rate": 48000,
+        "audio_start_seconds": 0.0,
+        "bytes": 967253,
+        "complete_strict_decode": true,
+        "copied_frame_sequence_identical": true,
+        "decoded_audio_frames": 704,
+        "decoded_seconds": 15.018667,
+        "first_video_pts_seconds": 0.0,
+        "height": 180,
+        "http_status": 200,
+        "scene_positions": [],
+        "sha256": "6ea9613b7bc4ef39271983ef5a76667c8217228f8b65342486135f7521b16f3c",
+        "start_ticks": 0,
+        "video_codec": "h264",
+        "video_frames": 360,
+        "width": 320
+      },
+      "nonzero_video_copy_seek_status": 415,
+      "rejected_seek_jobs_created": 0,
+      "stage": "authorized zero-start copy and explicit copy-seek rejection"
+    },
+    {
+      "full": {
+        "audio_channels": 2,
+        "audio_codec": "aac",
+        "audio_end_seconds": 15.0186663,
+        "audio_sample_rate": 48000,
+        "audio_start_seconds": 0.0,
+        "bytes": 753825,
+        "complete_strict_decode": true,
+        "copied_frame_sequence_identical": false,
+        "decoded_audio_frames": 704,
+        "decoded_seconds": 15.018667,
+        "first_video_pts_seconds": 0.0,
+        "height": 90,
+        "http_status": 200,
+        "scene_positions": [
+          {
+            "expected_source_frame": 0,
+            "mean_absolute_luma_error": 0.1719,
+            "nearest_source_frame": 0,
+            "output_frame": 0,
+            "position_tolerance_frames": 1
+          },
+          {
+            "expected_source_frame": 180,
+            "mean_absolute_luma_error": 0.3142,
+            "nearest_source_frame": 180,
+            "output_frame": 180,
+            "position_tolerance_frames": 1
+          },
+          {
+            "expected_source_frame": 359,
+            "mean_absolute_luma_error": 0.3108,
+            "nearest_source_frame": 359,
+            "output_frame": 359,
+            "position_tolerance_frames": 1
+          }
+        ],
+        "sha256": "5d2da40160bf57e36297ba94a596dec71adfc265b5e6ab726439aefd497b3f36",
+        "start_ticks": 0,
+        "video_codec": "h264",
+        "video_frames": 360,
+        "width": 160
+      },
+      "head_jobs_created": 0,
+      "identical_retry_reuses_job": true,
+      "only_start_ticks_changed": true,
+      "persisted_plan_start_ticks": [
+        0,
+        63700000
+      ],
+      "range_ignored_status": 200,
+      "seek": {
+        "audio_channels": 2,
+        "audio_codec": "aac",
+        "audio_end_seconds": 8.6400003,
+        "audio_sample_rate": 48000,
+        "audio_start_seconds": 0.0,
+        "bytes": 440276,
+        "complete_strict_decode": true,
+        "copied_frame_sequence_identical": false,
+        "decoded_audio_frames": 405,
+        "decoded_seconds": 8.64,
+        "first_video_pts_seconds": 0.004964,
+        "height": 90,
+        "http_status": 200,
+        "scene_positions": [
+          {
+            "expected_source_frame": 153,
+            "mean_absolute_luma_error": 0.217,
+            "nearest_source_frame": 153,
+            "output_frame": 0,
+            "position_tolerance_frames": 1
+          },
+          {
+            "expected_source_frame": 256,
+            "mean_absolute_luma_error": 0.2951,
+            "nearest_source_frame": 256,
+            "output_frame": 103,
+            "position_tolerance_frames": 1
+          },
+          {
+            "expected_source_frame": 359,
+            "mean_absolute_luma_error": 0.3056,
+            "nearest_source_frame": 359,
+            "output_frame": 206,
+            "position_tolerance_frames": 1
+          }
+        ],
+        "sha256": "2b6cca41487b257bb91b970eb317d9bdd892e005589901e2987de957d61e7aec",
+        "start_ticks": 63700000,
+        "video_codec": "h264",
+        "video_frames": 207,
+        "width": 160
+      },
+      "stage": "encoded standard stream URL full GET Range and 6.37-second seek"
+    },
+    {
+      "original_dto_and_user_data_preserved": true,
+      "original_get_jobs_created": 0,
+      "original_range_status": 206,
+      "original_sha256_matches": true,
+      "stage": "original byte representation and catalog facts remain unchanged"
+    },
+    {
+      "active_encodings_delete_status": 204,
+      "active_owned_encoders": 0,
+      "coverage_boundary": "Live-response interruption is covered by the separate remote HTTP integration suite",
+      "owned_playback_scopes_cleaned": 1,
+      "player_reports_sent": 0,
+      "stage": "owned conversion cleanup without fabricated player reports",
+      "user_data_preserved": true
+    }
+  ],
+  "cleanup_errors": [],
+  "deployment": {
+    "database": "goby_test",
+    "database_read_only": true,
+    "effective_uid": 995,
+    "ffmpeg": "9.0.1",
+    "main_pid": 3330261,
+    "non_root": true,
+    "postgresql_version_num": 170011,
+    "probe_version": 5,
+    "schema_version": 13,
+    "transcoding_enabled": true
+  },
+  "http_response_bytes": 3883151,
+  "logged_out_media_url_status": 401,
+  "original_video_dto_and_user_data_preserved": true,
+  "owned_playback_scopes_with_revoked_authentication": 1,
+  "owned_session_revoked_and_encoders_inactive": true,
+  "owner": "goby-progressive-video-m4e-verification-v1",
+  "player_reports_sent": 0,
+  "preservation_after_cleanup": {
+    "all_user_state_preserved": true,
+    "before": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "4": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "completed_scan_count": 5,
+    "expected_scan_count": 5,
+    "fixture_files_preserved": true,
+    "metadata_preserved": true,
+    "observed": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "observed_probe_versions": {
+      "5": 11
+    },
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "status": "preserved"
+  },
+  "private_tmpfs_scratch_removed": true,
+  "probe_five_after_cleanup": {
+    "after": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "all_media_probe_version": 5,
+    "all_user_state_preserved": true,
+    "baseline_boundary": "Captured after schema-13 deployment and before normal library scans",
+    "before": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "4": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "fixture_files_preserved": true,
+    "media_semantic_exceptions": [
+      "ProbeVersion",
+      "FormatStartKnown",
+      "FormatStartTicks"
+    ],
+    "metadata_preserved": true,
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "scans": [
+      {
+        "added": 0,
+        "fixture": "direct",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "hls",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "nextup",
+        "scanned": 3,
+        "status": "completed",
+        "updated": 3
+      },
+      {
+        "added": 0,
+        "fixture": "subtitle",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "audio",
+        "scanned": 5,
+        "status": "completed",
+        "updated": 5
+      }
+    ],
+    "source_clock_known_count": 9,
+    "source_clock_unknown_count": 2,
+    "status": "passed",
+    "upgraded_source_clocks_sha256": "4d61b211b7b7b9e48a4c0c03c642b348708d64c596385fc787a10d431cb57bf2"
+  },
+  "source": {
+    "bytes": 967651,
+    "format_start_known": true,
+    "format_start_ticks": 0,
+    "seconds": 15,
+    "sha256": "332bce27f1e97d71d3ef7cffa59d8cf70cbcc51380a6b600e05048107432de4d",
+    "video_frames": 360
+  },
+  "status": "passed",
+  "upgrade_after": {
+    "after": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "5": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "all_media_probe_version": 5,
+    "all_user_state_preserved": true,
+    "baseline_boundary": "Captured after schema-13 deployment and before normal library scans",
+    "before": {
+      "all_item_count": 21,
+      "all_user_state_rows": 15,
+      "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+      "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+      "fixture_file_bytes": 3049219,
+      "fixture_file_count": 20,
+      "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+      "item_count": 21,
+      "library_count": 5,
+      "media_count": 11,
+      "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+      "probe_versions": {
+        "4": 11
+      },
+      "selected_user_state_rows": 15
+    },
+    "fixture_files_preserved": true,
+    "media_semantic_exceptions": [
+      "ProbeVersion",
+      "FormatStartKnown",
+      "FormatStartTicks"
+    ],
+    "metadata_preserved": true,
+    "ownership_record_count": 7,
+    "ownership_records_preserved": true,
+    "ownership_records_sha256": "9a798b14107a02bb685502971cb7e67a900ec209a6043fb1a40ba563df9f57f2",
+    "scans": [
+      {
+        "added": 0,
+        "fixture": "direct",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "hls",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "nextup",
+        "scanned": 3,
+        "status": "completed",
+        "updated": 3
+      },
+      {
+        "added": 0,
+        "fixture": "subtitle",
+        "scanned": 1,
+        "status": "completed",
+        "updated": 1
+      },
+      {
+        "added": 0,
+        "fixture": "audio",
+        "scanned": 5,
+        "status": "completed",
+        "updated": 5
+      }
+    ],
+    "source_clock_known_count": 9,
+    "source_clock_unknown_count": 2,
+    "status": "passed",
+    "upgraded_source_clocks_sha256": "4d61b211b7b7b9e48a4c0c03c642b348708d64c596385fc787a10d431cb57bf2"
+  },
+  "upgrade_before": {
+    "all_item_count": 21,
+    "all_user_state_rows": 15,
+    "all_user_state_sha256": "f9f75a9569f7d64ace948560a16f3a1102a587eb5c8c5d866bc8d2a36948a82b",
+    "complete_media_semantics_sha256": "0f125df68b864ef916a5b836a027c1e56303fc624d615318d4229dc3d9b4609d",
+    "fixture_file_bytes": 3049219,
+    "fixture_file_count": 20,
+    "fixture_snapshot_sha256": "1c6cefd0f602efbf12e5cc7fdeb8aa8244fad172cf3d28e4837cff390ad4c1c9",
+    "item_count": 21,
+    "library_count": 5,
+    "media_count": 11,
+    "metadata_sha256": "3d7ae30f0981331e6baeeb82528c2e3159dd19386bd819679989daf6aeeb819b",
+    "probe_versions": {
+      "4": 11
+    },
+    "selected_user_state_rows": 15
+  },
+  "upgrade_scans": [
+    {
+      "added": 0,
+      "fixture": "direct",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "hls",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "nextup",
+      "scanned": 3,
+      "status": "completed",
+      "updated": 3
+    },
+    {
+      "added": 0,
+      "fixture": "subtitle",
+      "scanned": 1,
+      "status": "completed",
+      "updated": 1
+    },
+    {
+      "added": 0,
+      "fixture": "audio",
+      "scanned": 5,
+      "status": "completed",
+      "updated": 5
+    }
+  ]
+}

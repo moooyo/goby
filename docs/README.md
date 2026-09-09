@@ -2,9 +2,11 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, Universal/progressive audio, and audio PlaybackInfo profile selection are implemented; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Progressive video, additional audio timing/input profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain required work.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, Universal/progressive audio, progressive MP4 video, ordered audio/video PlaybackInfo profiles, and native revision-checked user management are implemented in source; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Nonzero video-copy seeking, additional input/timing profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain work.
 
-The reference corpus currently contains **736 records**: 436 earlier records, 174 from the [audio reference study](research/audio-reference.md), and 126 from the [audio profile study](research/audio-profile-reference.md). These include supporting probe/provenance observations and an explicitly incomplete response as well as complete HTTP captures; they are not counts of implemented endpoints or successful client workflows. Migration `0012` and probe cache version 4 are covered in the upgrade instructions below.
+The official reference corpus currently contains **828 records**: the previous 736, including the [audio reference](research/audio-reference.md) and [audio profile](research/audio-profile-reference.md) studies, plus 92 from the [video profile study](research/video-progressive-reference.md). The M4e addition includes 61 complete HTTP captures. Records also include supporting probe/provenance observations and preserved incomplete responses; they are not counts of implemented endpoints or successful client workflows. Current database schema **13** and probe cache version **5** require the upgrade steps below, including a normal library rescan for older probe snapshots.
+
+The [M4e/M5a verification](development/verification-m4e-video-and-users.md) passed the complete Linux race suite, deployed migration and five-library probe upgrade, actual progressive-video workflow, and administrator browser acceptance. The suite contains 854 top-level tests with no skips. [Implementation progress](development/progress.md) distinguishes completed increments from the remaining full compatibility and administrator milestones.
 
 ## Compatibility target
 
@@ -17,15 +19,17 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |
 | [Build and run](development/running.md) | Startup configuration, PostgreSQL deployment, migrations, and remote verification |
+| [Native user management](api/admin-users.md) | Revision-checked account/policy edits, password reset, last-administrator protection and session revocation |
 | [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Universal and progressive audio](development/audio-playback.md) | Original/progressive/HLS selection, supported audio outputs, exact timing, streaming failures and current limits |
 | [Audio profile negotiation](development/audio-profile-playback.md) | Ordered PlaybackInfo profiles, projected constraints, standard media URLs and current-policy execution |
+| [Progressive video playback](development/progressive-video-playback.md) | Standard MP4 URLs, ordered HTTP/HLS profiles, format-clock origin, copy/encode/seek boundaries and HTTP behavior |
 | [Client playback references](development/client-playback-references.md) | Scoped client nonces, canonical playback identities, tombstones and migration 0012 |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
 | [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
-| [Conversion engine](development/transcode-engine.md) | Planners, PostgreSQL jobs, bounded FFmpeg execution, progressive audio, hardware selection and HLS VOD production |
+| [Conversion engine](development/transcode-engine.md) | Planners, PostgreSQL jobs, bounded FFmpeg execution, progressive audio/video, hardware selection and HLS VOD production |
 | [HLS playback](development/hls-playback.md) | Full VOD manifests, global segment addressing, seek production, authentication and cleanup |
 | [Transcoding configuration](development/transcoding-configuration.md) | Startup settings, hardware choices, cache ownership and Linux service deployment |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
@@ -45,6 +49,8 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [HLS reference](research/hls-reference.md) | Full VOD manifests, seek hints, successful transcode segments, preserved remux failures and cleanup |
 | [Audio reference](research/audio-reference.md) | Universal defaults, original delivery, progressive seeking, AAC/TS HLS and preserved reference inconsistencies |
 | [Audio profile reference](research/audio-profile-reference.md) | HTTP/HLS profile order, protocol/context defaults, exact output conditions and measured response completeness |
+| [Video profile reference](research/video-progressive-reference.md) | Progressive MP4, HTTP/HLS order, measured Range/HEAD behavior and preserved copy-seek failures |
+| [Copied-video seek diagnostics](research/video-copy-seek/README.md) | Independent Linux edit-list, preroll, source-clock and buffered-remux controls; not a shipped copy-seek capability |
 
 ## Scope and evidence labels
 

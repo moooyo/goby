@@ -1,0 +1,166 @@
+{
+  "kind": "video-profile-observation",
+  "case": "hls-first",
+  "playbackInfoStatus": 200,
+  "sourceFields": {
+    "Container": "mp4",
+    "SupportsDirectPlay": false,
+    "SupportsDirectStream": false,
+    "SupportsTranscoding": true,
+    "TranscodingContainer": "ts",
+    "TranscodingSubProtocol": "hls",
+    "DefaultAudioStreamIndex": 1,
+    "RunTimeTicks": 150000000,
+    "AddApiKeyToDirectStreamUrl": false
+  },
+  "omittedSourceFields": [
+    "DefaultVideoStreamIndex",
+    "DefaultSubtitleStreamIndex"
+  ],
+  "hasTranscodingUrl": true,
+  "hasDirectStreamUrl": false,
+  "hasPlaySessionId": true,
+  "errorCode": null,
+  "returnedUrl": {
+    "endpointLeaf": "master.m3u8",
+    "parameterNames": [
+      "AudioBitrate",
+      "AudioCodec",
+      "AudioStreamIndex",
+      "BreakOnNonKeyFrames",
+      "DeviceId",
+      "MaxHeight",
+      "MaxWidth",
+      "MediaSourceId",
+      "MinSegments",
+      "PlaySessionId",
+      "SegmentContainer",
+      "SegmentLength",
+      "TranscodeReasons",
+      "TranscodingMaxAudioChannels",
+      "VideoBitrate",
+      "VideoCodec",
+      "allowAudioStreamCopy",
+      "allowVideoStreamCopy",
+      "api_key"
+    ],
+    "hasApiKey": true,
+    "mediaParameters": {
+      "VideoCodec": [
+        "h264"
+      ],
+      "AudioCodec": [
+        "aac"
+      ],
+      "VideoBitrate": [
+        "435707"
+      ],
+      "AudioBitrate": [
+        "64293"
+      ],
+      "MaxWidth": [
+        "160"
+      ],
+      "MaxHeight": [
+        "90"
+      ],
+      "AudioStreamIndex": [
+        "1"
+      ],
+      "TranscodingMaxAudioChannels": [
+        "2"
+      ],
+      "SegmentContainer": [
+        "ts"
+      ],
+      "SegmentLength": [
+        "3"
+      ],
+      "MinSegments": [
+        "1"
+      ],
+      "BreakOnNonKeyFrames": [
+        "False"
+      ],
+      "TranscodeReasons": [
+        "ContainerBitrateExceedsLimit,DirectPlayError"
+      ],
+      "allowVideoStreamCopy": [
+        "false"
+      ],
+      "allowAudioStreamCopy": [
+        "false"
+      ]
+    }
+  },
+  "selectedUrlField": "TranscodingUrl",
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "delivery": {
+    "finalStatus": 200,
+    "redirectStatuses": [],
+    "wireBytes": 685,
+    "contentType": "application/vnd.apple.mpegurl",
+    "sourceBytesMatch": false,
+    "mainStatus": 200,
+    "segmentStatuses": [
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "media": {
+      "probeExit": 0,
+      "frameProbeExit": 0,
+      "decodeExit": 0,
+      "decodeStderrEmpty": true,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "width": 160,
+      "height": 90,
+      "frameRate": "24/1",
+      "audioSampleRate": "48000",
+      "audioChannels": 1,
+      "formatName": "hls",
+      "formatDuration": "15.000000",
+      "videoFrames": 360,
+      "audioFrames": 705,
+      "audioSamples": 721920,
+      "decodeProgressFrames": 360,
+      "decodeProgressSeconds": 15.041667,
+      "decodedPresentation": {
+        "video": {
+          "firstPTS": 10.083333,
+          "endPTS": 25.083334
+        },
+        "audio": {
+          "firstPTS": 10.062,
+          "endPTS": 25.102000333333333
+        }
+      },
+      "packetPayloadDigests": {
+        "video": "bf100d98ffbe7f9f2947f3c9eb7e1be634a52e1a37326237ac85c2df1ee2c908",
+        "audio": "419c13f22895b6beead4805dfee1e9a6bb35c39467897cef466f23cff9896208"
+      },
+      "frameHashExit": 0,
+      "mp4TimingBoxes": {
+        "isISOBaseMedia": false,
+        "tracks": []
+      },
+      "firstDecodedVideoSourceFrameMatches": [],
+      "firstDecodedVideoSourceSeconds": null,
+      "firstPacketSourcePTSMatches": {
+        "video": [],
+        "audio": []
+      },
+      "audioMinusVideoStartSeconds": -0.021333,
+      "audioMinusVideoEndSeconds": 0.018666
+    }
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:54:25.315368+00:00"
+  }
+}

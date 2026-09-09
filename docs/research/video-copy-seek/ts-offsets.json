@@ -1,0 +1,1303 @@
+[
+  {
+    "name": "ts-fractional-copy-bsf",
+    "exit": 0,
+    "stderr": "",
+    "args": [
+      "-v",
+      "warning",
+      "-nostdin",
+      "-y",
+      "-ss",
+      "2.37",
+      "-i",
+      "/opt/goby-test/exec-scratch/goby-m4e-video-engine-8juf45nd/source.ts",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "copy",
+      "-threads:a",
+      "1",
+      "-avoid_negative_ts",
+      "disabled",
+      "-use_editlist",
+      "1",
+      "-movflags",
+      "frag_keyframe+delay_moov+empty_moov+default_base_moof+skip_trailer",
+      "-bsf:a",
+      "aac_adtstoasc",
+      "/opt/goby-test/exec-scratch/m4e-copy-elst-control/ts-fractional-copy-bsf.mp4"
+    ],
+    "atoms": [
+      {
+        "path": "/moov/mvhd",
+        "size": 108,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 1,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 40,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 148620,
+            "media_time": -1,
+            "rate": [
+              1,
+              0
+            ]
+          },
+          {
+            "segment_duration": 0,
+            "media_time": 7500,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 2,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 16480,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 48000,
+        "duration": 0
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2744,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1376,
+            "composition_offset": 15000
+          },
+          {
+            "size": 507,
+            "composition_offset": 3750
+          },
+          {
+            "size": 344,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 756,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 184,
+        "first_samples": [
+          {
+            "size": 194
+          },
+          {
+            "size": 181
+          },
+          {
+            "size": 155
+          },
+          {
+            "size": 195
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 180000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 72,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 6,
+        "first_samples": [
+          {
+            "size": 3083,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1044,
+            "composition_offset": 15000
+          },
+          {
+            "size": 509,
+            "composition_offset": 3750
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 188416
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 80,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 15,
+        "first_samples": [
+          {
+            "size": 169
+          },
+          {
+            "size": 171
+          },
+          {
+            "size": 172
+          },
+          {
+            "size": 156
+          }
+        ]
+      }
+    ],
+    "first_default_frame": 96,
+    "decode_exit": 0,
+    "decode_stderr": "",
+    "first_positive_frame": 96,
+    "positive_frames": 54
+  },
+  {
+    "name": "ts-prior-key-offset-copy",
+    "exit": 0,
+    "stderr": "",
+    "args": [
+      "-v",
+      "warning",
+      "-nostdin",
+      "-y",
+      "-copyts",
+      "-ss",
+      "1.9",
+      "-itsoffset",
+      "-3.832",
+      "-i",
+      "/opt/goby-test/exec-scratch/goby-m4e-video-engine-8juf45nd/source.ts",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "copy",
+      "-threads:a",
+      "1",
+      "-avoid_negative_ts",
+      "disabled",
+      "-use_editlist",
+      "1",
+      "-movflags",
+      "frag_keyframe+delay_moov+empty_moov+default_base_moof+skip_trailer",
+      "-bsf:a",
+      "aac_adtstoasc",
+      "/opt/goby-test/exec-scratch/m4e-copy-elst-control/ts-prior-key-offset-copy.mp4"
+    ],
+    "atoms": [
+      {
+        "path": "/moov/mvhd",
+        "size": 108,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 1,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 38880,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 2,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 31840,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 48000,
+        "duration": 0
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 3138,
+            "composition_offset": 7500
+          },
+          {
+            "size": 594,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1010,
+            "composition_offset": 15000
+          },
+          {
+            "size": 620,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 440,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 105,
+        "first_samples": [
+          {
+            "size": 184
+          },
+          {
+            "size": 175
+          },
+          {
+            "size": 155
+          },
+          {
+            "size": 140
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 180000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2744,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1376,
+            "composition_offset": 15000
+          },
+          {
+            "size": 507,
+            "composition_offset": 3750
+          },
+          {
+            "size": 344,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 107520
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 396,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 94,
+        "first_samples": [
+          {
+            "size": 187
+          },
+          {
+            "size": 167
+          },
+          {
+            "size": 162
+          },
+          {
+            "size": 170
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 360000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 72,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 6,
+        "first_samples": [
+          {
+            "size": 3083,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1044,
+            "composition_offset": 15000
+          },
+          {
+            "size": 509,
+            "composition_offset": 3750
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 203776
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 80,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 15,
+        "first_samples": [
+          {
+            "size": 169
+          },
+          {
+            "size": 171
+          },
+          {
+            "size": 172
+          },
+          {
+            "size": 156
+          }
+        ]
+      }
+    ],
+    "first_default_frame": 48,
+    "decode_exit": 0,
+    "decode_stderr": "",
+    "first_positive_frame": 57,
+    "positive_frames": 93
+  },
+  {
+    "name": "ts-from-zero-offset-copy",
+    "exit": 0,
+    "stderr": "",
+    "args": [
+      "-v",
+      "warning",
+      "-nostdin",
+      "-y",
+      "-copyts",
+      "-itsoffset",
+      "-3.832",
+      "-i",
+      "/opt/goby-test/exec-scratch/goby-m4e-video-engine-8juf45nd/source.ts",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "copy",
+      "-threads:a",
+      "1",
+      "-avoid_negative_ts",
+      "disabled",
+      "-use_editlist",
+      "1",
+      "-movflags",
+      "frag_keyframe+delay_moov+empty_moov+default_base_moof+skip_trailer",
+      "-bsf:a",
+      "aac_adtstoasc",
+      "/opt/goby-test/exec-scratch/m4e-copy-elst-control/ts-from-zero-offset-copy.mp4"
+    ],
+    "atoms": [
+      {
+        "path": "/moov/mvhd",
+        "size": 108,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 1,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 218880,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 2,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 113760,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 48000,
+        "duration": 0
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2902,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1155,
+            "composition_offset": 15000
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          },
+          {
+            "size": 358,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 384,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 91,
+        "first_samples": [
+          {
+            "size": 239
+          },
+          {
+            "size": 163
+          },
+          {
+            "size": 182
+          },
+          {
+            "size": 156
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 180000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 3138,
+            "composition_offset": 7500
+          },
+          {
+            "size": 594,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1010,
+            "composition_offset": 15000
+          },
+          {
+            "size": 620,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 93184
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 396,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 94,
+        "first_samples": [
+          {
+            "size": 148
+          },
+          {
+            "size": 186
+          },
+          {
+            "size": 182
+          },
+          {
+            "size": 159
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 360000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2744,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1376,
+            "composition_offset": 15000
+          },
+          {
+            "size": 507,
+            "composition_offset": 3750
+          },
+          {
+            "size": 344,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 189440
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 396,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 94,
+        "first_samples": [
+          {
+            "size": 187
+          },
+          {
+            "size": 167
+          },
+          {
+            "size": 162
+          },
+          {
+            "size": 170
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 540000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 72,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 6,
+        "first_samples": [
+          {
+            "size": 3083,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1044,
+            "composition_offset": 15000
+          },
+          {
+            "size": 509,
+            "composition_offset": 3750
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 285696
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 80,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 15,
+        "first_samples": [
+          {
+            "size": 169
+          },
+          {
+            "size": 171
+          },
+          {
+            "size": 172
+          },
+          {
+            "size": 156
+          }
+        ]
+      }
+    ],
+    "first_default_frame": 0,
+    "decode_exit": 0,
+    "decode_stderr": "",
+    "first_positive_frame": 57,
+    "positive_frames": 93
+  },
+  {
+    "name": "ts-from-zero-offset-aac",
+    "exit": 0,
+    "stderr": "",
+    "args": [
+      "-v",
+      "warning",
+      "-nostdin",
+      "-y",
+      "-copyts",
+      "-itsoffset",
+      "-3.832",
+      "-i",
+      "/opt/goby-test/exec-scratch/goby-m4e-video-engine-8juf45nd/source.ts",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "aac",
+      "-threads:a",
+      "1",
+      "-avoid_negative_ts",
+      "disabled",
+      "-use_editlist",
+      "1",
+      "-movflags",
+      "frag_keyframe+delay_moov+empty_moov+default_base_moof+skip_trailer",
+      "-b:a",
+      "128000",
+      "/opt/goby-test/exec-scratch/m4e-copy-elst-control/ts-from-zero-offset-aac.mp4"
+    ],
+    "atoms": [
+      {
+        "path": "/moov/mvhd",
+        "size": 108,
+        "timescale": 720000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 1,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 218880,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 90000,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/tkhd",
+        "size": 92,
+        "track_id": 2,
+        "duration": 0
+      },
+      {
+        "path": "/moov/trak/edts/elst",
+        "size": 28,
+        "version": 0,
+        "entries": [
+          {
+            "segment_duration": 0,
+            "media_time": 114784,
+            "rate": [
+              1,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/moov/trak/mdia/mdhd",
+        "size": 32,
+        "timescale": 48000,
+        "duration": 0
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2902,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1155,
+            "composition_offset": 15000
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          },
+          {
+            "size": 358,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 0
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 388,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 92,
+        "first_samples": [
+          {
+            "size": 383
+          },
+          {
+            "size": 453
+          },
+          {
+            "size": 246
+          },
+          {
+            "size": 244
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 180000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 3138,
+            "composition_offset": 7500
+          },
+          {
+            "size": 594,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1010,
+            "composition_offset": 15000
+          },
+          {
+            "size": 620,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 94208
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 396,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 94,
+        "first_samples": [
+          {
+            "size": 265
+          },
+          {
+            "size": 280
+          },
+          {
+            "size": 243
+          },
+          {
+            "size": 168
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 360000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 408,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 48,
+        "first_samples": [
+          {
+            "size": 2744,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1376,
+            "composition_offset": 15000
+          },
+          {
+            "size": 507,
+            "composition_offset": 3750
+          },
+          {
+            "size": 344,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 190464
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 396,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 94,
+        "first_samples": [
+          {
+            "size": 207
+          },
+          {
+            "size": 201
+          },
+          {
+            "size": 186
+          },
+          {
+            "size": 192
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 1,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 540000
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 72,
+        "version": 0,
+        "flags": 2565,
+        "sample_count": 6,
+        "first_samples": [
+          {
+            "size": 3083,
+            "composition_offset": 7500
+          },
+          {
+            "size": 1044,
+            "composition_offset": 15000
+          },
+          {
+            "size": 509,
+            "composition_offset": 3750
+          },
+          {
+            "size": 415,
+            "composition_offset": 3750
+          }
+        ]
+      },
+      {
+        "path": "/moof/traf/tfhd",
+        "size": 28,
+        "track_id": 2,
+        "flags": 131128
+      },
+      {
+        "path": "/moof/traf/tfdt",
+        "size": 20,
+        "base_media_decode_time": 286720
+      },
+      {
+        "path": "/moof/traf/trun",
+        "size": 80,
+        "version": 0,
+        "flags": 513,
+        "sample_count": 15,
+        "first_samples": [
+          {
+            "size": 201
+          },
+          {
+            "size": 213
+          },
+          {
+            "size": 190
+          },
+          {
+            "size": 190
+          }
+        ]
+      }
+    ],
+    "first_default_frame": 0,
+    "decode_exit": 0,
+    "decode_stderr": "",
+    "first_positive_frame": 57,
+    "positive_frames": 93
+  }
+]

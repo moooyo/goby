@@ -447,12 +447,10 @@ func TestHTTPOriginalStreamsRejectConversionAndInvalidSelectors(t *testing.T) {
 	s := newStreamHTTPFixture(t)
 	for _, item := range []streamHTTPItem{s.video, s.audio} {
 		base := "/emby/" + item.route + "/" + item.id + "/"
-		conversionStatus, originalConversionStatus := http.StatusNotImplemented, http.StatusNotImplemented
-		if item.route == "Audio" {
-			// Audio now has a conversion adapter. This fixture disables its
-			// runtime; incompatible audio requests are declined explicitly.
-			conversionStatus, originalConversionStatus = http.StatusUnsupportedMediaType, http.StatusBadRequest
-		}
+		// Both media routes have conversion adapters. This fixture disables
+		// their runtime; unsupported outputs are declined, while an original
+		// alias combined with Static=false is a contradictory request.
+		conversionStatus, originalConversionStatus := http.StatusUnsupportedMediaType, http.StatusBadRequest
 		for _, test := range []struct {
 			name, suffix string
 			status       int

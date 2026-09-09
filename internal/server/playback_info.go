@@ -153,7 +153,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		if source.Item.Type == "Audio" {
 			conversion, err = playback.PlanAudioConversion(input, request, limits)
 		} else {
-			conversion, err = playback.PlanConversion(input, request, limits)
+			conversion, err = playback.PlanVideoConversion(input, request, limits)
 		}
 		if err != nil {
 			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested conversion profile cannot be evaluated.")
@@ -222,7 +222,11 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			// The concrete output settings survive a normal client-side seek URL
 			// change. The media route rechecks current source facts and policy;
 			// negotiation does not reserve capacity or start an encoder.
-			streamURL = audioPlaybackURL(source.Item.ID, source.SourceID, session.ID, principal.Client.DeviceID, token, *conversion.Plan)
+			if source.Item.Type == "Audio" {
+				streamURL = audioPlaybackURL(source.Item.ID, source.SourceID, session.ID, principal.Client.DeviceID, token, *conversion.Plan)
+			} else {
+				streamURL = videoPlaybackURL(source.Item.ID, source.SourceID, session.ID, principal.Client.DeviceID, token, *conversion.Plan)
+			}
 			container, protocol = conversion.Plan.Container, "http"
 		} else {
 			hls, err := s.hls.register(principal, source, session.ID, conversion, start)

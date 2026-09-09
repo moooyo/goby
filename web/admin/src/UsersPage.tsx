@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import PersonAddAltRounded from '@mui/icons-material/PersonAddAltRounded';
 import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import { adminApi, isAbortError } from './api';
+import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
+import { adminApi, ApiError, isAbortError } from './api';
 import type { User, UsersResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError, PasswordField } from './formFields';
+import { ManagedUserDialog, UnsavedChangesDialog } from './ManagedUserDialog';
+import { useUserDraftNavigation } from './userDraftNavigation';
+import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase();
@@ -19,16 +23,28 @@ function createdDate(value: string): string {
   return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function CreateUserDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (user: User) => void }) {
+function CreateUserDialog({ open, onClose, onCreated, onNavigationGuardChange }: { open: boolean; onClose: () => void; onCreated: (user: User) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [administrator, setAdministrator] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
   const [error, setError] = useState<unknown>(null);
+  const [discarding, setDiscarding] = useState(false);
+  const [outcomeUnknown, setOutcomeUnknown] = useState(false);
+  const passwordTooLong = new TextEncoder().encode(password).length > 72;
+  useUserDraftNavigation(Boolean(name || password || administrator), busy, onNavigationGuardChange);
+
+  function requestClose() {
+    if (inFlight.current) return;
+    if (name || password || administrator) setDiscarding(true);
+    else onClose();
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (inFlight.current || outcomeUnknown || passwordTooLong) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -36,22 +52,26 @@ function CreateUserDialog({ open, onClose, onCreated }: { open: boolean; onClose
       setPassword('');
       onCreated(result.User);
     } catch (cause) {
+      if (cause instanceof ApiError && ['network_error', 'invalid_response'].includes(cause.code)) setOutcomeUnknown(true);
       if (!isAbortError(cause)) setError(cause);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
 
   return (
-    <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm" aria-labelledby="create-user-title">
+    <>
+    <Dialog open={open} onClose={requestClose} fullWidth maxWidth="sm" aria-labelledby="create-user-title">
       <Box component="form" onSubmit={submit} aria-busy={busy}>
         <DialogTitle id="create-user-title" sx={{ px: 3, pt: 3, pb: 0.5 }}><Typography component="span" variant="h3">Create user</Typography></DialogTitle>
         <DialogContent sx={{ px: 3, pt: '12px !important' }}>
           <Typography color="text.secondary" variant="body2" sx={{ mb: 3 }}>Give someone an account on your media server.</Typography>
           <Stack spacing={2.5}>
-            {error != null && <ErrorNotice error={error} />}
+            {error != null && !outcomeUnknown && <ErrorNotice error={error} />}
+            {outcomeUnknown && <Alert severity="warning">The response could not be confirmed. This user may already have been created. Check the user list before trying again.</Alert>}
             <TextField id="new-user-name" name="Name" autoFocus fullWidth required label="Username" value={name} onChange={(event) => setName(event.target.value)} disabled={busy} autoComplete="off" error={Boolean(fieldError(error, 'Name'))} helperText={fieldError(error, 'Name')} slotProps={{ htmlInput: { autoCapitalize: 'none', spellCheck: false } }} />
-            <PasswordField id="new-user-password" name="Password" fullWidth required label="Password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} autoComplete="new-password" error={Boolean(fieldError(error, 'Password'))} helperText={fieldError(error, 'Password') ?? 'Choose a unique password for this account.'} />
+            <PasswordField id="new-user-password" name="Password" fullWidth required label="Password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} autoComplete="new-password" error={passwordTooLong || Boolean(fieldError(error, 'Password'))} helperText={fieldError(error, 'Password') ?? (passwordTooLong ? 'Use at most 72 UTF-8 bytes for the password.' : 'Choose a unique password of at most 72 UTF-8 bytes.')} />
             <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.default', border: 1, borderColor: 'divider' }}>
               <FormControlLabel control={<Switch checked={administrator} onChange={(event) => setAdministrator(event.target.checked)} disabled={busy} slotProps={{ input: { 'aria-describedby': 'administrator-help' } }} />} label={<Typography sx={{ fontWeight: 600 }}>Administrator access</Typography>} />
               <Typography id="administrator-help" color="text.secondary" variant="body2" sx={{ mt: 0.25 }}>Administrators can manage all server settings and users.</Typography>
@@ -59,20 +79,23 @@ function CreateUserDialog({ open, onClose, onCreated }: { open: boolean; onClose
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button onClick={onClose} disabled={busy} color="secondary">Cancel</Button>
-          <Button type="submit" variant="contained" disabled={busy || !name.trim() || !password} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <PersonAddAltRounded />}>{busy ? 'Creating user...' : 'Create user'}</Button>
+          <Button onClick={requestClose} disabled={busy} color="secondary">Cancel</Button>
+          {outcomeUnknown ? <Button variant="contained" startIcon={<RefreshRounded />} onClick={onClose}>Check users</Button> : <Button type="submit" variant="contained" disabled={busy || !name.trim() || !password || passwordTooLong} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <PersonAddAltRounded />}>{busy ? 'Creating user...' : 'Create user'}</Button>}
         </DialogActions>
       </Box>
     </Dialog>
+    {discarding && <UnsavedChangesDialog reload={false} onKeep={() => setDiscarding(false)} onDiscard={onClose} />}
+    </>
   );
 }
 
-export function UsersPage({ currentUser }: { currentUser: User }) {
+export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuardChange }: { currentUser: User; onCurrentUserUpdated: (user: User) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [data, setData] = useState<UsersResponse>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [revision, setRevision] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [managing, setManaging] = useState<User>();
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -122,6 +145,7 @@ export function UsersPage({ currentUser }: { currentUser: User }) {
                   <Typography variant="caption" color={user.HasPassword ? 'text.secondary' : 'warning.main'}>{user.HasPassword ? 'Password set' : 'Password not set'}</Typography>
                   <Typography variant="caption" color="text.secondary">{createdDate(user.CreatedAt)}</Typography>
                 </Stack>
+                <Button size="small" variant="outlined" startIcon={<ManageAccountsOutlined />} onClick={() => setManaging(user)} aria-label={`Manage ${user.Name}`} sx={{ mt: 2 }}>Manage</Button>
               </Box>
             ))}
           </Box>
@@ -129,7 +153,7 @@ export function UsersPage({ currentUser }: { currentUser: User }) {
         {data && data.Items.length > 0 && (
           <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
             <Table aria-label="Server users" sx={{ minWidth: 650 }}>
-              <TableHead><TableRow><TableCell sx={{ pl: 3 }}>User</TableCell><TableCell>Access</TableCell><TableCell>Status</TableCell><TableCell>Password</TableCell><TableCell sx={{ pr: 3 }}>Created</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell sx={{ pl: 3 }}>User</TableCell><TableCell>Access</TableCell><TableCell>Status</TableCell><TableCell>Password</TableCell><TableCell>Created</TableCell><TableCell align="right" sx={{ pr: 3 }}>Manage</TableCell></TableRow></TableHead>
               <TableBody>
                 {data.Items.map((user) => (
                   <TableRow key={user.Id}>
@@ -142,7 +166,8 @@ export function UsersPage({ currentUser }: { currentUser: User }) {
                     <TableCell><Stack direction="row" sx={{ alignItems: 'center', gap: 0.6 }}>{user.IsAdministrator && <ShieldOutlined sx={{ fontSize: 16, color: 'primary.main' }} />}<Typography variant="body2">{user.IsAdministrator ? 'Administrator' : 'Member'}</Typography></Stack></TableCell>
                     <TableCell><Chip size="small" label={user.IsDisabled ? 'Disabled' : 'Active'} variant="outlined" color={user.IsDisabled ? 'default' : 'success'} /></TableCell>
                     <TableCell><Typography variant="body2" color={user.HasPassword ? 'text.secondary' : 'warning.main'}>{user.HasPassword ? 'Set' : 'Not set'}</Typography></TableCell>
-                    <TableCell sx={{ pr: 3, whiteSpace: 'nowrap' }}><Typography variant="body2" color="text.secondary">{createdDate(user.CreatedAt)}</Typography></TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" color="text.secondary">{createdDate(user.CreatedAt)}</Typography></TableCell>
+                    <TableCell align="right" sx={{ pr: 3 }}><Button size="small" startIcon={<ManageAccountsOutlined />} onClick={() => setManaging(user)} aria-label={`Manage ${user.Name}`}>Manage</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -152,8 +177,9 @@ export function UsersPage({ currentUser }: { currentUser: User }) {
         {!data && !loading && error != null && <Typography variant="body2" color="text.secondary" sx={{ px: 3, pb: 3 }}>The user list could not be loaded. Retry the request to see your users.</Typography>}
       </Paper>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Members use compatible media clients. Administrator accounts can also sign in to this dashboard.</Typography>
-      {creating && <CreateUserDialog open onClose={() => setCreating(false)} onCreated={(user) => { setCreating(false); setNotice(`User ${user.Name} created.`); refresh(); }} />}
-      <Snackbar open={Boolean(notice)} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')}>{notice}</Alert></Snackbar>
+      {creating && <CreateUserDialog open onClose={() => { setCreating(false); refresh(); }} onCreated={(user) => { setCreating(false); setNotice(`User ${user.Name} created.`); refresh(); }} onNavigationGuardChange={onNavigationGuardChange} />}
+      {managing && <ManagedUserDialog key={managing.Id} userId={managing.Id} currentUserId={currentUser.Id} onClose={() => { setManaging(undefined); refresh(); }} onUpdated={(user, message) => { setData((current) => current ? { ...current, Items: current.Items.map((item) => item.Id === user.Id ? user : item) } : current); if (user.Id === currentUser.Id) onCurrentUserUpdated(user); setNotice(message); }} onNavigationGuardChange={onNavigationGuardChange} />}
+      <Snackbar open={Boolean(notice) && !managing && !creating} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')}>{notice}</Alert></Snackbar>
     </Box>
   );
 }

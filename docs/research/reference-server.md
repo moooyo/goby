@@ -2,6 +2,14 @@
 
 Status recorded at `2026-09-08T22:37:09Z` on the authorized Linux `test-env` host. This document records observations from an isolated official Emby Server instance. It does not establish that Goby implements or passes these contracts.
 
+Later bounded studies are documented separately: [HLS](hls-reference.md),
+[Universal/progressive audio](audio-reference.md), [audio profiles](audio-profile-reference.md),
+and [progressive-video profiles](video-progressive-reference.md). The retained
+corpus now contains 828 JSON records, including supporting observations and
+preserved incomplete responses; historical counts below describe their original
+capture boundaries. The M4e video extension adds 92 records with 61 complete HTTP
+captures and does not establish general copied-video seek correctness.
+
 ## Provenance
 
 | Property | Recorded value |

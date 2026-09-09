@@ -149,12 +149,12 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	user, err := s.identity.CreateUser(r.Context(), body.Name, body.Password, body.IsAdministrator)
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	user, err := s.identity.CreateManagedUser(r.Context(), principal, body.Name, body.Password, body.IsAdministrator)
 	if err != nil {
 		s.identityError(w, r, err)
 		return
 	}
-	principal := r.Context().Value(principalKey).(identity.Principal)
 	s.log.Info("user created", "actor_id", principal.User.ID, "user_id", user.ID, "administrator", body.IsAdministrator)
 	jsonResponse(w, 201, map[string]any{"User": nativeUser(user)})
 }

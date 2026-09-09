@@ -7,11 +7,17 @@ playback negotiation, complete source timelines, authorized segment URLs, seek
 production and cleanup. The [audio adapter](audio-playback.md) adds Universal and
 legacy selection with progressive output on the same manager, while
 [Audio PlaybackInfo](audio-profile-playback.md) selects ordered HTTP/HLS profiles.
+[Progressive video](progressive-video-playback.md) adds standard MP4 URLs and
+ordered Video PlaybackInfo profiles with verified source-clock mapping.
 [Startup configuration](transcoding-configuration.md) enables conversion by default and
-supplies cache, concurrency, output and video-hardware policy. Progressive video,
-additional audio timing/format/profile cases, richer subtitles, hard resource
-isolation, actual GPU execution and real-client acceptance
-remain active requirements.
+supplies cache, concurrency, output and video-hardware policy. Nonzero video-copy
+seeking, additional timing/format/profile cases, richer subtitles, hard resource
+isolation, actual GPU execution and real-client acceptance remain active work.
+
+The [M4e/M5a verification](verification-m4e-video-and-users.md) passed the complete
+Linux race suite, deployed migration and video workflow, and administrator browser
+acceptance. These results do not establish every client workflow; the larger
+conversion and release milestones remain open in [implementation progress](progress.md).
 
 ## Plans and output facts
 
@@ -21,6 +27,10 @@ evaluates explicit progressive audio targets separately from Universal's choice
 to serve a compatible original. `playback.PlanAudioConversion` preserves the
 original evaluation and declared HTTP/HLS TranscodingProfile order for Audio
 PlaybackInfo, selecting the first authorized output that passes profile checks.
+`playback.PlanProgressiveVideo` constructs explicit H.264/AAC fragmented MP4,
+and `playback.PlanVideoConversion` preserves the declared HTTP/HLS profile order
+for Video PlaybackInfo. Its compatible zero-start copy, mixed copy/encode, and
+encoded-seek candidates remain subject to independent user permissions.
 These planners consume authenticated server and user limits supplied by the
 caller, never authorize a user themselves, and start no process during negotiation.
 
@@ -30,15 +40,22 @@ CodecProfiles and ContainerProfiles, including output-dependent applicability,
 are evaluated again on the projected output. Required unknown or contradictory
 conditions reject a candidate; an allowed encoding can be retried when copied
 facts cannot prove compatibility. Original MediaSource DTOs stay unchanged, and
-the resulting standard audio URL serializes the concrete plan. PlaybackInfo
+the resulting standard audio or video URL serializes the concrete plan. PlaybackInfo
 prepares its canonical play but does not reserve a progressive job or revision;
-GET performs fresh admission and source/policy checks. See the [profile contract](audio-profile-playback.md).
+GET performs fresh admission and source/policy checks. See the [audio profile](audio-profile-playback.md)
+and [progressive video](progressive-video-playback.md) contracts.
 
 Audio profile search shares a request-wide 2,048-unit evaluation budget across
 progressive and HLS candidates, with bounded per-profile refinements and variants.
 Its container aliases normalize consistently across output selectors and codec/
 container conditions without changing the original evaluation. Budget exhaustion
 returns an explained unsupported result rather than an unevaluated plan.
+
+Video profile search separately shares a 2,048-unit candidate budget and a bounded
+node budget across profile choices. Required output conditions are evaluated
+against actual projected MP4 framing, selected codec facts, and constructible
+geometry/rate/bitrate targets. Exact targets and ceilings remain independent;
+source metadata is not used to claim facts that an encoder cannot establish.
 
 The HLS planner considers stream copy, audio conversion, video conversion, and their
 combinations against a declared Streaming/HLS/MPEG-TS TranscodingProfile. Initial
@@ -55,6 +72,14 @@ separate from maximum ceilings; FLAC retains an explicit 16- or 24-bit choice,
 and Opus output uses its actual 48 kHz clock. Unknown timing or precision is not
 converted into a guaranteed output fact. The [audio guide](audio-playback.md)
 records source restrictions and deliberately rejected copy combinations.
+
+Progressive video currently outputs MP4/H.264 and AAC for an existing audio track.
+It can preserve a source without audio but does not silently discard an existing
+audio track. Known compatible H.264/AAC streams can be copied at start zero;
+each encoded stream needs its own current conversion permission. Explicit video
+copy with a nonzero start is declined. A normal H.264 request can choose permitted
+encoding instead. Query fields cannot select arbitrary filters or inject a
+source-clock origin or hardware policy into the immutable plan.
 
 The resulting output facts pass the same profile evaluator again. Input facts
 that the output cannot promise are cleared: input time bases and codec tags, and
@@ -130,20 +155,31 @@ cancelled production returns an error; after response headers, the HTTP adapter
 preserves `http.ErrAbortHandler` so truncated output is aborted instead of ending
 with a normal success terminator.
 
-Probe cache version 3 introduced bounded packet/frame timing; version 4 extends
-the current facts to supported Ogg Opus/Vorbis/modern FLAC after independent page,
+Probe cache version 3 introduced bounded packet/frame timing; version 4 extended
+those facts to supported Ogg Opus/Vorbis/modern FLAC after independent page,
 header and topology checks plus complete packet/frame association. Opus pre-skip
 and final discard and the defined Vorbis warm-up packet are reconciled with actual
 decoded samples. Chained or changing streams, legacy Ogg FLAC mapping and
-Matroska/WebM quantized-clock timing remain outside this exact subset. Current
-metadata can retain original-file delivery when exact conversion is unproven.
+Matroska/WebM quantized-clock timing remain outside this exact audio-only subset.
+Current metadata can retain original-file delivery when exact conversion is unproven.
 Integer decoded sample counts survive seek/resampling plans rather than being
 reconstructed from outward-rounded ticks. WAV writes an accurate RIFF
 header before its PCM payload; only the defined sample-quantization deficit may
 be padded. Excessive, materially short, misaligned or changed source/output fails,
 and unsupported 32-bit RIFF sizes are rejected. Existing libraries, including
-version 3 snapshots, need a normal rescan for version 4. The [audio guide](audio-playback.md#source-duration-and-audio-hls)
-records proof bounds; additional exact-timing input profiles remain work.
+version 4 snapshots, need a normal rescan for current probe version 5. The
+[audio guide](audio-playback.md#source-duration-and-audio-hls) records proof bounds;
+additional exact-timing input profiles remain work.
+
+Probe version 5 separately records the demuxer's explicitly reported
+`FormatStartKnown`/`FormatStartTicks`. Missing format origin is not assumed zero
+or inferred from audio presentation samples. Progressive video requires this
+bounded fact and copies it into the private `SourceFormatStart*` plan fields.
+FFmpeg applies one source-format offset to all selected tracks; encoded seeks
+decode the prefix and trim in the output presentation domain. Without an explicit
+frame-rate target, source timestamp pacing is preserved. This permits supported
+video inputs independently of the stricter audio-only exact-sample subset.
+Old probe snapshots block indexed media and external-subtitle reads until rescanned.
 
 Exact Ogg audio uses private `Plan.AudioSampleSeek` for non-copy conversion.
 Progressive and HLS execution decode from the beginning, trim the Start/End window
@@ -151,7 +187,7 @@ in input sample coordinates, reset the decoded PTS origin, then resample and app
 the output sample limit. The normal HLS numbering and transport mapping remain
 separate from this decoded-audio origin. The planner derives this policy only from
 proven exact Ogg facts; request query fields cannot invent source measurements.
-Non-Ogg plans retain their existing input seek behavior.
+Non-Ogg audio plans retain their existing input seek behavior.
 
 This path addresses measured Ogg cases where input `-ss` produced the correct
 sample count at the wrong content position: a short Vorbis case was 128 samples
@@ -166,6 +202,14 @@ The source prefix must actually be decoded. Existing startup, no-progress,
 job-runtime and resource limits continue to apply; the policy does not provide a
 high-performance random page-seek guarantee. Final execution and HTTP verification
 are recorded separately from these diagnostic findings and the chosen contract.
+
+Progressive video also decodes from the beginning for a nonzero encoded seek.
+For copied video, retained decoder pre-roll and an MP4 edit list are not sufficient
+evidence that a generic client presents the requested start correctly. The
+[independent copy-seek controls](../research/video-copy-seek/README.md) include
+default-consumer failures and a bounded buffered-remux direction, not a shipped
+exception to the nonzero copy rejection. Long prefix decoding remains subject to
+the existing startup, cancellation, runtime, and quota limits.
 
 The runner processes `-progress pipe:1` incrementally with a bounded line size;
 normal progress can continue for hours without accumulating memory. Stderr keeps
@@ -225,6 +269,13 @@ revisions continue using the canonical identity. Tombstones prevent a removed or
 terminal playback reference from silently creating new work; binding or resolving
 the reference does not update watched state or playback position.
 
+The current schema is 13. Migration `0013_managed_users.sql` adds the management
+revision used by [native user administration](../api/admin-users.md). Account and
+password mutations revalidate the administrator in their transaction, protect the
+last enabled administrator, and apply the defined session revocations. Media and
+conversion authorization use current credentials and policy; a previously created
+job or URL is not an enduring grant after confirmed revocation.
+
 Startup recovery marks abandoned queued/running rows interrupted while retaining
 history. The caller must already hold the existing exclusive catalog ownership;
 a cache-directory lock alone cannot coordinate two roots using one database.
@@ -282,7 +333,11 @@ timelines and bounded VOD producers with explicit cuts and global numbers.
 Its full-duration manifests are distinct from the measured internal worker list.
 Universal/legacy audio now selects original, progressive, or MPEG-TS HLS delivery
 under the [audio contract](audio-playback.md) and [reference evidence](../research/audio-reference.md).
-Progressive video, additional audio timing and profile
-cases, packed-audio HLS, richer subtitle/codec profiles, hard worker isolation,
+Video URLs and ordered profiles now use the same manager under the
+[progressive MP4 contract](progressive-video-playback.md), informed by the
+[M4e reference study](../research/video-progressive-reference.md). Native account
+changes are described in the [user-management contract](../api/admin-users.md).
+Additional audio/video timing and profile cases, nonzero video-copy seek,
+packed-audio HLS, richer subtitle/codec profiles, hard worker isolation,
 actual hardware execution, and real third-party-client release acceptance remain
 required. The M4/M5/M6 scope stays active.

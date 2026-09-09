@@ -1,0 +1,30 @@
+[
+  {
+    "name": "mkv-aligned-copy.mp4",
+    "requested_start": 2,
+    "best_source_sample_delta": -16,
+    "mse0": 1.3250746016969157,
+    "best_mse": 0.0
+  },
+  {
+    "name": "mkv-fractional-copy.mp4",
+    "requested_start": 2.37,
+    "best_source_sample_delta": 0,
+    "mse0": 2.6340704799766086e-10,
+    "best_mse": 2.6340704799766086e-10
+  },
+  {
+    "name": "mkv-fractional-aac.mp4",
+    "requested_start": 2.37,
+    "best_source_sample_delta": 8,
+    "mse0": 0.4549510954128471,
+    "best_mse": 3.823776023760106e-06
+  },
+  {
+    "name": "mkv-buffered-prefix.mp4",
+    "requested_start": 2.37,
+    "best_source_sample_delta": -8,
+    "mse0": 0.4564935987582063,
+    "best_mse": 2.8404289044716054e-10
+  }
+]

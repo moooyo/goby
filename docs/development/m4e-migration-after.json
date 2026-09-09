@@ -1,0 +1,51 @@
+{
+  "owner": "goby-m4e-migration-audit-v1",
+  "phase": "after",
+  "schema_version": 13,
+  "application_database_port": 5432,
+  "tables": {
+    "server_settings": {
+      "count": 2,
+      "sha256": "79c783f650a4d6eb62d7be34d60df286f00f0bd0b77965cef76804ce5b742853"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "fe93bdebcb4e3b8865d1136cd6eb4409b43cf0aba07960a62fa58c370d7538d1"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "03a98c88e3d5ec516d075d22e70305051c04b54c23b0aa017deacd08c144bd92"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "73f5d58e72d293cd15dfccfc4c7fcba497d6221edcd0c456c8a51d5bc609a9c4"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "ef26288d537483c2dc6fd3b24674920c0b10d92108c97c17dbb074de9afed2c6"
+    },
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "f50061773497132ee9dfab57bdbeb8907754684c9f6ba4cea513287934f724b6"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "64141262978c84cc35a727f9b53a52b5b5eb23acafdd4715b26b33705eb50927"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "3cfdea15c62e4b576295983a1d1905ff95a110c6c0a88a1e95eee8add081cb94"
+    }
+  },
+  "status": "passed",
+  "existing_rows_preserved": true,
+  "default_management_revisions": 10
+}

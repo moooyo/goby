@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 736 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 828 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio/video studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -38,5 +38,15 @@ body observation as a complete HTTP contract. Reference failures and truncated
 successful responses remain recorded; only complete decoded media provides
 positive playback evidence. All earlier raw/export pairs and source hashes
 were unchanged by the extension.
+
+The [M4e video profile study](../../../../../docs/research/video-progressive-reference.md)
+adds 92 separately prefixed records to the preceding 736. It contains 61 complete
+HTTP captures, twelve PlaybackInfo requests, a Range control, media probes and
+supporting observations. Pure-copy reference responses include preserved server
+failures and truncated bodies, and a mixed-copy seek retains the wrong video
+preroll. Neither HTTP 200 nor an encoder exit code establishes correct playback.
+All earlier raw/export pairs and the source hash were preserved. The separate
+Goby copied-video diagnostics under `docs/research/video-copy-seek` do not add to
+this official-reference count.
 
 Do not replay setup/library mutations against arbitrary servers. Differential checks should normalize explicitly chosen nondeterministic fields without changing casing, array/object shape, status, content type, null/omission distinctions, or numeric values.

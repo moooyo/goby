@@ -1,0 +1,14 @@
+{
+  "kind": "remote-runtime-observation",
+  "referencePID": 3131777,
+  "directChildProcesses": [],
+  "transcodingFileCount": 7,
+  "transcodingBytes": 796097,
+  "rootFreeBytes": 47120384,
+  "tmpfsFreeBytes": 150253568,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T06:54:25.323702+00:00"
+  }
+}

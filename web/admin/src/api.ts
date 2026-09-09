@@ -7,6 +7,41 @@ export interface User {
   CreatedAt: string;
 }
 
+export interface UserPolicy {
+  EnableAllFolders: boolean;
+  EnabledFolders: string[];
+  EnableMediaPlayback: boolean;
+  EnablePlaybackRemuxing: boolean;
+  EnableAudioPlaybackTranscoding: boolean;
+  EnableVideoPlaybackTranscoding: boolean;
+}
+
+export interface ManagedUser extends User {
+  Revision: string;
+  Policy: UserPolicy;
+}
+
+export interface ManagedUserResponse {
+  User: ManagedUser;
+}
+
+export interface UserMutationResponse extends ManagedUserResponse {
+  CurrentSessionRevoked: boolean;
+}
+
+export interface UpdateUserInput {
+  Revision: string;
+  Name: string;
+  IsAdministrator: boolean;
+  IsDisabled: boolean;
+  Policy: UserPolicy;
+}
+
+export interface ResetUserPasswordInput {
+  Revision: string;
+  Password: string;
+}
+
 export interface BootstrapResponse {
   Initialized: boolean;
 }
@@ -275,7 +310,7 @@ function invalidResponse(status = 200): ApiError {
 }
 
 interface InternalRequestOptions extends RequestOptions {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   public?: boolean;
 }
@@ -351,7 +386,7 @@ async function getSession(options: RequestOptions = {}): Promise<SessionResponse
 
 async function mutate<T>(
   path: string,
-  method: "POST" | "DELETE",
+  method: "POST" | "PUT" | "DELETE",
   body: unknown,
   options: RequestOptions,
 ): Promise<T> {
@@ -375,6 +410,37 @@ async function mutate<T>(
       requestId: error.requestId,
     });
   }
+}
+
+function validateManagedUser(result: ManagedUserResponse): void {
+  if (!isRecord(result)) throw invalidResponse();
+  const user = result.User;
+  if (!isRecord(user) || !nonemptyString(user.Id) || typeof user.Name !== "string"
+    || typeof user.CreatedAt !== "string" || typeof user.Revision !== "string"
+    || !/^[1-9]\d*$/.test(user.Revision) || user.Revision.length > 19
+    || (user.Revision.length === 19 && user.Revision > "9223372036854775807")
+    || ![user.IsAdministrator, user.IsDisabled, user.HasPassword].every((value) => typeof value === "boolean")
+    || !isRecord(user.Policy)) throw invalidResponse();
+  const policy = user.Policy;
+  if (!Array.isArray(policy.EnabledFolders) || !policy.EnabledFolders.every((id) => typeof id === "string")
+    || ![policy.EnableAllFolders, policy.EnableMediaPlayback, policy.EnablePlaybackRemuxing,
+      policy.EnableAudioPlaybackTranscoding, policy.EnableVideoPlaybackTranscoding]
+      .every((value) => typeof value === "boolean")) throw invalidResponse();
+}
+
+async function mutateUser(
+  path: string,
+  method: "POST" | "PUT",
+  input: UpdateUserInput | ResetUserPasswordInput,
+  options: RequestOptions,
+): Promise<UserMutationResponse> {
+  const revision = sessionRevision;
+  const result = await mutate<UserMutationResponse>(path, method, input, options);
+  if (revision !== sessionRevision) throw sessionChanged();
+  validateManagedUser(result);
+  if (typeof result.CurrentSessionRevoked !== "boolean") throw invalidResponse();
+  if (result.CurrentSessionRevoked) expireSession(revision);
+  return result;
 }
 
 export const adminApi = {
@@ -416,8 +482,30 @@ export const adminApi = {
     return request("/users", options);
   },
 
-  createUser(input: CreateUserInput, options: RequestOptions = {}): Promise<UserResponse> {
-    return mutate("/users", "POST", input, options);
+  async createUser(input: CreateUserInput, options: RequestOptions = {}): Promise<UserResponse> {
+    const result = await mutate<UserResponse>("/users", "POST", input, options);
+    if (!isRecord(result) || !isRecord(result.User)
+      || !nonemptyString(result.User.Id) || typeof result.User.Name !== "string"
+      || typeof result.User.CreatedAt !== "string"
+      || ![result.User.IsAdministrator, result.User.IsDisabled, result.User.HasPassword]
+        .every((value) => typeof value === "boolean")) throw invalidResponse();
+    return result;
+  },
+
+  async getUser(userId: string, options: RequestOptions = {}): Promise<ManagedUserResponse> {
+    const revision = sessionRevision;
+    const result = await request<ManagedUserResponse>(`/users/${encodeURIComponent(userId)}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateManagedUser(result);
+    return result;
+  },
+
+  updateUser(userId: string, input: UpdateUserInput, options: RequestOptions = {}): Promise<UserMutationResponse> {
+    return mutateUser(`/users/${encodeURIComponent(userId)}`, "PUT", input, options);
+  },
+
+  resetUserPassword(userId: string, input: ResetUserPasswordInput, options: RequestOptions = {}): Promise<UserMutationResponse> {
+    return mutateUser(`/users/${encodeURIComponent(userId)}/password`, "POST", input, options);
   },
 
   getLibraries(options: RequestOptions = {}): Promise<LibrariesResponse> {
