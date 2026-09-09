@@ -1,0 +1,155 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:10:23.990345+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "qL68B7o7MCSf/R7B/NkSSQ=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-m3c-recorder HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: qL68B7o7MCSf/R7B/NkSSQ==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:10:23 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "L0r6oBspxqVhRdQbNLfgK2hqthc="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 02:10:23 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: L0r6oBspxqVhRdQbNLfgK2hqthc=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T02:10:24.505659+00:00",
+      "elapsedMs": 515.401,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 196,
+      "text": "{\"MessageType\":\"Playstate\",\"MessageId\":\"451c076929034ff1b129c579d58593dc\",\"Data\":{\"Id\":\"3051be5bda6e822e1f0a9c80cb6a5100\",\"Command\":\"Pause\",\"ControllingUserId\":\"fa0ec9ecc77b4fb487eceb8233c9a1fb\"}}",
+      "json": {
+        "MessageType": "Playstate",
+        "MessageId": "451c076929034ff1b129c579d58593dc",
+        "Data": {
+          "Id": "3051be5bda6e822e1f0a9c80cb6a5100",
+          "Command": "Pause",
+          "ControllingUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb"
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:25.514787+00:00",
+      "elapsedMs": 1524.524,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 177,
+      "text": "{\"MessageType\":\"GeneralCommand\",\"MessageId\":\"32956e9a8cb541d6b91d3359d3318a21\",\"Data\":{\"Name\":\"SetVolume\",\"ControllingUserId\":\"fa0ec9ecc77b4fb487eceb8233c9a1fb\",\"Arguments\":{}}}",
+      "json": {
+        "MessageType": "GeneralCommand",
+        "MessageId": "32956e9a8cb541d6b91d3359d3318a21",
+        "Data": {
+          "Name": "SetVolume",
+          "ControllingUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "Arguments": {}
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:26.522235+00:00",
+      "elapsedMs": 2531.971,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 176,
+      "text": "{\"MessageType\":\"GeneralCommand\",\"MessageId\":\"71a14522bcc046e1b30acd201e15c33a\",\"Data\":{\"Name\":\"VolumeUp\",\"ControllingUserId\":\"fa0ec9ecc77b4fb487eceb8233c9a1fb\",\"Arguments\":{}}}",
+      "json": {
+        "MessageType": "GeneralCommand",
+        "MessageId": "71a14522bcc046e1b30acd201e15c33a",
+        "Data": {
+          "Name": "VolumeUp",
+          "ControllingUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "Arguments": {}
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:27.529475+00:00",
+      "elapsedMs": 3539.208,
+      "direction": "server-to-client",
+      "opcode": 1,
+      "fin": true,
+      "masked": false,
+      "payloadLength": 177,
+      "text": "{\"MessageType\":\"GeneralCommand\",\"MessageId\":\"837c454f2a2544c4a9321b307ea9bfb6\",\"Data\":{\"Name\":\"SetVolume\",\"ControllingUserId\":\"2118172027b94fd18c3ca6e55478d6d3\",\"Arguments\":{}}}",
+      "json": {
+        "MessageType": "GeneralCommand",
+        "MessageId": "837c454f2a2544c4a9321b307ea9bfb6",
+        "Data": {
+          "Name": "SetVolume",
+          "ControllingUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "Arguments": {}
+        }
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:28.530722+00:00",
+      "elapsedMs": 4540.484,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T02:10:28.531491+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 4541.242,
+  "unparsedBufferedBytes": 0
+}

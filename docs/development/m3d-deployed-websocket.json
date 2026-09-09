@@ -1,0 +1,53 @@
+{
+  "assertions": [
+    {
+      "authenticated_upgrade_paths": 5,
+      "missing_and_invalid_token": 401,
+      "stage": "RFC 6455 upgrade routes and authentication",
+      "upgrade_status": 101
+    },
+    {
+      "live_with_media_control": true,
+      "live_without_media_control": false,
+      "rfc6455_ping_pong": true,
+      "stage": "live sessions and capability declarations"
+    },
+    {
+      "committed_state_matches": true,
+      "different_user_isolated_both_directions": true,
+      "ordinary_http_mutation_notified": true,
+      "sibling_message_id_shared": true,
+      "stage": "ordinary user state events and account isolation"
+    },
+    {
+      "administrator_pause_delivered": true,
+      "full_set_volume": "37",
+      "http_command_status": 204,
+      "named_arguments_empty": true,
+      "play_request_delivered": true,
+      "stage": "same-user and administrator remote delivery",
+      "target_session_only": true
+    },
+    {
+      "live_capability_toggle_applied": true,
+      "offline_capability": false,
+      "offline_commands_not_replayed": true,
+      "offline_http_status": 204,
+      "other_account_rejected": 404,
+      "stage": "unauthorized controls and offline delivery"
+    },
+    {
+      "revoked_session_hidden": true,
+      "revoked_websocket_and_http_token": 401,
+      "same_session_sockets_disconnected": 2,
+      "sibling_session_preserved": true,
+      "stage": "logout revokes all matching sockets and token"
+    }
+  ],
+  "capabilities_reset_and_login_sessions_revoked": true,
+  "cleanup_errors": [],
+  "owned_media_unchanged": true,
+  "owned_user_states_restored": true,
+  "private_isolation_account_record_mode": "0600",
+  "status": "passed"
+}

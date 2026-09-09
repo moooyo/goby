@@ -36,6 +36,10 @@ CREDS = PRIVATE / "websocket-m3c-credentials.env"
 BASELINE = PRIVATE / "websocket-m3c-baseline-hashes.json"
 DEVICE = "goby-websocket-m3c-recorder"
 PREFIX = "websocket-m3c-"
+ADMIN_PREFIX = "websocket-admin-m3d-"
+ADMIN_CREDS = PRIVATE / "websocket-admin-m3d-credentials.env"
+ADMIN_BASELINE = PRIVATE / "websocket-admin-m3d-baseline-hashes.json"
+ADMIN_DEVICE = "goby-websocket-admin-m3d-recorder"
 
 
 def timestamp():
@@ -43,6 +47,8 @@ def timestamp():
 
 
 class Recorder(BASE.Recorder):
+    prefix = PREFIX
+
     def __init__(self):
         super().__init__()
         for path in PRIVATE.glob("*credentials.env"):
@@ -56,7 +62,7 @@ class Recorder(BASE.Recorder):
         return super().request(name, *args, **kwargs)
 
     def unused(self, name):
-        if not name.startswith(PREFIX):
+        if not name.startswith(self.prefix):
             raise RuntimeError("Only owned WebSocket fixture names are permitted")
         if any((directory / (name + ".json")).exists() for directory in (PRIVATE / "raw", EXPORT)):
             raise RuntimeError("Refusing to overwrite existing evidence: " + name)
@@ -265,10 +271,155 @@ class Recorder(BASE.Recorder):
         self.request(PREFIX + "control-detail-after", "GET", detail, authenticated=True)
 
 
+class AdminRecorder(Recorder):
+    prefix = ADMIN_PREFIX
+
+    def admin(self):
+        self.credentials = BASE.read_credentials(ADMIN_CREDS)
+        self.credential_path = ADMIN_CREDS
+        self.secret_values.update(value for key, value in self.credentials.items()
+                                  if key in {"REFERENCE_TOKEN", "REFERENCE_PASSWORD"} and value)
+        self.client_headers = {
+            "Accept": "application/json",
+            "Authorization": ('Emby Client="Goby Admin WebSocket Recorder", Device="Linux Admin WebSocket Test", '
+                              f'DeviceId="{ADMIN_DEVICE}", Version="0.1.0"'),
+        }
+
+    def admin_setup(self):
+        if ADMIN_CREDS.exists() or ADMIN_BASELINE.exists():
+            raise RuntimeError("Administrator WebSocket setup already exists")
+        baseline = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for directory in (PRIVATE / "raw", EXPORT)
+                    for path in sorted(directory.glob("*.json"))}
+        BASE.private_write(ADMIN_BASELINE, json.dumps(baseline, indent=2) + "\n")
+        original = BASE.read_credentials()
+        credentials = {key: original[key] for key in ("REFERENCE_USERNAME", "REFERENCE_PASSWORD")}
+        BASE.save_credentials(credentials, ADMIN_CREDS)
+        self.admin()
+        status, result = self.request(ADMIN_PREFIX + "admin-login", "POST", "/emby/Users/AuthenticateByName",
+                                      body={"Username": credentials["REFERENCE_USERNAME"], "Pw": credentials["REFERENCE_PASSWORD"]})
+        if status != 200 or result.get("User", {}).get("Policy", {}).get("IsAdministrator") is not True:
+            raise RuntimeError("Dedicated administrator device login failed")
+        self.credentials["REFERENCE_SESSION_ID"] = result["SessionInfo"]["Id"]
+        BASE.save_credentials(self.credentials, ADMIN_CREDS)
+        print(f"Preserved baseline hashes for {len(baseline)} prior raw/export files.", flush=True)
+
+    def admin_subscriptions(self):
+        self.admin()
+        with Capture(self, "sessions-subscription", self.path(device=ADMIN_DEVICE)) as capture:
+            capture.wait(0.5)
+            capture.message("SessionsStart", "1000,1000")
+            capture.wait(3)
+            capture.message("SessionsStop", "")
+            capture.wait(2)
+            capture.send(2, b'{"MessageType":"SessionsStart","Data":"1000,1000"}')
+            capture.wait(3)
+            capture.send(2, b'{"MessageType":"SessionsStop","Data":""}')
+            capture.wait(2)
+
+    def remote_controls(self):
+        self.own()
+        target_user = self.credentials["REFERENCE_USER_ID"]
+        target = self.credentials["REFERENCE_SESSION_ID"]
+        query = "?Id=" + target
+        status, sessions = self.request(ADMIN_PREFIX + "target-before", "GET", "/emby/Sessions" + query, authenticated=True)
+        if status != 200 or len(sessions) != 1 or sessions[0].get("DeviceId") != DEVICE or sessions[0].get("UserId") != target_user:
+            raise RuntimeError("Remote commands may only target the owned ordinary recorder device")
+        before = sessions[0]
+        BASE.private_write(PRIVATE / (ADMIN_PREFIX + "target-before.json"), json.dumps(before, indent=2) + "\n")
+        target_socket = Capture(self, "remote-target", self.path())
+        try:
+            target_socket.wait(0.5)
+            self.request(ADMIN_PREFIX + "target-connected", "GET", "/emby/Sessions" + query, authenticated=True)
+            self.request(ADMIN_PREFIX + "capabilities-declare", "POST",
+                         "/emby/Sessions/Capabilities" + query + "&PlayableMediaTypes=Video,Audio&SupportedCommands=SetVolume&SupportsMediaControl=true&SupportsSync=false",
+                         authenticated=True)
+            self.request(ADMIN_PREFIX + "target-declared", "GET", "/emby/Sessions" + query, authenticated=True)
+            self.request(ADMIN_PREFIX + "controllable-own-user", "GET", "/emby/Sessions" + query + "&ControllableByUserId=" + target_user, authenticated=True)
+            self.admin()
+            admin_user = self.credentials["REFERENCE_USER_ID"]
+            self.request(ADMIN_PREFIX + "controllable-admin", "GET", "/emby/Sessions" + query + "&ControllableByUserId=" + admin_user, authenticated=True)
+            self.request(ADMIN_PREFIX + "pause-admin", "POST", f"/emby/Sessions/{target}/Playing/Pause", body={"Command": "Pause"}, authenticated=True)
+            target_socket.wait(1)
+            self.request(ADMIN_PREFIX + "volume-admin", "POST", f"/emby/Sessions/{target}/Command/SetVolume",
+                         body={"Arguments": {"Volume": "37"}}, authenticated=True)
+            target_socket.wait(1)
+            self.request(ADMIN_PREFIX + "target-after-commands", "GET", "/emby/Sessions" + query, authenticated=True,
+                         note="The recorder receives commands but does not apply or report playback state.")
+            self.request(ADMIN_PREFIX + "undeclared-command", "POST", f"/emby/Sessions/{target}/Command/VolumeUp", body={}, authenticated=True,
+                         note="VolumeUp was not in the target's explicitly declared SupportedCommands list; only the owned recorder is targeted.")
+            target_socket.wait(1)
+            other = BASE.read_credentials(BASE.SESSION_ENV_FILE)
+            self.request(ADMIN_PREFIX + "controllable-other-user", "GET", "/emby/Sessions" + query + "&ControllableByUserId=" + other["REFERENCE_USER_ID"], authenticated=True)
+            self.credentials = other
+            self.credential_path = BASE.SESSION_ENV_FILE
+            self.client_headers = {"Accept": "application/json", "Authorization": 'Emby Client="Goby Reference Recorder", Device="Linux Session Test", DeviceId="goby-session-m3b-recorder", Version="0.1.0"'}
+            self.request(ADMIN_PREFIX + "other-user-policy", "GET", "/emby/Users/" + other["REFERENCE_USER_ID"], authenticated=True)
+            self.request(ADMIN_PREFIX + "volume-other-user", "POST", f"/emby/Sessions/{target}/Command/SetVolume",
+                         body={"Arguments": {"Volume": "38"}}, authenticated=True,
+                         note="A distinct pre-existing ordinary test account targets only the dedicated recorder. No user policy is changed.")
+            target_socket.wait(1)
+            target_socket.close()
+            self.admin()
+            self.request(ADMIN_PREFIX + "target-disconnected", "GET", "/emby/Sessions" + query, authenticated=True)
+            self.request(ADMIN_PREFIX + "pause-disconnected", "POST", f"/emby/Sessions/{target}/Playing/Pause", body={"Command": "Pause"}, authenticated=True,
+                         note="The owned target WebSocket has been closed; its advertised capabilities have not yet been restored.")
+        finally:
+            target_socket.close()
+            self.own()
+            restore = {
+                "Id": target,
+                "PlayableMediaTypes": ",".join(before.get("PlayableMediaTypes", [])),
+                "SupportedCommands": ",".join(before.get("SupportedCommands", [])),
+                "SupportsMediaControl": str(before.get("Capabilities", {}).get("SupportsMediaControl", False)).lower(),
+                "SupportsSync": str(before.get("SupportsSync", False)).lower(),
+            }
+            self.request(ADMIN_PREFIX + "capabilities-restore", "POST", "/emby/Sessions/Capabilities?" + urllib.parse.urlencode(restore), authenticated=True)
+        self.admin()
+        self.request(ADMIN_PREFIX + "target-restored", "GET", "/emby/Sessions" + query, authenticated=True)
+
+    def admin_audit(self):
+        baseline = json.loads(ADMIN_BASELINE.read_text())
+        for name, expected in baseline.items():
+            path = Path(name)
+            if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+                raise RuntimeError("Pre-existing evidence changed: " + path.name)
+        paths = sorted(EXPORT.glob(ADMIN_PREFIX + "*.json"))
+        for path in paths:
+            raw = json.loads((PRIVATE / "raw" / path.name).read_text())
+            cleaned = json.loads(path.read_text())
+            self.audit_export(raw, cleaned)
+            if any(secret in path.read_text() for secret in self.secret_values):
+                raise RuntimeError("Credential survived sanitization: " + path.name)
+        print(f"Audited {len(paths)} administrator WebSocket fixtures; preserved all {len(baseline)} original raw/export files.", flush=True)
+
+    def admin_command_body(self):
+        self.own()
+        target = self.credentials["REFERENCE_SESSION_ID"]
+        query = "?Id=" + target
+        self.request(ADMIN_PREFIX + "body-capabilities-declare", "POST",
+                     "/emby/Sessions/Capabilities" + query + "&PlayableMediaTypes=Video,Audio&SupportedCommands=SetVolume&SupportsMediaControl=true&SupportsSync=false",
+                     authenticated=True)
+        try:
+            with Capture(self, "command-body-target", self.path()) as capture:
+                capture.wait(0.5)
+                self.admin()
+                self.request(ADMIN_PREFIX + "volume-general-body", "POST", f"/emby/Sessions/{target}/Command",
+                             body={"Name": "SetVolume", "Arguments": {"Volume": "37"}}, authenticated=True,
+                             note="Single complete GeneralCommand body control against the same owned recorder; it does not execute playback.")
+                capture.wait(1)
+        finally:
+            self.own()
+            self.request(ADMIN_PREFIX + "body-capabilities-restore", "POST",
+                         "/emby/Sessions/Capabilities" + query + "&PlayableMediaTypes=&SupportedCommands=&SupportsMediaControl=false&SupportsSync=false",
+                         authenticated=True)
+        self.request(ADMIN_PREFIX + "body-target-restored", "GET", "/emby/Sessions" + query, authenticated=True)
+
+
 class Capture:
     def __init__(self, recorder, name, path):
         self.recorder = recorder
-        self.name = PREFIX + name
+        self.name = recorder.prefix + name
         recorder.unused(self.name)
         self.started = time.monotonic()
         self.buffer = bytearray()
@@ -434,9 +585,11 @@ def pump(captures, seconds):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=("setup", "handshakes", "events", "subscriptions", "playback", "playback_control", "audit"))
+    parser.add_argument("stage", choices=("setup", "handshakes", "events", "subscriptions", "playback", "playback_control", "audit",
+                                         "admin_setup", "admin_subscriptions", "remote_controls", "admin_command_body", "admin_audit"))
     stage = parser.parse_args().stage
-    getattr(Recorder(), stage)()
+    recorder = AdminRecorder() if stage.startswith("admin_") or stage == "remote_controls" else Recorder()
+    getattr(recorder, stage)()
 
 
 if __name__ == "__main__":

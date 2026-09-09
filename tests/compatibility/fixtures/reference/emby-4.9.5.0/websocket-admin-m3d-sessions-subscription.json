@@ -1,0 +1,135 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:09:56.693195+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-admin-m3d-recorder",
+    "headers": [
+      [
+        "Host",
+        "127.0.0.1:18097"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Sec-WebSocket-Key",
+        "Imr363IIZ/JF9MIn4vJK+g=="
+      ],
+      [
+        "Sec-WebSocket-Version",
+        "13"
+      ]
+    ],
+    "wireHeaders": "GET /embywebsocket?api_key=[REDACTED_TOKEN]&deviceId=goby-websocket-admin-m3d-recorder HTTP/1.1\r\nHost: 127.0.0.1:18097\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: Imr363IIZ/JF9MIn4vJK+g==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+  },
+  "response": {
+    "status": 101,
+    "statusLine": "HTTP/1.1 101 Switching Protocols",
+    "headers": [
+      [
+        "Connection",
+        "Upgrade"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:09:56 GMT"
+      ],
+      [
+        "Upgrade",
+        "websocket"
+      ],
+      [
+        "Sec-WebSocket-Accept",
+        "tGYwQMYDEYAXaW5CFxxJBJdOFXs="
+      ]
+    ],
+    "wireHeaders": "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nDate: Wed, 09 Sep 2026 02:09:56 GMT\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: tGYwQMYDEYAXaW5CFxxJBJdOFXs=\r\n\r\n",
+    "acceptMatchesRequestKey": true
+  },
+  "events": [
+    {
+      "at": "2026-09-09T02:09:57.195110+00:00",
+      "elapsedMs": 502.534,
+      "direction": "client-to-server",
+      "opcode": 1,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 50,
+      "text": "{\"MessageType\":\"SessionsStart\",\"Data\":\"1000,1000\"}",
+      "json": {
+        "MessageType": "SessionsStart",
+        "Data": "1000,1000"
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:00.198626+00:00",
+      "elapsedMs": 3506.056,
+      "direction": "client-to-server",
+      "opcode": 1,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 40,
+      "text": "{\"MessageType\":\"SessionsStop\",\"Data\":\"\"}",
+      "json": {
+        "MessageType": "SessionsStop",
+        "Data": ""
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:02.201233+00:00",
+      "elapsedMs": 5508.665,
+      "direction": "client-to-server",
+      "opcode": 2,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 50,
+      "text": "{\"MessageType\":\"SessionsStart\",\"Data\":\"1000,1000\"}",
+      "json": {
+        "MessageType": "SessionsStart",
+        "Data": "1000,1000"
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:05.204758+00:00",
+      "elapsedMs": 8512.2,
+      "direction": "client-to-server",
+      "opcode": 2,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 40,
+      "text": "{\"MessageType\":\"SessionsStop\",\"Data\":\"\"}",
+      "json": {
+        "MessageType": "SessionsStop",
+        "Data": ""
+      }
+    },
+    {
+      "at": "2026-09-09T02:10:07.207267+00:00",
+      "elapsedMs": 10514.689,
+      "direction": "client-to-server",
+      "opcode": 8,
+      "fin": true,
+      "masked": true,
+      "payloadLength": 2,
+      "closeCode": 1000,
+      "closeReason": ""
+    },
+    {
+      "at": "2026-09-09T02:10:07.208327+00:00",
+      "direction": "server-to-client",
+      "transport": "eof"
+    }
+  ],
+  "observation": "Bounded RFC 6455 client. Times are client receipt/send times. Text payload and parsed JSON are both preserved. No compression or subprotocol was requested.",
+  "observedDurationMs": 10515.725,
+  "unparsedBufferedBytes": 0
+}

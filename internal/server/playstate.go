@@ -43,13 +43,14 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			apiError(w, r, http.StatusForbidden, "session_mismatch", "Playback reports must belong to the authenticated session.")
 			return
 		}
-		_, _, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
+		_, data, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
 			PlaySessionID: body.PlaySessionID, ItemID: body.ItemID, MediaSourceID: body.MediaSourceID,
 			Event: event, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused, PlayerState: &body.PlayerStateUpdate})
 		if err != nil {
 			s.playbackError(w, r, err)
 			return
 		}
+		s.notifier.Enqueue(principal.User.ID, data.ItemID, false)
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -101,6 +102,7 @@ func (s *Server) setUserFlag(favorite, value bool) http.HandlerFunc {
 			s.playbackError(w, r, err)
 			return
 		}
+		s.notifier.Enqueue(userID, data.ItemID, !favorite)
 		jsonResponse(w, http.StatusOK, userDataDTO(data, false))
 	}
 }

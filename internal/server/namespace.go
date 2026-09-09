@@ -78,7 +78,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(3, "Subtitles")
 	case "Sessions":
 		literal(1, "Playing", "Logout", "Capabilities")
-		literal(2, "Playing", "Progress", "Ping", "Stopped", "Full")
+		literal(2, "Playing", "Progress", "Ping", "Stopped", "Full", "Command")
 	case "Library":
 		literal(1, "VirtualFolders", "Refresh")
 		literal(2, "Query", "Delete", "LibraryOptions")

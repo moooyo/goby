@@ -31,13 +31,15 @@ Known fields are type checked; unknown fields are discarded at every level.
 Input is limited to 64 KiB, bounded nesting/nodes, 128 entries per array, and
 2,048 bytes per string. Optional nulls are omitted, while null array entries and
 duplicate JSON keys are rejected. PushToken/PushTokenType are validated then
-discarded because notification delivery is not implemented.
+discarded because external push-notification services are not implemented.
 
 Session responses expose declared media types and commands. They do not expose
 the raw capability object, stored device profile, or arbitrary remote icon URLs.
-`SupportsRemoteControl` remains false until command/event transport is available;
-`ControllableByUserId` therefore selects an empty list in this increment. Stored
-DeviceProfile does not implicitly change a later minimal PlaybackInfo request,
+`SupportsRemoteControl` requires both `SupportsMediaControl=true` and an established
+WebSocket. `ControllableByUserId` filters live, declared sessions using current
+same-user or administrator authorization. Ordinary users cannot inspect another
+user's controller scope. See [events and remote commands](websocket-events.md).
+Stored DeviceProfile does not implicitly change a later minimal PlaybackInfo request,
 matching the captured reference control. Negotiation still consumes its explicit
 request profile.
 
@@ -45,7 +47,8 @@ request profile.
 
 The initial Goby presence window is five minutes. Authenticated requests refresh
 `last_seen_at` at most once per 15 seconds. Capability reports also refresh that
-activity. This is separate from the 30-day login lifetime; activity never extends
+activity. Established WebSockets also refresh presence, with current authentication
+rechecked every five seconds. This is separate from the 30-day login lifetime; activity never extends
 token expiration. Current account disable/revocation and administrator role are
 rechecked in the database.
 
@@ -84,6 +87,8 @@ update another owner's session. A valid owned key refreshes live-session expiry
 without changing playback position. This supersedes the initial SDK-derived
 200 success response used before the M3b runtime capture.
 
-External subtitles, WebSocket events, remote commands, and full device management
-remain separate implementation work. No consumer player is added to the
-administrator dashboard by these APIs.
+Indexed external SRT/WebVTT, user-state WebSocket events, and initial remote
+commands are implemented in separate increments. Full device management,
+session-list subscriptions, additional events, and the broader shared-device
+policy matrix remain work. No consumer player is added to the administrator
+dashboard by these APIs.

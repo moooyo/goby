@@ -1,0 +1,109 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:10:26.516675+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Sessions?Id=3051be5bda6e822e1f0a9c80cb6a5100",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Admin WebSocket Recorder\", Device=\"Linux Admin WebSocket Test\", DeviceId=\"goby-websocket-admin-m3d-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "758"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:10:25 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": [
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [
+          "Video",
+          "Audio"
+        ],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "3051be5bda6e822e1f0a9c80cb6a5100",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+        "UserName": "reference-websocket-m3c",
+        "Client": "Goby WebSocket Recorder",
+        "LastActivityDate": "2026-09-09T02:10:24.4981996Z",
+        "DeviceName": "Linux WebSocket Test",
+        "InternalDeviceId": 4,
+        "DeviceId": "goby-websocket-m3c-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [
+          "SetVolume"
+        ],
+        "SupportsRemoteControl": true
+      }
+    ]
+  },
+  "observation": "The recorder receives commands but does not apply or report playback state."
+}

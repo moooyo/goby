@@ -2,7 +2,7 @@
 
 ## Scope and evidence
 
-This investigation recorded 46 additive `websocket-m3c-*.json` fixtures: 19 WebSocket connection transcripts and 27 supporting HTTP requests. It used the isolated official Emby Server 4.9.5.0 on `test-env`, reached at `127.0.0.1:18097` from the `goby-emby-reference.service` network namespace. All execution and verification were remote. The service retained `PrivateNetwork=yes`; no package, service configuration, Goby backend, or existing media file was changed.
+The initial M3c investigation recorded 46 additive `websocket-m3c-*.json` fixtures: 19 WebSocket connection transcripts and 27 supporting HTTP requests. It used the isolated official Emby Server 4.9.5.0 on `test-env`, reached at `127.0.0.1:18097` from the `goby-emby-reference.service` network namespace. All execution and verification were remote. The service retained `PrivateNetwork=yes`; no package, service configuration, Goby backend, or existing media file was changed. The later M3d administrator and remote-control follow-up is described separately at the end of this report.
 
 The new ordinary user `reference-websocket-m3c` used device `goby-websocket-m3c-recorder`. Playback and favorite changes targeted only this user's data for the existing 600-second synthetic movie, item `"28"`, media source `"mediasource_28"`. Separate credentials, raw transcripts, and the baseline hash file remain mode 0600 under the protected reference directory. The source is [reference-websocket.py](../../scripts/test-env/reference-websocket.py), a standard-library extension that reads the existing recorder without editing it. Captures span `2026-09-09T01:35:37Z` through `01:37:24Z`, according to the remote recorder clock.
 
@@ -10,7 +10,7 @@ The exported [fixtures](../../tests/compatibility/fixtures/reference/emby-4.9.5.
 
 ## Published protocol and SDK context
 
-The official [Web Socket guide](https://dev.emby.media/doc/restapi/Web-Socket.html) describes changing a server HTTP URL to WS/WSS, passing `api_key` and `deviceId`, and using envelopes with `MessageType` and `Data`. It documents `UserDataChanged` with `Data.UserId` and `Data.UserDataList`, plus receiving `Play`, `Playstate`, and `GeneralCommand` remote-control events. Those remote commands were not generated in this investigation.
+The official [Web Socket guide](https://dev.emby.media/doc/restapi/Web-Socket.html) describes changing a server HTTP URL to WS/WSS, passing `api_key` and `deviceId`, and using envelopes with `MessageType` and `Data`. It documents `UserDataChanged` with `Data.UserId` and `Data.UserDataList`, plus receiving `Play`, `Playstate`, and `GeneralCommand` remote-control events. Those remote commands were not generated in the initial M3c investigation.
 
 The current official [C# ApiWebSocket source](https://github.com/MediaBrowser/Emby.ApiClient/blob/b2e124f789b6f086b7b5b7e88e07c902e946f5b2/Emby.ApiClient/ApiWebSocket.cs) appends `/embywebsocket` and sends `SessionsStart` with an interval pair such as `"1000,1000"`, followed by `SessionsStop` with an empty string. Its general sender uses binary WebSocket messages. The guide's older C# link returned 404, so the current repository path was used instead.
 
@@ -110,3 +110,100 @@ Audited 46 WebSocket fixtures; preserved all 464 original raw/export files.
 ```
 
 The recorder's stages are `setup`, `handshakes`, `events`, `subscriptions`, `playback`, `playback_control`, and `audit`. Setup and capture stages refuse existing owned filenames; they are not rerun commands for the completed dataset. To repeat the experiment, allocate a new prefix, credential file, baseline file, and ordinary account. The audit stage is read-only and repeatable on `test-env`.
+
+## M3d administrator and remote-control follow-up
+
+This follow-up adds 25 `websocket-admin-m3d-*.json` fixtures: three WebSocket transcripts and 22 HTTP records. Its independent baseline covers the 317 fixture pairs present at repository baseline `9f83f5c`, including the complete M3c collection. The remote capture clock spans `2026-09-09T02:09:52Z` through `02:11:17Z`. Each observation wait was at most three seconds, within the five-second bound for this follow-up.
+
+The existing reference administrator authenticated on a new dedicated device, `goby-websocket-admin-m3d-recorder`. Its login response confirmed `Policy.IsAdministrator: true` and returned a dedicated session and token. The original administrator credential file was not overwritten. The only command target was the existing ordinary recorder device `goby-websocket-m3c-recorder`, session `3051be5bda6e822e1f0a9c80cb6a5100`, belonging to `reference-websocket-m3c`. No user policy was changed and no real client received a command.
+
+### Administrator subscription control
+
+The administrator's `/embywebsocket` upgrade returned 101. The recorder sent `SessionsStart` with `Data: "1000,1000"` as a text frame, observed three seconds, sent `SessionsStop`, and observed another two seconds. It repeated that sequence with binary frames. No server message, including `Sessions`, appeared in the entire transcript.
+
+Administrator status therefore did not make the earlier ordinary-account subscription probe positive. Because no subscription result appeared, the experiment cannot establish effective subscription stopping. It does not distinguish unsupported message handling, additional required client state, or a different contract in this server version. Evidence: `websocket-admin-m3d-admin-login.json` and `websocket-admin-m3d-sessions-subscription.json`.
+
+### Remote capability and connection state
+
+The ordinary target's HTTP session ID and device/user identity were checked before commands. Its initial `PlayableMediaTypes` and `SupportedCommands` were empty arrays. No playback report was sent during M3d.
+
+| Target state | `SupportsRemoteControl` | Advertised arrays |
+| --- | --- | --- |
+| Before opening its WebSocket | false | Empty |
+| WebSocket connected, no capability declaration | false | Empty |
+| Connected; Simple capabilities declared `SupportsMediaControl=true` | true | `PlayableMediaTypes: ["Video","Audio"]`, `SupportedCommands: ["SetVolume"]` |
+| WebSocket closed, same capability declaration still present | false | Arrays still populated |
+| Original capabilities restored | false | Empty |
+
+The declaration returned HTTP 204. This sequence establishes that capability declaration and an active WebSocket together made this particular target report remote-control support; opening its socket alone did not. The response DTO did not expose a `SupportsMediaControl` property, so its input value should not be invented in returned session DTOs.
+
+GET Sessions constrained by the target `Id` plus `ControllableByUserId` returned the target for its owner and for the administrator. It also returned the target when the administrator queried with the other ordinary test user's ID. This is an observed accepted combination; it does not fully establish independent semantics or precedence for every session-filter parameter. The official [remote-control guide](https://dev.emby.media/doc/restapi/Remote-Control.html) describes using `ControllableByUserId` to find sessions a user can control.
+
+Evidence: `websocket-admin-m3d-target-*.json`, `websocket-admin-m3d-capabilities-*.json`, and `websocket-admin-m3d-controllable-*.json`.
+
+### Delivered remote-control messages
+
+With the target connected and declared, the administrator posted `/Sessions/{Id}/Playing/Pause` with `{"Command":"Pause"}`. HTTP 204 was followed by one server text frame with this envelope:
+
+```json
+{
+  "MessageType": "Playstate",
+  "MessageId": "451c076929034ff1b129c579d58593dc",
+  "Data": {
+    "Id": "3051be5bda6e822e1f0a9c80cb6a5100",
+    "Command": "Pause",
+    "ControllingUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb"
+  }
+}
+```
+
+The recorder only receives frames. It does not perform the command or report playback state. The subsequent session DTO retained its default play state, including `IsPaused: false`, and had no playback item or position. HTTP command acceptance and delivery therefore must not be equated with confirmed execution by a client.
+
+The administrator also posted `/Sessions/{Id}/Command/SetVolume` with `{"Arguments":{"Volume":"37"}}`. This returned 204 and delivered `GeneralCommand` with `Data.Name: "SetVolume"`, the administrator's `ControllingUserId`, and an **empty** `Arguments` object. Its Data did not contain `Id`.
+
+A single complete-body control then posted `/Sessions/{Id}/Command` with `{"Name":"SetVolume","Arguments":{"Volume":"37"}}`. It returned 204 and delivered:
+
+```json
+{
+  "MessageType": "GeneralCommand",
+  "MessageId": "99993779527d4fa2b8dc4eaa300bfba7",
+  "Data": {
+    "Id": "3051be5bda6e822e1f0a9c80cb6a5100",
+    "Name": "SetVolume",
+    "ControllingUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+    "Arguments": {
+      "Volume": "37"
+    }
+  }
+}
+```
+
+The `Volume` value remained a string. The complete-body endpoint preserved this argument and included the target ID; the named endpoint did not preserve the supplied JSON argument in this test. The guide suggests arguments can accompany the named route, while its current [named-command REST reference](https://dev.emby.media/reference/RestAPI/SessionsService/postSessionsByIdCommandByCommand.html) lists only path `Id` and `Command`, without a body parameter. The [general-command REST reference](https://dev.emby.media/reference/RestAPI/SessionsService/postSessionsByIdCommand.html) explicitly declares a body containing `Name`, `ControllingUserId`, and `Arguments`. The runtime captures support using the complete-body endpoint when arguments must be delivered. No broader body/query precedence inference was made.
+
+Evidence: `websocket-admin-m3d-pause-admin.json`, `websocket-admin-m3d-volume-admin.json`, `websocket-admin-m3d-remote-target.json`, `websocket-admin-m3d-volume-general-body.json`, and `websocket-admin-m3d-command-body-target.json`.
+
+### Three bounded additional command cases
+
+| Case targeting only the recorder | HTTP result | Observed delivery |
+| --- | --- | --- |
+| Administrator sends `VolumeUp`, which was absent from the target's `SupportedCommands: ["SetVolume"]` | 204 | `GeneralCommand`, `Name: "VolumeUp"`, empty `Arguments` |
+| A different ordinary test user sends named-route `SetVolume` | 204 | `GeneralCommand` with that ordinary user's `ControllingUserId`, empty `Arguments` |
+| Administrator sends Pause after the target socket closes, before capability restoration | 204 | No connected target was available; delivery was not established |
+
+The distinct ordinary caller was the existing `reference-session-m3b` test account, user ID `2118172027b94fd18c3ca6e55478d6d3`. A GET of its user record confirmed `IsAdministrator: false`, `EnableRemoteControlOfOtherUsers: false`, and `EnableSharedDeviceControl: true`. Its command still reached the dedicated target, whose `UserId` belonged to the other ordinary account. Both policy flags and the exact target/session setup are necessary context: this observation does not establish a general cross-user authorization model or isolate shared-device behavior, and no policy was altered to probe further.
+
+The undeclared-command case shows that the advertised command list did not act as a rejection list for this request. The disconnected case shows that HTTP 204 alone did not prove an available delivery channel. These findings should remain separate from capability-driven UI filtering and client execution acknowledgement.
+
+Evidence: `websocket-admin-m3d-undeclared-command.json`, `websocket-admin-m3d-other-user-policy.json`, `websocket-admin-m3d-volume-other-user.json`, `websocket-admin-m3d-pause-disconnected.json`, and the corresponding target transcript.
+
+### M3d restoration and integrity
+
+Both command sequences restored the target's original empty media-type and command arrays with `SupportsMediaControl=false` and `SupportsSync=false`. Final session GETs confirmed `SupportsRemoteControl: false`, empty arrays, the original idle play state, and no current item or position. No media, library configuration, existing user policy, or other device capability changed. The administrator's new dedicated session and protected credentials remain for reference reuse; authenticated requests also advance the participating test accounts' ordinary session activity.
+
+The final remote audit validated all 25 sanitized records against their private originals, checked credential absence and JSON structure/types, and preserved all 634 pre-existing raw/export files by SHA-256. Concurrent additions are permitted without weakening checks on the recorded baseline. The immutable M3c fixtures were included in this baseline.
+
+```text
+Audited 25 administrator WebSocket fixtures; preserved all 634 original raw/export files.
+```
+
+The additive source stages are `admin_setup`, `admin_subscriptions`, `remote_controls`, `admin_command_body`, and `admin_audit`. Captured stages reject existing names; only the audit is intended for repeat execution against this completed collection.

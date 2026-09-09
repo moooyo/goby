@@ -101,7 +101,7 @@ func (s *Server) clientSessionDTO(session identity.ClientSession) map[string]any
 		"ServerId": s.serverID, "LastActivityDate": session.LastSeenAt.UTC(),
 		"PlayableMediaTypes":    append([]string{}, session.Capabilities.PlayableMediaTypes...),
 		"SupportedCommands":     append([]string{}, session.Capabilities.SupportedCommands...),
-		"SupportsRemoteControl": false, "AdditionalUsers": []any{},
+		"SupportsRemoteControl": session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID), "AdditionalUsers": []any{},
 		"PlayState": idlePlayerStateDTO(), "PlaylistIndex": 0, "PlaylistLength": 0,
 	}
 	// An arbitrary client IconUrl is stored as a declaration but is not exposed
@@ -141,9 +141,22 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 			s.clientSessionError(w, r, identity.ErrClientSessionForbidden)
 			return
 		}
-		// No remote command transport has been implemented in this increment.
-		jsonResponse(w, http.StatusOK, []any{})
-		return
+		controller, err := s.identity.GetUser(r.Context(), userID)
+		if errors.Is(err, identity.ErrNotFound) || (err == nil && controller.IsDisabled) {
+			jsonResponse(w, http.StatusOK, []any{})
+			return
+		}
+		if err != nil {
+			s.identityError(w, r, err)
+			return
+		}
+		controlled := make([]identity.ClientSession, 0, len(sessions))
+		for _, session := range sessions {
+			if (controller.IsAdministrator || session.UserID == controller.ID) && session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID) {
+				controlled = append(controlled, session)
+			}
+		}
+		sessions = controlled
 	}
 	authIDs := make([]string, 0, len(sessions))
 	for _, session := range sessions {

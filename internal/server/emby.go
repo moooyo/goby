@@ -232,5 +232,9 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
+	if s.eventHub != nil {
+		principal := r.Context().Value(principalKey).(identity.Principal)
+		s.eventHub.DisconnectSession(principal.SessionID)
+	}
 	w.WriteHeader(http.StatusOK)
 }

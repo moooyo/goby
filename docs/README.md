@@ -2,7 +2,7 @@
 
 Research date: **2026-09-09, Asia/Shanghai**.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, and user state increments delivered; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
+Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, and initial events/remote-control increments delivered; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below.
 
 ## Compatibility target
 
@@ -19,6 +19,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
+| [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
 | [External subtitles](development/external-subtitles.md) | Sidecar indexing, SRT/WebVTT delivery, time semantics, authorization and resource limits |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |

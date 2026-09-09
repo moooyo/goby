@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/config"
+	"github.com/moooyo/goby/internal/events"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
@@ -27,6 +28,9 @@ type Server struct {
 	images        *imageCache
 	streamSlots   chan struct{}
 	subtitleSlots chan struct{}
+	eventHub      *events.Hub
+	sockets       *socketRuntime
+	notifier      *userDataNotifier
 }
 
 func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
@@ -38,10 +42,19 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if err != nil {
 		return nil, err
 	}
-	return &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4)}, nil
+	hub, err := events.New(events.Options{})
+	if err != nil {
+		_ = catalog.Close(ctx)
+		return nil, err
+	}
+	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	app.notifier = newUserDataNotifier(catalog, hub)
+	return app, nil
 }
 
-func (s *Server) Close(ctx context.Context) error { return s.library.Close(ctx) }
+func (s *Server) Close(ctx context.Context) error {
+	return s.closeSockets(ctx)
+}
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -63,6 +76,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerPlaybackRoutes(mux)
 	s.registerClientSessionRoutes(mux)
 	s.registerSubtitleRoutes(mux)
+	s.registerRemoteCommandRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})
@@ -119,6 +133,10 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 				apiError(w, r, 500, "internal_error", "The request could not be completed.")
 			}
 		}()
+		if isSocketRequest(r) {
+			s.requireEmby(s.clientSocket)(w, r)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
