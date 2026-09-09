@@ -1,6 +1,6 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, and durable per-user playback state. Subtitles, conversion, client-session/events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, durable per-user playback state, client capabilities/session views, and NextUp queries. Subtitles, conversion, client events, and the remaining compatibility surface are still being implemented; this is not yet a production media replacement.
 
 ## Build inputs
 
@@ -64,6 +64,8 @@ Migration `0004` backfills persistent genre/tag/studio/person identities from st
 
 Migration `0006` adds durable playback sessions and user state. Run a normal scan of existing libraries after upgrading: probe version 2 includes Linux ctime and extra codec facts needed for original-file delivery. Older snapshots remain unavailable for playback until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Scans are not automatically scheduled by this upgrade.
 
+Migration `0007` adds validated client capability snapshots to authentication sessions; `0008` adds validated player hints to playback sessions. These upgrades need no new configuration or rescan beyond the earlier probe-version requirement. [Client sessions](client-sessions.md) distinguishes online presence, login expiration, current playback, and supported declarations. [NextUp](next-up.md) documents series-directed behavior and the remaining global-query reference gap.
+
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 
 Database upgrades use the startup deadline rather than the ordinary 15-second statement limit. The migration transaction temporarily disables `statement_timeout`, including while it waits for the migration lock, and restores the connection setting on commit or rollback. A caller deadline, service termination, or the migration's 30-minute upper bound still cancels the work. Connection establishment retains its shorter limits. Increase `GOBY_STARTUP_TIMEOUT` for a large metadata backfill before starting the service; this setting is not a guarantee that an arbitrary catalog finishes within that budget.
@@ -83,5 +85,7 @@ go test -race -count=1 ./...
 ```
 
 The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. On the current constrained test host, Go module/build caches live in dedicated `/dev/shm/goby-go-*` directories to avoid filling the root filesystem.
+
+The current host also has an owned 512 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. Verification sets `GOTMPDIR` and `TMPDIR` to this executable scratch directory. This avoids consuming the constrained root filesystem without changing the shared `/dev/shm` mount's execution policy. The directory is dedicated to Goby verification and is not an application media or persistent-data location.
 
 See [environment evidence](test-env.md) for exact installed versions and the distinction between compiled hardware interfaces and real hardware execution.

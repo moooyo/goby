@@ -22,6 +22,7 @@ type PlaySession struct {
 	PositionTicks, DurationTicks                                      int64
 	CreatedAt, UpdatedAt, ExpiresAt                                   time.Time
 	StartedAt, StoppedAt                                              *time.Time
+	PlayerState                                                       PlayerState
 	counted                                                           bool
 	live                                                              bool
 }
@@ -33,18 +34,27 @@ type PlaybackReport struct {
 	PlaySessionID, ItemID, MediaSourceID, Event string
 	PositionTicks                               *int64
 	IsPaused                                    bool
+	PlayerState                                 *PlayerStateUpdate
 }
 
 const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
-	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, counted, expires_at > clock_timestamp()`
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp()`
 
 func scanPlaySession(row rowScanner) (PlaySession, error) {
 	var session PlaySession
+	var rawPlayerState []byte
 	err := row.Scan(&session.ID, &session.UserID, &session.AuthSessionID, &session.DeviceID,
 		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
 		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
-		&session.StartedAt, &session.StoppedAt, &session.counted, &session.live)
-	return session, err
+		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live)
+	if err != nil {
+		return session, err
+	}
+	session.PlayerState, err = decodePlayerState(rawPlayerState)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	return session, nil
 }
 
 func validPlaybackOwner(owner PlaybackOwner) bool {
@@ -308,6 +318,27 @@ func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id 
 // ListPlaybackSessions returns a bounded active-session view. The HTTP layer
 // decides whether to request administrator scope; the database rechecks it.
 func (s *Store) ListPlaybackSessions(ctx context.Context, ownerUserID string, administrator bool) ([]PlaySession, error) {
+	return s.listPlaybackSessions(ctx, ownerUserID, administrator, nil, false)
+}
+
+// ListNowPlayingSessionsForAuth returns the latest Playing/Paused session per
+// selected authentication session. Prepared sessions cannot hide active media;
+// empty input selects no sessions, not every session.
+func (s *Store) ListNowPlayingSessionsForAuth(ctx context.Context, ownerUserID string, administrator bool, authSessionIDs []string) ([]PlaySession, error) {
+	if len(authSessionIDs) > 256 {
+		return nil, ErrInvalidInput
+	}
+	ids := make([]string, 0, len(authSessionIDs))
+	for _, id := range authSessionIDs {
+		if strings.TrimSpace(id) == "" || len(id) > 256 || strings.ContainsRune(id, '\x00') || !utf8.ValidString(id) {
+			return nil, ErrInvalidInput
+		}
+		ids = append(ids, id)
+	}
+	return s.listPlaybackSessions(ctx, ownerUserID, administrator, ids, true)
+}
+
+func (s *Store) listPlaybackSessions(ctx context.Context, ownerUserID string, administrator bool, authSessionIDs []string, nowPlayingOnly bool) ([]PlaySession, error) {
 	tx, access, err := s.beginUserRead(ctx, ownerUserID)
 	if err != nil {
 		return nil, err
@@ -326,11 +357,23 @@ func (s *Store) ListPlaybackSessions(ctx context.Context, ownerUserID string, ad
 	for index, column := range columns {
 		columns[index] = "play." + strings.TrimSpace(column)
 	}
-	rows, err := tx.Query(ctx, "SELECT "+strings.Join(columns, ",")+` FROM play_sessions play
+	filter := ""
+	arguments := []any{administrator, ownerUserID, access.all, access.folders}
+	if authSessionIDs != nil {
+		filter = " AND play.auth_session_id = ANY($5::text[])"
+		arguments = append(arguments, authSessionIDs)
+	}
+	selection := "SELECT "
+	states := "('Prepared','Playing','Paused')"
+	if nowPlayingOnly {
+		selection = "SELECT DISTINCT ON (play.auth_session_id) "
+		states = "('Playing','Paused')"
+	}
+	statement := selection + strings.Join(columns, ",") + ` FROM play_sessions play
 		JOIN sessions authentication ON authentication.id = play.auth_session_id AND authentication.user_id = play.user_id
 			AND authentication.device_id = play.device_id
 		JOIN users account ON account.id = play.user_id JOIN items i ON i.id = play.item_id
-		WHERE play.state IN ('Prepared','Playing','Paused') AND play.expires_at > clock_timestamp()
+		WHERE play.state IN ` + states + ` AND play.expires_at > clock_timestamp()
 		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
 		AND (authentication.kind <> 'admin' OR account.is_administrator)
 		AND jsonb_typeof(account.policy) = 'object'
@@ -344,8 +387,14 @@ func (s *Store) ListPlaybackSessions(ctx context.Context, ownerUserID string, ad
 					ELSE '[]'::jsonb END) AS folder(value) WHERE jsonb_typeof(folder.value) <> 'string')
 				AND (account.policy -> 'EnabledFolders') ? i.library_id
 			))
-		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[]))
-		ORDER BY play.updated_at DESC, play.id LIMIT 256`, administrator, ownerUserID, access.all, access.folders)
+		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[]))` + filter
+	if nowPlayingOnly {
+		statement += " ORDER BY play.auth_session_id, play.updated_at DESC, play.id DESC"
+		statement = "SELECT * FROM (" + statement + ") AS current_playback ORDER BY updated_at DESC, id DESC LIMIT 256"
+	} else {
+		statement += " ORDER BY play.updated_at DESC, play.id LIMIT 256"
+	}
+	rows, err := tx.Query(ctx, statement, arguments...)
 	if err != nil {
 		return nil, fmt.Errorf("list active playback sessions: %w", err)
 	}
@@ -404,6 +453,10 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 	event, err := canonicalPlaybackEvent(report.Event)
 	if err != nil || (report.PositionTicks != nil && *report.PositionTicks < 0) {
 		return PlaySession{}, UserData{}, ErrInvalidInput
+	}
+	playerStatePatch, err := encodePlayerStateUpdate(report.PlayerState)
+	if err != nil {
+		return PlaySession{}, UserData{}, err
 	}
 	if event == "Started" && report.PlaySessionID == "" {
 		if err := s.cleanupPlayback(ctx, owner); err != nil {
@@ -498,8 +551,9 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		started_at = CASE WHEN $6 THEN COALESCE(started_at, clock_timestamp()) ELSE started_at END,
 		stopped_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE stopped_at END,
 		expires_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE clock_timestamp() + interval '30 minutes' END,
+		player_state = CASE WHEN $7::boolean THEN player_state || $8::jsonb ELSE player_state END,
 		updated_at = clock_timestamp() WHERE id = $1 RETURNING `+playSessionColumns,
-		session.ID, state, position, item.duration, counted, countNow))
+		session.ID, state, position, item.duration, counted, countNow, report.PlayerState != nil && event != "Ping", playerStatePatch))
 	if err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("persist playback report: %w", err)
 	}

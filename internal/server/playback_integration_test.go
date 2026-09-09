@@ -244,7 +244,7 @@ func TestHTTPPlaybackNegotiationOriginalDeliveryAndResumeLifecycle(t *testing.T)
 		t.Fatalf("120 seconds of a server-side 600-second item was not resumable: %#v", resumed)
 	}
 	assertPlaybackHTTPData(t, objectValue(t, resumed[0], "UserData"), position, 1, false, false)
-	expectStatus(t, p.s.f.request(t, http.MethodPost, "/emby/Sessions/Playing/Ping?PlaySessionId="+playID, nil, p.headers), http.StatusOK)
+	expectStatus(t, p.s.f.request(t, http.MethodPost, "/emby/Sessions/Playing/Ping?PlaySessionId="+playID, nil, p.headers), http.StatusNoContent)
 	assertPlaybackHTTPData(t, p.detailData(t, p.s.video.id), position, 1, false, false)
 	p.report(t, "Stopped", playID, position)
 	p.report(t, "Stopped", playID, 590*media.TicksPerSecond)

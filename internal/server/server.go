@@ -60,6 +60,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerImageRoutes(mux)
 	s.registerStreamRoutes(mux)
 	s.registerPlaybackRoutes(mux)
+	s.registerClientSessionRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})

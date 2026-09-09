@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -26,6 +27,7 @@ func userDataDTO(data library.UserData, includeItemID bool) map[string]any {
 func (s *Server) playbackReport(event string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
+			library.PlayerStateUpdate
 			PlaySessionID string `json:"PlaySessionId"`
 			ItemID        string `json:"ItemId"`
 			MediaSourceID string `json:"MediaSourceId"`
@@ -43,7 +45,7 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 		}
 		_, _, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
 			PlaySessionID: body.PlaySessionID, ItemID: body.ItemID, MediaSourceID: body.MediaSourceID,
-			Event: event, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused})
+			Event: event, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused, PlayerState: &body.PlayerStateUpdate})
 		if err != nil {
 			s.playbackError(w, r, err)
 			return
@@ -58,13 +60,19 @@ func (s *Server) playbackPing(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The playback ping query is invalid.")
 		return
 	}
+	if values["playsessionid"] == "" {
+		embyTextError(w, r, http.StatusBadRequest, "Value cannot be null. (Parameter 'key')")
+		return
+	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	_, _, err = s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{Event: "Ping", PlaySessionID: values["playsessionid"], ItemID: values["itemid"], MediaSourceID: values["mediasourceid"]})
-	if err != nil {
+	if err != nil && !errors.Is(err, library.ErrNotFound) {
 		s.playbackError(w, r, err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	// Unknown or foreign play-session keys are inert, matching the captured
+	// reference while disclosing no ownership information or changing state.
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) setUserFlag(favorite, value bool) http.HandlerFunc {

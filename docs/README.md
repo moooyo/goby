@@ -18,6 +18,8 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Local metadata](development/local-metadata.md) | NFO discovery, values, refresh behavior, and input boundaries |
 | [Local artwork](development/local-artwork.md) | Indexed images, public binary retrieval, transforms, caching, and resource limits |
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
+| [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
+| [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
 | [Machine-readable inventory](api/inventory.json) | Endpoint metadata, source references, planning classification, and implementation status |
 | [Data models](api/models.md) | Offline reference for all 333 upstream schema definitions |

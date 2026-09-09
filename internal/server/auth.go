@@ -80,6 +80,12 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			s.identityError(w, r, err)
 			return
 		}
+		if time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
+			if err := s.identity.TouchClientSession(r.Context(), principal); err != nil {
+				s.identityError(w, r, err)
+				return
+			}
+		}
 		next(w, r.WithContext(context.WithValue(r.Context(), principalKey, principal)))
 	}
 }

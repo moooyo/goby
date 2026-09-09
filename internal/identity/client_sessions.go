@@ -1,0 +1,502 @@
+package identity
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
+)
+
+const (
+	// ClientSessionPresenceWindow is an activity filter, not an authentication TTL.
+	ClientSessionPresenceWindow = 5 * time.Minute
+	ClientSessionTouchInterval  = 15 * time.Second
+	MaxClientSessions           = 256
+	MaxClientCapabilitiesBytes  = 64 * 1024
+	MaxClientCapabilityEntries  = 128
+	MaxClientCapabilityText     = 2048
+	maxCapabilityDepth          = 8
+	maxCapabilityNodes          = 4096
+	maxCapabilityObjectFields   = 64
+)
+
+var ErrClientSessionForbidden = errors.New("client session access denied")
+
+// ClientCapabilities contains only supported, non-secret client declarations.
+// DeviceProfile is a bounded, canonical JSON object containing known official
+// fields. Push tokens and unknown fields are never retained.
+type ClientCapabilities struct {
+	PlayableMediaTypes   []string        `json:"PlayableMediaTypes,omitempty"`
+	SupportedCommands    []string        `json:"SupportedCommands,omitempty"`
+	SupportsMediaControl bool            `json:"SupportsMediaControl,omitempty"`
+	SupportsSync         bool            `json:"SupportsSync,omitempty"`
+	DeviceProfile        json.RawMessage `json:"DeviceProfile,omitempty"`
+	IconURL              string          `json:"IconUrl,omitempty"`
+	AppID                string          `json:"AppId,omitempty"`
+}
+
+// ClientSession is a safe projection of an Emby authentication session. A live
+// authentication session does not establish that media is currently playing.
+type ClientSession struct {
+	SessionID    string
+	UserID       string
+	UserName     string
+	Client       Client
+	CreatedAt    time.Time
+	LastSeenAt   time.Time
+	ExpiresAt    time.Time
+	Capabilities ClientCapabilities
+}
+
+// ClientSessionFilter constrains an already-authorized session list. An omitted
+// activity window defaults to ClientSessionPresenceWindow; an explicit zero
+// disables only the presence filter, never expiry or account authorization.
+type ClientSessionFilter struct {
+	SessionID           string
+	DeviceID            string
+	ActiveWithinSeconds *int
+	Limit               int
+}
+
+// ParseClientCapabilities validates the complete input before dropping unknown
+// fields for forward compatibility. Known fields must match their official
+// types; null optional fields are treated as omitted. All JSON, including
+// discarded fields, is bounded. Duplicate keys are rejected rather than merged.
+func ParseClientCapabilities(data []byte) (ClientCapabilities, error) {
+	if len(data) == 0 || len(data) > MaxClientCapabilitiesBytes || !utf8.Valid(data) {
+		return ClientCapabilities{}, capabilityInputError("capabilities must contain at most 64 KiB of UTF-8 JSON")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	nodes := 0
+	value, err := readCapabilityJSON(decoder, 0, &nodes)
+	if err != nil {
+		return ClientCapabilities{}, err
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return ClientCapabilities{}, capabilityInputError("capabilities must contain one JSON object")
+	}
+	if _, ok := value.(map[string]any); !ok {
+		return ClientCapabilities{}, capabilityInputError("capabilities must be a JSON object")
+	}
+	cleaned, err := sanitizeCapabilityValue(value, clientCapabilityShape, "capabilities")
+	if err != nil {
+		return ClientCapabilities{}, err
+	}
+	fields := cleaned.(map[string]any)
+	// Push delivery is not implemented, and notification tokens are secrets.
+	delete(fields, "PushToken")
+	delete(fields, "PushTokenType")
+	encoded, err := json.Marshal(fields)
+	if err != nil {
+		return ClientCapabilities{}, fmt.Errorf("encode validated capabilities: %w", err)
+	}
+	if len(encoded) > MaxClientCapabilitiesBytes {
+		return ClientCapabilities{}, capabilityInputError("encoded capabilities exceed 64 KiB")
+	}
+	var capabilities ClientCapabilities
+	if err := json.Unmarshal(encoded, &capabilities); err != nil {
+		return ClientCapabilities{}, fmt.Errorf("decode validated capabilities: %w", err)
+	}
+	return capabilities, nil
+}
+
+// UpdateClientCapabilities replaces the caller's complete capability snapshot.
+// A supplied target must be the authenticated session, including for admins.
+func (s *Store) UpdateClientCapabilities(ctx context.Context, principal Principal, targetSessionID string, capabilities ClientCapabilities) error {
+	encoded, err := json.Marshal(capabilities)
+	if err != nil {
+		return capabilityInputError("capabilities must contain valid JSON")
+	}
+	validated, err := ParseClientCapabilities(encoded)
+	if err != nil {
+		return err
+	}
+	encoded, err = json.Marshal(validated)
+	if err != nil {
+		return fmt.Errorf("encode client capabilities: %w", err)
+	}
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin client capability update: %w", err)
+	}
+	defer rollback(tx)
+	if _, err := lockClientSession(ctx, tx, principal, true); err != nil {
+		return err
+	}
+	if targetSessionID != "" && targetSessionID != principal.SessionID {
+		return ErrClientSessionForbidden
+	}
+	if _, err := tx.Exec(ctx, `UPDATE sessions SET client_capabilities = $2::jsonb,
+		last_seen_at = CASE WHEN last_seen_at <= now() - ($3::bigint * interval '1 second')
+		THEN now() ELSE last_seen_at END WHERE id = $1`, principal.SessionID, encoded,
+		int64(ClientSessionTouchInterval/time.Second)); err != nil {
+		return fmt.Errorf("update client capabilities: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit client capability update: %w", err)
+	}
+	return nil
+}
+
+// TouchClientSession records authenticated activity at most once per interval.
+// It revalidates the account and session without extending the login lifetime.
+func (s *Store) TouchClientSession(ctx context.Context, principal Principal) error {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin client session activity: %w", err)
+	}
+	defer rollback(tx)
+	if _, err := lockClientSession(ctx, tx, principal, true); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE sessions SET last_seen_at = now()
+		WHERE id = $1 AND last_seen_at <= now() - ($2::bigint * interval '1 second')`,
+		principal.SessionID, int64(ClientSessionTouchInterval/time.Second)); err != nil {
+		return fmt.Errorf("record client session activity: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit client session activity: %w", err)
+	}
+	return nil
+}
+
+// ListClientSessions returns bounded active Emby sessions. Ordinary accounts
+// see their own sessions; the current stored administrator role permits all
+// enabled accounts. Admin cookie sessions are never included or accepted.
+func (s *Store) ListClientSessions(ctx context.Context, principal Principal, filter ClientSessionFilter) ([]ClientSession, error) {
+	if err := validateClient(Client{DeviceID: filter.DeviceID, Name: filter.SessionID}); err != nil {
+		return nil, err
+	}
+	limit := filter.Limit
+	if limit == 0 {
+		limit = MaxClientSessions
+	}
+	if limit < 1 || limit > MaxClientSessions {
+		return nil, capabilityInputError("session limit must be between 1 and 256")
+	}
+	activeSeconds := int(ClientSessionPresenceWindow / time.Second)
+	if filter.ActiveWithinSeconds != nil {
+		activeSeconds = *filter.ActiveWithinSeconds
+	}
+	if activeSeconds < 0 || activeSeconds > int(embyLifetime/time.Second) {
+		return nil, capabilityInputError("session activity window is outside the login lifetime")
+	}
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("begin client session list: %w", err)
+	}
+	defer rollback(tx)
+	isAdmin, err := lockClientSession(ctx, tx, principal, false)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.Query(ctx, `SELECT a.id, u.id, u.name, a.client_name,
+		a.device_id, a.device_name, a.client_version, a.created_at,
+		a.last_seen_at, a.expires_at, a.client_capabilities
+		FROM sessions a JOIN users u ON u.id = a.user_id
+		WHERE a.kind = 'emby' AND a.revoked_at IS NULL AND a.expires_at > now()
+		AND NOT u.is_disabled AND ($1::boolean OR a.user_id = $2)
+		AND ($3 = '' OR a.id = $3) AND ($4 = '' OR a.device_id = $4)
+		AND ($5::bigint = 0 OR a.last_seen_at >= now() - ($5::bigint * interval '1 second'))
+		ORDER BY a.last_seen_at DESC, a.id LIMIT $6`, isAdmin, principal.User.ID,
+		filter.SessionID, filter.DeviceID, activeSeconds, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list client sessions: %w", err)
+	}
+	defer rows.Close()
+	sessions := make([]ClientSession, 0)
+	for rows.Next() {
+		var session ClientSession
+		var encoded []byte
+		if err := rows.Scan(&session.SessionID, &session.UserID, &session.UserName,
+			&session.Client.Name, &session.Client.DeviceID, &session.Client.Device,
+			&session.Client.Version, &session.CreatedAt, &session.LastSeenAt,
+			&session.ExpiresAt, &encoded); err != nil {
+			return nil, fmt.Errorf("read client session: %w", err)
+		}
+		// Read-time validation also prevents unsafe fields from a manual database
+		// change from reaching the session projection. JSONB adds whitespace.
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, encoded); err != nil {
+			return nil, fmt.Errorf("read stored client capabilities: %w", err)
+		}
+		session.Capabilities, err = ParseClientCapabilities(compact.Bytes())
+		if err != nil {
+			return nil, fmt.Errorf("read stored client capabilities: %w", err)
+		}
+		sessions = append(sessions, session)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read client session list: %w", err)
+	}
+	rows.Close()
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit client session list: %w", err)
+	}
+	return sessions, nil
+}
+
+// Locks keep concurrent disable, demotion, and revocation from authorizing a
+// mutation with stale state. Client metadata and role claims are never trusted.
+func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, mutate bool) (bool, error) {
+	if principal.Kind != "emby" || principal.SessionID == "" || principal.User.ID == "" {
+		return false, ErrUnauthorized
+	}
+	locking := " FOR SHARE OF a, u"
+	if mutate {
+		locking = " FOR UPDATE OF a FOR SHARE OF u"
+	}
+	var isAdmin bool
+	err := tx.QueryRow(ctx, `SELECT u.is_administrator
+		FROM sessions a JOIN users u ON u.id = a.user_id
+		WHERE a.id = $1 AND a.user_id = $2 AND a.kind = 'emby'
+		AND a.revoked_at IS NULL AND a.expires_at > now() AND NOT u.is_disabled`+locking,
+		principal.SessionID, principal.User.ID).Scan(&isAdmin)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, ErrUnauthorized
+	}
+	if err != nil {
+		return false, fmt.Errorf("authorize client session: %w", err)
+	}
+	return isAdmin, nil
+}
+
+func capabilityInputError(message string) error {
+	return fmt.Errorf("%w: %s", ErrInvalidInput, message)
+}
+
+// A token walk enforces limits before accepting either known or unknown data.
+func readCapabilityJSON(decoder *json.Decoder, depth int, nodes *int) (any, error) {
+	*nodes = *nodes + 1
+	if depth > maxCapabilityDepth || *nodes > maxCapabilityNodes {
+		return nil, capabilityInputError("capabilities exceed JSON nesting or value limits")
+	}
+	token, err := decoder.Token()
+	if err != nil {
+		return nil, capabilityInputError("capabilities contain malformed JSON")
+	}
+	switch value := token.(type) {
+	case json.Delim:
+		switch value {
+		case '{':
+			object := make(map[string]any)
+			for decoder.More() {
+				keyToken, err := decoder.Token()
+				if err != nil {
+					return nil, capabilityInputError("capabilities contain malformed object keys")
+				}
+				key, ok := keyToken.(string)
+				if !ok || len(key) > maxClientFieldBytes || !validCapabilityText(key) {
+					return nil, capabilityInputError("capabilities contain an invalid object key")
+				}
+				if _, exists := object[key]; exists || len(object) >= maxCapabilityObjectFields {
+					return nil, capabilityInputError("capabilities contain duplicate keys or too many object fields")
+				}
+				child, err := readCapabilityJSON(decoder, depth+1, nodes)
+				if err != nil {
+					return nil, err
+				}
+				object[key] = child
+			}
+			if end, err := decoder.Token(); err != nil || end != json.Delim('}') {
+				return nil, capabilityInputError("capabilities contain an incomplete object")
+			}
+			return object, nil
+		case '[':
+			values := make([]any, 0)
+			for decoder.More() {
+				if len(values) >= MaxClientCapabilityEntries {
+					return nil, capabilityInputError("capabilities contain too many array entries")
+				}
+				child, err := readCapabilityJSON(decoder, depth+1, nodes)
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, child)
+			}
+			if end, err := decoder.Token(); err != nil || end != json.Delim(']') {
+				return nil, capabilityInputError("capabilities contain an incomplete array")
+			}
+			return values, nil
+		default:
+			return nil, capabilityInputError("capabilities contain an unexpected delimiter")
+		}
+	case string:
+		if !validCapabilityText(value) {
+			return nil, capabilityInputError("capability text exceeds limits or contains control characters")
+		}
+		return value, nil
+	case json.Number, bool, nil:
+		return value, nil
+	default:
+		return nil, capabilityInputError("capabilities contain an unsupported JSON value")
+	}
+}
+
+func validCapabilityText(value string) bool {
+	return len(value) <= MaxClientCapabilityText && utf8.ValidString(value) &&
+		strings.IndexFunc(value, unicode.IsControl) < 0
+}
+
+type capabilityShape struct {
+	kind    byte
+	fields  map[string]*capabilityShape
+	element *capabilityShape
+	maximum int64
+	enum    []string
+}
+
+func capabilityObject(fields map[string]*capabilityShape) *capabilityShape {
+	return &capabilityShape{kind: 'o', fields: fields}
+}
+
+func capabilityArray(element *capabilityShape) *capabilityShape {
+	return &capabilityShape{kind: 'a', element: element}
+}
+
+func capabilityEnum(values ...string) *capabilityShape {
+	return &capabilityShape{kind: 's', enum: values}
+}
+
+// These shapes follow the pinned DeviceProfile schema. Unknown fields are
+// dropped at every object level, preventing identity or secret extensions from
+// becoming persisted session state. Optional nulls are normalized to omission.
+var (
+	capabilityText      = &capabilityShape{kind: 's'}
+	capabilityBool      = &capabilityShape{kind: 'b'}
+	capabilityInt32     = &capabilityShape{kind: 'n', maximum: math.MaxInt32}
+	capabilityInt64     = &capabilityShape{kind: 'n', maximum: math.MaxInt64}
+	capabilityKind      = capabilityEnum("Audio", "Video", "Photo")
+	capabilityCondition = capabilityObject(map[string]*capabilityShape{
+		"Condition": capabilityEnum("Equals", "NotEquals", "LessThanEqual", "GreaterThanEqual", "EqualsAny"),
+		"Property": capabilityEnum("AudioChannels", "AudioBitrate", "AudioProfile", "Width", "Height",
+			"Has64BitOffsets", "PacketLength", "VideoBitDepth", "VideoBitrate", "VideoFramerate",
+			"VideoLevel", "VideoProfile", "VideoTimestamp", "IsAnamorphic", "RefFrames", "NumAudioStreams",
+			"NumVideoStreams", "IsSecondaryAudio", "VideoCodecTag", "IsAvc", "IsInterlaced",
+			"AudioSampleRate", "AudioBitDepth", "VideoRange", "VideoRotation", "IsExternalAudio"),
+		"Value": capabilityText, "IsRequired": capabilityBool,
+	})
+	capabilityConditions    = capabilityArray(capabilityCondition)
+	capabilityDeviceProfile = capabilityObject(map[string]*capabilityShape{
+		"Name": capabilityText, "Id": capabilityText, "SupportedMediaTypes": capabilityText,
+		"MaxStreamingBitrate": capabilityInt64, "MusicStreamingTranscodingBitrate": capabilityInt32,
+		"MaxStaticMusicBitrate": capabilityInt32, "DeclaredFeatures": capabilityArray(capabilityText),
+		"DirectPlayProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Container": capabilityText, "AudioCodec": capabilityText, "VideoCodec": capabilityText, "Type": capabilityKind,
+		})),
+		"TranscodingProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Container": capabilityText, "Type": capabilityKind, "VideoCodec": capabilityText,
+			"AudioCodec": capabilityText, "Protocol": capabilityText, "EstimateContentLength": capabilityBool,
+			"EnableMpegtsM2TsMode": capabilityBool, "TranscodeSeekInfo": capabilityEnum("Auto", "Bytes"),
+			"CopyTimestamps": capabilityBool, "Context": capabilityEnum("Streaming", "Static"),
+			"MaxAudioChannels": capabilityText, "MinSegments": capabilityInt32, "SegmentLength": capabilityInt32,
+			"BreakOnNonKeyFrames": capabilityBool, "AllowInterlacedVideoStreamCopy": capabilityBool,
+			"ManifestSubtitles": capabilityText, "MaxManifestSubtitles": capabilityInt32,
+			"MaxWidth": capabilityInt32, "MaxHeight": capabilityInt32, "FillEmptySubtitleSegments": capabilityBool,
+		})),
+		"ContainerProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Type": capabilityKind, "Conditions": capabilityConditions, "Container": capabilityText,
+		})),
+		"CodecProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Type": capabilityEnum("Video", "VideoAudio", "Audio"), "Conditions": capabilityConditions,
+			"ApplyConditions": capabilityConditions, "Codec": capabilityText, "Container": capabilityText,
+		})),
+		"ResponseProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Container": capabilityText, "AudioCodec": capabilityText, "VideoCodec": capabilityText,
+			"Type": capabilityKind, "OrgPn": capabilityText, "MimeType": capabilityText, "Conditions": capabilityConditions,
+		})),
+		"SubtitleProfiles": capabilityArray(capabilityObject(map[string]*capabilityShape{
+			"Format": capabilityText, "Method": capabilityEnum("Encode", "Embed", "External", "Hls", "VideoSideData"),
+			"DidlMode": capabilityText, "Language": capabilityText, "Container": capabilityText,
+			"AllowChunkedResponse": capabilityBool, "Protocol": capabilityText,
+		})),
+	})
+	clientCapabilityShape = capabilityObject(map[string]*capabilityShape{
+		"PlayableMediaTypes": capabilityArray(capabilityText), "SupportedCommands": capabilityArray(capabilityText),
+		"SupportsMediaControl": capabilityBool, "PushToken": capabilityText, "PushTokenType": capabilityText,
+		"SupportsSync": capabilityBool, "DeviceProfile": capabilityDeviceProfile,
+		"IconUrl": capabilityText, "AppId": capabilityText,
+	})
+)
+
+func sanitizeCapabilityValue(value any, shape *capabilityShape, path string) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	invalid := func() (any, error) {
+		return nil, capabilityInputError(path + " has an invalid type or value")
+	}
+	switch shape.kind {
+	case 'o':
+		object, ok := value.(map[string]any)
+		if !ok {
+			return invalid()
+		}
+		cleaned := make(map[string]any)
+		for key, child := range object {
+			childShape, known := shape.fields[key]
+			if !known || child == nil {
+				continue
+			}
+			sanitized, err := sanitizeCapabilityValue(child, childShape, path+"."+key)
+			if err != nil {
+				return nil, err
+			}
+			cleaned[key] = sanitized
+		}
+		return cleaned, nil
+	case 'a':
+		values, ok := value.([]any)
+		if !ok {
+			return invalid()
+		}
+		cleaned := make([]any, 0, len(values))
+		for _, child := range values {
+			if child == nil {
+				return invalid()
+			}
+			sanitized, err := sanitizeCapabilityValue(child, shape.element, path+"[]")
+			if err != nil {
+				return nil, err
+			}
+			cleaned = append(cleaned, sanitized)
+		}
+		return cleaned, nil
+	case 's':
+		text, ok := value.(string)
+		if !ok {
+			return invalid()
+		}
+		if len(shape.enum) > 0 {
+			for _, choice := range shape.enum {
+				if text == choice {
+					return text, nil
+				}
+			}
+			return invalid()
+		}
+		return text, nil
+	case 'b':
+		if boolean, ok := value.(bool); ok {
+			return boolean, nil
+		}
+	case 'n':
+		if number, ok := value.(json.Number); ok {
+			integer, err := number.Int64()
+			if err == nil && integer >= 0 && integer <= shape.maximum {
+				return number, nil
+			}
+		}
+	}
+	return invalid()
+}

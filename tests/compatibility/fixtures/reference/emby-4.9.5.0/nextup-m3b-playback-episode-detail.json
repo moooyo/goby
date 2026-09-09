@@ -1,0 +1,283 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:10:40.129798+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users/2118172027b94fd18c3ca6e55478d6d3/Items/15",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Session Test\", DeviceId=\"goby-session-m3b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "4352"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:10:39 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "Goby sample movie",
+      "ServerId": "ec69ef1cf84140e88489c30326529308",
+      "Id": "15",
+      "Etag": "4e385dc6bd52a51ad3b2affbf0fa3dec",
+      "DateCreated": "2026-09-08T21:56:32.0000000Z",
+      "DateModified": "2026-09-08T21:56:32.0000000Z",
+      "CanDelete": false,
+      "CanDownload": true,
+      "PresentationUniqueKey": "c0bd934b29c3c56366d628455bbcf02f-001 - 0001",
+      "SupportsSync": true,
+      "Container": "mp4",
+      "SortName": "Goby sample movie",
+      "ForcedSortName": "Goby sample movie",
+      "ExternalUrls": [],
+      "MediaSources": [
+        {
+          "Chapters": [],
+          "Protocol": "File",
+          "Id": "mediasource_15",
+          "Path": "/opt/goby-fixtures/tv/Example Series/Season 01/Example Series S01E01.mp4",
+          "Type": "Default",
+          "Container": "mp4",
+          "Size": 90299,
+          "Name": "Example Series S01E01",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 20000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": true,
+          "SupportsDirectPlay": true,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/12288",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 280500,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 24,
+              "RealFrameRate": 24,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 70056,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 361196,
+          "RequiredHttpHeaders": {},
+          "AddApiKeyToDirectStreamUrl": false,
+          "ReadAtNativeFramerate": false,
+          "DefaultAudioStreamIndex": 1,
+          "ItemId": "15"
+        }
+      ],
+      "Path": "/opt/goby-fixtures/tv/Example Series/Season 01/Example Series S01E01.mp4",
+      "Taglines": [],
+      "Genres": [],
+      "RunTimeTicks": 20000000,
+      "Size": 90299,
+      "FileName": "Example Series S01E01.mp4",
+      "Bitrate": 361196,
+      "IndexNumber": 1,
+      "ParentIndexNumber": 1,
+      "RemoteTrailers": [],
+      "ProviderIds": {},
+      "IsFolder": false,
+      "ParentId": "13",
+      "Type": "Episode",
+      "People": [],
+      "Studios": [],
+      "GenreItems": [],
+      "TagItems": [],
+      "LocalTrailerCount": 0,
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 1,
+        "IsFavorite": false,
+        "LastPlayedDate": "2026-09-09T01:10:40.0000000Z",
+        "Played": true
+      },
+      "SeriesName": "Example Series",
+      "SeriesId": "12",
+      "SeasonId": "13",
+      "DisplayPreferencesId": "26dd4a82b00c839c498471cdba80a99c",
+      "SeasonName": "Season 1",
+      "MediaStreams": [
+        {
+          "Codec": "h264",
+          "CodecTag": "avc1",
+          "Language": "und",
+          "TimeBase": "1/12288",
+          "VideoRange": "SDR",
+          "DisplayTitle": "SD H264",
+          "NalLengthSize": "4",
+          "IsInterlaced": false,
+          "BitRate": 280500,
+          "BitDepth": 8,
+          "RefFrames": 1,
+          "IsDefault": true,
+          "IsForced": false,
+          "IsHearingImpaired": false,
+          "Height": 90,
+          "Width": 160,
+          "AverageFrameRate": 24,
+          "RealFrameRate": 24,
+          "Profile": "Constrained Baseline",
+          "Type": "Video",
+          "AspectRatio": "16:9",
+          "Index": 0,
+          "IsExternal": false,
+          "IsTextSubtitleStream": false,
+          "SupportsExternalStream": false,
+          "Protocol": "File",
+          "PixelFormat": "yuv420p",
+          "Level": 10,
+          "IsAnamorphic": false,
+          "ExtendedVideoType": "None",
+          "ExtendedVideoSubType": "None",
+          "ExtendedVideoSubTypeDescription": "None",
+          "AttachmentSize": 0
+        },
+        {
+          "Codec": "aac",
+          "CodecTag": "mp4a",
+          "Language": "und",
+          "TimeBase": "1/48000",
+          "DisplayTitle": "AAC mono (Default)",
+          "IsInterlaced": false,
+          "ChannelLayout": "mono",
+          "BitRate": 70056,
+          "Channels": 1,
+          "SampleRate": 48000,
+          "IsDefault": true,
+          "IsForced": false,
+          "IsHearingImpaired": false,
+          "Profile": "LC",
+          "Type": "Audio",
+          "Index": 1,
+          "IsExternal": false,
+          "IsTextSubtitleStream": false,
+          "SupportsExternalStream": false,
+          "Protocol": "File",
+          "ExtendedVideoType": "None",
+          "ExtendedVideoSubType": "None",
+          "ExtendedVideoSubTypeDescription": "None",
+          "AttachmentSize": 0
+        }
+      ],
+      "PartCount": 1,
+      "ImageTags": {},
+      "BackdropImageTags": [],
+      "Chapters": [],
+      "MediaType": "Video",
+      "LockedFields": [],
+      "LockData": false,
+      "Width": 160,
+      "Height": 90
+    }
+  }
+}

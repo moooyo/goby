@@ -576,3 +576,135 @@ Both `POST /Users/{userId}/PlayedItems/{seriesId}` and the corresponding DELETE 
 This confirms that the sampled series operation affected descendant episodes rather than only the parent series. The default episode-list projection showed zero `PlayCount` and omitted dates in both reads; no episode-detail count or date inference should be made from those fields. Season-node details and partially restricted library policies were not sampled.
 
 The four requests are `folder-state-series-played.json`, `folder-state-episodes-after-played.json`, `folder-state-series-unplayed.json`, and `folder-state-episodes-after-unplayed.json`. The dedicated user's series and episodes were restored to unplayed through the ordinary API. No media, NFO, vendor code, or server configuration changed. The remote export audit preserved all 298 previous raw/export files by SHA-256, kept original headers and JSON types, and removed credentials. The supporting stages are `folder_state_begin`, `folder_state`, and `export_folder_state`; the extension is limited to these four fixtures.
+
+## M3b session listing, capabilities, and Ping
+
+This extension adds 26 `session-m3b-*.json` fixtures. A new ordinary account, `reference-session-m3b`, and device ID `goby-session-m3b-recorder` isolate capability updates and later series-state tests from previous users. The account was created and assigned a random password through ordinary administrator APIs. Its separate `private/session-m3b-credentials.env` file uses mode 0600; the sanitizer includes this credential set alongside the earlier accounts. No existing user's capability state was targeted.
+
+### Session response shape and visibility
+
+Login returned HTTP 200 with a `SessionInfo` object. `GET /Sessions` returned a top-level JSON array: the administrator saw three existing user/device sessions, while the new ordinary account saw only its own session in this configuration. A matching `DeviceId` or `Id` returned a one-element array; a nonexistent `Id` returned `[]`, all with HTTP 200.
+
+The sampled default session properties were `PlayState`, `AdditionalUsers`, `RemoteEndPoint`, `Protocol`, `PlayableMediaTypes`, `PlaylistIndex`, `PlaylistLength`, `Id`, `ServerId`, `UserId`, `UserName`, `Client`, `LastActivityDate`, `DeviceName`, `InternalDeviceId`, `DeviceId`, `ApplicationVersion`, `SupportedCommands`, and `SupportsRemoteControl`. `InternalDeviceId` was a JSON number; the public session/user/server IDs were strings. `IsActive`, `Capabilities`, `DeviceProfile`, `SupportsSync`, and `NowPlayingItem` were absent in this idle HTTP-only session.
+
+Default `PlayableMediaTypes` and `SupportedCommands` were empty arrays, and `SupportsRemoteControl` was false. The default `PlayState` included explicit false `CanSeek`, `IsPaused`, and `IsMuted`, `RepeatMode: "RepeatNone"`, `SleepTimerMode: "None"`, `SubtitleOffset: 0`, `Shuffle: false`, and `PlaybackRate: 1`; it did not invent a current item or playback position.
+
+`ActiveWithinSeconds=0` and `ActiveWithinSeconds=3600` both returned the same single recently active ordinary session. These requests establish acceptance but do not determine whether that query is filtered, ignored, or treats zero specially. The pinned specification lists `DeviceId`, `Id`, and `ControllableByUserId`, but does not expose `ActiveWithinSeconds` in this operation's parameter list. No stale-session timing experiment was performed.
+
+Evidence: `session-m3b-user-login.json` and `session-m3b-list-*.json`. These visibility results cover the sampled accounts and their default permissions; they do not establish every remote-control policy combination.
+
+### Capability updates and current-session binding
+
+All recorded Simple and Full capability POSTs returned HTTP 204 with empty bodies. The following GETs used the dedicated session's known ID:
+
+| Capability request | Fields visible in the subsequent session |
+| --- | --- |
+| Simple form with only query `Id` | Empty `PlayableMediaTypes` and `SupportedCommands` |
+| Simple form with comma-separated `Audio,Video`, commands `PlayMediaSource,SetVolume`, `SupportsMediaControl=true`, `SupportsSync=false` | Arrays reflected those media types and commands in supplied order |
+| Full form with query `Id` and body `{}` | Both arrays cleared again |
+| Full populated JSON with `Video,Audio`, four commands, media control enabled, and a `DeviceProfile` | Media-type and command arrays reflected the JSON input |
+| Simple populated form with query `Id` omitted | The current dedicated session changed to `Audio` and `VolumeUp` |
+| Full form with a nonexistent query `Id` | The current dedicated session changed to `Audio` and `VolumeDown` |
+
+The missing/unknown ID observations show that these requests updated the authenticated device's current session rather than rejecting the supplied target. They do not prove how a valid ID belonging to a different existing session would be treated: no such session was targeted. The `Id` query must not be mistaken for proof of authorization to mutate another device.
+
+`SupportsRemoteControl` remained false even when `SupportsMediaControl=true` was sent. The test session used HTTP requests without a WebSocket connection, and no remote command delivery was attempted. `DeviceProfile`, `Capabilities`, and `SupportsSync` were not exposed by the sampled session GETs, so their absence is not evidence that the uploaded values were rejected or not stored.
+
+For a bounded profile control, Full capabilities uploaded a HEVC-only direct-play profile against the known H.264 source. A subsequent minimal `POST /Items/28/PlaybackInfo` supplied only `UserId`, with no request `DeviceProfile`. It returned the generic three support flags true and no direct/transcoding URL, matching the earlier profile-less behavior. Thus this request did not automatically apply the uploaded mismatch profile. The capture does not establish other uses of a stored profile.
+
+Evidence: `session-m3b-caps-*.json`, `session-m3b-after-*.json`, and `session-m3b-playbackinfo-after-profile.json`.
+
+### Playback Ping
+
+All Ping requests were authenticated as the new ordinary account:
+
+| `POST /Sessions/Playing/Ping` query | Response |
+| --- | --- |
+| `PlaySessionId` omitted | HTTP 400, `text/plain`, `Value cannot be null. (Parameter 'key')` |
+| Syntactically valid but unknown ID | HTTP 204, empty body |
+| ID issued by this account's preceding PlaybackInfo request | HTTP 204, empty body |
+
+The known ID was negotiated but had not received a Started report. These observations establish response behavior, not renewal duration, worker liveness, active-playback validation, or cross-user ownership rules. Evidence: `session-m3b-ping-*.json`.
+
+## M3b NextUp controls with the existing short episodes
+
+The 33 `nextup-m3b-*.json` fixtures use the fresh ordinary account and the existing three two-second episodes in `Example Series` (`SeriesId: "12"`). State changes targeted only that account. Every control sequence ended by marking the whole series unplayed again; the restoration responses reported `UnplayedItemCount: 3` and `Played: false`.
+
+The directional result is established: after a played episode, specifying `SeriesId` can return all later unplayed episodes and skip earlier gaps. The global default result remains unresolved in this synthetic setup; it must not be generalized into a rule that global NextUp is always empty.
+
+### Manual-state and parameter controls
+
+All NextUp reads returned HTTP 200 with `{ "Items": [...], "TotalRecordCount": ... }`. Returned nonempty entries were `Type: "Episode"` with the same series ID, not Series DTOs.
+
+| State and request | Observed result |
+| --- | --- |
+| Fresh account, all three episodes unplayed, default query | Empty |
+| Same state, `SeriesId=12` | Empty |
+| All unplayed, only TV-library `ParentId=5` | Empty |
+| All unplayed, `SeriesId=12&ParentId=5` | Empty |
+| Only S01E02 played, followed by a two-second wait, default query | Empty |
+| Same state, only `ParentId=5` | Empty |
+| Same state, only `SeriesId=12` | S02E01 only, skipping the still-unplayed S01E01 gap |
+| Same state, `SeriesId=12&ParentId=5` | S02E01 only |
+| S01E02 restored, only S01E01 played, `SeriesId=12&ParentId=5` without additional flags | S01E02 and S02E01, both from Series 12 |
+| Only S01E01 played, default query after a 30-second wait | Empty |
+| All three episodes played, default query | Empty |
+| All played, `SeriesId=12&EnableRewatching=true` | Empty |
+
+The earlier combined request with `SeriesId`, `ParentId`, `EnableResumable=true`, and `EnableRewatching=false` also returned S01E02 and S02E01. The later no-extra-flags control shows that those extra booleans were not necessary to obtain the two-item result in this state. It does not establish their independent effects in resumable or rewatch scenarios.
+
+The two-second clips are unsuitable for a 120-second partial-playback experiment, so none was fabricated. The first twelve NextUp fixtures were captured before capability updates; the additive controls used the same dedicated HTTP session after the capability sequence, whose recorded final playable-media array was `Audio`. The tests did not independently determine whether session capabilities or other setup factors affect global NextUp selection.
+
+Evidence: the initial `nextup-m3b-*.json` sequence and `nextup-m3b-split-*.json`. The additive controls preserved the first twelve fixtures unchanged and did not reuse their filenames.
+
+### Playback-event control
+
+A final nine-request control replaced manual first-episode marking with `PlaybackInfo` followed by Started at zero and Stopped at the source's actual two-second duration. The subsequent episode detail confirmed `Played: true`, `PlayCount: 1`, and a present `LastPlayedDate`.
+
+After a two-second wait, default NextUp and ParentId-only NextUp still returned empty results. `SeriesId=12` returned both S01E02 and S02E01. Series detail showed `UnplayedItemCount: 2`, `PlayCount: 0`, and `Played: false`, with no `LastPlayedDate` in that DTO. Restoration returned the series and descendants to unplayed.
+
+This control did not make the global query positive, so the observed difference cannot be attributed solely to using manual watched marking rather than playback events. No internal database or vendor implementation was inspected to explain it. Evidence: `nextup-m3b-playback-*.json`.
+
+### NextUp evidence boundaries and integrity
+
+The history-cursor observation applies to the specified-series requests in the tested ordered series. It is evidence against always selecting the earliest unplayed gap and against limiting this specified-series response to one item. The global positive-selection rule, rewatch behavior, partially resumed episodes, multiple active series, missing episode numbering, and permission-restricted series remain unverified.
+
+The session and short-NextUp export audited all 26 session fixtures and 33 NextUp fixtures. It preserved the original 306 raw/export files, the 382 files preceding the split-parameter controls, and the 406 files preceding the playback-event controls. Headers, JSON primitive types, and credentials were checked remotely. No prior account, media file, NFO, or library configuration was altered by these controls.
+
+## Independent long-duration NextUp control
+
+The final duration control adds 12 `nextup-long-*.json` fixtures. It uses a new owned `/opt/goby-fixtures/nextup-long-reference` directory and a new `Reference NextUp Long` TV library, leaving the older TV library and files unchanged. Three copies of the existing 600-second synthetic MP4 total 169137 bytes; each copy retains SHA-256 `997af268405a91e01685afa52d70a892c767e0e7135d25f6a33087cfb72de1c3`. No new encoding or dependency installation was needed.
+
+The new library reused the older test TV library's returned options, changing its source paths only. Provider access remained disabled, and only this new library received a targeted refresh. The `reference-session-m3b` account was reused without a policy change.
+
+The indexed series was `Id: "31"`, with S01E01 `Id: "35"`, S01E02 `Id: "34"`, and S02E01 `Id: "36"`. All three episodes returned `RunTimeTicks: 6000000000`. IDs are not episode-order keys; the selection used season and episode numbers.
+
+| Long-series state and query | Observed result |
+| --- | --- |
+| Unstarted, global default | Empty |
+| Unstarted, `SeriesId=31` | Empty |
+| Only S01E01 marked played, followed by a two-second wait, global default | Empty |
+| Same state, only the new library's ParentId | Empty |
+| Same state, `SeriesId=31` | S01E02 and S02E01, both 600-second episodes |
+
+Series detail showed two unplayed items. The final DELETE restored all three episodes to unplayed, and the series response reported `UnplayedItemCount: 3`. Because the global query was still empty, the optional middle-episode branch was not executed and no further request expansion was performed.
+
+Increasing duration did not make the global query positive in this new-library control. The global selection behavior therefore remains uncertain; duration alone is not an established explanation for the earlier empty results. The new library, episode files, and existing capability context are recorded so that this limited comparison is not presented as a complete causal model or general client compatibility proof.
+
+The long-duration export checked all 12 new fixtures and preserved every one of the 424 pre-existing raw/export files by SHA-256, including all 33 prior NextUp and 26 session records. Only sanitized exports were copied to the repository. This completes the bounded control; it did not modify Goby, vendor code, older media, or older library settings.
+
+## External-subtitle follow-up requirements from existing evidence
+
+The session work did not add subtitle requests or implement subtitle delivery. Existing evidence already returns a `/Videos/{item}/{source}/Subtitles/{index}/0/Stream.srt?api_key=...` URL, so a backend emitting that shape must support the path-offset form, including zero. The SDK also declares GET/HEAD and both `/Videos` and `/Items` aliases. A subtitle index is the index in all `MediaStreams` (2 in this source), not its position in a subtitle-only array.
+
+The remaining concrete delivery gaps are authentication/error responses, GET/HEAD content type and length, alias behavior, SRT-to-WebVTT conversion and encoding, Start/End filtering versus clipping or rebasing, boundary-spanning cues, `CopyTimestamps` omitted/true/false behavior, and path/query precedence. Start and End use int64 ticks; the general unit is 10000000 ticks per second. The separate playback-report `SubtitleOffset` field still lacks a confirmed unit and must not be equated with a subtitle download's start position. No unsupported timing behavior is established by the descriptor alone.
+
+## NextUp capability declaration control
+
+Eight `nextup-capability-*.json` fixtures isolate the explicitly observed Audio-only session declaration from the preceding long-series comparison. A Simple capabilities POST declared `PlayableMediaTypes=Video,Audio`, an empty `SupportedCommands` value, `SupportsMediaControl=true`, and `SupportsSync=false`. No `DeviceProfile` property was supplied. The following session GET confirmed `PlayableMediaTypes: ["Video","Audio"]` and `SupportedCommands: []`; `SupportsRemoteControl` remained false.
+
+Only the long series' first episode was then marked played for the same dedicated account. After a two-second wait, global NextUp and ParentId-only NextUp still returned empty query-result objects. Specifying `SeriesId=31` returned the same two later episodes, S01E02 (`Id: "34"`) and S02E01 (`Id: "36"`). The Video declaration therefore did not make the global query positive in this controlled case, and an Audio-only declaration is not an established explanation for the prior empty result.
+
+The final series DELETE returned `UnplayedItemCount: 3` and `Played: false`. A final Simple capabilities POST restored `Audio` and `VolumeDown` and returned HTTP 204, without supplying a profile. No additional case was attempted after this result.
+
+The export audited these eight records remotely and preserved all 448 preceding raw/export files, covering the original 224 HTTP fixtures. The supporting stages are `nextup_capability_begin`, `nextup_capability`, and `export_nextup_capability`. Separately, the long-fixture generator now explicitly applies mode 0755 to its newly created root and season directories after creation, so the recorder's restrictive umask does not prevent the unprivileged Goby service from reading those synthetic fixtures. Image/media contents and their hashes are unchanged; files retain mode 0644.

@@ -1,0 +1,122 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T01:15:54.722147+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Shows/NextUp?UserId=2118172027b94fd18c3ca6e55478d6d3&SeriesId=31",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Reference Recorder\", Device=\"Linux Session Test\", DeviceId=\"goby-session-m3b-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "882"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 01:15:54 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference Playback M3",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "34",
+          "RunTimeTicks": 6000000000,
+          "IndexNumber": 2,
+          "ParentIndexNumber": 1,
+          "IsFolder": false,
+          "Type": "Episode",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "SeriesName": "NextUp Long Reference",
+          "SeriesId": "31",
+          "SeasonId": "32",
+          "SeasonName": "Season 1",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        },
+        {
+          "Name": "Reference Playback M3",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "36",
+          "RunTimeTicks": 6000000000,
+          "IndexNumber": 1,
+          "ParentIndexNumber": 2,
+          "IsFolder": false,
+          "Type": "Episode",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "SeriesName": "NextUp Long Reference",
+          "SeriesId": "31",
+          "SeasonId": "33",
+          "SeasonName": "Season 2",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 2
+    }
+  }
+}

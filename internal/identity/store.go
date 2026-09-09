@@ -66,15 +66,17 @@ type Credentials struct {
 	Token     string
 	SessionID string
 	ExpiresAt time.Time
+	CreatedAt time.Time
 }
 
 // Principal describes an authenticated, active session and its current account.
 type Principal struct {
-	User      User
-	SessionID string
-	Client    Client
-	Kind      string
-	ExpiresAt time.Time
+	User       User
+	SessionID  string
+	Client     Client
+	Kind       string
+	ExpiresAt  time.Time
+	LastSeenAt time.Time
 }
 
 // Store provides database-backed identity operations.
@@ -191,22 +193,22 @@ func (s *Store) Authenticate(ctx context.Context, name, password string, client 
 	}
 	// Recheck account state and the password hash while issuing the token, so a
 	// concurrent disable, demotion, or password update cannot issue stale access.
-	var expiresAt time.Time
+	var expiresAt, createdAt time.Time
 	err = s.pool.QueryRow(ctx, `INSERT INTO sessions
 		(id, user_id, token_hash, kind, client_name, device_id, device_name, client_version, expires_at)
 		SELECT $1, id, $3, $4, $5, $6, $7, $8, now() + ($9::bigint * interval '1 second')
 		FROM users WHERE id = $2 AND password_hash = $10 AND NOT is_disabled
 		AND ($4 <> 'admin' OR is_administrator)
 		FOR SHARE
-		RETURNING expires_at`, sessionID, user.ID, digest[:], kind,
-		client.Name, client.DeviceID, client.Device, client.Version, int64(lifetime/time.Second), hash).Scan(&expiresAt)
+		RETURNING expires_at, created_at`, sessionID, user.ID, digest[:], kind,
+		client.Name, client.DeviceID, client.Device, client.Version, int64(lifetime/time.Second), hash).Scan(&expiresAt, &createdAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Credentials{}, ErrInvalidCredentials
 	}
 	if err != nil {
 		return Credentials{}, fmt.Errorf("create authentication session: %w", err)
 	}
-	return Credentials{User: user, Token: token, SessionID: sessionID, ExpiresAt: expiresAt}, nil
+	return Credentials{User: user, Token: token, SessionID: sessionID, ExpiresAt: expiresAt, CreatedAt: createdAt}, nil
 }
 
 // Resolve accepts only the requested session kind and checks current user state.
@@ -221,7 +223,7 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
 		u.has_password, u.created_at, u.policy, s.id, s.client_name, s.device_id, s.device_name,
-		s.client_version, s.kind, s.expires_at
+		s.client_version, s.kind, s.expires_at, s.last_seen_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = $1 AND s.kind = $2 AND s.revoked_at IS NULL
 		AND s.expires_at > now() AND NOT u.is_disabled
@@ -229,7 +231,7 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt, &principal.User.Policy,
 			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
-			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt)
+			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Principal{}, ErrUnauthorized
 	}

@@ -1,6 +1,6 @@
 # Delivery plan and remote compatibility verification
 
-Status: **service foundation, ingestion, local NFO, persistent entities, and indexed artwork increments delivered; playback pending**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
+Status: **service foundation, ingestion, metadata/artwork, and original playback increments delivered; full client playback remains in progress**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
 
 ## Milestones and dependencies
 

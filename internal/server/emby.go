@@ -168,7 +168,9 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 	}
 	jsonResponse(w, 200, map[string]any{
 		"User": s.userDTO(credentials.User), "AccessToken": credentials.Token, "ServerId": s.serverID,
-		"SessionInfo": map[string]any{"Id": credentials.SessionID, "UserId": credentials.User.ID, "UserName": credentials.User.Name, "DeviceId": client.DeviceID, "DeviceName": client.Device, "Client": client.Name, "ApplicationVersion": client.Version, "ServerId": s.serverID, "SupportsRemoteControl": false},
+		"SessionInfo": s.clientSessionDTO(identity.ClientSession{SessionID: credentials.SessionID,
+			UserID: credentials.User.ID, UserName: credentials.User.Name, Client: client,
+			CreatedAt: credentials.CreatedAt, LastSeenAt: credentials.CreatedAt, ExpiresAt: credentials.ExpiresAt}),
 	})
 }
 

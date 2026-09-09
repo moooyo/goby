@@ -1,8 +1,9 @@
 # Original-file playback and durable user state
 
 This increment implements original local-file delivery. It does not complete the
-entire M3 milestone: external subtitles, client-session capabilities/events,
-NextUp, remuxing, transcoding, and real consumer-client acceptance remain open.
+entire M3 milestone: external subtitles, client events, remuxing, transcoding,
+and real consumer-client acceptance remain open. Client-session capabilities and
+NextUp are described in their subsequent increment guides.
 Goby's React/MUI dashboard remains an administrator application without a player.
 
 ## Client flow
@@ -92,8 +93,9 @@ it. Concurrent reports apply in database-lock processing order; strict HTTP
 arrival order is not guaranteed and the initial contract has no reliable client
 sequence number. Client-supplied duration, user identity, and role hints
 never establish authority. Started, Progress, and Stopped return 204 with no body,
-matching the runtime reference; Ping currently follows the SDK's 200 empty-body
-contract pending a separate runtime capture.
+matching the runtime reference. Ping also returns 204 after a subsequent runtime
+capture corrected the original SDK-derived 200 implementation; missing keys are
+400 and unknown/foreign nonempty keys are inert. See [client sessions](client-sessions.md).
 
 Resume initially requires a duration of at least 120 seconds and a position from
 2% through less than 90%, excluding played items. Stop at or above 90% marks the

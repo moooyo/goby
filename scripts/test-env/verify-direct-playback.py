@@ -378,10 +378,25 @@ def reset_state(api: API, item_id: str, library_id: str) -> None:
 def report(api: API, event: str, play_id: str, item_id: str, source_id: str, position: int) -> None:
     paths = {"Started": "/sEsSiOnS/pLaYiNg", "Progress": "/emby/Sessions/Playing/Progress",
              "Stopped": "/eMbY/sEsSiOnS/pLaYiNg/sToPpEd"}
+    body = {"PlaySessionId": play_id, "ItemId": item_id, "MediaSourceId": source_id,
+            "SessionId": api.session_id, "PositionTicks": position, "RunTimeTicks": 600 * TICKS,
+            "PlayMethod": "DirectStream", "IsPaused": False}
+    if event == "Started":
+        body.update({"CanSeek": True, "IsMuted": True, "VolumeLevel": 0, "PlaybackRate": 1.25})
     api.request("POST", paths[event], emby=True, expected=(204,), parse=False,
-                label="Playback " + event, body={"PlaySessionId": play_id, "ItemId": item_id,
-                "MediaSourceId": source_id, "SessionId": api.session_id, "PositionTicks": position,
-                "RunTimeTicks": 600 * TICKS, "PlayMethod": "DirectStream", "IsPaused": False})
+                label="Playback " + event, body=body)
+
+
+def current_session(api: API) -> dict:
+    sessions = api.request("GET", "/sEsSiOnS?" + urlencode({"Id": api.session_id}),
+                           emby=True, label="Current client session")
+    check(isinstance(sessions, list) and len(sessions) == 1 and
+          sessions[0].get("Id") == api.session_id and sessions[0].get("UserId") == api.user_id,
+          "Client session query did not return only the owned authentication session")
+    session = sessions[0]
+    check(not any(field in session for field in ("AccessToken", "Token", "PushToken", "Capabilities", "DeviceProfile")),
+          "Client session exposed a private declaration or credential")
+    return session
 
 
 def decode_media(content: bytes) -> dict:
@@ -457,6 +472,19 @@ def main() -> int:
         item_id = items[0]["Id"]
         reset_state(api, item_id, library_id)
         summary["assertions"].append({"stage": stage, "scanned_movies": 1})
+
+        stage = "client capability report and session query"
+        api.request("POST", "/emby/Sessions/Capabilities/Full?Id=stale-session-hint", emby=True,
+                    expected=(204,), parse=False, label="Owned client capability report",
+                    body={"PlayableMediaTypes": ["Video"], "SupportedCommands": ["Pause"],
+                          "SupportsMediaControl": True, "DeviceProfile": {"Name": "Recorded Profile",
+                          "DirectPlayProfiles": [{"Type": "Video", "Container": "mp4", "VideoCodec": "hevc"}]}})
+        session = current_session(api)
+        check(session.get("PlayableMediaTypes") == ["Video"] and session.get("SupportedCommands") == ["Pause"] and
+              session.get("SupportsRemoteControl") is False and "NowPlayingItem" not in session,
+              "Client capabilities or idle session projection did not match the report")
+        summary["assertions"].append({"stage": stage, "capabilities": 204, "owned_session": True,
+                                      "remote_control": False})
 
         stage = "matching PlaybackInfo and route aliases"
         profile = {"UserId": api.user_id, "IsPlayback": True, "DeviceProfile": {
@@ -542,8 +570,18 @@ def main() -> int:
         check(result.get("TotalRecordCount") == 1 and len(result.get("Items", [])) == 1 and
               result["Items"][0].get("Id") == item_id, "Progress at 120 of 600 seconds is absent from Resume")
         state_is(result["Items"][0]["UserData"], POSITION, 1, False, False)
+        session = current_session(api)
+        player = session.get("PlayState", {})
+        item = session.get("NowPlayingItem", {})
+        check(item.get("Id") == item_id and "Path" not in item and "UserData" not in item and
+              player.get("PositionTicks") == POSITION and player.get("CanSeek") is True and
+              player.get("IsMuted") is True and player.get("VolumeLevel") == 0 and player.get("PlaybackRate") == 1.25,
+              "Current session lost the authorized item or persistent player hints")
+        api.request("POST", "/emby/Sessions/Playing/Ping?" + urlencode({"PlaySessionId": play_id}),
+                    emby=True, expected=(204,), parse=False, label="Owned playback ping")
         summary["assertions"].append({"stage": stage, "started": 204, "progress": 204,
-                                      "position_seconds": 120, "duration_seconds": 600, "play_count": 1})
+                                      "position_seconds": 120, "duration_seconds": 600, "play_count": 1,
+                                      "current_session_player_hints": True, "ping": 204})
 
         stage = "Stopped and duplicate Stopped"
         report(api, "Stopped", play_id, item_id, source_id, POSITION)
@@ -552,6 +590,7 @@ def main() -> int:
         state_is(stopped_data, POSITION, 1, False, False)
         report(api, "Stopped", play_id, item_id, source_id, 590 * TICKS)
         check(detail(api, item_id)["UserData"] == stopped_data, "Duplicate Stopped changed persisted user state")
+        check("NowPlayingItem" not in current_session(api), "Stopped playback remained in the current session")
         result = resume(api, library_id)
         check(result.get("TotalRecordCount") == 1 and len(result.get("Items", [])) == 1 and
               result["Items"][0].get("Id") == item_id,
