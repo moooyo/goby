@@ -1,13 +1,13 @@
 # Toolchain, database, and hardware verification policy
 
-Updated: **2026-09-09, Asia/Shanghai**. Status: **implementation baseline; installation and runtime capability evidence must be recorded separately**.
+Updated: **2026-09-10, Asia/Shanghai**. Status: **implementation baseline; installation and runtime capability evidence must be recorded separately**.
 
 ## Stable release baseline
 
 | Component | Required baseline | Official evidence |
 | --- | --- | --- |
-| Go | `1.27.1` | The [Go download JSON](https://go.dev/dl/?mode=json) lists `go1.27.1` with `stable: true`, observed on 2026-09-09. |
-| FFmpeg and ffprobe | `9.0.1` from the same build | The [FFmpeg download page](https://ffmpeg.org/download.html) identifies `9.0.1` as the latest stable release, released on 2026-08-12. |
+| Go | `1.27.1` | The [Go download JSON](https://go.dev/dl/?mode=json) lists `go1.27.1` with `stable: true`, reconfirmed on 2026-09-10. |
+| FFmpeg and ffprobe | `9.0.1` from the same build | The [FFmpeg download page](https://ffmpeg.org/download.html) identifies `9.0.1` as the latest stable release, released on 2026-08-12 and reconfirmed on 2026-09-10. |
 | PostgreSQL | Required independent database service | Pin the selected supported PostgreSQL server major/patch and container digest or package source in deployment artifacts. SQLite is not an implementation option. [PostgreSQL versioning policy](https://www.postgresql.org/support/versioning/). |
 | PostgreSQL Go driver | `github.com/jackc/pgx/v5`, including `pgxpool` | Pin the exact compatible module version in `go.mod` and `go.sum`. [pgx documentation](https://pkg.go.dev/github.com/jackc/pgx/v5). |
 | Administrator frontend | React, TypeScript, Material UI | Pin compatible stable dependency versions in the package manifest and lockfile. Use Material Design for administration; do not add a web playback page. |

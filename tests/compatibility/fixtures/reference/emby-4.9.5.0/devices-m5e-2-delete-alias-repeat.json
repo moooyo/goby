@@ -1,0 +1,147 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Devices/Delete?Id=27",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null,
+    "ownedDeviceWriteProof": {
+      "label": "delete-alias-repeat-owned-proof",
+      "targetId": "27",
+      "status": 204,
+      "matchedOwnedIdentity": false,
+      "previouslyProvedTargetMissing": true,
+      "missingResponseKind": "HTTP204EmptyAndAbsentFromCompleteList",
+      "absenceList": {
+        "label": "delete-alias-repeat-owned-proof-absence-list",
+        "completeKnownMembership": true,
+        "itemCount": 20,
+        "reportedTotalRecordCount": 0,
+        "reportedTotalMatchesItems": false,
+        "membershipProof": {
+          "protectedIds": [
+            "1",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "16",
+            "17",
+            "2",
+            "20",
+            "21",
+            "25",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ],
+          "knownOwnedIds": [
+            "25",
+            "26",
+            "27",
+            "28"
+          ],
+          "acknowledgedDeletedIds": [
+            "26",
+            "27"
+          ],
+          "expectedOwnedPresentIds": [
+            "25",
+            "28"
+          ],
+          "observedIds": [
+            "1",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "16",
+            "17",
+            "2",
+            "20",
+            "21",
+            "25",
+            "28",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        },
+        "targetAbsent": true
+      },
+      "expected": {
+        "Id": "27",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-02-beta",
+        "AppName": "Goby Devices M5e 20260910 02 Alpha"
+      },
+      "observed": null
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Wed, 09 Sep 2026 22:23:36 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 0
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:23:36.686375+00:00"
+  }
+}

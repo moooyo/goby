@@ -1,0 +1,88 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Devices/Options?Id=26",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "CustomName": "Goby Devices M5e 02 Owned Before Delete Relogin"
+    },
+    "bodyPresent": true,
+    "clientMetadata": null,
+    "ownedDeviceWriteProof": {
+      "label": "options-before-delete-relogin-owned-proof",
+      "targetId": "26",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "missingResponseKind": null,
+      "absenceList": null,
+      "expected": {
+        "Id": "26",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-02-alpha",
+        "AppName": "Goby Devices M5e 20260910 02 Alpha"
+      },
+      "observed": {
+        "Id": "26",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-02-alpha",
+        "AppName": "Goby Devices M5e 20260910 02 Alpha"
+      }
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Wed, 09 Sep 2026 22:23:36 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 0
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:23:36.665349+00:00"
+  }
+}

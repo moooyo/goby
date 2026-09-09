@@ -1,0 +1,1677 @@
+{
+  "kind": "capture-audit-observation",
+  "referencePID": 3131777,
+  "captureFailureType": "RuntimeError",
+  "cleanupPassed": true,
+  "checks": {
+    "oldDeviceStructuralFieldsUnchanged": true,
+    "oldDeviceActivityUnchanged": true,
+    "oldDeviceOptionsUnchanged": true,
+    "noUnownedNewDevices": true,
+    "onlyControlOwnedDeviceRetained": true,
+    "oldUserMembershipUnchanged": true,
+    "oldUsersUnchangedExceptAttributedParticipantActivity": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "allAttemptedLoginsAcknowledgedOrRejected": true,
+    "referenceProcessUnchanged": true,
+    "oldRecordsSourcesPrivateFilesUnchanged": true,
+    "newRedactionAuditPassed": true
+  },
+  "cleanupErrors": [],
+  "preservedOldRecords": 1128,
+  "preservedOldRecordFiles": 2256,
+  "preservedOldMediaFiles": 240,
+  "preservedOldPrivateFiles": 1527,
+  "oldDeviceCount": 17,
+  "oldDeviceOptionsAudited": 17,
+  "oldDeviceActivityDifferences": [],
+  "attributedUserActivityDifferences": [
+    {
+      "userId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "field": "LastActivityDate",
+      "before": "2026-09-09T22:14:10.9245297Z",
+      "after": "2026-09-09T22:14:11.0500859Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "field": "LastLoginDate",
+      "before": "2026-09-09T22:14:10.9005604Z",
+      "after": "2026-09-09T22:14:10.9284278Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastActivityDate",
+      "before": "2026-09-09T19:58:51.8668880Z",
+      "after": "2026-09-09T22:14:11.0326303Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastLoginDate",
+      "before": "2026-09-09T19:58:51.8262284Z",
+      "after": "2026-09-09T22:14:10.9436862Z",
+      "attribution": "Owned fresh login and requests"
+    }
+  ],
+  "ownedLoginAttempts": [
+    "alpha-admin",
+    "alpha-other-client",
+    "alpha-viewer",
+    "beta-viewer",
+    "control",
+    "permission-viewer"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200,
+    "alpha-admin": 200,
+    "alpha-viewer": 200,
+    "alpha-other-client": 200,
+    "beta-viewer": 200,
+    "permission-viewer": 200
+  },
+  "ownedLoginsAcknowledged": [
+    "alpha-admin",
+    "alpha-other-client",
+    "alpha-viewer",
+    "beta-viewer",
+    "control",
+    "permission-viewer"
+  ],
+  "ownedLoginLogoutStatuses": {
+    "alpha-admin": 401,
+    "alpha-viewer": 401,
+    "beta-viewer": 204,
+    "permission-viewer": 204,
+    "control": 204
+  },
+  "ownedLoginInvalidityProofs": {
+    "alpha-admin": {
+      "label": "cleanup-invalid-alpha-admin",
+      "status": 401
+    },
+    "alpha-viewer": {
+      "label": "cleanup-invalid-alpha-other-client",
+      "status": 401
+    },
+    "alpha-other-client": {
+      "label": "cleanup-invalid-alpha-other-client",
+      "status": 401
+    },
+    "beta-viewer": {
+      "label": "cleanup-invalid-beta-viewer",
+      "status": 401
+    },
+    "permission-viewer": {
+      "label": "cleanup-invalid-permission-viewer",
+      "status": 401
+    },
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedDeviceObservations": [
+    {
+      "label": "devices-baseline",
+      "totalRecordCount": 0,
+      "itemsCount": 18,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-alpha-admin",
+      "totalRecordCount": 0,
+      "itemsCount": 19,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Admin Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-alpha-viewer",
+      "totalRecordCount": 0,
+      "itemsCount": 19,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Viewer Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-alpha-other-client",
+      "totalRecordCount": 0,
+      "itemsCount": 19,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-beta-viewer",
+      "totalRecordCount": 0,
+      "itemsCount": 20,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-permission-viewer",
+      "totalRecordCount": 0,
+      "itemsCount": 21,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-created",
+      "totalRecordCount": 0,
+      "itemsCount": 21,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-anonymous-permissions",
+      "totalRecordCount": 0,
+      "itemsCount": 21,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-after-viewer-permissions",
+      "totalRecordCount": 0,
+      "itemsCount": 21,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "cleanup-devices-discover",
+      "totalRecordCount": 0,
+      "itemsCount": 20,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-final-before-control-logout",
+      "totalRecordCount": 0,
+      "itemsCount": 18,
+      "owned": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    }
+  ],
+  "alphaRegistryIdentityObservation": {
+    "selectedId": "22",
+    "selectedClient": "Goby Devices M5e 20260910 01 Alpha",
+    "selection": "Preferred Alpha client",
+    "observedRows": [
+      {
+        "Name": "Alpha Other Device",
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "LastUserName": "reference-admin",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha",
+        "AppVersion": "1.0.0",
+        "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+        "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+        "IpAddress": "127.0.0.1"
+      }
+    ]
+  },
+  "ownedDeviceMutations": [
+    {
+      "label": "control-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-admin",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Control",
+          "DeviceId": "goby-devices-m5e-20260910-01-control",
+          "Device": "Control Device",
+          "Version": "0.1.0"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "alpha-admin-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-admin",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Alpha",
+          "DeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "Device": "Alpha Admin Device",
+          "Version": "1.0.0"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "alpha-viewer-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-session-m3b",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Alpha",
+          "DeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "Device": "Alpha Viewer Device",
+          "Version": "1.0.1"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "alpha-other-client-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-session-m3b",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Other",
+          "DeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "Device": "Alpha Other Device",
+          "Version": "2.0.0"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "beta-viewer-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-session-m3b",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Alpha",
+          "DeviceId": "goby-devices-m5e-20260910-01-beta",
+          "Device": "Beta Viewer Device",
+          "Version": "3.0.0"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "permission-viewer-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-session-m3b",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Devices M5e 20260910 01 Permission",
+          "DeviceId": "goby-devices-m5e-20260910-01-permission",
+          "Device": "Permission Device",
+          "Version": "4.0.0"
+        }
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "anonymous-rename",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned anonymous"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "anonymous-rename-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 401,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "viewer-rename",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned viewer"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "viewer-rename-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 403,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "viewer-self-rename",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned viewer-self"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "viewer-self-rename-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 403,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "anonymous-delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/emby/Devices?Id=24",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "anonymous-delete-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 401,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "anonymous-delete-alias",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Delete?Id=24",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "anonymous-delete-alias-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 401,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "viewer-delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/emby/Devices?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "viewer-delete-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 403,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "viewer-delete-alias",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Delete?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "viewer-delete-alias-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 403,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-rename",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned Alpha Renamed"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-rename-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-clear-empty",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": ""
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-clear-empty-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-rename-before-missing",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned Before Missing"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-rename-before-missing-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-clear-missing",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {},
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-clear-missing-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-rename-before-null",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": "Goby Devices M5e Owned Before Null"
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-rename-before-null-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "options-clear-null",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Devices/Options?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "CustomName": null
+        },
+        "bodyPresent": true,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "options-clear-null-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "delete-canonical",
+      "request": {
+        "method": "DELETE",
+        "path": "/emby/Devices?Id=22",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "delete-canonical-owned-proof",
+          "targetId": "22",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "22",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-alpha-admin",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null
+      },
+      "responseStatus": 401,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-alpha-viewer",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null
+      },
+      "responseStatus": 401,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-beta-viewer",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-permission-viewer",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-delete-device-1",
+      "request": {
+        "method": "DELETE",
+        "path": "/emby/Devices?Id=23",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "cleanup-delete-device-1-owned-proof",
+          "targetId": "23",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "23",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          },
+          "observed": {
+            "Id": "23",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+            "AppName": "Goby Devices M5e 20260910 01 Alpha"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-delete-device-2",
+      "request": {
+        "method": "DELETE",
+        "path": "/emby/Devices?Id=24",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedDeviceWriteProof": {
+          "label": "cleanup-delete-device-2-owned-proof",
+          "targetId": "24",
+          "status": 200,
+          "matchedOwnedIdentity": true,
+          "previouslyProvedTargetMissing": false,
+          "expected": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          },
+          "observed": {
+            "Id": "24",
+            "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+            "AppName": "Goby Devices M5e 20260910 01 Permission"
+          }
+        }
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-control",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    }
+  ],
+  "ownedDeviceWriteProofs": [
+    {
+      "label": "anonymous-rename-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "viewer-rename-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "viewer-self-rename-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "anonymous-delete-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "anonymous-delete-alias-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "viewer-delete-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "viewer-delete-alias-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    },
+    {
+      "label": "options-rename-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "options-clear-empty-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "options-rename-before-missing-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "options-clear-missing-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "options-rename-before-null-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "options-clear-null-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "delete-canonical-owned-proof",
+      "targetId": "22",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "delete-canonical-repeat-owned-proof",
+      "targetId": "22",
+      "status": 204,
+      "matchedOwnedIdentity": false,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "22",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": null
+    },
+    {
+      "label": "cleanup-delete-device-1-owned-proof",
+      "targetId": "23",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "23",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      },
+      "observed": {
+        "Id": "23",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+        "AppName": "Goby Devices M5e 20260910 01 Alpha"
+      }
+    },
+    {
+      "label": "cleanup-delete-device-2-owned-proof",
+      "targetId": "24",
+      "status": 200,
+      "matchedOwnedIdentity": true,
+      "previouslyProvedTargetMissing": false,
+      "expected": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      },
+      "observed": {
+        "Id": "24",
+        "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+        "AppName": "Goby Devices M5e 20260910 01 Permission"
+      }
+    }
+  ],
+  "retainedOwnedHistory": [
+    {
+      "Name": "Control Device",
+      "Id": "21",
+      "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+      "LastUserName": "reference-admin",
+      "AppName": "Goby Devices M5e 20260910 01 Control",
+      "AppVersion": "0.1.0",
+      "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+      "IpAddress": "127.0.0.1"
+    }
+  ],
+  "retainedHistoryObservation": "Device list immediately before final control logout; that owned token is then probed independently",
+  "existingCredentialHTTPRequests": 0,
+  "applicationKeyMutations": 0,
+  "sourceWrites": 0,
+  "cameraUploadRequests": 0,
+  "encoderRequests": 0,
+  "httpAttempts": 152,
+  "incompleteHTTP": 0,
+  "wireBytes": 275575,
+  "wireByteBudgetCharged": 275575,
+  "elapsedSeconds": 0.695,
+  "limits": {
+    "oldDevices": 128,
+    "httpAttempts": 480,
+    "mainHTTPAttempts": 300,
+    "responseBytes": 262144,
+    "totalResponseBytes": 33554432,
+    "phaseSeconds": 360,
+    "socketTimeoutSeconds": 5,
+    "requestDeadlineSeconds": 15
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:14:11.241214+00:00"
+  }
+}

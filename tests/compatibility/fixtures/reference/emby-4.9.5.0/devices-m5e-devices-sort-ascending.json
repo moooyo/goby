@@ -1,0 +1,313 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Devices?SortOrder=Ascending",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "6529"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 22:14:10 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Control Device",
+          "Id": "21",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Alpha Other Device",
+          "Id": "22",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-alpha",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "1.0.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Beta Viewer Device",
+          "Id": "23",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-beta",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Alpha",
+          "AppVersion": "3.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Permission Device",
+          "Id": "24",
+          "ReportedDeviceId": "goby-devices-m5e-20260910-01-permission",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Devices M5e 20260910 01 Permission",
+          "AppVersion": "4.0.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T22:14:10.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Keys Context Owned",
+          "Id": "20",
+          "ReportedDeviceId": "goby-keys-scope-m5d-20260910-01-admin",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Keys Context Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T20:56:11.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Keys Context Owned",
+          "Id": "17",
+          "ReportedDeviceId": "goby-keys-context-m5d-20260910-01-admin",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Keys Context Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T20:35:18.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Keys Playback Owned",
+          "Id": "16",
+          "ReportedDeviceId": "goby-keys-playback-m5d-20260910-01-admin",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Keys Playback Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T20:23:23.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Keys M5d Owned",
+          "Id": "13",
+          "ReportedDeviceId": "goby-keys-m5d-20260910-01-admin",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Keys M5d Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T19:58:51.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Keys M5d Owned",
+          "Id": "14",
+          "ReportedDeviceId": "goby-keys-m5d-20260910-01-viewer",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Keys M5d Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T19:58:51.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Metadata M5b Owned Fixture",
+          "Id": "12",
+          "ReportedDeviceId": "goby-metadata-m5b-recorder",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Metadata Reference",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T08:20:48.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Audio Test",
+          "Id": "11",
+          "ReportedDeviceId": "goby-video-profile-m4e-recorder",
+          "LastUserName": "reference-hls-m4a",
+          "AppName": "Goby Audio Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "7581d36391e24c08b20b2d126ea9768e",
+          "DateLastActivity": "2026-09-09T06:52:21.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Audio Test",
+          "Id": "10",
+          "ReportedDeviceId": "goby-audio-profile-m4d-recorder",
+          "LastUserName": "reference-audio-m4c",
+          "AppName": "Goby Audio Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "c7d44baf46104f59ac2f4ca3dadda77f",
+          "DateLastActivity": "2026-09-09T05:55:07.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Audio Test",
+          "Id": "9",
+          "ReportedDeviceId": "goby-audio-m4c-recorder",
+          "LastUserName": "reference-audio-m4c",
+          "AppName": "Goby Audio Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "c7d44baf46104f59ac2f4ca3dadda77f",
+          "DateLastActivity": "2026-09-09T04:56:57.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Audio Test",
+          "Id": "8",
+          "ReportedDeviceId": "goby-audio-m4c-recorder-admin",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Audio Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T04:32:38.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux HLS Test",
+          "Id": "6",
+          "ReportedDeviceId": "goby-hls-m4a-recorder",
+          "LastUserName": "reference-hls-m4a",
+          "AppName": "Goby HLS Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "7581d36391e24c08b20b2d126ea9768e",
+          "DateLastActivity": "2026-09-09T02:52:04.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Test",
+          "Id": "1",
+          "ReportedDeviceId": "goby-reference-recorder",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T02:52:02.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux HLS Admin",
+          "Id": "7",
+          "ReportedDeviceId": "goby-hls-m4a-admin-recorder",
+          "LastUserName": "reference-hls-m4a-admin",
+          "AppName": "Goby HLS Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fec4ebc17b7b427eaa99321c0bdaeeb6",
+          "DateLastActivity": "2026-09-09T02:52:02.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Session Test",
+          "Id": "3",
+          "ReportedDeviceId": "goby-session-m3b-recorder",
+          "LastUserName": "reference-session-m3b",
+          "AppName": "Goby Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+          "DateLastActivity": "2026-09-09T02:10:27.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux WebSocket Test",
+          "Id": "4",
+          "ReportedDeviceId": "goby-websocket-m3c-recorder",
+          "LastUserName": "reference-websocket-m3c",
+          "AppName": "Goby WebSocket Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "5760844f98b54d16b1c13073e5c9d73f",
+          "DateLastActivity": "2026-09-09T02:10:23.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Admin WebSocket Test",
+          "Id": "5",
+          "ReportedDeviceId": "goby-websocket-admin-m3d-recorder",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Admin WebSocket Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T02:09:52.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Test",
+          "Id": "2",
+          "ReportedDeviceId": "goby-playback-m3-recorder",
+          "LastUserName": "reference-playback-m3",
+          "AppName": "Goby Reference Recorder",
+          "AppVersion": "0.1.0",
+          "LastUserId": "b9ea5322ce7342a283da085981dc454d",
+          "DateLastActivity": "2026-09-09T00:27:46.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ],
+      "TotalRecordCount": 0
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 6529
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:14:10.951269+00:00"
+  }
+}

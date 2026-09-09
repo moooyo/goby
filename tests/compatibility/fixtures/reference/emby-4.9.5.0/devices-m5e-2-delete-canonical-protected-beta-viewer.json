@@ -1,0 +1,232 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Sessions",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "3606"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 22:23:36 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": [
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "06d7f3ce440411829c20109412660619",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "2118172027b94fd18c3ca6e55478d6d3",
+        "UserName": "reference-session-m3b",
+        "Client": "Goby Devices M5e 20260910 02 Alpha",
+        "LastActivityDate": "2026-09-09T22:23:36.6791729Z",
+        "DeviceName": "Beta Viewer Device",
+        "InternalDeviceId": 27,
+        "DeviceId": "goby-devices-m5e-20260910-02-beta",
+        "ApplicationVersion": "3.0.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "7947fd77d9ae78b3a871909d3856c94b",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "2118172027b94fd18c3ca6e55478d6d3",
+        "UserName": "reference-session-m3b",
+        "Client": "Goby Devices M5e 20260910 02 Permission",
+        "LastActivityDate": "2026-09-09T22:23:36.5885219Z",
+        "DeviceName": "Permission Device",
+        "InternalDeviceId": 28,
+        "DeviceId": "goby-devices-m5e-20260910-02-permission",
+        "ApplicationVersion": "4.0.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "PlayMethod": "Transcode",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "224ecb5ac240f64b2db1c7be92b50a19",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "Client": "GobyContext-beta",
+        "LastActivityDate": "2026-09-09T20:35:18.7755467Z",
+        "DeviceName": "ContextDevice-beta",
+        "InternalDeviceId": 19,
+        "DeviceId": "goby-context-client-beta",
+        "ApplicationVersion": "1.2.3",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "PlayMethod": "Transcode",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "72982afb94462c268257e721b2ae7d34",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "Client": "GobyContext-alpha",
+        "LastActivityDate": "2026-09-09T20:35:18.7709175Z",
+        "DeviceName": "ContextDevice-alpha",
+        "InternalDeviceId": 18,
+        "DeviceId": "goby-context-client-alpha",
+        "ApplicationVersion": "9.8.7",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "PlayMethod": "Transcode",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [
+          "Audio"
+        ],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "c2b8d3f77b156a733895898a88de4ba3",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "2118172027b94fd18c3ca6e55478d6d3",
+        "UserName": "reference-session-m3b",
+        "Client": "Goby Reference Recorder",
+        "LastActivityDate": "2026-09-09T02:10:27.5287292Z",
+        "DeviceName": "Linux Session Test",
+        "InternalDeviceId": 3,
+        "DeviceId": "goby-session-m3b-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [
+          "VolumeDown"
+        ],
+        "SupportsRemoteControl": false
+      }
+    ]
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 3606
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:23:36.679442+00:00"
+  }
+}
