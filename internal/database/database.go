@@ -18,6 +18,8 @@ import (
 
 const migrationLockID int64 = 4919415424202458190
 
+const maxMigrationDuration = 30 * time.Minute
+
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
 
@@ -90,10 +92,13 @@ func migrations() ([]migration, error) {
 
 // Migrate atomically applies embedded migrations under a PostgreSQL advisory lock.
 // Concurrent server startups serialize before inspecting or modifying the schema.
+// The caller's deadline is capped at 30 minutes, including lock acquisition.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	if pool == nil {
 		return errors.New("database pool is required")
 	}
+	ctx, cancel := context.WithTimeout(ctx, maxMigrationDuration)
+	defer cancel()
 	available, err := migrations()
 	if err != nil {
 		return err
@@ -103,6 +108,12 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("begin schema migration: %w", err)
 	}
 	defer rollback(tx)
+	// Data backfills may exceed the ordinary pool statement timeout. SET LOCAL
+	// limits this exception to the transaction; the context still bounds every
+	// query and lock wait, and COMMIT or ROLLBACK restores connection settings.
+	if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = 0"); err != nil {
+		return fmt.Errorf("configure migration transaction timeout: %w", err)
+	}
 	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", migrationLockID); err != nil {
 		return fmt.Errorf("lock schema migrations: %w", err)
 	}

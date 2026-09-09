@@ -33,7 +33,7 @@ func run(logger *slog.Logger) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	startup, cancel := context.WithTimeout(ctx, 30*time.Second)
+	startup, cancel := context.WithTimeout(ctx, cfg.StartupTimeout)
 	defer cancel()
 	pool, err := database.Open(startup, cfg.DatabaseURL)
 	if err != nil {

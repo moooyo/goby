@@ -42,6 +42,7 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | Environment variable | Meaning |
 | --- | --- |
 | `GOBY_DATABASE_URL` | Required PostgreSQL URL; configure TLS according to the database deployment |
+| `GOBY_STARTUP_TIMEOUT` | Startup and upgrade time budget as a Go duration; default `5m`, allowed `1s` through `30m` |
 | `GOBY_LISTEN` | HTTP listen address, default `:8096` |
 | `GOBY_PUBLIC_URL` | Exact administrator/client-facing HTTP(S) origin, default `http://localhost:8096` |
 | `GOBY_SERVER_NAME` | Display name, default `Goby` |
@@ -62,6 +63,8 @@ The scanner also reads [local NFO metadata](local-metadata.md). A normal library
 Migration `0004` backfills persistent genre/tag/studio/person identities from stored NFO data. Migration `0005` stores [local artwork](local-artwork.md); existing files become indexed during a library scan. Image conversion uses a bounded in-memory cache and needs no writable cache directory. Indexed image contents are public under the compatible ImageService contract; image enumeration still requires authentication and library access. No arbitrary path or URL can be requested through the image-content route.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
+
+Database upgrades use the startup deadline rather than the ordinary 15-second statement limit. The migration transaction temporarily disables `statement_timeout`, including while it waits for the migration lock, and restores the connection setting on commit or rollback. A caller deadline, service termination, or the migration's 30-minute upper bound still cancels the work. Connection establishment retains its shorter limits. Increase `GOBY_STARTUP_TIMEOUT` for a large metadata backfill before starting the service; this setting is not a guarantee that an arbitrary catalog finishes within that budget.
 
 Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8 bytes and are hashed with bcrypt; ordinary client accounts may be configured without a password. Such accounts must still authenticate to receive a token. Username uniqueness uses Unicode simple case folding. Password length and account policy will be exposed consistently in the full user-management milestone.
 

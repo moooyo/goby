@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const GoVersion = "1.27.1"
@@ -25,6 +26,7 @@ type Config struct {
 	FFprobePath    string
 	TrustedProxies []netip.Prefix
 	MediaRoots     []string
+	StartupTimeout time.Duration
 }
 
 func Load() (Config, error) {
@@ -55,6 +57,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("GOBY_COOKIE_SECURE must be a boolean")
 	}
+	c.StartupTimeout, err = time.ParseDuration(env("GOBY_STARTUP_TIMEOUT", "5m"))
+	if err != nil {
+		return Config{}, fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
+	}
 	if err := c.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -76,6 +82,9 @@ func (c Config) Validate() error {
 	}
 	if c.SetupToken != "" && len(c.SetupToken) < 24 {
 		return fmt.Errorf("GOBY_SETUP_TOKEN must contain at least 24 bytes")
+	}
+	if c.StartupTimeout < time.Second || c.StartupTimeout > 30*time.Minute {
+		return fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
 	}
 	return nil
 }

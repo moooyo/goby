@@ -20,10 +20,11 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
+| Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Pending | Direct playback, negotiation, subtitles, progress, session/events |
 | M4 conversion and hardware pipeline | Pending | Remux/transcode/HLS, tracks, hardware decode/encode, limits and recovery |
 | M5 administrator completion | Pending | Metadata, full policies, tasks/devices/keys/settings, backup and restore |
-| M6 compatibility release | Pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations and upgrade evidence; revise startup/migration time budgets before high-volume metadata backfills |
+| M6 compatibility release | Pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations, representative large-catalog upgrade timing, and recovery evidence |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
 
 ## Environment observations
