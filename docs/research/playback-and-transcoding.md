@@ -35,7 +35,7 @@ All routes below are API-relative. The documented API base is `http[s]://host:po
 | Playback report DTOs | The guide describes stopped reports as identical to started reports. Current `PlaybackStopInfo` has a distinct property set. | Use the current distinct DTO, accept harmless extra input fields, and preserve unknown-field compatibility. |
 | Subtitle offset | The guide calls `SubtitleOffset` floating point; current start/progress DTOs declare `int32`, with no unit explanation. | Do not invent a conversion. Capture client values and visible subtitle timing before fixing the wire interpretation. |
 | Generated HTML types | Some rendered references display `DeviceProfile[]` where the pinned SDK declares a singular `DeviceProfile` object. | Use the underlying schema and actual client requests, not rendered array notation alone. |
-| Segment routes | `HlsSegmentService` in the SDK lists encoding cleanup, but does not specify the VOD segment route templates or manifest grammar. | Record manifests and their requested child URLs from the chosen reference release. Do not infer Emby routes from Jellyfin. |
+| Segment routes | `DynamicHlsService` declares GET/HEAD `/Videos/{Id}/hls1/{PlaylistId}/{SegmentId}.{SegmentContainer}` and the Audio equivalent; `HlsSegmentService` also contains cleanup. The generated schema leaves manifest and seek behavior incomplete. | Use the [M4a reference capture](hls-reference.md) for observed full-VOD manifests, stable numbering, child URLs and timestamp limits. Do not infer the missing semantics from another server. |
 
 ## 2. Playback API inventory
 
@@ -71,6 +71,8 @@ The `LiveStreams` name does not mean these DTOs are exclusively a Live TV subsys
 | `GET, HEAD` | `/Audio/{Id}/master.m3u8` | Audio HLS master manifest expected. | P1 |
 | `GET` | `/Audio/{Id}/main.m3u8` | Audio HLS media manifest expected. | P1 |
 | `GET` | `/Audio/{Id}/live.m3u8` | Audio HLS delivery variant. | P1 |
+| `GET, HEAD` | `/Videos/{Id}/hls1/{PlaylistId}/{SegmentId}.{SegmentContainer}` | Declared dynamic video segment path; successful H.264/AAC response recorded in M4a. | P1 |
+| `GET, HEAD` | `/Audio/{Id}/hls1/{PlaylistId}/{SegmentId}.{SegmentContainer}` | Declared dynamic audio segment path; separate audio-client evidence remains required. | P1 |
 | `DELETE` | `/Videos/ActiveEncodings` | Required query `DeviceId` and `PlaySessionId`; HTTP 200 content unspecified. | P1 |
 | `POST` | `/Videos/ActiveEncodings/Delete` | Current SDK alternate cleanup method, with the same required query fields. | P1 |
 
@@ -258,7 +260,7 @@ HDR-to-SDR is a separate filter and color-management requirement. Copying an HDR
 
 ### HLS manifest and segment service
 
-The backend must implement the whole returned URL graph: master manifest, selected media playlist, media segments, and subtitle renditions. Returning a syntactically valid `master.m3u8` alone is insufficient. Relative child URIs resolve against their containing playlist, so reverse-proxy base paths and query-token propagation need explicit handling. HLS playlists use UTF-8 without BOM and must be identified appropriately; [RFC 8216](https://www.rfc-editor.org/rfc/rfc8216.html) defines the protocol baseline, while Emby's actual playlist shape still needs reference traces.
+The backend must implement the whole returned URL graph: master manifest, selected media playlist, media segments, and subtitle renditions. Returning a syntactically valid `master.m3u8` alone is insufficient. Relative child URIs resolve against their containing playlist, so reverse-proxy base paths and query-token propagation need explicit handling. HLS playlists use UTF-8 without BOM and must be identified appropriately; [RFC 8216](https://www.rfc-editor.org/rfc/rfc8216.html) defines the protocol baseline. The [M4a reference study](hls-reference.md) records complete VOD playlists with stable segment indices and EXT-X-START hints, plus positive and negative segment controls. The engine's internal measured EVENT playlist does not by itself implement that client-facing contract.
 
 Recommended worker behavior:
 

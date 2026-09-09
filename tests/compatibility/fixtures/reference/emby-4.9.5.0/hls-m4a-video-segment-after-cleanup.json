@@ -1,0 +1,69 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:45:06.641088+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/videos/28/hls1/main/190.ts?PlaySessionId=d9543bbc9a72459398ec9958a8d4d29c",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 404,
+    "headers": [
+      [
+        "Content-Length",
+        "88"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:45:06 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Exception of type 'MediaBrowser.Common.Extensions.ResourceNotFoundException' was thrown."
+  },
+  "observation": {
+    "wireBytes": 88,
+    "wireSha256": "06fcb54ceeceec681e71a5456ed875559216bb0a6003a65d0217a2ee4b8da2fc",
+    "note": "Bounded read of the same emitted segment URL after ActiveEncodings cleanup; no new master or media playlist request is sent."
+  }
+}

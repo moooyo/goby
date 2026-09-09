@@ -1,0 +1,865 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:52:02.340193+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Library/VirtualFolders/Query",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby HLS Recorder\", Device=\"Linux HLS Admin\", DeviceId=\"goby-hls-m4a-admin-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "18294"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:52:01 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference HLS Normal M4a",
+          "Locations": [
+            "/opt/goby-fixtures/hls-reference"
+          ],
+          "CollectionType": "movies",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/hls-reference"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "movies",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": true,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 0
+          },
+          "ItemId": "41",
+          "Id": "41",
+          "Guid": "db18545e910e4be4bf526fde5fd57918"
+        },
+        {
+          "Name": "Reference Movies",
+          "Locations": [
+            "/opt/goby-fixtures/movies"
+          ],
+          "CollectionType": "movies",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/movies"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "movies",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": false,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Series",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Season",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Episode",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicArtist",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicAlbum",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Audio",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 0
+          },
+          "ItemId": "3",
+          "Id": "3",
+          "Guid": "ea58489081a74d32a668063a9166562d",
+          "PrimaryImageItemId": "3",
+          "PrimaryImageTag": "88212ad1f547a79e3ae10f679b6bc144"
+        },
+        {
+          "Name": "Reference Music",
+          "Locations": [
+            "/opt/goby-fixtures/music"
+          ],
+          "CollectionType": "music",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/music"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "music",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": false,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Series",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Season",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Episode",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicArtist",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicAlbum",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Audio",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 314572800
+          },
+          "ItemId": "7",
+          "Id": "7",
+          "Guid": "f41bb18d1922470f90cdbb95787cf967"
+        },
+        {
+          "Name": "Reference NextUp Long",
+          "Locations": [
+            "/opt/goby-fixtures/nextup-long-reference"
+          ],
+          "CollectionType": "tvshows",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/nextup-long-reference"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "tvshows",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": false,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Series",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Season",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Episode",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicArtist",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicAlbum",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Audio",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 314572800
+          },
+          "ItemId": "29",
+          "Id": "29",
+          "Guid": "a77796cb714d44f3a161214d336bc9aa"
+        },
+        {
+          "Name": "Reference Playback M3",
+          "Locations": [
+            "/opt/goby-fixtures/playback-reference"
+          ],
+          "CollectionType": "movies",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/playback-reference"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "movies",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": true,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 314572800
+          },
+          "ItemId": "26",
+          "Id": "26",
+          "Guid": "95d94a87bd504a599726568bf4fe21ae"
+        },
+        {
+          "Name": "Reference Shows",
+          "Locations": [
+            "/opt/goby-fixtures/tv"
+          ],
+          "CollectionType": "tvshows",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/tv"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "tvshows",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": false,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Series",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Season",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Episode",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicArtist",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "MusicAlbum",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              },
+              {
+                "Type": "Audio",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 314572800
+          },
+          "ItemId": "5",
+          "Id": "5",
+          "Guid": "2a31996450644fdc9d59300b4cf870d0"
+        },
+        {
+          "Name": "Reference Subtitle M3c",
+          "Locations": [
+            "/opt/goby-fixtures/subtitle-reference"
+          ],
+          "CollectionType": "movies",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-fixtures/subtitle-reference"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": true,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": true,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "movies",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": true,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": false,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 314572800
+          },
+          "ItemId": "37",
+          "Id": "37",
+          "Guid": "5b03a8b72520445aa077589be6bafec2"
+        }
+      ],
+      "TotalRecordCount": 7
+    }
+  },
+  "observation": {
+    "wireBytes": 18294,
+    "wireSha256": "6da85e04d33fd31c4d744d17d4be0b6740d56398c3ddbaa437d82d7f760cfba2"
+  }
+}

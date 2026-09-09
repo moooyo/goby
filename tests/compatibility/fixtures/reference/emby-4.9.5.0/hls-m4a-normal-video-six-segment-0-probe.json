@@ -1,0 +1,298 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:52:43.042013+00:00"
+  },
+  "kind": "remote-media-probe",
+  "sourceFixture": "hls-m4a-normal-video-six-segment-0",
+  "input": {
+    "bytes": 94564,
+    "sha256": "aa0048cca9370efd814eb887978958dc153b582312ad98d46d63f381b8b476b7"
+  },
+  "ffprobe": {
+    "exitCode": 0,
+    "body": {
+      "packets": [
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1440000,
+          "pts_time": "16.000000",
+          "dts": 1432500,
+          "dts_time": "15.916667",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "2913",
+          "pos": "564",
+          "flags": "K__",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1443750,
+          "pts_time": "16.041667",
+          "dts": 1436250,
+          "dts_time": "15.958333",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "766",
+          "pos": "3572",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1447500,
+          "pts_time": "16.083333",
+          "dts": 1440000,
+          "dts_time": "16.000000",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "461",
+          "pos": "4512",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1451250,
+          "pts_time": "16.125000",
+          "dts": 1443750,
+          "dts_time": "16.041667",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "747",
+          "pos": "5452",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1455000,
+          "pts_time": "16.166667",
+          "dts": 1447500,
+          "dts_time": "16.083333",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "610",
+          "pos": "6392",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1458750,
+          "pts_time": "16.208333",
+          "dts": 1451250,
+          "dts_time": "16.125000",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "816",
+          "pos": "7144",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1462500,
+          "pts_time": "16.250000",
+          "dts": 1455000,
+          "dts_time": "16.166667",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "649",
+          "pos": "8460",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        },
+        {
+          "codec_type": "video",
+          "stream_index": 0,
+          "pts": 1470000,
+          "pts_time": "16.333333",
+          "dts": 1458750,
+          "dts_time": "16.208333",
+          "duration": 3750,
+          "duration_time": "0.041667",
+          "size": "768",
+          "pos": "9212",
+          "flags": "___",
+          "side_data_list": [
+            {
+              "side_data_type": "MPEGTS Stream ID",
+              "id": 224
+            }
+          ]
+        }
+      ],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "Main",
+          "codec_type": "video",
+          "codec_tag_string": "[27][0][0][0]",
+          "codec_tag": "0x001b",
+          "mime_codec_string": "avc1.4d4015",
+          "width": 160,
+          "height": 90,
+          "coded_width": 160,
+          "coded_height": 90,
+          "has_b_frames": 2,
+          "sample_aspect_ratio": "1:1",
+          "display_aspect_ratio": "16:9",
+          "pix_fmt": "yuv420p",
+          "level": 21,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "is_avc": "false",
+          "nal_length_size": "0",
+          "ts_id": "1",
+          "ts_packetsize": "188",
+          "id": "0x100",
+          "r_frame_rate": "24/1",
+          "avg_frame_rate": "24/1",
+          "time_base": "1/90000",
+          "start_pts": 1440000,
+          "start_time": "16.000000",
+          "duration_ts": 270000,
+          "duration": "3.000000",
+          "bits_per_raw_sample": "8",
+          "nb_read_packets": "8",
+          "extradata_size": 36,
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "[15][0][0][0]",
+          "codec_tag": "0x000f",
+          "mime_codec_string": "mp4a.40.2",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "ts_id": "1",
+          "ts_packetsize": "188",
+          "id": "0x101",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/90000",
+          "start_pts": 1439520,
+          "start_time": "15.994667",
+          "duration_ts": 247680,
+          "duration": "2.752000",
+          "bit_rate": "66835",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        }
+      ],
+      "format": {
+        "filename": "/reference-hls-private/probe/hls-m4a-normal-video-six-segment-0.ts",
+        "nb_streams": 2,
+        "nb_programs": 1,
+        "nb_stream_groups": 0,
+        "format_name": "mpegts",
+        "format_long_name": "MPEG-TS (MPEG-2 Transport Stream)",
+        "start_time": "15.994667",
+        "duration": "3.005333",
+        "size": "94564",
+        "bit_rate": "251723",
+        "probe_score": 100
+      }
+    },
+    "stderr": ""
+  },
+  "ffmpegDecode": {
+    "exitCode": 0,
+    "stderr": "",
+    "scope": "The complete downloaded segment only; no server URL or full source is decoded."
+  }
+}

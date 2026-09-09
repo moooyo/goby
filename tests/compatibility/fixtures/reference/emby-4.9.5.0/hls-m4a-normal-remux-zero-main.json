@@ -1,0 +1,81 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:52:42.523963+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/videos/43/main.m3u8?DeviceId=goby-hls-m4a-recorder&MediaSourceId=mediasource_43&PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=aac&VideoBitrate=1935707&AudioBitrate=64293&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&SegmentContainer=ts&SegmentLength=3&MinSegments=1&BreakOnNonKeyFrames=False&TranscodeReasons=ContainerNotSupported%2CDirectPlayError&StartTimeTicks=0",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "538"
+      ],
+      [
+        "Content-Type",
+        "application/vnd.apple.mpegurl"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:52:41 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Pragma",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "#EXTM3U\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:3.0000, nodesc\nhls1/main/0.ts?PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d\n#EXTINF:3.0000, nodesc\nhls1/main/1.ts?PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d\n#EXTINF:3.0000, nodesc\nhls1/main/2.ts?PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d\n#EXTINF:3.0000, nodesc\nhls1/main/3.ts?PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d\n#EXTINF:3.0000, nodesc\nhls1/main/4.ts?PlaySessionId=1e27e6e5a5994918a71d9af5f7ce440d\n#EXT-X-ENDLIST\n"
+  },
+  "observation": {
+    "wireBytes": 538,
+    "wireSha256": "8afedaa8b7fbf14dbcb24cef3da3316426cc4ef91c4a97e1be40d9ef566ba032",
+    "note": "Relative child resolved exactly; no query token is added if absent from the emitted URI."
+  }
+}

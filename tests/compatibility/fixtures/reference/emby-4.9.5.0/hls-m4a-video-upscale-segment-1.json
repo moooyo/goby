@@ -1,0 +1,69 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:46:35.666284+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/videos/28/hls1/main/191.ts?PlaySessionId=d9543bbc9a72459398ec9958a8d4d29c",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "8297"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:46:35 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-1bf4ee5b-9f6f-4e58-b6d1-38237fbf40c1_1graph.txt\" -copyts -start_at_zero -f mp4 -ss 00:09:33.000 -c:v:0 h264 -noautorotate -i \"/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4\" -map 0:0 -map 0:1 -sn -c:v:0 libx264 -g:v:0 3 -maxrate:v:0 380 -bufsize:v:0 760 -sc_threshold:v:0 0 -keyint_min:v:0 3 -r:v:0 1 -pix_fmt:v:0 yuv420p -preset:v:0 veryfast -profile:v:0 main -x264opts:v:0 \"subme=0:me_range=4:rc_lookahead=10:partitions=none\" -crf:v:0 23 -c:a:0 copy -disposition:a:0 default -max_delay 5000000 -avoid_negative_ts disabled -f segment -map_metadata -1 -map_chapters -1 -segment_format mpegts -segment_list \"/transcoding-temp/7A3B07/7A3B07.m3u8\" -segment_list_type m3u8 -segment_time 00:00:03.000 -segment_start_number 191 -individual_header_trailer 0 -write_header_trailer 0 -segment_write_temp 1 \"/transcoding-temp/7A3B07/7A3B07_%d.ts\"\n\n10:46:35.673 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n10:46:35.673   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n10:46:35.673 Execution Date: 2026-09-09 10:46:35\n10:46:35.676 Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4':\n10:46:35.676   Metadata:\n10:46:35.676     major_brand     : isom\n10:46:35.676     minor_version   : 512\n10:46:35.676     compatible_brands: isomiso2avc1mp41\n10:46:35.676     title           : Reference Playback M3\n10:46:35.676     encoder         : Lavf63.1.101\n10:46:35.676   Duration: 00:10:00.00, start: 0.000000, bitrate: 0 kb/s\n10:46:35.676   Stream #0:0[0x1](und): Video: h264 (Constrained Baseline) (avc1 / 0x31637661), yuv420p(progressive), 160x90 [SAR 1:1 DAR 16:9], 0 kb/s, Level 10, 1 fps, 1 tbr, 16384 tbn (default)\n10:46:35.676     Metadata:\n10:46:35.676       handler_name    : VideoHandler\n10:46:35.676       vendor_id       : [0][0][0][0]\n10:46:35.676       encoder         : Lavc63.1.101 libx264\n10:46:35.676   Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 0 kb/s (default)\n10:46:35.676     Metadata:\n10:46:35.676       handler_name    : SoundHandler\n10:46:35.676       vendor_id       : [0][0][0][0]\n10:46:35.679 Stream mapping:\n10:46:35.679   Stream #0:0 -> #0:0 (h264 (native) -> h264 (libx264))\n10:46:35.679   Stream #0:1 -> #0:1 (copy)\n10:46:35.679 Press [q] to stop, [?] for help\n10:46:35.684 [libx264 @ 0x2091ad80] using SAR=1/1\n10:46:35.684 [libx264 @ 0x2091ad80] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512\n10:46:35.685 [libx264 @ 0x2091ad80] profile Main, level 1.0, 4:2:0, 8-bit\n10:46:35.685 [libx264 @ 0x2091ad80] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x1:0 me=hex subme=0 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=4 chroma_me=1 trellis=0 8x8dct=0 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=3 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=2 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=3 keyint_min=2 scenecut=0 intra_refresh=0 rc_lookahead=3 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00\n10:46:35.685 Output #0, segment, to '/transcoding-temp/7A3B07/7A3B07_%d.ts':\n10:46:35.685   Metadata:\n10:46:35.685     encoder         : Lavf59.27.100\n10:46:35.685   Stream #0:0: Video: h264, yuv420p(progressive), 160x90 [SAR 1:1 DAR 16:9], q=2-31, 1 fps, 90k tbn (default)\n10:46:35.685     Metadata:\n10:46:35.685       encoder         : Lavc59.37.100 libx264\n10:46:35.685     Side data:\n10:46:35.685       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A\n10:46:35.685   Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 0 kb/s (default)\n10:46:35.685 elapsed=00:00:00.00 frame=    1 fps=0.0 q=0.0 size=N/A time=00:00:00.00 bitrate=N/A throttle=off speed=   0x    \n10:46:35.687 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.687 SegmentComplete=video:0 Index=191 Start=0.000000 End=576.000000 Duration=576.000000 offset_pts=0 start_pts=0 Frames=3 filename=7A3B07_191.ts\n10:46:35.687 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_192.ts.tmp' for writing\n10:46:35.687 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.687 SegmentComplete=video:0 Index=192 Start=576.000000 End=579.000000 Duration=3.000000 offset_pts=0 start_pts=576000000 Frames=3 filename=7A3B07_192.ts\n10:46:35.687 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_193.ts.tmp' for writing\n10:46:35.688 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.688 SegmentComplete=video:0 Index=193 Start=579.000000 End=582.000000 Duration=3.000000 offset_pts=0 start_pts=579000000 Frames=3 filename=7A3B07_193.ts\n10:46:35.688 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_194.ts.tmp' for writing\n10:46:35.688 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.688 SegmentComplete=video:0 Index=194 Start=582.000000 End=585.000000 Duration=3.000000 offset_pts=0 start_pts=582000000 Frames=3 filename=7A3B07_194.ts\n10:46:35.688 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_195.ts.tmp' for writing\n10:46:35.688 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.688 SegmentComplete=video:0 Index=195 Start=585.000000 End=588.000000 Duration=3.000000 offset_pts=0 start_pts=585000000 Frames=3 filename=7A3B07_195.ts\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_196.ts.tmp' for writing\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.689 SegmentComplete=video:0 Index=196 Start=588.000000 End=591.000000 Duration=3.000000 offset_pts=0 start_pts=588000000 Frames=3 filename=7A3B07_196.ts\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_197.ts.tmp' for writing\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.689 SegmentComplete=video:0 Index=197 Start=591.000000 End=594.000000 Duration=3.000000 offset_pts=0 start_pts=591000000 Frames=3 filename=7A3B07_197.ts\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_198.ts.tmp' for writing\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\n10:46:35.689 SegmentComplete=video:0 Index=198 Start=594.000000 End=597.000000 Duration=3.000000 offset_pts=0 start_pts=594000000 Frames=3 filename=7A3B07_198.ts\n10:46:35.689 [segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07_199.ts.tmp' for writing\n[segment @ 0x20957340] Opening '/transcoding-temp/7A3B07/7A3B07.m3u8.tmp' for writing\nSegmentComplete=video:0 Index=199 Start=597.000000 End=600.000000 Duration=3.000000 offset_pts=0 start_pts=597000000 Frames=3 filename=7A3B07_199.ts\nelapsed=00:00:00.01 frame=   27 fps=0.0 q=-1.0 Lsize=N/A time=00:00:14.97 bitrate=N/A throttle=off speed=1.43e+03x    \nvideo:1kB audio:2kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown\n[libx264 @ 0x2091ad80] frame I:9     Avg QP: 0.00  size:    56\n[libx264 @ 0x2091ad80] frame P:9     Avg QP: 2.00  size:    16\n[libx264 @ 0x2091ad80] frame B:9     Avg QP: 2.00  size:    13\n[libx264 @ 0x2091ad80] consecutive B-frames: 33.3% 66.7%  0.0%\n[libx264 @ 0x2091ad80] mb I  I16..4: 98.3%  0.0%  1.7%\n[libx264 @ 0x2091ad80] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%\n[libx264 @ 0x2091ad80] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  0.0%  0.0%  0.0%  direct: 0.0%  skip:100.0%\n[libx264 @ 0x2091ad80] coded y,uvDC,uvAC intra: 0.4% 0.0% 0.0% inter: 0.0% 0.0% 0.0%\n[libx264 @ 0x2091ad80] i16 v,h,dc,p: 85%  0% 15%  0%\n[libx264 @ 0x2091ad80] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu:  0%  0% 100%  0%  0%  0%  0%  0%  0%\n[libx264 @ 0x2091ad80] i8c dc,h,v,p: 100%  0%  0%  0%\n[libx264 @ 0x2091ad80] Weighted P-Frames: Y:0.0% UV:0.0%\n[libx264 @ 0x2091ad80] kb/s:0.23\nEXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 8297,
+    "wireSha256": "59c08a85cf03d7866f1f32c3cfe212b47d360e3f5f2460cf6bda08989f20f968",
+    "note": "Selects manifest entry 191 at the requested playback offset. Uses only credentials emitted in the relative URI; no token header, cookie, or inherited parent query is added."
+  }
+}

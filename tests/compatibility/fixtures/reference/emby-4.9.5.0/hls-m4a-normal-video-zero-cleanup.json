@@ -1,0 +1,64 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:52:42.904436+00:00"
+  },
+  "request": {
+    "method": "DELETE",
+    "path": "/emby/Videos/ActiveEncodings?DeviceId=goby-hls-m4a-recorder&PlaySessionId=39df209d8eb34c079d8f5f60d3e9ec4e",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby HLS Recorder\", Device=\"Linux HLS Test\", DeviceId=\"goby-hls-m4a-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:52:42 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "wireBytes": 0,
+    "wireSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -20,6 +20,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Original playback](development/direct-playback.md) | Negotiation, authenticated ranges, durable progress, watched/favorite state, and probe upgrade requirements |
 | [Client sessions](development/client-sessions.md) | Capability declarations, presence, player-state projection, ownership, and Ping behavior |
 | [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
+| [Conversion engine](development/transcode-engine.md) | Planner, PostgreSQL jobs, bounded FFmpeg execution, hardware selection and pending HLS integration |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
 | [External subtitles](development/external-subtitles.md) | Sidecar indexing, SRT/WebVTT delivery, time semantics, authorization and resource limits |
 | [Full API catalog](api/catalog.md) | Every HTTP operation in the pinned official SDK export |
@@ -34,6 +35,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [Source provenance](sources/README.md) | Fixed upstream revisions, snapshot hashes, and known document defects |
 | [Live reference baseline](research/reference-server.md) | Official Emby 4.9.5.0 isolation, audited HTTP captures and observed differences |
 | [WebSocket reference](research/websocket-reference.md) | Audited upgrade paths, token-scoped events, message envelopes and limits of observed behavior |
+| [HLS reference](research/hls-reference.md) | Full VOD manifests, seek hints, successful transcode segments, preserved remux failures and cleanup |
 
 ## Scope and evidence labels
 

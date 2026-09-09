@@ -1,0 +1,41 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:52:42.775552+00:00"
+  },
+  "kind": "remote-runtime-observation",
+  "scope": "Only output directories named in this job's public HTTP error bodies, observed before its explicit cleanup API request.",
+  "outputDirectories": [
+    {
+      "publicLogDirectory": "/transcoding-temp/05B85D",
+      "directoryExists": true,
+      "files": [
+        {
+          "name": "05B85D_2.ts",
+          "bytes": 226728
+        },
+        {
+          "name": "05B85D_0.ts",
+          "bytes": 210372
+        },
+        {
+          "name": "05B85D_1.ts",
+          "bytes": 222592
+        },
+        {
+          "name": "05B85D_4.ts",
+          "bytes": 211876
+        },
+        {
+          "name": "05B85D.m3u8",
+          "bytes": 173
+        },
+        {
+          "name": "05B85D_3.ts",
+          "bytes": 210560
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:47:32.064501+00:00"
+  },
+  "kind": "remote-runtime-observation",
+  "referencePID": 3131777,
+  "directChildProcesses": [],
+  "namespaceMatchesReference": true,
+  "transcodingFileCount": 0,
+  "transcodingBytes": 0,
+  "scratchBytes": 317394,
+  "rootFreeBytes": 79654912,
+  "tmpfsFreeBytes": 1284796416
+}

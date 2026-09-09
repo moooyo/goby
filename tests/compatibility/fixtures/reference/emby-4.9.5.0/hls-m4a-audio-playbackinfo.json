@@ -1,0 +1,248 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T02:43:32.215020+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Items/28/PlaybackInfo",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby HLS Recorder\", Device=\"Linux HLS Test\", DeviceId=\"goby-hls-m4a-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "UserId": "7581d36391e24c08b20b2d126ea9768e",
+      "MediaSourceId": "mediasource_28",
+      "DeviceProfile": {
+        "Name": "HLS M4a audio",
+        "MaxStreamingBitrate": 200000,
+        "DirectPlayProfiles": [],
+        "TranscodingProfiles": [
+          {
+            "Container": "ts",
+            "Type": "Video",
+            "VideoCodec": "h264",
+            "AudioCodec": "mp3",
+            "Protocol": "hls",
+            "Context": "Streaming",
+            "MaxAudioChannels": "2",
+            "MinSegments": 1,
+            "SegmentLength": 3
+          }
+        ],
+        "SubtitleProfiles": [
+          {
+            "Format": "srt",
+            "Method": "External"
+          },
+          {
+            "Format": "vtt",
+            "Method": "External"
+          }
+        ]
+      },
+      "IsPlayback": true,
+      "EnableDirectPlay": false,
+      "EnableDirectStream": false,
+      "EnableTranscoding": true,
+      "AllowVideoStreamCopy": true,
+      "AllowAudioStreamCopy": false,
+      "StartTimeTicks": 5700000000,
+      "AudioStreamIndex": 1,
+      "SubtitleStreamIndex": -1
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "3248"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 02:43:31 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "MediaSources": [
+        {
+          "Chapters": [
+            {
+              "StartPositionTicks": 0,
+              "Name": "Chapter 1",
+              "MarkerType": "Chapter",
+              "ChapterIndex": 0
+            },
+            {
+              "StartPositionTicks": 3000000000,
+              "Name": "Chapter 2",
+              "MarkerType": "Chapter",
+              "ChapterIndex": 1
+            }
+          ],
+          "Protocol": "File",
+          "Id": "mediasource_28",
+          "Path": "/opt/goby-fixtures/playback-reference/Reference Playback M3.mp4",
+          "Type": "Default",
+          "Container": "mp4",
+          "Size": 56379,
+          "Name": "Reference Playback M3",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 6000000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": false,
+          "SupportsDirectPlay": false,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/16384",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 95,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 1,
+              "RealFrameRate": 1,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/8000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 253,
+              "Channels": 1,
+              "SampleRate": 8000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "srt",
+              "DisplayTitle": "(SRT)",
+              "IsInterlaced": false,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Subtitle",
+              "Index": 2,
+              "IsExternal": true,
+              "DeliveryMethod": "External",
+              "DeliveryUrl": "/Videos/28/mediasource_28/Subtitles/2/0/Stream.srt?api_key=[REDACTED_TOKEN]",
+              "IsExternalUrl": false,
+              "IsChunkedResponse": false,
+              "IsTextSubtitleStream": true,
+              "SupportsExternalStream": true,
+              "Path": "/opt/goby-fixtures/playback-reference/Reference Playback M3.srt",
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 751,
+          "RequiredHttpHeaders": {},
+          "AddApiKeyToDirectStreamUrl": false,
+          "TranscodingUrl": "/videos/28/master.m3u8?DeviceId=goby-hls-m4a-recorder&MediaSourceId=mediasource_28&StartTimeTicks=5700000000&PlaySessionId=bc6a0f12e5e6437fa8ccc8f30654a902&api_key=[REDACTED_TOKEN]&VideoCodec=h264&AudioCodec=mp3&VideoBitrate=199747&AudioBitrate=253&AudioStreamIndex=1&TranscodingMaxAudioChannels=2&SegmentContainer=ts&SegmentLength=3&MinSegments=1&BreakOnNonKeyFrames=False&TranscodeReasons=ContainerNotSupported,DirectPlayError&allowAudioStreamCopy=false",
+          "TranscodingSubProtocol": "hls",
+          "TranscodingContainer": "ts",
+          "ReadAtNativeFramerate": false,
+          "DefaultAudioStreamIndex": 1,
+          "ItemId": "28"
+        }
+      ],
+      "PlaySessionId": "bc6a0f12e5e6437fa8ccc8f30654a902"
+    }
+  },
+  "observation": {
+    "wireBytes": 3248,
+    "wireSha256": "c5d7d83d15dd683d4434243c2606600f0e2bef9495961154d213c234d9db4bfb",
+    "note": "Negotiates only the last 30 seconds of the 600-second owned source; no playback reports or watch-state changes are sent."
+  }
+}
