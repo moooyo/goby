@@ -1,0 +1,81 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Audio/48/main.m3u8?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=45ae53cc25ac54207fdc0e20c02428c6&MaxStreamingBitrate=128000&Container=mp3&TranscodingProtocol=hls&TranscodingContainer=ts&AudioCodec=aac&MaxSampleRate=48000&AudioSampleRate=48000&api_key=[REDACTED_TOKEN]&SegmentContainer=ts&AudioBitrate=128000&TranscodeReasons=ContainerNotSupported",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "283"
+      ],
+      [
+        "Content-Type",
+        "application/vnd.apple.mpegurl"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:30:31 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Pragma",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "#EXTM3U\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:3.0000, nodesc\nhls1/main/0.ts?PlaySessionId=45ae53cc25ac54207fdc0e20c02428c6\n#EXTINF:3.0000, nodesc\nhls1/main/1.ts?PlaySessionId=45ae53cc25ac54207fdc0e20c02428c6\n#EXT-X-ENDLIST\n"
+  },
+  "observation": {
+    "wireBytes": 283,
+    "wireSha256": "c4ee561e648bff67fabb7c504bb11a522b317a33a290ae7c7c4ad739b4e13a07",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:30:31.948620+00:00"
+  }
+}

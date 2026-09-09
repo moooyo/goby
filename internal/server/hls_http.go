@@ -100,8 +100,19 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		if err != nil {
 			return nil, nil, library.MediaFile{}, err
 		}
-		if values["playsessionid"] != "" && values["playsessionid"] != session.key.scope.PlaySessionID ||
-			values["mediasourceid"] != "" && values["mediasourceid"] != session.key.scope.SourceID {
+		if session.key.plan.OutputMode != "" {
+			return nil, nil, library.MediaFile{}, library.ErrNotFound
+		}
+		if reference := values["playsessionid"]; reference != "" && reference != session.key.scope.PlaySessionID {
+			canonical, err := s.library.ResolvePlaybackReference(ctx, playbackOwner(principal), reference)
+			if err != nil {
+				return nil, nil, library.MediaFile{}, err
+			}
+			if canonical != session.key.scope.PlaySessionID {
+				return nil, nil, library.MediaFile{}, library.ErrNotFound
+			}
+		}
+		if values["mediasourceid"] != "" && values["mediasourceid"] != session.key.scope.SourceID {
 			return nil, nil, library.MediaFile{}, library.ErrNotFound
 		}
 		// A negotiated revision is immutable. Quality/track changes require a
@@ -143,6 +154,10 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 			err = errHLSRequestUnsupported
 		}
 		return nil, nil, library.MediaFile{}, err
+	}
+	if source.Item.Type == "Audio" && exactAudioCoverage(*source.Item.Media, decision.Plan.AudioStreamIndex) == nil {
+		_ = file.Close()
+		return nil, nil, library.MediaFile{}, errHLSRequestUnsupported
 	}
 	start, err := hlsStart(values, 0, source.Item.Media.DurationTicks)
 	if err != nil {
@@ -323,7 +338,16 @@ func (s *Server) stopHLSEncodings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Unknown/foreign keys are inert and idempotent; no ownership is disclosed.
-	s.hls.cancelMatching(principal.SessionID, values["playsessionid"])
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	canonical, err := s.library.ResolvePlaybackReference(ctx, playbackOwner(principal), values["playsessionid"])
+	if err != nil && !errors.Is(err, library.ErrNotFound) && !errors.Is(err, library.ErrForbidden) {
+		s.hlsError(w, r, err)
+		return
+	}
+	if err == nil {
+		s.hls.cancelMatching(principal.SessionID, canonical)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -336,7 +360,7 @@ func (s *Server) hlsError(w http.ResponseWriter, r *http.Request, err error) {
 		apiError(w, r, http.StatusNotFound, "hls_not_found", "The HLS request was cancelled.")
 	case errors.Is(err, identity.ErrUnauthorized):
 		s.identityError(w, r, err)
-	case errors.Is(err, errHLSRequestInvalid), errors.Is(err, transcode.ErrInvalidPlan), errors.Is(err, transcode.ErrInvalidTimeline):
+	case errors.Is(err, errHLSRequestInvalid), errors.Is(err, library.ErrInvalidInput), errors.Is(err, transcode.ErrInvalidPlan), errors.Is(err, transcode.ErrInvalidTimeline):
 		apiError(w, r, http.StatusBadRequest, "invalid_hls_request", "Check HLS parameters and stream identifiers.")
 	case errors.Is(err, errHLSRequestUnsupported), errors.Is(err, transcode.ErrUnsupportedTimeline), errors.Is(err, transcode.ErrTimelineLimit):
 		apiError(w, r, http.StatusUnsupportedMediaType, "NoCompatibleStream", "This source does not support the requested HLS output.")

@@ -447,13 +447,19 @@ func TestHTTPOriginalStreamsRejectConversionAndInvalidSelectors(t *testing.T) {
 	s := newStreamHTTPFixture(t)
 	for _, item := range []streamHTTPItem{s.video, s.audio} {
 		base := "/emby/" + item.route + "/" + item.id + "/"
+		conversionStatus, originalConversionStatus := http.StatusNotImplemented, http.StatusNotImplemented
+		if item.route == "Audio" {
+			// Audio now has a conversion adapter. This fixture disables its
+			// runtime; incompatible audio requests are declined explicitly.
+			conversionStatus, originalConversionStatus = http.StatusUnsupportedMediaType, http.StatusBadRequest
+		}
 		for _, test := range []struct {
 			name, suffix string
 			status       int
 		}{
-			{"conversion", "stream?Static=false", http.StatusNotImplemented},
-			{"original-conversion", "original." + item.container + "?Static=false", http.StatusNotImplemented},
-			{"codec-request", "stream?VideoCodec=hevc", http.StatusNotImplemented},
+			{"conversion", "stream?Static=false", conversionStatus},
+			{"original-conversion", "original." + item.container + "?Static=false", originalConversionStatus},
+			{"codec-request", "stream?VideoCodec=hevc", conversionStatus},
 			// HLS has a separate handler; this fixture deliberately disables it.
 			{"disabled-hls-service", "master.m3u8?Static=true", http.StatusServiceUnavailable},
 			{"real-filename-is-not-an-alias", url.PathEscape(filepath.Base(item.path)) + "?Static=true", http.StatusNotFound},

@@ -1,0 +1,93 @@
+{
+  "kind": "bare-universal-default-observation",
+  "queryNames": [
+    "DeviceId",
+    "api_key"
+  ],
+  "omittedParameters": [
+    "UserId",
+    "PlaySessionId",
+    "MaxStreamingBitrate",
+    "Container",
+    "TranscodingProtocol",
+    "TranscodingContainer",
+    "AudioCodec"
+  ],
+  "results": [
+    {
+      "sourceKind": "flac",
+      "headStatus": 200,
+      "getStatus": 200,
+      "sourceBytes": 716925,
+      "receivedBytes": 716925,
+      "sourceBytesMatch": true,
+      "sourceSha256": "843ce1829f3ef1807233e4a0ed874d9132fa87f581b07298576ac18ea4216c81",
+      "receivedSha256": "843ce1829f3ef1807233e4a0ed874d9132fa87f581b07298576ac18ea4216c81",
+      "headContentType": "audio/flac",
+      "getContentType": "audio/flac",
+      "headContentLength": "716925",
+      "getContentLength": "716925",
+      "headAcceptRanges": "bytes",
+      "getAcceptRanges": "bytes",
+      "headLocationPresent": false,
+      "getLocationPresent": false
+    },
+    {
+      "sourceKind": "aac",
+      "headStatus": 200,
+      "getStatus": 200,
+      "sourceBytes": 50440,
+      "receivedBytes": 50440,
+      "sourceBytesMatch": true,
+      "sourceSha256": "ae7f1c88684f05ec883b327dd2b1fae17445b3dfaba446c02613c2f70ac46160",
+      "receivedSha256": "ae7f1c88684f05ec883b327dd2b1fae17445b3dfaba446c02613c2f70ac46160",
+      "headContentType": "audio/mp4",
+      "getContentType": "audio/mp4",
+      "headContentLength": "50440",
+      "getContentLength": "50440",
+      "headAcceptRanges": "bytes",
+      "getAcceptRanges": "bytes",
+      "headLocationPresent": false,
+      "getLocationPresent": false
+    },
+    {
+      "sourceKind": "wav",
+      "headStatus": 200,
+      "getStatus": 200,
+      "sourceBytes": 576160,
+      "receivedBytes": 576160,
+      "sourceBytesMatch": true,
+      "sourceSha256": "37fc3c2a29ff734981c1217003888b8aa7207fcf4c9f498c19fe9535ce36c8b5",
+      "receivedSha256": "37fc3c2a29ff734981c1217003888b8aa7207fcf4c9f498c19fe9535ce36c8b5",
+      "headContentType": "audio/wav",
+      "getContentType": "audio/wav",
+      "headContentLength": "576160",
+      "getContentLength": "576160",
+      "headAcceptRanges": "bytes",
+      "getAcceptRanges": "bytes",
+      "headLocationPresent": false,
+      "getLocationPresent": false
+    }
+  ],
+  "runtimeBefore": {
+    "referencePID": 3131777,
+    "directChildProcesses": [],
+    "transcodingFileCount": 0,
+    "transcodingBytes": 0,
+    "rootFreeBytes": 0,
+    "tmpfsFreeBytes": 668958720
+  },
+  "runtimeAfter": {
+    "referencePID": 3131777,
+    "directChildProcesses": [],
+    "transcodingFileCount": 0,
+    "transcodingBytes": 0,
+    "rootFreeBytes": 0,
+    "tmpfsFreeBytes": 663523328
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:56:57.229446+00:00"
+  }
+}

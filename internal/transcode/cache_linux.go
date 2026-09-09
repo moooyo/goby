@@ -51,6 +51,14 @@ type cacheJobSnapshot struct {
 	info os.FileInfo
 }
 
+type cacheInspectionMode uint8
+
+const (
+	cacheInspectOwned cacheInspectionMode = iota
+	cacheInspectHLS
+	cacheInspectProgressive
+)
+
 func openCacheRoot(path string) (_ *cacheRoot, err error) {
 	dir, err := openCacheDirectory(path, true)
 	if err != nil {
@@ -328,8 +336,43 @@ func (c *cacheRoot) OpenJobFile(id, name string) (*os.File, error) {
 	return cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
 }
 
-func (c *cacheRoot) ScanJob(id string) (bytes int64, ready bool, err error) {
+// OpenProgressiveFile opens the private, append-only output through its owned
+// directory. The returned descriptor keeps the same inode as more bytes arrive;
+// the caller controls its lifetime and enforces the plan's output size limits.
+func (c *cacheRoot) OpenProgressiveFile(id string) (*os.File, error) {
 	if !validJobID(id) {
+		return nil, ErrCacheInvalid
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return nil, os.ErrClosed
+	}
+	dir, err := cacheOpenDirectoryAt(c.dir, id)
+	if err != nil {
+		return nil, err
+	}
+	defer dir.Close()
+	return cacheOpenRegular(dir, "stream.bin", syscall.O_RDONLY, 0)
+}
+
+func (c *cacheRoot) ScanJob(id string) (bytes int64, ready bool, err error) {
+	return c.ScanPlanJob(id, Plan{})
+}
+
+// ScanPlanJob accounts only files belonging to the selected output mode. For
+// progressive output, ready reports positive file length, not playable payload;
+// the manager must also require a valid payload signal from the runner.
+func (c *cacheRoot) ScanPlanJob(id string, plan Plan) (bytes int64, ready bool, err error) {
+	if !validJobID(id) {
+		return 0, false, ErrCacheInvalid
+	}
+	mode := cacheInspectHLS
+	switch plan.OutputMode {
+	case "":
+	case "progressive":
+		mode = cacheInspectProgressive
+	default:
 		return 0, false, ErrCacheInvalid
 	}
 	c.mu.Lock()
@@ -342,7 +385,7 @@ func (c *cacheRoot) ScanJob(id string) (bytes int64, ready bool, err error) {
 		return 0, false, err
 	}
 	defer dir.Close()
-	_, bytes, ready, err = cacheInspectJob(dir, true)
+	_, bytes, ready, err = cacheInspectJobMode(dir, mode == cacheInspectHLS, mode)
 	return bytes, ready, err
 }
 
@@ -421,6 +464,12 @@ func (c *cacheRoot) FreeBytes() (int64, error) {
 }
 
 func cacheInspectJob(dir *os.File, tolerateRename bool) ([]cacheFileSnapshot, int64, bool, error) {
+	// Recovery is independent of a plan: every recognized owned output is
+	// removable, including a mixture left by an interrupted conversion.
+	return cacheInspectJobMode(dir, tolerateRename, cacheInspectOwned)
+}
+
+func cacheInspectJobMode(dir *os.File, tolerateRename bool, mode cacheInspectionMode) ([]cacheFileSnapshot, int64, bool, error) {
 	names, err := cacheDirectoryNames(dir, maxJobFiles)
 	if err != nil {
 		return nil, 0, false, err
@@ -433,6 +482,9 @@ func cacheInspectJob(dir *os.File, tolerateRename bool) ([]cacheFileSnapshot, in
 	for _, name := range names {
 		if !validCacheFileName(name) {
 			return nil, 0, false, fmt.Errorf("%w: unrecognized job file", ErrCacheUnsafe)
+		}
+		if mode == cacheInspectHLS && name == "stream.bin" || mode == cacheInspectProgressive && name != "stream.bin" {
+			return nil, 0, false, fmt.Errorf("%w: file does not belong to the planned output mode", ErrCacheUnsafe)
 		}
 		file, err := cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
 		if tolerateRename && errors.Is(err, os.ErrNotExist) {
@@ -463,6 +515,9 @@ func cacheInspectJob(dir *os.File, tolerateRename bool) ([]cacheFileSnapshot, in
 		playlist = playlist || name == "main.m3u8" && info.Size() > 0
 		segment = segment || strings.HasPrefix(name, "segment-") && strings.HasSuffix(name, ".ts") && info.Size() > 0
 		files = append(files, cacheFileSnapshot{name: name, info: info})
+	}
+	if mode == cacheInspectProgressive {
+		return files, bytes, bytes > 0, nil
 	}
 	return files, bytes, playlist && segment, nil
 }
@@ -579,6 +634,10 @@ func validOutputName(name string) bool {
 
 func validCacheFileName(name string) bool {
 	switch name {
+	case "stream.bin":
+		// Progressive output is private and is read only through its dedicated
+		// file API. No temporary or alternate progressive names are permitted.
+		return true
 	case "segment-list.m3u8", "segment-list.m3u8.tmp", "main.m3u8.publish.tmp":
 		// The VOD runner publishes final segments before exposing its public
 		// playlist. These exact private names are accounted and recoverable,

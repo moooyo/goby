@@ -14,6 +14,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/transcode"
 )
@@ -48,21 +49,24 @@ type hlsJobs interface {
 }
 
 type hlsSession struct {
-	mu        sync.Mutex
-	id        string
-	key       hlsKey
-	principal identity.Principal
-	output    playback.Source
-	startHint int64
-	accessed  time.Time
-	closed    bool
-	timeline  *transcode.Timeline
-	lead      int64
-	building  chan struct{}
-	producers []hlsProducer
-	lastAsked int
-	ctx       context.Context
-	cancel    context.CancelFunc
+	mu                 sync.Mutex
+	id                 string
+	key                hlsKey
+	principal          identity.Principal
+	output             playback.Source
+	audioTiming        *media.AudioTiming
+	startHint          int64
+	accessed           time.Time
+	presenceUpdated    time.Time
+	closed             bool
+	timeline           *transcode.Timeline
+	lead               int64
+	building           chan struct{}
+	producers          []hlsProducer
+	progressiveReaders int
+	lastAsked          int
+	ctx                context.Context
+	cancel             context.CancelFunc
 }
 
 // HLS session IDs identify immutable output revisions, not credentials. Their
@@ -125,7 +129,9 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		return nil, transcode.ErrInvalidPlan
 	}
 	plan := *decision.Plan
-	plan.StartTicks = 0
+	if plan.OutputMode == "" {
+		plan.StartTicks = 0
+	}
 	key := hlsKey{scope: transcode.Scope{UserID: principal.User.ID, AuthSessionID: principal.SessionID, DeviceID: principal.Client.DeviceID,
 		PlaySessionID: playID, ItemID: source.Item.ID, SourceID: source.SourceID}, stamp: source.ETag, plan: plan}
 	h.mu.Lock()
@@ -162,7 +168,13 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 	}
 	ctx, cancel := context.WithCancel(h.ctx)
 	session := &hlsSession{id: hex.EncodeToString(random[:]), key: key, principal: principal, output: decision.OutputSource,
-		startHint: start, accessed: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel}
+		startHint: start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel}
+	if source.Item.Type == "Audio" && source.Item.Media != nil {
+		if timing := exactAudioCoverage(*source.Item.Media, plan.AudioStreamIndex); timing != nil {
+			copy := *timing
+			session.audioTiming = &copy
+		}
+	}
 	h.sessions[session.id], h.byKey[key] = session, session
 	return session, nil
 }
@@ -187,21 +199,23 @@ func (h *hlsRuntime) find(id string, principal identity.Principal, itemID string
 
 func (h *hlsRuntime) retire(session *hlsSession) {
 	h.mu.Lock()
+	session.mu.Lock()
+	session.closed = true
+	session.cancel()
+	// CancelJob immediately fences manager deduplication without waiting for
+	// process exit. Complete that fence before the same registry key can be
+	// registered again, or a replacement could inherit the retiring producer.
+	for _, producer := range session.producers {
+		_ = h.manager.CancelJob(producer.id, session.key.scope)
+	}
 	if h.sessions[session.id] == session {
 		delete(h.sessions, session.id)
 		if h.byKey[session.key] == session {
 			delete(h.byKey, session.key)
 		}
 	}
-	session.mu.Lock()
-	session.closed = true
-	session.cancel()
-	producers := append([]hlsProducer(nil), session.producers...)
 	session.mu.Unlock()
 	h.mu.Unlock()
-	for _, producer := range producers {
-		_ = h.manager.CancelJob(producer.id, session.key.scope)
-	}
 }
 
 func (h *hlsRuntime) cancelMatching(authID, playID string) {
@@ -323,7 +337,21 @@ func (h *hlsRuntime) timeline(ctx context.Context, session *hlsSession, input *o
 		}
 		var timeline transcode.Timeline
 		if err == nil {
-			timeline, err = transcode.BuildTimeline(plan.DurationTicks, plan.SegmentSeconds, keys, copiedVideo)
+			if plan.VideoStreamIndex < 0 {
+				if session.audioTiming == nil {
+					err = transcode.ErrUnsupportedTimeline
+				} else {
+					options := transcode.AudioTimelineOptions{Codec: plan.AudioCodec, SampleRate: plan.AudioSampleRate}
+					if plan.AudioCodec == "copy" {
+						last := session.audioTiming.LastPacketStartTicks
+						options.LastPacketStartTicks = &last
+						options.MaxPacketDurationTicks = session.audioTiming.MaxPacketDurationTicks
+					}
+					timeline, err = transcode.BuildAudioTimeline(plan.DurationTicks, plan.SegmentSeconds, options)
+				}
+			} else {
+				timeline, err = transcode.BuildTimeline(plan.DurationTicks, plan.SegmentSeconds, keys, copiedVideo)
+			}
 		}
 		stop()
 		cancel()
@@ -462,6 +490,7 @@ func (h *hlsRuntime) maintainSessions(cycle context.Context, sessions []*hlsSess
 		}
 		session.mu.Lock()
 		idle, active := time.Since(session.accessed) > hlsIdleTTL, len(session.producers) > 0
+		keepPresence := time.Since(session.presenceUpdated) >= time.Minute && time.Since(session.accessed) < time.Minute
 		session.mu.Unlock()
 		if idle {
 			h.retire(session)
@@ -472,6 +501,22 @@ func (h *hlsRuntime) maintainSessions(cycle context.Context, sessions []*hlsSess
 		}
 		check, stop := context.WithTimeout(cycle, 750*time.Millisecond)
 		file, _, err := h.verify(check, session.principal, session.key.scope, session.key.stamp, session.key.plan)
+		if err == nil && keepPresence && h.server != nil {
+			// Media activity keeps the prepared play alive without pretending
+			// that the client reported a position, play count or watched state.
+			play, _, pingErr := h.server.library.ReportPlayback(check, playbackOwner(session.principal), library.PlaybackReport{
+				Event: "Ping", PlaySessionID: session.key.scope.PlaySessionID,
+				ItemID: session.key.scope.ItemID, MediaSourceID: session.key.scope.SourceID})
+			if pingErr != nil {
+				err = pingErr
+			} else if play.State == "Stopped" || play.State == "Expired" {
+				err = library.ErrNotFound
+			} else {
+				session.mu.Lock()
+				session.presenceUpdated = time.Now()
+				session.mu.Unlock()
+			}
+		}
 		stop()
 		if file != nil {
 			_ = file.Close()

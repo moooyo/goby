@@ -1,29 +1,42 @@
 # Linux conversion engine
 
 The conversion engine provides planning, PostgreSQL job records, bounded FFmpeg
-execution, and an owned HLS output cache. Its planner-to-segment path is verified
-with real Linux media. The M4b [HLS adapter](hls-playback.md) connects it to playback
-negotiation, complete source timelines, authorized segment URLs, seek production,
-and cleanup. [Startup configuration](transcoding-configuration.md) enables the
-service by default and supplies cache, concurrency, output and hardware policy.
-Progressive conversion, universal audio, broader codecs and subtitles, hard
-resource isolation, actual GPU execution and real-client acceptance remain active
-requirements.
+execution, and an owned media output cache. Its HLS planner-to-segment path is
+verified with real Linux media. The [HLS adapter](hls-playback.md) connects it to
+playback negotiation, complete source timelines, authorized segment URLs, seek
+production and cleanup. The [audio adapter](audio-playback.md) adds Universal and
+legacy selection with progressive output on the same manager. [Startup
+configuration](transcoding-configuration.md) enables conversion by default and
+supplies cache, concurrency, output and video-hardware policy. Progressive video,
+progressive PlaybackInfo profiles, additional audio timing/format cases, richer
+subtitles, hard resource isolation, actual GPU execution and real-client acceptance
+remain active requirements.
 
 ## Plans and output facts
 
 `playback.PlanConversion` preserves the existing original-file `Evaluate` result
-and evaluates an additional output candidate. It consumes authenticated server
-and user limits supplied by its caller, never authorizes a user itself, and starts
-no process during negotiation.
+and evaluates an additional HLS output candidate. `playback.PlanProgressiveAudio`
+evaluates explicit progressive audio targets separately from Universal's choice
+to serve a compatible original. Both consume authenticated server and user limits
+supplied by the caller, never authorize a user themselves, and start no process
+during negotiation. PlaybackInfo still negotiates original/HLS DeviceProfiles;
+its general progressive-profile adapter remains unfinished.
 
-The planner considers stream copy, audio conversion, video conversion, and their
+The HLS planner considers stream copy, audio conversion, video conversion, and their
 combinations against a declared Streaming/HLS/MPEG-TS TranscodingProfile. Initial
 encoded outputs are H.264, AAC LC, and MP3. It selects actual stream indexes and
 applies copy restrictions, source duration, starting ticks, bitrate, audio channel
 and sample-rate limits, dimensions, frame rate, container/codec conditions, and
 supported external text-subtitle declarations. Conditions whose applicability
 changes after resizing/downmixing are reevaluated through bounded refinement.
+
+Progressive audio supports MP3, AAC/ADTS, AAC in fragmented MP4/M4A, FLAC, OGG
+with Vorbis/Opus/FLAC, and WAV with signed 16-bit PCM. Copy requires compatible
+source codec/framing and current remux permission. Exact audio targets remain
+separate from maximum ceilings; FLAC retains an explicit 16- or 24-bit choice,
+and Opus output uses its actual 48 kHz clock. Unknown timing or precision is not
+converted into a guaranteed output fact. The [audio guide](audio-playback.md)
+records source restrictions and deliberately rejected copy combinations.
 
 The resulting output facts pass the same profile evaluator again. Input facts
 that the output cannot promise are cleared: input time bases and codec tags, and
@@ -32,11 +45,17 @@ into a fabricated result. Required unknown output conditions cause rejection.
 MPEG-TS Annex B output does not retain MP4's AVC framing claim.
 
 Initial numeric server defaults are 20 Mbps total, 1920x1080, and up to eight audio
-channels. The planner preserves source channels when allowed; MP3 is limited to
-two channels. It reserves ten percent of the bitrate budget for transport
+channels. The planners preserve source channels when allowed; MP3 is limited to
+two channels. HLS planning reserves ten percent of the bitrate budget for transport
 overhead, which is a planning allowance rather than a packet-level rate limiter.
 The caller can supply different bounded limits. Remux/audio/video permissions
 default to false until explicitly supplied by the authorized caller.
+
+Progressive lossy-audio budgets apply to encoded media, allowing an exact target
+to equal the requested media ceiling. PCM uses its payload rate and FLAC a
+conservative sample/frame bound. Container startup bytes remain within cache
+quotas but are not amortized into a short clip's bitrate estimate. This policy
+does not impose instantaneous HTTP bandwidth limits.
 
 Explicit HDR conversion, unknown high-bit-depth HDR risk, unsupported interlace,
 embedded/bitmap subtitle rendering, unsupported output conditions, and unavailable
@@ -77,6 +96,29 @@ tag injection. An unfinished event is never relabeled as a complete VOD.
 The client-facing VOD manifest comes from the complete source timeline, separately
 from the measured internal worker list; seeking can produce a requested range
 without truncating that public manifest.
+
+Audio-only HLS uses exact source duration and output-frame or measured packet
+facts to merge an unproducible short final tail into the preceding segment before
+publishing the timeline. Total duration and global numbering remain coherent,
+and target duration is recomputed. This does not add packed AAC/MP3 HLS or claim
+sample-exact gapless presentation.
+
+Progressive mode sends media through nonseekable descriptor 4 into the private
+append-only `stream.bin`, while descriptor 3 remains the source and stdout the
+progress channel. Readiness requires actual media payload beyond container
+metadata. `ProgressiveReader` waits through temporary EOF and returns successful
+EOF only after durable completion and consumption of all final bytes. Failed or
+cancelled production returns an error; after response headers, the HTTP adapter
+preserves `http.ErrAbortHandler` so truncated output is aborted instead of ending
+with a normal success terminator.
+
+Probe cache version 3 adds bounded packet/frame timing for supported continuous
+audio. Integer decoded sample counts survive seek/resampling plans rather than
+being reconstructed from outward-rounded ticks. WAV writes an accurate RIFF
+header before its PCM payload; only the defined sample-quantization deficit may
+be padded. Excessive, materially short, misaligned or changed source/output fails,
+and unsupported 32-bit RIFF sizes are rejected. Existing libraries need a normal
+rescan; additional exact-timing input profiles remain work.
 
 The runner processes `-progress pipe:1` incrementally with a bounded line size;
 normal progress can continue for hours without accumulating memory. Stderr keeps
@@ -129,6 +171,13 @@ terminal result; completed/failed/cancelled/interrupted records cannot revive.
 Cleanup may persist a terminal result after logout. Source files, tokens, output
 paths, and stderr are not database fields.
 
+Migration `0012` adds [client playback references](client-playback-references.md).
+A client nonce is scoped to user, authentication session and device, then bound
+to one canonical server play and one item/source. Encoding jobs and output
+revisions continue using the canonical identity. Tombstones prevent a removed or
+terminal playback reference from silently creating new work; binding or resolving
+the reference does not update watched state or playback position.
+
 Startup recovery marks abandoned queued/running rows interrupted while retaining
 history. The caller must already hold the existing exclusive catalog ownership;
 a cache-directory lock alone cannot coordinate two roots using one database.
@@ -163,15 +212,20 @@ does not redirect output into a replacement path. Recovery removes only verified
 owned output. Reader leases defer deletion until readers close.
 
 `Ensure` takes ownership of every supplied input, including duplicate/error paths.
-Identical scope/source/plan requests reuse work. `WaitReady` requires a published
-playlist and a complete segment. `Open` requires the exact scope and a generated
+Identical scope/source/plan requests reuse work. For HLS, `WaitReady` requires a
+published playlist and a complete segment; progressive readiness requires usable
+media payload. `Open` requires the exact scope and a generated
 filename; the HTTP adapter additionally revalidates token, library, playback policy,
 and source before serving output, including cached and conditional requests.
+`OpenProgressive` exposes a nonseekable reader with the same scoped authorization
+boundary and shared reader/cache limits. The last progressive consumer cancels
+unfinished production; completed output may remain cached. Retirement fences
+deduplication before another consumer can register the same output key.
 Cancellation, startup/no-progress/idle/runtime limits, cache
 failure, and shutdown reclaim owned resources. Caller timeouts do not abandon
 background cleanup. Conversion never updates watched or playback-position data.
 
-## VOD integration and remaining work
+## Playback integration and remaining work
 
 The [reference study](../research/hls-reference.md) establishes full VOD manifests
 and stable global segment numbers, with `EXT-X-START` seek hints. Its successful
@@ -179,6 +233,9 @@ segments also establish usable codec/packet evidence; its remux failures are not
 a behavior to reproduce. The [HTTP adapter](hls-playback.md) uses complete source
 timelines and bounded VOD producers with explicit cuts and global numbers.
 Its full-duration manifests are distinct from the measured internal worker list.
-Progressive conversion, universal audio, richer subtitle/codec profiles, hard
-worker isolation, actual hardware execution, and real third-party-client release
-acceptance remain required. The M4/M5/M6 scope stays active.
+Universal/legacy audio now selects original, progressive, or MPEG-TS HLS delivery
+under the [audio contract](audio-playback.md) and [reference evidence](../research/audio-reference.md).
+Progressive video, progressive PlaybackInfo profiles, additional audio timing
+cases, packed-audio HLS, richer subtitle/codec profiles, hard worker isolation,
+actual hardware execution, and real third-party-client release acceptance remain
+required. The M4/M5/M6 scope stays active.

@@ -1,0 +1,61 @@
+{
+  "kind": "audio-case-observation",
+  "case": "flac-list-mp3-first",
+  "sourceKind": "flac",
+  "parameters": {
+    "Container": "mp3,flac"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49270784,
+      "tmpfsFreeBytes": 902987776
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49266688,
+      "tmpfsFreeBytes": 902979584
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49266688,
+      "tmpfsFreeBytes": 902979584
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "audio/flac",
+  "finalBytes": 716925,
+  "delivery": "progressive_or_original",
+  "media": {
+    "probeExit": 0,
+    "decodeExit": 0,
+    "codec": "flac",
+    "sampleRate": "96000",
+    "bitsPerRawSample": "24",
+    "channels": 2,
+    "duration": "6.000000",
+    "decodedSeconds": 6.0
+  },
+  "matchesSourceKinds": [
+    "flac"
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:29.576179+00:00"
+  }
+}

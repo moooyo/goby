@@ -1,0 +1,61 @@
+{
+  "kind": "audio-case-observation",
+  "case": "wav-match",
+  "sourceKind": "wav",
+  "parameters": {
+    "Container": "wav"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48570368,
+      "tmpfsFreeBytes": 878596096
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48570368,
+      "tmpfsFreeBytes": 878587904
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48570368,
+      "tmpfsFreeBytes": 878587904
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "audio/wav",
+  "finalBytes": 576160,
+  "delivery": "progressive_or_original",
+  "media": {
+    "probeExit": 0,
+    "decodeExit": 0,
+    "codec": "pcm_s16le",
+    "sampleRate": "48000",
+    "bitsPerRawSample": null,
+    "channels": 1,
+    "duration": "6.000000",
+    "decodedSeconds": 6.0
+  },
+  "matchesSourceKinds": [
+    "wav"
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:34.114429+00:00"
+  }
+}

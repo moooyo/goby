@@ -1,0 +1,143 @@
+{
+  "owner": "goby-m4c-rescan-upgrade-v1",
+  "status": "passed",
+  "started_at": "2026-09-09T05:36:47.270420+00:00",
+  "libraries": [
+    {
+      "library_id": "f7735a851879da1b28459681929029ac",
+      "name": "Goby Direct Playback fd68121d1efcad99",
+      "status": "completed",
+      "error": null,
+      "job_id": "c40bf0d1cdb83dcaeac130f4da2ec6d5",
+      "scanned": 1,
+      "added": 0,
+      "updated": 1
+    },
+    {
+      "library_id": "f9d3068ea791e6fdf1e756351e7938fb",
+      "name": "Goby HLS verification",
+      "status": "completed",
+      "error": null,
+      "job_id": "e1c2a4bd444180ba2a39fc8f7875e4ac",
+      "scanned": 1,
+      "added": 0,
+      "updated": 1
+    },
+    {
+      "library_id": "869490513db0bc3bd3ca045f94c0f4b7",
+      "name": "Goby NextUp verification",
+      "status": "completed",
+      "error": null,
+      "job_id": "e64e8c79882c4b39f64b58eaba03db53",
+      "scanned": 3,
+      "added": 0,
+      "updated": 3
+    },
+    {
+      "library_id": "6b292629894c1e52223362072bff8a22",
+      "name": "Goby Subtitle verification",
+      "status": "completed",
+      "error": null,
+      "job_id": "49d2e855de00a3a1e139c35112052963",
+      "scanned": 1,
+      "added": 0,
+      "updated": 1
+    }
+  ],
+  "cleanup_errors": [],
+  "excluded_libraries": [
+    {
+      "name": "Goby Audio M4c verification",
+      "id": "cee89e23266846304b1c5551b4a24381",
+      "reason": "Exclusively owned by the concurrent M4c audio verifier"
+    }
+  ],
+  "service_before": {
+    "user": "goby",
+    "pid": 3247967,
+    "active_state": "active"
+  },
+  "before": {
+    "schema_version": 12,
+    "version2_media_total": 6,
+    "outdated_media_total": 6,
+    "selected_media_count": 6,
+    "selected_version2_media": 6,
+    "selected_current_media": 0,
+    "selected_item_count": 14,
+    "user_state_count": 10,
+    "by_library": [
+      {
+        "library_id": "6b292629894c1e52223362072bff8a22",
+        "media_count": 1,
+        "current_media": 0,
+        "version2_media": 1
+      },
+      {
+        "library_id": "869490513db0bc3bd3ca045f94c0f4b7",
+        "media_count": 3,
+        "current_media": 0,
+        "version2_media": 3
+      },
+      {
+        "library_id": "f7735a851879da1b28459681929029ac",
+        "media_count": 1,
+        "current_media": 0,
+        "version2_media": 1
+      },
+      {
+        "library_id": "f9d3068ea791e6fdf1e756351e7938fb",
+        "media_count": 1,
+        "current_media": 0,
+        "version2_media": 1
+      }
+    ]
+  },
+  "after": {
+    "schema_version": 12,
+    "version2_media_total": 0,
+    "outdated_media_total": 0,
+    "selected_media_count": 6,
+    "selected_version2_media": 0,
+    "selected_current_media": 6,
+    "selected_item_count": 14,
+    "user_state_count": 10,
+    "by_library": [
+      {
+        "library_id": "6b292629894c1e52223362072bff8a22",
+        "media_count": 1,
+        "current_media": 1,
+        "version2_media": 0
+      },
+      {
+        "library_id": "869490513db0bc3bd3ca045f94c0f4b7",
+        "media_count": 3,
+        "current_media": 3,
+        "version2_media": 0
+      },
+      {
+        "library_id": "f7735a851879da1b28459681929029ac",
+        "media_count": 1,
+        "current_media": 1,
+        "version2_media": 0
+      },
+      {
+        "library_id": "f9d3068ea791e6fdf1e756351e7938fb",
+        "media_count": 1,
+        "current_media": 1,
+        "version2_media": 0
+      }
+    ]
+  },
+  "metadata_preserved": true,
+  "user_state_preserved": true,
+  "fixture_file_snapshots_preserved": true,
+  "fixture_file_count": 14,
+  "service_after": {
+    "user": "goby",
+    "pid": 3247967,
+    "active_state": "active"
+  },
+  "administrator_session_revoked": true,
+  "finished_at": "2026-09-09T05:36:49.408496+00:00"
+}

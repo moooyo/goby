@@ -1,0 +1,87 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Audio/49/stream.mp3?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=40d58af77aaf1ac678cfd52fa6cba903&MaxStreamingBitrate=2000000&Static=true&AudioCodec=aac&AudioSampleRate=22050&StartTimeTicks=20000000&api_key=[REDACTED_TOKEN]",
+    "headers": {
+      "Range": "bytes=0-1023"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 206,
+    "headers": [
+      [
+        "Content-Length",
+        "1024"
+      ],
+      [
+        "Content-Type",
+        "audio/mpeg"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:26:33 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "bytes"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "private, no-transform"
+      ],
+      [
+        "Content-Range",
+        "bytes 0-1023/97098"
+      ],
+      [
+        "ETag",
+        "\"fbf04c10411045f929c278f1abb416b1\""
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "binary-base64",
+    "body": "SUQzBAAAAAAAe1RJVDIAAAAVAAADUmVmZXJlbmNlIEF1ZGlvIE1QMwBUUEUxAAAAFgAAA0dvYnkgQXVkaW8gUmVmZXJlbmNlAFRBTEIAAAAQAAADR29ieSBNNGMgQXVkaW8AVFNTRQAAAA4AAANMYXZmNjMuMS4xMDEAAAAAAAAAAAAAAP/7kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEluZm8AAAAPAAAA5wABesUABAYIDA4QExYYGx0fIyUnKS0vMTQ3OTw+QURGSEtOUFJWWFpdX2JlZ2ltb3Fzd3l7foGDhoiLjpCSlJianJ+ipKeprK+xs7e5u73Bw8XIy83Q0tTY2tze4uTm6ezu8fP2+fv9AAAAAExhdmM2My4xLgAAAAAAAAAAAAAAACQDqAAAAAAAAXrFzDH5bAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kGQAAAI9DE4dYEAAAAANIKAAARYVlR756gAAAAA0gwAAAAXbbtzKUxhLRtDSMMijhI4KByFruWw9nbX3fh+X04AAAAAAAAIAmD4Pg/iAMcH+p1Hn+UdoD/Aju/oKVAgD5+sCHOH+j/KAgAQAQAAQGEAnKYdY3RiCzHGAwCkYp7yhgbACGM6WYabw9Zgeg4G0oH0SgOm/4E4VAKTCrBiMFsGASBKnwgAquBik4GiOpPgZxGAaIAxIZFbcDDigbyg2DQBAKv4XyBuIGwwfqFwv/hq0Y4UEIWICLl//EKjqFzCtiGjmjK//45QoIUEOSLlFykOGaHO//V9E1NVJJLRRUl///WqkiYrUkt2QZS1VtVarbs5mtF6t1KO61QABLv+rjAIAfMAoB8wYAczAABiMCcI43se3TYIOJMc4SEw1AkzBZB2MGkGYwdQVDAZAUnr8Z4QTelBZVxVKNY6LsLvcOINFh5+pepo57/vP9IX3ZffqFSq2mstUuKJ2fbYmOY/FTAoJMdEAz+jzfEyMJRDyzPZnWMzwkPPMJcBVDirhNP/7kmRCCPMqCMXPeGAAAAANIOAAAQ2sIwoOf4JAAAA0gAAABHqE0AjjQL9MlkUIAjX4xbBAPTCRcQ=="
+  },
+  "observation": {
+    "wireBytes": 1024,
+    "wireSha256": "342974061ecd644d3b85a27c43f09c6d88770347dd42f4c3158cb2f104389d11",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:34.651198+00:00"
+  }
+}

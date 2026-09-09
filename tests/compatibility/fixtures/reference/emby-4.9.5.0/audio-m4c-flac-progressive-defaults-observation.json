@@ -1,0 +1,47 @@
+{
+  "kind": "audio-case-observation",
+  "case": "flac-progressive-defaults",
+  "sourceKind": "flac",
+  "parameters": {
+    "Container": "mp3"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 500,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 5,
+      "transcodingBytes": 109985,
+      "rootFreeBytes": 49061888,
+      "tmpfsFreeBytes": 880832512
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 5,
+      "transcodingBytes": 109985,
+      "rootFreeBytes": 49061888,
+      "tmpfsFreeBytes": 880824320
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 5,
+      "transcodingBytes": 109985,
+      "rootFreeBytes": 49061888,
+      "tmpfsFreeBytes": 880824320
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 500,
+  "finalContentType": "text/plain",
+  "finalBytes": 1214,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:31.524562+00:00"
+  }
+}

@@ -61,10 +61,16 @@ func runLimitedFiles(ctx context.Context, timeout time.Duration, maxStdout int, 
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
 	cmd := exec.CommandContext(processContext, executable, args...)
 	cmd.ExtraFiles = files
+	if len(files) > 0 {
+		cmd.Env = mediaProbeEnvironment()
+	}
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	cmd.WaitDelay = time.Second
-	err := cmd.Run()
+	retired, err := startMediaProcess(cmd)
+	if err == nil {
+		err = errors.Join(<-retired, cmd.Wait())
+	}
 	if stdout.exceeded || stderr.exceeded {
 		return nil, fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit)
 	}
@@ -83,4 +89,24 @@ func runLimitedFiles(ctx context.Context, timeout time.Duration, maxStdout int, 
 		return nil, fmt.Errorf("execute %s: %w", filepath.Base(executable), err)
 	}
 	return stdout.buffer.Bytes(), nil
+}
+
+// Descriptor probes need no inherited reporting, proxy, or user configuration
+// variables. The explicit loader path supports the pinned shared toolchain.
+func mediaProbeEnvironment() []string {
+	env := []string{"PATH=" + os.Getenv("PATH"), "LANG=C", "LC_ALL=C", "AV_LOG_FORCE_NOCOLOR=1"}
+	if loader := os.Getenv("LD_LIBRARY_PATH"); loader != "" {
+		env = append(env, "LD_LIBRARY_PATH="+loader)
+	}
+	return env
+}
+
+func startMediaProcess(command *exec.Cmd) (<-chan error, error) {
+	retire := configureMediaProcess(command)
+	if err := command.Start(); err != nil {
+		return nil, err
+	}
+	done := make(chan error, 1)
+	go func() { done <- retire() }()
+	return done, nil
 }

@@ -1,0 +1,85 @@
+{
+  "request": {
+    "method": "HEAD",
+    "path": "/emby/Audio/49/universal?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=2e3948726bb09c63f47ca3703333048d&MaxStreamingBitrate=96000&Container=mp3&TranscodingContainer=mp3&AudioCodec=mp3&StartTimeTicks=20000000&api_key=[REDACTED_TOKEN]",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "72411"
+      ],
+      [
+        "Content-Type",
+        "audio/mpeg"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:26:34 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Accept-Ranges",
+        "none"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Pragma",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "wireBytes": 0,
+    "wireSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:35.103740+00:00"
+  }
+}

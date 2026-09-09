@@ -6,7 +6,7 @@ import "time"
 const TicksPerSecond int64 = 10_000_000
 
 // CurrentProbeVersion identifies the media facts stored by this prober.
-const CurrentProbeVersion = 2
+const CurrentProbeVersion = 3
 
 type Prober struct {
 	FFprobePath string
@@ -18,10 +18,15 @@ type Info struct {
 	FileChangeTimeNs int64
 	Container        string
 	DurationTicks    int64
-	Bitrate          int64
-	Size             int64
-	Streams          []Stream
-	Chapters         []Chapter
+	// Audio-only sources require an exact sample/packet scan before conversion.
+	// Unproven sources retain their original metadata and byte-stream access.
+	AudioDurationExact      bool
+	AudioDurationReason     string
+	PresentationOriginTicks int64
+	Bitrate                 int64
+	Size                    int64
+	Streams                 []Stream
+	Chapters                []Chapter
 }
 
 type Stream struct {
@@ -62,6 +67,24 @@ type Stream struct {
 	IsForced             bool
 	IsExternal           bool
 	IsTextSubtitleStream bool
+	AudioTiming          *AudioTiming
+}
+
+// AudioTiming describes a fully scanned, continuous audio presentation. Sample
+// counts come from decoded frames after the decoder applies priming and padding.
+// PacketCount includes discarded packets; first/last positions refer only to
+// packets that actually yielded presentation samples. Positions are relative to
+// Info.PresentationOriginTicks, and packet starts may be negative after priming.
+// Starts round down and ends/maximum durations round up to 100 ns boundaries.
+type AudioTiming struct {
+	Exact                  bool
+	SampleCount            int64
+	PacketCount            int64
+	StartTicks             int64
+	EndTicks               int64
+	FirstPacketStartTicks  int64
+	LastPacketStartTicks   int64
+	MaxPacketDurationTicks int64
 }
 
 type Chapter struct {

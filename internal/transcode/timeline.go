@@ -32,8 +32,9 @@ type TimelineSegment struct {
 	DurationTicks int64
 }
 
-// BuildTimeline covers the full source duration. Encoded video and audio use
-// nominal cuts. Copied video uses the first keyframe at or after each minimum
+// BuildTimeline covers the full source duration. Encoded video uses nominal
+// cuts; audio-only producers must use BuildAudioTimeline for packet-aware tails.
+// Copied video uses the first keyframe at or after each minimum
 // segment duration; a long or irregular GOP therefore produces longer segments.
 // The caller must supply validated, ordered keyframes from Keyframes. A first
 // video keyframe after zero is allowed: segment zero also covers the container's
@@ -76,6 +77,10 @@ func BuildTimeline(durationTicks int64, segmentSeconds int, keyframes []int64, c
 			cuts = append(cuts, cut)
 		}
 	}
+	return timelineFromCuts(durationTicks, cuts), nil
+}
+
+func timelineFromCuts(durationTicks int64, cuts []int64) Timeline {
 	result := Timeline{Segments: make([]TimelineSegment, 0, len(cuts)+1)}
 	start := int64(0)
 	for _, end := range append(cuts, durationTicks) {
@@ -86,7 +91,7 @@ func BuildTimeline(durationTicks int64, segmentSeconds int, keyframes []int64, c
 		}
 		start = end
 	}
-	return result, nil
+	return result
 }
 
 // SegmentAt returns the segment containing a source position. The exclusive

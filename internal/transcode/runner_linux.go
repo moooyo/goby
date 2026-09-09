@@ -61,9 +61,24 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	defer cancel()
 	progress := &progressWriter{callback: onProgress, cancel: cancel}
 	stderr := &stderrTail{cancel: cancel}
+	var progressive *progressiveObserver
+	if plan.OutputMode == "progressive" {
+		progressive, err = newProgressiveObserver(directory, input, plan, onProgress, cancel)
+		if err != nil {
+			if errors.Is(err, ErrInvalidPlan) || errors.Is(err, ErrInvalidInput) {
+				return result, err
+			}
+			return result, ErrInvalidDirectory
+		}
+		defer progressive.file.Close()
+		progress.callback = progressive.report
+	}
 	cmd := exec.CommandContext(processCtx, resolved, args...)
 	cmd.Dir = directory
 	cmd.ExtraFiles = []*os.File{input}
+	if progressive != nil {
+		cmd.ExtraFiles = append(cmd.ExtraFiles, progressive.file)
+	}
 	cmd.Stdout, cmd.Stderr = progress, stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.WaitDelay = terminateGrace + time.Second
@@ -93,6 +108,9 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	if err := cmd.Start(); err != nil {
 		return result, ErrStart
+	}
+	if progressive != nil {
+		progressive.start()
 	}
 	var publisher *vodPublisher
 	var publishStop, publishDone chan struct{}
@@ -134,10 +152,15 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	retired = true
 	groupMu.Unlock()
 	err = cmd.Wait()
+	unchanged := transcodeSourceUnchanged(input, info)
+	var progressiveErr error
+	if progressive != nil {
+		progressiveErr = progressive.finish(err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed && unchanged)
+	}
 	if publisher != nil {
 		close(publishStop)
 		<-publishDone
-		if publisher.err == nil && err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed {
+		if publisher.err == nil && err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed && unchanged {
 			publisher.err = publisher.publish(true)
 		}
 	}
@@ -149,13 +172,29 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if ctx.Err() != nil {
 		return result, ctx.Err()
 	}
+	if !unchanged {
+		return result, ErrInvalidInput
+	}
 	if progress.err != nil {
 		return result, ErrProgress
 	}
-	if waitErr != nil || err != nil || stderr.failed || publisher != nil && publisher.err != nil {
+	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publisher != nil && publisher.err != nil {
 		return result, ErrProcess
 	}
 	return result, nil
+}
+
+func transcodeSourceUnchanged(input *os.File, before os.FileInfo) bool {
+	after, err := input.Stat()
+	if err != nil || !os.SameFile(before, after) || before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) {
+		return false
+	}
+	a, ok := before.Sys().(*syscall.Stat_t)
+	if !ok {
+		return false
+	}
+	b, ok := after.Sys().(*syscall.Stat_t)
+	return ok && a.Ctim == b.Ctim
 }
 
 func waitWithoutReaping(pid int) error {

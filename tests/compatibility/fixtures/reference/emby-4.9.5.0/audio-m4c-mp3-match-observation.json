@@ -1,0 +1,61 @@
+{
+  "kind": "audio-case-observation",
+  "case": "mp3-match",
+  "sourceKind": "mp3",
+  "parameters": {
+    "Container": "mp3"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49283072,
+      "tmpfsFreeBytes": 907681792
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49278976,
+      "tmpfsFreeBytes": 907673600
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 0,
+      "transcodingBytes": 0,
+      "rootFreeBytes": 49278976,
+      "tmpfsFreeBytes": 907673600
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "audio/mpeg",
+  "finalBytes": 97098,
+  "delivery": "progressive_or_original",
+  "media": {
+    "probeExit": 0,
+    "decodeExit": 0,
+    "codec": "mp3",
+    "sampleRate": "44100",
+    "bitsPerRawSample": null,
+    "channels": 2,
+    "duration": "6.000000",
+    "decodedSeconds": 6.0
+  },
+  "matchesSourceKinds": [
+    "mp3"
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:28.949818+00:00"
+  }
+}

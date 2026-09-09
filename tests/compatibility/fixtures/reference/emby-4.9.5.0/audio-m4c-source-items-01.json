@@ -1,0 +1,550 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items?UserId=c7d44baf46104f59ac2f4ca3dadda77f&ParentId=44&Recursive=true&IncludeItemTypes=Audio&Fields=Path%2CMediaSources%2CMediaStreams&Limit=20",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Emby Client=\"Goby Audio Reference Recorder\", Device=\"Linux Audio Test\", DeviceId=\"goby-audio-m4c-recorder\", Version=\"0.1.0\"",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "9072"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:25:53 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Reference Audio FLAC",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "48",
+          "Container": "flac",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_48",
+              "Path": "/reference-audio-source/Reference Audio M4c.flac",
+              "Type": "Default",
+              "Container": "flac",
+              "Size": 716925,
+              "Name": "Reference Audio M4c",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 60000000,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "flac",
+                  "TimeBase": "1/96000",
+                  "DisplayTitle": "FLAC stereo",
+                  "IsInterlaced": false,
+                  "ChannelLayout": "stereo",
+                  "BitRate": 955900,
+                  "BitDepth": 24,
+                  "Channels": 2,
+                  "SampleRate": 96000,
+                  "IsDefault": false,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Type": "Audio",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 955900,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 0,
+              "ItemId": "48"
+            }
+          ],
+          "Path": "/reference-audio-source/Reference Audio M4c.flac",
+          "RunTimeTicks": 60000000,
+          "Size": 716925,
+          "Bitrate": 955900,
+          "IsFolder": false,
+          "Type": "Audio",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "Artists": [
+            "Goby Audio Reference"
+          ],
+          "ArtistItems": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "Composers": [],
+          "Album": "Goby M4c Audio",
+          "AlbumId": "51",
+          "AlbumArtist": "Goby Audio Reference",
+          "AlbumArtists": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "MediaStreams": [
+            {
+              "Codec": "flac",
+              "TimeBase": "1/96000",
+              "DisplayTitle": "FLAC stereo",
+              "IsInterlaced": false,
+              "ChannelLayout": "stereo",
+              "BitRate": 955900,
+              "BitDepth": 24,
+              "Channels": 2,
+              "SampleRate": 96000,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Audio",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Audio"
+        },
+        {
+          "Name": "Reference Audio M4c",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "47",
+          "Container": "aac",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_47",
+              "Path": "/reference-audio-source/Reference Audio M4c.aac",
+              "Type": "Default",
+              "Container": "aac",
+              "Size": 50440,
+              "Name": "Reference Audio M4c",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 59475000,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "aac",
+                  "TimeBase": "1/28224000",
+                  "DisplayTitle": "AAC mono",
+                  "IsInterlaced": false,
+                  "ChannelLayout": "mono",
+                  "BitRate": 67847,
+                  "Channels": 1,
+                  "SampleRate": 48000,
+                  "IsDefault": false,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Profile": "LC",
+                  "Type": "Audio",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 67846,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 0,
+              "ItemId": "47"
+            }
+          ],
+          "Path": "/reference-audio-source/Reference Audio M4c.aac",
+          "RunTimeTicks": 59475000,
+          "Size": 50440,
+          "Bitrate": 67846,
+          "IsFolder": false,
+          "Type": "Audio",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "Artists": [],
+          "ArtistItems": [],
+          "Composers": [],
+          "AlbumArtists": [],
+          "MediaStreams": [
+            {
+              "Codec": "aac",
+              "TimeBase": "1/28224000",
+              "DisplayTitle": "AAC mono",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 67847,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Audio"
+        },
+        {
+          "Name": "Reference Audio MP3",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "49",
+          "Container": "mp3",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_49",
+              "Path": "/reference-audio-source/Reference Audio M4c.mp3",
+              "Type": "Default",
+              "Container": "mp3",
+              "Size": 97098,
+              "Name": "Reference Audio M4c",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 60342860,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "mp3",
+                  "TimeBase": "1/14112000",
+                  "DisplayTitle": "MP3 stereo",
+                  "IsInterlaced": false,
+                  "ChannelLayout": "stereo",
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "SampleRate": 44100,
+                  "IsDefault": false,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Type": "Audio",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 128728,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 0,
+              "ItemId": "49"
+            }
+          ],
+          "Path": "/reference-audio-source/Reference Audio M4c.mp3",
+          "RunTimeTicks": 60342860,
+          "Size": 97098,
+          "Bitrate": 128728,
+          "IsFolder": false,
+          "Type": "Audio",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "Artists": [
+            "Goby Audio Reference"
+          ],
+          "ArtistItems": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "Composers": [],
+          "Album": "Goby M4c Audio",
+          "AlbumId": "51",
+          "AlbumArtist": "Goby Audio Reference",
+          "AlbumArtists": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "MediaStreams": [
+            {
+              "Codec": "mp3",
+              "TimeBase": "1/14112000",
+              "DisplayTitle": "MP3 stereo",
+              "IsInterlaced": false,
+              "ChannelLayout": "stereo",
+              "BitRate": 128000,
+              "Channels": 2,
+              "SampleRate": 44100,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Audio",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Audio"
+        },
+        {
+          "Name": "Reference Audio WAV",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "46",
+          "Container": "wav",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_46",
+              "Path": "/reference-audio-source/Reference Audio M4c.wav",
+              "Type": "Default",
+              "Container": "wav",
+              "Size": 576160,
+              "Name": "Reference Audio M4c",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 60000000,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "pcm_s16le",
+                  "TimeBase": "1/48000",
+                  "DisplayTitle": "PCM_S16LE 1 ch",
+                  "IsInterlaced": false,
+                  "BitRate": 768000,
+                  "BitDepth": 16,
+                  "Channels": 1,
+                  "SampleRate": 48000,
+                  "IsDefault": false,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Type": "Audio",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 768213,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 0,
+              "ItemId": "46"
+            }
+          ],
+          "Path": "/reference-audio-source/Reference Audio M4c.wav",
+          "RunTimeTicks": 60000000,
+          "Size": 576160,
+          "Bitrate": 768213,
+          "IsFolder": false,
+          "Type": "Audio",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "Artists": [
+            "Goby Audio Reference"
+          ],
+          "ArtistItems": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "Composers": [],
+          "Album": "Goby M4c Audio",
+          "AlbumId": "51",
+          "AlbumArtist": "Goby Audio Reference",
+          "AlbumArtists": [
+            {
+              "Name": "Goby Audio Reference",
+              "Id": "50"
+            }
+          ],
+          "MediaStreams": [
+            {
+              "Codec": "pcm_s16le",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "PCM_S16LE 1 ch",
+              "IsInterlaced": false,
+              "BitRate": 768000,
+              "BitDepth": 16,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": false,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Type": "Audio",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Audio"
+        }
+      ],
+      "TotalRecordCount": 4
+    }
+  },
+  "observation": {
+    "wireBytes": 9072,
+    "wireSha256": "56abdc2efd5265d1b09a51f881eaaeb1193ccaa38ae713295282f00317736642",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:25:54.458953+00:00"
+  }
+}

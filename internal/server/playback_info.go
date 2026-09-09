@@ -154,6 +154,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested HLS profile cannot be evaluated.")
 			return
 		}
+		if conversion.Plan != nil && source.Item.Type == "Audio" && exactAudioCoverage(*source.Item.Media, conversion.Plan.AudioStreamIndex) == nil {
+			conversion.Plan = nil
+		}
 	}
 	formats := map[int]string{}
 	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {

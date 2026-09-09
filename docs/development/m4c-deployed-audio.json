@@ -1,0 +1,119 @@
+{
+  "assertions": [
+    {
+      "audio_items": 5,
+      "exact_adts_samples": 289792,
+      "probe_version": 3,
+      "stage": "owned audio scan and ProbeVersion 3 gate",
+      "tail_samples": 288048
+    },
+    {
+      "adts_mime": "audio/aac",
+      "conditional": 304,
+      "formats": [
+        "mp3",
+        "flac",
+        "aac",
+        "wav"
+      ],
+      "head": 200,
+      "missing_and_invalid_token": 401,
+      "original": 200,
+      "range": 206,
+      "stage": "bare universal original bytes HEAD Range and 304"
+    },
+    {
+      "content_length_omitted": true,
+      "encoding_jobs": 0,
+      "head": 200,
+      "stage": "progressive HEAD without an encoder"
+    },
+    {
+      "cross_auth_nonce_isolated": true,
+      "cross_source_nonce": 404,
+      "range_ignored_status": 200,
+      "retry_reuses_job": true,
+      "seek_two_seconds": {
+        "channels": 2,
+        "codec": "mp3",
+        "decode_exit": 0,
+        "decoded_samples": 193536,
+        "decoded_seconds": 4.032,
+        "probe_exit": 0,
+        "sample_rate": 48000
+      },
+      "stage": "progressive MP3 full seek retry and nonce isolation",
+      "user_data_unchanged": true,
+      "whole": {
+        "channels": 2,
+        "codec": "mp3",
+        "decode_exit": 0,
+        "decoded_samples": 289152,
+        "decoded_seconds": 6.024,
+        "probe_exit": 0,
+        "sample_rate": 48000
+      }
+    },
+    {
+      "all_presentation_samples_preserved": true,
+      "channels": 1,
+      "codec": "pcm_s16le",
+      "decode_exit": 0,
+      "decoded_samples": 289792,
+      "decoded_seconds": 6.037333,
+      "probe_exit": 0,
+      "sample_rate": 48000,
+      "stage": "ADTS to WAV exact integer samples"
+    },
+    {
+      "every_advertised_segment": 200,
+      "full_graph": {
+        "channels": 2,
+        "codec": "aac",
+        "decode_exit": 0,
+        "decoded_samples": 288768,
+        "decoded_seconds": 6.016,
+        "probe_exit": 0,
+        "sample_rate": 48000
+      },
+      "hint_seconds": 2,
+      "phantom_segment": 404,
+      "segment_durations": [
+        3.0,
+        3.001
+      ],
+      "stage": "6.001-second HLS full timeline hint and every segment"
+    },
+    {
+      "delete_and_post_cleanup": 204,
+      "deleted_hls_child": 404,
+      "independent_owner_preserved": true,
+      "logged_out_url": 401,
+      "stage": "nonce stop active encoding deletion and logout",
+      "stopped_nonce": 404,
+      "user_data_unchanged": true
+    }
+  ],
+  "cleanup_errors": [],
+  "deployment": {
+    "effective_uid": 995,
+    "ffmpeg": "9.0.1",
+    "main_pid": 3247967,
+    "non_root": true,
+    "schema_version": 12,
+    "transcoding_enabled": true
+  },
+  "http_response_bytes": 2580621,
+  "owned_fixture_hashes": {
+    "aac": "ae7f1c88684f05ec883b327dd2b1fae17445b3dfaba446c02613c2f70ac46160",
+    "flac": "843ce1829f3ef1807233e4a0ed874d9132fa87f581b07298576ac18ea4216c81",
+    "mp3": "75697f6abbda787e48de57462fef4c75c2decaa07576ef95d2105fd8151ed61b",
+    "wav": "37fc3c2a29ff734981c1217003888b8aa7207fcf4c9f498c19fe9535ce36c8b5"
+  },
+  "owned_tail_sha256": "98f562694fcd89cef333a4f472ea366f86ba9aee557f4032c6810ebf79ef7ed2",
+  "owned_user_data_unchanged": true,
+  "private_tmpfs_scratch_removed": true,
+  "reference_and_owned_sources_unchanged": true,
+  "reference_sources_unchanged": true,
+  "status": "passed"
+}

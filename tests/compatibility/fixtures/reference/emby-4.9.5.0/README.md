@@ -1,10 +1,10 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-These 107 JSON files were captured from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host: 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. They record reference behavior; they are not evidence that Goby passes all these contracts. The earlier fixtures are unchanged by each extension.
+This directory contains 610 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS and audio studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
-Each fixture contains:
+HTTP fixtures contain:
 
 - `reference`: product, actual server version, and UTC capture timestamp.
 - `request`: exact method, API-relative path, explicit recorder headers, and body.
@@ -20,5 +20,14 @@ The initial library/list/Latest captures preceded the movie library's `SampleIgn
 The later artwork captures follow a single-item refresh after adding synthetic NFO, JPEG, and PNG sidecars. They have a different title and richer metadata for the same movie ID. See the report's M2b extension for source hashes, timezone effects, field-selection behavior, image authentication, transforms, and conditional requests. The extension audit verified its 24 exports independently and retained SHA-256 equality of all original raw/exported baseline files.
 
 The 18 entity captures are read-only requests after that refresh. They cover genre/tag/studio/person lists, name and generic-ID details, ID/name filtering, a negative filter, and pagination. Their audit preserved all preceding 89 raw/exported files. Embedded numeric facet IDs and string entity/list/person IDs must retain their original JSON types during comparisons.
+
+Subsequent protocol and media records have their own documented observation or
+probe envelopes. Consult the [WebSocket study](../../../../../docs/research/websocket-reference.md),
+[HLS study](../../../../../docs/research/hls-reference.md), and
+[Universal/progressive audio study](../../../../../docs/research/audio-reference.md)
+for experiment scope, source hashes, positive decoding results and preserved
+failures. M4c adds 174 audio records to the preceding 436. Large audio/TS bodies
+can be represented by bounded binary summaries and hashes rather than embedded
+media; exact private wire captures were audited separately on the test host.
 
 Do not replay setup/library mutations against arbitrary servers. Differential checks should normalize explicitly chosen nondeterministic fields without changing casing, array/object shape, status, content type, null/omission distinctions, or numeric values.

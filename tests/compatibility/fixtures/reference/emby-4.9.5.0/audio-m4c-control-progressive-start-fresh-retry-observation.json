@@ -1,0 +1,40 @@
+{
+  "kind": "audio-retry-observation",
+  "firstStatus": 500,
+  "retryStatus": 200,
+  "parameters": {
+    "Container": "mp3",
+    "TranscodingProtocol": "",
+    "TranscodingContainer": "mp3",
+    "AudioCodec": "mp3",
+    "MaxStreamingBitrate": 128000,
+    "StartTimeTicks": 20000000
+  },
+  "identicalURL": true,
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "audio/mpeg",
+  "finalBytes": 65159,
+  "delivery": "progressive_or_original",
+  "media": {
+    "probeExit": 0,
+    "decodeExit": 0,
+    "codec": "mp3",
+    "sampleRate": "48000",
+    "bitsPerRawSample": null,
+    "channels": 2,
+    "duration": "4.000000",
+    "decodedSeconds": 4.0
+  },
+  "matchesSourceKinds": [],
+  "rangeStatus": 200,
+  "rangeBytes": 65159,
+  "rangeContentRange": null,
+  "rangePrefixMatches": false,
+  "cachedHeadStatus": 200,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:30:31.724911+00:00"
+  }
+}

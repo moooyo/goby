@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -13,6 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const maxProbeOutput = 8 * 1024 * 1024
@@ -67,6 +69,12 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if runtime.GOOS != "linux" {
 		return Info{}, fmt.Errorf("media probing requires Linux")
 	}
+	timeout := p.Timeout
+	if timeout <= 0 {
+		timeout = defaultProcessTimeout
+	}
+	probeContext, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	if file == nil {
 		return Info{}, fmt.Errorf("media file is nil")
 	}
@@ -82,7 +90,7 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if executable == "" {
 		executable = "ffprobe"
 	}
-	output, err := runLimitedFiles(ctx, p.Timeout, maxProbeOutput, executable, []*os.File{file},
+	output, err := runLimitedFiles(probeContext, timeout, maxProbeOutput, executable, []*os.File{file},
 		"-v", "error", "-show_format", "-show_streams", "-show_chapters",
 		"-of", "json", "-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats,
 		"-i", "/proc/self/fd/3")
@@ -92,6 +100,20 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	info, err := parseProbe(output)
 	if err != nil {
 		return Info{}, err
+	}
+	if audioOnly, reason := audioTimingSupport(info); audioOnly {
+		info.AudioDurationReason = reason
+		if reason == "" {
+			accurate, scanErr := runAudioTimingProbe(probeContext, min(timeout, 2*time.Minute), executable, file, info)
+			var unproven *audioTimingUnproven
+			if errors.As(scanErr, &unproven) {
+				info.AudioDurationReason = unproven.Reason
+			} else if scanErr != nil {
+				return Info{}, fmt.Errorf("scan audio presentation: %w", scanErr)
+			} else {
+				info = accurate
+			}
+		}
 	}
 	after, err := file.Stat()
 	if err != nil {

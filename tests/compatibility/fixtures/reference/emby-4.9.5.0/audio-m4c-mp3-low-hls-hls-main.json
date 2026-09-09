@@ -1,0 +1,81 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Audio/49/main.m3u8?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=17d93c419ef0313225052138f5ab3e86&MaxStreamingBitrate=64000&Container=mp3&TranscodingContainer=ts&TranscodingProtocol=hls&AudioCodec=aac&api_key=[REDACTED_TOKEN]&SegmentContainer=ts&AudioBitrate=64000",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "368"
+      ],
+      [
+        "Content-Type",
+        "application/vnd.apple.mpegurl"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:26:30 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cache-Control",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Pragma",
+        "no-cache, no-store, no-transform, must-revalidate"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "#EXTM3U\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:3.0000, nodesc\nhls1/main/0.ts?PlaySessionId=17d93c419ef0313225052138f5ab3e86\n#EXTINF:3.0000, nodesc\nhls1/main/1.ts?PlaySessionId=17d93c419ef0313225052138f5ab3e86\n#EXTINF:3.0000, nodesc\nhls1/main/2.ts?PlaySessionId=17d93c419ef0313225052138f5ab3e86\n#EXT-X-ENDLIST\n"
+  },
+  "observation": {
+    "wireBytes": 368,
+    "wireSha256": "94f8e2a6ba1ec20a554e807d0dfa710679918c3bce2c86205559c47b7a8374c9",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:31.107393+00:00"
+  }
+}

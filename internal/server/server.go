@@ -138,6 +138,9 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		}
 		defer func() {
 			if recovered := recover(); recovered != nil {
+				if recovered == http.ErrAbortHandler {
+					panic(recovered)
+				}
 				s.log.Error("request panic", "request_id", requestID)
 				apiError(w, r, 500, "internal_error", "The request could not be completed.")
 			}

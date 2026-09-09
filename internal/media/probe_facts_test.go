@@ -196,7 +196,7 @@ func TestParseProbeRejectsMalformedExtendedFacts(t *testing.T) {
 }
 
 func TestProbeFactVersionAndLegacyCache(t *testing.T) {
-	if CurrentProbeVersion != 2 || (Prober{}).CacheVersion() != CurrentProbeVersion {
+	if CurrentProbeVersion != 3 || (Prober{}).CacheVersion() != CurrentProbeVersion {
 		t.Fatalf("unexpected probe cache version: %d", (Prober{}).CacheVersion())
 	}
 	var legacy Info
@@ -212,7 +212,7 @@ func TestProbeFactVersionAndLegacyCache(t *testing.T) {
 		t.Fatalf("legacy cache inferred facts that were never probed: %+v", stream)
 	}
 	info, err := parseProbe(factsDocument(`"codec_type":"video"`))
-	if err != nil || info.ProbeVersion != 2 {
+	if err != nil || info.ProbeVersion != CurrentProbeVersion {
 		t.Fatalf("fresh probe did not set the current cache version: %+v, %v", info, err)
 	}
 }
@@ -309,12 +309,11 @@ func TestProbeFileRejectsSameSizeMutationWithRestoredModTime(t *testing.T) {
 	helper := filepath.Join(directory, "ffprobe-helper")
 	program := "#!/bin/sh\nset -eu\nsleep 0.05\n" +
 		"printf '%s' 'changed!' > /proc/self/fd/3\n" +
-		"touch -r \"$GOBY_PROBE_REFERENCE\" /proc/self/fd/3\n" +
+		"touch -r \"$(dirname \"$0\")/timestamp\" /proc/self/fd/3\n" +
 		"printf '%s\\n' '{\"format\":{\"format_name\":\"matroska,webm\"},\"streams\":[{\"index\":0}]}'\n"
 	if err := os.WriteFile(helper, []byte(program), 0700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GOBY_PROBE_REFERENCE", reference)
 	info, err := (Prober{FFprobePath: helper, Timeout: 5 * time.Second}).ProbeFile(context.Background(), file)
 	if err == nil || !strings.Contains(err.Error(), "media file changed during probe") || !reflect.DeepEqual(info, Info{}) {
 		t.Fatalf("changed media returned cached facts: %+v, %v", info, err)

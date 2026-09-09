@@ -1,0 +1,165 @@
+package library
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
+)
+
+const (
+	maxClientPlaybackReferenceBytes     = 256
+	maxClientPlaybackReferencesPerAuth  = 65_536
+	maxClientPlaybackReferencesPerUser  = 262_144
+	clientPlaybackReferenceCleanupBatch = 256
+)
+
+// PrepareCorrelatedPlayback binds a client-generated reference to a distinct
+// internal play within its authenticated user/session/device scope. Reusing a
+// reference may refresh only the same live item/source. Terminal or deleted
+// targets cannot be rebound. Reserved play_ identifiers only resolve existing
+// internal sessions; they never become new client references.
+func (s *Store) PrepareCorrelatedPlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, reference string) (PlaySession, error) {
+	return s.preparePlayback(ctx, owner, itemID, mediaSourceID, reference, true)
+}
+
+// ResolvePlaybackReference returns an owned canonical ID without creating or
+// refreshing a play. Existing terminal plays remain resolvable for idempotent
+// cleanup. Missing targets and tombstones return ErrNotFound. Current account,
+// authentication, playback policy, and catalog access are checked every time.
+func (s *Store) ResolvePlaybackReference(ctx context.Context, owner PlaybackOwner, reference string) (string, error) {
+	if !validClientPlaybackReference(reference) {
+		return "", ErrInvalidInput
+	}
+	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	if err != nil {
+		return "", err
+	}
+	defer rollback(tx)
+	session, err := readOwnedPlaySession(ctx, tx, owner, reference, false)
+	if err != nil {
+		return "", err
+	}
+	if _, err := lockStateItem(ctx, tx, access, session.ItemID, true); err != nil {
+		return "", err
+	}
+	// Resolve the canonical row again after the catalog lock. Deletion may make
+	// it unavailable, but an immutable alias can never redirect this operation.
+	session, err = readOwnedCanonicalPlaySession(ctx, tx, owner, session.ID, false)
+	if err != nil {
+		return "", err
+	}
+	if _, err := sourceForItem(session.ItemID, session.MediaSourceID); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("complete playback reference resolution: %w", err)
+	}
+	return session.ID, nil
+}
+
+func validClientPlaybackReference(reference string) bool {
+	return strings.TrimSpace(reference) != "" && len(reference) <= maxClientPlaybackReferenceBytes &&
+		utf8.ValidString(reference) && strings.IndexFunc(reference, unicode.IsControl) < 0
+}
+
+// Internal IDs retain priority, including historical rows without the current
+// purpose prefix. Nonce lookup never widens ownership or creates missing rows.
+func readOwnedPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, reference string, lock bool) (PlaySession, error) {
+	if !validClientPlaybackReference(reference) {
+		return PlaySession{}, ErrInvalidInput
+	}
+	session, err := readOwnedCanonicalPlaySession(ctx, tx, owner, reference, lock)
+	if !errors.Is(err, ErrNotFound) || strings.HasPrefix(reference, "play_") {
+		return session, err
+	}
+	id, exists, err := lookupClientPlaybackReference(ctx, tx, owner, reference)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	if !exists || id == "" {
+		return PlaySession{}, ErrNotFound
+	}
+	return readOwnedCanonicalPlaySession(ctx, tx, owner, id, lock)
+}
+
+func requireCorrelatedPlaybackAuthentication(ctx context.Context, tx pgx.Tx, owner PlaybackOwner) error {
+	var enabled bool
+	err := tx.QueryRow(ctx, `SELECT kind = 'emby' FROM sessions
+		WHERE id = $1 AND user_id = $2 AND device_id = $3`, owner.SessionID, owner.UserID, owner.DeviceID).Scan(&enabled)
+	if errors.Is(err, pgx.ErrNoRows) || err == nil && !enabled {
+		return ErrForbidden
+	}
+	if err != nil {
+		return fmt.Errorf("authorize client playback reference: %w", err)
+	}
+	return nil
+}
+
+// An existing NULL target is a tombstone, not permission to create a new play.
+// The surrounding transaction already holds current user/authentication locks.
+func lookupClientPlaybackReference(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, reference string) (string, bool, error) {
+	var id *string
+	err := tx.QueryRow(ctx, `SELECT reference.play_session_id FROM client_playback_references reference
+		JOIN sessions authentication ON authentication.id = reference.auth_session_id
+			AND authentication.user_id = reference.user_id AND authentication.device_id = reference.device_id
+		WHERE reference.user_id = $1 AND reference.auth_session_id = $2 AND reference.device_id = $3
+		AND reference.client_nonce = $4 AND authentication.kind = 'emby'`,
+		owner.UserID, owner.SessionID, owner.DeviceID, reference).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("read client playback reference: %w", err)
+	}
+	if id == nil {
+		return "", true, nil
+	}
+	return *id, true, nil
+}
+
+// Call only while holding lockPlaybackCapacity, followed by the usual item data
+// lock. Both active-session and reference admission therefore serialize per user.
+func createCorrelatedPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData, reference string) (PlaySession, error) {
+	var authCount, userCount int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2), count(*)
+		FROM client_playback_references WHERE user_id = $1`, owner.UserID, owner.SessionID).Scan(&authCount, &userCount); err != nil {
+		return PlaySession{}, fmt.Errorf("check client playback reference capacity: %w", err)
+	}
+	if authCount >= maxClientPlaybackReferencesPerAuth || userCount >= maxClientPlaybackReferencesPerUser {
+		return PlaySession{}, ErrBusy
+	}
+	session, err := createPlaybackSession(ctx, tx, owner, item, sourceID, data, true)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO client_playback_references
+		(user_id, auth_session_id, device_id, client_nonce, play_session_id)
+		VALUES ($1, $2, $3, $4, $5)`, owner.UserID, owner.SessionID, owner.DeviceID, reference, session.ID); err != nil {
+		return PlaySession{}, fmt.Errorf("bind client playback reference: %w", err)
+	}
+	return session, nil
+}
+
+func pruneInactiveClientPlaybackReferences(ctx context.Context, tx pgx.Tx, userID string) error {
+	// Disabling an account, stopping a play, or expiring a play does not permit
+	// nonce reuse. Only revoked/expired authentication makes its bindings inert.
+	_, err := tx.Exec(ctx, `WITH removable AS (
+		SELECT reference.user_id, reference.auth_session_id, reference.device_id, reference.client_nonce
+		FROM client_playback_references reference JOIN sessions authentication ON authentication.id = reference.auth_session_id
+		WHERE reference.user_id = $1 AND (authentication.revoked_at IS NOT NULL OR authentication.expires_at <= clock_timestamp())
+		ORDER BY reference.auth_session_id, reference.device_id, reference.client_nonce
+		LIMIT $2 FOR UPDATE OF reference SKIP LOCKED
+	) DELETE FROM client_playback_references reference USING removable
+	WHERE reference.user_id = removable.user_id AND reference.auth_session_id = removable.auth_session_id
+	AND reference.device_id = removable.device_id AND reference.client_nonce = removable.client_nonce`,
+		userID, clientPlaybackReferenceCleanupBatch)
+	if err != nil {
+		return fmt.Errorf("prune inactive client playback references: %w", err)
+	}
+	return nil
+}

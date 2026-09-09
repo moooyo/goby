@@ -364,6 +364,16 @@ func init() {
 
 func runTranscodeTestHelper(mode string) int {
 	switch mode {
+	case "progressive-slow":
+		ffmpeg, err := exec.LookPath("ffmpeg")
+		if err != nil {
+			return 96
+		}
+		args := append([]string{ffmpeg, "-readrate", "1"}, os.Args[1:]...)
+		if syscall.Exec(ffmpeg, args, os.Environ()) != nil {
+			return 97
+		}
+		return 98
 	case "copy":
 		for _, entry := range os.Environ() {
 			if strings.HasPrefix(entry, "GOBY_") || strings.HasPrefix(entry, "FFREPORT=") {

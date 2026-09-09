@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Audio/49/universal.mp3?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=93c1c3e09fb18ebb6b8df656b798cd1a&MaxStreamingBitrate=2000000&Container=flac&api_key=[REDACTED_TOKEN]",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "2010"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:26:32 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-e512dfb4-fb6d-4409-9ff5-2cc5fe601df3_1graph.txt\" -f mp3 -i \"/reference-audio-source/Reference Audio M4c.mp3\" -map 0:0 -vn -sn -c:a:0 copy \"/transcoding-temp/96E01C/96E01C.mp3\"\n\n12:26:33.207 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n12:26:33.207   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n12:26:33.207 Execution Date: 2026-09-09 12:26:33\n12:26:33.208 Input #0, mp3, from '/reference-audio-source/Reference Audio M4c.mp3':\n12:26:33.208   Metadata:\n12:26:33.208     title           : Reference Audio MP3\n12:26:33.208     artist          : Goby Audio Reference\n12:26:33.208     album           : Goby M4c Audio\n12:26:33.208     encoder         : Lavf63.1.101\n12:26:33.208   Duration: 00:00:06.03, start: 0.025057, bitrate: 128 kb/s\n12:26:33.208   Stream #0:0: Audio: mp3, 44100 Hz, stereo, fltp, 128 kb/s, Start-Time 0.025s\n12:26:33.208     Metadata:\n12:26:33.208       encoder         : Lavc63.1.\n12:26:33.208 Output #0, mp3, to '/transcoding-temp/96E01C/96E01C.mp3':\n12:26:33.208   Metadata:\n12:26:33.208     TIT2            : Reference Audio MP3\n12:26:33.208     TPE1            : Goby Audio Reference\n12:26:33.208     TALB            : Goby M4c Audio\n12:26:33.208     TSSE            : Lavf59.27.100\n12:26:33.208   Stream #0:0: Audio: mp3, 44100 Hz, stereo, fltp, 128 kb/s\n12:26:33.208     Metadata:\n12:26:33.208       encoder         : Lavc63.1.\n12:26:33.208 Stream mapping:\n12:26:33.208   Stream #0:0 -> #0:0 (copy)\n12:26:33.208 Press [q] to stop, [?] for help\n12:26:33.208 elapsed=00:00:00.00 size=       1kB time=00:00:00.00 bitrate=7271.4kbits/s throttle=off speed=N/A    \nelapsed=00:00:00.00 size=      95kB time=00:00:06.00 bitrate= 129.3kbits/s throttle=off speed=1.87e+04x    \nvideo:0kB audio:94kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.570701%\nEXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 2010,
+    "wireSha256": "a34adf3f6be91c8af43033aaba680c9ebbddc152209794d73ecb4922af4dc73b",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:33.260281+00:00"
+  }
+}

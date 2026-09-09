@@ -1,13 +1,13 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Progressive conversion, universal audio, embedded/additional subtitles, broader output formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references. Progressive video, progressive PlaybackInfo profile coverage, additional audio timing/input profiles, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
 ## Build inputs
 
 - Go 1.27.1; the module pins the supported toolchain minimum.
 - PostgreSQL, verified here with 17.11; connect using `GOBY_DATABASE_URL`.
 - Node compatible with the locked frontend dependencies. The initial frontend was built with Node 26.1.0; see [frontend instructions](../../web/admin/README.md).
-- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata, and copied-video HLS uses packet seekpoints. Original playback serves unchanged bytes; supported HLS conversion uses bounded FFmpeg workers. Hardware decode/encode can be configured but actual GPU execution remains unverified.
+- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata and bounded audio timing inspection; copied-video HLS uses packet seekpoints. Original playback serves unchanged bytes; supported HLS and progressive audio conversion share bounded FFmpeg workers. Video hardware decode/encode can be configured but actual GPU execution remains unverified.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
@@ -51,14 +51,16 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_COOKIE_SECURE` | Secure administrator cookies, default `true` |
 | `GOBY_TRUSTED_PROXIES` | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`; empty by default |
 | `GOBY_WEB_DIR` | Built administrator asset directory, default `web/admin/dist` |
-| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS conversion workers |
-| `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans and copied-video HLS timeline probes |
+| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS and progressive audio workers |
+| `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans, exact audio timing inspection, and copied-video HLS timeline probes |
 | `GOBY_TRANSCODING_ENABLED` | Enable configured conversion, default `true`; set `false` to disable it |
 | `GOBY_TRANSCODE_CACHE` | Dedicated conversion cache, default `/var/cache/goby/transcodes` |
 | `GOBY_HW_DECODER`, `GOBY_HW_ENCODER`, `GOBY_HW_DEVICE` | Independent hardware selections; software decoding/encoding and no device by default |
 | `GOBY_MEDIA_ROOTS` | Administrator-approved media directories; colon-separated on Linux; empty by default |
 
 The [transcoding configuration reference](transcoding-configuration.md) lists every `GOBY_TRANSCODE_*` setting and accepted range. Defaults allow two running jobs, one per user/authentication session, two configured FFmpeg threads, a 20 GiB cache, an 8 GiB per-job limit, and a 512 MiB free-space reserve. Output planning defaults to 20 Mbps, 1920x1080, and up to eight audio channels. These admission and periodic monitoring limits are not hard filesystem or cgroup ceilings. Settings are loaded at startup, and invalid explicit settings fail even when conversion is disabled.
+
+Progressive audio uses these same process, queue, cache and reader budgets; it needs no additional environment variables or separate encoder pool. Its bitrate target/ceiling applies to encoded media, not instantaneous HTTP transfer speed. Original delivery remains available when conversion is disabled and the source/current account permits it. See [audio playback](audio-playback.md) for output formats, `Container` versus `TranscodingContainer`, and exact targets versus maximum limits.
 
 Configure media roots before creating a library. The service must be able to traverse and read those directories; the root endpoint checks actual directory readability under the service identity. Libraries can select only directories within the configured roots. An unavailable mount prevents its scan, retains existing catalog data, and does not prevent the identity/dashboard service from starting.
 
@@ -68,7 +70,7 @@ The scanner also reads [local NFO metadata](local-metadata.md). A normal library
 
 Migration `0004` backfills persistent genre/tag/studio/person identities from stored NFO data. Migration `0005` stores [local artwork](local-artwork.md); existing files become indexed during a library scan. Image conversion uses a bounded in-memory cache and needs no writable cache directory. Indexed image contents are public under the compatible ImageService contract; image enumeration still requires authentication and library access. No arbitrary path or URL can be requested through the image-content route.
 
-Migration `0006` adds durable playback sessions and user state. Run a normal scan of existing libraries after upgrading: probe version 2 includes Linux ctime and extra codec facts needed for original-file delivery. Older snapshots remain unavailable for playback until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Scans are not automatically scheduled by this upgrade.
+Migration `0006` adds durable playback sessions and user state. Probe version 2 introduced Linux ctime and extra codec facts needed for original-file delivery; the current audio increment advances the cache to version 3 as described below. Older snapshots remain unavailable for media/subtitle reads until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Database upgrades do not automatically schedule scans.
 
 Migration `0007` adds validated client capability snapshots to authentication sessions; `0008` adds validated player hints to playback sessions. These upgrades need no new configuration or rescan beyond the earlier probe-version requirement. [Client sessions](client-sessions.md) distinguishes online presence, login expiration, current playback, and supported declarations. [NextUp](next-up.md) documents series-directed behavior and the remaining global-query reference gap.
 
@@ -78,7 +80,13 @@ Migration `0009` adds indexed [external subtitles](external-subtitles.md). Run a
 
 Migration `0010` adds durable encoding-job records for the [conversion engine](transcode-engine.md); `0011` expands bounded plan JSON to 128 KiB for immutable VOD source cut points. The [HLS adapter](hls-playback.md) now connects playback negotiation to full-duration manifests, authenticated segments, stable global numbering, seek production, and encoding cleanup for video and audio HLS. Compatible results advertise the supported delivery after applying the configured limits and current user permissions. Negotiation does not start an encoder; workers start when segment production is needed.
 
-These migrations require no additional rescan beyond the existing probe-version requirement. Enabled conversion initializes its owned cache and recovers interrupted job records during startup. Output revisions and timelines remain in memory, so clients must negotiate again after a restart; durable authentication and user progress remain in PostgreSQL. Progressive `Static=false`, universal-audio conversion, live/adaptive playlists, fMP4, and HLS subtitle delivery are not implemented by this adapter.
+Migrations `0010` and `0011` alone require no rescan beyond the probe-version requirement. Enabled conversion initializes its owned cache and recovers interrupted job records during startup. Output revisions and timelines remain in memory, so clients must prepare playback again after a restart; durable authentication and user progress remain in PostgreSQL. The MPEG-TS HLS adapter does not provide progressive video, live/adaptive playlists, fMP4 HLS, packed-audio HLS, or HLS subtitle delivery. Progressive fragmented MP4 audio is a separate implemented output.
+
+Migration `0012` adds [client playback references](client-playback-references.md). Universal clients can supply a fresh `PlaySessionId` without calling PlaybackInfo first. The nonce binds to a canonical server play inside the complete user/authentication-session/device scope and one item/source. Reuse cannot retarget a stopped, expired, or tombstoned reference. Reports and cleanup resolve owned aliases to the same canonical identity; preparing a reference does not mark content played.
+
+Run a normal scan of existing libraries after upgrading to **probe cache version 3**. This refreshes current source snapshots and records bounded audio packet/frame timing where supported, including integer sample counts and decoder-applied priming/discard behavior. Existing version 2 snapshots are not accepted by media or subtitle reads until rescanned. Fresh version 3 metadata with unproven, delayed, gapped, or incomplete audio coverage can still support original-file delivery, but does not authorize a fabricated exact-duration conversion. Metadata, artwork, identities and user state remain in PostgreSQL.
+
+The [audio adapter](audio-playback.md) implements Universal and legacy stream selection independently of PlaybackInfo's current original/HLS DeviceProfile negotiation. Progressive GET follows the private append-only `stream.bin` until durable completion and the final bytes; partial conversion failure aborts the HTTP response instead of reporting a normal end. Progressive HEAD starts no encoder and reports no estimated length. Integer source samples determine accurate WAV headers and output bounds, and audio HLS merges unproducible short tails while preserving total timeline duration. Additional exact-timing profiles, progressive video and progressive PlaybackInfo profiles remain separate work.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 
@@ -97,6 +105,25 @@ Remote test commands, after loading the protected test environment:
 ```sh
 go test -race -count=1 ./...
 ```
+
+The M4c playback-reference capacity test uses a separate PostgreSQL 17.11 cluster at `127.0.0.1:15432`, prepared by [prepare-postgres-scratch.sh](../../scripts/test-env/prepare-postgres-scratch.sh). Its data, socket and log directories live in the independently owned 1 GiB `/dev/shm/goby-pg-m4c` tmpfs; the dedicated `goby_test` role has no superuser, role-creation, database-creation or replication privileges. This cluster is disposable verification storage, not a replacement for the service's persistent PostgreSQL database on port 5432. Repeated preparation checks the owner marker, mount, cluster and listener identities without rotating credentials or rebuilding data.
+
+For that capacity check, run the following inside the remote SSH shell from the transferred repository. Load the original environment first, then the root-only override; only the two Goby database URLs change, leaving toolchain and FFmpeg settings intact:
+
+```sh
+bash scripts/test-env/prepare-postgres-scratch.sh
+set -a
+. /opt/goby-test/test.env
+. /opt/goby-test/m4c-test.env
+set +a
+export GOCACHE=/dev/shm/goby-go-cache GOMODCACHE=/dev/shm/goby-go-mod
+export GOTMPDIR=/opt/goby-test/exec-scratch TMPDIR=/opt/goby-test/exec-scratch
+go test -race -count=1 ./internal/library -run '^TestStoreCorrelatedPlaybackReferenceCapacityIncludesTombstonesAndAllowsReuse$'
+```
+
+Do not put this override in the Goby service environment. Stop the scratch instance only through the script's identity-checked `--stop` mode when its tests have finished; stopping retains its data for reuse. A deliberate unmount or reboot loses tmpfs data, and the script refuses to silently recreate an already recorded cluster.
+
+Root filesystem free space was restored during M4c test-host maintenance. The host's persistent PostgreSQL instance was observed with `max_wal_size=128MB` and `min_wal_size=32MB`; these are test-host settings, not new Goby production defaults. `max_wal_size` is a checkpoint target, not a hard WAL ceiling. The scratch cluster separately uses the same WAL targets and a 1 GiB aggregate filesystem limit, which can still fill during oversized tests.
 
 The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. On the current constrained test host, Go module/build caches live in dedicated `/dev/shm/goby-go-*` directories to avoid filling the root filesystem.
 

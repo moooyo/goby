@@ -1,0 +1,96 @@
+{
+  "kind": "remote-media-probe",
+  "sourceFixture": "audio-m4c-control-flac-hls-exact-duration-hls",
+  "input": {
+    "bytes": 546,
+    "sha256": "8a20361f5e358de8bdf1ade01aa2d445351cecc1fb71c8a99efddfe5f52172a8"
+  },
+  "ffprobe": {
+    "exitCode": 0,
+    "body": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "[15][0][0][0]",
+          "codec_tag": "0x000f",
+          "mime_codec_string": "mp4a.40.2",
+          "sample_fmt": "fltp",
+          "sample_rate": "44100",
+          "channels": 2,
+          "channel_layout": "stereo",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x0",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/90000",
+          "start_pts": 900000,
+          "start_time": "10.000000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "variant_bitrate": "153600"
+          }
+        }
+      ],
+      "format": {
+        "filename": "/reference-audio-private/private/probe/audio-m4c-control-flac-hls-exact-duration-hls.m3u8",
+        "nb_streams": 1,
+        "nb_programs": 1,
+        "nb_stream_groups": 0,
+        "format_name": "hls",
+        "format_long_name": "Apple HTTP Live Streaming",
+        "start_time": "10.000000",
+        "duration": "6.000000",
+        "size": "546",
+        "bit_rate": "728",
+        "probe_score": 100
+      }
+    },
+    "stderr": ""
+  },
+  "ffmpegDecode": {
+    "exitCode": 0,
+    "stderr": "",
+    "progress": {
+      "bitrate": "N/A",
+      "total_size": "N/A",
+      "out_time_us": "6037188",
+      "out_time_ms": "6037188",
+      "out_time": "00:00:06.037188",
+      "dup_frames": "0",
+      "drop_frames": "0",
+      "speed": "1.04e+03x",
+      "progress": "end"
+    },
+    "scope": "Complete real audio response or emitted HLS graph; software decoding."
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:30:32.139548+00:00"
+  }
+}

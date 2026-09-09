@@ -123,6 +123,9 @@ func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error 
 	) DELETE FROM play_sessions WHERE id IN (SELECT id FROM removable)`, owner.UserID); err != nil {
 		return fmt.Errorf("prune old playback sessions: %w", err)
 	}
+	if err := pruneInactiveClientPlaybackReferences(ctx, tx, owner.UserID); err != nil {
+		return err
+	}
 	return tx.Commit(ctx)
 }
 
@@ -141,7 +144,7 @@ func clampPosition(position, duration int64) int64 {
 	return position
 }
 
-func readOwnedPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id string, lock bool) (PlaySession, error) {
+func readOwnedCanonicalPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id string, lock bool) (PlaySession, error) {
 	statement := "SELECT " + playSessionColumns + ` FROM play_sessions
 		WHERE id = $1 AND user_id = $2 AND auth_session_id = $3 AND device_id = $4`
 	if lock {
@@ -167,7 +170,8 @@ func currentPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, ite
 		order = "CASE WHEN state IN ('Prepared','Playing','Paused') THEN 0 ELSE 1 END, " + order
 	}
 	session, err := scanPlaySession(tx.QueryRow(ctx, "SELECT "+playSessionColumns+` FROM play_sessions
-		WHERE user_id = $1 AND auth_session_id = $2 AND device_id = $3 AND item_id = $4 AND media_source_id = $5 `+
+		WHERE user_id = $1 AND auth_session_id = $2 AND device_id = $3 AND item_id = $4 AND media_source_id = $5
+		AND NOT client_correlated `+
 		filter+" ORDER BY "+order+" LIMIT 1 FOR UPDATE", owner.UserID, owner.SessionID, owner.DeviceID, itemID, sourceID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return PlaySession{}, ErrNotFound
@@ -176,6 +180,10 @@ func currentPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, ite
 }
 
 func createPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
+	return createPlaybackSession(ctx, tx, owner, item, sourceID, data, false)
+}
+
+func createPlaybackSession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData, correlated bool) (PlaySession, error) {
 	var authCount, userCount int
 	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE auth_session_id = $2), count(*)
 		FROM play_sessions WHERE user_id = $1 AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp()`,
@@ -192,9 +200,9 @@ func createPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item
 	// A purpose prefix makes it impossible to confuse this with an auth session.
 	id = "play_" + id
 	session, err := scanPlaySession(tx.QueryRow(ctx, `INSERT INTO play_sessions
-		(id, user_id, auth_session_id, device_id, item_id, media_source_id, state, position_ticks, duration_ticks, expires_at)
-		VALUES ($1,$2,$3,$4,$5,$6,'Prepared',$7,$8,clock_timestamp() + interval '30 minutes') RETURNING `+playSessionColumns,
-		id, owner.UserID, owner.SessionID, owner.DeviceID, item.id, sourceID, clampPosition(data.PlaybackPositionTicks, item.duration), item.duration))
+		(id, user_id, auth_session_id, device_id, item_id, media_source_id, state, position_ticks, duration_ticks, expires_at, client_correlated)
+		VALUES ($1,$2,$3,$4,$5,$6,'Prepared',$7,$8,clock_timestamp() + interval '30 minutes',$9) RETURNING `+playSessionColumns,
+		id, owner.UserID, owner.SessionID, owner.DeviceID, item.id, sourceID, clampPosition(data.PlaybackPositionTicks, item.duration), item.duration, correlated))
 	if err != nil {
 		return PlaySession{}, fmt.Errorf("create playback session: %w", err)
 	}
@@ -230,6 +238,13 @@ func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, it
 }
 
 func (s *Store) PreparePlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string) (PlaySession, error) {
+	return s.preparePlayback(ctx, owner, itemID, mediaSourceID, currentPlaySessionID, false)
+}
+
+func (s *Store) preparePlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string, createReference bool) (PlaySession, error) {
+	if (currentPlaySessionID != "" || createReference) && !validClientPlaybackReference(currentPlaySessionID) {
+		return PlaySession{}, ErrInvalidInput
+	}
 	if err := s.cleanupPlayback(ctx, owner); err != nil {
 		return PlaySession{}, err
 	}
@@ -238,6 +253,11 @@ func (s *Store) PreparePlayback(ctx context.Context, owner PlaybackOwner, itemID
 		return PlaySession{}, err
 	}
 	defer rollback(tx)
+	if createReference {
+		if err := requireCorrelatedPlaybackAuthentication(ctx, tx, owner); err != nil {
+			return PlaySession{}, err
+		}
+	}
 	item, err := lockStateItem(ctx, tx, access, itemID, true)
 	if err != nil {
 		return PlaySession{}, err
@@ -256,6 +276,17 @@ func (s *Store) PreparePlayback(ctx context.Context, owner PlaybackOwner, itemID
 	var session PlaySession
 	if currentPlaySessionID != "" {
 		session, err = readOwnedPlaySession(ctx, tx, owner, currentPlaySessionID, true)
+		if errors.Is(err, ErrNotFound) && createReference && !strings.HasPrefix(currentPlaySessionID, "play_") {
+			// A missing alias and a retained tombstone are different states. Only
+			// the missing alias may reserve a new, independently counted play.
+			_, exists, lookupErr := lookupClientPlaybackReference(ctx, tx, owner, currentPlaySessionID)
+			if lookupErr != nil {
+				return PlaySession{}, lookupErr
+			}
+			if !exists {
+				session, err = createCorrelatedPlayback(ctx, tx, owner, item, sourceID, data, currentPlaySessionID)
+			}
+		}
 		if err != nil || session.ItemID != itemID || session.MediaSourceID != sourceID || session.State == "Stopped" || session.State == "Expired" || !session.live {
 			if err != nil {
 				return PlaySession{}, err
@@ -451,7 +482,8 @@ func stopPosition(position, duration int64) (int64, bool) {
 
 func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report PlaybackReport) (PlaySession, UserData, error) {
 	event, err := canonicalPlaybackEvent(report.Event)
-	if err != nil || (report.PositionTicks != nil && *report.PositionTicks < 0) {
+	if err != nil || (report.PositionTicks != nil && *report.PositionTicks < 0) ||
+		(report.PlaySessionID != "" && !validClientPlaybackReference(report.PlaySessionID)) {
 		return PlaySession{}, UserData{}, ErrInvalidInput
 	}
 	playerStatePatch, err := encodePlayerStateUpdate(report.PlayerState)
@@ -477,7 +509,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 			(report.MediaSourceID != "" && report.MediaSourceID != identified.MediaSourceID) {
 			return PlaySession{}, UserData{}, ErrNotFound
 		}
-		report.ItemID, report.MediaSourceID = identified.ItemID, identified.MediaSourceID
+		report.PlaySessionID, report.ItemID, report.MediaSourceID = identified.ID, identified.ItemID, identified.MediaSourceID
 	}
 	item, err := lockStateItem(ctx, tx, access, report.ItemID, true)
 	if err != nil {

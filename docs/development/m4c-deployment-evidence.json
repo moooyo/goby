@@ -1,0 +1,62 @@
+{
+  "audio_sources": [
+    {
+      "codec": "pcm_s16le",
+      "duration_exact": true,
+      "duration_ticks": 60000000,
+      "file_name": "Reference Audio M4c.wav",
+      "probe_version": 3,
+      "sample_count": 288000,
+      "sample_rate": 48000
+    },
+    {
+      "codec": "aac",
+      "duration_exact": true,
+      "duration_ticks": 60373334,
+      "file_name": "Reference Audio M4c.aac",
+      "probe_version": 3,
+      "sample_count": 289792,
+      "sample_rate": 48000
+    },
+    {
+      "codec": "mp3",
+      "duration_exact": true,
+      "duration_ticks": 60000000,
+      "file_name": "Reference Audio M4c.mp3",
+      "probe_version": 3,
+      "sample_count": 264600,
+      "sample_rate": 44100
+    },
+    {
+      "codec": "flac",
+      "duration_exact": true,
+      "duration_ticks": 60000000,
+      "file_name": "Reference Audio M4c.flac",
+      "probe_version": 3,
+      "sample_count": 576000,
+      "sample_rate": 96000
+    },
+    {
+      "codec": "flac",
+      "duration_exact": true,
+      "duration_ticks": 60010000,
+      "file_name": "Goby Audio M4c Short Tail.flac",
+      "probe_version": 3,
+      "sample_count": 288048,
+      "sample_rate": 48000
+    }
+  ],
+  "configured_service_user": "goby",
+  "main_pid": 3247967,
+  "process_uids": [
+    995,
+    995,
+    995,
+    995
+  ],
+  "result_mode": "0o600",
+  "schema_version": 12,
+  "server_port": 5432,
+  "service_active": true,
+  "status": "passed"
+}

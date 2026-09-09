@@ -47,7 +47,10 @@ include an explicit zero when resetting a prior nonzero hint.
 An omitted start in a manual request without GobyHlsId also means zero, even
 when the request reuses a revision originally opened at a later position.
 
-Encoded video and audio use nominal segment intervals. Copied video uses actual
+Encoded video uses nominal segment intervals. Audio uses the exact timing and
+frame-aware tail rules in [audio playback](audio-playback.md#source-duration-and-audio-hls);
+an unproducible tiny final interval is merged without losing source duration.
+Copied video uses actual
 FFprobe packet seekpoints and can therefore have longer, irregular segments.
 Format start time is the source origin; a real audio lead-in before the first
 video keyframe remains part of segment zero. Packet key flags establish demuxer
@@ -127,6 +130,9 @@ exhausted cycle does not cancel unverified sessions belonging to other users.
 Started/progress/valid Ping reports refresh revision presence, including long
 segments or paused playback. They do not refresh the encoder's media-consumption
 lease indefinitely. Stopped reports and logout retire the matching revisions.
+Recent media access also permits a bounded prepared-session Ping renewal without
+changing user progress or watched state. Progressive writes share this presence
+mechanism; a long active response is not treated as an idle registry entry.
 ActiveEncodings cleanup requires the caller's device ID and only affects that
 authentication session; unknown or foreign play-session IDs are inert 204s.
 Cleanup itself never fabricates a watched/progress update.

@@ -1,0 +1,57 @@
+{
+  "kind": "audio-case-observation",
+  "case": "mp3-low-hls",
+  "sourceKind": "mp3",
+  "parameters": {
+    "Container": "mp3",
+    "MaxStreamingBitrate": 64000,
+    "TranscodingContainer": "ts",
+    "TranscodingProtocol": "hls",
+    "AudioCodec": "aac"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 1,
+      "transcodingBytes": 48744,
+      "rootFreeBytes": 49172480,
+      "tmpfsFreeBytes": 881168384
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 1,
+      "transcodingBytes": 48744,
+      "rootFreeBytes": 49168384,
+      "tmpfsFreeBytes": 881160192
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 1,
+      "transcodingBytes": 48744,
+      "rootFreeBytes": 49168384,
+      "tmpfsFreeBytes": 881160192
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "application/vnd.apple.mpegurl",
+  "finalBytes": 424,
+  "delivery": "hls",
+  "segmentStatuses": [
+    200,
+    200,
+    500
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:31.280942+00:00"
+  }
+}

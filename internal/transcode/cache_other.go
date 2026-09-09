@@ -30,7 +30,13 @@ func (*cacheRoot) JobPath(string) (string, error) {
 func (*cacheRoot) OpenJobFile(string, string) (*os.File, error) {
 	return nil, ErrUnsupported
 }
+func (*cacheRoot) OpenProgressiveFile(string) (*os.File, error) {
+	return nil, ErrUnsupported
+}
 func (*cacheRoot) ScanJob(string) (int64, bool, error) {
+	return 0, false, ErrUnsupported
+}
+func (*cacheRoot) ScanPlanJob(string, Plan) (int64, bool, error) {
 	return 0, false, ErrUnsupported
 }
 

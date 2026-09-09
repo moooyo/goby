@@ -262,6 +262,262 @@ func TestCacheAccountsPrivateVODFilesWithoutServingThem(t *testing.T) {
 	}
 }
 
+func TestCacheProgressiveReadinessAndAccounting(t *testing.T) {
+	cache := newTestCache(t)
+	if err := cache.CreateJob(cacheTestJobA); err != nil {
+		t.Fatal(err)
+	}
+	plan := Plan{OutputMode: "progressive"}
+	bytes, ready, err := cache.ScanPlanJob(cacheTestJobA, plan)
+	if err != nil || ready || bytes != 0 {
+		t.Fatalf("empty progressive directory: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	path := filepath.Join(cache.RootPath(), cacheTestJobA, "stream.bin")
+	writeCacheTestFile(t, path, "")
+	bytes, ready, err = cache.ScanPlanJob(cacheTestJobA, plan)
+	if err != nil || ready || bytes != 0 {
+		t.Fatalf("empty progressive output: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	// Cache readiness measures byte availability; only the runner can confirm
+	// that a muxer header is followed by a valid payload for the chosen format.
+	const body = "unparsed progressive bytes"
+	writeCacheTestFile(t, path, body)
+	bytes, ready, err = cache.ScanPlanJob(cacheTestJobA, plan)
+	if err != nil || !ready || bytes != int64(len(body)) {
+		t.Fatalf("progressive byte accounting: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	file, err := cache.OpenJobFile(cacheTestJobA, "stream.bin")
+	if file != nil {
+		_ = file.Close()
+	}
+	if !errors.Is(err, ErrCacheInvalid) {
+		t.Fatalf("private progressive file exposed through public output API: %v", err)
+	}
+	if _, _, err := cache.ScanJob(cacheTestJobA); !errors.Is(err, ErrCacheUnsafe) {
+		t.Fatalf("default HLS scan accepted progressive output: %v", err)
+	}
+	if _, _, err := cache.ScanPlanJob(cacheTestJobA, Plan{}); !errors.Is(err, ErrCacheUnsafe) {
+		t.Fatalf("explicit HLS scan accepted progressive output: %v", err)
+	}
+	if err := cache.RemoveJob(cacheTestJobA); err != nil {
+		t.Fatalf("progressive cleanup failed: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Dir(path)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("progressive output remains after cleanup: %v", err)
+	}
+}
+
+func TestCacheProgressiveFilePreservesGrowingInode(t *testing.T) {
+	cache := newTestCache(t)
+	if err := cache.CreateJob(cacheTestJobA); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cache.RootPath(), cacheTestJobA, "stream.bin")
+	writeCacheTestFile(t, path, "first")
+	reader, err := cache.OpenProgressiveFile(cacheTestJobA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	writer, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.Close()
+	body, err := io.ReadAll(reader)
+	if err != nil || string(body) != "first" {
+		t.Fatalf("initial progressive data: %q, %v", body, err)
+	}
+	// Keep both descriptors open while replacing the configured pathname.
+	// Appends and reads must continue against the originally opened root.
+	if err := os.Rename(cache.RootPath(), cache.RootPath()+"-old"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeCacheTestFile(t, path, "replacement")
+	if _, err := io.WriteString(writer, " second"); err != nil {
+		t.Fatal(err)
+	}
+	body, err = io.ReadAll(reader)
+	if err != nil || string(body) != " second" {
+		t.Fatalf("new bytes through the original descriptor: %q, %v", body, err)
+	}
+	info, err := reader.Stat()
+	if err != nil || info.Size() != int64(len("first second")) {
+		t.Fatalf("growing descriptor size: %v, %v", info, err)
+	}
+	bytes, ready, err := cache.ScanPlanJob(cacheTestJobA, Plan{OutputMode: "progressive"})
+	if err != nil || !ready || bytes != int64(len("first second")) {
+		t.Fatalf("anchored progressive scan: bytes=%d, ready=%v, err=%v", bytes, ready, err)
+	}
+	secondReader, err := cache.OpenProgressiveFile(cacheTestJobA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer secondReader.Close()
+	body, err = io.ReadAll(secondReader)
+	if err != nil || string(body) != "first second" {
+		t.Fatalf("reopened progressive descriptor escaped: %q, %v", body, err)
+	}
+	assertCacheTestFile(t, path, "replacement")
+}
+
+func TestCacheScanRejectsOutputModeMixing(t *testing.T) {
+	for _, name := range []string{"main.m3u8", "main.m3u8.tmp", "segment-0.ts", "segment-0.ts.tmp", "segment-list.m3u8", "segment-list.m3u8.tmp", "main.m3u8.publish.tmp"} {
+		t.Run(name, func(t *testing.T) {
+			cache := newTestCache(t)
+			if err := cache.CreateJob(cacheTestJobA); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(cache.RootPath(), cacheTestJobA)
+			writeCacheTestFile(t, filepath.Join(path, "stream.bin"), "progressive")
+			// Even an empty file from another mode invalidates the directory.
+			writeCacheTestFile(t, filepath.Join(path, name), "")
+			if _, _, err := cache.ScanPlanJob(cacheTestJobA, Plan{OutputMode: "progressive"}); !errors.Is(err, ErrCacheUnsafe) {
+				t.Fatalf("progressive scan accepted HLS content: %v", err)
+			}
+		})
+	}
+	t.Run("ready-hls-with-empty-progressive-file", func(t *testing.T) {
+		cache := newTestCache(t)
+		if err := cache.CreateJob(cacheTestJobA); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(cache.RootPath(), cacheTestJobA)
+		writeCacheTestFile(t, filepath.Join(path, "main.m3u8"), "#EXTM3U\n")
+		writeCacheTestFile(t, filepath.Join(path, "segment-0.ts"), "segment")
+		if _, ready, err := cache.ScanPlanJob(cacheTestJobA, Plan{}); err != nil || !ready {
+			t.Fatalf("normal HLS output rejected: %v, %v", ready, err)
+		}
+		writeCacheTestFile(t, filepath.Join(path, "stream.bin"), "")
+		if _, _, err := cache.ScanJob(cacheTestJobA); !errors.Is(err, ErrCacheUnsafe) {
+			t.Fatalf("ready HLS job accepted a progressive file: %v", err)
+		}
+	})
+}
+
+func TestCacheProgressiveFileRejectsNonregularContent(t *testing.T) {
+	for _, kind := range []string{"symlink", "hardlink", "directory", "fifo", "job-symlink"} {
+		t.Run(kind, func(t *testing.T) {
+			cache := newTestCache(t)
+			outside := t.TempDir()
+			foreign := filepath.Join(outside, "stream.bin")
+			writeCacheTestFile(t, foreign, "preserve")
+			jobPath := filepath.Join(cache.RootPath(), cacheTestJobA)
+			if kind == "job-symlink" {
+				if err := os.Symlink(outside, jobPath); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err := cache.CreateJob(cacheTestJobA); err != nil {
+					t.Fatal(err)
+				}
+				path := filepath.Join(jobPath, "stream.bin")
+				var err error
+				switch kind {
+				case "symlink":
+					err = os.Symlink(foreign, path)
+				case "hardlink":
+					err = os.Link(foreign, path)
+				case "directory":
+					err = os.Mkdir(path, 0o700)
+				case "fifo":
+					err = syscall.Mkfifo(path, 0o600)
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			file, err := cache.OpenProgressiveFile(cacheTestJobA)
+			if file != nil {
+				_ = file.Close()
+			}
+			if !errors.Is(err, ErrCacheUnsafe) {
+				t.Fatalf("unsafe progressive file opened: %v", err)
+			}
+			if _, _, err := cache.ScanPlanJob(cacheTestJobA, Plan{OutputMode: "progressive"}); !errors.Is(err, ErrCacheUnsafe) {
+				t.Fatalf("unsafe progressive content scanned: %v", err)
+			}
+			if err := cache.Recover(); !errors.Is(err, ErrCacheUnsafe) {
+				t.Fatalf("unsafe progressive content removed: %v", err)
+			}
+			assertCacheTestFile(t, foreign, "preserve")
+		})
+	}
+}
+
+func TestCacheRecoveryAccountsMixedKnownOutputsAndPreservesUnknownContent(t *testing.T) {
+	cache := newTestCache(t)
+	for _, id := range []string{cacheTestJobA, cacheTestJobB} {
+		if err := cache.CreateJob(id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pathA := filepath.Join(cache.RootPath(), cacheTestJobA)
+	pathB := filepath.Join(cache.RootPath(), cacheTestJobB)
+	writeCacheTestFile(t, filepath.Join(pathA, "stream.bin"), "first")
+	names := []string{"stream.bin", "main.m3u8", "main.m3u8.tmp", "segment-0.ts", "segment-1.ts.tmp", "segment-list.m3u8", "segment-list.m3u8.tmp", "main.m3u8.publish.tmp"}
+	for _, name := range names {
+		writeCacheTestFile(t, filepath.Join(pathB, name), "owned")
+	}
+	dir, err := cacheOpenDirectoryAt(cache.dir, cacheTestJobB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, bytes, _, err := cacheInspectJob(dir, false)
+	_ = dir.Close()
+	if err != nil || len(files) != len(names) || bytes != int64(len(names)*len("owned")) {
+		t.Fatalf("mixed recovery accounting: files=%d, bytes=%d, err=%v", len(files), bytes, err)
+	}
+	unknown := filepath.Join(pathB, "stream.bin.tmp")
+	writeCacheTestFile(t, unknown, "foreign")
+	if err := cache.Recover(); !errors.Is(err, ErrCacheUnsafe) {
+		t.Fatalf("unexpected progressive suffix accepted during recovery: %v", err)
+	}
+	assertCacheTestFile(t, filepath.Join(pathA, "stream.bin"), "first")
+	for _, name := range names {
+		assertCacheTestFile(t, filepath.Join(pathB, name), "owned")
+	}
+	assertCacheTestFile(t, unknown, "foreign")
+	if err := os.Remove(unknown); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.Recover(); err != nil {
+		t.Fatalf("mixed owned outputs could not be recovered: %v", err)
+	}
+	for _, path := range []string{pathA, pathB} {
+		if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("owned output remains after recovery: %v", err)
+		}
+	}
+}
+
+func TestCachePlanScanValidatesModeAndJobID(t *testing.T) {
+	cache := newTestCache(t)
+	if err := cache.CreateJob(cacheTestJobA); err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"hls", "Progressive", "PROGRESSIVE", "progressive ", "unknown"} {
+		if _, _, err := cache.ScanPlanJob(cacheTestJobA, Plan{OutputMode: mode}); !errors.Is(err, ErrCacheInvalid) {
+			t.Errorf("invalid mode %q accepted: %v", mode, err)
+		}
+	}
+	for _, id := range []string{"", "../outside", strings.Repeat("A", 32)} {
+		if _, _, err := cache.ScanPlanJob(id, Plan{OutputMode: "progressive"}); !errors.Is(err, ErrCacheInvalid) {
+			t.Errorf("invalid scan job %q accepted: %v", id, err)
+		}
+		file, err := cache.OpenProgressiveFile(id)
+		if file != nil {
+			_ = file.Close()
+		}
+		if !errors.Is(err, ErrCacheInvalid) {
+			t.Errorf("invalid progressive job %q opened: %v", id, err)
+		}
+	}
+}
+
 func TestCacheRejectsUnrecognizedAndLinkedJobContent(t *testing.T) {
 	for _, kind := range []string{"unknown", "nested", "symlink", "hardlink", "fifo"} {
 		t.Run(kind, func(t *testing.T) {
@@ -519,7 +775,7 @@ func TestCacheValidatesJobAndOutputNames(t *testing.T) {
 			t.Errorf("valid output rejected: %q", name)
 		}
 	}
-	for _, name := range []string{"", "../main.m3u8", "x/main.m3u8", "/main.m3u8", "Main.m3u8", "main.m3u8.tmp", "segment-.ts", "segment--1.ts", "segment-1a.ts", "segment-١.ts", "segment-0.ts/extra", "segment-0.ts\x00", strings.Repeat("0", 256)} {
+	for _, name := range []string{"", "../main.m3u8", "x/main.m3u8", "/main.m3u8", "Main.m3u8", "main.m3u8.tmp", "segment-.ts", "segment--1.ts", "segment-1a.ts", "segment-١.ts", "segment-0.ts/extra", "segment-0.ts\x00", "stream.bin", "stream.bin.tmp", strings.Repeat("0", 256)} {
 		if validOutputName(name) {
 			t.Errorf("invalid output accepted: %q", name)
 		}
@@ -527,7 +783,10 @@ func TestCacheValidatesJobAndOutputNames(t *testing.T) {
 	if validCacheFileName("main.m3u8.tmp.tmp") {
 		t.Fatal("multiple temporary suffixes accepted")
 	}
-	for _, name := range []string{"segment-list.m3u8.tmp.tmp", "main.m3u8.publish", "main.m3u8.publish.tmp.tmp", "segment-list-1.m3u8", "Segment-list.m3u8"} {
+	if !validCacheFileName("stream.bin") {
+		t.Fatal("progressive output is not recoverable")
+	}
+	for _, name := range []string{"segment-list.m3u8.tmp.tmp", "main.m3u8.publish", "main.m3u8.publish.tmp.tmp", "segment-list-1.m3u8", "Segment-list.m3u8", "stream.bin.tmp", "stream.bin.publish.tmp", ".stream.bin", "Stream.bin", "stream.BIN", "stream.bin/extra", "stream.bin\x00"} {
 		if validCacheFileName(name) {
 			t.Errorf("unexpected private filename accepted: %q", name)
 		}
@@ -544,7 +803,9 @@ func TestCacheMethodsRejectClosedRoot(t *testing.T) {
 	_, _, scanErr := cache.ScanJob(cacheTestJobA)
 	_, freeErr := cache.FreeBytes()
 	_, pathErr := cache.JobPath(cacheTestJobA)
-	checks = append(checks, openErr, scanErr, freeErr, pathErr)
+	_, progressiveErr := cache.OpenProgressiveFile(cacheTestJobA)
+	_, _, planScanErr := cache.ScanPlanJob(cacheTestJobA, Plan{OutputMode: "progressive"})
+	checks = append(checks, openErr, scanErr, freeErr, pathErr, progressiveErr, planScanErr)
 	for _, err := range checks {
 		if !errors.Is(err, os.ErrClosed) {
 			t.Errorf("closed cache operation: %v", err)

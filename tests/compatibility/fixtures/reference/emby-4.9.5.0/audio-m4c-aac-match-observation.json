@@ -1,0 +1,61 @@
+{
+  "kind": "audio-case-observation",
+  "case": "aac-match",
+  "sourceKind": "aac",
+  "parameters": {
+    "Container": "aac"
+  },
+  "headStatus": 200,
+  "initialGetStatus": 200,
+  "headLocationPresent": false,
+  "getLocationPresent": false,
+  "headProcessObservations": {
+    "before": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48574464,
+      "tmpfsFreeBytes": 878891008
+    },
+    "immediateAfter": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48574464,
+      "tmpfsFreeBytes": 878882816
+    },
+    "after150ms": {
+      "referencePID": 3131777,
+      "directChildProcesses": [],
+      "transcodingFileCount": 4,
+      "transcodingBytes": 501785,
+      "rootFreeBytes": 48574464,
+      "tmpfsFreeBytes": 878882816
+    }
+  },
+  "redirectStatuses": [],
+  "finalStatus": 200,
+  "finalContentType": "audio/mp4",
+  "finalBytes": 50440,
+  "delivery": "progressive_or_original",
+  "media": {
+    "probeExit": 0,
+    "decodeExit": 0,
+    "codec": "aac",
+    "sampleRate": "48000",
+    "bitsPerRawSample": null,
+    "channels": 1,
+    "duration": "5.947500",
+    "decodedSeconds": 6.037333
+  },
+  "matchesSourceKinds": [
+    "aac"
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:33.885798+00:00"
+  }
+}

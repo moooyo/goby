@@ -1,0 +1,69 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Audio/48/universal?UserId=c7d44baf46104f59ac2f4ca3dadda77f&DeviceId=goby-audio-m4c-recorder&PlaySessionId=d45908e0243b17ffc9c492666a61830b&MaxStreamingBitrate=2000000&Container=mp3&TranscodingProtocol=http&TranscodingContainer=mp3&AudioCodec=aac&api_key=[REDACTED_TOKEN]",
+    "headers": {},
+    "body": null
+  },
+  "response": {
+    "status": 500,
+    "headers": [
+      [
+        "Content-Length",
+        "1642"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 04:26:32 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "Error starting ffmpeg\n-loglevel +timing -y -print_graphs_file \"/logs/ffmpeg-transcode-cf0823c0-4fdf-49c6-a1fb-6ee193700c7d_1graph.txt\" -f flac -i \"/reference-audio-source/Reference Audio M4c.flac\" -map 0:0 -vn -sn -c:a:0 aac -ab:a:0 2000000 -ac:a:0 2 \"/transcoding-temp/585316/585316.mp3\"\n\n12:26:32.970 ffmpeg version 5.1-emby_2023_06_25_p4 Copyright (c) 2000-2022 the FFmpeg developers and softworkz for Emby LLC\n12:26:32.970   built with gcc 10.3.0 (crosstool-NG 1.25.0)\n12:26:32.970 Execution Date: 2026-09-09 12:26:32\n12:26:32.970 Input #0, flac, from '/reference-audio-source/Reference Audio M4c.flac':\n12:26:32.970   Metadata:\n12:26:32.971     title           : Reference Audio FLAC\n12:26:32.971     artist          : Goby Audio Reference\n12:26:32.971     album           : Goby M4c Audio\n12:26:32.971     encoder         : Lavf63.1.101\n12:26:32.971   Duration: 00:00:06.00, start: 0.000000, bitrate: 955 kb/s\n12:26:32.971   Stream #0:0: Audio: flac, 96000 Hz, stereo, s32 (24 bit)\n12:26:32.971 Stream mapping:\n12:26:32.971   Stream #0:0 -> #0:0 (flac (native) -> aac (native))\n12:26:32.971 Press [q] to stop, [?] for help\n12:26:32.973 [aac @ 0x1aaaf640] Too many bits 21333.333333 > 12288 per frame requested, clamping to max\n12:26:32.973 [mp3 @ 0x1aab3000] Invalid audio stream. Exactly one MP3 audio stream is required.\n12:26:32.973 Could not write header for output file #0 (incorrect codec parameters ?): Invalid argument\n12:26:32.973 Error initializing output stream 0:0 -- \n12:26:32.974 [aac @ 0x1aaaf640] Qavg: nan\n12:26:32.975 Conversion failed!\n12:26:32.975 EXIT\n\n\n\n"
+  },
+  "observation": {
+    "wireBytes": 1642,
+    "wireSha256": "abd0e05a853c2db11a1901e85a8b130fa62e436aca363d062da20101bf0c56df",
+    "note": ""
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T04:26:33.018932+00:00"
+  }
+}

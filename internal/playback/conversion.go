@@ -375,6 +375,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		}
 		audio.CodecTag, audio.CodecTagString, audio.IsDefault = "", "", true
 		audio.TimeBase = ""
+		audio.AudioTiming = nil
 		projected.Info.Streams = append(projected.Info.Streams, *audio)
 	}
 	if selection.subtitle != nil {

@@ -35,6 +35,15 @@ const (
 // select compatible, authorized streams and reject unsupported HDR conversions.
 func ValidatePlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
+	if p.OutputMode == "progressive" {
+		return validateProgressivePlan(p)
+	}
+	if p.OutputMode != "" {
+		return invalid("output mode")
+	}
+	if p.AudioBitDepth != 0 || p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0 {
+		return invalid("audio bit depth")
+	}
 	if p.Container != "ts" && p.Container != "mpegts" {
 		return invalid("container")
 	}
@@ -147,6 +156,9 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	}
 	if threads < 1 || threads > maxThreads {
 		return nil, ErrInvalidThreads
+	}
+	if p.OutputMode == "progressive" {
+		return buildProgressiveArgs(p, threads), nil
 	}
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y",

@@ -72,6 +72,7 @@ type managedJob struct {
 	finished     bool
 	directory    bool
 	ready        bool
+	mediaReady   bool
 	readers      int
 	stopCode     string
 	started      time.Time
@@ -467,8 +468,9 @@ func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
 	return j.record, jobError(j)
 }
 
-// WaitReady waits for an atomically published playlist and at least one
-// completed segment. It does not expose FFmpeg temporary output files.
+// WaitReady requires an atomically published HLS playlist and at least one
+// completed segment, or a nonempty progressive stream whose media payload the
+// runner has confirmed. It does not expose temporary or header-only output.
 func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record, error) {
 	for {
 		if err := ctx.Err(); err != nil {
@@ -579,6 +581,10 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	if err != nil {
 		m.mu.Unlock()
 		return attempt, err
+	}
+	if j.record.Spec.Plan.OutputMode != "" {
+		m.mu.Unlock()
+		return attempt, ErrOutputUnavailable
 	}
 	m.touchLocked(j)
 	attempt.changed = j.changed
@@ -826,6 +832,11 @@ func (m *Manager) runJob(j *managedJob) {
 	}
 	_, err = m.options.run(j.ctx, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, m.options.Threads, func(p Progress) {
 		m.mu.Lock()
+		becameReady := p.Ready && !j.mediaReady && j.record.Spec.Plan.OutputMode == "progressive"
+		if becameReady {
+			j.mediaReady = true
+			m.notifyLocked(j)
+		}
 		if p.OutputTicks > j.outputTicks || p.Bytes > j.progressSize {
 			j.lastProgress = time.Now().UTC()
 			if p.OutputTicks > j.outputTicks {
@@ -836,6 +847,9 @@ func (m *Manager) runJob(j *managedJob) {
 			}
 		}
 		m.mu.Unlock()
+		if becameReady {
+			m.signal()
+		}
 	})
 	m.finish(j, err)
 }
@@ -867,9 +881,15 @@ func (m *Manager) finish(j *managedJob, runErr error) {
 	var scanErr error
 	if directory {
 		m.filesMu.Lock()
-		size, ready, scanErr = m.cache.ScanJob(j.record.ID)
+		size, ready, scanErr = m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
 	}
 	m.mu.Lock()
+	if j.record.Spec.Plan.OutputMode == "progressive" {
+		ready = ready && j.mediaReady
+		if size < j.record.OutputBytes && j.stopCode == "" {
+			j.stopCode = "invalid_output"
+		}
+	}
 	m.bytes += size - j.record.OutputBytes
 	j.record.OutputBytes = size
 	if j.stopCode == "" {
@@ -963,7 +983,7 @@ func (m *Manager) maintain() {
 			continue
 		}
 		m.filesMu.Lock()
-		size, ready, err := m.cache.ScanJob(j.record.ID)
+		size, ready, err := m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
 		m.mu.Lock()
 		if err != nil {
 			if !j.finished {
@@ -972,6 +992,16 @@ func (m *Manager) maintain() {
 				m.invalidateFinishedLocked(j, "cache_unavailable")
 			}
 		} else {
+			if j.record.Spec.Plan.OutputMode == "progressive" {
+				ready = ready && j.mediaReady
+				if size < j.record.OutputBytes {
+					if j.finished {
+						m.invalidateFinishedLocked(j, "invalid_output")
+					} else {
+						m.stopLocked(j, "invalid_output")
+					}
+				}
+			}
 			changed := size != j.record.OutputBytes || ready != j.ready
 			if size > j.record.OutputBytes && j.running {
 				j.lastProgress = time.Now().UTC()
@@ -1058,6 +1088,9 @@ func (m *Manager) reclaim(j *managedJob, closing bool) bool {
 			// until the owner resolves it and explicitly restarts the service.
 			j.stopCode = "cache_unavailable"
 			m.cacheFailed = true
+			for _, affected := range m.jobs {
+				m.notifyLocked(affected)
+			}
 			m.closeErr = errors.Join(m.closeErr, err)
 		}
 		m.mu.Unlock()

@@ -5,20 +5,26 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
 )
 
 // The original-file endpoint is distinct from future conversion handlers.
 // A filename here is a delivery alias, never a filesystem lookup argument.
 func (s *Server) registerStreamRoutes(mux *http.ServeMux) {
 	for _, resource := range []string{"Videos", "Audio"} {
+		handler := s.originalStream(false)
+		if resource == "Audio" {
+			handler = s.audioStream
+		}
 		for _, base := range []string{"/emby/" + resource, "/emby/" + strings.ToLower(resource), "/" + resource, "/" + strings.ToLower(resource)} {
-			mux.HandleFunc("GET "+base+"/{Id}/stream", s.requireEmby(s.originalStream(resource == "Audio")))
-			mux.HandleFunc("GET "+base+"/{Id}/{StreamFileName}", s.requireEmby(s.originalStream(resource == "Audio")))
+			mux.HandleFunc("GET "+base+"/{Id}/stream", s.requireEmby(handler))
+			mux.HandleFunc("GET "+base+"/{Id}/{StreamFileName}", s.requireEmby(handler))
 		}
 	}
 }
@@ -136,32 +142,37 @@ func (s *Server) originalStream(audio bool) http.HandlerFunc {
 			apiError(w, r, http.StatusUnsupportedMediaType, "container_conversion_unavailable", "The requested container differs from the original media source.")
 			return
 		}
-		w.Header().Set("Content-Type", source.MIMEType)
-		w.Header().Set("ETag", source.ETag)
-		w.Header().Set("Cache-Control", "private, no-transform")
-		w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified")
-		modified := source.ModifiedAt
-		if source.Item.Media != nil && source.Item.Media.FileChangeTimeNs > 0 {
-			changed := time.Unix(0, source.Item.Media.FileChangeTimeNs).UTC()
-			if changed.After(modified) {
-				modified = changed
-			}
-		}
-		finished := make(chan struct{})
-		defer close(finished)
-		go func() {
-			select {
-			case <-r.Context().Done():
-				_ = file.Close()
-			case <-finished:
-			}
-		}()
-		// net/http provides standard byte/suffix/multipart ranges, HEAD,
-		// If-Range, and conditional requests on the already authorized handle.
-		// Ticks never cause a byte-level truncation of an original container;
-		// players seek within it using byte ranges or their own demuxer.
-		// Linux ctime invalidates date validators when a writer restores mtime.
-		// ETags remain the precise validator; HTTP dates have second precision.
-		http.ServeContent(w, r, "original."+source.Container, modified, file)
+		serveOriginalMedia(w, r, file, source)
 	}
+}
+
+// serveOriginalMedia only writes a source already opened and authorized by its
+// caller. Sharing the delivery code keeps Universal and legacy original reads
+// on the same snapshot without reopening a potentially changed source.
+func serveOriginalMedia(w http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile) {
+	w.Header().Set("Content-Type", source.MIMEType)
+	w.Header().Set("ETag", source.ETag)
+	w.Header().Set("Cache-Control", "private, no-transform")
+	w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified")
+	modified := source.ModifiedAt
+	if source.Item.Media != nil && source.Item.Media.FileChangeTimeNs > 0 {
+		changed := time.Unix(0, source.Item.Media.FileChangeTimeNs).UTC()
+		if changed.After(modified) {
+			modified = changed
+		}
+	}
+	finished := make(chan struct{})
+	defer close(finished)
+	go func() {
+		select {
+		case <-r.Context().Done():
+			_ = file.Close()
+		case <-finished:
+		}
+	}()
+	// net/http provides byte/suffix/multipart ranges, HEAD, If-Range and
+	// conditional responses. Ticks never become a guessed source-byte offset.
+	// Linux ctime invalidates date validators when a writer restores mtime;
+	// ETags remain the precise validator because HTTP dates have second precision.
+	http.ServeContent(w, r, "original."+source.Container, modified, file)
 }
