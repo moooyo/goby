@@ -1,0 +1,111 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Users/be483f931a18446297f4d883c405d712/Policy",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "IsAdministrator": false,
+      "IsHidden": false,
+      "IsHiddenRemotely": true,
+      "IsHiddenFromUnusedDevices": false,
+      "IsDisabled": true,
+      "LockedOutDate": 0,
+      "AllowTagOrRating": false,
+      "BlockedTags": [],
+      "IsTagBlockingModeInclusive": false,
+      "IncludeTags": [],
+      "EnableUserPreferenceAccess": true,
+      "AccessSchedules": [],
+      "BlockUnratedItems": [],
+      "EnableRemoteControlOfOtherUsers": false,
+      "EnableSharedDeviceControl": true,
+      "EnableRemoteAccess": true,
+      "EnableLiveTvManagement": true,
+      "EnableLiveTvAccess": true,
+      "EnableMediaPlayback": true,
+      "EnableAudioPlaybackTranscoding": true,
+      "EnableVideoPlaybackTranscoding": true,
+      "AutoRemoteQuality": 0,
+      "EnablePlaybackRemuxing": true,
+      "EnableContentDeletion": false,
+      "RestrictedFeatures": [],
+      "EnableContentDeletionFromFolders": [],
+      "EnableContentDownloading": true,
+      "EnableSubtitleDownloading": true,
+      "EnableSubtitleManagement": false,
+      "EnableSyncTranscoding": true,
+      "EnableMediaConversion": true,
+      "EnabledChannels": [],
+      "EnableAllChannels": true,
+      "EnabledFolders": [],
+      "EnableAllFolders": true,
+      "InvalidLoginAttemptCount": 0,
+      "EnablePublicSharing": true,
+      "RemoteClientBitrateLimit": 0,
+      "ExcludedSubFolders": [],
+      "SimultaneousStreamLimit": 0,
+      "EnabledDevices": [],
+      "EnableAllDevices": true,
+      "AllowCameraUpload": true,
+      "AllowSharingPersonalItems": false
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Wed, 09 Sep 2026 20:23:23 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 0,
+    "rangeRequested": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T20:23:23.939079+00:00"
+  }
+}

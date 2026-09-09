@@ -1,0 +1,346 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users/be483f931a18446297f4d883c405d712/Items/18",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "5012"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 20:23:23 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "Reference Artwork Film",
+      "OriginalTitle": "Reference Original Title",
+      "ServerId": "ec69ef1cf84140e88489c30326529308",
+      "Id": "18",
+      "Etag": "89082c47eded12644c607c79bfd45904",
+      "DateCreated": "2026-09-08T21:56:32.0000000Z",
+      "DateModified": "2026-09-08T21:56:32.0000000Z",
+      "CanDelete": false,
+      "CanDownload": true,
+      "PresentationUniqueKey": "p-tmdb-Movie-999999999-ea58489081a74d32a668063a9166562d",
+      "SupportsSync": true,
+      "Container": "mp4",
+      "SortName": "Reference Artwork Film",
+      "ForcedSortName": "Reference Artwork Film",
+      "PremiereDate": "2024-01-01T16:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "IMDb",
+          "Url": "https://www.imdb.com/title/tt999999999"
+        },
+        {
+          "Name": "TheMovieDb",
+          "Url": "https://www.themoviedb.org/movie/999999999"
+        },
+        {
+          "Name": "Trakt",
+          "Url": "https://trakt.tv/search/tmdb/999999999?id_type=movie"
+        }
+      ],
+      "MediaSources": [
+        {
+          "Chapters": [],
+          "Protocol": "File",
+          "Id": "mediasource_18",
+          "Path": "/reference-fixtures/movies/Goby Sample (2026).mp4",
+          "Type": "Default",
+          "Container": "mp4",
+          "Size": 90299,
+          "Name": "Goby Sample (2026)",
+          "IsRemote": false,
+          "HasMixedProtocols": false,
+          "RunTimeTicks": 20000000,
+          "SupportsTranscoding": true,
+          "SupportsDirectStream": true,
+          "SupportsDirectPlay": true,
+          "IsInfiniteStream": false,
+          "RequiresOpening": false,
+          "RequiresClosing": false,
+          "RequiresLooping": false,
+          "SupportsProbing": true,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/12288",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 280500,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 24,
+              "RealFrameRate": 24,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 70056,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "Formats": [],
+          "Bitrate": 361196,
+          "RequiredHttpHeaders": {},
+          "AddApiKeyToDirectStreamUrl": false,
+          "ReadAtNativeFramerate": false,
+          "DefaultAudioStreamIndex": 1,
+          "ItemId": "18"
+        }
+      ],
+      "ProductionLocations": [],
+      "Path": "/reference-fixtures/movies/Goby Sample (2026).mp4",
+      "OfficialRating": "PG-13",
+      "Taglines": [],
+      "Genres": [
+        "Drama",
+        "Science Fiction"
+      ],
+      "CommunityRating": 7.5,
+      "RunTimeTicks": 20000000,
+      "Size": 90299,
+      "FileName": "Goby Sample (2026).mp4",
+      "Bitrate": 361196,
+      "ProductionYear": 2024,
+      "RemoteTrailers": [],
+      "ProviderIds": {
+        "Imdb": "tt999999999",
+        "Tmdb": "999999999"
+      },
+      "IsFolder": false,
+      "ParentId": "4",
+      "Type": "Movie",
+      "People": [
+        {
+          "Name": "Reference Actor",
+          "Id": "19",
+          "Role": "Lead",
+          "Type": "Actor"
+        },
+        {
+          "Name": "Reference Director",
+          "Id": "20",
+          "Type": "Director"
+        }
+      ],
+      "Studios": [
+        {
+          "Name": "Reference Studio",
+          "Id": 23
+        }
+      ],
+      "GenreItems": [
+        {
+          "Name": "Drama",
+          "Id": 21
+        },
+        {
+          "Name": "Science Fiction",
+          "Id": 22
+        }
+      ],
+      "TagItems": [
+        {
+          "Name": "local-artwork",
+          "Id": 24
+        },
+        {
+          "Name": "reference",
+          "Id": 25
+        }
+      ],
+      "LocalTrailerCount": 0,
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false
+      },
+      "DisplayPreferencesId": "dbf7709c41faaa746463d67978eb863d",
+      "PrimaryImageAspectRatio": 0.6666666666666666,
+      "MediaStreams": [
+        {
+          "Codec": "h264",
+          "CodecTag": "avc1",
+          "Language": "und",
+          "TimeBase": "1/12288",
+          "VideoRange": "SDR",
+          "DisplayTitle": "SD H264",
+          "NalLengthSize": "4",
+          "IsInterlaced": false,
+          "BitRate": 280500,
+          "BitDepth": 8,
+          "RefFrames": 1,
+          "IsDefault": true,
+          "IsForced": false,
+          "IsHearingImpaired": false,
+          "Height": 90,
+          "Width": 160,
+          "AverageFrameRate": 24,
+          "RealFrameRate": 24,
+          "Profile": "Constrained Baseline",
+          "Type": "Video",
+          "AspectRatio": "16:9",
+          "Index": 0,
+          "IsExternal": false,
+          "IsTextSubtitleStream": false,
+          "SupportsExternalStream": false,
+          "Protocol": "File",
+          "PixelFormat": "yuv420p",
+          "Level": 10,
+          "IsAnamorphic": false,
+          "ExtendedVideoType": "None",
+          "ExtendedVideoSubType": "None",
+          "ExtendedVideoSubTypeDescription": "None",
+          "AttachmentSize": 0
+        },
+        {
+          "Codec": "aac",
+          "CodecTag": "mp4a",
+          "Language": "und",
+          "TimeBase": "1/48000",
+          "DisplayTitle": "AAC mono (Default)",
+          "IsInterlaced": false,
+          "ChannelLayout": "mono",
+          "BitRate": 70056,
+          "Channels": 1,
+          "SampleRate": 48000,
+          "IsDefault": true,
+          "IsForced": false,
+          "IsHearingImpaired": false,
+          "Profile": "LC",
+          "Type": "Audio",
+          "Index": 1,
+          "IsExternal": false,
+          "IsTextSubtitleStream": false,
+          "SupportsExternalStream": false,
+          "Protocol": "File",
+          "ExtendedVideoType": "None",
+          "ExtendedVideoSubType": "None",
+          "ExtendedVideoSubTypeDescription": "None",
+          "AttachmentSize": 0
+        }
+      ],
+      "PartCount": 1,
+      "ImageTags": {
+        "Primary": "66dcea91e5ed256521d919b37c1e6c4d"
+      },
+      "BackdropImageTags": [
+        "ea3300eb80fb72fba2c9eff80d1a45b4"
+      ],
+      "Chapters": [],
+      "MediaType": "Video",
+      "LockedFields": [],
+      "LockData": false,
+      "Width": 160,
+      "Height": 90
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 5012,
+    "rangeRequested": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T20:23:23.880001+00:00"
+  }
+}

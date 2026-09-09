@@ -1,0 +1,23 @@
+{
+  "kind": "capture-audit-observation",
+  "referencePID": 3131777,
+  "preservedOldRecords": 1006,
+  "preservedOldRecordFiles": 2012,
+  "preservedOldMediaFiles": 240,
+  "oldHashesUnchanged": true,
+  "oldUserMembershipAndPoliciesUnchanged": true,
+  "ownedUsersRemaining": 0,
+  "oldKeyRecordsUnchanged": true,
+  "ownedKeysRemaining": 0,
+  "ownedLoginLogoutStatuses": {
+    "admin": 204
+  },
+  "wireBytes": 155319,
+  "httpRecords": 58,
+  "incompleteHTTP": 0,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T20:23:24.056608+00:00"
+  }
+}

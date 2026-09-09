@@ -1,0 +1,373 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users/5aec2f823e84431d83d348baf8901bcd/Views",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "7225"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 20:56:11 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Metadata M5b Owned Fixture",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "52",
+          "Guid": "a975d69334a649789b19e8cb94f5ee5a",
+          "Etag": "7aae512ee095a4fa9b387d58e03982be",
+          "DateCreated": "2026-09-09T08:15:19.6845120Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "a975d69334a649789b19e8cb94f5ee5a",
+          "SortName": "Metadata M5b Owned Fixture",
+          "ForcedSortName": "Metadata M5b Owned Fixture",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "a975d69334a649789b19e8cb94f5ee5a",
+          "CollectionType": "movies",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Audio M4c",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "44",
+          "Guid": "c78782bdaacf49e288afebde9aac6790",
+          "Etag": "6464c685ed9b14d785e3b4fb9c828166",
+          "DateCreated": "2026-09-09T04:25:53.9413730Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "c78782bdaacf49e288afebde9aac6790",
+          "SortName": "Reference Audio M4c",
+          "ForcedSortName": "Reference Audio M4c",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "c78782bdaacf49e288afebde9aac6790",
+          "CollectionType": "music",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference HLS Normal M4a",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "41",
+          "Guid": "db18545e910e4be4bf526fde5fd57918",
+          "Etag": "65e8a0a3e3b9706a70dd245319607041",
+          "DateCreated": "2026-09-09T02:52:02.3381603Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "db18545e910e4be4bf526fde5fd57918",
+          "SortName": "Reference HLS Normal M4a",
+          "ForcedSortName": "Reference HLS Normal M4a",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "db18545e910e4be4bf526fde5fd57918",
+          "CollectionType": "movies",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Movies",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "3",
+          "Guid": "ea58489081a74d32a668063a9166562d",
+          "Etag": "229051064355df6f67c8a7b2ba0778ff",
+          "DateCreated": "2026-09-08T22:30:45.5091209Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "ea58489081a74d32a668063a9166562d",
+          "SortName": "Reference Movies",
+          "ForcedSortName": "Reference Movies",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "ea58489081a74d32a668063a9166562d",
+          "PrimaryImageAspectRatio": 1.7777777777777777,
+          "CollectionType": "movies",
+          "ImageTags": {
+            "Primary": "88212ad1f547a79e3ae10f679b6bc144"
+          },
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Music",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "7",
+          "Guid": "f41bb18d1922470f90cdbb95787cf967",
+          "Etag": "2a4993b05a7933b99f2557294a4cd866",
+          "DateCreated": "2026-09-08T22:30:45.5313600Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "f41bb18d1922470f90cdbb95787cf967",
+          "SortName": "Reference Music",
+          "ForcedSortName": "Reference Music",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "f41bb18d1922470f90cdbb95787cf967",
+          "CollectionType": "music",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference NextUp Long",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "29",
+          "Guid": "a77796cb714d44f3a161214d336bc9aa",
+          "Etag": "537894b191c9a5873eb35d0201235c5f",
+          "DateCreated": "2026-09-09T01:15:50.6572078Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "a77796cb714d44f3a161214d336bc9aa",
+          "SortName": "Reference NextUp Long",
+          "ForcedSortName": "Reference NextUp Long",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "a77796cb714d44f3a161214d336bc9aa",
+          "CollectionType": "tvshows",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Playback M3",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "26",
+          "Guid": "95d94a87bd504a599726568bf4fe21ae",
+          "Etag": "3a487d7a640b88f5da5d1e3736d445f8",
+          "DateCreated": "2026-09-08T23:59:30.2094781Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "95d94a87bd504a599726568bf4fe21ae",
+          "SortName": "Reference Playback M3",
+          "ForcedSortName": "Reference Playback M3",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "95d94a87bd504a599726568bf4fe21ae",
+          "CollectionType": "movies",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Shows",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "5",
+          "Guid": "2a31996450644fdc9d59300b4cf870d0",
+          "Etag": "d37844a8ea63bc18111249e89263f869",
+          "DateCreated": "2026-09-08T22:30:45.5282127Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "2a31996450644fdc9d59300b4cf870d0",
+          "SortName": "Reference Shows",
+          "ForcedSortName": "Reference Shows",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "2a31996450644fdc9d59300b4cf870d0",
+          "CollectionType": "tvshows",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        },
+        {
+          "Name": "Reference Subtitle M3c",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "37",
+          "Guid": "5b03a8b72520445aa077589be6bafec2",
+          "Etag": "f74b6723fc4e40b6d3e6983a98b00f1e",
+          "DateCreated": "2026-09-09T01:35:47.2099391Z",
+          "DateModified": "0001-01-01T00:00:00.0000000Z",
+          "CanDelete": false,
+          "CanDownload": false,
+          "PresentationUniqueKey": "5b03a8b72520445aa077589be6bafec2",
+          "SortName": "Reference Subtitle M3c",
+          "ForcedSortName": "Reference Subtitle M3c",
+          "ExternalUrls": [],
+          "Taglines": [],
+          "RemoteTrailers": [],
+          "ProviderIds": {},
+          "IsFolder": true,
+          "ParentId": "2",
+          "Type": "CollectionFolder",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "DisplayPreferencesId": "5b03a8b72520445aa077589be6bafec2",
+          "CollectionType": "movies",
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "LockedFields": [],
+          "LockData": false
+        }
+      ],
+      "TotalRecordCount": 9
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 7225,
+    "rangeRequested": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T20:56:11.400579+00:00"
+  }
+}

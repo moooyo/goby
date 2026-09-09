@@ -1,0 +1,520 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Sessions",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "9899"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 20:23:23 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": [
+      {
+        "PlayState": {
+          "PositionTicks": 10000000,
+          "CanSeek": true,
+          "IsPaused": true,
+          "IsMuted": false,
+          "MediaSourceId": "mediasource_18",
+          "PlayMethod": "DirectStream",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "0f3c4a66924b2f5925807ab8ccd1b6de",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "Client": "Goby Keys Playback M5d 20260910 01 Alpha",
+        "LastActivityDate": "2026-09-09T20:23:23.9118687Z",
+        "DeviceName": "Goby Emby Reference",
+        "NowPlayingItem": {
+          "Name": "Reference Artwork Film",
+          "OriginalTitle": "Reference Original Title",
+          "ServerId": "ec69ef1cf84140e88489c30326529308",
+          "Id": "18",
+          "DateCreated": "2026-09-08T21:56:32.0000000Z",
+          "DateModified": "2026-09-08T21:56:32.0000000Z",
+          "PresentationUniqueKey": "p-tmdb-Movie-999999999-ea58489081a74d32a668063a9166562d",
+          "Container": "mp4",
+          "PremiereDate": "2024-01-01T16:00:00.0000000Z",
+          "ExternalUrls": [
+            {
+              "Name": "IMDb",
+              "Url": "https://www.imdb.com/title/tt999999999"
+            },
+            {
+              "Name": "TheMovieDb",
+              "Url": "https://www.themoviedb.org/movie/999999999"
+            },
+            {
+              "Name": "Trakt",
+              "Url": "https://trakt.tv/search/tmdb/999999999?id_type=movie"
+            }
+          ],
+          "Path": "/reference-fixtures/movies/Goby Sample (2026).mp4",
+          "OfficialRating": "PG-13",
+          "Taglines": [],
+          "Genres": [
+            "Drama",
+            "Science Fiction"
+          ],
+          "CommunityRating": 7.5,
+          "RunTimeTicks": 20000000,
+          "Size": 90299,
+          "FileName": "Goby Sample (2026).mp4",
+          "Bitrate": 361196,
+          "ProductionYear": 2024,
+          "ProviderIds": {
+            "Imdb": "tt999999999",
+            "Tmdb": "999999999"
+          },
+          "IsFolder": false,
+          "ParentId": "4",
+          "Type": "Movie",
+          "Studios": [
+            {
+              "Name": "Reference Studio",
+              "Id": 23
+            }
+          ],
+          "GenreItems": [
+            {
+              "Name": "Drama",
+              "Id": 21
+            },
+            {
+              "Name": "Science Fiction",
+              "Id": 22
+            }
+          ],
+          "PrimaryImageAspectRatio": 0.6666666666666666,
+          "MediaStreams": [
+            {
+              "Codec": "h264",
+              "CodecTag": "avc1",
+              "Language": "und",
+              "TimeBase": "1/12288",
+              "VideoRange": "SDR",
+              "DisplayTitle": "SD H264",
+              "NalLengthSize": "4",
+              "IsInterlaced": false,
+              "BitRate": 280500,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 90,
+              "Width": 160,
+              "AverageFrameRate": 24,
+              "RealFrameRate": 24,
+              "Profile": "Constrained Baseline",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 10,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 70056,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {
+            "Primary": "66dcea91e5ed256521d919b37c1e6c4d"
+          },
+          "BackdropImageTags": [
+            "ea3300eb80fb72fba2c9eff80d1a45b4"
+          ],
+          "Chapters": [],
+          "MediaType": "Video",
+          "Width": 160,
+          "Height": 90
+        },
+        "InternalDeviceId": 15,
+        "DeviceId": "ec69ef1cf84140e88489c30326529308",
+        "ApplicationVersion": "4.9.5.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "8963b28f938a4578c50af6b3b8a5295a",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+        "UserName": "reference-admin",
+        "Client": "Goby Keys Playback Recorder",
+        "LastActivityDate": "2026-09-09T20:23:23.8702411Z",
+        "DeviceName": "Keys Playback Owned",
+        "InternalDeviceId": 16,
+        "DeviceId": "goby-keys-playback-m5d-20260910-01-admin",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "e5c52c320a7cbff5aed94333afc39423",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "7581d36391e24c08b20b2d126ea9768e",
+        "UserName": "reference-hls-m4a",
+        "Client": "Goby HLS Recorder",
+        "LastActivityDate": "2026-09-09T02:54:11.8061224Z",
+        "DeviceName": "Linux HLS Test",
+        "InternalDeviceId": 6,
+        "DeviceId": "goby-hls-m4a-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "b0fa5aaa84b0bb7269fc6f1b7e4143da",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "fec4ebc17b7b427eaa99321c0bdaeeb6",
+        "UserName": "reference-hls-m4a-admin",
+        "Client": "Goby HLS Recorder",
+        "LastActivityDate": "2026-09-09T02:52:02.3425858Z",
+        "DeviceName": "Linux HLS Admin",
+        "InternalDeviceId": 7,
+        "DeviceId": "goby-hls-m4a-admin-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "PlayMethod": "Transcode",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "a3f03e0da95e97342b608c04ee83712d",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+        "UserName": "reference-admin",
+        "Client": "Goby Reference Recorder",
+        "LastActivityDate": "2026-09-09T02:52:02.3326772Z",
+        "DeviceName": "Linux Test",
+        "InternalDeviceId": 1,
+        "DeviceId": "goby-reference-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "3051be5bda6e822e1f0a9c80cb6a5100",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+        "UserName": "reference-websocket-m3c",
+        "Client": "Goby WebSocket Recorder",
+        "LastActivityDate": "2026-09-09T02:11:17.0349880Z",
+        "DeviceName": "Linux WebSocket Test",
+        "InternalDeviceId": 4,
+        "DeviceId": "goby-websocket-m3c-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "536a2c31b41bd6112a619de90cb21497",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+        "UserName": "reference-admin",
+        "Client": "Goby Admin WebSocket Recorder",
+        "LastActivityDate": "2026-09-09T02:11:16.0253963Z",
+        "DeviceName": "Linux Admin WebSocket Test",
+        "InternalDeviceId": 5,
+        "DeviceId": "goby-websocket-admin-m3d-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "PlayMethod": "Transcode",
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [
+          "Audio"
+        ],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "c2b8d3f77b156a733895898a88de4ba3",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "2118172027b94fd18c3ca6e55478d6d3",
+        "UserName": "reference-session-m3b",
+        "Client": "Goby Reference Recorder",
+        "LastActivityDate": "2026-09-09T02:10:27.5287292Z",
+        "DeviceName": "Linux Session Test",
+        "InternalDeviceId": 3,
+        "DeviceId": "goby-session-m3b-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [
+          "VolumeDown"
+        ],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "http",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "2b51b68134645743444780c6aec21f5c",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "5760844f98b54d16b1c13073e5c9d73f",
+        "UserName": "reference-websocket-m3c",
+        "Client": "Goby WebSocket Recorder",
+        "LastActivityDate": "2026-09-09T01:36:06.6821281Z",
+        "DeviceName": "Linux WebSocket Test",
+        "InternalDeviceId": 4,
+        "DeviceId": "goby-websocket-m3c-recorder-other",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "7328e2d073aaffff95e1edd1ee8f3d6b",
+        "ServerId": "ec69ef1cf84140e88489c30326529308",
+        "UserId": "b9ea5322ce7342a283da085981dc454d",
+        "UserName": "reference-playback-m3",
+        "Client": "Goby Reference Recorder",
+        "LastActivityDate": "2026-09-09T00:27:46.8713463Z",
+        "DeviceName": "Linux Test",
+        "InternalDeviceId": 2,
+        "DeviceId": "goby-playback-m3-recorder",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      }
+    ]
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 9899,
+    "rangeRequested": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T20:23:23.912464+00:00"
+  }
+}

@@ -64,3 +64,12 @@ The keys are independent of user logins; creation, carriers, list DTOs, permissi
 pagination anomalies, deletion and logout are recorded. All four newly issued
 keys and both dedicated logins were retired; all 958 older records and known
 source paths retained their hashes. This study does not verify key playback.
+
+The key playback, client-context and target-scope studies add 122 records:
+119 complete HTTP exchanges and three audits. Their prefixes are
+keys-playback-m5d, keys-context-m5d and keys-scope-m5d. The complete corpus now
+contains 1128 records. The later controls resolve earlier combined-policy
+ambiguity: explicit catalog targets obey library ACLs; key profile negotiation
+uses conversion flags, while IsDisabled or EnableMediaPlayback alone did not
+remove the sampled conversion capability. No conversion URL was followed.
+See the separately linked research reports for preservation and cleanup.
