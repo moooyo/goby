@@ -11,10 +11,15 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const jobColumns = `id, library_id, status, error, scanned, added, updated, created_at, started_at, finished_at`
+const jobColumns = `id, library_id, status, error, scanned, added, updated, force_probe, created_at, started_at, finished_at`
 
 // StartScan durably queues work independently from the requesting HTTP context.
 func (s *Store) StartScan(ctx context.Context, libraryID string) (Job, error) {
+	return s.StartScanWithOptions(ctx, libraryID, ScanOptions{})
+}
+
+// StartScanWithOptions persists the requested probe policy with the queued job.
+func (s *Store) StartScanWithOptions(ctx context.Context, libraryID string, options ScanOptions) (Job, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
@@ -27,8 +32,8 @@ func (s *Store) StartScan(ctx context.Context, libraryID string) (Job, error) {
 	if err != nil {
 		return Job{}, err
 	}
-	job, err := scanJob(s.queryOwnedRow(ctx, `INSERT INTO scan_jobs (id, library_id, status)
-		SELECT $1, id, 'Queued' FROM libraries WHERE id = $2 RETURNING `+jobColumns, id, libraryID))
+	job, err := scanJob(s.queryOwnedRow(ctx, `INSERT INTO scan_jobs (id, library_id, status, force_probe)
+		SELECT $1, id, 'Queued', $3 FROM libraries WHERE id = $2 RETURNING `+jobColumns, id, libraryID, options.ForceProbe))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Job{}, ErrNotFound
 	}
@@ -101,7 +106,7 @@ func (s *Store) CancelJob(ctx context.Context, id string) error {
 
 func scanJob(row rowScanner) (Job, error) {
 	var job Job
-	err := row.Scan(&job.ID, &job.LibraryID, &job.Status, &job.Error, &job.Scanned, &job.Added, &job.Updated, &job.CreatedAt, &job.StartedAt, &job.FinishedAt)
+	err := row.Scan(&job.ID, &job.LibraryID, &job.Status, &job.Error, &job.Scanned, &job.Added, &job.Updated, &job.ForceProbe, &job.CreatedAt, &job.StartedAt, &job.FinishedAt)
 	return job, err
 }
 

@@ -1,0 +1,32 @@
+{
+  "owner": "goby-m4g-targeted-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 1 ./internal/database ./internal/library ./internal/server -run 'ForceProbe|DecodeScanOptions|JobDTOAlways|HTTPAdminScan'",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "top_level_tests_passed": 15,
+  "skipped_tests": 0,
+  "packages": [
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "1.087s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "1.816s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "4.469s"
+    }
+  ],
+  "log_sha256": "cdce3ee80fc8f9a82cd03dfd2ae494a3a3687bf49ce0751553c1cebf1158db9f",
+  "go_and_module_files": 308,
+  "verified_go_source_sha256": "e056554ac010b9b7f6d1225488c8f7a140d440bbaf3da736098216eab0a42455",
+  "schema_version": 15,
+  "probe_version": 6,
+  "integration_database_port": 15432
+}

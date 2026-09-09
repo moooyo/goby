@@ -234,7 +234,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	probe := stored.media
-	unchanged := probe != nil && stored.size == info.Size() && stored.modified != nil && stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
+	// A forced refresh uses the same descriptor checks and persistence path as
+	// any changed source, even when the accepted probe facts remain identical.
+	unchanged := !state.task.job.ForceProbe && probe != nil && stored.size == info.Size() && stored.modified != nil && stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
 	versioned, checksVersion := state.store.prober.(interface{ CacheVersion() int })
 	if checksVersion {
 		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&

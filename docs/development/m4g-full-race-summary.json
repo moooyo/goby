@@ -1,0 +1,83 @@
+{
+  "owner": "goby-m4g-full-race-summary-v1",
+  "status": "passed",
+  "command": "go test -race -count=1 -v -p 2 ./...",
+  "go_exit_code": 0,
+  "ssh_wrapper_exit_code": 0,
+  "top_level_tests_passed": 969,
+  "skipped_tests": 0,
+  "packages": [
+    {
+      "status": "?",
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "detail": "[no test files]"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "detail": "1.409s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/config",
+      "detail": "1.018s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/database",
+      "detail": "2.903s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/events",
+      "detail": "1.078s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/identity",
+      "detail": "115.345s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/library",
+      "detail": "23.866s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/media",
+      "detail": "5.144s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "detail": "1.516s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/playback",
+      "detail": "1.219s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/server",
+      "detail": "430.429s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "detail": "1.124s"
+    },
+    {
+      "status": "ok",
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "detail": "56.865s"
+    }
+  ],
+  "log_sha256": "18f2354e20590f14e0574b5a2f2f61555da31aced3fbed2095093db28e8137cd",
+  "go_and_module_files": 308,
+  "verified_go_source_sha256": "e056554ac010b9b7f6d1225488c8f7a140d440bbaf3da736098216eab0a42455",
+  "schema_version": 15,
+  "probe_version": 6,
+  "integration_database_port": 15432,
+  "actual_gpu_execution_verified": false
+}

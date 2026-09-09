@@ -35,8 +35,14 @@ type Library struct {
 type Job struct {
 	ID, LibraryID, Status, Error string
 	Scanned, Added, Updated      int
+	ForceProbe                   bool
 	CreatedAt                    time.Time
 	StartedAt, FinishedAt        *time.Time
+}
+
+// ScanOptions controls whether a scan can reuse persisted media probe facts.
+type ScanOptions struct {
+	ForceProbe bool
 }
 
 // Path is server data: only authorized item projections may expose it.

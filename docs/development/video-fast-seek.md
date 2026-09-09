@@ -103,11 +103,14 @@ can invalidate an old index at runtime, but an ordinary rescan does not rebuild
 it solely for that reason. Sources remain eligible for linear playback under
 the ordinary checks.
 
-This is a known operational limit: there is currently no force-reprobe endpoint
-or dedicated index-rebuild task. A naturally changed source is analyzed through
-the normal scanner; explicit rebuilding of unchanged sources remains future
-work. Do not treat changing media timestamps, deleting libraries, or modifying
-private catalog state as the normal way to request fresh indexes.
+M4g adds **Libraries > Refresh media details** to re-probe unchanged sources.
+It sends `{"ForceProbe":true}` to the existing native scan route and persists
+that mode in task history. Use it after a tool upgrade or to retry optional
+index production. It reuses the normal source checks, cancellation and metadata
+preservation rules; unsupported or budget-limited index analysis still permits
+linear fallback. See the [administrator scan contract](../api/admin-scans.md).
+Changing source timestamps, deleting libraries or editing private catalog state
+is not required to request fresh indexes.
 
 ## Candidate selection and execution
 

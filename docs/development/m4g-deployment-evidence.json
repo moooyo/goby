@@ -1,0 +1,161 @@
+{
+  "owner": "goby-m4g-deployment-evidence-v1",
+  "status": "passed",
+  "main_pid": 3452400,
+  "uid": 995,
+  "start_ticks": "21814230",
+  "binary_sha256": "8f1c71d462b0534601cb148920470c5c5e6f312e62144fc2e0bdc0b39108358e",
+  "previous_binary_sha256": "f1eafa5d95c5647464d69a7839791a61f3a9f5d30c3e4a30996a31f6a2a28e13",
+  "previous_pid": 3431702,
+  "schema_version": 15,
+  "all_preexisting_business_fields_preserved": true,
+  "legacy_scan_modes_default_false": true,
+  "tables_before": {
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "0eaeffce16c5c1aae5f2c19b29ed00f82dbc7103d1b1d5ba409211ae6000c3bf"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "86e54c47f1dae78c5b02ca2791c53260486837c12709218d5216397ba9464b5d"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "d40e03877f0817489e8ca2447922f40968fa264da66c183d2ca5065be28badae"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 28,
+      "sha256": "896115c6747c54552e47467a3f9bdcd3d804571e272077e5e1b232b6619ca95b"
+    },
+    "scan_jobs": {
+      "count": 36,
+      "sha256": "de8fef135e88290031280b9a63a2601a4ebdbe935d14689cf2fe153a5b2baee8"
+    },
+    "schema_migrations": {
+      "count": 14,
+      "sha256": "1792a25132bafd1327baeffd9b8568238d476c873452d63915ec8c6f2a67e177"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 79,
+      "sha256": "75593ec253ae946f0e73682d62afe173954ecf40f2c0306dc5437fc24d8b6d9a"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "tables_after": {
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "0eaeffce16c5c1aae5f2c19b29ed00f82dbc7103d1b1d5ba409211ae6000c3bf"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "86e54c47f1dae78c5b02ca2791c53260486837c12709218d5216397ba9464b5d"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "d40e03877f0817489e8ca2447922f40968fa264da66c183d2ca5065be28badae"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 28,
+      "sha256": "896115c6747c54552e47467a3f9bdcd3d804571e272077e5e1b232b6619ca95b"
+    },
+    "scan_jobs": {
+      "count": 36,
+      "sha256": "dfbe4f64a04b0ab07c4dc398c7b13113665b7a5778a049aad44198cc8c978509"
+    },
+    "schema_migrations": {
+      "count": 15,
+      "sha256": "cc48946a7ecb6e509a2c1b3ac97b089add015686581b29bcde71d9ef94cb5a14"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 79,
+      "sha256": "75593ec253ae946f0e73682d62afe173954ecf40f2c0306dc5437fc24d8b6d9a"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "assets_archive_sha256": "42fea93320f44809652c9d35ead5552bc6c50c59fa93160c58f3f6a3a5925e43",
+  "current_asset_files": 35,
+  "retained_asset_files": 134,
+  "http_index_and_entry_verified": true,
+  "installed_go_module_and_migration_files": 323,
+  "backup_directory": "/dev/shm/goby-m4g-deployment-backup",
+  "database_dump_bytes": 154283,
+  "deployment_script_sha256": "d7a786fb4b969b5c55acd1e088a1d48dcfdc0fab6a7d38b32f85a13db3ed584a"
+}

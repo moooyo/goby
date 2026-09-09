@@ -136,6 +136,9 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 	result := make(map[string]string, len(tables))
 	for _, table := range tables {
 		statement := `SELECT COALESCE(jsonb_agg(to_jsonb(original) ORDER BY to_jsonb(original)::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + " original"
+		if table == "scan_jobs" {
+			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
+		}
 		if table == "schema_migrations" {
 			statement += " WHERE version <= 13"
 		}
@@ -265,8 +268,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 14 {
-		t.Fatalf("metadata migration version = %d, want 14, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 15 {
+		t.Fatalf("metadata migration version = %d, want 15, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()

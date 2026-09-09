@@ -224,6 +224,7 @@ export interface Library {
 export interface Job {
   Id: string;
   LibraryId: string;
+  ForceProbe: boolean;
   Status: string;
   Error: string;
   Scanned: number;
@@ -823,6 +824,13 @@ export const adminApi = {
 
   scanLibrary(libraryId: string, options: RequestOptions = {}): Promise<JobResponse> {
     return mutate(`/libraries/${encodeURIComponent(libraryId)}/scan`, "POST", undefined, options);
+  },
+
+  async refreshLibraryMedia(libraryId: string, options: RequestOptions = {}): Promise<JobResponse> {
+    const result = await mutate<JobResponse>(`/libraries/${encodeURIComponent(libraryId)}/scan`, "POST", { ForceProbe: true }, options);
+    if (!isRecord(result) || !isRecord(result.Job) || !nonemptyString(result.Job.Id)
+      || result.Job.LibraryId !== libraryId || result.Job.ForceProbe !== true) throw invalidResponse();
+    return result;
   },
 
   getJobs(options: RequestOptions = {}): Promise<JobsResponse> {

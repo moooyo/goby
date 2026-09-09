@@ -6,7 +6,7 @@ The routes below exist in source. Authentication, permission and ingestion workf
 
 The official reference inventory contains 1006 sanitized JSON records: the previous 958 plus 48 from the [application-key study](../research/api-key-reference.md), including 47 complete HTTP exchanges and one audit. Application keys remain unimplemented; their userless authority must be modeled separately from login sessions. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
-The [M5c increment](../development/verification-m5c-sessions.md) passed all twelve tested packages in the complete Linux race suite (954 top-level tests, no skips), isolated browser/restart acceptance, and the deployed native session workflow. The current database schema is 14 and probe cache version is 6. The preceding M4f [private restart evidence](../development/video-fast-seek.md) adds no public HTTP route or proof parameter. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
+The [M4g increment](../development/verification-m4g-media-refresh.md) passed all twelve tested packages in the complete Linux race suite (969 top-level tests, no skips), real-media browser/restart acceptance, and five deployed explicit refreshes. [M5c](../development/verification-m5c-sessions.md) records the preceding native session workflow. The current database schema is 15 and probe cache version is 6. The preceding M4f [private restart evidence](../development/video-fast-seek.md) adds no public HTTP route or proof parameter. These results do not establish full client compatibility or complete the larger conversion and administrator milestones.
 
 ## Administrator API
 
@@ -31,11 +31,11 @@ All names are Goby-owned. JSON bodies and responses use the field names shown he
 | `GET /admin/v1/libraries` | Administrator cookie | `{Items: Library[], TotalRecordCount}` |
 | `POST /admin/v1/libraries` | Cookie, CSRF, `{Name, CollectionType, Paths, Scan}` | `201 {Library, Job?}`; optional `ScanError` if catalog creation succeeded but initial scan admission failed |
 | `DELETE /admin/v1/libraries/{id}` | Cookie and CSRF | `204`; remove catalog records, retain every media file; active scans prevent removal |
-| `POST /admin/v1/libraries/{id}/scan` | Cookie and CSRF | `202 {Job}`; durable scan admission with per-library deduplication |
+| `POST /admin/v1/libraries/{id}/scan` | Cookie and CSRF; empty body or optional JSON `ForceProbe` boolean; no query | `202 {Job}`; durable normal/forced media scanning with per-library deduplication; [contract](admin-scans.md) |
 | `GET /admin/v1/libraries/{id}/items` | Administrator cookie; optional `SearchTerm`, `Types`, `StartIndex`, `Limit` | Library-scoped lightweight summaries and paging; no user-state writes |
 | `GET /admin/v1/items/{id}/metadata` | Administrator cookie; no query parameters | Item context, revision, automatic/effective values, overrides, locks and inactive settings |
 | `PUT /admin/v1/items/{id}/metadata` | Cookie, CSRF, complete `{Revision, Overrides, LockedFields}` | Atomic effective metadata/entity update; stale source or editor revision returns 409 |
-| `GET /admin/v1/jobs` | Administrator cookie | Recent scan jobs, real progress and outcomes |
+| `GET /admin/v1/jobs` | Administrator cookie | Recent scan jobs, persisted `ForceProbe` mode, real progress and outcomes |
 | `POST /admin/v1/jobs/{id}/cancel` | Cookie and CSRF | `202 {Job}`; cancel remaining scan work, retain already indexed items |
 | `GET /admin/v1/storage/roots` | Administrator cookie | `{Items: [{Path, Available}], Configured}`; `Available` includes directory read permission |
 

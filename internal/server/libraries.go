@@ -42,7 +42,7 @@ func jobDTO(job library.Job) map[string]any {
 	if status == "queued" {
 		status = "pending"
 	}
-	return map[string]any{"Id": job.ID, "LibraryId": job.LibraryID, "Status": status, "Error": job.Error, "Scanned": job.Scanned, "Added": job.Added, "Updated": job.Updated, "CreatedAt": job.CreatedAt, "StartedAt": job.StartedAt, "FinishedAt": job.FinishedAt}
+	return map[string]any{"Id": job.ID, "LibraryId": job.LibraryID, "ForceProbe": job.ForceProbe, "Status": status, "Error": job.Error, "Scanned": job.Scanned, "Added": job.Added, "Updated": job.Updated, "CreatedAt": job.CreatedAt, "StartedAt": job.StartedAt, "FinishedAt": job.FinishedAt}
 }
 
 func libraryErrorInfo(err error) (int, string, string) {
@@ -124,11 +124,18 @@ func (s *Server) deleteLibrary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) scanLibrary(w http.ResponseWriter, r *http.Request) {
-	job, err := s.library.StartScan(r.Context(), r.PathValue("id"))
+	options, ok := decodeScanOptions(w, r)
+	if !ok {
+		return
+	}
+	job, err := s.library.StartScanWithOptions(r.Context(), r.PathValue("id"), options)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	s.log.Info("library scan requested", "actor_id", actor.User.ID, "library_id", job.LibraryID,
+		"job_id", job.ID, "force_probe", job.ForceProbe)
 	jsonResponse(w, http.StatusAccepted, map[string]any{"Job": jobDTO(job)})
 }
 

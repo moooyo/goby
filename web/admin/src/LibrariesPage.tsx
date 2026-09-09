@@ -5,6 +5,7 @@ import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import FolderOpenOutlined from '@mui/icons-material/FolderOpenOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
+import RestartAltRounded from '@mui/icons-material/RestartAltRounded';
 import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
 import ListAltRounded from '@mui/icons-material/ListAltRounded';
@@ -138,6 +139,48 @@ function DeleteLibraryDialog({ library, onClose, onDeleted }: { library: Library
   );
 }
 
+function RefreshMediaDialog({ library, outcomeUnknown, onUnknown, onClose, onStarted, onTasks }: { library: Library; outcomeUnknown: boolean; onUnknown: () => void; onClose: () => void; onStarted: () => void; onTasks: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  async function start() {
+    if (busy || outcomeUnknown) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.refreshLibraryMedia(library.Id);
+      onStarted();
+    } catch (cause) {
+      if (cause instanceof ApiError && ['network_error', 'invalid_response'].includes(cause.code)) onUnknown();
+      else if (!isAbortError(cause)) setError(cause);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="xs" aria-labelledby="refresh-media-title" aria-describedby="refresh-media-description">
+      <DialogTitle id="refresh-media-title">Refresh media details?</DialogTitle>
+      <DialogContent aria-busy={busy}>
+        <Typography sx={{ fontWeight: 650, overflowWrap: 'anywhere', mb: 2 }}>{library.Name}</Typography>
+        <Stack id="refresh-media-description" spacing={2}>
+          <Typography color="text.secondary">This re-reads every media file in this library and rebuilds playback indexes for supported formats. It can take longer than a normal scan.</Typography>
+          <Typography color="text.secondary">Your edited metadata and play history are kept.</Typography>
+          <Typography variant="body2" color="text.secondary">Some formats do not support playback indexes, even when the refresh completes.</Typography>
+        </Stack>
+        {error != null && <Box sx={{ mt: 2 }}><ErrorNotice error={error} /></Box>}
+        {outcomeUnknown && <Alert severity="warning" sx={{ mt: 2 }}>The server response could not be confirmed. This refresh may already be running. View Tasks and check this library before requesting another refresh.</Alert>}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.5, flexWrap: 'wrap', gap: 1 }}>
+        <Button autoFocus color="secondary" onClick={onClose} disabled={busy}>{outcomeUnknown ? 'Close' : 'Cancel'}</Button>
+        {outcomeUnknown
+          ? <Button variant="contained" onClick={onTasks} startIcon={<PlaylistAddCheckRounded />}>View tasks</Button>
+          : <Button variant="contained" onClick={() => void start()} disabled={busy} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <RestartAltRounded />}>{busy ? 'Requesting...' : 'Refresh media details'}</Button>}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void; onManageItems: (library: Library) => void }) {
   const [libraries, setLibraries] = useState<LibrariesResponse>();
   const [roots, setRoots] = useState<StorageRootsResponse>();
@@ -148,6 +191,8 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
   const [revision, setRevision] = useState(0);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Library>();
+  const [refreshingMedia, setRefreshingMedia] = useState<Library>();
+  const [unconfirmedRefreshes, setUnconfirmedRefreshes] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ message: string; taskLink: boolean }>();
 
@@ -167,7 +212,7 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
   const canCreate = !loading && rootsError == null && roots?.Configured && roots.Items.some((root) => root.Available);
 
   async function scanLibrary(library: Library) {
-    if (scanning.has(library.Id)) return;
+    if (scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)) return;
     setScanning((ids) => new Set(ids).add(library.Id));
     setActionError(null);
     try {
@@ -219,19 +264,19 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
             <Stack component="ul" aria-label="Media libraries" spacing={2} sx={{ listStyle: 'none', p: 0, m: 0 }}>
               {libraries.Items.map((library) => (
                 <Paper component="li" key={library.Id} variant="outlined" sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Stack direction={{ xs: 'column', md: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+                  <Stack direction={{ xs: 'column', lg: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' }, gap: 2 }}>
                     <Stack direction="row" sx={{ gap: 1.5, alignItems: 'center', minWidth: 0 }}>
                       <Box sx={{ bgcolor: '#E8F3F3', color: 'primary.main', borderRadius: 2, p: 1.3, display: 'flex' }}><VideoLibraryOutlined /></Box>
                       <Box sx={{ minWidth: 0 }}><Typography component="h3" variant="h3" sx={{ overflowWrap: 'anywhere' }}>{library.Name}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>{collectionName(library.CollectionType)}</Typography></Box>
                     </Stack>
-                    <Stack direction="row" sx={{ gap: 1.5, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
+                    <Stack direction="row" sx={{ gap: 1, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
                       <Button variant="contained" size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}>Manage items</Button>
-                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                        <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
-                        <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
-                      </Stack>
+                      <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
+                      <Button size="small" color="secondary" startIcon={<RestartAltRounded />} onClick={() => setRefreshingMedia(library)} disabled={scanning.has(library.Id)} aria-label={`Refresh media details for ${library.Name}`}>Refresh media details</Button>
+                      <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
                     </Stack>
                   </Stack>
+                  {unconfirmedRefreshes.has(library.Id) && <Alert severity="warning" sx={{ mt: 2 }} action={<Button color="inherit" size="small" onClick={onTasks}>View tasks</Button>}>A media details refresh request could not be confirmed. Check Tasks before starting another scan or refresh.</Alert>}
                   <Stack spacing={1} sx={{ mt: 2.5, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                     {library.Paths.map((path) => <Stack key={path} direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}><FolderOpenOutlined sx={{ fontSize: 18, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} /><Typography variant="body2" sx={{ fontFamily: 'ui-monospace, Consolas, monospace', overflowWrap: 'anywhere', minWidth: 0 }}>{path}</Typography></Stack>)}
                   </Stack>
@@ -242,10 +287,11 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
             </Stack>
           </Box>
         )}
-        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans run in the background. Open Tasks to follow their progress.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans and media details refreshes run in the background. Open Tasks to follow their progress.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
       </Stack>
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
+      {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>
   );

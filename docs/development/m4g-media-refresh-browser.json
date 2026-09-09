@@ -1,0 +1,227 @@
+{
+  "application_pids": [
+    3437605,
+    3437844
+  ],
+  "assets_archive_sha256": "42fea93320f44809652c9d35ead5552bc6c50c59fa93160c58f3f6a3a5925e43",
+  "binary_sha256": "8f1c71d462b0534601cb148920470c5c5e6f312e62144fc2e0bdc0b39108358e",
+  "browser": {
+    "duration_ms": 14571.956999999999,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_contract": {
+    "CancelPosts": 0,
+    "DialogCancelAndEscape": true,
+    "Marker": "goby-media-refresh-fixtures-v1",
+    "MobileOverflow": false,
+    "NonemptyMetadataPreserved": true,
+    "NormalForceProbe": false,
+    "NormalJobId": "f1fe384dcb6f8f86572c1ef5dfb5c318",
+    "RefreshForceProbe": true,
+    "RefreshJobId": "cc19c78b3d37a004f553b91d5c38944b",
+    "RunId": "20260909_200856_b18ac97dff",
+    "ScanPostCount": 2,
+    "TaskModesAfterReload": true
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "all_five_jobs_and_modes_survived_restart": true,
+    "application_uid": 995,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "empty_normal_scan_preserved_missing_index": true,
+    "empty_object_normal_scan_preserved_missing_index": true,
+    "exact_temporary_hba_rule": true,
+    "forced_refresh_restored_same_version_index": true,
+    "fresh_dedicated_administrator": true,
+    "item_hierarchy_and_original_media_source_preserved": true,
+    "metadata_revision_audit_entities_and_subtitles_preserved": true,
+    "nonempty_manual_overrides_and_locks_preserved": true,
+    "original_media_and_sidecar_bytes_unchanged": true,
+    "real_user_favorite_and_play_history_preserved": true,
+    "restart_preserved_complete_durable_snapshot": true,
+    "same_version_missing_index_fixture": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m4g_refresh_20260909_200856_b18ac97dff",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "ffmpeg_sha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e",
+  "ffmpeg_version": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "ffprobe_sha256": "8b86ad18818830b003f4d5191c1bd0c9b3722539c6203fae30de4da7f04cc872",
+  "ffprobe_version": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+  "fixtures": {
+    "application_can_replace_sources": false,
+    "media_bytes": 97364,
+    "media_count": 1,
+    "nfo_count": 1,
+    "nonempty_control_rows": {
+      "associations": 4,
+      "manual_states": 1,
+      "subtitles": 1,
+      "userdata": 1
+    },
+    "source_hashes": {
+      "Refresh.Movie.2024.en.srt": "1c44e9de00392782a3e978b82e5bec995a1f82339aa5fa318d724c546a235aa9",
+      "Refresh.Movie.2024.mp4": "6acd712e6996018f0eda896f10a67534c474db053eed321af36000dd6674bc51",
+      "Refresh.Movie.2024.nfo": "adac486ef97122957fc363cd70111f8451e788eafa40fa7e484a2fabcbbe4a65"
+    },
+    "subtitle_count": 1
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 42485,
+  "initial_index": {
+    "entry_count": 3,
+    "index_bytes": 1162,
+    "index_count": 1,
+    "nal_scope_checked": true,
+    "packet_scope_checked": true,
+    "probe_version": 6,
+    "sha256": "f91bc7348e5968128e1015cb65cba7875709f9d0f64fe0c0b313f600bfa46260"
+  },
+  "jobs": [
+    {
+      "Added": 0,
+      "ForceProbe": true,
+      "Id": "cc19c78b3d37a004f553b91d5c38944b",
+      "Scanned": 1,
+      "Status": "completed",
+      "Updated": 1
+    },
+    {
+      "Added": 0,
+      "ForceProbe": false,
+      "Id": "f1fe384dcb6f8f86572c1ef5dfb5c318",
+      "Scanned": 1,
+      "Status": "completed",
+      "Updated": 0
+    },
+    {
+      "Added": 0,
+      "ForceProbe": false,
+      "Id": "b99275561958eee2c2cf419119560c47",
+      "Scanned": 1,
+      "Status": "completed",
+      "Updated": 0
+    },
+    {
+      "Added": 0,
+      "ForceProbe": false,
+      "Id": "e8b904a311925f5f35330355d5a13162",
+      "Scanned": 1,
+      "Status": "completed",
+      "Updated": 0
+    },
+    {
+      "Added": 1,
+      "ForceProbe": false,
+      "Id": "d6e79fdffc59b6bf1fcb6c12c9d09be0",
+      "Scanned": 1,
+      "Status": "completed",
+      "Updated": 0
+    }
+  ],
+  "limitations": [
+    "The refresh fixture covers one supported H.264/AAC file; unsupported formats may complete without indexes.",
+    "Index existence and bounded persisted evidence are checked; this scenario does not assert runtime fast-seek speed."
+  ],
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "refreshed_index": {
+    "entry_count": 3,
+    "index_bytes": 1162,
+    "index_count": 1,
+    "nal_scope_checked": true,
+    "packet_scope_checked": true,
+    "probe_version": 6,
+    "sha256": "f91bc7348e5968128e1015cb65cba7875709f9d0f64fe0c0b313f600bfa46260"
+  },
+  "role": "goby_m4g_role_20260909_200856_b18ac97dff",
+  "run_id": "20260909_200856_b18ac97dff",
+  "scenario": "explicit_media_refresh",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3431702"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3431702"
+  },
+  "source_spec_sha256": "739cc497c3b79dd0f8ac723d93d1c96c9410fbbf7e779a42b6efdca8eac05841",
+  "space_before": {
+    "/": 42971136,
+    "/dev/shm": 669200384,
+    "/dev/shm/goby-pg-m4c": 806006784,
+    "/opt/goby-test/exec-scratch": 176394240
+  },
+  "status": "passed",
+  "verifier_sha256": "37583c3eb37516091d9fa44fd08dbe5082fe0615a60bdfee1d1b4e2e5319efb9"
+}

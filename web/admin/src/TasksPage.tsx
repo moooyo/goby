@@ -62,19 +62,19 @@ function TaskTime({ label, value, empty }: { label: string; value: string | null
 
 function TaskCard({ job, library, onCancel, busy }: { job: Job; library?: Library; onCancel: () => void; busy: boolean }) {
   const status = normalizedStatus(job);
-  const failure = job.Error.trim() || (status === 'failed' ? 'The scan failed without an error message.' : '');
+  const failure = job.Error.trim() || (status === 'failed' ? `The ${job.ForceProbe ? 'media details refresh' : 'scan'} failed without an error message.` : '');
 
   return (
     <Box component="li" data-job-id={job.Id} sx={{ p: { xs: 2, sm: 3 }, borderTop: 1, borderColor: 'divider' }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="h4" component="h3" sx={{ overflowWrap: 'anywhere' }}>{library?.Name ?? `Library ${job.LibraryId}`}</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Library scan</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{job.ForceProbe ? 'Media details refresh' : 'Library scan'}</Typography>
           <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>Task <span className="mono">{job.Id}</span></Typography>
         </Box>
         <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1.2, maxWidth: '100%' }}>
           <StatusChip job={job} />
-          {isActive(job) && <Button size="small" color="secondary" onClick={onCancel} disabled={busy} startIcon={<CancelOutlined />} aria-label={`Cancel scan for ${library?.Name ?? `library ${job.LibraryId}`}`}>Cancel task</Button>}
+          {isActive(job) && <Button size="small" color="secondary" onClick={onCancel} disabled={busy} startIcon={<CancelOutlined />} aria-label={`Cancel ${job.ForceProbe ? 'media details refresh' : 'scan'} for ${library?.Name ?? `library ${job.LibraryId}`}`}>Cancel task</Button>}
         </Stack>
       </Stack>
 
@@ -92,9 +92,10 @@ function TaskCard({ job, library, onCancel, busy }: { job: Job; library?: Librar
         <TaskTime label="Started" value={job.StartedAt} empty="Not started" />
         <TaskTime label="Finished" value={job.FinishedAt} empty="Not finished" />
       </Box>
-      {status === 'running' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Scanning files. Counts update as the scan progresses.</Typography>}
+      {status === 'running' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>{job.ForceProbe ? 'Re-reading media details and rebuilding supported playback indexes. Counts update as the refresh progresses.' : 'Scanning files. Counts update as the scan progresses.'}</Typography>}
       {status === 'pending' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Waiting to start.</Typography>}
-      {status === 'interrupted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>The scan stopped before it finished. Start another scan from Libraries when ready.</Typography>}
+      {status === 'interrupted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>{job.ForceProbe ? 'The refresh stopped before it finished. Use Refresh media details in Libraries to start again when ready.' : 'The scan stopped before it finished. Start another scan from Libraries when ready.'}</Typography>}
+      {job.ForceProbe && status === 'completed' && <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Refresh complete. Some formats do not support playback indexes.</Typography>}
       {failure && <Alert severity={status === 'failed' ? 'error' : 'warning'} role="note" sx={{ mt: 2, '& .MuiAlert-message': { minWidth: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }}>{failure}</Alert>}
     </Box>
   );
@@ -231,7 +232,7 @@ export function TasksPage({ onLibraries }: { onLibraries: () => void }) {
       if (controller.signal.aborted) return;
       setData((previous) => previous ? { ...previous, Items: previous.Items.map((job) => job.Id === result.Job.Id ? result.Job : job) } : previous);
       setSelectedJob(null);
-      setNotice(normalizedStatus(result.Job) === 'cancelled' ? 'Task cancelled. Items already scanned remain in the library.' : isActive(result.Job) ? 'Cancellation requested. The task is stopping.' : `Task status: ${statusDetails(result.Job).label}.`);
+      setNotice(normalizedStatus(result.Job) === 'cancelled' ? result.Job.ForceProbe ? 'Task cancelled. Media details already refreshed remain in the library.' : 'Task cancelled. Items already scanned remain in the library.' : isActive(result.Job) ? 'Cancellation requested. The task is stopping.' : `Task status: ${statusDetails(result.Job).label}.`);
     } catch (cause) {
       if (!controller.signal.aborted && !isAbortError(cause)) setCancelError(cause);
     } finally {
@@ -248,7 +249,7 @@ export function TasksPage({ onLibraries }: { onLibraries: () => void }) {
 
   return (
     <Box>
-      <PageHeading title="Tasks" description="Follow library scans and review their results." action={<Button variant="outlined" startIcon={<LibraryBooksOutlined />} onClick={onLibraries}>Manage libraries</Button>} />
+      <PageHeading title="Tasks" description="Follow library scans and media details refreshes, and review their results." action={<Button variant="outlined" startIcon={<LibraryBooksOutlined />} onClick={onLibraries}>Manage libraries</Button>} />
       {error != null && <Stack sx={{ mb: 3, gap: 1 }}><ErrorNotice error={error} retry={refresh} /><Typography variant="body2" color="text.secondary">Automatic updates stopped. Refresh to load the latest tasks.</Typography></Stack>}
       {libraryError != null && (
         <Alert severity="warning" sx={{ mb: 3, '& .MuiAlert-message': { minWidth: 0, overflowWrap: 'anywhere' } }} action={<Button color="inherit" size="small" disabled={libraryLoading} onClick={() => setLibraryRevision((value) => value + 1)}>Retry names</Button>}>
@@ -259,7 +260,7 @@ export function TasksPage({ onLibraries }: { onLibraries: () => void }) {
       <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1.5, px: { xs: 2, sm: 3 }, py: 2.2 }}>
           <Box>
-            <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1.2 }}><Typography variant="h4" component="h2">Scan history</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}</Stack>
+            <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1.2 }}><Typography variant="h4" component="h2">Scan and refresh history</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}</Stack>
             <Typography variant="caption" color="text.secondary" component="p" sx={{ m: 0, mt: 0.5 }}>
               {loading && data ? 'Refreshing tasks...' : error != null ? 'Updates paused after a request error.' : activeCount > 0 ? paused ? 'Updates paused while this tab is hidden.' : `${activeCount.toLocaleString()} active ${activeCount === 1 ? 'task' : 'tasks'} · Updates every 3 seconds` : data ? 'No active scans.' : 'Loading scan history...'}
             </Typography>
@@ -281,11 +282,11 @@ export function TasksPage({ onLibraries }: { onLibraries: () => void }) {
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Counts show scanned files and the items added to or updated in your library.</Typography>
 
       <Dialog open={Boolean(currentJob)} onClose={cancelling ? undefined : closeDialog} fullWidth maxWidth="sm" aria-labelledby="cancel-task-title" aria-describedby="cancel-task-description">
-        <DialogTitle id="cancel-task-title" sx={{ px: 3, pt: 3, pb: 1 }}><Typography component="span" variant="h3">Cancel this scan?</Typography></DialogTitle>
+        <DialogTitle id="cancel-task-title" sx={{ px: 3, pt: 3, pb: 1 }}><Typography component="span" variant="h3">{currentJob?.ForceProbe ? 'Cancel this media details refresh?' : 'Cancel this scan?'}</Typography></DialogTitle>
         <DialogContent aria-busy={cancelling} sx={{ px: 3 }}>
           <Stack sx={{ gap: 2 }}>
             {cancelError != null && <ErrorNotice error={cancelError} />}
-            <Typography id="cancel-task-description">Cancelling stops the remaining scan work. Items already scanned remain in the library.</Typography>
+            <Typography id="cancel-task-description">{currentJob?.ForceProbe ? 'Cancelling stops the remaining refresh work. Media details already refreshed remain in the library.' : 'Cancelling stops the remaining scan work. Items already scanned remain in the library.'}</Typography>
             {currentJob && <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 2, bgcolor: 'background.default' }}><Typography sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{libraryById.get(currentJob.LibraryId)?.Name ?? `Library ${currentJob.LibraryId}`}</Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, mb: 1, overflowWrap: 'anywhere' }}>Task <span className="mono">{currentJob.Id}</span></Typography><StatusChip job={currentJob} /></Box>}
             {currentJob && !isActive(currentJob) && <Alert severity="info">This task has already stopped and can no longer be cancelled.</Alert>}
           </Stack>
