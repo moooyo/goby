@@ -1,0 +1,93 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Info/Public",
+    "headers": {
+      "Accept": "application/json"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "160"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 02:50:52 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Scheduled Tasks Fresh M5f 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "56fecd8ca14a4ff5a823d70d614145be"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "LocalAddresses": [],
+      "RemoteAddresses": [],
+      "ServerName": "Goby Scheduled Tasks Fresh M5f 20260910 01",
+      "Version": "4.9.5.0",
+      "Id": "56fecd8ca14a4ff5a823d70d614145be"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 160,
+    "requestStartedAtUtc": "2026-09-10T02:50:53.695883+00:00",
+    "requestFinishedAtUtc": "2026-09-10T02:50:53.700765+00:00",
+    "elapsedSeconds": 0.004864
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-scheduled-tasks-fresh-m5f-20260910-01.service",
+    "pid": 3546904,
+    "startTicks": "24144839",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T02:50:53.700853+00:00"
+  }
+}

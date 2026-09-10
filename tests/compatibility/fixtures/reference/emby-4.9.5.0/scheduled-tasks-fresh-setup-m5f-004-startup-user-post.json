@@ -1,0 +1,84 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T02:44:50.686657+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Startup/User",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "Authorization",
+        "[REDACTED_HEADER]"
+      ],
+      [
+        "Content-Type",
+        "application/x-www-form-urlencoded"
+      ]
+    ],
+    "body": "Name=reference-scheduled-tasks-fresh-m5f-01&Password=[REDACTED_SECRET]"
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "2"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 02:44:50 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Scheduled Tasks Fresh M5f 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "56fecd8ca14a4ff5a823d70d614145be"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {}
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 2,
+    "freshFixtureOnly": true
+  }
+}

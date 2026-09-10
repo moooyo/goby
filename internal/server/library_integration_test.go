@@ -45,26 +45,16 @@ func newLibraryServerFixture(t *testing.T) (*serverFixture, string) {
 		t.Skip("media library HTTP integration tests require Linux")
 	}
 	f := newServerFixture(t)
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close default media workers: %v", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, apiMediaProber{}, []string{root})
 	if err != nil {
 		t.Fatalf("create test media catalog: %v", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.cfg.MediaRoots = []string{root}
 	f.cfg.MediaRoots = []string{root}
 	f.handler = f.app.Handler()
-	// Stop the fake scanner before TempDir removes its approved media root.
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close test media workers: %v", err)
-		}
-	})
 	return f, root
 }
 

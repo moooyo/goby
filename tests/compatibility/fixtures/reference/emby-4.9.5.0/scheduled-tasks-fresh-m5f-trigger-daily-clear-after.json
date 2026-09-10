@@ -1,0 +1,452 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/ScheduledTasks",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "7602"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 02:50:55 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Scheduled Tasks Fresh M5f 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "56fecd8ca14a4ff5a823d70d614145be"
+      ]
+    ],
+    "bodyType": "json",
+    "body": [
+      {
+        "Name": "Cache file cleanup",
+        "State": "Idle",
+        "Id": "241d4fcb19a1d557ee62428e411da609",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Deletes cache files no longer needed by the system",
+        "Category": "Maintenance",
+        "IsHidden": true,
+        "Key": "DeleteCacheFiles"
+      },
+      {
+        "Name": "Check for application updates",
+        "State": "Idle",
+        "Id": "1cc2f60a05befec8b1532ac44630a00f",
+        "LastExecutionResult": {
+          "StartTimeUtc": "2026-09-10T02:44:53.1323770Z",
+          "EndTimeUtc": "2026-09-10T02:44:53.1703172Z",
+          "Status": "Completed",
+          "Name": "Check for application updates",
+          "Id": "1cc2f60a05befec8b1532ac44630a00f",
+          "Key": "SystemUpdateTask"
+        },
+        "Triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Downloads and installs application updates.",
+        "Category": "Application",
+        "IsHidden": true,
+        "Key": "SystemUpdateTask"
+      },
+      {
+        "Name": "Check for plugin updates",
+        "State": "Idle",
+        "Id": "c27fda37dfb6e39be141191aaa1c3060",
+        "LastExecutionResult": {
+          "StartTimeUtc": "2026-09-10T02:44:53.1425299Z",
+          "EndTimeUtc": "2026-09-10T02:44:53.1719143Z",
+          "Status": "Completed",
+          "Name": "Check for plugin updates",
+          "Id": "c27fda37dfb6e39be141191aaa1c3060",
+          "Key": "PluginUpdates"
+        },
+        "Triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Downloads and installs updates for plugins that are configured to update automatically.",
+        "Category": "Application",
+        "IsHidden": true,
+        "Key": "PluginUpdates"
+      },
+      {
+        "Name": "Convert media",
+        "State": "Idle",
+        "Id": "8542b8a00478ef9d9a590e7f2e3b62da",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "Description": "Runs conversion jobs that were created using the convert media feature as well as downloads that require conversion to compatible formats.",
+        "Category": "Downloads & Conversions",
+        "IsHidden": false,
+        "Key": "SyncPrepare"
+      },
+      {
+        "Name": "Detect Episode Intros",
+        "State": "Idle",
+        "Id": "41025d42ea034a89558382b16c965757",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Detect intro start and end times for episodes that it is enabled for.",
+        "Category": "Library",
+        "IsHidden": true,
+        "Key": "markers"
+      },
+      {
+        "Name": "Download OCR Data",
+        "State": "Idle",
+        "Id": "d875342e9b1b199691b89f7a79c0f960",
+        "LastExecutionResult": {
+          "StartTimeUtc": "2026-09-10T02:44:53.1323761Z",
+          "EndTimeUtc": "2026-09-10T02:44:53.1421353Z",
+          "Status": "Completed",
+          "Name": "Download OCR Data",
+          "Id": "d875342e9b1b199691b89f7a79c0f960",
+          "Key": "DownloadOcr"
+        },
+        "Triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "Description": "Downloads OCR model data for subtitle conversion.",
+        "Category": "Subtitles",
+        "IsHidden": true,
+        "Key": "DownloadOcr"
+      },
+      {
+        "Name": "Download subtitles",
+        "State": "Idle",
+        "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Searches the internet for missing subtitles, if automatic subtitle downloading is enabled in Emby library setup.",
+        "Category": "Library",
+        "IsHidden": false,
+        "Key": "DownloadSubtitles"
+      },
+      {
+        "Name": "Emby Server Backup",
+        "State": "Idle",
+        "Id": "a1e4a7962c72ac5e491497598d1ee479",
+        "Triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 6000000000
+          }
+        ],
+        "Description": "Scheduled backup from Emby Backup",
+        "Category": "Application",
+        "IsHidden": true,
+        "Key": "EmbyServerBackup"
+      },
+      {
+        "Name": "Hardware Detection",
+        "State": "Idle",
+        "Id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "LastExecutionResult": {
+          "StartTimeUtc": "2026-09-10T02:44:50.1338771Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.5443329Z",
+          "Status": "Completed",
+          "Name": "Hardware Detection",
+          "Id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "Key": "HardwareDetection"
+        },
+        "Triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          },
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "Description": "Detect available hardware acceleration devices.",
+        "Category": "Application",
+        "IsHidden": true,
+        "Key": "HardwareDetection"
+      },
+      {
+        "Name": "Log file cleanup",
+        "State": "Idle",
+        "Id": "1c8ede62c521bea0bf851344f5b8ca40",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Deletes log files that are more than 2 days old.",
+        "Category": "Maintenance",
+        "IsHidden": true,
+        "Key": "CleanLogFiles"
+      },
+      {
+        "Name": "Refresh Custom Intros",
+        "State": "Idle",
+        "Id": "9be21c934ee449269f41b7c2b4d4d1d7",
+        "Triggers": [],
+        "Description": "Refreshes custom intro files.",
+        "Category": "Library",
+        "IsHidden": true,
+        "Key": "RefreshIntros"
+      },
+      {
+        "Name": "Refresh Emby Connect Data",
+        "State": "Idle",
+        "Id": "9120755af992e23c502f998cc55e54ac",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 216000000000
+          }
+        ],
+        "Description": "Refresh Emby Connect Data",
+        "Category": "Application",
+        "IsHidden": true,
+        "Key": "RefreshAuthorizationsScheduledTask"
+      },
+      {
+        "Name": "Refresh Guide",
+        "State": "Idle",
+        "Id": "9492d30c70f7f1bec3757c9d0a4feb45",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Downloads channel information from live tv services.",
+        "Category": "Live TV",
+        "IsHidden": true,
+        "Key": "RefreshGuide"
+      },
+      {
+        "Name": "Refresh Internet Channels",
+        "State": "Idle",
+        "Id": "a27c54259520b2e5c509def68c8f4c45",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Refreshes internet channel information.",
+        "Category": "Internet Channels",
+        "IsHidden": true,
+        "Key": "RefreshInternetChannels"
+      },
+      {
+        "Name": "Refresh Users",
+        "State": "Idle",
+        "Id": "7a7448c261fa47f346b4c061a5d5c163",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "Description": "Refresh user infos",
+        "Category": "Library",
+        "IsHidden": true,
+        "Key": "RefreshUsers"
+      },
+      {
+        "Name": "Rotate log file",
+        "State": "Idle",
+        "Id": "c3f011675d868fcc11e278b847523ef5",
+        "Triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 0
+          }
+        ],
+        "Description": "Moves logging to a new file to help reduce log file sizes.",
+        "Category": "Application",
+        "IsHidden": false
+      },
+      {
+        "Name": "Scan media library",
+        "State": "Idle",
+        "Id": "6330ee8fb4a957f33981f89aa78b030f",
+        "LastExecutionResult": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f",
+          "Key": "RefreshLibrary"
+        },
+        "Triggers": [],
+        "Description": "Scans your media library to check for new and updated files.",
+        "Category": "Library",
+        "IsHidden": false,
+        "Key": "RefreshLibrary"
+      },
+      {
+        "Name": "Scan Metadata Folder",
+        "State": "Idle",
+        "Id": "66ff02a80e8afc5da71945716f0f53e3",
+        "Triggers": [],
+        "Description": "Run this task if you've modified the contents of Emby Server's internal metadata folder directly, so that Emby Server can discover the changes.",
+        "Category": "Library",
+        "IsHidden": false,
+        "Key": "ScanInternalMetadataFolderTask"
+      },
+      {
+        "Name": "Send Download Notifications",
+        "State": "Idle",
+        "Id": "c2d62f565f79cd563efbea04a1135a1f",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "Description": "Send download notifications",
+        "Category": "Sync",
+        "IsHidden": true,
+        "Key": "SyncDownloadNotification"
+      },
+      {
+        "Name": "Transfer media",
+        "State": "Idle",
+        "Id": "9c4589c712196c27894f665a58cc42e3",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "Description": "Transfers completed conversions to their final destination. Used by the Download and Conversion features.",
+        "Category": "Downloads & Conversions",
+        "IsHidden": false,
+        "Key": "ServerSync"
+      },
+      {
+        "Name": "Vacuum Database",
+        "State": "Idle",
+        "Id": "82280a18c237acd24570a386d598c3ba",
+        "Triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 6048000000000
+          }
+        ],
+        "Description": "Schedules a database vacuum on the next server startup",
+        "Category": "Database",
+        "IsHidden": false,
+        "Key": "VacuumDatabase"
+      },
+      {
+        "Name": "Video preview thumbnail extraction",
+        "State": "Idle",
+        "Id": "d15b3f9fc313609ffe7e49bd1c74f753",
+        "Triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "Description": "Creates thumbnails for videos.",
+        "Category": "Library",
+        "IsHidden": false,
+        "Key": "RefreshChapterImages"
+      }
+    ]
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 7602,
+    "requestStartedAtUtc": "2026-09-10T02:50:56.445891+00:00",
+    "requestFinishedAtUtc": "2026-09-10T02:50:56.446715+00:00",
+    "elapsedSeconds": 0.000825
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-scheduled-tasks-fresh-m5f-20260910-01.service",
+    "pid": 3546904,
+    "startTicks": "24144839",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T02:50:56.446726+00:00"
+  }
+}

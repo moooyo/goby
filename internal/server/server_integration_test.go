@@ -99,8 +99,6 @@ func newServerFixture(t *testing.T) *serverFixture {
 	if err != nil {
 		t.Fatalf("create server: %v", err)
 	}
-	fixture.handler = api.Handler()
-	fixture.app = api
 	t.Cleanup(func() {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -108,6 +106,8 @@ func newServerFixture(t *testing.T) *serverFixture {
 			t.Errorf("close server workers: %v", err)
 		}
 	})
+	fixture.handler = api.Handler()
+	fixture.app = api
 	return fixture
 }
 

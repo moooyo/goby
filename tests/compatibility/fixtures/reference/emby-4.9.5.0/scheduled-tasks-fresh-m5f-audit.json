@@ -1,0 +1,4303 @@
+{
+  "kind": "capture-audit-observation",
+  "captureFailureType": null,
+  "cleanupPassed": true,
+  "checks": {
+    "originalTriggersRestoredAndTaskIdle": true,
+    "otherTaskConfigurationUnchanged": true,
+    "ownedTaskStaticConfigurationRestored": true,
+    "oldDeviceStructuralFieldsUnchanged": true,
+    "oldDeviceActivityUnchanged": true,
+    "oldDeviceOptionsUnchanged": true,
+    "noUnownedNewDevices": true,
+    "oldUserMembershipUnchanged": true,
+    "oldUsersUnchangedExceptAttributedParticipantActivity": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "allLoginAttemptsAcknowledgedOrRejected": true,
+    "freshAndOriginalProcessAuthorityPreserved": true,
+    "oldEvidenceAndAllOwnedSourcesUnchanged": true,
+    "newRedactionAuditPassed": true
+  },
+  "cleanupErrors": [],
+  "referencePID": 3546904,
+  "serverId": "56fecd8ca14a4ff5a823d70d614145be",
+  "mutableTaskId": "6330ee8fb4a957f33981f89aa78b030f",
+  "mutableTaskIdentifier": "RefreshLibrary",
+  "initialTriggers": [
+    {
+      "Type": "IntervalTrigger",
+      "IntervalTicks": 432000000000
+    }
+  ],
+  "experiments": [
+    {
+      "capture": "initial-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-known-triggers",
+      "operation": "triggers",
+      "actor": "anonymous",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-known-start",
+      "operation": "start",
+      "actor": "anonymous",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-known-stop",
+      "operation": "stop",
+      "actor": "anonymous",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-known-stop-alias",
+      "operation": "stop-alias",
+      "actor": "anonymous",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-unknown-triggers",
+      "operation": "triggers",
+      "actor": "anonymous",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-unknown-start",
+      "operation": "start",
+      "actor": "anonymous",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop",
+      "operation": "stop",
+      "actor": "anonymous",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop-alias",
+      "operation": "stop-alias",
+      "actor": "anonymous",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-known-triggers",
+      "operation": "triggers",
+      "actor": "viewer",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-known-start",
+      "operation": "start",
+      "actor": "viewer",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-known-stop",
+      "operation": "stop",
+      "actor": "viewer",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-known-stop-alias",
+      "operation": "stop-alias",
+      "actor": "viewer",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-unknown-triggers",
+      "operation": "triggers",
+      "actor": "viewer",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-unknown-start",
+      "operation": "start",
+      "actor": "viewer",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-unknown-stop",
+      "operation": "stop",
+      "actor": "viewer",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-viewer-unknown-stop-alias",
+      "operation": "stop-alias",
+      "actor": "viewer",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-control-unknown-triggers",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-control-unknown-start",
+      "operation": "start",
+      "actor": "control",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-control-unknown-stop",
+      "operation": "stop",
+      "actor": "control",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "permission-control-unknown-stop-alias",
+      "operation": "stop-alias",
+      "actor": "control",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "idle-stop",
+      "operation": "stop",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 500,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "idle-stop-alias",
+      "operation": "stop-alias",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 500,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-original",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-original-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-clear-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-duplicate-interval",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-duplicate-interval-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-daily",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-daily-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-startup",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-startup-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-system-event",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-system-event-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-unknown",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 400,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-unknown-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-mixed",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 400,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "trigger-mixed-clear",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "manual-empty-start",
+      "operation": "start",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": true
+    },
+    {
+      "experiment": "owned-batch-a",
+      "libraryCreateStatus": 204,
+      "libraryId": "3",
+      "sourceBatch": "a",
+      "sourceFiles": 256
+    },
+    {
+      "capture": "batch-a-manual-start",
+      "operation": "start",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 0,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "batch-a-duplicate-start",
+      "operation": "start",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 0,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 9,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "batch-a-stop",
+      "operation": "stop",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 11.25,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": true
+    },
+    {
+      "experiment": "owned-batch-a",
+      "stopOperation": "stop",
+      "runningPrecondition": true,
+      "stopStatus": 204,
+      "terminalTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "interpretation": "Cancellation request and final result are separate observations; Completed remains a possible race"
+    },
+    {
+      "experiment": "owned-batch-a",
+      "afterLibraryCreation": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "manualStartBaseline": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "manualResultChanged": true
+    },
+    {
+      "experiment": "owned-batch-b",
+      "libraryCreateStatus": 204,
+      "libraryId": "291",
+      "sourceBatch": "b",
+      "sourceFiles": 256
+    },
+    {
+      "capture": "batch-b-manual-start",
+      "operation": "start",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 4.50703125,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    },
+    {
+      "capture": "batch-b-stop-alias",
+      "operation": "stop-alias",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 19.6875,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": true
+    },
+    {
+      "experiment": "owned-batch-b",
+      "stopOperation": "stop-alias",
+      "runningPrecondition": true,
+      "stopStatus": 204,
+      "terminalTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "interpretation": "Cancellation request and final result are separate observations; Completed remains a possible race"
+    },
+    {
+      "experiment": "owned-batch-b",
+      "afterLibraryCreation": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "manualStartBaseline": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "manualResultChanged": true
+    },
+    {
+      "capture": "cleanup-restore-original-triggers",
+      "operation": "triggers",
+      "actor": "control",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204,
+      "before": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "after": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "resultChanged": false
+    }
+  ],
+  "taskObservations": [
+    {
+      "capture": "task-definitions-initial",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": false
+    },
+    {
+      "capture": "refresh-library-initial-detail",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "empty-library-task-baseline",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "initial-clear-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "initial-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-known-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-known-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-known-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-known-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-unknown-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-unknown-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-known-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-known-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-known-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-known-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-unknown-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-unknown-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-unknown-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-viewer-unknown-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-control-unknown-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-control-unknown-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-control-unknown-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "permission-control-unknown-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "idle-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "idle-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-original-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-original-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-original-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-clear-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-clear-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-duplicate-interval-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-duplicate-interval-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-duplicate-interval-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-daily-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-daily-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-daily-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-startup-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-startup-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-startup-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-system-event-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-system-event-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-system-event-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-unknown-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-unknown-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-unknown-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-mixed-owned-proof",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "trigger-mixed-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "trigger-mixed-clear-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "manual-empty-before",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:44:50.7289960Z",
+          "EndTimeUtc": "2026-09-10T02:44:50.7370833Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "manual-empty-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "manual-empty-result-0",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-a-before-create",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-a-task-after-create",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-a-manual-before",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-a-manual-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 0,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-a-duplicate-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 9,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-a-stop-precondition",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 11.25,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-a-stop-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-a-stop-result-0",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-a-all-tasks-final",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-b-before-create",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-b-task-after-create",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-b-manual-before",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-b-manual-start-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 4.50703125,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-b-stop-precondition",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Running",
+        "progress": 19.6875,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-b-stop-alias-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "batch-b-stop-result-0",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "batch-b-all-tasks-final",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    },
+    {
+      "capture": "cleanup-owned-task-before",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "cleanup-restore-original-triggers-after",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "cleanup-task-definitions-final",
+      "selectedTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "definitionCount": 22,
+      "otherTaskConfigurationChecked": true
+    }
+  ],
+  "pollObservations": [
+    {
+      "capture": "manual-empty-result",
+      "observations": 1,
+      "terminalTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:56.9268465Z",
+          "EndTimeUtc": "2026-09-10T02:50:56.9289144Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "newResultRequired": true
+    },
+    {
+      "capture": "batch-a-stop-result",
+      "observations": 1,
+      "terminalTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.0909426Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.1923577Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "newResultRequired": false
+    },
+    {
+      "capture": "batch-b-stop-result",
+      "observations": 1,
+      "terminalTask": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-10T02:50:57.3911460Z",
+          "EndTimeUtc": "2026-09-10T02:50:57.4466663Z",
+          "Status": "Cancelled",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "newResultRequired": false
+    }
+  ],
+  "taskMutationAcknowledgements": [
+    {
+      "capture": "initial-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "permission-anonymous-known-triggers",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-known-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-known-stop",
+      "operation": "stop",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-known-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-unknown-triggers",
+      "operation": "triggers",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-unknown-start",
+      "operation": "start",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop",
+      "operation": "stop",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401
+    },
+    {
+      "capture": "permission-anonymous-unknown-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 401
+    },
+    {
+      "capture": "permission-viewer-known-triggers",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-known-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-known-stop",
+      "operation": "stop",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-known-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-unknown-triggers",
+      "operation": "triggers",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-unknown-start",
+      "operation": "start",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-unknown-stop",
+      "operation": "stop",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403
+    },
+    {
+      "capture": "permission-viewer-unknown-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 403
+    },
+    {
+      "capture": "permission-control-unknown-triggers",
+      "operation": "triggers",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404
+    },
+    {
+      "capture": "permission-control-unknown-start",
+      "operation": "start",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404
+    },
+    {
+      "capture": "permission-control-unknown-stop",
+      "operation": "stop",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404
+    },
+    {
+      "capture": "permission-control-unknown-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "goby-scheduled-tasks-fresh-m5f-20260910-01-missing",
+      "status": 404
+    },
+    {
+      "capture": "idle-stop",
+      "operation": "stop",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 500
+    },
+    {
+      "capture": "idle-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 500
+    },
+    {
+      "capture": "trigger-original",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-original-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-clear-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-duplicate-interval",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-duplicate-interval-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-daily",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-daily-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-startup",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-startup-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-system-event",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-system-event-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-unknown",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 400
+    },
+    {
+      "capture": "trigger-unknown-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "trigger-mixed",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 400
+    },
+    {
+      "capture": "trigger-mixed-clear",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "manual-empty-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "batch-a-manual-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "batch-a-duplicate-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "batch-a-stop",
+      "operation": "stop",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "batch-b-manual-start",
+      "operation": "start",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "batch-b-stop-alias",
+      "operation": "stop-alias",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    },
+    {
+      "capture": "cleanup-restore-original-triggers",
+      "operation": "triggers",
+      "targetId": "6330ee8fb4a957f33981f89aa78b030f",
+      "status": 204
+    }
+  ],
+  "libraryMutationAcknowledgements": [
+    {
+      "capture": "batch-a-library-create",
+      "libraryName": "Goby Scheduled Tasks Fresh M5f Batch A 01",
+      "status": 204
+    },
+    {
+      "capture": "batch-b-library-create",
+      "libraryName": "Goby Scheduled Tasks Fresh M5f Batch B 01",
+      "status": 204
+    }
+  ],
+  "libraryCreationAttempts": [
+    "a",
+    "b"
+  ],
+  "ownedLibraryIds": [
+    "3",
+    "291"
+  ],
+  "ownedLibrariesLeftInsideDisposableDataForOperatorTeardown": true,
+  "otherTaskConfigurationChanges": [],
+  "ownedLoginInvalidityProofs": {
+    "viewer": {
+      "label": "cleanup-invalid-viewer",
+      "status": 401
+    },
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedLoginLogoutStatuses": {
+    "viewer": 204,
+    "control": 204
+  },
+  "ownedLoginAttempts": [
+    "control",
+    "viewer"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200,
+    "viewer": 200
+  },
+  "retainedOwnedDeviceHistory": [
+    {
+      "Name": "Fresh Tasks Viewer",
+      "Id": "4",
+      "ReportedDeviceId": "goby-scheduled-tasks-fresh-m5f-20260910-01-capture-viewer",
+      "LastUserName": "reference-scheduled-tasks-fresh-viewer-m5f-01",
+      "AppName": "Goby Scheduled Tasks Fresh M5f 20260910 01 Capture Viewer",
+      "AppVersion": "0.1.0",
+      "LastUserId": "988a09699e644e6da6eb1b091a5d2e07",
+      "DateLastActivity": "2026-09-10T02:50:54.0000000Z",
+      "IpAddress": "127.0.0.1"
+    },
+    {
+      "Name": "Fresh Tasks Control",
+      "Id": "3",
+      "ReportedDeviceId": "goby-scheduled-tasks-fresh-m5f-20260910-01-capture-control",
+      "LastUserName": "reference-scheduled-tasks-fresh-m5f-01",
+      "AppName": "Goby Scheduled Tasks Fresh M5f 20260910 01 Capture Control",
+      "AppVersion": "0.1.0",
+      "LastUserId": "bb334ce9b46b4d3a9d8fea87ad103c1e",
+      "DateLastActivity": "2026-09-10T02:50:53.0000000Z",
+      "IpAddress": "127.0.0.1"
+    }
+  ],
+  "attributedUserActivityDifferences": [
+    {
+      "userId": "bb334ce9b46b4d3a9d8fea87ad103c1e",
+      "field": "LastActivityDate",
+      "before": "2026-09-10T02:50:54.8360998Z",
+      "after": "2026-09-10T02:50:57.6451998Z",
+      "attribution": "Owned fresh login and requests"
+    }
+  ],
+  "preservedPriorRecords": 1794,
+  "preservedSetupRecords": 17,
+  "preservedOldRecordFiles": 3622,
+  "preservedOldMediaFiles": 240,
+  "preservedOwnedSourceFiles": 512,
+  "historicalRemovedPathsRemainHistorical": [
+    "/dev/shm/goby-emby-key-devices-fresh-m5e-20260910-02/.goby-managed"
+  ],
+  "originalServiceHTTPRequests": 0,
+  "originalTaskMutations": 0,
+  "applicationKeyRequests": 0,
+  "userPolicyWrites": 0,
+  "sourceWrites": 0,
+  "freshServiceLeftAliveForOperatorTeardown": true,
+  "httpAttempts": 153,
+  "incompleteHTTP": 0,
+  "wireBytes": 433969,
+  "wireByteBudgetCharged": 433969,
+  "elapsedSeconds": 8.089,
+  "limits": {
+    "mainHTTPAttempts": 256,
+    "allHTTPAttempts": 480,
+    "responseBytes": 262144,
+    "totalResponseBytes": 33554432,
+    "phaseSeconds": 360,
+    "stopObservationSeconds": 45,
+    "pollObservationsPerWindow": 30,
+    "libraryCreations": 2,
+    "filesPerBatch": 256
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-scheduled-tasks-fresh-m5f-20260910-01.service",
+    "pid": 3546904,
+    "startTicks": "24144839",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T02:51:01.283424+00:00"
+  }
+}

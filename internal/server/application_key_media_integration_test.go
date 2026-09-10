@@ -109,15 +109,14 @@ func newApplicationMediaFixture(t *testing.T) *applicationMediaFixture {
 	adminToken := stringValue(t, f.embyLogin(t, "Administrator", "administrator-password"), "AccessToken")
 	fixture := &applicationMediaFixture{f: f, adminID: adminID, keys: applicationMediaIssueKeys(t, f, adminToken)}
 	f.app.notifier.Close()
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close initial application media catalog (%T)", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, applicationMediaProber{}, []string{root})
 	if err != nil {
 		t.Fatalf("create application media catalog (%T)", err)
 	}
-	f.app.library, f.app.cfg.MediaRoots = catalog, []string{root}
+	installFixtureCatalog(t, f, catalog)
+	f.app.cfg.MediaRoots = []string{root}
 	f.app.notifier = newUserDataNotifier(catalog, f.app.eventHub)
 	fixture.stream = &streamHTTPFixture{f: f, root: root, adminID: adminID}
 	fixture.stream.video = fixture.stream.addItem(t, "Application.Feature.mp4", "movies", "Videos", "mp4", "video/mp4", bytes.Repeat([]byte("original-video-data\n"), 64))

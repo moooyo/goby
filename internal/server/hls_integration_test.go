@@ -82,22 +82,15 @@ func newHLSHTTPFixture(t *testing.T) *hlsHTTPFixture {
 		"-g", "72", "-keyint_min", "72", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p",
 		"-c:a", "aac", "-threads:a", "1", "-b:a", "96000", "-t", "12", source)
 	f.app.notifier.Close()
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close initial HLS fixture catalog (%T)", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	catalog, err := library.New(f.pool, media.Prober{FFprobePath: ffprobe, Timeout: 15 * time.Second}, []string{root})
 	if err != nil {
 		t.Fatalf("create real-probe HLS catalog (%T)", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.notifier = newUserDataNotifier(catalog, f.app.eventHub)
 	t.Cleanup(func() {
 		f.app.notifier.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close HLS fixture catalog (%T)", err)
-		}
 	})
 	f.app.cfg.FFmpegPath, f.app.cfg.FFprobePath = ffmpeg, ffprobe
 	f.app.cfg.MediaRoots = []string{root}

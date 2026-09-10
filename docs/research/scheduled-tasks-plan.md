@@ -1,8 +1,13 @@
 # Scheduled tasks implementation plan
 
-Status: **proposed; not implemented or verified**. Prepared for M5f against the
-schema-18 code after M5e. Schema 19 below is a proposed migration, not an applied
-database version. The design is based on local source inspection. The official
+Status: **M5f implemented; evidence recorded separately**. Prepared from the
+schema-18 baseline after M5e. Schema 19, the task repository, scanner bridge,
+scheduler, coordinator, native/compatibility handlers, and administrator UI are
+implemented. The [verification report](../development/verification-m5f-tasks.md)
+records the full Linux regression, isolated browser/restarts, deployment, and
+main-service workflow. This plan retains the design and broader evidence
+obligations; the [current API](../api/tasks.md) describes the shipped contract.
+The official
 [list reference](https://dev.emby.media/reference/RestAPI/ScheduledTaskService/getScheduledtasks.html)
 and [trigger-update reference](https://dev.emby.media/reference/RestAPI/ScheduledTaskService/postScheduledtasksByIdTriggers.html)
 were retrieved successfully on 2026-09-10 and confirm the declared DTO and
@@ -10,10 +15,11 @@ administrator requirement. These declarations do not establish actual server
 behavior. The [read-only reference study](scheduled-tasks-reference.md) is now
 complete: 128 complete HTTP exchanges plus one audit, with five remote recorder
 guard tests passing. It observed no task mutation or execution transition.
-Goby task implementation, product tests/builds, browser acceptance, and
-deployment acceptance remain pending for this increment.
-The design text is frozen after static review of the transaction and
-cancellation boundaries; that review is not implementation or runtime evidence.
+The later [fresh-instance mutation study](scheduled-tasks-mutation-reference.md)
+adds 171 records, including real manual starts/stops and bounded trigger writes,
+with its own completed teardown. The corpus is now 1965 records. Full Goby
+regression, browser, deployment, timer, and client acceptance are separate
+requirements; neither reference study proves them.
 
 The objective is a persistent task service used by both the administrator
 dashboard and the Emby compatibility adapter. A task is an available operation;
@@ -50,9 +56,10 @@ execution records and must not become the list of available scheduled tasks.
 - [TasksPage](../../web/admin/src/TasksPage.tsx) presents scan history, warnings,
   counters, timestamps, and cancellation. Its visibility-aware polling and
   request cancellation can be reused, but its data model is not `TaskInfo`.
-- [Library/Refresh](../../internal/server/libraries.go) currently starts each
-  library independently and ignores `ErrBusy`. That error conflates an existing
-  scan and a full queue, so it cannot establish complete full-library admission.
+- Before M5f, [Library/Refresh](../../internal/server/libraries.go) started each
+  library independently and ignored `ErrBusy`, conflating an existing scan
+  with a full queue. M5f routes this operation through durable full-library
+  admission and distinguishes those scanner outcomes.
 
 The first registered executor should perform a normal scan of every library
 present at admission. Existing per-library scans and explicit media detail
@@ -80,8 +87,10 @@ execution receives a child record. The stable definition ID, run ID, child ID,
 library ID, and existing scan-job ID are separate identities. All 18 historical
 results in the read study used the enclosing definition ID for
 `LastExecutionResult.Id`. Preserve that observed projection; a Goby run ID
-belongs in the native API. The study observed unchanged identities across
-reads, not across a newly executed run, server restart, or upgrade.
+belongs in the native API. The fresh-instance study also observed that ID in
+new completed/cancelled results. Its task ID matched the original instance's
+ID, which is evidence about two instances rather than an ID-generation
+algorithm or a universal restart/upgrade guarantee.
 
 Registry reconciliation inserts missing definitions and updates code-owned
 labels/capabilities without replacing administrator schedules or history. A
@@ -90,18 +99,20 @@ its schedules must not fire successfully. Registry reconciliation performs no
 scan by itself. Seed no automatic schedule until its behavior is selected and
 documented.
 
-## Proposed schema 19
+## Schema 19 design
 
-Use a migration named `0019_scheduled_tasks.sql`, subject to the migration number
-still being available when implementation begins. Keep all historical schema-18
-rows unchanged apart from explicitly added nullable columns. Do not infer or
-backfill generic runs from old scan history.
+The [0019_scheduled_tasks.sql migration](../../internal/database/migrations/0019_scheduled_tasks.sql)
+adds six tables and a nullable scan-child association. Keep all historical
+schema-18 rows unchanged apart from that explicit nullable column. Do not infer
+or backfill generic runs from old scan history. The sixth table normalizes
+request receipts instead of accumulating bounded JSON aliases inside a run.
 
-| Table | Proposed columns and purpose |
+| Table | Columns and purpose |
 | --- | --- |
-| `task_definitions` | `id text PRIMARY KEY`, `key text UNIQUE NOT NULL`, `revision bigint NOT NULL`, `enabled boolean NOT NULL`, `schedule_timezone text NOT NULL DEFAULT 'UTC'`, `created_at`, `updated_at`. Names, descriptions, category and executor capabilities come from the code registry; labels needed for historical display are snapshotted on runs. |
-| `task_triggers` | `id text PRIMARY KEY`, `task_id` FK, `schedule_revision bigint`, `position integer`, `kind text`, `interval_ticks bigint NULL`, `anchor_at timestamptz NULL`, `time_of_day_ticks bigint NULL`, `day_of_week smallint NULL`, `event_key text NULL`, `timezone text NULL`, `max_runtime_ticks bigint NULL`, `next_fire_at timestamptz NULL`, `last_due_at timestamptz NULL`, `retired_at timestamptz NULL`, creation/update timestamps. Native trigger IDs are internal persistence identities and are not invented Emby fields. |
+| `task_definitions` | `id text PRIMARY KEY`, `key text UNIQUE NOT NULL`, `emby_key`, code-owned `name/description/category/is_hidden`, `revision bigint NOT NULL`, `enabled boolean NOT NULL`, `schedule_timezone text NOT NULL DEFAULT 'UTC'`, `created_at`, `updated_at`. Registry reconciliation maintains labels; historical labels are snapshotted on runs. |
+| `task_triggers` | `id text PRIMARY KEY`, `task_id` FK, `schedule_revision bigint`, `position integer`, native `kind`, nullable `interval_ticks/anchor_at/time_of_day_ticks/day_of_week/timezone/max_runtime_ticks`, `next_fire_at`, `last_due_at`, `calculation_error text NOT NULL DEFAULT ''` bounded to 128 bytes, `retired_at`, and creation/update timestamps. Native kinds are interval/daily/weekly/startup; no SystemEvent executor is claimed. |
 | `task_runs` | `id text PRIMARY KEY`, `task_id` FK, `state text`, `source text`, optional `request_id`, `request_fingerprint`, optional immutable trigger ID/revision/scheduled-instant/limit snapshots, actor audit snapshot, task label snapshot, `created_at`, `started_at`, `deadline_at`, `stop_requested_at`, `stop_reason`, `finished_at`, bounded `error_code/error_message`, and aggregate child/file counters. Occurrences link to runs through the table below; there is no circular run-to-occurrence FK. |
+| `task_run_requests` | `(task_id, request_id) PRIMARY KEY`, `run_id`, 32-byte `fingerprint`, `created_at`; composite `(run_id, task_id)` FK to the referenced run. Every accepted native RequestId has a receipt, including requests coalesced into an existing active run. The run's own RequestID remains its initial display/audit snapshot. |
 | `task_run_children` | `id text PRIMARY KEY`, `run_id` FK, `library_id text`, `library_name text`, `ordinal integer`, `state text`, optional immutable `scan_job_id text`, progress/result snapshot, `created_at`, `started_at`, `finished_at`, and bounded error fields. The library identity and name are snapshots; deleting a library must not cascade-delete generic task history. |
 | `task_occurrences` | `id text PRIMARY KEY`, `task_id` FK, `trigger_id` FK, `schedule_revision bigint`, `due_at timestamptz`, `last_due_at timestamptz NULL`, `occurrence_count bigint NOT NULL DEFAULT 1`, `disposition text`, optional `run_id` FK, observation timestamp. Records whether a due occurrence admitted a run, overlapped an active run, or summarizes a consecutive missed range while the service was unavailable. |
 
@@ -123,9 +134,12 @@ Enforce these database invariants:
    snapshot entry per selected library and deterministic iteration.
 3. A partial unique index on non-null `task_run_children(scan_job_id)` and the
    unique scan-side child reference enforce one owned scan per child.
-4. `UNIQUE (task_id, request_id)` for non-null native request IDs provides
-   durable retry identity. Store a normalized request fingerprint and reject
-   reuse with different input.
+4. `task_run_requests` provides durable retry identity through its
+   `(task_id, request_id)` primary key and normalized fingerprint. Under the
+   definition lock, read a receipt before selecting an active run, and insert a
+   receipt for every accepted request. A coalesced request retried after the run
+   finishes must return that run instead of starting another. Reject a reused
+   RequestId with different input. Its composite FK prevents cross-task links.
 5. `UNIQUE (trigger_id, schedule_revision, due_at)` makes trigger admission
    idempotent across a commit whose response or scheduler wake-up was lost.
 6. State checks and timestamp checks distinguish active and terminal records;
@@ -134,10 +148,16 @@ Enforce these database invariants:
    replacement retires previous rows and increments the definition revision
    in one transaction. Referenced retired triggers remain available to history.
 8. Trigger shape checks permit only fields applicable to its internal kind:
-   interval plus anchor, calendar time plus zone and optional weekday, or a
-   supported event key. Weekdays use a documented native 0-6 convention and
+   interval plus anchor, calendar time plus zone and optional weekday, or
+   startup without calendar fields. Weekdays use a documented native 0-6 convention and
    are converted at the compatibility boundary. Do not use zero to represent
    an omitted nullable tick value.
+9. A trigger's `(id, task_id, schedule_revision)` is unique. Composite FKs bind
+   occurrences and scheduled runs to that exact task/revision, and occurrences
+   to a run of the same task. A run's trigger ID/revision/scheduled instant are
+   all absent for manual/compatibility sources and all present for
+   schedule/startup sources. Retired referenced rules remain protected by
+   `ON DELETE RESTRICT`.
 
 Use native states with precise meanings. Proposed run states are `pending`,
 `running`, `stopping`, `completed`, `failed`, `cancelled`, and `interrupted`.
@@ -304,9 +324,10 @@ An aggregate `completed` result requires every selected child to complete.
 
 Repeated native start requests with the same `RequestId` return the original
 run, including after it becomes terminal. A different request while a run is
-active returns that active run with `Admitted: false` under the proposed native
-contract. It creates no second child list. The Emby start response and overlap
-behavior must be selected from reference evidence, not this native policy.
+active returns that active run with `Admitted: false` and its own durable
+request receipt. It creates no second child list. The fresh reference returns
+`204` for a running duplicate start; that observation does not establish an
+unlimited future no-replay guarantee. Goby's native retry contract is explicit.
 
 Route `POST /emby/Library/Refresh` through this same full-library admission once
 its observed behavior is captured. It must no longer lose libraries because a
@@ -342,6 +363,15 @@ scan ID from another run, or independent scan must never widen cancellation.
 Keep the existing native per-scan cancellation route for administrators who
 explicitly select that scan.
 
+The compatibility `StopByDefinition` path locks the definition and its current
+run in that same owned transaction before entering the shared child/scan stop
+logic. It accepts pending/running runs, which project as Running, and reports
+`ErrNotRunning` for an absent active run or an already stopping run. A missing
+definition is `ErrNotFound`. The observed idle error maps to compatibility
+`500`, and an unknown definition maps to `404`; native Stop by run ID retains
+its idempotent contract. The stopping-state decision is Goby's explicit
+concurrency policy; the reference sample did not capture Cancelling.
+
 The existing `library.CancelJob` queued fast path immediately writes
 `Cancelled` and `finished_at`. For a linked job, route that path through the
 same `run -> child -> scan` bridge and persist the child's terminal status,
@@ -375,12 +405,16 @@ Before changing a linked queued scan to running, the worker must lock and check
 the parent state too. It cannot begin a probe in the interval between the
 parent stop commit and delivery of the in-memory cancellation signal.
 
-Use a monotonic in-process timer for an active maximum-runtime limit and persist
-its corresponding UTC deadline. Proposed deadline origin is `started_at`,
-before waiting for scan capacity, so maximum runtime also bounds queue and
-duplicate waits. Zero/omitted limits, accepted bounds, and Emby timeout result
-mapping are reference questions. Checked integer conversion must reject tick
-values that overflow Go durations or accepted operational limits.
+The [coordinator](../../internal/tasks/manager.go) establishes each active limit
+once using a local `time.Now().Add(limit)` value with Go's monotonic component,
+before waiting for scan capacity. Persisted `started_at/deadline_at` are UTC
+audit data; a wall-clock jump must not redefine elapsed runtime or create a
+new origin on each poll. Native omitted/zero runtime means no limit, positive
+runtime is at least one second, and checked conversion rejects Go duration
+overflow. These are Goby policies, not observed Emby timeout semantics. Startup
+recovery interrupts old runs instead of reconstructing elapsed time from wall
+timestamps. Do not impose `finished_at >= started_at` as a database invariant
+that could reject a legitimate wall-clock rollback.
 
 On expiry, use the same owned cancellation path with reason `max_runtime`.
 Keep the native reason distinct from an administrator stop. The task remains
@@ -401,23 +435,24 @@ of files. A library-level fraction can be labeled as such in the dashboard;
 it must not be presented as measured file completion. Emby progress omission,
 zero values, and update cadence need observation. Do not invent a smooth
 percentage to satisfy a DTO property. All 22 sampled idle definitions omitted
-`CurrentProgressPercentage`; none emitted null or zero. That idle omission is
-now observed, while running/cancelling progress remains unresolved.
+`CurrentProgressPercentage`; none emitted null or zero. The fresh study later
+observed running values including 0, 9, and 11.25 while the old terminal result
+remained visible. It did not capture the Cancelling transition or establish
+the reference's percentage denominator.
 
 ## Persistent schedules and time
 
-Use typed internal schedule kinds independent of Emby `Type` strings. Candidate
-native kinds are interval, daily calendar, weekly calendar, and explicitly
-supported startup/system events. They are a design vocabulary, not a declaration
-of accepted Emby write types. Stored reference rules now establish the spellings
+Use typed internal schedule kinds independent of Emby `Type` strings. Current
+native kinds are interval, daily calendar, weekly calendar, and startup.
+Stored reference rules and the fresh write study establish the spellings
 `IntervalTrigger`, `DailyTrigger`, `StartupTrigger`, and `SystemEventTrigger`.
 Weekly rules were not observed. The library task stores
 `IntervalTicks: 432000000000`; Hardware Detection stores a
 `SystemEventTrigger` for `DisplayConfigurationChange` and a separate
-`StartupTrigger`. These reads do not establish admission, cadence, startup
-execution, or a usable Linux event source. Add a kind to the adapter only after
-its write contract and actual Linux execution path are known; startup must not
-be treated as an arbitrary alias for an unimplemented system event.
+`StartupTrigger`. The fresh study accepted and read back all four sampled wire
+types, but did not exercise their timer/event execution. Goby does not support
+the DisplayConfigurationChange system event. Startup is a distinct native
+lifecycle event and cannot stand in for an unimplemented system event.
 
 Store instants as `timestamptz` and serialize timestamps in UTC. Store each
 calendar rule's named IANA timezone separately; use an explicit persisted UTC
@@ -434,20 +469,21 @@ time-of-day values 0, 6000000000, and 72000000000, and a maximum-runtime value
 enforcement. Day-of-week numbering/names and accepted tick precision still need
 evidence.
 
-Proposed native scheduling policy, subject to compatibility review:
+Native scheduling policy, with its verification recorded separately:
 
-| Concern | Concrete proposal |
+| Concern | Implementation policy |
 | --- | --- |
 | Interval anchor | Persist an explicit UTC anchor; calculate due instants from the anchor instead of delaying the next interval from scan completion. |
 | Calendar rules | Calculate the next local calendar date/time in the persisted zone, then resolve it to a UTC instant. Do not add 24 hours to the preceding UTC instant. |
 | Missing DST time | Skip that nonexistent local occurrence; show the next real occurrence in the preview. |
 | Repeated DST time | Fire once for that local date/time, using the earlier matching UTC instant. |
 | Overlap | Admit at most one run per definition. Record the occurrence as overlapping an existing run; do not create an unbounded catch-up queue. |
-| Downtime/misfire | Record one summary occurrence for a consecutive missed range, with first/last due instants and a count, then calculate the next future occurrence. Do not insert one row or replay work for every missed interval at startup. |
+| Downtime/misfire | Startup summarizes and skips every historical timed occurrence through one fixed startup instant. Delayed ordinary dispatch summarizes older due instants, then admits or coalesces only the latest due occurrence. Do not replay an unbounded backlog. |
 | Schedule replacement | Validate the full replacement before changing any row. Commit a new revision, retired old rules, and next-fire values atomically. Already admitted runs retain their schedule/limit snapshots. |
-| Empty schedule | Disable automatic admissions for that task while keeping manual execution available. Emby empty-array acceptance remains to be confirmed. |
+| Empty schedule | Remove automatic rules while keeping manual execution available. The reference accepted clearing with `204`; this does not equate an empty array with its separate IsEnabled filter. |
 | Clock changes | Recompute due work against a fresh database/UTC clock after wake-up; never assume a timer alone establishes the current instant. Persisted occurrence identity prevents duplicate admissions after a backward clock step. |
-| System events | Implement only events that the Linux application can actually observe and distinguish. Do not advertise Windows-only event behavior or map an unknown event to startup. |
+| Calculation failure | Set CalculationError and pause that rule while retaining its original next_fire_at and last_due_at; other rules continue. A replacement creates validated new rows with the error cleared. |
+| System events | DisplayConfigurationChange is currently unsupported by Goby despite accepted reference JSON. Do not map an unknown event to startup. |
 
 The scheduler selects due rules in a short owned transaction, inserts their
 unique occurrence, admits or associates a run, and advances `next_fire_at` in
@@ -458,10 +494,25 @@ explicit interrupted outcomes.
 
 Use one scheduler loop with a wake signal for schedule changes and a bounded
 sleep until the nearest due rule. Do not create an unbounded goroutine per
-trigger. Proposed limits are 32 active triggers per definition and explicit
-minimum interval/maximum runtime configuration; select and document the exact
-duration bounds after reference sampling. Preview calculations use the same
-pure schedule function as dispatch.
+trigger. The native limit is 32 active rules per definition, at least one second
+for a positive interval/runtime, and at most ten preview occurrences. Preview
+uses the same pure schedule function as dispatch.
+
+Native tick fields preserve 100 ns units. PostgreSQL timestamps have microsecond
+precision, so [stored due instants](../../internal/tasks/triggers.go) use an
+upward microsecond ceiling, never rounding an occurrence earlier. Interval
+anchors come from the database clock; future calculation retains the immutable
+anchor and exact tick interval rather than adding rounded persisted intervals.
+Due-range reconstruction accounts for the ceiling before counting occurrences.
+
+The [scheduler](../../internal/tasks/scheduler.go) counts interval misfires
+arithmetically and calendar misfires exactly up to 4096 occurrences. Exceeding
+that calendar bound, exhausting a bounded search, or finding no representable
+future instant pauses the affected rule with a bounded CalculationError. Its
+next_fire_at/last_due_at are not cleared or advanced. NextDue and DispatchDue
+exclude paused rules, preventing repeated immediate wake-ups while other rules
+continue. Native DTOs/UI must display the error and retained recovery position;
+a successful atomic replacement clears the condition through new rule rows.
 
 Prune terminal occurrence/run history only under a documented retention policy,
 never active runs or records required by live foreign keys. Retention must not
@@ -569,26 +620,27 @@ remaining behaviors below before freezing the adapter. The completed
 combinations, all 22 known details before and after, ordinary-login read
 authorization, stored trigger shapes, and preservation. It contains no task
 mutation, application-key request, restart, or observed execution transition.
+The separate [fresh mutation study](scheduled-tasks-mutation-reference.md)
+establishes the bounded write/manual-run observations in the table below.
 
-| Reference question | Observed read baseline | Remaining observation |
+| Reference question | Observed baseline and fresh study | Remaining observation |
 | --- | --- | --- |
-| Stable task identity | 22 definitions unchanged across reads; all 18 historical result IDs equal the enclosing definition ID; Rotate log file omits Key. | Identity around newly executed runs, restart and upgrade; fresh-history result omissions versus later results. |
+| Stable task identity | Historical and newly completed/cancelled result IDs equal the definition ID; Rotate log file omits Key. The selected ID matches in two instances. | ID-generation algorithm, broader cross-installation behavior, restart and upgrade. |
 | List filters | Canonical absent/true/false filters and all four intersections; counts 22, 14/8, 20/2 and 12/2/8/0; no IsEnabled property. | Repeated/malformed/empty/case-variant filters and changes in enabled state. |
-| Authorization and routes | Anonymous list/known/unknown reads return 401; viewer reads return 403; administrator known reads return 200 and unknown detail 404, under `/emby`. | Application-key authority, mutations, root aliases, namespace casing and opaque ID normalization. |
-| Start | Not sampled. | Idle, already running, invalid/missing ID, both library refresh and task-start paths, response status/body/headers, and actual admitted work. |
-| Stop | Not sampled. | Both stop aliases while idle/running/stopping/finished; missing ID; status/body/headers; delayed termination and last result. **Do not select the idle-stop status from the SDK's listed 200.** |
-| Trigger vocabulary | Stored IntervalTrigger, DailyTrigger, StartupTrigger and SystemEventTrigger; DisplayConfigurationChange is a stored event value only. | Accepted write types/fields and real Linux execution of each advertised kind; weekly rule representation. |
-| Trigger identity/update | No trigger ID in the SDK or sampled objects; two definitions have existing empty arrays. | Replacement versus merge, clearing, duplicates, null/unknown fields, normalization and ordering after writes. |
+| Authorization and routes | Anonymous reads and four mutation forms return 401; viewer returns 403 for known and unknown IDs. Administrator known reads return 200 and unknown reads/mutations return 404, under `/emby`. | Application-key authority, root aliases, namespace casing and opaque ID normalization. |
+| Start | Known empty-library/media starts return 204 with observed new results/running state; running duplicate returns 204. | Arbitrary payload validation, later replay outside the observation window, and the independent Library/Refresh route relationship. |
+| Stop | Both running-stop forms return 204 followed by a new Cancelled result. Both idle-stop forms return 500 with the captured text; unknown IDs return 404. | Cancelling-state transitions, prolonged cancellation, failures and broader concurrency patterns. |
+| Trigger vocabulary | IntervalTrigger, DailyTrigger, StartupTrigger and SystemEventTrigger writes return 204 and read back for the tested payloads. | Real timer/event execution, additional payload shapes and weekly rules. Goby does not implement DisplayConfigurationChange. |
+| Trigger identity/update | Clearing returns 204/[]; duplicate intervals remain duplicated; unknown and mixed-invalid arrays return 400 and stay [] from an empty baseline. | Null/omitted/extra-field behavior, invalid replacement over an arbitrary nonempty baseline, and broader normalization. |
 | Calendar meaning | Stored daily time values, including explicit zero; no timezone or DayOfWeek field in this sample. | Server timezone, UTC offset, tick interpretation, local midnight/weekly boundaries and DST behavior. |
 | Interval/runtime meaning | Stored library interval 432000000000 and thumbnail maximum runtime 144000000000. | Anchor, accepted zero/omitted/negative/overflow bounds, overlap, misfires, restart persistence and actual maximum-runtime outcome. |
-| Progress/result shape | All observed definitions idle with omitted progress; 18 existing Completed results and four omitted results, unchanged in the sample. | Running/cancelling progress, warning/failure results, new result timestamps and retention across execution/restart. |
+| Progress/result shape | Idle progress omitted; fresh running progress includes 0/9/11.25 while LastExecutionResult retains the old terminal result; new results retain the definition ID. | Progress denominator, Cancelling observations, warning/failure results and retention across restart. |
 
-The completed read-only discovery records existing tasks and their original
-triggers; it does not establish which can safely be executed. Any later
-reference mutation requires a specific bounded
-recorder, exact before/after snapshots, restoration of changed triggers and
-settings, and isolation from unrelated active work. Do not run expensive or
-destructive reference tasks merely to enumerate status values.
+The completed mutation study used a separately owned disposable instance,
+restored its original rule, revoked capture logins, and retained evidence after
+operator teardown. Further mutations still require a specific bounded recorder,
+before/after snapshots, restoration, and isolation from unrelated work. The
+original reference instance remains a preserved baseline.
 
 The adapter may preserve an observed harmless quirk when useful, but it must
 not lie about an unsupported trigger, accepted scan, or completed cancellation.
@@ -598,10 +650,14 @@ remains an open issue, not a guessed implementation requirement.
 
 ## Implementation order and acceptance evidence
 
-1. Use the completed read-only discovery as the preserved baseline; capture the
-   missing execution and trigger-write contracts with a separately bounded
-   workflow. Publish observations in the reference report, distinct from this
-   plan's native implementation choices.
+The ordering below describes delivery work and its acceptance obligations.
+The [M5f verification report](../development/verification-m5f-tasks.md) records
+the implemented increment. This document does not mark the full release gate
+complete or convert unresolved reference behavior into a native requirement.
+
+1. Retain both completed reference studies and their exact bounded claims.
+   Expand unresolved timer/client contracts through separately owned evidence,
+   distinct from native implementation choices.
 2. Add schema 19, registry reconciliation, run/child repositories, and the
    shared-owner transaction entry point. Preserve all schema-18 data.
 3. Split duplicate/capacity results, add atomic child links and terminal

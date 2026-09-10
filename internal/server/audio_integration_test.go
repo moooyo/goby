@@ -59,22 +59,15 @@ func newAudioHTTPFixture(t *testing.T, slow bool) *audioHTTPFixture {
 	hlsHTTPMediaCommand(t, ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-i", paths["flac"],
 		"-map", "0:a:0", "-c:a", "aac", "-b:a", "128000", "-threads:a", "1", "-f", "adts", paths["adts"])
 	f.app.notifier.Close()
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close initial audio catalog (%T)", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	catalog, err := library.New(f.pool, media.Prober{FFprobePath: ffprobe, Timeout: 15 * time.Second}, []string{root})
 	if err != nil {
 		t.Fatalf("create real audio catalog (%T)", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.notifier = newUserDataNotifier(catalog, f.app.eventHub)
 	t.Cleanup(func() {
 		f.app.notifier.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close audio catalog (%T)", err)
-		}
 	})
 	owned := t.TempDir()
 	pidFile := filepath.Join(owned, "encoder-pids")

@@ -48,7 +48,8 @@ func TestForceProbeMigrationPreservesHistoryAndDefaultsToOrdinaryScanning(t *tes
 		FROM unnest($1::text[]) AS status`, []string{"Queued", "Running", "Completed", "Failed", "Cancelled", "Interrupted"}); err != nil {
 		t.Fatalf("seed every historical scan status: %v", err)
 	}
-	const legacyJobs = `SELECT jsonb_agg(to_jsonb(j) - 'force_probe' ORDER BY id)::text FROM scan_jobs j`
+	// Later nullable task ownership is checked independently after migration.
+	const legacyJobs = `SELECT jsonb_agg(to_jsonb(j) - 'force_probe' - 'task_child_id' ORDER BY id)::text FROM scan_jobs j`
 	var before string
 	if err := pool.QueryRow(ctx, legacyJobs).Scan(&before); err != nil {
 		t.Fatalf("snapshot historical scan jobs: %v", err)
@@ -57,12 +58,16 @@ func TestForceProbeMigrationPreservesHistoryAndDefaultsToOrdinaryScanning(t *tes
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade force probe job policy: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 18 {
-		t.Fatalf("force probe migrated schema = %d, want 18, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 19 {
+		t.Fatalf("force probe migrated schema = %d, want 19, error=%v", version, err)
 	}
 	var after, oldHistory, name string
 	if err := pool.QueryRow(ctx, legacyJobs).Scan(&after); err != nil || after != before {
 		t.Fatalf("force probe migration changed historical scan fields: error=%v", err)
+	}
+	var taskLinkedScans int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM scan_jobs WHERE task_child_id IS NOT NULL").Scan(&taskLinkedScans); err != nil || taskLinkedScans != 0 {
+		t.Fatalf("migration attached historical scans to task children: count=%d error=%v", taskLinkedScans, err)
 	}
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text
 		FROM schema_migrations m WHERE version <= 14`).Scan(&oldHistory); err != nil || oldHistory != beforeHistory {

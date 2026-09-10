@@ -1,0 +1,107 @@
+{
+  "command": "go test -race -count=1 -json -p 2 -timeout 20m ./...",
+  "compilerDiagnostics": [],
+  "environment": "test-env Linux",
+  "failedTests": [],
+  "goExitCode": 0,
+  "go_version": "go1.27.1 linux/amd64",
+  "logSha256": "1187fb80b08afe6958ebb9042125de5de643263d5afcb848db7d4b2139f283fb",
+  "no_test_files_package": "github.com/moooyo/goby/cmd/goby",
+  "packages": [
+    {
+      "Action": "skip",
+      "Elapsed": 0,
+      "Package": "github.com/moooyo/goby/cmd/goby",
+      "Time": "2026-09-10T11:32:50.768490838+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.03,
+      "Package": "github.com/moooyo/goby/internal/config",
+      "Time": "2026-09-10T11:32:52.127083138+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.554,
+      "Package": "github.com/moooyo/goby/internal/artwork",
+      "Time": "2026-09-10T11:32:52.322366054+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.2,
+      "Package": "github.com/moooyo/goby/internal/events",
+      "Time": "2026-09-10T11:32:53.524099466+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 4.179,
+      "Package": "github.com/moooyo/goby/internal/database",
+      "Time": "2026-09-10T11:32:56.307683445+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 37.065,
+      "Package": "github.com/moooyo/goby/internal/library",
+      "Time": "2026-09-10T11:33:36.041801634+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 5.342,
+      "Package": "github.com/moooyo/goby/internal/media",
+      "Time": "2026-09-10T11:33:42.367084375+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.5150000000000001,
+      "Package": "github.com/moooyo/goby/internal/metadata",
+      "Time": "2026-09-10T11:33:44.187921506+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.236,
+      "Package": "github.com/moooyo/goby/internal/playback",
+      "Time": "2026-09-10T11:33:46.574516729+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 220.102,
+      "Package": "github.com/moooyo/goby/internal/identity",
+      "Time": "2026-09-10T11:36:34.487527594+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 1.12,
+      "Package": "github.com/moooyo/goby/internal/subtitle",
+      "Time": "2026-09-10T11:36:35.861596369+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 31.793,
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Time": "2026-09-10T11:37:08.56923846+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 58.718,
+      "Package": "github.com/moooyo/goby/internal/transcode",
+      "Time": "2026-09-10T11:38:09.86030293+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 550.674,
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Time": "2026-09-10T11:43:01.296047253+08:00"
+    }
+  ],
+  "phase": "M5f",
+  "previous_http_failures_retained": true,
+  "raceWarningPresent": false,
+  "source_directory": "/opt/goby-test/verify-m5f-core-attempt-5",
+  "source_input_count": 405,
+  "status": "passed",
+  "test_skips": 0,
+  "tested_packages": 13,
+  "topLevelTests": {
+    "pass": 1190
+  }
+}

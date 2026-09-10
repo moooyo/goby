@@ -140,12 +140,12 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
     document.title = `${pageTitles[page]} · Goby administration`;
   }, [page]);
 
-  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>, libraryId?: string) {
+  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>, libraryId?: string, state?: { tasksTab: 'history' }) {
     if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0)) return;
     event?.preventDefault();
     const changing = page !== next || metadataLibraryId !== libraryId;
     if (changing && navigationGuard.current && !navigationGuard.current()) return;
-    if (changing) window.history.pushState(null, '', pageURL(next, libraryId));
+    if (changing) window.history.pushState(state ?? null, '', pageURL(next, libraryId));
     currentPage.current = next;
     currentMetadataLibrary.current = libraryId;
     setPage(next);
@@ -197,9 +197,9 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
           <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
             {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
             {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks')} onManageItems={(library) => navigate('metadata', undefined, library.Id)} />}
+            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} />}
             {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} />}
+            {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}

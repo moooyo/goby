@@ -1,0 +1,342 @@
+{
+  "admin_logout_protected_status": 401,
+  "allowed_old_row_changes": {
+    "directory_items": "Only updated_at for baseline non-CollectionFolder directories in their completed scan root and time window",
+    "libraries": "Only last_scan_at for a completed owned child scan",
+    "selected_task_definition": "Only acknowledged schedule revision and updated_at; original timezone and empty rules restored"
+  },
+  "checks": {
+    "baseline_libraries_snapshotted": 5,
+    "compatibility_last_result_uses_definition_id": true,
+    "distant_daily_weekly_rules": 2,
+    "emby_key": "RefreshLibrary",
+    "issued_credentials": 2,
+    "manual_runs": 1,
+    "native_and_emby_definition_identity": true,
+    "new_ordinary_devices": 1,
+    "normal_cached_media_scanned": 11,
+    "receipt_replay_no_new_run": true,
+    "reciprocal_child_scan_ownership": true,
+    "run_child_aggregates_match": true,
+    "stale_schedule_status": 409
+  },
+  "cleanup": {
+    "errors": [],
+    "new_credentials_revoked": 2,
+    "physical_history_deletions": 0,
+    "proven": true,
+    "retained_ordinary_devices": 1
+  },
+  "database_queries": 34,
+  "deployment": {
+    "binary_sha256": "2993870cce6f4e0ae2c3630b645985cab664ce5e5e18123fdc920fb241bb2abf",
+    "database_port": 5432,
+    "database_role": "goby_test",
+    "main_pid": 3570491,
+    "postgresql_forced_read_only": true,
+    "schema_version": 19,
+    "server_namespace_sha256": "3f6a7f16d5b958b7eff0d220752ccf53630c998737701e63e5a763a837989e7d",
+    "start_ticks": "24600634",
+    "uid": 995
+  },
+  "deployment_unchanged": true,
+  "elapsed_seconds": 1.618,
+  "eligible_directory_timestamp_changes": {
+    "count": 5,
+    "per_library_counts": {
+      "6b292629894c1e52223362072bff8a22": 1,
+      "869490513db0bc3bd3ca045f94c0f4b7": 3,
+      "cee89e23266846304b1c5551b4a24381": 1
+    }
+  },
+  "emby_logout_protected_status": 401,
+  "http_method_counts": {
+    "DELETE": 1,
+    "GET": 14,
+    "POST": 7,
+    "PUT": 3
+  },
+  "http_transport_retries": 0,
+  "initial_scanner_cache_preflight": {
+    "empty_historical_identity_fields": 0,
+    "media_files": 11
+  },
+  "limitations": [
+    "No automatic timer firing or service restart; isolated browser acceptance covers two restarts"
+  ],
+  "limits": {
+    "database_queries": 160,
+    "http_requests": 200,
+    "response_bytes": 2097152,
+    "workflow_seconds": 180
+  },
+  "media_unchanged": true,
+  "nfo_unchanged": true,
+  "old_keys_devices_users_policy_metadata_and_task_history_exact": true,
+  "old_media_items_and_all_other_item_fields_exact": true,
+  "old_scan_jobs_and_expired_prepared_row_exact": true,
+  "output_scope": {
+    "attempt_marker": "m5f-deployed-tasks.attempt.json",
+    "directory": "/opt/goby-test",
+    "private_failure_log": "m5f-deployed-tasks.private.json",
+    "report": "m5f-deployed-tasks.json"
+  },
+  "owned_history_additions": {
+    "devices": 1,
+    "scan_jobs": 5,
+    "sessions": 2,
+    "task_run_children": 5,
+    "task_run_requests": 1,
+    "task_runs": 1,
+    "task_triggers": 2
+  },
+  "owner": "goby-tasks-deployed-m5f-v1",
+  "run_post_scanner_cache_preflights": [
+    {
+      "empty_historical_identity_fields": 0,
+      "media_files": 11
+    },
+    {
+      "empty_historical_identity_fields": 0,
+      "media_files": 11
+    }
+  ],
+  "schedule_restored_exact_rules_and_timezone": true,
+  "snapshots": {
+    "after_cleanup": {
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 12,
+        "sha256": "6232403a1303e77a4e1a81bdfed37ef874947cb7f58695820171ceaad8939f9b"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "795c3f4c70e5a5e1448dc586cd3716ee28eaad4cb03615953848e5799465140b"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "76170cf93356bc3ed1d9d0bb038722fd6baaf0593b4144b9e06d2cb71b8e2ad6"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 46,
+        "sha256": "181cf8932556c0d9abfab2ed10a4a47bdfc58e6c4b8ab59cfe191b4cf7b28bf5"
+      },
+      "schema_migrations": {
+        "count": 19,
+        "sha256": "4dc8409b7bd9431e365fd0df5bed121670066cdf07c0fe9b3c239e34393d1b31"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 93,
+        "sha256": "bb1361c9ea7307597238212fd1e7cf3de977821dded04c9d700ab2fb6ce64376"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "85c9bc95fe2aa6b153b977de7459a678c320065f8d59a08f59ed729920b5bdd8"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 5,
+        "sha256": "19de137e55286a3fa5eb90a0396e052d9ec8158c02340704a6b8b6b16402e161"
+      },
+      "task_run_requests": {
+        "count": 1,
+        "sha256": "128f2df8b7e072b2a419c1b63ec16563a3dbc57ac9019d392b36695fe9e6a3c9"
+      },
+      "task_runs": {
+        "count": 1,
+        "sha256": "2a269b2c533bbd9b76083f627f6f51e7b9c5c742132a0598f050b98d34cc6cc5"
+      },
+      "task_triggers": {
+        "count": 2,
+        "sha256": "28419fa06506ee6d29120e6a91d8c93ae5e43bd3f295dcfa928f19fb44fed467"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    },
+    "before": {
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 11,
+        "sha256": "bb874b97936e83c50c45b3aa6f0f856e57e768d9dae227aa22a3a921009342b0"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 41,
+        "sha256": "4e1a2f7e1f655fdb607ae21a6e6e4499e54b27a1250a912b9d8cfff4d38859b1"
+      },
+      "schema_migrations": {
+        "count": 19,
+        "sha256": "4dc8409b7bd9431e365fd0df5bed121670066cdf07c0fe9b3c239e34393d1b31"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 91,
+        "sha256": "57c1330488ec8934c2101b669fcf911d3a3102169816130a430ede2f35929370"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "306770133ca8c70970b4cfdb937bf24d407c6f1e4ba5f9ad08f2bfb35cd666c1"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_requests": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_runs": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_triggers": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    }
+  },
+  "source_hashes_before": {
+    "media_count": 11,
+    "media_sha256": "ff1daa92111afc21eb2726301b02a2545da8b2367fbd89035a5b203d60c5951e",
+    "nfo_count": 0,
+    "nfo_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "status": "passed",
+  "vault": {
+    "bytes": 32,
+    "directory_mode": "0700",
+    "mode": "0600",
+    "uid": 995
+  },
+  "vault_unchanged": true,
+  "verification_run": 1
+}

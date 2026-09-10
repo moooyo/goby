@@ -70,24 +70,15 @@ type streamHTTPFixture struct {
 func newStreamHTTPFixture(t *testing.T) *streamHTTPFixture {
 	t.Helper()
 	f := newServerFixture(t)
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close default catalog: %v", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, streamHTTPProber{}, []string{root})
 	if err != nil {
 		t.Fatalf("create versioned stream catalog: %v", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.cfg.MediaRoots, f.cfg.MediaRoots = []string{root}, []string{root}
 	f.handler = f.app.Handler()
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close stream catalog: %v", err)
-		}
-	})
 	s := &streamHTTPFixture{f: f, root: root, adminID: f.bootstrap(t)}
 	s.cookie, _ = f.adminLogin(t)
 	videoBytes := make([]byte, 256)

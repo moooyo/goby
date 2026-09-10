@@ -67,6 +67,12 @@ func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) e
 	if err != nil {
 		return err
 	}
+	return s.withOwnedTxCallback(raw, callback)
+}
+
+// withOwnedTxCallback completes a transaction already admitted by beginOwnedTx.
+// Scanner admission may hold Store.mu; this helper never acquires that mutex.
+func (s *Store) withOwnedTxCallback(raw pgx.Tx, callback func(OwnedTx) error) error {
 	transaction := raw.(*ownedTx)
 	view := &ownedCallbackTx{driver: transaction.Tx, ctx: transaction.ctx, classify: s.ownershipErrorLocked,
 		commit:   func() error { return transaction.Commit(context.Background()) },
@@ -80,7 +86,7 @@ func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) e
 			_ = view.finish(errOwnedCallbackInterrupted)
 		}
 	}()
-	err = view.finish(callback(view))
+	err := view.finish(callback(view))
 	completed = true
 	return err
 }

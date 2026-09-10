@@ -1,8 +1,9 @@
 # Scheduled task read-only reference
 
 Research date: 2026-09-10 (Asia/Shanghai).
-Status: **bounded reference read study complete; Goby task implementation and
-runtime acceptance remain pending**.
+Status: **bounded reference read study complete**. Goby's subsequent task
+acceptance is recorded in the separate
+[M5f verification report](../development/verification-m5f-tasks.md).
 
 This study observes task definitions, existing schedules, list filters, and
 read authorization on official Emby Server `4.9.5.0`. The server returned
@@ -11,7 +12,10 @@ read authorization on official Emby Server `4.9.5.0`. The server returned
 all 18 returned historical results used the enclosing definition's ID.
 No task was started, stopped, rescheduled, or otherwise mutated by this study.
 
-The [implementation plan](scheduled-tasks-plan.md) remains a proposal. The
+The [implementation plan](scheduled-tasks-plan.md) records design and evidence obligations.
+The later [fresh-instance mutation study](scheduled-tasks-mutation-reference.md)
+adds separate evidence for bounded task writes and manual execution; it does
+not change this study's read-only scope. The
 [official list reference](https://dev.emby.media/reference/RestAPI/ScheduledTaskService/getScheduledtasks.html),
 [official trigger-update reference](https://dev.emby.media/reference/RestAPI/ScheduledTaskService/postScheduledtasksByIdTriggers.html),
 and [pinned SDK contract](../api/services/ScheduledTaskService.md) describe the
@@ -21,7 +25,7 @@ declared API; observations below come from the saved HTTP exchanges.
 
 The `scheduled-tasks-m5f-` extension adds **129 records: 128 complete HTTP
 exchanges and one audit observation**. It preserves the preceding 1665 records
-and brings the reference corpus to **1794 records**. There were no incomplete
+and brought the reference corpus to **1794 records** at this checkpoint. There were no incomplete
 HTTP replies. The capture recorded **182,636 response bytes in 2.164 seconds**.
 The [audit](../../tests/compatibility/fixtures/reference/emby-4.9.5.0/scheduled-tasks-m5f-audit.json)
 records no capture failure, no cleanup error, and successful preservation checks.
@@ -284,12 +288,15 @@ identity; it should not replace the definition ID in this observed result
 shape. Enabled status must remain independent of whether a trigger list is
 empty.
 
-The following remain unverified: trigger replacement or clearing, accepted
+The following were outside this read-only study: trigger replacement or clearing, accepted
 write types/fields, task start and stop responses, idle-stop behavior, active
 progress, cancellation races, duplicate/overlapping starts, timeouts, interval
 anchor, restart behavior, calendar timezone/DST, weekly triggers, actual
 startup/system-event execution, application-key authority, and full-client
 workflows. No mutation or runtime claim should be inferred from the historical
-results or from the existence of a stored trigger. The implementation plan's
-database, scheduler, UI, and cancellation proposals still require development
-and their own acceptance evidence.
+results or from the existence of a stored trigger. The later
+[fresh-instance study](scheduled-tasks-mutation-reference.md) supplies bounded
+write/start/stop evidence and raises the corpus to 1965 records. Goby's database,
+scheduler, UI, and cancellation implementation has its own
+[acceptance evidence](../development/verification-m5f-tasks.md); reference
+observations do not establish it.

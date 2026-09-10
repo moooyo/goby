@@ -55,24 +55,15 @@ type playbackHTTPFixture struct {
 func newPlaybackHTTPFixture(t *testing.T) *playbackHTTPFixture {
 	t.Helper()
 	f := newServerFixture(t)
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close default playback catalog: %v", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, playbackHTTPProber{}, []string{root})
 	if err != nil {
 		t.Fatalf("create current playback catalog: %v", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.cfg.MediaRoots, f.cfg.MediaRoots = []string{root}, []string{root}
 	f.handler = f.app.Handler()
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close playback catalog: %v", err)
-		}
-	})
 	s := &streamHTTPFixture{f: f, root: root, adminID: f.bootstrap(t)}
 	s.cookie, _ = f.adminLogin(t)
 	data := bytes.Repeat([]byte("Goby original playback fixture bytes\n"), 32)

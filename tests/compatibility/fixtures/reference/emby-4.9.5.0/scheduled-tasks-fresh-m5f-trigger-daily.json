@@ -1,0 +1,91 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/ScheduledTasks/6330ee8fb4a957f33981f89aa78b030f/Triggers",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": [
+      {
+        "Type": "DailyTrigger",
+        "TimeOfDayTicks": 72000000000,
+        "MaxRuntimeTicks": 144000000000
+      }
+    ],
+    "bodyPresent": true,
+    "clientMetadata": null,
+    "ownedTaskWriteProof": {
+      "taskId": "6330ee8fb4a957f33981f89aa78b030f",
+      "taskIdentifier": "RefreshLibrary",
+      "state": "Idle",
+      "capture": "trigger-daily-owned-proof",
+      "requestSequence": 79
+    },
+    "experiment": "empty-library-triggers"
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Thu, 10 Sep 2026 02:50:55 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Scheduled Tasks Fresh M5f 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "56fecd8ca14a4ff5a823d70d614145be"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 0,
+    "requestStartedAtUtc": "2026-09-10T02:50:56.392507+00:00",
+    "requestFinishedAtUtc": "2026-09-10T02:50:56.394300+00:00",
+    "elapsedSeconds": 0.001794
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-scheduled-tasks-fresh-m5f-20260910-01.service",
+    "pid": 3546904,
+    "startTicks": "24144839",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T02:50:56.394311+00:00"
+  }
+}

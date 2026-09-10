@@ -350,6 +350,103 @@ export interface JobResponse {
   Job: Job;
 }
 
+export type TaskRunState = "pending" | "running" | "stopping" | "completed" | "failed" | "cancelled" | "interrupted";
+export type TaskChildState = "waiting" | "queued" | "running" | "completed" | "failed" | "cancelled" | "unavailable" | "interrupted";
+export type TaskTriggerKind = "interval" | "daily" | "weekly" | "startup";
+
+export interface TaskTriggerInput {
+  Kind: TaskTriggerKind;
+  IntervalTicks?: string | null;
+  TimeOfDayTicks?: string | null;
+  DayOfWeek?: number | null;
+  MaxRuntimeTicks?: string | null;
+}
+
+export interface TaskTrigger {
+  Id: string;
+  Kind: TaskTriggerKind;
+  IntervalTicks: string | null;
+  TimeOfDayTicks: string | null;
+  DayOfWeek: number | null;
+  MaxRuntimeTicks: string | null;
+  NextFireAt: string | null;
+  CalculationError: string;
+}
+
+export interface TaskRun {
+  Id: string;
+  TaskId: string;
+  State: TaskRunState;
+  Source: string;
+  RequestId: string | null;
+  CreatedAt: string;
+  StartedAt: string | null;
+  FinishedAt: string | null;
+  StopRequestedAt: string | null;
+  StopReason: string;
+  ErrorCode: string;
+  ErrorMessage: string;
+  TotalChildren: number;
+  TerminalChildren: number;
+  CompletedChildren: number;
+  FailedChildren: number;
+  CancelledChildren: number;
+  InterruptedChildren: number;
+  UnavailableChildren: number;
+  Scanned: number;
+  Added: number;
+  Updated: number;
+}
+
+export interface TaskChild {
+  Id: string;
+  RunId: string;
+  LibraryId: string;
+  LibraryName: string;
+  Ordinal: number;
+  State: TaskChildState;
+  ScanJobId: string | null;
+  Scanned: number;
+  Added: number;
+  Updated: number;
+  ErrorCode: string;
+  ErrorMessage: string;
+  CreatedAt: string;
+  StartedAt: string | null;
+  FinishedAt: string | null;
+}
+
+export interface TaskDefinition {
+  Id: string;
+  Key: string;
+  Name: string;
+  Description: string;
+  Category: string;
+  IsHidden: boolean;
+  Enabled: boolean;
+  Revision: string;
+  ScheduleTimezone: string;
+  Triggers: TaskTrigger[];
+  CurrentRun: TaskRun | null;
+  LastRun: TaskRun | null;
+  NextRunAt: string | null;
+}
+
+export interface TaskDefinitionsResponse { Items: TaskDefinition[]; TotalRecordCount: number }
+export interface TaskDefinitionResponse { Task: TaskDefinition }
+export interface TaskRunResponse { Run: TaskRun }
+export interface TaskAdmissionResponse extends TaskRunResponse { Admitted: boolean }
+export interface TaskPageQuery { StartIndex?: number; Limit?: number }
+export interface TaskPage<T> { Items: T[]; TotalRecordCount: number; StartIndex: number; Limit: number }
+export type TaskRunsResponse = TaskPage<TaskRun>;
+export interface TaskRunDetail extends TaskRunResponse { Children: TaskPage<TaskChild> }
+export interface TaskScheduleInput { ScheduleTimezone: string; Triggers: TaskTriggerInput[] }
+export interface TaskScheduleUpdate extends TaskScheduleInput { Revision: string }
+export interface TaskSchedulePreview {
+  ServerTime: string;
+  Items: { Index: number; Occurrences: string[]; Event: string | null }[];
+}
+
 export interface StorageRootsResponse {
   Items: {
     Path: string;
@@ -855,6 +952,70 @@ function validateMetadataItems(value: MetadataItemsResponse, libraryId: string, 
   }
 }
 
+function validTaskCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function validTaskTimestamp(value: unknown): boolean {
+  return value === null || validSessionTimestamp(value);
+}
+
+function validTaskTicks(value: unknown): boolean {
+  return value === null || (typeof value === "string" && /^(0|[1-9]\d*)$/.test(value)
+    && value.length <= 17 && BigInt(value) <= 92233720368547758n);
+}
+
+function validTaskRun(value: unknown): value is TaskRun {
+  if (!isRecord(value) || !nonemptyString(value.Id) || !nonemptyString(value.TaskId)
+    || typeof value.State !== "string" || !["pending", "running", "stopping", "completed", "failed", "cancelled", "interrupted"].includes(value.State)
+    || ![value.Source, value.StopReason, value.ErrorCode, value.ErrorMessage].every((entry) => typeof entry === "string")
+    || (value.RequestId !== null && typeof value.RequestId !== "string")
+    || !validSessionTimestamp(value.CreatedAt) || ![value.StartedAt, value.FinishedAt, value.StopRequestedAt].every(validTaskTimestamp)
+    || ![value.TotalChildren, value.TerminalChildren, value.CompletedChildren, value.FailedChildren,
+      value.CancelledChildren, value.InterruptedChildren, value.UnavailableChildren, value.Scanned, value.Added, value.Updated].every(validTaskCount)) return false;
+  return (value.TerminalChildren as number) <= (value.TotalChildren as number);
+}
+
+function validTaskDefinition(value: unknown): value is TaskDefinition {
+  if (!isRecord(value) || !nonemptyString(value.Id) || !nonemptyString(value.Key)
+    || ![value.Name, value.Description, value.Category, value.ScheduleTimezone].every((entry) => typeof entry === "string")
+    || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision) || value.Revision.length > 19
+    || BigInt(value.Revision) > 9223372036854775807n || typeof value.IsHidden !== "boolean" || typeof value.Enabled !== "boolean"
+    || !validTaskTimestamp(value.NextRunAt) || !Array.isArray(value.Triggers) || value.Triggers.length > 32
+    || (value.CurrentRun !== null && (!validTaskRun(value.CurrentRun) || value.CurrentRun.TaskId !== value.Id))
+    || (value.LastRun !== null && (!validTaskRun(value.LastRun) || value.LastRun.TaskId !== value.Id))) return false;
+  const ids = new Set<string>();
+  return value.Triggers.every((trigger: unknown) => {
+    if (!isRecord(trigger) || !nonemptyString(trigger.Id) || ids.has(trigger.Id as string)
+      || typeof trigger.Kind !== "string" || !["interval", "daily", "weekly", "startup"].includes(trigger.Kind)
+      || ![trigger.IntervalTicks, trigger.TimeOfDayTicks, trigger.MaxRuntimeTicks].every(validTaskTicks)
+      || (trigger.DayOfWeek !== null && (!Number.isInteger(trigger.DayOfWeek) || (trigger.DayOfWeek as number) < 0 || (trigger.DayOfWeek as number) > 6))
+      || !validTaskTimestamp(trigger.NextFireAt) || typeof trigger.CalculationError !== "string") return false;
+    ids.add(trigger.Id as string);
+    return true;
+  });
+}
+
+function validTaskChild(value: unknown): value is TaskChild {
+  return isRecord(value) && Boolean(nonemptyString(value.Id)) && Boolean(nonemptyString(value.RunId))
+    && [value.LibraryId, value.LibraryName, value.ErrorCode, value.ErrorMessage].every((entry) => typeof entry === "string")
+    && typeof value.State === "string" && ["waiting", "queued", "running", "completed", "failed", "cancelled", "unavailable", "interrupted"].includes(value.State)
+    && (value.ScanJobId === null || typeof value.ScanJobId === "string")
+    && [value.Ordinal, value.Scanned, value.Added, value.Updated].every(validTaskCount)
+    && validSessionTimestamp(value.CreatedAt) && [value.StartedAt, value.FinishedAt].every(validTaskTimestamp);
+}
+
+function validateTaskPage<T extends { Id: string }>(value: TaskPage<T>, query: TaskPageQuery, check: (item: unknown) => item is T): void {
+  if (!isRecord(value) || !Array.isArray(value.Items) || !validTaskCount(value.TotalRecordCount)
+    || value.StartIndex !== (query.StartIndex ?? 0) || value.Limit !== (query.Limit ?? 50)
+    || value.Items.length > value.Limit || value.Items.length > value.TotalRecordCount
+    || !value.Items.every(check) || new Set(value.Items.map((item) => item.Id)).size !== value.Items.length) throw invalidResponse();
+}
+
+function taskPageParameters(query: TaskPageQuery): URLSearchParams {
+  return new URLSearchParams({ StartIndex: String(query.StartIndex ?? 0), Limit: String(query.Limit ?? 50) });
+}
+
 export const adminApi = {
   getBootstrap(options: RequestOptions = {}): Promise<BootstrapResponse> {
     return request("/bootstrap", { ...options, public: true });
@@ -1083,6 +1244,78 @@ export const adminApi = {
 
   getJobs(options: RequestOptions = {}): Promise<JobsResponse> {
     return request("/jobs", options);
+  },
+
+  async getTasks(options: RequestOptions = {}): Promise<TaskDefinitionsResponse> {
+    const revision = sessionRevision;
+    const result = await request<TaskDefinitionsResponse>("/tasks", options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!Array.isArray(result.Items) || !validTaskCount(result.TotalRecordCount)
+      || result.Items.length !== result.TotalRecordCount || !result.Items.every(validTaskDefinition)
+      || new Set(result.Items.map((task) => task.Id)).size !== result.Items.length) throw invalidResponse();
+    return result;
+  },
+
+  async getTask(taskId: string, options: RequestOptions = {}): Promise<TaskDefinitionResponse> {
+    const revision = sessionRevision;
+    const result = await request<TaskDefinitionResponse>(`/tasks/${encodeURIComponent(taskId)}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validTaskDefinition(result.Task) || result.Task.Id !== taskId) throw invalidResponse();
+    return result;
+  },
+
+  async startTask(taskId: string, requestId: string, options: RequestOptions = {}): Promise<TaskAdmissionResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<TaskAdmissionResponse>(`/tasks/${encodeURIComponent(taskId)}/runs`, "POST", { RequestId: requestId }, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validTaskRun(result.Run) || result.Run.TaskId !== taskId || typeof result.Admitted !== "boolean"
+      || (result.Admitted && result.Run.RequestId !== requestId)) throw invalidResponse();
+    return result;
+  },
+
+  async getTaskRuns(taskId: string, query: TaskPageQuery = {}, options: RequestOptions = {}): Promise<TaskRunsResponse> {
+    const revision = sessionRevision;
+    const result = await request<TaskRunsResponse>(`/tasks/${encodeURIComponent(taskId)}/runs?${taskPageParameters(query)}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateTaskPage(result, query, validTaskRun);
+    if (result.Items.some((run) => run.TaskId !== taskId)) throw invalidResponse();
+    return result;
+  },
+
+  async getTaskRun(runId: string, query: TaskPageQuery = {}, options: RequestOptions = {}): Promise<TaskRunDetail> {
+    const revision = sessionRevision;
+    const result = await request<TaskRunDetail>(`/task-runs/${encodeURIComponent(runId)}?${taskPageParameters(query)}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validTaskRun(result.Run) || result.Run.Id !== runId) throw invalidResponse();
+    validateTaskPage(result.Children, query, validTaskChild);
+    if (result.Children.Items.some((child) => child.RunId !== runId)) throw invalidResponse();
+    return result;
+  },
+
+  async cancelTaskRun(runId: string, options: RequestOptions = {}): Promise<TaskRunResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<TaskRunResponse>(`/task-runs/${encodeURIComponent(runId)}/cancel`, "POST", {}, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validTaskRun(result.Run) || result.Run.Id !== runId) throw invalidResponse();
+    return result;
+  },
+
+  async updateTaskSchedule(taskId: string, input: TaskScheduleUpdate, options: RequestOptions = {}): Promise<TaskDefinitionResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<TaskDefinitionResponse>(`/tasks/${encodeURIComponent(taskId)}/triggers`, "PUT", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validTaskDefinition(result.Task) || result.Task.Id !== taskId) throw invalidResponse();
+    return result;
+  },
+
+  async previewTaskSchedule(taskId: string, input: TaskScheduleInput, options: RequestOptions = {}): Promise<TaskSchedulePreview> {
+    const revision = sessionRevision;
+    const result = await mutate<TaskSchedulePreview>(`/tasks/${encodeURIComponent(taskId)}/triggers/preview`, "POST", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validSessionTimestamp(result.ServerTime) || !Array.isArray(result.Items) || result.Items.length !== input.Triggers.length
+      || !result.Items.every((item, index) => isRecord(item) && item.Index === index && Array.isArray(item.Occurrences)
+        && item.Occurrences.every(validSessionTimestamp) && (item.Event === null || typeof item.Event === "string"))) throw invalidResponse();
+    return result;
   },
 
   cancelJob(jobId: string, options: RequestOptions = {}): Promise<JobResponse> {

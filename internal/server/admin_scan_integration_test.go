@@ -184,22 +184,13 @@ func (prober *adminScanCountingProber) ProbeFile(ctx context.Context, file *os.F
 
 func installAdminScanCountingProber(t *testing.T, f *serverFixture, root string, prober *adminScanCountingProber) {
 	t.Helper()
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close previous scan workers: %v", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	catalog, err := library.New(f.pool, prober, []string{root})
 	if err != nil {
 		t.Fatalf("create counting scan catalog: %v", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.handler = f.app.Handler()
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close counting scan workers: %v", err)
-		}
-	})
 }
 
 func TestHTTPAdminScanForceProbePersistsAndBypassesOnlyRequestedScans(t *testing.T) {
@@ -275,8 +266,14 @@ func TestHTTPAdminScanForceProbePersistsAndBypassesOnlyRequestedScans(t *testing
 			}
 		})
 	}
-	// The compatibility refresh remains an ordinary cache-aware scan.
+	// Compatibility refresh first commits the all-library task snapshot. Its
+	// coordinator then admits the same ordinary cache-aware scan asynchronously.
+	var priorRunIDs []string
+	if err := f.pool.QueryRow(f.ctx, "SELECT ARRAY(SELECT id FROM task_runs)").Scan(&priorRunIDs); err != nil {
+		t.Fatal(err)
+	}
 	expectStatus(t, f.request(t, http.MethodPost, "/emby/Library/Refresh", nil, embyHeaders), http.StatusNoContent)
+	refreshJobID := waitScheduledRefreshOwnedScanJob(t, f, libraryID, priorRunIDs)
 	jobs, total := responseItems(t, f.request(t, http.MethodGet, "/admin/v1/jobs", nil, nil, cookie))
 	if total != len(jobModes)+1 || len(jobs) != total {
 		t.Fatalf("compatibility refresh did not queue exactly one job: count = %d, total = %d", len(jobs), total)
@@ -284,6 +281,9 @@ func TestHTTPAdminScanForceProbePersistsAndBypassesOnlyRequestedScans(t *testing
 	for _, job := range jobs {
 		jobID := stringValue(t, job, "Id")
 		if _, present := jobModes[jobID]; !present {
+			if jobID != refreshJobID {
+				t.Fatal("refresh observed a new scan outside its acknowledged task child")
+			}
 			waitAdminScanHTTPJob(t, f, cookie, libraryID, jobID, false)
 			jobModes[jobID] = false
 		}

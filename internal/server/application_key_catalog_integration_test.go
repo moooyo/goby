@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -46,28 +45,19 @@ type applicationKeyCatalogFixture struct {
 func newApplicationKeyCatalogFixture(t *testing.T) *applicationKeyCatalogFixture {
 	t.Helper()
 	f := newServerFixture(t)
-	if err := f.app.library.Close(f.ctx); err != nil {
-		t.Fatalf("close default catalog: %v", err)
-	}
+	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, applicationKeyCatalogProber{}, []string{root})
 	if err != nil {
 		t.Fatalf("create application catalog: %v", err)
 	}
-	f.app.library = catalog
+	installFixtureCatalog(t, f, catalog)
 	f.app.cfg.MediaRoots = []string{root}
 	f.cfg.MediaRoots = []string{root}
 	f.users = identity.NewWithApplicationKeyVault(f.pool,
 		identity.NewApplicationKeyVault(filepath.Join(t.TempDir(), "application-keys.master")))
 	f.app.identity = f.users
 	f.handler = f.app.Handler()
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := catalog.Close(ctx); err != nil {
-			t.Errorf("close application catalog: %v", err)
-		}
-	})
 	for _, relative := range []string{
 		"visible/Visible.Movie.mp4", "hidden/Hidden.Movie.mp4", "hidden/Other.Movie.mp4",
 		"tv/Private Show/Season 01/Private.Show.S01E01.mp4",

@@ -137,7 +137,8 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 	for _, table := range tables {
 		statement := `SELECT COALESCE(jsonb_agg(to_jsonb(original) ORDER BY to_jsonb(original)::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + " original"
 		if table == "scan_jobs" {
-			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
+			// Nullable task ownership is checked independently after migration.
+			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' - 'task_child_id' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
 		}
 		if table == "sessions" {
 			// Device registration adds a foreign key without changing login data.
@@ -278,8 +279,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 18 {
-		t.Fatalf("metadata migration version = %d, want 18, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 19 {
+		t.Fatalf("metadata migration version = %d, want 19, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -288,6 +289,10 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 			if after[table] != before[table] {
 				t.Errorf("metadata migration rewrote existing table %s", table)
 			}
+		}
+		var taskLinkedScans int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM scan_jobs WHERE task_child_id IS NOT NULL").Scan(&taskLinkedScans); err != nil || taskLinkedScans != 0 {
+			t.Errorf("metadata migration attached historical scans to task children: count=%d error=%v", taskLinkedScans, err)
 		}
 	}
 	assertOldTables()
@@ -331,8 +336,17 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		}
 	}
 	sort.Strings(additions)
-	if !reflect.DeepEqual(additions, []string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state"}) {
+	taskTables := []string{"task_definitions", "task_occurrences", "task_run_children", "task_run_requests", "task_runs", "task_triggers"}
+	expectedAdditions := append([]string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state"}, taskTables...)
+	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
+	}
+	// Migration creates task storage; this fixture never initializes a registry.
+	for _, table := range taskTables {
+		var count int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+pgx.Identifier{table}.Sanitize()).Scan(&count); err != nil || count != 0 {
+			t.Errorf("metadata migration populated task table %s without registry initialization: count=%d error=%v", table, count, err)
+		}
 	}
 	var keys, clients int
 	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM application_keys),

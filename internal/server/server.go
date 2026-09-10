@@ -14,6 +14,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/tasks"
 )
 
 type Server struct {
@@ -33,6 +34,8 @@ type Server struct {
 	sockets       *socketRuntime
 	notifier      *userDataNotifier
 	hls           *hlsRuntime
+	taskStore     *tasks.Store
+	taskManager   *tasks.Manager
 }
 
 func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
@@ -64,7 +67,30 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.notifier = newUserDataNotifier(catalog, hub)
+	if err := app.initializeTasks(ctx); err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
 	return app, nil
+}
+
+func (s *Server) initializeTasks(ctx context.Context) error {
+	store, err := tasks.New(s.db, s.library)
+	if err != nil {
+		return err
+	}
+	if err := store.Reconcile(ctx); err != nil {
+		return err
+	}
+	if err := store.RecoverRuns(ctx); err != nil {
+		return err
+	}
+	manager, err := tasks.NewManager(store, s.library, tasks.ManagerOptions{Logger: s.log})
+	if err != nil {
+		return err
+	}
+	s.taskStore, s.taskManager = store, manager
+	return nil
 }
 
 func (s *Server) Close(ctx context.Context) error {
@@ -87,6 +113,8 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminUserRoutes(mux)
 	s.registerAdminSessionRoutes(mux)
 	s.registerAdminDeviceRoutes(mux)
+	s.registerAdminTaskRoutes(mux)
+	s.registerScheduledTaskRoutes(mux)
 	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
@@ -176,6 +204,10 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.library.CheckOwnership(ctx) != nil {
 		apiError(w, r, 503, "catalog_not_ready", "The media catalog is not ready. Restart the service if its database session was lost.")
+		return
+	}
+	if s.taskManager != nil && !s.taskManager.Available() {
+		apiError(w, r, 503, "tasks_not_ready", "The task scheduler is not ready.")
 		return
 	}
 	jsonResponse(w, 200, map[string]string{"Status": "ready"})

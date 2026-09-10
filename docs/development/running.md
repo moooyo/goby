@@ -2,12 +2,22 @@
 
 The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
-The current database schema is **18** and the probe cache version remains **6**.
-The [accepted M5e device increment](verification-m5e-devices.md) adds ordinary
+The current database schema is **19** and the probe cache version remains **6**.
+The [M5f task increment](verification-m5f-tasks.md) adds durable library-wide
+tasks, schedule rules, request receipts, and owned scan-child associations.
+It creates no automatic schedule and does not backfill old scans into task
+runs. The preceding [M5e device increment](verification-m5e-devices.md) adds ordinary
 device generations and a separate shared application-key server registry.
 Migrations 17 and 18 preserve existing catalog, playback, credential, and key
 history; they require no media rescan. The separate rescan requirement for
 older probe-cache versions still applies.
+
+The `test-env` virtual disk was expanded to 97 GiB on 2026-09-10, and the root
+partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
+reported roughly 96G total and 60G available; existing service PIDs, root
+identity, and boot partitions were preserved. See the
+[capacity evidence](test-env-disk-growth.json). This resolves the earlier root
+capacity shortage. The subsequent M5f deployment uses schema 19.
 
 ## Build inputs
 
@@ -119,7 +129,20 @@ The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate
 
 The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
-The accepted M5e deployment checkpoint runs schema 18 as UID 995, PID 3535438,
+The current M5f deployment runs schema 19 as UID 995, PID 3570491, with probe
+version 6. Its [deployment evidence](m5f-deployment-evidence.json) includes a
+complete pre-stop backup, a real isolated database restore with all 21 old
+tables equal, and exact preservation through the migration. The task
+definition initially has no schedules or execution history. See
+[task execution and scheduling](tasks.md) for startup, missed schedules,
+shutdown, and ownership behavior, and the
+[verification report](verification-m5f-tasks.md) for acceptance boundaries.
+The [deployed task workflow](m5f-deployed-tasks.json) completed all five existing
+libraries, preserved cached media and prior account/metadata state, and restored
+its temporary schedule to empty. Execution and retired trigger history remain
+stored; a normal scan can advance directory and library scan timestamps.
+
+The preceding M5e deployment checkpoint ran schema 18 as UID 995, PID 3535438,
 with probe version 6. Its [deployment evidence](m5e-deployment-evidence.json)
 preserves all prior business fields, 21 catalog items, 11 media files, and the
 matching application-key master without scheduling a scan. The
@@ -147,7 +170,7 @@ set -a
 . /opt/goby-test/m4c-test.env
 set +a
 export GOCACHE=/dev/shm/goby-go-cache GOMODCACHE=/dev/shm/goby-go-mod
-export GOTMPDIR=/opt/goby-test/exec-scratch TMPDIR=/opt/goby-test/exec-scratch
+export GOTMPDIR=/opt/goby-test/exec-work-m5f TMPDIR=/opt/goby-test/exec-work-m5f
 go test -race -count=1 ./internal/library -run '^TestStoreCorrelatedPlaybackReferenceCapacityIncludesTombstonesAndAllowsReuse$'
 ```
 
@@ -157,7 +180,7 @@ Root filesystem free space was restored during M4c test-host maintenance. The ho
 
 The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. On the current constrained test host, Go module/build caches live in dedicated `/dev/shm/goby-go-*` directories to avoid filling the root filesystem.
 
-The current host also has an owned 512 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. Verification sets `GOTMPDIR` and `TMPDIR` to this executable scratch directory. This avoids consuming the constrained root filesystem without changing the shared `/dev/shm` mount's execution policy. The directory is dedicated to Goby verification and is not an application media or persistent-data location.
+The current host also has an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. It retains private verification evidence and isolated browser artifacts. After the root disk expansion, Go verification uses the separate root-owned directory `/opt/goby-test/exec-work-m5f` on the persistent filesystem for `GOTMPDIR` and `TMPDIR`. This avoids exhausting the evidence tmpfs without changing the shared `/dev/shm` mount's execution policy. Both directories are dedicated to verification and are not application media or persistent business-data locations.
 
 See [environment evidence](test-env.md) for exact installed versions and the distinction between compiled hardware interfaces and real hardware execution.
 

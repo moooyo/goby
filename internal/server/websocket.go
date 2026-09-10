@@ -45,10 +45,15 @@ func newSocketRuntime() *socketRuntime {
 func (s *Server) closeSockets(ctx context.Context) error {
 	s.originals.stop()
 	if s.sockets == nil {
+		s.taskManager.BeginClose()
+		if err := s.taskManager.Close(ctx); err != nil {
+			return err
+		}
 		return s.library.Close(ctx)
 	}
 	runtime := s.sockets
 	runtime.once.Do(func() {
+		s.taskManager.BeginClose()
 		runtime.mu.Lock()
 		runtime.closed = true
 		runtime.cancel()
@@ -59,7 +64,7 @@ func (s *Server) closeSockets(ctx context.Context) error {
 			runtime.wg.Wait()
 			s.originals.wait()
 			// Cleanup continues even if an individual Close caller times out.
-			runtime.shutdownErr = errors.Join(s.hls.Close(context.Background()), s.library.Close(context.Background()))
+			runtime.shutdownErr = errors.Join(s.hls.Close(context.Background()), s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

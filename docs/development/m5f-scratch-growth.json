@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "before": {
+    "target": "/opt/goby-test/exec-scratch",
+    "source": "tmpfs",
+    "fstype": "tmpfs",
+    "options": "rw,nosuid,nodev,relatime,size=524288k,mode=700,inode64"
+  },
+  "after": {
+    "target": "/opt/goby-test/exec-scratch",
+    "source": "tmpfs",
+    "fstype": "tmpfs",
+    "options": "rw,nosuid,nodev,relatime,size=786432k,mode=700,inode64"
+  },
+  "directory_identity_unchanged": true,
+  "candidate_bytes_unchanged": true,
+  "shared_service_unchanged": true,
+  "files_deleted": 0,
+  "available_bytes": 398790656
+}

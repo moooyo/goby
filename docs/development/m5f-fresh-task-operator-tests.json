@@ -1,0 +1,1 @@
+{"suite": "scheduled-tasks-fresh-safety", "status": "passed", "testsRun": 19, "failures": 0, "errors": 0, "skipped": 0, "operatorSha256": "bca453513b40c157ecffceb51133d2790c24f13e7f66fb75bdccbab84ec6a50b", "suiteSha256": "2490e4ede069e747a8dc7e385193d7ab442c71eda8cf1e1f49262976ec358922", "fixtures": "synthetic-memory-only", "failureSummaries": [], "failureSummariesOmitted": 0}

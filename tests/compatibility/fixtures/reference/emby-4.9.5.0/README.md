@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 1794 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, and ScheduledTasks studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 1965 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, and ScheduledTasks studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -95,7 +95,7 @@ key-device recreation were not sampled.
 
 The [ScheduledTasks read-only study](../../../../../docs/research/scheduled-tasks-reference.md)
 adds 129 records under `scheduled-tasks-m5f-`: 128 complete HTTP exchanges and
-one [audit](scheduled-tasks-m5f-audit.json), bringing the current total to 1794.
+one [audit](scheduled-tasks-m5f-audit.json), bringing the corpus to 1794 at that checkpoint.
 It records 22 task definitions, all sampled states `Idle`, read-permission
 responses, and interval/daily/startup/system-event trigger declarations. It
 does not start or stop a task, change triggers, restart the service, or make
@@ -111,3 +111,23 @@ credentials finish with independently observed `401`; device rows `31` and
 pass without HTTP or capture writes. This is recorder/reference evidence;
 Goby's [M5f task service](../../../../../docs/research/scheduled-tasks-plan.md)
 has no new product acceptance in this corpus extension.
+
+The [fresh task mutation study](../../../../../docs/research/scheduled-tasks-mutation-reference.md)
+adds 171 records, bringing the current total to 1965. The setup contains 16
+complete HTTP exchanges and one non-HTTP readiness failure; the controlled
+capture contains 153 complete HTTP exchanges and one
+[audit](scheduled-tasks-fresh-m5f-audit.json). Both actual-running stop forms
+return `204` and lead to new `Cancelled` results; idle-stop returns `500`, and
+reserved unknown IDs return `404`. Sampled legal triggers return `204`;
+unknown/mixed-invalid arrays return `400` without installing the valid prefix
+from the sampled empty baseline. No `Cancelling` state was observed.
+
+The previous 1794 records and 240 original source paths remain preserved.
+The [final cleanup](../../../../../docs/development/m5f-fresh-task-cleanup.json)
+removed all 512 disposable copies and the exact fresh program-data/source
+paths, stopped the owned process, and retained the evidence. The copies do not
+increase the permanent 240-source baseline. The operator and recorder guard
+suites pass 19 and eight tests respectively; their derived reports are not
+additional corpus records. Weekly/system-event execution, scheduled firing,
+DST, maximum-runtime expiry, and reference application-key authority remain
+unverified. The extension is research evidence, not full Goby M5f acceptance.

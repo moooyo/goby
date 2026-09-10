@@ -34,6 +34,8 @@ type Library struct {
 
 type Job struct {
 	ID, LibraryID, Status, Error string
+	TaskChildID                  string `json:"-"`
+	CancelRequested              bool   `json:"-"`
 	Scanned, Added, Updated      int
 	ForceProbe                   bool
 	CreatedAt                    time.Time
@@ -107,6 +109,7 @@ type Store struct {
 	shutdownErr error
 	active      map[string]*scanTask
 	queue       chan *scanTask
+	scanUpdates chan struct{}
 	workers     sync.WaitGroup
 	done        chan struct{}
 }

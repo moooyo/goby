@@ -1,0 +1,21 @@
+{
+  "attempt": 1,
+  "at": "2026-09-10T02:53:57.279193+00:00",
+  "unit": "goby-emby-scheduled-tasks-fresh-m5f-20260910-01.service",
+  "dataRemoved": true,
+  "sourceRemoved": true,
+  "evidenceRetained": true,
+  "oldPreservationVerified": true,
+  "stop": {
+    "stopped": true,
+    "ownedProcessGone": true,
+    "unitMainPID": 0,
+    "finalActiveState": "inactive"
+  },
+  "captureHttpAttempts": 153,
+  "captureRecords": 154,
+  "setupRecords": 17,
+  "removedOwnedSourceFiles": 512,
+  "originalReferencePID": 3131777,
+  "deployedGobyPID": 3535438
+}

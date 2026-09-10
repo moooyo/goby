@@ -23,7 +23,8 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string) (*Store, erro
 	if pool == nil || prober == nil {
 		return nil, fmt.Errorf("%w: database and media prober are required", ErrInvalidInput)
 	}
-	s := &Store{pool: pool, prober: prober, active: make(map[string]*scanTask), queue: make(chan *scanTask, 128), done: make(chan struct{})}
+	s := &Store{pool: pool, prober: prober, active: make(map[string]*scanTask), queue: make(chan *scanTask, 128),
+		scanUpdates: make(chan struct{}, 1), done: make(chan struct{})}
 	seen := make(map[string]bool)
 	for _, path := range allowedRoots {
 		if strings.TrimSpace(path) == "" || strings.ContainsRune(path, '\x00') {
@@ -51,13 +52,12 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string) (*Store, erro
 	if err != nil {
 		return nil, err
 	}
-	if _, err := ownership.conn.Exec(ctx, `UPDATE scan_jobs SET status = 'Interrupted',
-		error = 'Server stopped before the scan finished', finished_at = now()
-		WHERE status IN ('Queued', 'Running')`); err != nil {
-		return nil, errors.Join(fmt.Errorf("recover interrupted scans: %w", err), ownership.release())
-	}
 	s.ownership = ownership
 	s.ctx, s.cancel = context.WithCancel(context.Background())
+	if err := s.recoverTaskScans(ctx); err != nil {
+		s.cancel()
+		return nil, errors.Join(fmt.Errorf("recover interrupted scans: %w", err), ownership.release())
+	}
 	for i := 0; i < 2; i++ {
 		s.workers.Add(1)
 		go s.worker()

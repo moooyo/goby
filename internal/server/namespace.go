@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth", "Devices"}
+	resources := []string{"System", "Users", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth", "Devices", "ScheduledTasks"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -58,6 +58,13 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	}
 	switch resource {
+	case "ScheduledTasks":
+		literal(1, "Running")
+		if len(parts) > 1 && parts[1] == "Running" {
+			literal(3, "Delete")
+		} else {
+			literal(2, "Triggers")
+		}
 	case "Devices":
 		literal(1, "Info", "Options", "Delete")
 	case "Auth":

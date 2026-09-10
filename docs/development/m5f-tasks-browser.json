@@ -1,0 +1,196 @@
+{
+  "application_pids": [
+    3569780,
+    3569931,
+    3569956
+  ],
+  "assets_archive_sha256": "b432bbaa8363016ab7a6de2e73b82765c7e01a913ae1f2788d7eccf0595cff76",
+  "binary_sha256": "2993870cce6f4e0ae2c3630b645985cab664ce5e5e18123fdc920fb241bb2abf",
+  "browser": {
+    "duration_ms": 19078.232,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_checks": {
+    "CalendarPrecisionAndRevisionConflict": true,
+    "CommittedScheduleResponseLossAndExplicitReload": true,
+    "CommittedStartResponseLossAndDurableReceipt": true,
+    "LegacyScanHistoryAndLibraryLink": true,
+    "ManualRunAndLibraryCounters": true,
+    "MobileLayoutAndUnsavedScheduleGuard": true,
+    "OwnedMediaAndStableTaskIdentity": true,
+    "RealIntervalTriggerAndRemoval": true
+  },
+  "browser_driver_stderr": "",
+  "browser_observations": {
+    "active_cancel_executed": false,
+    "active_stop_dialog_observed": true
+  },
+  "checks": {
+    "all_task_and_scan_work_settled_after_rule_removal": true,
+    "all_task_triggers_cleared": true,
+    "application_uid": 995,
+    "browser_native_task_journey": true,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "exact_temporary_hba_rule": true,
+    "first_restart_preserved_all_27_public_tables_exactly": true,
+    "fresh_dedicated_administrator": true,
+    "native_fixture_libraries_created": 2,
+    "original_browser_session_survives_restart": true,
+    "original_manual_receipt_replays_without_admission": true,
+    "original_media_bytes_unchanged": true,
+    "owned_library_directories_explicit_mode_0755": true,
+    "private_logs_exclude_raw_secrets": true,
+    "real_manual_and_interval_runs": true,
+    "restart_snapshot_public_table_count": 27,
+    "second_restart_admitted_one_real_startup_run": true,
+    "secret_free_screenshots": 4,
+    "startup_allowed_only_explicit_scan_and_dispatch_watermarks": true,
+    "startup_completed_two_owned_library_children": true,
+    "startup_normal_cached_scan_added_or_updated_no_items": true,
+    "startup_preserved_all_other_public_rows": true,
+    "startup_preserved_existing_history_and_receipts": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "browser_stopped_before_api_cleanup": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "every_issued_session_revoked_control_last": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "native_cleanup_control_available": true,
+    "native_sessions_revoked_count": 2,
+    "native_task_and_scan_work_drained": true,
+    "native_task_triggers_cleared": true,
+    "preexisting_database_catalog_unchanged": true,
+    "private_browser_secrets_collected": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5f_tasks_20260910_034933_ec5157ed6f",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "fixtures": {
+    "files_per_library": 1,
+    "initial_scan_disabled": true,
+    "libraries": 2,
+    "media_bytes": 13362,
+    "native_api_creation": true,
+    "private_manifest": true,
+    "real_mp4_files": 2,
+    "root_owned_read_only_to_application": true
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 51331,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5f_role_20260910_034933_ec5157ed6f",
+  "run_id": "20260910_034933_ec5157ed6f",
+  "scenario": "administrator_scheduled_tasks",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3535438"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3535438"
+  },
+  "snapshot_tables": [
+    "application_key_clients",
+    "application_key_devices",
+    "application_keys",
+    "catalog_entities",
+    "client_playback_references",
+    "devices",
+    "encoding_jobs",
+    "item_entities",
+    "item_images",
+    "item_metadata_state",
+    "item_subtitles",
+    "items",
+    "libraries",
+    "library_roots",
+    "play_sessions",
+    "scan_jobs",
+    "schema_migrations",
+    "server_settings",
+    "sessions",
+    "task_definitions",
+    "task_occurrences",
+    "task_run_children",
+    "task_run_requests",
+    "task_runs",
+    "task_triggers",
+    "user_item_data",
+    "users"
+  ],
+  "source_spec_sha256": "6942fa8c1fd0962845e6219100d07e3bf55576149e40054154bae924f8749a35",
+  "space_before": {
+    "/": 63580299264,
+    "/dev/shm": 797962240,
+    "/dev/shm/goby-pg-m4c": 825974784,
+    "/opt/goby-test/exec-scratch": 398630912
+  },
+  "status": "passed",
+  "verifier_sha256": "c9e62cb4aa022eb7f28da973881916459ba3466b5f3e8e97dc8f2f6c47538f27"
+}

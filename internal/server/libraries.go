@@ -9,6 +9,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/tasks"
 )
 
 func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
@@ -256,16 +257,20 @@ func (s *Server) embyRefreshLibraries(w http.ResponseWriter, r *http.Request) {
 	if !s.embyAdministrator(w, r) {
 		return
 	}
-	libraries, err := s.library.ListLibraries(r.Context())
-	if err != nil {
-		s.libraryError(w, r, err)
+	if s.taskStore == nil {
+		s.scheduledTaskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	for _, item := range libraries {
-		if _, err := s.library.StartScan(r.Context(), item.ID); err != nil && !errors.Is(err, library.ErrBusy) {
-			s.libraryError(w, r, err)
-			return
-		}
+	definition, err := s.taskStore.GetByKey(r.Context(), tasks.LibraryScanKey)
+	if err != nil {
+		s.scheduledTaskError(w, r, err)
+		return
+	}
+	// The durable task owns a snapshot of every library. Bounded scanner
+	// admission can defer children without dropping later libraries as busy.
+	if _, err := s.taskManager.Start(r.Context(), embyTaskActor(r), tasks.StartRequest{TaskID: definition.ID}); err != nil {
+		s.scheduledTaskError(w, r, err)
+		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
