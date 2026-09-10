@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 1965 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, and ScheduledTasks studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 2051 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -113,7 +113,7 @@ Goby's [M5f task service](../../../../../docs/research/scheduled-tasks-plan.md)
 has no new product acceptance in this corpus extension.
 
 The [fresh task mutation study](../../../../../docs/research/scheduled-tasks-mutation-reference.md)
-adds 171 records, bringing the current total to 1965. The setup contains 16
+adds 171 records, bringing the corpus to 1965 at that checkpoint. The setup contains 16
 complete HTTP exchanges and one non-HTTP readiness failure; the controlled
 capture contains 153 complete HTTP exchanges and one
 [audit](scheduled-tasks-fresh-m5f-audit.json). Both actual-running stop forms
@@ -131,3 +131,24 @@ suites pass 19 and eight tests respectively; their derived reports are not
 additional corpus records. Weekly/system-event execution, scheduled firing,
 DST, maximum-runtime expiry, and reference application-key authority remain
 unverified. The extension is research evidence, not full Goby M5f acceptance.
+
+The [configuration read study](../../../../../docs/research/configuration-reference.md)
+adds 86 records under `configuration-m5g-`: 85 complete HTTP exchanges and one
+[audit](configuration-m5g-audit.json), bringing the current total to 2051.
+Administrator total/encoding/devices/DLNA objects have 60/17/2/3 fields. The
+ordinary viewer's total-configuration `200` is exactly `{}`; named reads return
+viewer `403`, while all tested anonymous configuration requests return `401`.
+An unknown name returns administrator `500` with the preserved plain-text error.
+No total, partial, or named configuration POST or application-key request ran.
+
+Its audit preserves the preceding 1965 records/3930 raw-export files, 240 known
+sources, 2621 private files, old devices/options, task configuration/runtime,
+user structure, and both original service identities. Both new ordinary logins
+finish with independent `401`; device rows `33` and `34` remain as history.
+All 85 private wire records were preserved; the safe exports apply deep secret
+and bounded URL redaction. `AllowLegacyLocalNetworkPassword` is conservatively
+masked, so its actual value is unobserved. Encoding sentinels and saved hardware
+flags do not establish runtime behavior. The
+[18 pure guard tests](../../../../../docs/development/m5g-configuration-recorder-tests.json)
+pass without HTTP or capture writes. This is a read-only research increment;
+Goby M5g native implementation remains in development without product acceptance.

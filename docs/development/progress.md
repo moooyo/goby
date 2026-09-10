@@ -16,7 +16,7 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 1965 records. The [fresh task mutation study](../research/scheduled-tasks-mutation-reference.md) adds 171 records after the [read study](../research/scheduled-tasks-reference.md) brought the corpus to 1794. Earlier device, key, catalog, and media evidence is preserved. Task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2051 records. The [configuration read study](../research/configuration-reference.md) adds 86 records to the 1965 checkpoint reached by the [fresh task mutation study](../research/scheduled-tasks-mutation-reference.md). Earlier device, key, catalog, and media evidence is preserved. Configuration writes/key authority, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
@@ -25,6 +25,7 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | M4 conversion and hardware pipeline | Engine, HLS VOD, progressive audio/video, ordered profiles and verified video restart increments complete; milestone incomplete | [M4a](verification-m4a-engine.md), [M4b](verification-m4b-hls.md), [M4c](verification-m4c-audio.md), [M4d](verification-m4d-audio-profiles.md) and [M4e](verification-m4e-video-and-users.md) establish the preceding conversion and clock behavior. [M4f](verification-m4f-video-seek.md) adds probe 6 private restart evidence, software-decoder proof with actual threads, and independent linear audio. All 940 top-level race tests and five deployed library upgrades passed with real fast producer observation. [M4g](verification-m4g-media-refresh.md) adds explicit media re-probing, schema-15 task modes, real same-version index reconstruction and five deployed forced scans; all 969 top-level race tests pass. Nonzero copied-video seeking, efficient audio I/O, additional tracks/formats, aggregate resource isolation, actual GPU execution and full client acceptance remain |
 | M5 administrator completion | User, metadata, login-session, application-key, device and initial scheduled-task increments complete; milestone incomplete | [M5a](verification-m4e-video-and-users.md), [M5b](verification-m5b-metadata.md), [M5c](verification-m5c-sessions.md), [M5d](verification-m5d-application-keys.md), and [M5e](verification-m5e-devices.md) retain preceding acceptance evidence. [M5f](verification-m5f-tasks.md) adds durable library-wide execution, schedules, receipts and an administrator task UI. All 1190 top-level race tests pass across thirteen packages with zero skips/races; browser, deployment and the main-service workflow pass. Additional task executors, full policies, providers, broader settings, audit/log browsing, product backup/restore and broader wire/client parity remain |
 | M5f scheduled tasks | Initial library executor and scheduling increment complete | [Verification](verification-m5f-tasks.md): 1190 full-race tests, isolated browser acceptance with two restarts, schema-19 deployment, and a successful main-service run/replay/schedule workflow. Eight [native task routes](../api/tasks.md) and six compatibility operations use durable receipts, owned children, typed schedules and recovery. [Reference read](../research/scheduled-tasks-reference.md) and [mutation](../research/scheduled-tasks-mutation-reference.md) studies retain their narrower evidence; timer/reference parity, more executors, and complete client acceptance remain broader work |
+| M5g configuration | Read-only reference increment complete; native implementation in development | [Study](../research/configuration-reference.md): 85 complete HTTP exchanges plus one audit, permission/field observations, preserved prior evidence, and [18 pure recorder guard tests](m5g-configuration-recorder-tests.json). No configuration writes or key-authority requests were sampled. Product acceptance is pending; M5f remains deployed at schema 19/probe 6 |
 | M6 compatibility release | Incomplete; acceptance pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations, representative large-catalog upgrade timing, and recovery evidence |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
 
@@ -113,7 +114,7 @@ was the deployed checkpoint then; the completed M5f acceptance is recorded below
 
 The [fresh-instance study](../research/scheduled-tasks-mutation-reference.md)
 adds 171 records: 169 complete HTTP exchanges, one audit, and one non-HTTP
-readiness failure. The current corpus is 1965. Both stop forms were exercised
+readiness failure. The corpus reached 1965 at that checkpoint. Both stop forms were exercised
 against observed `Running` tasks, returned `204`, and produced new `Cancelled`
 results. Idle-stop returned `500`; administrator operations on the reserved
 unknown ID returned `404`. Sampled legal trigger arrays returned `204`, while
@@ -137,6 +138,35 @@ Those early checks were followed by the [complete M5f acceptance](verification-m
 full regression, browser/restarts, deployment, and the main-service workflow.
 The reference increment remains separate evidence; its unsampled behaviors
 are not promoted to observed Emby contracts by Goby's successful implementation.
+
+## Configuration read-only reference increment
+
+The [M5g configuration study](../research/configuration-reference.md) adds 86
+records: 85 complete HTTP exchanges and one audit, recorded in 2.438 seconds
+with 104,719 response-body bytes. The corpus now contains 2051 records. Administrator
+total configuration has 60 fields; the viewer's `200` body is exactly `{}`.
+Named encoding/devices/DLNA objects have 17, two, and three fields respectively,
+with administrator `200`, viewer `403`, and anonymous `401`. An unknown name
+returns administrator `500` with `Sequence contains no matching element`.
+
+The [audit](../../tests/compatibility/fixtures/reference/emby-4.9.5.0/configuration-m5g-audit.json)
+preserves all preceding 1965 records and 3930 raw/export files, 240 known source
+files, 2621 private files, 22 old listed devices and hidden server device `15`,
+their options, and old task/user structure. The original Emby PID 3131777 and
+M5f Goby PID 3570491 remain unchanged. Only the two owned ordinary login/logout
+flows mutate state; new device rows `33` and `34` remain as history, and both
+credentials finish with independent `401` proofs. All cleanup checks pass.
+
+All 85 full private wire records are preserved. Export redaction covers sensitive
+fields, known credentials, dictionary keys and nested headers; URL recognition
+uses at most two percent-decode layers and masks values that exceed that budget.
+`AllowLegacyLocalNetworkPassword` is conservatively masked, so its actual value
+is not claimed. The sampled deprecated `EncodingThreadCount: -1` and
+`TranscodingMaxWidth: 0` do not establish encoder execution semantics. The
+[18 pure guard tests](m5g-configuration-recorder-tests.json) pass without HTTP
+or capture writes. Total/partial/named POST behavior and application-key
+authority remain unobserved. Native M5g implementation remains in development,
+without product acceptance; the accepted M5f deployment is unchanged.
 
 ## Environment observations
 

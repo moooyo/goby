@@ -1,0 +1,152 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Configuration",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "1773"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 04:57:15 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "EnableUPnP": false,
+      "PublicPort": 18097,
+      "PublicHttpsPort": 18497,
+      "HttpServerPortNumber": 18097,
+      "HttpsPortNumber": 18497,
+      "EnableHttps": false,
+      "IsPortAuthorized": true,
+      "AutoRunWebApp": false,
+      "EnableRemoteAccess": false,
+      "LogAllQueryTimes": false,
+      "DisableOutgoingIPv6": false,
+      "EnableCaseSensitiveItemIds": true,
+      "PreferredMetadataLanguage": "en",
+      "MetadataCountryCode": "US",
+      "SortRemoveWords": [
+        "the",
+        "a",
+        "an",
+        "das",
+        "der",
+        "el",
+        "la"
+      ],
+      "LibraryMonitorDelaySeconds": 90,
+      "EnableDashboardResponseCaching": true,
+      "ImageSavingConvention": "Compatible",
+      "EnableAutomaticRestart": false,
+      "ServerName": "Goby Emby Reference",
+      "PreferredDetectedRemoteAddressFamily": "InterNetwork",
+      "UICulture": "en-US",
+      "RemoteClientBitrateLimit": 0,
+      "LocalNetworkSubnets": [],
+      "LocalNetworkAddresses": [
+        "127.0.0.1"
+      ],
+      "EnableExternalContentInSuggestions": false,
+      "RequireHttps": false,
+      "IsBehindProxy": false,
+      "RemoteIPFilter": [],
+      "IsRemoteIPFilterBlacklist": false,
+      "ImageExtractionTimeoutMs": 0,
+      "PathSubstitutions": [],
+      "UninstalledPlugins": [],
+      "CollapseVideoFolders": false,
+      "EnableOriginalTrackTitles": false,
+      "VacuumDatabaseOnStartup": true,
+      "SimultaneousStreamLimit": 0,
+      "DatabaseCacheSizeMB": 64,
+      "EnableSqLiteMmio": false,
+      "PlaylistsUpgradedToM3U": true,
+      "ImageExtractorUpgraded1": true,
+      "EnablePeopleLetterSubFolders": true,
+      "OptimizeDatabaseOnShutdown": true,
+      "DatabaseAnalysisLimit": 400,
+      "MaxLibraryDatabaseConnections": 5,
+      "MaxAuthDbConnections": 5,
+      "MaxOtherDbConnections": 3,
+      "DisableAsyncIO": false,
+      "MigratedToUserItemShares8": true,
+      "MigratedLibraryOptionsToDb": true,
+      "AllowLegacyLocalNetworkPassword": "[REDACTED_SECRET]",
+      "EnableSavedMetadataForPeople": false,
+      "TvChannelsRefreshed": true,
+      "ProxyHeaderMode": "AllAddresses",
+      "IsInMaintenanceMode": false,
+      "EnableDebugLevelLogging": false,
+      "EnableAutoUpdate": false,
+      "LogFileRetentionDays": 2,
+      "RunAtStartup": true,
+      "IsStartupWizardCompleted": true
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 1773,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "1202afa2f20e4eedf81586f7ee15ced50a60b52587e9d62c6dfcb8be9509cc1c"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T04:57:16.036229+00:00"
+  }
+}

@@ -1,0 +1,500 @@
+{
+  "kind": "capture-audit-observation",
+  "referencePID": 3131777,
+  "serverId": "ec69ef1cf84140e88489c30326529308",
+  "captureFailureType": null,
+  "cleanupPassed": true,
+  "checks": {
+    "configurationReadsUnchanged": true,
+    "taskDefinitionMembershipUnchanged": true,
+    "taskConfigurationUnchanged": true,
+    "oldDeviceStructuralFieldsUnchanged": true,
+    "oldDeviceActivityUnchanged": true,
+    "oldDeviceOptionsUnchanged": true,
+    "noUnownedNewDevices": true,
+    "onlyThisRunOwnedLoginDeviceHistoryAdded": true,
+    "hiddenServerDeviceInfoAndOptionsUnchanged": true,
+    "oldUserMembershipUnchanged": true,
+    "oldUsersUnchangedExceptAttributedParticipantActivity": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "allAttemptedLoginsAcknowledgedOrRejected": true,
+    "originalReferenceProcessUnchanged": true,
+    "mainGobyProcessAndBinaryUnchanged": true,
+    "allPriorEvidenceSourcesAndPrivateFilesUnchanged": true,
+    "onlyOwnedLoginLogoutMutations": true,
+    "newRedactionAuditPassed": true,
+    "privateWireEvidenceUnchanged": true
+  },
+  "cleanupErrors": [],
+  "preservedOldRecords": 1965,
+  "preservedOldRecordFiles": 3930,
+  "preservedOldMediaFiles": 240,
+  "preservedOldPrivateFiles": 2621,
+  "historicallyRemovedPathsNotRequiredToExist": [
+    "/dev/shm/goby-emby-key-devices-fresh-m5e-20260910-02/.goby-managed",
+    "/dev/shm/goby-emby-scheduled-tasks-fresh-m5f-20260910-01",
+    "/opt/goby-test/exec-scratch/emby-scheduled-tasks-fresh-m5f-20260910-01/source"
+  ],
+  "retiredOwnedMediaFiles": 512,
+  "mainGobyBefore": {
+    "pid": 3570491,
+    "uid": 995,
+    "startTicks": "24600634",
+    "networkNamespace": "net:[4026531840]",
+    "executable": "/opt/goby-dev/goby",
+    "binarySha256": "2993870cce6f4e0ae2c3630b645985cab664ce5e5e18123fdc920fb241bb2abf",
+    "serviceProperties": {
+      "MainPID": "3570491",
+      "ExecStart": "{ path=/opt/goby-dev/goby ; argv[]=/opt/goby-dev/goby ; ignore_errors=no ; start_time=[Thu 2026-09-10 12:00:47 CST] ; stop_time=[n/a] ; pid=3570491 ; code=(null) ; status=0/0 }",
+      "WorkingDirectory": "/var/lib/goby-test",
+      "User": "goby",
+      "ActiveState": "active"
+    }
+  },
+  "oldListedDeviceCount": 22,
+  "oldDeviceActivityDifferences": [],
+  "attributedUserActivityDifferences": [
+    {
+      "userId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "field": "LastActivityDate",
+      "before": "2026-09-10T04:57:14.8900830Z",
+      "after": "2026-09-10T04:57:16.1028839Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastActivityDate",
+      "before": "2026-09-10T01:56:58.6179027Z",
+      "after": "2026-09-10T04:57:16.0570619Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastLoginDate",
+      "before": "2026-09-10T01:56:58.4927115Z",
+      "after": "2026-09-10T04:57:15.9982400Z",
+      "attribution": "Owned fresh login and requests"
+    }
+  ],
+  "ownedLoginAttempts": [
+    "control",
+    "viewer"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200,
+    "viewer": 200
+  },
+  "ownedLoginInvalidityProofs": {
+    "viewer": {
+      "label": "cleanup-invalid-viewer",
+      "status": 401
+    },
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedLoginLogoutStatuses": {
+    "viewer": 204,
+    "control": 204
+  },
+  "configurationObservations": [
+    {
+      "capture": "admin-configuration-before-total",
+      "configurationName": "total",
+      "path": "/emby/System/Configuration",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnableUPnP",
+        "PublicPort",
+        "PublicHttpsPort",
+        "HttpServerPortNumber",
+        "HttpsPortNumber",
+        "EnableHttps",
+        "IsPortAuthorized",
+        "AutoRunWebApp",
+        "EnableRemoteAccess",
+        "LogAllQueryTimes",
+        "DisableOutgoingIPv6",
+        "EnableCaseSensitiveItemIds",
+        "PreferredMetadataLanguage",
+        "MetadataCountryCode",
+        "SortRemoveWords",
+        "LibraryMonitorDelaySeconds",
+        "EnableDashboardResponseCaching",
+        "ImageSavingConvention",
+        "EnableAutomaticRestart",
+        "ServerName",
+        "PreferredDetectedRemoteAddressFamily",
+        "UICulture",
+        "RemoteClientBitrateLimit",
+        "LocalNetworkSubnets",
+        "LocalNetworkAddresses",
+        "EnableExternalContentInSuggestions",
+        "RequireHttps",
+        "IsBehindProxy",
+        "RemoteIPFilter",
+        "IsRemoteIPFilterBlacklist",
+        "ImageExtractionTimeoutMs",
+        "PathSubstitutions",
+        "UninstalledPlugins",
+        "CollapseVideoFolders",
+        "EnableOriginalTrackTitles",
+        "VacuumDatabaseOnStartup",
+        "SimultaneousStreamLimit",
+        "DatabaseCacheSizeMB",
+        "EnableSqLiteMmio",
+        "PlaylistsUpgradedToM3U",
+        "ImageExtractorUpgraded1",
+        "EnablePeopleLetterSubFolders",
+        "OptimizeDatabaseOnShutdown",
+        "DatabaseAnalysisLimit",
+        "MaxLibraryDatabaseConnections",
+        "MaxAuthDbConnections",
+        "MaxOtherDbConnections",
+        "DisableAsyncIO",
+        "MigratedToUserItemShares8",
+        "MigratedLibraryOptionsToDb",
+        "AllowLegacyLocalNetworkPassword",
+        "EnableSavedMetadataForPeople",
+        "TvChannelsRefreshed",
+        "ProxyHeaderMode",
+        "IsInMaintenanceMode",
+        "EnableDebugLevelLogging",
+        "EnableAutoUpdate",
+        "LogFileRetentionDays",
+        "RunAtStartup",
+        "IsStartupWizardCompleted"
+      ]
+    },
+    {
+      "capture": "admin-configuration-before-encoding",
+      "configurationName": "encoding",
+      "path": "/emby/System/Configuration/encoding",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EncodingThreadCount",
+        "ExtractionThreadCount",
+        "DownMixAudioBoost",
+        "EnableThrottling",
+        "ThrottleBufferSize",
+        "ThrottleHysteresis",
+        "ThrottlingMethod",
+        "H264Crf",
+        "EnableHardwareEncoding",
+        "EnableSubtitleExtraction",
+        "EnableOnTheFlyAttachmentExtraction",
+        "CodecConfigurations",
+        "HardwareAccelerationMode",
+        "EnableHardwareToneMapping",
+        "EnableSoftwareToneMapping",
+        "TranscodingMaxWidth",
+        "EnableHevcEncoding"
+      ]
+    },
+    {
+      "capture": "admin-configuration-before-devices",
+      "configurationName": "devices",
+      "path": "/emby/System/Configuration/devices",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnabledCameraUploadDevices",
+        "EnableCameraUploadSubfolders"
+      ]
+    },
+    {
+      "capture": "admin-configuration-before-dlna",
+      "configurationName": "dlna",
+      "path": "/emby/System/Configuration/dlna",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnablePlayTo",
+        "EnableServer",
+        "EnableDebugLog"
+      ]
+    },
+    {
+      "capture": "admin-configuration-before-unknown",
+      "configurationName": "unknown",
+      "path": "/emby/System/Configuration/goby-configuration-m5g-20260910-01-unknown-configuration",
+      "status": 500,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "anonymous-configuration-total",
+      "configurationName": "total",
+      "path": "/emby/System/Configuration",
+      "status": 401,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "anonymous-configuration-encoding",
+      "configurationName": "encoding",
+      "path": "/emby/System/Configuration/encoding",
+      "status": 401,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "anonymous-configuration-devices",
+      "configurationName": "devices",
+      "path": "/emby/System/Configuration/devices",
+      "status": 401,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "anonymous-configuration-dlna",
+      "configurationName": "dlna",
+      "path": "/emby/System/Configuration/dlna",
+      "status": 401,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "anonymous-configuration-unknown",
+      "configurationName": "unknown",
+      "path": "/emby/System/Configuration/goby-configuration-m5g-20260910-01-unknown-configuration",
+      "status": 401,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "viewer-configuration-total",
+      "configurationName": "total",
+      "path": "/emby/System/Configuration",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": []
+    },
+    {
+      "capture": "viewer-configuration-encoding",
+      "configurationName": "encoding",
+      "path": "/emby/System/Configuration/encoding",
+      "status": 403,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "viewer-configuration-devices",
+      "configurationName": "devices",
+      "path": "/emby/System/Configuration/devices",
+      "status": 403,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "viewer-configuration-dlna",
+      "configurationName": "dlna",
+      "path": "/emby/System/Configuration/dlna",
+      "status": 403,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "viewer-configuration-unknown",
+      "configurationName": "unknown",
+      "path": "/emby/System/Configuration/goby-configuration-m5g-20260910-01-unknown-configuration",
+      "status": 403,
+      "responseShape": "str",
+      "properties": null
+    },
+    {
+      "capture": "admin-configuration-final-total",
+      "configurationName": "total",
+      "path": "/emby/System/Configuration",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnableUPnP",
+        "PublicPort",
+        "PublicHttpsPort",
+        "HttpServerPortNumber",
+        "HttpsPortNumber",
+        "EnableHttps",
+        "IsPortAuthorized",
+        "AutoRunWebApp",
+        "EnableRemoteAccess",
+        "LogAllQueryTimes",
+        "DisableOutgoingIPv6",
+        "EnableCaseSensitiveItemIds",
+        "PreferredMetadataLanguage",
+        "MetadataCountryCode",
+        "SortRemoveWords",
+        "LibraryMonitorDelaySeconds",
+        "EnableDashboardResponseCaching",
+        "ImageSavingConvention",
+        "EnableAutomaticRestart",
+        "ServerName",
+        "PreferredDetectedRemoteAddressFamily",
+        "UICulture",
+        "RemoteClientBitrateLimit",
+        "LocalNetworkSubnets",
+        "LocalNetworkAddresses",
+        "EnableExternalContentInSuggestions",
+        "RequireHttps",
+        "IsBehindProxy",
+        "RemoteIPFilter",
+        "IsRemoteIPFilterBlacklist",
+        "ImageExtractionTimeoutMs",
+        "PathSubstitutions",
+        "UninstalledPlugins",
+        "CollapseVideoFolders",
+        "EnableOriginalTrackTitles",
+        "VacuumDatabaseOnStartup",
+        "SimultaneousStreamLimit",
+        "DatabaseCacheSizeMB",
+        "EnableSqLiteMmio",
+        "PlaylistsUpgradedToM3U",
+        "ImageExtractorUpgraded1",
+        "EnablePeopleLetterSubFolders",
+        "OptimizeDatabaseOnShutdown",
+        "DatabaseAnalysisLimit",
+        "MaxLibraryDatabaseConnections",
+        "MaxAuthDbConnections",
+        "MaxOtherDbConnections",
+        "DisableAsyncIO",
+        "MigratedToUserItemShares8",
+        "MigratedLibraryOptionsToDb",
+        "AllowLegacyLocalNetworkPassword",
+        "EnableSavedMetadataForPeople",
+        "TvChannelsRefreshed",
+        "ProxyHeaderMode",
+        "IsInMaintenanceMode",
+        "EnableDebugLevelLogging",
+        "EnableAutoUpdate",
+        "LogFileRetentionDays",
+        "RunAtStartup",
+        "IsStartupWizardCompleted"
+      ]
+    },
+    {
+      "capture": "admin-configuration-final-encoding",
+      "configurationName": "encoding",
+      "path": "/emby/System/Configuration/encoding",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EncodingThreadCount",
+        "ExtractionThreadCount",
+        "DownMixAudioBoost",
+        "EnableThrottling",
+        "ThrottleBufferSize",
+        "ThrottleHysteresis",
+        "ThrottlingMethod",
+        "H264Crf",
+        "EnableHardwareEncoding",
+        "EnableSubtitleExtraction",
+        "EnableOnTheFlyAttachmentExtraction",
+        "CodecConfigurations",
+        "HardwareAccelerationMode",
+        "EnableHardwareToneMapping",
+        "EnableSoftwareToneMapping",
+        "TranscodingMaxWidth",
+        "EnableHevcEncoding"
+      ]
+    },
+    {
+      "capture": "admin-configuration-final-devices",
+      "configurationName": "devices",
+      "path": "/emby/System/Configuration/devices",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnabledCameraUploadDevices",
+        "EnableCameraUploadSubfolders"
+      ]
+    },
+    {
+      "capture": "admin-configuration-final-dlna",
+      "configurationName": "dlna",
+      "path": "/emby/System/Configuration/dlna",
+      "status": 200,
+      "responseShape": "dict",
+      "properties": [
+        "EnablePlayTo",
+        "EnableServer",
+        "EnableDebugLog"
+      ]
+    },
+    {
+      "capture": "admin-configuration-final-unknown",
+      "configurationName": "unknown",
+      "path": "/emby/System/Configuration/goby-configuration-m5g-20260910-01-unknown-configuration",
+      "status": 500,
+      "responseShape": "str",
+      "properties": null
+    }
+  ],
+  "configurationChanges": [],
+  "completeConfigurationBaseline": true,
+  "namedConfigurationEvidence": {
+    "encoding": {
+      "url": "https://github.com/MediaBrowser/Emby/blob/66e4d9ca63dcf46c4e57159252d34f9479515a42/MediaBrowser.WebDashboard/dashboard-ui/scripts/encodingsettings.js#[REDACTED_FRAGMENT]",
+      "call": "ApiClient.getNamedConfiguration(\"encoding\")",
+      "scope": "Official historical WebDashboard client, 2018; current support is unverified"
+    },
+    "devices": {
+      "url": "https://github.com/MediaBrowser/Emby.ApiClient.Javascript/blob/fdd0939ac596406ab92274f30fd83d226a677424/apiclient.js#[REDACTED_FRAGMENT]",
+      "call": "this.getUrl(\"System/Configuration/devices\")",
+      "scope": "Official API client getDevicesOptions, followed by getJSON; target support is unverified"
+    },
+    "dlna": {
+      "url": "https://github.com/MediaBrowser/Emby/blob/2334e1ecd577e3275602f0155793cb9024adc39f/MediaBrowser.WebDashboard/dashboard-ui/scripts/dlnasettings.js#[REDACTED_FRAGMENT]",
+      "call": "ApiClient.getNamedConfiguration(\"dlna\")",
+      "scope": "Official historical WebDashboard client, 2017; current support is unverified"
+    }
+  },
+  "taskConfigurationChanges": [],
+  "taskRuntimeChanges": [],
+  "configurationMutationRequests": 0,
+  "scheduledTaskMutationRequests": 0,
+  "deviceMutationRequests": 0,
+  "applicationKeyRequests": 0,
+  "existingCredentialHTTPRequests": 0,
+  "mediaOrEncoderRequests": 0,
+  "sourceWrites": 0,
+  "httpAttempts": 85,
+  "incompleteHTTP": 0,
+  "wireBytes": 104719,
+  "wireByteBudgetCharged": 104719,
+  "privateWireRecords": 85,
+  "persistenceFailures": [],
+  "elapsedSeconds": 2.438,
+  "redactionPolicy": "Sensitive fields and known credentials are redacted deeply, including dictionary keys; URL userinfo/query values/fragments are private; configuration Key fields have no public exception",
+  "urlPercentDecodeLayers": 2,
+  "urlDecodeBudgetExhaustion": "Entire values with residual URL delimiter encodings are redacted",
+  "limits": {
+    "taskDefinitions": 64,
+    "httpAttempts": 480,
+    "mainHTTPAttempts": 300,
+    "responseBytes": 262144,
+    "totalResponseBytes": 33554432,
+    "phaseSeconds": 360
+  },
+  "dependencies": [
+    {
+      "sourceFile": "reference-scheduled-tasks.py",
+      "sha256": "b037ab51f5d0fb9e84d4121466a34263ebbf166c99eff2e56cc2dc5b68ada4f1"
+    },
+    {
+      "sourceFile": "reference-devices.py",
+      "sha256": "96d5378d82ce3fcd5dd9a325b02ea3b49bb9c045bcd6b320952222cc888b556d"
+    },
+    {
+      "sourceFile": "reference-api-keys.py",
+      "sha256": "ead25f9d47e8faf0b2b579ca8641b4ddcf4f7993c9e5a16710624c2927e749a8"
+    }
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T04:57:16.634994+00:00"
+  }
+}

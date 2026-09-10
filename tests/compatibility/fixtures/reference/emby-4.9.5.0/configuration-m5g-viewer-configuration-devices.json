@@ -1,0 +1,77 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Configuration/devices",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 403,
+    "headers": [
+      [
+        "Content-Length",
+        "83"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 04:57:15 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "User reference-session-m3b does not have access to ReadServerConfiguration feature."
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 83,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "11323f6675803c9b8587d0cd192e0c440b2dd29a5da39f4925d42cc69c2e135b"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T04:57:16.054872+00:00"
+  }
+}
