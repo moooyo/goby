@@ -16,7 +16,7 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 isolated on test-env, 1476 audited records. The [user-device study](../research/devices-reference.md) adds 348 records, preserving the preceding 1128-record checkpoint `a631dd3`; device implementation remains pending. [Key playback](../research/api-key-playback-reference.md), [client contexts](../research/api-key-context-reference.md), and [target scope](../research/api-key-scope-reference.md) distinguish independent credentials, multiple clients, explicit-user library ACLs and conversion permissions; Goby's bounded M5d acceptance passed separately. Global NextUp selection and application-key device/deletion behavior remain unresolved; [HTTP](../research/reference-server.md), [WebSocket](../research/websocket-reference.md), [HLS](../research/hls-reference.md), [audio](../research/audio-reference.md), [audio profiles](../research/audio-profile-reference.md), [video profiles](../research/video-progressive-reference.md), [metadata](../research/metadata-reference.md) |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence now contains 1665 records. The [user-device study](../research/devices-reference.md) adds 348 records after the earlier 1128; the [key-device study](../research/key-devices-reference.md) adds another 189 with independent offline audit recovery and fresh-fixture teardown. [Key playback](../research/api-key-playback-reference.md), [client contexts](../research/api-key-context-reference.md), and [target scope](../research/api-key-scope-reference.md) distinguish credentials, client contexts, ACLs and conversion permissions. Global NextUp selection and hidden header-device Info/deletion remain unresolved. Goby's M5d acceptance is separate; M5e device implementation is not yet accepted |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
@@ -43,9 +43,42 @@ source paths, preceding raw/export and private files, old device options, and
 user policies are preserved. Control devices `21` and `25` remain as documented
 history with their login credentials revoked. The reference's zero totals and
 ignored sort requests remain separate observations. This is research only:
-Goby device-management implementation and application-key device/deletion
-evidence remain pending. The deployed M5d `563cd0e` product, schema 16, and its
-1046-test acceptance are unchanged.
+Goby device-management acceptance remains pending; the separate key-device
+study below now supplies bounded shared-server deletion evidence. The deployed
+M5d `563cd0e` product, schema 16, and its 1046-test acceptance are unchanged.
+
+## Application-key/device reference increment
+
+The [completed reference study](../research/key-devices-reference.md) adds 189
+records: guarded original-instance capture with 61 HTTP exchanges and one audit,
+fresh setup with 16 complete HTTP exchanges and one non-HTTP readiness failure,
+109 complete fresh-study HTTP exchanges, and one independent recovery audit.
+The corpus is now 1665; the derived operator teardown is not an extra record.
+
+The original-instance gate preserved a hidden old server device and created no
+key. A wholly owned fresh instance then showed two keys sharing server-device
+`5`; deleting it emptied the key list and made all five tested key scopes
+unauthorized while the ordinary control remained usable. Three metadata
+Session DTOs persisted as stale projections. A key separately renamed and
+deleted the owned ordinary viewer's device, revoking that login while both
+keys still authenticated. Header-specific hidden Info/deletion and key-device
+recreation were not sampled.
+
+The original final-audit serialization failed on logical labels classified as
+secrets. The offline recovery preserves that failure, verifies all 109 exports
+unchanged and secret-free, acknowledges ten owned mutations, and proves final
+credential invalidity. It makes no HTTP request or process launch. Old evidence,
+240 sources, credentials, prior failure artifacts, and unrelated services remain
+preserved; separate operator teardown removes only the fresh program data and
+process. Synthetic suites pass 16 guarded-recorder tests, 28 preparation tests,
+24 fresh-recorder tests, and five offline-analyzer tests.
+
+M5e device implementation remains uncommitted and undeployed at this research
+checkpoint. Its initial Go run reported nine failures requiring correction;
+no M5e acceptance is claimed. Recreating a new application-key device generation
+is a Goby safety design, not an observed reference contract. The deployed M5d
+schema-16/probe-6 service and its 1046-test evidence remain current. M4, M5, M6,
+and the complete goal remain unfinished.
 
 ## Environment observations
 

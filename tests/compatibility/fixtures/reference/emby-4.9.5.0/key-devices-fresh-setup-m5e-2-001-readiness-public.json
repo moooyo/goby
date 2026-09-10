@@ -1,0 +1,31 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T23:50:17.366306+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Info/Public",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ]
+    ],
+    "body": null
+  },
+  "response": {
+    "status": null,
+    "headers": [],
+    "bodyType": "incomplete",
+    "body": null
+  },
+  "observation": {
+    "completeHTTP": false,
+    "captureIncomplete": true,
+    "failureType": "ConnectionRefusedError",
+    "wireBytes": 0,
+    "freshFixtureOnly": true
+  }
+}

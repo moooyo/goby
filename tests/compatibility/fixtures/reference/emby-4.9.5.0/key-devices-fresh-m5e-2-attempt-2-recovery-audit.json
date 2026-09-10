@@ -1,0 +1,625 @@
+{
+  "kind": "capture-audit-observation",
+  "verificationMode": "offline-recovery",
+  "cleanupPassed": true,
+  "originalFinalization": {
+    "outcome": "failed",
+    "failureType": "RuntimeError",
+    "reason": "Secret survived export redaction",
+    "captureFailurePresent": false,
+    "rawHTTPRecordsPreserved": 109,
+    "existingExportsModified": false,
+    "recorderSourceSha256": "39357835081eb068e7a089db7c011acc0e58c9c1676e2c1a0c6367313fd00e80",
+    "failureFileSha256": "4794ff42a0c4c81b966a8b87be9174b86dd913d6b5a96ba8e3c8d67209b92cd5"
+  },
+  "diagnosis": {
+    "syntheticReproductionPassed": true,
+    "matches": [
+      {
+        "sourceField": "keyProtectedRouteObservations[].key",
+        "stringClass": "logical-credential-label",
+        "stringLength": 5,
+        "matchKind": "dictionary-key",
+        "location": "keyInvalidityProofs/<dictionary-key:0>"
+      },
+      {
+        "sourceField": "keyProtectedRouteObservations[].key",
+        "stringClass": "logical-credential-label",
+        "stringLength": 7,
+        "matchKind": "dictionary-key",
+        "location": "keyInvalidityProofs/<dictionary-key:1>"
+      }
+    ],
+    "explanation": "Logical credential labels under the generic key field become secret values; legacy sanitization leaves dictionary keys unchanged",
+    "originalHTTPExportsRequireModification": false
+  },
+  "recoveredVerification": {
+    "checks": {
+      "all109HTTPCompleteAndFreshAuthorityMatched": true,
+      "allMutationsAcknowledgedAndOwned": true,
+      "allFourCredentialsLatestRequestUnauthorized": true,
+      "bothCredentialsAndAllFiveContextsUnauthorized": true,
+      "completePostDeletionCredentialListsEmpty": true,
+      "oldDeviceFieldsActivityAndOptionsUnchanged": true,
+      "oldUsersUnchangedExceptParticipantLoginActivity": true,
+      "onlyRevokedControlListedHistoryRetained": true
+    },
+    "httpCount": 109,
+    "mutationCount": 10,
+    "firstCapturedAt": "2026-09-09T23:54:43.902262+00:00",
+    "lastCapturedAt": "2026-09-09T23:54:45.171090+00:00",
+    "chronologySource": "Recorded UTC capturedAt timestamps",
+    "completeCredentialListProofs": [
+      {
+        "capture": "cleanup-keys-discover",
+        "items": 0,
+        "pagedTotal": 0
+      },
+      {
+        "capture": "cleanup-keys-final",
+        "items": 0,
+        "pagedTotal": 0
+      },
+      {
+        "capture": "keys-after-client-alpha",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "keys-after-client-beta",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "keys-after-client-sibling",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "keys-baseline",
+        "items": 0,
+        "pagedTotal": 0
+      },
+      {
+        "capture": "keys-client-server-keys",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "keys-created-alpha",
+        "items": 1,
+        "pagedTotal": 1
+      },
+      {
+        "capture": "keys-created-sibling",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "keys-token-only-server-keys",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "server-delete-key-ownership",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "server-delete-keys-after",
+        "items": 0,
+        "pagedTotal": 0
+      },
+      {
+        "capture": "server-delete-refresh-keys",
+        "items": 2,
+        "pagedTotal": 2
+      },
+      {
+        "capture": "server-delete-registration-after-probes-keys",
+        "items": 0,
+        "pagedTotal": 0
+      }
+    ],
+    "latestCredentialInvalidityProofs": [
+      {
+        "credentialLabel": "control-login",
+        "capture": "cleanup-invalid-control",
+        "status": 401
+      },
+      {
+        "credentialLabel": "viewer-login",
+        "capture": "cleanup-invalid-viewer",
+        "status": 401
+      },
+      {
+        "credentialLabel": "alpha",
+        "capture": "cleanup-key-invalid-owned-key-1-beta",
+        "status": 401
+      },
+      {
+        "credentialLabel": "sibling",
+        "capture": "cleanup-key-invalid-owned-key-2-sibling",
+        "status": 401
+      }
+    ],
+    "deviceWriteProofs": [
+      {
+        "capture": "key-rename-viewer",
+        "targetId": "4",
+        "positiveInfoCapture": "key-rename-viewer-owned-proof",
+        "identityMatched": true
+      },
+      {
+        "capture": "key-delete-viewer",
+        "targetId": "4",
+        "positiveInfoCapture": "key-delete-viewer-owned-proof",
+        "identityMatched": true
+      },
+      {
+        "capture": "delete-owned-server-device",
+        "targetId": "5",
+        "positiveInfoCapture": "delete-owned-server-device-owned-proof",
+        "identityMatched": true
+      }
+    ],
+    "credentialContextInvalidityProofs": [
+      {
+        "credentialLabel": "alpha",
+        "clientLabel": "token-only",
+        "afterDeleteCapture": "server-delete-key-protected-owned-key-1",
+        "finalCapture": "cleanup-key-invalid-owned-key-1",
+        "afterDeleteStatus": 401,
+        "finalStatus": 401
+      },
+      {
+        "credentialLabel": "alpha",
+        "clientLabel": "alpha",
+        "afterDeleteCapture": "server-delete-key-protected-owned-key-1-alpha",
+        "finalCapture": "cleanup-key-invalid-owned-key-1-alpha",
+        "afterDeleteStatus": 401,
+        "finalStatus": 401
+      },
+      {
+        "credentialLabel": "alpha",
+        "clientLabel": "beta",
+        "afterDeleteCapture": "server-delete-key-protected-owned-key-1-beta",
+        "finalCapture": "cleanup-key-invalid-owned-key-1-beta",
+        "afterDeleteStatus": 401,
+        "finalStatus": 401
+      },
+      {
+        "credentialLabel": "sibling",
+        "clientLabel": "token-only",
+        "afterDeleteCapture": "server-delete-key-protected-owned-key-2",
+        "finalCapture": "cleanup-key-invalid-owned-key-2",
+        "afterDeleteStatus": 401,
+        "finalStatus": 401
+      },
+      {
+        "credentialLabel": "sibling",
+        "clientLabel": "sibling",
+        "afterDeleteCapture": "server-delete-key-protected-owned-key-2-sibling",
+        "finalCapture": "cleanup-key-invalid-owned-key-2-sibling",
+        "afterDeleteStatus": 401,
+        "finalStatus": 401
+      }
+    ],
+    "sharedServerDevice": {
+      "id": "5",
+      "reportedDeviceId": "00475e7660c6499e9065f988188e7a57",
+      "credentialNumericIds": [
+        5,
+        6
+      ],
+      "deleteStatus": 204,
+      "controlStatusAfterDeletion": 200,
+      "numericLookupAfterDeletion": {
+        "status": 204,
+        "bodyBytes": 0
+      },
+      "absenceNotInferredFromEmptyNumericResponseAlone": true
+    },
+    "sessionProjection": {
+      "defaultContexts": [
+        {
+          "credentialLabel": "alpha",
+          "sessionId": "ef24f5b0594ecae90fbb0dbba59a6737",
+          "removedFromProjection": true
+        },
+        {
+          "credentialLabel": "sibling",
+          "sessionId": "7e63615ca646121bd9bc63a57861932d",
+          "removedFromProjection": true
+        }
+      ],
+      "staleMetadataContexts": [
+        {
+          "clientLabel": "alpha",
+          "sessionId": "ac68a42731a72a63e4bd1c6066532f55",
+          "internalDeviceId": 6,
+          "retainedBeforeCredentialProbes": true,
+          "retainedAfterCredentialProbes": true,
+          "authenticationStatus": 401
+        },
+        {
+          "clientLabel": "beta",
+          "sessionId": "4fc1925d4980758ff811643467c77786",
+          "internalDeviceId": 7,
+          "retainedBeforeCredentialProbes": true,
+          "retainedAfterCredentialProbes": true,
+          "authenticationStatus": 401
+        },
+        {
+          "clientLabel": "sibling",
+          "sessionId": "89f6ded12eac67c20409cb87f8a002ac",
+          "internalDeviceId": 8,
+          "retainedBeforeCredentialProbes": true,
+          "retainedAfterCredentialProbes": true,
+          "authenticationStatus": 401
+        }
+      ],
+      "interpretation": "Three metadata session DTOs remained cached while every associated authentication probe returned 401"
+    },
+    "headerDeviceDeletion": {
+      "executed": false,
+      "reason": "No Alpha metadata device was present in the bounded administrator device list",
+      "hiddenMetadataDeviceInfoNotQueried": true
+    },
+    "retainedControlDeviceId": "3",
+    "protectedOldDeviceIds": [
+      "1",
+      "2"
+    ],
+    "sourceWrites": 0,
+    "mediaOrEncoderRequests": 0,
+    "userPolicyWrites": 0
+  },
+  "preservation": {
+    "records": {
+      "files": 3110,
+      "bytes": 68313148,
+      "hashesUnchanged": true
+    },
+    "media": {
+      "files": 240,
+      "bytes": 23084703,
+      "hashesUnchanged": true
+    },
+    "privateFiles": {
+      "files": 2080,
+      "bytes": 63771979,
+      "hashesUnchanged": true
+    },
+    "authorityFiles": {
+      "files": 3,
+      "bytes": 1057,
+      "hashesUnchanged": true
+    },
+    "previousFailureFiles": {
+      "files": 11,
+      "bytes": 965623,
+      "hashesUnchanged": true
+    },
+    "previousCaptureFailureFiles": {
+      "files": 3,
+      "bytes": 44489,
+      "hashesUnchanged": true
+    }
+  },
+  "processIdentityProofs": [
+    {
+      "unit": "goby-emby-reference.service",
+      "pid": 3131777,
+      "uid": 0,
+      "startTicks": "13964831",
+      "networkNamespace": "net:[4026532476]",
+      "unchanged": true
+    },
+    {
+      "unit": "goby-foundation-test.service",
+      "pid": 3494032,
+      "uid": 995,
+      "startTicks": "22367653",
+      "networkNamespace": "net:[4026531840]",
+      "unchanged": true
+    },
+    {
+      "unit": "goby-emby-key-devices-fresh-m5e-20260910-02.service",
+      "pid": 3496037,
+      "uid": 0,
+      "startTicks": "23097616",
+      "networkNamespace": "net:[4026532474]",
+      "unchanged": true
+    }
+  ],
+  "bootstrapCredentialInvalidityProofs": {
+    "credentials": [
+      {
+        "credentialLabel": "bootstrap-admin",
+        "finalStatus": 401,
+        "studyHTTPUses": 0
+      },
+      {
+        "credentialLabel": "bootstrap-viewer",
+        "finalStatus": 401,
+        "studyHTTPUses": 0
+      }
+    ],
+    "independentRawTokenMappingVerified": true,
+    "setupRecords": 17,
+    "completeHTTPRecords": 16,
+    "nonHTTPReadinessObservations": [
+      {
+        "recordOrdinal": 1,
+        "completeHTTP": false,
+        "failureType": "ConnectionRefusedError",
+        "wireBytes": 0,
+        "scope": "Anonymous initial public readiness request",
+        "followingPublicInfoStatus": 200
+      }
+    ]
+  },
+  "original109ExportsDeterministicallyVerified": true,
+  "sourceCaptureTree": {
+    "files": {
+      "/reference-keys-m5d-private/.goby-managed": "ade35478305921d96ff52a22505def49bcee7d06a4c1ade6ba38b560a6d8a3b2",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-delete-key-0.json": "d7344cc302988b99c6fb7e496e7842715f959534605fc078533db1c33ac03aa9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-delete-key-1.json": "34c7bdd9f739256ed63e43aa9314ebf447aa2132f40e3dbecb28693e4d094b44",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-devices-discover.json": "cb3ee7b2f4c142d1fe294ba0dffc9812e8a1cbada45ba9c1e853737cf5df909b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-fresh-server-info-0.json": "ae2f95573c809ee9d09ad21a160078f941cbb612f99022701c9c59769d87b2f4",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-invalid-control.json": "ef83343a115c77b158ad5653829fd4bb04b873da515038b276bee83a38516088",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-invalid-viewer.json": "42027e270731cd6b5e01406e870c474d8bc5e1fadb653aeb4dbccd1d85d8511a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1-alpha.json": "5176acec39f12871a7ce5f3806adcf3f00cbc46d2c58614dd81427ed49341a1a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1-beta.json": "55782be80bcd212c7c16e1ac6f7ce31034e95db296100aeabd4cf3865e145979",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1.json": "264dcf0f516a877ad1ea028da682ad1d1a18e090bfb52b74c3c975791e7d9aa2",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-2-sibling.json": "00581794f74a1a9e4f5074fbc18ff2c3b58070f1be70d270f8c65bdfd9fa3d7e",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-2.json": "2dab01811e43fcefbb3251a1e77c069ca242fb1e0fbf6bcfa2bc67bf77fc45c9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-discover-bounded-page.json": "67ebdae13dbf3ba31c7ac03c16a5b8f6c576b899e2a83af8c367dceab6dccd6a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-discover.json": "0cb9134d7c1b2e269fb71186ed3003b7623ba394654062b30b5071a765ac58d9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-final-bounded-page.json": "5911c8ddbdb71d3e1cd38702b1a0aa82c375ac63052a279c36c6a16423d36dd7",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-final.json": "b4155f46f11c750484fb9457d72ca4d66eea87f42384e8b46675b6cecb6eaaff",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-cleanup-logout-control.json": "227151badf07d81467fd94e271f58a400c2effab0fb96539a445840400fd8805",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-control-after-key-delete-protected.json": "686f2abed817ab12834e715fec4ef7e9dae84a3680da35aaca82be33e11b0c3b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-control-login.json": "7106c46805d220b8eadc1f355b9990cb0763fc4a27d59abb3d3e1455ab2ccfc2",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-control-protected-before.json": "b962bfbb9b29d6b5a55d09a3d4ee2511bbb2576863bdfd5c745aa02b3f3b1ed6",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-create-key-alpha.json": "a8e4bdb6f1b2cabbf3bef7cc97cec24c15dc9b97623c9e1f600e87bfbaa496fe",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-create-key-sibling.json": "31f5af49b6c48a384264c36b2e6307ce33510adad2d50f88b2aade51cc02a9b8",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-delete-owned-server-device-owned-proof.json": "7616cc298053f4f9a27288204d3e5dc114314ef67f6ebe859f639e18fa33171f",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-delete-owned-server-device.json": "3e20d23cabafc8dd70c30bb4b31221b53553edb2cfef82b23e87ada08523c021",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-alpha.json": "34c90f1010b6fa657f63535411cf513aaadd73ce906b411e8287301bc18ee8e5",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-beta.json": "83d77904d90924531bf9c6ef49c4f96ef3110d3adc3a82352f56a2b84c349dbf",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-clients.json": "da1b84af84f7a8ee2c25487b57117b4714bfa5c29addb970af84913c940c0403",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-delete-viewer.json": "0efbccba0083b45aca9cd0293bd6c5357510dff8e8b3d62e97837ca102893f0a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-sibling.json": "f9aafce2037d00bf8faae142dfff1c2fcfcd6bf2f8769a4c56bedb52aaa59616",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-key-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-after-viewer.json": "cf960d09a8817840d085bd5556cbc2160bce521b8a1bbcc02069fd17cd843bd3",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-baseline.json": "6e3248615810441cc1c5091f61e316065950c13ed07a764de4511a8e74f56f18",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-devices-final-before-control-logout.json": "16d5e0977dd60d4d59cbbd2a5aa59b2e8d3aa44b043e8a0894131e11b77f45d1",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-header-delete-candidates.json": "1605fae92117a6971758294aa17d489c6c052921f2a3ca74960eca1b3eddff2d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-alpha-devices-metadata.json": "89447f7181be056155f4c5685f59d8acdec679b7422f94b7aa3e207853a0f247",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-alpha-devices-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-alpha-sessions-metadata.json": "ef4e88b7fa2588c24a460848c63951b82e781d077620dacfad9e467b3fffaa3b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-alpha-sessions-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-beta-devices-metadata.json": "df3783e837e371ac12da27915d616348c0c7f52ead820cce505d406bc7699a28",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-beta-sessions-metadata.json": "cbcfb6a52de52ea7c89e39cade66e05677dbd498522f7d2308ae47a8d88828fb",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-delete-viewer-owned-proof.json": "89c66a8a90d68aa1ff11b095a60acfd0e27f1bc492d8cf89ace2f823dac33a67",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-delete-viewer.json": "45fd443291d1a8b08e0fbd9ca5f82e1e832d9392b21a31fdc43682d169303cd5",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-rename-viewer-owned-proof.json": "80c7785b5d7eb53e00c55ed214eb3c7fc2017742d648c364a0c9c85ae9265968",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-rename-viewer.json": "039f730b188f08d79b3457aa925c1dc5d09b6dd4da82036ffdd9b1c27cba3d73",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-sibling-devices-metadata.json": "6cda9488ec8197e279297d312ca65e4c907c60226387ae15d0f072e56b3d8ca9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-sibling-devices-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-sibling-sessions-metadata.json": "c17145f5f02e29945d14aea123f60d461b4c6bec062bdb7fd56050eedba8798c",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-key-sibling-sessions-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-alpha-bounded-page.json": "c1f823042d7933fbe6e147227b2e90707c43267519e7422419cdf1c4270e9fab",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-alpha.json": "70fdf9c82331d23ff7a04c04947fbd820a715e33ca2bbd1dccb92d4513d2d437",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-beta-bounded-page.json": "857110372494d2b34f59debafe23e0765a2c2476f628b6d1e6f9e32e600ad38b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-beta.json": "e80614e4688ff52cae0a54bd6ef8cb9e09e94adb2c8400488289f4885d362018",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-sibling-bounded-page.json": "4d6034adc25b00e5bafa777e827b765d896c31f8d1487100e92fb2e5428ea816",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-after-client-sibling.json": "12ff220bdf88b25760babbbb402ffd7654b58385106da64f556ae4ebd29082bc",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-baseline-bounded-page.json": "5cc6687a77081ae5f7ae77991e88417ef640c3089c6b0673318d88207918a784",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-baseline.json": "948ba8f94cac4136e64e4bd1abb140c5645ff8034986482ae6fcccd0bbf7f960",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-client-server-info-0.json": "1fe8d0aaa086a8ba71ccbdf12c73f5a77cd218c14c3e17f0fbe39909bf01a075",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-client-server-info-1.json": "a5de287dafb4de8517069f48942859d2c05c2496af21e2d1a2905e51adb14925",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-client-server-keys-bounded-page.json": "6ba631f93d5c7e03ce2013f5c9ffaf78360495e760709683fbc37e7622ec163d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-client-server-keys.json": "5d56c1b9e707e5978c3013332930db7008be431be18f7401902b11be5836bbfe",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-created-alpha-bounded-page.json": "90293094f2eefcb240e4ed2859bb4244a07eec37954c7da57320785312742b6d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-created-alpha.json": "684a52d4cf39541f93e9b1a230a6f49ebdd4a33084c1561782ff05c8a780d62f",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-created-sibling-bounded-page.json": "aff70abf0f80c8046c54effdc06f6d5d8ad69f304a3a463658b610ee18610a91",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-created-sibling.json": "5b164c75059ffed5e0fd41780356f065e378324cd13a7336020978cec973dd2e",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-info-0.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-info-1.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-keys-bounded-page.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-keys.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-old-options-before-0.json": "e8633dfbb9cc5ddb9ca48fff2d37735c2fb593bdc96a8c60888ab045665b1ead",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-old-options-before-1.json": "7af8b42f6a304768f6b71e9b3b87cc0221483f5a5cd2604f5419f2c57af2362f",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-old-options-final-0.json": "b1778dadca9c0950ceedb377d9226230956004e8c683dbf5fb48d514ff2de360",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-old-options-final-1.json": "bfaccad36b5b6b24708f867884d77bca7571b5d79fe436a3cd602d2d479b45d8",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-public-before.json": "a4ecc14c068934fbcb3c657c7db598bc0bc2eb9d5bf66316be897354d534691c",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-control-protected.json": "c51d5ddadc2eb457d8e80b2bde23a176bad7ff366ef538ad58be9e24e8538427",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-devices-after-key-probes.json": "2ebfb6c05e95128e8c9645b433cdbd192484d883aa660086a5a47fa1089d329d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-devices-after.json": "17aa79f3f8852c589c597e09165e872b19d01e392e9b80f4763cbb2c536e61e0",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-info-after.json": "a768bc1acb1fb457c0f5cf3bbf3b67eb4174cd6d9bc7db4b07a3eef7cde940dd",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-ownership-bounded-page.json": "b42deb382b4a862abb3925cda05b83fba365fa287b942f3db913ef92677ffe8b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-ownership.json": "79f49499d44717b5d09d87bee9d9845a12a545ffd0afc84eb8bc83f3fbfcb786",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1-alpha.json": "ff926ec06c3d6bf27a166a1cf7eed540b2d56fd1efe71dc340fb7094e9b21e78",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1-beta.json": "48bd95320cdc996ec5aec6e2cffff7dca8aae370092582b83196a8a3de363e94",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1.json": "e9c04abfddc09bb2aeb8d90b66c8744c72406fe756d4cee11ee1506e2dd01522",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-2-sibling.json": "b223d68c5439ea3f4682f7b931d1459873d1747a7edda89211d91bad69cd1be4",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-2.json": "207f9b96797e0d8396c71792210859585fa91bee7e962edfd8f95136d4877530",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-keys-after-bounded-page.json": "b13b2f97dbd51e36d68f7df51d10a6dc3837b0b69ea12e5c86639f9b01f6a0c0",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-keys-after.json": "7eeedb713d8fa4c402c799d1af584be10720066d13ec9c86e46f7bd0a342df81",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-devices.json": "e57fa84e1809fdb6bfa976714f02287a44345c81d8724d627f98bc472730d474",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-info-0.json": "a752b59bfd3cfa14d24cab76d7eb7ed22e04c6461cf0b13cca4f35b27a1df2a1",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-info-1.json": "af5399d2dcd7ce3c2376cf3d3bcde3a0e49103873d588be3c71a35c5ebfcca6d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-keys-bounded-page.json": "0991e223c8483e2c1959c873b7306c2f0fbe8e297524efcdfc291243d823531d",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-keys.json": "0f726ccec01ed8e49b343aa3e08b8d9a005f299f52493eb06fc569e4159d3fdc",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-info-0.json": "b3c24c8c9a6f26a750e68f5d8740be4ed387671e7e010a9fc978f4f88a214a96",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-keys-bounded-page.json": "cfc38a92f16332cc554715202e860d448c91928aa341ca3543061b4e92d6e93a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-keys.json": "da43a0669f8f43bbc9616b9d6e1ee3157b63b223c29bb553b58cd2e085123ec9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-devices.json": "264a46c853470e37e3e01a623be36a198280110f90697d1d483266f5b86ffa82",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-delete-sessions-before-key-probes.json": "e891bbcbd0dc116b684aca7e5f1d5ef5e5c0a2f474ca26b6faaeba822eed035b",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-info-before-0.json": "9aafe3fdf32f872949c1213dcc51d1dfc4a718d399b06c30f6aab8bfa5dfbb5c",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-server-info-before-1.json": "5ea31e9c8d4c9605284d8e7cc9a053c80e21b35fbddd6131a73ee9ba8c055060",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-sessions-baseline.json": "e3b44a42860904f5cda415e4dd46e140f026ba519d73e835e49617ccf1b4716f",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-sessions-final-before-control-logout.json": "d5a94dc52c91731f86961ff3c15833bc6859fbbb014d1171cd34bc70c0c936b9",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-users-baseline.json": "746c609fc55a32e3793318bab037e309ba41f7b00bf9b4ad87bf6672a5207ff5",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-users-final.json": "0517478c203131d1878d9590c97ebac32e7b0e8fab0bd7108c690367c5b6f5b3",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-delete-info.json": "5413c89c6b04fd2306f74aa904544da31a4ca6b8b19f85b4d32728b9deb87aa4",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-delete-protected.json": "81be85e91b20539afb7d30cfd7bfa9d4d69d617177bd9abb51afda2b085addbb",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-rename-info.json": "ce1b8204c2ea2651a624639d0693b570ebd355f1dbe4a63213ccb6168e903124",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-rename-options.json": "71a358fe7ae1944a34081ff11e80f7534a459fbfeaf4f3de6c6996796e1d7205",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-delete-key-protected-alpha.json": "6d968dc2890221b6535fc8bc11ab5110fd49b7c2118497d8f8dcb5715a12cb8c",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-delete-key-protected-sibling.json": "85f589c606ba67aec500e8f96692fac14d6bedd01f34e7406ce54a1f6e18454a",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-login.json": "4f6f6acd727dc731a6ed43f1b0b9825d946e10eebc4f2acd22e1e344fc3dab36",
+      "/reference-keys-m5d-private/export/key-devices-fresh-m5e-2-attempt-2-viewer-protected-before.json": "a49974762a71d8bcafee39b50d5452209f8f4b61eb425348d07de7bb93a8a199",
+      "/reference-keys-m5d-private/private/baseline.json": "a0ba6c84eed5b741a37cf7e4955273ac66d35f7447c2b81d5ddc3bf80177705e",
+      "/reference-keys-m5d-private/private/cleanup-failure.txt": "4794ff42a0c4c81b966a8b87be9174b86dd913d6b5a96ba8e3c8d67209b92cd5",
+      "/reference-keys-m5d-private/private/control-login-response.json": "2926b7e5b67bb5dd118909a75d9b5e0b6ea63f55be5279d56121edb3e40f0381",
+      "/reference-keys-m5d-private/private/mutation-results.json": "e44c1e00ca941bdc8e1fa64ca15288cf41b0db40309c0ae680cfd7d51b0a5083",
+      "/reference-keys-m5d-private/private/mutations/001-intent.json": "cbe44ae21c84bbbb0491797f7debd32a06572a224bff8f8c8a3dad7829dd62cf",
+      "/reference-keys-m5d-private/private/mutations/002-intent.json": "62bab721a5b45398bf8a48059a6e7ff8e02e6596e6eb083b654b1f09a22b29cd",
+      "/reference-keys-m5d-private/private/mutations/003-intent.json": "bcdecc0a33713ba66cc3a1455cd1ebb3ccf96a8b515e81c6e39b2aee92c6ad9a",
+      "/reference-keys-m5d-private/private/mutations/004-intent.json": "9452cab37db225920fe97aa18dcdefbc7eceabf07446acb48ebf3b2e843630bb",
+      "/reference-keys-m5d-private/private/mutations/005-intent.json": "8db35729984ad5a29f6a7d86938230d9b3a8bcbb2d052327b34bf8d34b3a2387",
+      "/reference-keys-m5d-private/private/mutations/006-intent.json": "fa681b02f641ece4a678c0af4e4c388b7d5630f9833272a292be69e45e6ee630",
+      "/reference-keys-m5d-private/private/mutations/007-intent.json": "7308663be9664c130cbf7d4f29c9ab1e15a486b8aa2ce87aef25445b963987c0",
+      "/reference-keys-m5d-private/private/mutations/008-intent.json": "3435ed70445f69adae09f9598a55d82a863a7e9fa59485b8598023b45e0bb700",
+      "/reference-keys-m5d-private/private/mutations/009-intent.json": "f1663d34118aa8862f52bf348888800ac2f301cadc807a272475338b2c85a395",
+      "/reference-keys-m5d-private/private/mutations/010-intent.json": "9140b23bcb01a3c770ec5e2caadbff1350da3456b45d9f4666053f74dc03b205",
+      "/reference-keys-m5d-private/private/old-devices.json": "268b2793e6d44421890eb3ac434c1bed768aebb48cdf5304eb5e6000c8061397",
+      "/reference-keys-m5d-private/private/old-keys.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "/reference-keys-m5d-private/private/old-options.json": "07b7ac61e535100eb6d73fc64e2f9777db785f8e2cb778d91a8a04c6124cfc94",
+      "/reference-keys-m5d-private/private/old-users.json": "e26c7ae567aec22cd26366b16aa214a89a480c104bea0f96007b15d42a536300",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-delete-key-0.json": "3a9001a608fe70b9de376dbec814e3eafaac6cac3ca74567960e69e2cb5e8343",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-delete-key-1.json": "8bfa94e1613d4aeadf7fa41c8175425505d430e32b20c6355eb6070ce36c53ca",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-devices-discover.json": "8646c664f1d4d13de8f4d3a465fed3a372e049b35192aa72717d74af6e111488",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-fresh-server-info-0.json": "96d065adf148af950ca64bba406b384c719f429403a1fb4ffd6dea5cc222369c",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-invalid-control.json": "719cc50b97dd9e46516fadb60fa2553078f4d43d3c3e59e4d0ca85dd2e6b84b8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-invalid-viewer.json": "6f4fb1af730bd3670948bea68b92d8c4602c7012b98ef39720d930f2bb7e19d6",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1-alpha.json": "3ad2bf411f63b8339d3525baafe9df60ce139d56fcf7a28bad407685e56e30e3",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1-beta.json": "a5f02da3ca5a49d9d70f246d03e16d577fc19caca57fc990d5a145470d6c8131",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-1.json": "61cbd63012febc78b2ccd65889e71a400594575245d6c449193f5ef7aa74c344",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-2-sibling.json": "102e68f8981c6591532743d9f6a7d5990c60fecab18bd0b135eca320e23b1301",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-key-invalid-owned-key-2.json": "565f1599eb17385b98deb6829adcc1ca5edfa8bca46199f117ff5dd449ad0f33",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-discover-bounded-page.json": "5b05465fa6391bb5d04db6703437009cfa962f4fe2b37572710ab7a712320ea9",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-discover.json": "5817bb8c2552cf1c4376348a448069450ca92cb4a0f23eb4a19283a797e30db6",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-final-bounded-page.json": "05501324b3b496993d5c72bc73030df6872358a4124b124dccbf14f69b4384a8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-keys-final.json": "98e2459aa9aa20a7868655adfff2b23040ff862bac37a03b2ad351ce32f96995",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-cleanup-logout-control.json": "49cfc776bd19e60e7626692d45ce048d24cb2cd1e053696f41005c0a12ac6e2e",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-control-after-key-delete-protected.json": "b6fd9fe9648f6952d95aefa08ab367cf9ccb65b8c180ec1d1cd216add4f53671",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-control-login.json": "a57f257e5099233d0dc6825d2f1f500643e88e4d7d13b5059049b1e3b5733d60",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-control-protected-before.json": "139aa4886d58ee03c379e0717e1fc0850a4888e7e341baf25f114b69d467f591",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-create-key-alpha.json": "82b5d9c9734009c2568b9cfb4180af879971da356ad169a42bf5015eb7188063",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-create-key-sibling.json": "06caf83e59b95418d39920637587b2435f4c58a16cde595864ed3abfb405460e",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-delete-owned-server-device-owned-proof.json": "d041c0699ea996813af351e462e0dca060e369a5c555739601e5519325ee6f36",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-delete-owned-server-device.json": "a3aff275ace06c5a94a118c0fa3da5ed25241490afbe79371bb1e2f56fdb8951",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-alpha.json": "7c38237d6e8234e04de604e2d2eb92e2967a6f3d3fc2a4d61453db5a5c512845",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-beta.json": "b34795b791077f8de79f71ccdbed405a3a341cde27e29709b50f4df4ca3319c9",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-clients.json": "ee9f4f5cdd4bed21fa106a0aa6f63d9f553bf27045443a099a52fe0f2d8ed444",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-delete-viewer.json": "3cc80a9a7586aef269bda1c9aebcedd0e8db125c1f026d0c41961c15febd24d8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-sibling.json": "7c23d734ae1ebd3731b159ef7186050928ee5b1e2c827d53fd13579cbf134d04",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-key-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-after-viewer.json": "50b5aeeaeb0c5c53c31f1a07fa0d152c399987b8133b2bdcca29641052cda202",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-baseline.json": "734dff7f79c13869e414a2b7881689bb15268d7ab640a8d312d8696b88fe3b52",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-devices-final-before-control-logout.json": "5fc72f679c6c14b53ec90655d50215266dc01e267e32cea50d3a3d5229f0c702",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-header-delete-candidates.json": "59d327829408b3902aec75868c57b2d90e24a63815cc254138823bc24d2c39bf",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-alpha-devices-metadata.json": "188fd0cf29288db1ad4b335ca2135be2fac1023eb2e72ac6616ee787ed73d1f1",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-alpha-devices-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-alpha-sessions-metadata.json": "239460c2443e020cf41d01b5da548b6f9982dc1c50d61773571ab33e187cec8d",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-alpha-sessions-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-beta-devices-metadata.json": "5ae28befb60359fb6f9c141cfcc50de9883aacff93e24262e9921c12ddd0532f",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-beta-sessions-metadata.json": "1276c068946a04fc61bcf361b032c2722f74773ac272d25fa585d3bc007bc9f8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-delete-viewer-owned-proof.json": "a85a4db96330219fe3569891b207344904969505e2bdbda084f53ce056c193ab",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-delete-viewer.json": "2d2f374678dc11eddf433269e837268f5fdf39b2d5783f33ba87cd68726db057",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-rename-viewer-owned-proof.json": "85a364fcced62dac05e810b45429bebb59dfb7bbc6c9c6c61e51987c892b2fd4",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-rename-viewer.json": "7bb642e8c75d66ac6b77d2e4db41024a5370ecf64e9c52a0d3b7c6481c992bef",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-sibling-devices-metadata.json": "f4e2ca2ee21c0dbd24dd394439026fc2defb1d0c03291a8c4907b82f5da74479",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-sibling-devices-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-sibling-sessions-metadata.json": "1619c33186b841335ac0375016a4c5a4361a6fe585230e8454e3bb8218856261",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-key-sibling-sessions-token-only.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-alpha-bounded-page.json": "b6c95b566122fe48d4b2253d43971839f9a2424b108886c9f4765023fd3ce871",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-alpha.json": "66b5605fc414f9f8f9b220f2290447a41f6f4e7d31276907a0152d9b01e3940c",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-beta-bounded-page.json": "a3b333083c159408c09fad467b51fdce2f9a352c40ad6932141290a0fce7860d",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-beta.json": "2e521d328e1b2d2bfc6ade04eb81b974230ebf51ecb2fceb4de48d707b057d14",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-sibling-bounded-page.json": "062506d85497240370d4b7d9b03741c6f3be7d70cb1dd668df3c36b020f3a3ab",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-after-client-sibling.json": "093110f0d5350f03ab309d4934a166915397911fcb1fc5601250cde5d034f316",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-baseline-bounded-page.json": "6c10f90760427b2909173bbbf886cd0ac5305b14945fa1e053f1c51cc141cdb8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-baseline.json": "f1105a86f6f610ea79dfaee328928746955761a1c6da186f826ce7d25ed24afb",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-client-server-info-0.json": "73f6a52b2ba20da014b1bdbd3b5ec3c8b6a52c7c4a46bb121581d917fb0b29eb",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-client-server-info-1.json": "155458ec4314a972605e14c09734ff98646ea690ac54dbc75c21176235018b89",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-client-server-keys-bounded-page.json": "5d7f97d0592fd4d046117aa059c2b7ba40cdd9b778555081850175f9386e72e7",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-client-server-keys.json": "7a304c2d550023073b625cf5d8bdae4a7cbf2ffdbdaff9d4206bd16c8fc580eb",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-created-alpha-bounded-page.json": "8b51c8c957c56bcf0d24cb36a9f65b5fc00baf9d71a89be420c25dbccb96e904",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-created-alpha.json": "93823799add5eb276e537fe71a7d4baa4392c6e4ff5aa74bbc76eb8b50cad79a",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-created-sibling-bounded-page.json": "64a5bf2fe2114987cb06acbc7518fe7405d0b4c654cfc9d83f57bfede4a9bc8f",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-created-sibling.json": "dc98cc7343f609c2f5882afe49a9ba3c8783c03d99b1204d3b29adae564444d3",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-info-0.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-info-1.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-keys-bounded-page.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-keys-token-only-server-keys.json": "[REDACTED_SECRET]",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-old-options-before-0.json": "2412f39478cb71ea112cdf0498f2387e2a85d276bcc25e9549f1851bcc198efb",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-old-options-before-1.json": "9c581a8af9e6852ff20694a8ea4c12709bab6b495edd53eaa4283ba0259cb0f4",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-old-options-final-0.json": "4e0078ef4dc25d6d41273f8b225d2ea6ae22fe3073f8a1ddc4e3edfd7d315ebc",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-old-options-final-1.json": "0223a49ed13e454bbe8c042d4c84a7241c0110190d9cbd39f88aec523ff1ee1e",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-public-before.json": "a4ecc14c068934fbcb3c657c7db598bc0bc2eb9d5bf66316be897354d534691c",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-control-protected.json": "6a4e0efa295e2cb90a7d7a113733db2f046f815140a9e98a0bfaafa7fe453d60",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-devices-after-key-probes.json": "0e592a711fb1fb8f948f2f334c336d1efbfa5212a2b44c185c2015e6117c0de1",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-devices-after.json": "6542f110a9d59c165eee458c4c6f5b2e388ec40e85facf4980993714950c807f",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-info-after.json": "55dc0384cbf0d83ddd461fe4b1ba34cc1ed86973f74427e91eda2f520eedd4f6",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-ownership-bounded-page.json": "e016b035a3f4bbc4cdc7bf66e82fac7ecabbc7be21f4694c153619e9be5a7a09",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-ownership.json": "0ba946be7943fb0ea22fd0c99694c924ebb43cbed4a4427344c910de5a24090a",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1-alpha.json": "84a8df41a969ccef993dad2f735fb8309b143a8e6305bfd752f1e303d3a3e312",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1-beta.json": "fa9420a13acbe3de9bb5dc6c1bfd9b774da1c9d00f754c8fff927a955746d572",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-1.json": "362c51683928061f77038febda83da100e481eeb0868ec7b3035c921283ee8fa",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-2-sibling.json": "a31a42b68cf2c1ce7e79d4c37f5c7ddbf68b9f981b1834456b6fd227c2d2f438",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-key-protected-owned-key-2.json": "e2cbaabeda0b58addc13102b67bc1ffa8349f4e436b051c7e84c9870a502f2ce",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-keys-after-bounded-page.json": "68ac98502532191746d4438b7b0456cdbd2e108fc7ff0573275e4265dbcca19d",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-keys-after.json": "d76c318ab8e63afa75a831025a18338cb72b57e4e996e37d6c627130b2d41dab",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-devices.json": "1e97c1f7b23024107c3c74e7008a915e71d19275f6780e95e4ce2c40a88ac7c4",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-info-0.json": "4806a50f20e20ab30be3d07d2df9e170c084f212f3f20d887ad990327f250b77",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-info-1.json": "464422596f4764be83a715f3e72254ee10a28d93c2030b4d166e7543f9733b0d",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-keys-bounded-page.json": "5fd34ed3e4fac82b43b546fa11842c264b62c629eab6201a1384acc3afda97f7",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-refresh-keys.json": "2bd328f56a9eb1d550253e08918c1c98eba090c6e0534809c795125e99b443b8",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-info-0.json": "120ed532c55756f5e6038d93efd933af15bcdae8ae507a52522b8a405fe33627",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-keys-bounded-page.json": "d2924b991433a657b16cd1664d1a0062e7d8ca349c1c78733e436885ed1b3c8b",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-after-probes-keys.json": "978067395024a8db3e6cfe2b4b9382b320d74cd62686e5dcd9b8aca8992bfdf0",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-registration-devices.json": "625df4c30f1e0b632db7ef81ea2d1f7b0486fa232a721223bb85452c31160967",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-delete-sessions-before-key-probes.json": "1eb1274d30603acc0a6bb32a343c8dc73af8fcda0113f0afefa8e533674b7d93",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-info-before-0.json": "5971f4a48942fbe79f2d9060cbae94253a0ffde1b456583a3c2325094b384179",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-server-info-before-1.json": "528aa2b3cab2ec3048690a70cd59992ae7d8a581df12a02300fe9879a7279e06",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-sessions-baseline.json": "832d958b5bb4cf7ab1a6bd7086b7cf643b291daa11168149bcedf2bbcae73e64",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-sessions-final-before-control-logout.json": "16334cdab5c872bb9262f6ce5c39d0ceceb8e8b6f7cd3628312ebbcac67792b4",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-users-baseline.json": "705f53f30cd36ef311fba634fa6936dfaeaed167e4de3cb6b6d03b2937a687b7",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-users-final.json": "64418408446a7c08698075977af1381e46ca30ec1a44546267ce5ad6a3507a76",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-delete-info.json": "fbe0803b597d89873ced3d5209ba87211530e322ea53b3d2394e3d0c58534ecd",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-delete-protected.json": "b833c2e0e1ac5182f431de84434315f3a2ad618960ba7e22e0aac73cdcf6904e",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-rename-info.json": "c27b3cd845a7f125abeed18e4323e0f444ff4d165f371bb3faef6ee0cfb419ab",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-after-key-rename-options.json": "022760066dc32598ac484f2e4d702a47a3b2cd313162f4054a10b7458ad137ff",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-delete-key-protected-alpha.json": "e1bb45398ae1e1857d2f7c78310c44be12ece8a2587c2c4a204bbbbd6e5cd139",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-delete-key-protected-sibling.json": "92097dd9b9bf9258e812ef596c68219220bf85bf8c02c7ecabff56438cc68b0a",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-login.json": "9a1c34194e374e892f15cd7340fdf04c3f2b2baf7f8d3578613bf99117218cdc",
+      "/reference-keys-m5d-private/private/raw/key-devices-fresh-m5e-2-attempt-2-viewer-protected-before.json": "6aadf8c3c40787bf3611f9d2aac2013b74d348d3a39f6ebad05f37f6dcc9c0c1",
+      "/reference-keys-m5d-private/private/recorder-source.py": "39357835081eb068e7a089db7c011acc0e58c9c1676e2c1a0c6367313fd00e80",
+      "/reference-keys-m5d-private/private/server-creation-gate.json": "134c23c3750238e27a4f4a508c1b7f441f0644d9087bb2b5f5c1590d64b076e8",
+      "/reference-keys-m5d-private/private/viewer-login-response.json": "5e32e9acac36207cefb67052d7f0ebf891209eba551f74c4a9cfe174fcd9eade"
+    },
+    "directories": [
+      "/reference-keys-m5d-private/export",
+      "/reference-keys-m5d-private/private",
+      "/reference-keys-m5d-private/private/mutations",
+      "/reference-keys-m5d-private/private/raw"
+    ],
+    "totalBytes": 1754781
+  },
+  "httpRequestsIssuedByAnalyzer": 0,
+  "processLaunchesByAnalyzer": 0,
+  "serviceManagerQueriesByAnalyzer": 0,
+  "serviceConfigurationAndFinalTeardown": "Separate operator verification remains required; this analyzer reads process identity directly from procfs",
+  "freshServiceLeftAliveForOperatorTeardown": true,
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "recoveredAt": "2026-09-10T00:16:41.448928+00:00"
+  }
+}

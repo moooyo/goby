@@ -1,0 +1,27 @@
+{
+  "kind": "fresh-reference-teardown-evidence",
+  "referenceRun": 2,
+  "operatorSourceSha256": "1edd854b8f8a4a4aec2debe19f1bf8ddc0d9eb7cc384f1eafb28667d1e12b56b",
+  "cleanupRecordSha256": "b90a9edf4e2ab989bffcc145e71f70964d0183399ae46b89b0594617fb5d4f6d",
+  "at": "2026-09-10T00:16:56.908296+00:00",
+  "unit": "goby-emby-key-devices-fresh-m5e-20260910-02.service",
+  "programData": "/dev/shm/goby-emby-key-devices-fresh-m5e-20260910-02",
+  "dataRemoved": true,
+  "evidenceRetained": true,
+  "oldPreservationVerified": true,
+  "stop": {
+    "stopped": true,
+    "ownedProcessGone": true,
+    "unitMainPID": 0,
+    "finalActiveState": "inactive"
+  },
+  "dataBytesBeforeRemoval": 3809544,
+  "originalCorpusRecords": 1538,
+  "setupRecords": 17,
+  "completeSetupHTTP": 16,
+  "initialReadinessConnectionRefusals": 1,
+  "completeStudyHTTP": 109,
+  "independentRecoveryAudits": 1,
+  "finalCorpusRecords": 1665,
+  "corpusCountingNote": "This teardown document is a derived report, not an additional HTTP or corpus fixture."
+}

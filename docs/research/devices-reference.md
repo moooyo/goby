@@ -188,7 +188,12 @@ revision-checked management through its own cookie/CSRF contract while the
 compatibility adapter keeps the recorded method, ID, status, and option shapes.
 These are implementation recommendations, not delivered endpoints.
 
-Application-key device membership and deletion effects require a separate
-study. These captures do not execute media, inspect WebSocket termination,
-perform camera uploads, test Unicode/length limits, or establish full client
-interoperability. Goby's device-management implementation remains pending.
+The separate [application-key/device study](key-devices-reference.md) now
+records key-authorized ordinary-device management and shared server-device
+deletion that revokes two keys, with stale session projections distinguished
+from failed authentication. Header-specific hidden Info/deletion and key
+recreation after shared-device deletion remain unsampled. The ordinary-device
+captures above do not execute media, inspect WebSocket termination, perform
+camera uploads, test Unicode/length limits, or establish full client
+interoperability. Goby's device implementation is in progress; acceptance and
+deployment remain pending.

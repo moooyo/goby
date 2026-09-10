@@ -1,0 +1,114 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Auth/Keys",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null,
+    "ownedKeyClient": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "800"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 23:54:44 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Key Devices Fresh M5e 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "00475e7660c6499e9065f988188e7a57"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Id": 6,
+          "AccessToken": "[REDACTED_SECRET]",
+          "ReportedDeviceId": "00475e7660c6499e9065f988188e7a57",
+          "DeviceId": 5,
+          "AppName": "Goby Fresh Key Devices M5e 20260910 05 Sibling",
+          "AppVersion": "3.0.0",
+          "IpAddress": "127.0.0.1",
+          "DeviceName": "Key Sibling Device",
+          "UserId": 0,
+          "DateCreated": "2026-09-09T23:54:45.0000000Z",
+          "DateLastActivity": "2026-09-09T23:54:45.0000000Z",
+          "IsActive": true
+        },
+        {
+          "Id": 5,
+          "AccessToken": "[REDACTED_SECRET]",
+          "ReportedDeviceId": "00475e7660c6499e9065f988188e7a57",
+          "DeviceId": 5,
+          "AppName": "Goby Fresh Key Devices M5e 20260910 05 Alpha",
+          "AppVersion": "2.0.0",
+          "IpAddress": "127.0.0.1",
+          "DeviceName": "Key Sibling Device",
+          "UserId": 0,
+          "DateCreated": "2026-09-09T23:54:45.0000000Z",
+          "DateLastActivity": "2026-09-09T23:54:45.0000000Z",
+          "IsActive": true
+        }
+      ],
+      "TotalRecordCount": 0
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 800
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-key-devices-fresh-m5e-20260910-02.service",
+    "port": 18098,
+    "pid": 3496037,
+    "startTicks": "23097616",
+    "networkNamespace": "net:[4026532474]"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T23:54:45.101069+00:00"
+  }
+}

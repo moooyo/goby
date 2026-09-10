@@ -1,0 +1,161 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T23:50:18.527494+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Users/New",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "X-Emby-Token",
+        "[REDACTED_HEADER]"
+      ],
+      [
+        "Content-Type",
+        "application/json"
+      ]
+    ],
+    "body": {
+      "Name": "reference-key-devices-fresh-viewer-m5e-02"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "1888"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 23:50:18 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Key Devices Fresh M5e 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "00475e7660c6499e9065f988188e7a57"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "reference-key-devices-fresh-viewer-m5e-02",
+      "ServerId": "00475e7660c6499e9065f988188e7a57",
+      "Prefix": "R",
+      "DateCreated": "2026-09-09T23:50:18.5401961Z",
+      "Id": "85ba8f69bffb453f8e35eeafba834047",
+      "HasPassword": false,
+      "HasConfiguredPassword": false,
+      "Configuration": {
+        "PlayDefaultAudioTrack": true,
+        "DisplayMissingEpisodes": false,
+        "SubtitleMode": "Smart",
+        "OrderedViews": [],
+        "LatestItemsExcludes": [],
+        "MyMediaExcludes": [],
+        "HidePlayedInLatest": true,
+        "HidePlayedInMoreLikeThis": false,
+        "HidePlayedInSuggestions": false,
+        "RememberAudioSelections": true,
+        "RememberSubtitleSelections": true,
+        "EnableNextEpisodeAutoPlay": true,
+        "ResumeRewindSeconds": 0,
+        "IntroSkipMode": "ShowButton",
+        "EnableLocalPassword": false
+      },
+      "Policy": {
+        "IsAdministrator": false,
+        "IsHidden": false,
+        "IsHiddenRemotely": true,
+        "IsHiddenFromUnusedDevices": false,
+        "IsDisabled": false,
+        "LockedOutDate": 0,
+        "AllowTagOrRating": false,
+        "BlockedTags": [],
+        "IsTagBlockingModeInclusive": false,
+        "IncludeTags": [],
+        "EnableUserPreferenceAccess": true,
+        "AccessSchedules": [],
+        "BlockUnratedItems": [],
+        "EnableRemoteControlOfOtherUsers": false,
+        "EnableSharedDeviceControl": true,
+        "EnableRemoteAccess": true,
+        "EnableLiveTvManagement": true,
+        "EnableLiveTvAccess": true,
+        "EnableMediaPlayback": true,
+        "EnableAudioPlaybackTranscoding": true,
+        "EnableVideoPlaybackTranscoding": true,
+        "AutoRemoteQuality": 0,
+        "EnablePlaybackRemuxing": true,
+        "EnableContentDeletion": false,
+        "RestrictedFeatures": [],
+        "EnableContentDeletionFromFolders": [],
+        "EnableContentDownloading": true,
+        "EnableSubtitleDownloading": true,
+        "EnableSubtitleManagement": false,
+        "EnableSyncTranscoding": true,
+        "EnableMediaConversion": true,
+        "EnabledChannels": [],
+        "EnableAllChannels": true,
+        "EnabledFolders": [],
+        "EnableAllFolders": true,
+        "InvalidLoginAttemptCount": 0,
+        "EnablePublicSharing": true,
+        "RemoteClientBitrateLimit": 0,
+        "ExcludedSubFolders": [],
+        "SimultaneousStreamLimit": 0,
+        "EnabledDevices": [],
+        "EnableAllDevices": true,
+        "AllowCameraUpload": true,
+        "AllowSharingPersonalItems": false
+      }
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 1888,
+    "freshFixtureOnly": true
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Users/AuthenticateByName",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "Username": "reference-key-devices-fresh-viewer-m5e-02",
+      "Pw": ""
+    },
+    "bodyPresent": true,
+    "clientMetadata": {
+      "Client": "Goby Fresh Key Devices M5e 20260910 05 Viewer",
+      "DeviceId": "goby-key-devices-fresh-m5e-20260910-05-viewer",
+      "Device": "Key Devices Viewer",
+      "Version": "0.1.0"
+    },
+    "ownedKeyClient": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "2986"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Wed, 09 Sep 2026 23:54:44 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Key Devices Fresh M5e 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "00475e7660c6499e9065f988188e7a57"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "User": {
+        "Name": "reference-key-devices-fresh-viewer-m5e-02",
+        "ServerId": "00475e7660c6499e9065f988188e7a57",
+        "Prefix": "R",
+        "DateCreated": "2026-09-09T23:50:18.5401961Z",
+        "Id": "85ba8f69bffb453f8e35eeafba834047",
+        "HasPassword": false,
+        "HasConfiguredPassword": false,
+        "LastLoginDate": "2026-09-09T23:54:45.0599885Z",
+        "LastActivityDate": "2026-09-09T23:54:45.0604660Z",
+        "Configuration": {
+          "PlayDefaultAudioTrack": true,
+          "DisplayMissingEpisodes": false,
+          "SubtitleMode": "Smart",
+          "OrderedViews": [],
+          "LatestItemsExcludes": [],
+          "MyMediaExcludes": [],
+          "HidePlayedInLatest": true,
+          "HidePlayedInMoreLikeThis": false,
+          "HidePlayedInSuggestions": false,
+          "RememberAudioSelections": true,
+          "RememberSubtitleSelections": true,
+          "EnableNextEpisodeAutoPlay": true,
+          "ResumeRewindSeconds": 0,
+          "IntroSkipMode": "ShowButton",
+          "EnableLocalPassword": false
+        },
+        "Policy": {
+          "IsAdministrator": false,
+          "IsHidden": false,
+          "IsHiddenRemotely": true,
+          "IsHiddenFromUnusedDevices": false,
+          "IsDisabled": false,
+          "LockedOutDate": 0,
+          "AllowTagOrRating": false,
+          "BlockedTags": [],
+          "IsTagBlockingModeInclusive": false,
+          "IncludeTags": [],
+          "EnableUserPreferenceAccess": true,
+          "AccessSchedules": [],
+          "BlockUnratedItems": [],
+          "EnableRemoteControlOfOtherUsers": false,
+          "EnableSharedDeviceControl": true,
+          "EnableRemoteAccess": true,
+          "EnableLiveTvManagement": true,
+          "EnableLiveTvAccess": true,
+          "EnableMediaPlayback": true,
+          "EnableAudioPlaybackTranscoding": true,
+          "EnableVideoPlaybackTranscoding": true,
+          "AutoRemoteQuality": 0,
+          "EnablePlaybackRemuxing": true,
+          "EnableContentDeletion": false,
+          "RestrictedFeatures": [],
+          "EnableContentDeletionFromFolders": [],
+          "EnableContentDownloading": true,
+          "EnableSubtitleDownloading": true,
+          "EnableSubtitleManagement": false,
+          "EnableSyncTranscoding": true,
+          "EnableMediaConversion": true,
+          "EnabledChannels": [],
+          "EnableAllChannels": true,
+          "EnabledFolders": [],
+          "EnableAllFolders": true,
+          "InvalidLoginAttemptCount": 0,
+          "EnablePublicSharing": true,
+          "RemoteClientBitrateLimit": 0,
+          "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+          "ExcludedSubFolders": [],
+          "SimultaneousStreamLimit": 0,
+          "EnabledDevices": [],
+          "EnableAllDevices": true,
+          "AllowCameraUpload": true,
+          "AllowSharingPersonalItems": false
+        }
+      },
+      "SessionInfo": {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "a689966f480e00459cba371e1bbe13e0",
+        "ServerId": "00475e7660c6499e9065f988188e7a57",
+        "UserId": "85ba8f69bffb453f8e35eeafba834047",
+        "UserName": "reference-key-devices-fresh-viewer-m5e-02",
+        "Client": "Goby Fresh Key Devices M5e 20260910 05 Viewer",
+        "LastActivityDate": "2026-09-09T23:54:45.0604660Z",
+        "DeviceName": "Key Devices Viewer",
+        "InternalDeviceId": 4,
+        "DeviceId": "goby-key-devices-fresh-m5e-20260910-05-viewer",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      "AccessToken": "[REDACTED_SECRET]",
+      "ServerId": "00475e7660c6499e9065f988188e7a57"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 2986
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-key-devices-fresh-m5e-20260910-02.service",
+    "port": 18098,
+    "pid": 3496037,
+    "startTicks": "23097616",
+    "networkNamespace": "net:[4026532474]"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T23:54:45.062020+00:00"
+  }
+}

@@ -1,0 +1,318 @@
+{
+  "kind": "capture-audit-observation",
+  "referencePID": 3131777,
+  "captureFailureType": "RuntimeError",
+  "cleanupPassed": true,
+  "checks": {
+    "oldDeviceStructuralFieldsUnchanged": true,
+    "oldDeviceActivityUnchanged": true,
+    "oldDeviceOptionsUnchanged": true,
+    "onlyControlOwnedDeviceRetained": true,
+    "oldHiddenDeviceInfoAndOptionsUnchanged": true,
+    "noUnexplainedNewDevices": true,
+    "oldUserMembershipUnchanged": true,
+    "oldUsersUnchangedExceptAttributedParticipantActivity": true,
+    "allAcknowledgedKeyContextsInvalid": true,
+    "oldKeysUnchangedAndOwnedKeysRemoved": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "allAttemptedLoginsAcknowledgedOrRejected": true,
+    "referenceProcessUnchanged": true,
+    "oldRecordsSourcesPrivateFilesUnchanged": true,
+    "newRedactionAuditPassed": true
+  },
+  "cleanupErrors": [],
+  "preservedOldRecords": 1476,
+  "preservedOldRecordFiles": 2952,
+  "preservedOldMediaFiles": 240,
+  "preservedOldPrivateFiles": 1958,
+  "oldDeviceCount": 19,
+  "oldDeviceOptionsAudited": 19,
+  "oldDeviceActivityDifferences": [],
+  "protectedHiddenDeviceIds": [
+    "15"
+  ],
+  "previousAuditedDeviceIds": [
+    "1",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "16",
+    "17",
+    "2",
+    "20",
+    "21",
+    "25",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+  ],
+  "attributedUserActivityDifferences": [
+    {
+      "userId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "field": "LastActivityDate",
+      "before": "2026-09-09T22:46:12.7225040Z",
+      "after": "2026-09-09T22:46:12.7476335Z",
+      "attribution": "Owned fresh login and requests"
+    }
+  ],
+  "ownedLoginAttempts": [
+    "control"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200
+  },
+  "ownedLoginLogoutStatuses": {
+    "control": 204
+  },
+  "ownedLoginInvalidityProofs": {
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedDeviceObservations": [
+    {
+      "label": "devices-baseline",
+      "totalRecordCount": 0,
+      "itemsCount": 20,
+      "completeKnownMembershipRequired": false,
+      "reportedTotalMatchesItems": false,
+      "membershipProof": null,
+      "owned": [
+        {
+          "Name": "Key Devices Control",
+          "Id": "30",
+          "ReportedDeviceId": "goby-key-devices-m5e-20260910-03-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Key Devices M5e 20260910 03 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:46:12.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "cleanup-devices-discover",
+      "totalRecordCount": 0,
+      "itemsCount": 20,
+      "completeKnownMembershipRequired": false,
+      "reportedTotalMatchesItems": false,
+      "membershipProof": null,
+      "owned": [
+        {
+          "Name": "Key Devices Control",
+          "Id": "30",
+          "ReportedDeviceId": "goby-key-devices-m5e-20260910-03-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Key Devices M5e 20260910 03 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:46:12.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "label": "devices-final-before-control-logout",
+      "totalRecordCount": 0,
+      "itemsCount": 20,
+      "completeKnownMembershipRequired": false,
+      "reportedTotalMatchesItems": false,
+      "membershipProof": null,
+      "owned": [
+        {
+          "Name": "Key Devices Control",
+          "Id": "30",
+          "ReportedDeviceId": "goby-key-devices-m5e-20260910-03-control",
+          "LastUserName": "reference-admin",
+          "AppName": "Goby Key Devices M5e 20260910 03 Control",
+          "AppVersion": "0.1.0",
+          "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+          "DateLastActivity": "2026-09-09T22:46:12.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ]
+    }
+  ],
+  "ownedDeviceWriteProofs": [],
+  "ownedMutations": [
+    {
+      "label": "control-login",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "[REDACTED_SECRET]",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "Username": "reference-admin",
+          "Pw": "[REDACTED_SECRET]"
+        },
+        "bodyPresent": true,
+        "clientMetadata": {
+          "Client": "Goby Key Devices M5e 20260910 03 Control",
+          "DeviceId": "goby-key-devices-m5e-20260910-03-control",
+          "Device": "Key Devices Control",
+          "Version": "0.1.0"
+        },
+        "ownedKeyClient": null
+      },
+      "responseStatus": 200,
+      "acknowledgedLogin": true,
+      "transportFailure": null
+    },
+    {
+      "label": "cleanup-logout-control",
+      "request": {
+        "method": "POST",
+        "path": "/emby/Sessions/Logout",
+        "headers": {
+          "Accept": "application/json",
+          "X-Emby-Token": "[REDACTED_SECRET]"
+        },
+        "body": null,
+        "bodyPresent": false,
+        "clientMetadata": null,
+        "ownedKeyClient": null
+      },
+      "responseStatus": 204,
+      "acknowledgedLogin": false,
+      "transportFailure": null
+    }
+  ],
+  "keyCreationStatuses": {},
+  "ownedKeysAcknowledged": 0,
+  "keyRowsObservations": [
+    {
+      "label": "keys-baseline",
+      "totalRecordCount": 0,
+      "items": [],
+      "completeMembershipProof": {
+        "pagedTotalRecordCount": 0,
+        "pageItemCount": 0,
+        "uniqueCredentialMembershipEqual": true
+      }
+    },
+    {
+      "label": "cleanup-keys-discover",
+      "totalRecordCount": 0,
+      "items": [],
+      "completeMembershipProof": {
+        "pagedTotalRecordCount": 0,
+        "pageItemCount": 0,
+        "uniqueCredentialMembershipEqual": true
+      }
+    },
+    {
+      "label": "cleanup-keys-final",
+      "totalRecordCount": 0,
+      "items": [],
+      "completeMembershipProof": {
+        "pagedTotalRecordCount": 0,
+        "pageItemCount": 0,
+        "uniqueCredentialMembershipEqual": true
+      }
+    }
+  ],
+  "keyDeviceMappingObservations": [],
+  "keyProtectedRouteObservations": [],
+  "keyInvalidityProofs": {},
+  "keyDeleteAcknowledgements": [],
+  "headerDeviceDeletion": {
+    "verified": false,
+    "deleteAttempted": false,
+    "reason": "Not reached"
+  },
+  "serverCreationGate": {
+    "evaluated": true,
+    "allowed": false,
+    "blockedReason": "Reported server identity was not absent with HTTP 404 before key creation",
+    "reportedServerId": "ec69ef1cf84140e88489c30326529308",
+    "completeDeviceBaseline": true,
+    "completeKeyBaseline": true,
+    "baselineListedServerDevices": [],
+    "baselineServerInfo": {
+      "ec69ef1cf84140e88489c30326529308": {
+        "status": 200,
+        "body": {
+          "Name": "Goby Emby Reference",
+          "Id": "15",
+          "ReportedDeviceId": "ec69ef1cf84140e88489c30326529308",
+          "AppName": "Goby Keys Scope M5d 20260910 01 Alpha",
+          "AppVersion": "4.9.5.0",
+          "DateLastActivity": "2026-09-09T20:56:11.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      },
+      "15": {
+        "status": 200,
+        "body": {
+          "Name": "Goby Emby Reference",
+          "Id": "15",
+          "ReportedDeviceId": "ec69ef1cf84140e88489c30326529308",
+          "AppName": "Goby Keys Scope M5d 20260910 01 Alpha",
+          "AppVersion": "4.9.5.0",
+          "DateLastActivity": "2026-09-09T20:56:11.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      }
+    },
+    "readOnlyServerBaselineBranch": true,
+    "applicationKeyTrafficBeforeGate": 0
+  },
+  "serverDeviceDeletion": {
+    "verified": false,
+    "deleteAttempted": false,
+    "reason": "Server creation gate blocked: Reported server identity was not absent with HTTP 404 before key creation",
+    "retainedMappedServerDevices": [],
+    "retentionDoesNotProveDeletionCompatibility": false
+  },
+  "retainedOwnedHistory": [
+    {
+      "Name": "Key Devices Control",
+      "Id": "30",
+      "ReportedDeviceId": "goby-key-devices-m5e-20260910-03-control",
+      "LastUserName": "reference-admin",
+      "AppName": "Goby Key Devices M5e 20260910 03 Control",
+      "AppVersion": "0.1.0",
+      "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "DateLastActivity": "2026-09-09T22:46:12.0000000Z",
+      "IpAddress": "127.0.0.1"
+    }
+  ],
+  "retainedHistoryObservation": "Device list before final control logout; the owned credential is then independently probed",
+  "existingCredentialHTTPRequests": 0,
+  "sourceWrites": 0,
+  "cameraUploadRequests": 0,
+  "encoderRequests": 0,
+  "userPolicyWrites": 0,
+  "httpAttempts": 61,
+  "incompleteHTTP": 0,
+  "wireBytes": 67399,
+  "wireByteBudgetCharged": 67399,
+  "elapsedSeconds": 0.431,
+  "limits": {
+    "oldDevices": 128,
+    "httpAttempts": 480,
+    "mainHTTPAttempts": 300,
+    "responseBytes": 262144,
+    "totalResponseBytes": 33554432,
+    "phaseSeconds": 360,
+    "socketTimeoutSeconds": 5,
+    "requestDeadlineSeconds": 15
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-09T22:46:12.939501+00:00"
+  }
+}
