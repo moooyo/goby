@@ -1,0 +1,64 @@
+{
+  "status": "failed",
+  "groups": [
+    {
+      "name": "foundation",
+      "exit": 0,
+      "topLevel": {
+        "pass": 16
+      },
+      "failures": [],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/recoverycontrol",
+          "Action": "pass",
+          "Elapsed": 3.667
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "aa393777c00843b07e21d2fb009cafaee68b9f2392c2e52fa26855a4d320a3e1"
+    },
+    {
+      "name": "database",
+      "exit": 1,
+      "topLevel": {
+        "pass": 13,
+        "fail": 3
+      },
+      "failures": [
+        {
+          "package": "github.com/moooyo/goby/internal/server",
+          "test": "TestHTTPAdminBackupNilManagerStillRegistersEveryOperation"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/server",
+          "test": "TestHTTPAdminBackupDispatchesOnlyCompleteTypedRequests"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/server",
+          "test": "TestHTTPAdminBackupRejectsUnknownQueriesAndDuplicateOrEncodedHeaders"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/server",
+          "test": null
+        }
+      ],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/server",
+          "Action": "fail",
+          "Elapsed": 8.305
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "574abc341c95fbdd83c8464b1ce343ee9831bf6472b08b02b0b1a71039026653"
+    }
+  ],
+  "protectedServicesAndHBAUnchanged": true,
+  "sourceInputsSha256": "75c6cf090e153004f2141924eb5605619acc11ee2ac5c002b7bbbd25defd2987",
+  "memoryMaxMiB": 1536,
+  "memorySwapMaxBytes": 0,
+  "cpuQuotaPercent": 150
+}

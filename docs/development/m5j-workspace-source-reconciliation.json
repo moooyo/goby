@@ -1,0 +1,11 @@
+{
+  "archive": "/opt/goby-test/exec-work-m5j/m5j-full-source-attempt-3.tar.gz",
+  "archiveSha256": "6797eac70a413acbad4e8c113216d6349f9e64843b655a3a9a65824626b7ab24",
+  "changedInputs": [],
+  "frozenSource": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-30",
+  "scope": "The final workspace Go, module, migration, compiled catalog, test, reference and selected acceptance inputs exactly match final source30.",
+  "sourceFiles": 3118,
+  "sourceManifestSha256": "3b2315164a58c15e2f80cc581ef5f19dfe6682bc2e7d962f994d40063305f1e0",
+  "status": "passed",
+  "workspace": "D:/Code/goby"
+}

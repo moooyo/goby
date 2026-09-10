@@ -69,13 +69,23 @@ func eventArguments(event Event) ([]any, error) {
 		event.Revision < 0 || event.Count < 0 || len(event.ChangedFields) > MaxChangedFields {
 		return nil, ErrInvalidInput
 	}
-	terminal := event.Action == ActionScanFinished || event.Action == ActionTaskFinished
-	if terminal {
+	switch event.Action {
+	case ActionScanFinished, ActionTaskFinished, ActionBackupFinished:
 		if event.State != StateCompleted && event.State != StateFailed && event.State != StateCancelled && event.State != StateInterrupted {
 			return nil, ErrInvalidInput
 		}
-	} else if event.State != "" {
-		return nil, ErrInvalidInput
+	case ActionRestoreApplied:
+		if event.State != StateCompleted {
+			return nil, ErrInvalidInput
+		}
+	case ActionRestoreFailed:
+		if event.State != StateFailed {
+			return nil, ErrInvalidInput
+		}
+	default:
+		if event.State != "" {
+			return nil, ErrInvalidInput
+		}
 	}
 	fields := make([]string, 0, len(event.ChangedFields))
 	for _, field := range event.ChangedFields {
@@ -148,6 +158,12 @@ func actionResource(action Action) ResourceKind {
 		return ResourceTaskRun
 	case ActionTaskScheduleUpdated:
 		return ResourceTask
+	case ActionBackupRequested, ActionBackupCancelRequested, ActionBackupFinished, ActionBackupImported,
+		ActionBackupDeleteRequested, ActionBackupDeleted, ActionBackupDownloaded:
+		return ResourceBackup
+	case ActionRestoreRequested, ActionRestorePlanned, ActionRestoreApplyRequested, ActionRestoreApplied,
+		ActionRestoreRollbackRequested, ActionRestoreCancelRequested, ActionRestoreFailed:
+		return ResourceRestore
 	default:
 		return ""
 	}

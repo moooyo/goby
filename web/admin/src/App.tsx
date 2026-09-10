@@ -10,6 +10,7 @@ import KeyRounded from '@mui/icons-material/KeyRounded';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
+import BackupOutlined from '@mui/icons-material/BackupOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -29,9 +30,10 @@ const DevicesPage = lazy(() => import('./DevicesPage').then((module) => ({ defau
 const ApiKeysPage = lazy(() => import('./ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })));
 const SettingsPage = lazy(() => import('./SettingsPage').then((module) => ({ default: module.SettingsPage })));
 const ObservabilityPage = lazy(() => import('./ObservabilityPage').then((module) => ({ default: module.ObservabilityPage })));
+const BackupsPage = lazy(() => import('./BackupsPage').then((module) => ({ default: module.BackupsPage })));
 const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -40,7 +42,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -63,6 +65,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/api-keys')) return 'api-keys';
   if (path.endsWith('/settings')) return 'settings';
   if (path.endsWith('/observability')) return 'observability';
+  if (path.endsWith('/backups')) return 'backups';
   return 'overview';
 }
 
@@ -87,6 +90,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
           { id: 'api-keys' as const, label: 'API keys', icon: KeyRounded },
           { id: 'observability' as const, label: 'Activity & logs', icon: HistoryRounded },
+          { id: 'backups' as const, label: 'Backups & recovery', icon: BackupOutlined },
           { id: 'settings' as const, label: 'Settings', icon: SettingsOutlined },
         ].map(({ id, label, icon: Icon }) => (
           <ListItemButton key={id} component="a" href={pageURL(id)} selected={selectedPage === id} aria-current={selectedPage === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
@@ -201,6 +205,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'settings' && <SettingsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'observability' && <ObservabilityPage />}
+            {page === 'backups' && <BackupsPage onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>
@@ -212,7 +217,9 @@ export function App() {
   const [state, setState] = useState<AppState>({ mode: 'loading' });
   const [revision, setRevision] = useState(0);
 
-  useEffect(() => onSessionExpired(() => setState({ mode: 'login', notice: 'Your session has changed or expired. Sign in again to continue.' })), []);
+  useEffect(() => onSessionExpired(() => setState({ mode: 'login', notice: pageFromLocation() === 'backups'
+    ? 'Your session has changed or expired. If a restore or rollback was in progress, sign in with the restored account passwords and check its job status. A disconnected session does not confirm completion.'
+    : 'Your session has changed or expired. Sign in again to continue.' })), []);
 
   useEffect(() => {
     const controller = new AbortController();

@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "groups": [
+    {
+      "name": "foundation",
+      "exit": 0,
+      "topLevel": {
+        "pass": 58
+      },
+      "failures": [],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/backupstore",
+          "Action": "pass",
+          "Elapsed": 2.919
+        },
+        {
+          "Package": "github.com/moooyo/goby/internal/config",
+          "Action": "pass",
+          "Elapsed": 1.071
+        },
+        {
+          "Package": "github.com/moooyo/goby/internal/recovery",
+          "Action": "pass",
+          "Elapsed": 6.781
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "678b1a03fec48ad414ef1c47cadf365bf43dfb0d6e2495031db4117c6c340de1"
+    },
+    {
+      "name": "database",
+      "exit": 0,
+      "topLevel": {
+        "pass": 21
+      },
+      "failures": [],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/identity",
+          "Action": "pass",
+          "Elapsed": 11.066
+        },
+        {
+          "Package": "github.com/moooyo/goby/internal/database",
+          "Action": "pass",
+          "Elapsed": 2.123
+        },
+        {
+          "Package": "github.com/moooyo/goby/internal/activity",
+          "Action": "pass",
+          "Elapsed": 1.517
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "a4f4ff54e38fa9e1cfb8d8703550a408d65c01a3b25a5413c43970dc9dcc45ce"
+    }
+  ],
+  "protectedServicesAndHBAUnchanged": true,
+  "sourceInputsSha256": "cec4152b06d443e85587588933b7d29d3e8e6066ab6845734800595bef06dc8b",
+  "memoryMaxMiB": 1536,
+  "memorySwapMaxBytes": 0,
+  "cpuQuotaPercent": 150
+}

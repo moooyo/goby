@@ -1,0 +1,29 @@
+{
+  "status": "failed",
+  "stage": "post_install_service_configuration_check",
+  "failure": "The original service configuration differs",
+  "cause": "systemctl emits repeated EnvironmentFiles properties; the original parser retained only the last value",
+  "originalOperatorSha256": "610be9cba0910b7edcac1d576be3b3dca7d325954a79e12e9e684872574bf154",
+  "candidateManifestSha256": "8d6c9f55107682329fe94ec70cbb2f8e32af5609a0c23107d38ecbcfb2f4593b",
+  "backupDirectory": "/opt/goby-test/backups/m5j-20260910",
+  "backupPhase": "backup-complete",
+  "isolatedRestoreRehearsal": {
+    "status": "passed",
+    "schemaVersion": 22,
+    "all29TablesRawExact": true,
+    "temporaryDatabaseRemoved": true,
+    "mainDatabaseRestoreExecuted": false
+  },
+  "installedCandidate": {
+    "active": true,
+    "mainPID": 3750313,
+    "startTicks": "28911319",
+    "binarySha256": "a4abba7b289ceb74ca0916484d714dc6baa1b3c5230b06964b89d363a64e8b81"
+  },
+  "automaticRecovery": {
+    "rejectedBeforeServiceStopAndDatabaseRestore": true,
+    "sameConfigurationParserFailure": true
+  },
+  "referencePID": 3131777,
+  "scope": "Retained failed deployment attempt. Installation was not yet published as accepted; a separately verified forward finalization must recheck every boundary without restoring an old database."
+}

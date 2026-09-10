@@ -1,0 +1,21 @@
+{
+  "archive": "/opt/goby-test/exec-work-m5j/m5j-index-source.tar",
+  "archiveSha256": "04966f25e527941f0de4c021fa769dabe449d479d0584522e3bd133e8708724f",
+  "exactInputs": 3117,
+  "gitTree": "d5db912a9241fa5932687391239f67032cf3cf93",
+  "lineEndingNormalizations": [
+    {
+      "gitSha256": "61aa14d075560b7d912d8fc812c71e299a5fcd78c36ce59cf6d5eab64154367f",
+      "onlyCRLFNormalization": true,
+      "path": "scripts/test-env/verify-backuppg.py",
+      "pythonASTIdentical": true,
+      "snapshotSha256": "4addb7ce4ae047cb0ceb70500a61954b093961e704ed40f23783a077ab5b1530"
+    }
+  ],
+  "productionInputsExact": true,
+  "scope": "All compiled Go, production UI, tests and reference bytes match the staged Git tree. Git normalizes only the PostgreSQL verifier line endings; its Python syntax tree is identical.",
+  "selectedInputs": 3118,
+  "source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-30",
+  "sourceManifestSha256": "3b2315164a58c15e2f80cc581ef5f19dfe6682bc2e7d962f994d40063305f1e0",
+  "status": "passed"
+}

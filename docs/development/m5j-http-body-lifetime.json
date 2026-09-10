@@ -1,0 +1,42 @@
+{
+  "checks": {
+    "cancellationAndIdleDeadlineRetained": true,
+    "frozenSourceUnchanged": true,
+    "normalEOFDoesNotExpireConnection": true,
+    "oldCleanupReproduced": true,
+    "oneExtraByteLimitRetained": true
+  },
+  "fixedProductionSha256": "bbe9c6de6b3254aaa80fe1cb0a0b8ccaa9412a822db8716356d02a5bbf8a7a32",
+  "oldProductionSha256": "255ec83c67cb0625f213ccc1f6b1068c3f9a1684b9c59d31514cac101519f76d",
+  "results": {
+    "fixed": {
+      "exitCode": 0,
+      "logPath": "/opt/goby-test/verify-m5j-http-eof-attempt-1/fixed.jsonl",
+      "logSha256": "b3f771330bf6a17f3afa082433f9d3582ffe4c725e6fb11487bb616e4161e529",
+      "tests": {
+        "fail": [],
+        "pass": [
+          "TestAdminBackupUploadCancellationAndIdleDeadlineCloseBeforeDraining",
+          "TestAdminBackupCompletedBodyNeverExpiresConnectionReadDeadline",
+          "TestAdminBackupImportReadsAtMostOneByteBeyondItsLimit"
+        ],
+        "skip": []
+      }
+    },
+    "old": {
+      "exitCode": 1,
+      "logPath": "/opt/goby-test/verify-m5j-http-eof-attempt-1/old.jsonl",
+      "logSha256": "72b8213da930b475b1d7bcf3c7126f02a39c23b11b52d6fa0d9579f72222c615",
+      "tests": {
+        "fail": [
+          "TestAdminBackupCompletedBodyNeverExpiresConnectionReadDeadline"
+        ],
+        "pass": [],
+        "skip": []
+      }
+    }
+  },
+  "source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-30",
+  "sourceManifestSha256": "3b2315164a58c15e2f80cc581ef5f19dfe6682bc2e7d962f994d40063305f1e0",
+  "status": "passed"
+}

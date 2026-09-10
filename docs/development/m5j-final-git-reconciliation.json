@@ -1,0 +1,57 @@
+{
+  "archive": "/opt/goby-test/exec-work-m5j/m5j-closeout-tree.tar",
+  "archiveSha256": "7f1f62ee946ad8704c5eb8ef78a0931093d7d308ba2e4d63fbf9d1f46d9506e2",
+  "compiledGoAndInstalledSourcesExact": 576,
+  "documentation": {
+    "files": [
+      "README.md",
+      "docs/README.md",
+      "docs/api/backups.md",
+      "docs/api/implemented.md",
+      "docs/development/backup-recovery.md",
+      "docs/development/handoff.md",
+      "docs/development/progress.md"
+    ],
+    "missingTargets": [],
+    "noPendingCloseoutFields": true,
+    "relativeLinksChecked": 395
+  },
+  "gitTree": "1a00a4d16fe6b71bdb4fd55c9d729321b4e30bda",
+  "lineEndingNormalizations": [
+    {
+      "gitSha256": "61aa14d075560b7d912d8fc812c71e299a5fcd78c36ce59cf6d5eab64154367f",
+      "onlyCRLFNormalization": true,
+      "path": "scripts/test-env/verify-backuppg.py",
+      "pythonASTIdentical": true,
+      "snapshotSha256": "4addb7ce4ae047cb0ceb70500a61954b093961e704ed40f23783a077ab5b1530"
+    }
+  ],
+  "postSnapshotOperatorChanges": [
+    {
+      "gitSha256": "c74433ad09ff8b70e0b0c9fb4db42ce3f17f57efd6cb56938c890be62588514b",
+      "path": "scripts/test-env/deploy-backup-recovery.py",
+      "pythonASTMatchesVerifiedSource": true,
+      "snapshotSha256": "610be9cba0910b7edcac1d576be3b3dca7d325954a79e12e9e684872574bf154",
+      "verifiedOperatorSha256": "c74433ad09ff8b70e0b0c9fb4db42ce3f17f57efd6cb56938c890be62588514b"
+    },
+    {
+      "gitSha256": "15d6e6f50ecefefae33056defb7b1d1559446065bba8c89d5f4047b1a735e5fc",
+      "path": "scripts/test-env/test-deploy-backup-recovery.py",
+      "pythonASTMatchesVerifiedSource": true,
+      "snapshotSha256": "429f63f330494c35b8f097b49570315cb080c5821eb918c376152ad736065de5",
+      "verifiedOperatorSha256": "15d6e6f50ecefefae33056defb7b1d1559446065bba8c89d5f4047b1a735e5fc"
+    }
+  ],
+  "productionWebInputsExact": 40,
+  "remediationReport": {
+    "path": "/opt/goby-test/exec-work-m5j/deployment-remediation-attempt-1/guard-report.json",
+    "sha256": "4f408d61b8c7479c5b3e9f26467a583c02d8f7185888dbfd206aeeb2fdb45b45",
+    "tests": 54
+  },
+  "scope": "The staged production source exactly matches the accepted source30 binary and UI. Only the separately verified deployment operator and guards changed afterward; the original PostgreSQL verifier has syntax-identical Git line-ending normalization.",
+  "selectedGitInputsSha256": "3eb620e3807f3974b50a853d66fc123a183e5fdd0fd60c9a219fd7ff328bb9dd",
+  "selectedInputs": 3118,
+  "source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-30",
+  "sourceManifestSha256": "3b2315164a58c15e2f80cc581ef5f19dfe6682bc2e7d962f994d40063305f1e0",
+  "status": "passed"
+}

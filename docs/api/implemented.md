@@ -4,6 +4,13 @@ This file tracks implementation separately from the immutable upstream research 
 
 The routes below exist in source. Authentication, permission and ingestion workflows have previously passed Goby's own PostgreSQL-backed HTTP tests on Linux. Selected behavior has also been corrected using [real Emby 4.9.5.0 captures](../research/reference-server.md). Per-increment verification evidence is recorded in the [implementation progress](../development/progress.md) and its linked reports. This is not yet a complete differential compatibility run or a real third-party-player pass.
 
+The M5j native backup/recovery routes are accepted and deployed at schema
+23/probe 6, PID 3750313. The final 1605-test race suite, UI a6, complete
+browser/process/offline-CLI journey, protected deployment and main-service
+backup/download workflow passed. See the
+[backup/recovery engineering record](../development/backup-recovery.md).
+These native routes do not implement the Emby BackupRestore plugin contract.
+
 The official reference inventory contains 2462 sanitized JSON records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one initial connection-refused readiness record, and one audit; all 76 capture HTTP exchanges are complete. Its [report](../development/m5i-observability-reference.json) is reference evidence, not product acceptance. The earlier [4K encoding-width study](../research/encoding-width-reference.md) added 61 records to the preceding 2305. The [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 records after the [read study](../research/configuration-reference.md) brought the corpus to 2051. The [fresh ScheduledTasks mutation study](../research/scheduled-tasks-mutation-reference.md) reached the earlier 1965 checkpoint with 171 records. The earlier [task read study](../research/scheduled-tasks-reference.md), [key-device](../research/key-devices-reference.md), [ordinary user-device](../research/devices-reference.md), [key playback](../research/api-key-playback-reference.md), [client-context](../research/api-key-context-reference.md), and [target-scope](../research/api-key-scope-reference.md) evidence remain intact. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
 Reference total configuration returns administrator `200` with 60 fields and ordinary-viewer `200` with exactly `{}`. Named encoding/devices/DLNA reads return administrator `200`, viewer `403`, and anonymous `401`; an unknown name returns administrator `500`. The earlier fresh mutation study observes a partial update returning `500` after a visible in-process name change, and three key-authorized baseline no-op writes returning `204`. These observations do not establish restart persistence or changed-value key writes. M5h's five [ConfigurationService operations](configuration.md) implement only `ServerName`, read-only `IsStartupWizardCompleted`, and `encoding.TranscodingMaxWidth`; the full 60/17-field reference objects remain unsupported. [Native settings](settings.md) exposes four name modes, independent Encoding state, and six reset selectors.
@@ -27,7 +34,7 @@ passed **1380 top-level tests across 17 tested packages**, with zero skips or
 race findings. [Browser/restarts](../development/m5i-observability-browser.json),
 [protected deployment](../development/m5i-deployment-evidence.json), and the
 [main-service workflow](../development/m5i-deployed-observability.json) passed.
-Current deployment is M5i/schema 22/probe 6, PID 3668655. See the
+That earlier M5i deployment used schema 22/probe 6 and PID 3668655. See the
 [activity/log contract](observability.md) and [implementation evidence](../development/observability.md).
 
 | Method and route | Request | Response / access |
@@ -79,6 +86,37 @@ Current deployment is M5i/schema 22/probe 6, PID 3668655. See the
 | `POST /admin/v1/jobs/{id}/cancel` | Cookie and CSRF | `202 {Job}`; cancel remaining scan work, retain already indexed items |
 | `GET /admin/v1/storage/roots` | Administrator cookie | `{Items: [{Path, Available}], Configured}`; `Available` includes directory read permission |
 
+### Native backup/recovery candidate
+
+These M5j routes exist in source but are not yet deployed. They require a live
+native administrator cookie; mutations additionally require same-origin and
+CSRF checks. Emby login tokens and application keys do not authorize them.
+The [backup API contract](backups.md) defines the complete DTO, strict input,
+revision, idempotency and error rules. None of these routes is an Emby
+BackupRestore/plugin alias or an upstream-compatible archive implementation.
+
+| Method and route | Request | Response / access |
+| --- | --- | --- |
+| `GET /admin/v1/backups/status` | Cookie; no query | `200 StatusView`; backup/restore availability, limits, storage, active operation and generation/rollback state |
+| `GET /admin/v1/backups` | Cookie; optional `StartIndex`, `Limit` | `200 BackupPage`; default 25/max 100 |
+| `GET /admin/v1/backups/{id}` | Cookie; no query | `200 {Backup}` |
+| `POST /admin/v1/backups` | Cookie, CSRF, exact `{RequestId, Passphrase}` | `202 {Operation}`; durable encrypted backup creation |
+| `POST /admin/v1/backups/import` | Cookie, CSRF, age bytes as `application/octet-stream`, `X-Backup-Request-Id` | `202 {Operation}`; imported bytes remain unverified until restore-plan validation |
+| `GET /admin/v1/backups/{id}/file`; `HEAD` on the same route | Cookie and download origin check; no query; optional Range | Immutable encrypted attachment with length and SHA-256 ETag; bounded current-authority checks |
+| `DELETE /admin/v1/backups/{id}` | Cookie, CSRF, exact `{RequestId, SHA256}` | `202 {Operation}`; durable deletion of the selected object |
+| `GET /admin/v1/backup-operations` | Cookie; optional `StartIndex`, `Limit` | `200 OperationPage`; default 25/max 100 |
+| `GET /admin/v1/backup-operations/{id}` | Cookie; no query | `200 {Operation}` |
+| `POST /admin/v1/backup-operations/{id}/cancel` | Cookie, CSRF, exact `{Revision}` | `202 {Operation}`; only when cancellable |
+| `POST /admin/v1/restores/plans` | Cookie, CSRF, exact `{RequestId, BackupId, SHA256, Passphrase, RestoreDefaults, ReplaceRollback, GenerationRevision}` | `202 {Operation}`; validate and stage in an independently owned inactive slot |
+| `POST /admin/v1/restores/{id}/apply` | Cookie, CSRF, exact `{Revision, GenerationRevision}` | `202 {Operation}`; drain and perform a guarded generation transition |
+| `POST /admin/v1/restores/rollback` | Cookie, CSRF, exact `{RequestId, GenerationRevision}` | `202 {Operation}`; select only an explicitly retained, verified rollback copy |
+
+An admission `202` is not completion or activation acceptance. Final operation
+state and the subsequent authenticated generation establish the result.
+Passphrases are never returned or persisted in the operation journal.
+
+### Existing administrator contracts
+
 The native list/create/session user shape remains `{Id, Name, IsAdministrator, IsDisabled, HasPassword, CreatedAt}`. Managed detail adds `Revision` as an opaque positive decimal string and the six supported library/playback `Policy` fields. Updates reject missing, null, duplicate, unknown, or wrongly typed fields; stale revisions and attempts to remove the last enabled administrator return 409 without changing state. Saved policy is distinct from effective administrator access and configured conversion capability. See [native user management](admin-users.md) for the complete contract; Emby user mutation routes and account deletion remain separate work.
 
 [Native application-key management](application-keys.md) returns exactly `Id`, `AppName`, `CreatedAt`, `LastUsedAt`, `RevokedAt`, `CreatedBy`, `IPAddress`, and `Status` in safe rows. IDs are decimal strings; `LastUsedAt`, `RevokedAt`, and `CreatedBy` are nullable. POST bodies are strict UTF-8 JSON objects limited to 4 KiB. App names and literal search terms are limited to 256 UTF-8 bytes without controls. Native list limits are 1–200, default 50, with newest-first deterministic ordering and actual counts even for empty pages. Key handlers disable caching; secrets appear only in native creation and explicit reveal responses. Creation/reveal require the persistent `GOBY_API_KEY_MASTER_KEY_FILE` vault, with safe lazy creation and Linux ownership/mode checks; unavailable secrets return `503` while safe metadata and revocation remain usable. See [operations and recovery](../development/application-keys.md).
@@ -87,8 +125,10 @@ The native list/create/session user shape remains `{Id, Name, IsAdministrator, I
 
 [Native Tasks](tasks.md) currently exposes the real `library.scan` executor. Definition, run, trigger, and child IDs are opaque 32-character hexadecimal strings; revisions and native tick values are decimal strings. Strict JSON bodies are bounded to 32 KiB, rules to 32, and history/child pages to 200 rows. A nonempty visible-ASCII `RequestId` has a durable per-definition receipt, including when requests coalesce; retries after completion return the original run. Schedules support interval, daily, weekly and startup rules, named timezones, preview, and explicit maximum-runtime limits. Empty schedules preserve manual starts. Definitions/runs remain separate from per-library scan jobs, and no consumer player is added. See [ownership, timing and recovery](../development/tasks.md).
 
-[Native activity and logs](observability.md) read separate stores. Twenty-one
-activity actions are inserted in their owning business transactions, with fixed
+[Native activity and logs](observability.md) read separate stores. The deployed
+M5i increment defines twenty-one transactional activity actions; the M5j
+candidate adds backup/recovery activity within its separate acceptance scope.
+Actions are inserted in their owning business transactions, with fixed
 descriptions and changed-field names rather than request values. Default
 activity retention is 30 days with one bounded batch per minute. Diagnostic
 files use a service-owned private Linux directory, per-event sanitization,

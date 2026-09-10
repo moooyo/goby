@@ -15,6 +15,7 @@ import (
 )
 
 func TestRunSanitizesBootstrapFailuresAndDefaultLogging(t *testing.T) {
+	_ = cliTestConfig(t)
 	previousLogger := slog.Default()
 	previousOutput, previousFlags := log.Writer(), log.Flags()
 	t.Cleanup(func() {

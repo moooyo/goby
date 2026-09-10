@@ -1,0 +1,323 @@
+{
+  "catalog_after_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "catalog_before_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "cgroup": {
+    "CPUQuotaPerSecUSec": "1.500000s",
+    "Description": "goby-backuppg-pair-m5j-v1:20260910_143925_c156a76b",
+    "KillMode": "control-group",
+    "MainPID": "3726403",
+    "MemoryMax": "1610612736",
+    "MemorySwapMax": "0"
+  },
+  "checks": {
+    "exact_temporary_hba": true,
+    "independent_low_privilege_pair": true,
+    "prepared_source_binary_assets_provenance": true,
+    "scratch_cluster_identity": true,
+    "source_and_artifact_bytes_unchanged_after_runtime": true
+  },
+  "cleanup": {
+    "failed_private_diagnostics_retained": true,
+    "goby_backup_source_20260910143925c156a76b_removed": true,
+    "goby_backup_source_r_20260910143925c156a76b_removed": true,
+    "goby_backup_target_20260910143925c156a76b_removed": true,
+    "goby_backup_target_r_20260910143925c156a76b_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "owned_cgroup_stopped": true,
+    "preexisting_database_and_role_catalog_unchanged": true,
+    "private_diagnostic_projection_recorded": true,
+    "private_environment_removed": true,
+    "private_runtime_removed": true,
+    "protected_services_unchanged": true,
+    "synthetic_database_credentials_invalidated": true
+  },
+  "databases": [
+    {
+      "database": "goby_backup_source_20260910143925c156a76b",
+      "oid": 7197267,
+      "role": "goby_backup_source_r_20260910143925c156a76b"
+    },
+    {
+      "database": "goby_backup_target_20260910143925c156a76b",
+      "oid": 7197269,
+      "role": "goby_backup_target_r_20260910143925c156a76b"
+    }
+  ],
+  "error": "Real runtime acceptance failed; only the safe worker projection is published.",
+  "failure": {
+    "class": "browser_phase_failed",
+    "stage": "browser_create_download_import"
+  },
+  "hba_after_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_before_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "marker": "goby-backuppg-pair-m5j-v1",
+  "mode": "runtime",
+  "private_diagnostics": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-runtime-20260910_143925_c156a76b/private",
+    "files": [
+      {
+        "bytes": 13105,
+        "name": "application.log",
+        "sha256": "f508d3ef93262a64afc2fca4b31ebebbca2620f39a445bd34de0877e0c272895"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0001.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 145,
+        "name": "command-0001.stdout",
+        "sha256": "99a13fb49c4f4eb38521b9cb5a7bc636ef70472166054eae25a81da2306ecf4d"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0002.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 32,
+        "name": "command-0002.stdout",
+        "sha256": "f554cfdb85411c2bb1d503df3f53dfbad1f753eb8271938833166a5d26a7547c"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0003.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 1210,
+        "name": "command-0003.stdout",
+        "sha256": "c6ccdc17095177303c767ded3f4e19cf9abb55e1f5bbed509cd32307e31a36ac"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0004.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 52,
+        "name": "command-0004.stdout",
+        "sha256": "c17aaa4acdd8af615c0fed300b18aedcacb2c476bb224ffc28099c76c0ef9c59"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0005.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 690,
+        "name": "command-0005.stdout",
+        "sha256": "e9aa61db2f3583ccd312852cddbd23f0c0e3fa79c4c5eaf52e5516d49780692a"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0006.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 665,
+        "name": "command-0006.stdout",
+        "sha256": "7e922ec9699ae21cf993c0239f60536a7637653e243e4fd6a8bb9616ba795374"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0007.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 134,
+        "name": "command-0007.stdout",
+        "sha256": "b003771f8806f828e2daa6e6579fd8855b5c51a6935db4637a43e0da3e158720"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0008.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 33,
+        "name": "command-0008.stdout",
+        "sha256": "bb2fbed1cca7e8ca5c2bfd770c0ebae95439bb308d9054aa6c5f6717e49721b9"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0009.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 134,
+        "name": "command-0009.stdout",
+        "sha256": "b003771f8806f828e2daa6e6579fd8855b5c51a6935db4637a43e0da3e158720"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0010.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0010.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0011.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 134,
+        "name": "command-0011.stdout",
+        "sha256": "b003771f8806f828e2daa6e6579fd8855b5c51a6935db4637a43e0da3e158720"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0012.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 16718,
+        "name": "command-0012.stdout",
+        "sha256": "605b30e173ebfa1da07a711f5dc8bc0a1149f1716da231351820d9819e6f0e8e"
+      },
+      {
+        "bytes": 6684,
+        "name": "create-browser.json",
+        "sha256": "1accb34c69e2852fa9e25eee7e34888bb1b75bec2f31d7afb798e18e3aa3bb1f"
+      },
+      {
+        "bytes": 0,
+        "name": "create-browser.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 13105,
+        "name": "runtime-log-000.jsonl",
+        "sha256": "f508d3ef93262a64afc2fca4b31ebebbca2620f39a445bd34de0877e0c272895"
+      },
+      {
+        "bytes": 0,
+        "name": "unit.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "name": "unit.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 1679,
+        "name": "worker-exception.txt",
+        "sha256": "603e751df4b9c8fdfda80615410ffa34afccc613414e7f5cd3ac9f363f90a6a9"
+      },
+      {
+        "bytes": 0,
+        "name": "worker.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "retained": true
+  },
+  "protected_services_after": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "protected_services_before": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "provenance": {
+    "artifact_digest_origin": "operator_supplied_build_evidence",
+    "assets_archive_sha256": "98b3cbc869bf9369464b8cdbb961b845118197999be6f9c934599507ab0f6cee",
+    "binary_sha256": "d51a2424be86111eae7d98bc7d85d103b76cdda84f81f78133e8bc73db3daec6",
+    "binary_source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-26",
+    "binary_source_manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8",
+    "binary_source_members_preserved_in_runtime_source": true,
+    "browser_inputs_sha256": {
+      "e2e/backup-recovery-runtime.spec.ts": "a1d0417ae49fc7914eddec19904464727efa15a5f0aea11a999897fd89de35a2",
+      "package-lock.json": "3f68111eb71283903ac90550e340dd261a3bba33eb4ff2f65f21dd41ab0c9307",
+      "package.json": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b",
+      "playwright.config.ts": "e270b700e65d18a8f5120d6db27850cfd55682551881fd0d103efc6cb44dba44",
+      "tsconfig.json": "1342b5d0a98665ea205c058674f28bdad45714b4d514a685eafa03ff795e931e"
+    },
+    "core_operator_sha256": "4addb7ce4ae047cb0ceb70500a61954b093961e704ed40f23783a077ab5b1530",
+    "source_manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8",
+    "wrapper_sha256": "4e29e3b1dc0555eed3f807754c72160591cee9b2d3bc3360e9360ae28e82d332"
+  },
+  "run_id": "20260910_143925_c156a76b",
+  "runtime": {
+    "application_pids": [
+      3726417
+    ],
+    "browser": {
+      "create": {
+        "checks": {
+          "NativeBrowserPasswordLogin": true
+        },
+        "exit_code": 1,
+        "expected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "unexpected": 1
+      }
+    },
+    "checks": {
+      "native_seed_with_retained_accounts_keys_library_history_and_abandoned_work": true,
+      "separate_private_state_backup_and_operation_roots": true
+    },
+    "failure": {
+      "class": "browser_phase_failed",
+      "stage": "browser_create_download_import"
+    },
+    "generations": {},
+    "http_port": 55433,
+    "marker": "goby-backup-recovery-runtime-v1",
+    "run_id": "20260910_143925_c156a76b",
+    "safe_failure_message": "A real browser phase did not pass every required assertion without skips.",
+    "stage": "browser_create_download_import",
+    "status": "failed",
+    "tools": {
+      "ffmpeg": "9.0.1",
+      "go": "1.27.1",
+      "playwright": "1.63.0",
+      "postgresql": "17"
+    }
+  },
+  "runtime_marker": "goby-backup-recovery-runtime-v1",
+  "runtime_progress": {
+    "marker": "goby-backup-recovery-runtime-v1",
+    "run_id": "20260910_143925_c156a76b",
+    "stage": "browser_create_download_import",
+    "status": "failed"
+  },
+  "scenario": "native_binary_browser_offline_recovery",
+  "source": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-26",
+    "file_count": 3118,
+    "manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8"
+  },
+  "stage": "runtime_worker",
+  "status": "failed",
+  "unit_exit": 1
+}

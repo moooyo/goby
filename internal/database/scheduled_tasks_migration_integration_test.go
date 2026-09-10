@@ -156,8 +156,8 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 		if err := database.Migrate(ctx, pool); err != nil {
 			t.Fatalf("scheduled-task migration attempt %d: %v", attempt, err)
 		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
-			t.Fatalf("scheduled-task full migration schema = %d, want 22: %v", version, err)
+		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 23 {
+			t.Fatalf("scheduled-task full migration schema = %d, want 23: %v", version, err)
 		}
 		var name string
 		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 19").Scan(&name); err != nil || name != "0019_scheduled_tasks.sql" {

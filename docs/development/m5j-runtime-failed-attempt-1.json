@@ -1,0 +1,251 @@
+{
+  "catalog_after_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "catalog_before_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "cgroup": {
+    "CPUQuotaPerSecUSec": "1.500000s",
+    "Description": "goby-backuppg-pair-m5j-v1:20260910_143803_27f3ce75",
+    "KillMode": "control-group",
+    "MainPID": "3726187",
+    "MemoryMax": "1610612736",
+    "MemorySwapMax": "0"
+  },
+  "checks": {
+    "exact_temporary_hba": true,
+    "independent_low_privilege_pair": true,
+    "prepared_source_binary_assets_provenance": true,
+    "scratch_cluster_identity": true,
+    "source_and_artifact_bytes_unchanged_after_runtime": true
+  },
+  "cleanup": {
+    "failed_private_diagnostics_retained": true,
+    "goby_backup_source_2026091014380327f3ce75_removed": true,
+    "goby_backup_source_r_2026091014380327f3ce75_removed": true,
+    "goby_backup_target_2026091014380327f3ce75_removed": true,
+    "goby_backup_target_r_2026091014380327f3ce75_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "owned_cgroup_stopped": true,
+    "preexisting_database_and_role_catalog_unchanged": true,
+    "private_diagnostic_projection_recorded": true,
+    "private_environment_removed": true,
+    "private_runtime_removed": true,
+    "protected_services_unchanged": true,
+    "synthetic_database_credentials_invalidated": true
+  },
+  "databases": [
+    {
+      "database": "goby_backup_source_2026091014380327f3ce75",
+      "oid": 7196416,
+      "role": "goby_backup_source_r_2026091014380327f3ce75"
+    },
+    {
+      "database": "goby_backup_target_2026091014380327f3ce75",
+      "oid": 7196418,
+      "role": "goby_backup_target_r_2026091014380327f3ce75"
+    }
+  ],
+  "error": "Real runtime acceptance failed; only the safe worker projection is published.",
+  "failure": {
+    "class": "acceptance_assertion_failed",
+    "stage": "seed_native_fixture"
+  },
+  "hba_after_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_before_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "marker": "goby-backuppg-pair-m5j-v1",
+  "mode": "runtime",
+  "private_diagnostics": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-runtime-20260910_143803_27f3ce75/private",
+    "files": [
+      {
+        "bytes": 3555,
+        "name": "application.log",
+        "sha256": "4263c08f1647f8b6f62035123408db6ec5f68106594475230e43d6605fa31101"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0001.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 145,
+        "name": "command-0001.stdout",
+        "sha256": "5b67e9a40773f2c7f2a603a543b3c3d37558fde885c8ecc9007e6a30b5aca413"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0002.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 32,
+        "name": "command-0002.stdout",
+        "sha256": "f554cfdb85411c2bb1d503df3f53dfbad1f753eb8271938833166a5d26a7547c"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0003.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 1210,
+        "name": "command-0003.stdout",
+        "sha256": "c6ccdc17095177303c767ded3f4e19cf9abb55e1f5bbed509cd32307e31a36ac"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0004.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 52,
+        "name": "command-0004.stdout",
+        "sha256": "c17aaa4acdd8af615c0fed300b18aedcacb2c476bb224ffc28099c76c0ef9c59"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0005.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 690,
+        "name": "command-0005.stdout",
+        "sha256": "e9aa61db2f3583ccd312852cddbd23f0c0e3fa79c4c5eaf52e5516d49780692a"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0006.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 665,
+        "name": "command-0006.stdout",
+        "sha256": "7e922ec9699ae21cf993c0239f60536a7637653e243e4fd6a8bb9616ba795374"
+      },
+      {
+        "bytes": 0,
+        "name": "command-0007.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 136,
+        "name": "command-0007.stdout",
+        "sha256": "7859c88e051b09ed09fa009267f1838d2a7a1cacf4b647398c3b869eeeeff7f7"
+      },
+      {
+        "bytes": 3555,
+        "name": "runtime-log-000.jsonl",
+        "sha256": "4263c08f1647f8b6f62035123408db6ec5f68106594475230e43d6605fa31101"
+      },
+      {
+        "bytes": 0,
+        "name": "unit.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "name": "unit.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 1156,
+        "name": "worker-exception.txt",
+        "sha256": "0ef5404ce21d760c1341eb681218cccf5f8e063aecc72833e273d688fb66bb5b"
+      },
+      {
+        "bytes": 0,
+        "name": "worker.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "retained": true
+  },
+  "protected_services_after": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "protected_services_before": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "provenance": {
+    "artifact_digest_origin": "operator_supplied_build_evidence",
+    "assets_archive_sha256": "98b3cbc869bf9369464b8cdbb961b845118197999be6f9c934599507ab0f6cee",
+    "binary_sha256": "d51a2424be86111eae7d98bc7d85d103b76cdda84f81f78133e8bc73db3daec6",
+    "binary_source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-26",
+    "binary_source_manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8",
+    "binary_source_members_preserved_in_runtime_source": true,
+    "browser_inputs_sha256": {
+      "e2e/backup-recovery-runtime.spec.ts": "a1d0417ae49fc7914eddec19904464727efa15a5f0aea11a999897fd89de35a2",
+      "package-lock.json": "3f68111eb71283903ac90550e340dd261a3bba33eb4ff2f65f21dd41ab0c9307",
+      "package.json": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b",
+      "playwright.config.ts": "e270b700e65d18a8f5120d6db27850cfd55682551881fd0d103efc6cb44dba44",
+      "tsconfig.json": "1342b5d0a98665ea205c058674f28bdad45714b4d514a685eafa03ff795e931e"
+    },
+    "core_operator_sha256": "4addb7ce4ae047cb0ceb70500a61954b093961e704ed40f23783a077ab5b1530",
+    "source_manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8",
+    "wrapper_sha256": "5bff653bda7a76ffd00e8ef682ef7fb4ab96206375d4d7527026fc8b3db99756"
+  },
+  "run_id": "20260910_143803_27f3ce75",
+  "runtime": {
+    "application_pids": [
+      3726200
+    ],
+    "browser": {},
+    "checks": {
+      "separate_private_state_backup_and_operation_roots": true
+    },
+    "failure": {
+      "class": "acceptance_assertion_failed",
+      "stage": "seed_native_fixture"
+    },
+    "generations": {},
+    "http_port": 34527,
+    "marker": "goby-backup-recovery-runtime-v1",
+    "run_id": "20260910_143803_27f3ce75",
+    "safe_failure_message": "The independently owned database identity changed.",
+    "stage": "seed_native_fixture",
+    "status": "failed",
+    "tools": {
+      "ffmpeg": "9.0.1",
+      "go": "1.27.1",
+      "playwright": "1.63.0",
+      "postgresql": "17"
+    }
+  },
+  "runtime_marker": "goby-backup-recovery-runtime-v1",
+  "runtime_progress": {
+    "marker": "goby-backup-recovery-runtime-v1",
+    "run_id": "20260910_143803_27f3ce75",
+    "stage": "seed_native_fixture",
+    "status": "failed"
+  },
+  "scenario": "native_binary_browser_offline_recovery",
+  "source": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-26",
+    "file_count": 3118,
+    "manifest_sha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8"
+  },
+  "stage": "runtime_worker",
+  "status": "failed",
+  "unit_exit": 1
+}

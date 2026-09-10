@@ -408,6 +408,9 @@ func TestSnapshotCloseWaitsForCancellationReaderSlotRelease(t *testing.T) {
 
 func TestStoreCloseWaitsForConcurrentSnapshotRelease(t *testing.T) {
 	directory := t.TempDir()
+	if err := os.Chmod(directory, 0700); err != nil {
+		t.Fatal(err)
+	}
 	synctest.Test(t, func(t *testing.T) {
 		store, err := Open(Config{Directory: directory})
 		if err != nil {

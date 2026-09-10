@@ -32,6 +32,7 @@ type Config struct {
 	APIKeyMasterKeyFile   string
 	Transcoding           TranscodingConfig
 	Diagnostics           diagnostics.Config
+	Recovery              RecoveryConfig
 	ActivityRetentionDays int
 }
 
@@ -76,6 +77,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	c.Recovery, err = loadRecovery()
+	if err != nil {
+		return Config{}, err
+	}
 	if err := c.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -110,6 +115,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("GOBY_API_KEY_MASTER_KEY_FILE must name a bounded persistent key file")
 	}
 	if err := validateObservability(c.Diagnostics.WithDefaults(), c.ActivityRetentionDays); err != nil {
+		return err
+	}
+	if err := c.validateRecovery(); err != nil {
 		return err
 	}
 	return c.Transcoding.Validate()

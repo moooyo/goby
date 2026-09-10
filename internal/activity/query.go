@@ -152,6 +152,34 @@ func description(action Action, state State) (string, string) {
 		return terminalDescription("Task", state)
 	case ActionTaskScheduleUpdated:
 		return "Task schedule updated", "A task schedule was replaced."
+	case ActionBackupRequested:
+		return "Backup requested", "A backup was durably queued."
+	case ActionBackupCancelRequested:
+		return "Backup cancellation requested", "A backup cancellation request was persisted."
+	case ActionBackupFinished:
+		return terminalDescription("Backup", state)
+	case ActionBackupImported:
+		return "Backup imported", "A backup was imported into the managed backup inventory."
+	case ActionBackupDeleteRequested:
+		return "Backup deletion requested", "A backup deletion request was persisted."
+	case ActionBackupDeleted:
+		return "Backup deleted", "A backup was removed from the managed backup inventory."
+	case ActionBackupDownloaded:
+		return "Backup download prepared", "A backup was prepared for an authorized download."
+	case ActionRestoreRequested:
+		return "Restore requested", "A restore planning request was persisted."
+	case ActionRestorePlanned:
+		return "Restore planned", "A restore plan was prepared."
+	case ActionRestoreApplyRequested:
+		return "Restore application requested", "A restore application request was persisted."
+	case ActionRestoreApplied:
+		return "Restore applied", "A restored database was activated."
+	case ActionRestoreRollbackRequested:
+		return "Restore rollback requested", "A restore rollback request was persisted."
+	case ActionRestoreCancelRequested:
+		return "Restore cancellation requested", "A restore cancellation request was persisted."
+	case ActionRestoreFailed:
+		return "Restore failed", "A restore attempt failed."
 	default:
 		return "Activity recorded", "A server activity was recorded."
 	}

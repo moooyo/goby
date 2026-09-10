@@ -23,10 +23,14 @@ const actionLabels: Record<ActivityAction, string> = {
   'scan.requested': 'Scan requested', 'scan.cancel_requested': 'Scan cancellation requested', 'scan.finished': 'Scan finished',
   'metadata.updated': 'Metadata updated', 'settings.updated': 'Settings updated',
   'task.admitted': 'Task admitted', 'task.cancel_requested': 'Task cancellation requested', 'task.finished': 'Task finished', 'task.schedule_updated': 'Task schedule updated',
+  'backup.requested': 'Backup requested', 'backup.cancel_requested': 'Backup cancellation requested', 'backup.finished': 'Backup finished',
+  'backup.imported': 'Backup imported', 'backup.delete_requested': 'Backup deletion requested', 'backup.deleted': 'Backup deleted', 'backup.downloaded': 'Backup download prepared',
+  'restore.requested': 'Restore requested', 'restore.planned': 'Restore planned', 'restore.apply_requested': 'Restore application requested',
+  'restore.applied': 'Restore applied', 'restore.rollback_requested': 'Restore rollback requested', 'restore.cancel_requested': 'Restore cancellation requested', 'restore.failed': 'Restore failed',
 };
 const resourceLabels: Record<ActivityResourceKind, string> = {
   user: 'User', session: 'Session', application_key: 'API key', device: 'Device', library: 'Library', scan: 'Scan',
-  item: 'Item', settings: 'Settings', task: 'Task', task_run: 'Task run',
+  item: 'Item', settings: 'Settings', task: 'Task', task_run: 'Task run', backup: 'Backup', restore: 'Restore',
 };
 const sourceLabels = { native: 'Native', emby: 'Emby', system: 'System' };
 const pageSizes = [25, 50, 100, 200];

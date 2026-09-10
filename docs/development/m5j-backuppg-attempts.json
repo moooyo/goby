@@ -1,0 +1,298 @@
+{
+  "marker": "goby-backuppg-attempts-m5j-v1",
+  "reports": [
+    {
+      "cleanup": {
+        "goby_backup_source_20260910113530a5eb9508_removed": false,
+        "goby_backup_source_r_20260910113530a5eb9508_removed": false,
+        "goby_backup_target_20260910113530a5eb9508_removed": false,
+        "goby_backup_target_r_20260910113530a5eb9508_removed": false,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": false,
+        "protected_services_unchanged": true
+      },
+      "cleanup_supplement": {
+        "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_113530_a5eb9508/cleanup-supplement-1.json",
+        "proof": {
+          "checks": {
+            "catalog_exact": true,
+            "goby_backup_source_20260910113530a5eb9508_removed": true,
+            "goby_backup_target_20260910113530a5eb9508_removed": true,
+            "hba_exact": true,
+            "protected_services_exact": true
+          },
+          "marker": "goby-backuppg-pair-m5j-v1",
+          "reason": "PostgreSQL OID JSON values are strings; exact integer-normalized ownership comparison.",
+          "run_id": "20260910_113530_a5eb9508",
+          "status": "passed"
+        },
+        "sha256": "b089ff59f7198a0189e825945a98721c265fa9579f9406eeaa4ca874f28448dd"
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "442a21214a75f18cf97fb4318232ff79a9a06eca4618e315474d111300343dba",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_113530_a5eb9508/report.json",
+      "sha256": "278e340ae4eb229ad5356c143236cfc964e3e186bc45660a03d837b048c16dee",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-3",
+        "file_count": 62,
+        "manifest_sha256": "062f94018bed9b9deb4109e3e29f269cb396dcfb0ae2ef0d2b9fd059a3c7a151"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_20260910113723ee712293_removed": true,
+        "goby_backup_source_r_20260910113723ee712293_removed": true,
+        "goby_backup_target_20260910113723ee712293_removed": true,
+        "goby_backup_target_r_20260910113723ee712293_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "149f2b000b3e080a78dc87f74ce022b24021f67758583dd2cd450d9b1e2ccefb",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_113723_ee712293/report.json",
+      "sha256": "1271c0eac9a18127f018fe40a3478a0828283e8ca85783b7c99191975b831144",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-4",
+        "file_count": 63,
+        "manifest_sha256": "3e25adf3e231d4340aa36a0d63c9565c6e7077001d7cabc3bd05017ef54c4759"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_202609101138117aca95c4_removed": true,
+        "goby_backup_source_r_202609101138117aca95c4_removed": true,
+        "goby_backup_target_202609101138117aca95c4_removed": true,
+        "goby_backup_target_r_202609101138117aca95c4_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "5f8a2bb78653a085cf0e334dd3693d607c8ffad1249f8686ac43dbd2bf0935d4",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_113811_7aca95c4/report.json",
+      "sha256": "63ad84a10c6b15d1be1d26081f4fcd80648b853f482c71ae28b1988ec4438295",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-5",
+        "file_count": 63,
+        "manifest_sha256": "99f3c6d3c7ac7de521112a92b59e0ff35ec44dc72a6c2f343180007a0ea10282"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_202609101139171cffa4ba_removed": true,
+        "goby_backup_source_r_202609101139171cffa4ba_removed": true,
+        "goby_backup_target_202609101139171cffa4ba_removed": true,
+        "goby_backup_target_r_202609101139171cffa4ba_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "b6bd90c2061b4a7bb0bee82890112a443978a0d847e76152aea237dc1be26cd7",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_113917_1cffa4ba/report.json",
+      "sha256": "e71fa319ed611bdfdc2b3e8e8d190b9cbd551043b09858f56fc4959a0e8d4b15",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-6",
+        "file_count": 63,
+        "manifest_sha256": "90b5eefd7bd79d079734803fc9f9b802accfc7aa7c9dcf07e6f2ae684e6d5d62"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_2026091011401704520a76_removed": true,
+        "goby_backup_source_r_2026091011401704520a76_removed": true,
+        "goby_backup_target_2026091011401704520a76_removed": true,
+        "goby_backup_target_r_2026091011401704520a76_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": null,
+      "log_sha256": "df092c74148f2c32d1eec36f5bfcd741238266b2d690d694d2725e101e6187d7",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_114017_04520a76/report.json",
+      "sha256": "d42e222b8024bddf9c8bdc4c3c13276f2ad39afc7d03774790b98f6129fdbc0e",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-7",
+        "file_count": 63,
+        "manifest_sha256": "aecfc59094c2ee45962b35d0b64e32af512d602c651aa963bf5705f65716b58a"
+      },
+      "status": "passed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_202609101142317fdf58ab_removed": true,
+        "goby_backup_source_r_202609101142317fdf58ab_removed": true,
+        "goby_backup_target_202609101142317fdf58ab_removed": true,
+        "goby_backup_target_r_202609101142317fdf58ab_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": null,
+      "log_sha256": "df092c74148f2c32d1eec36f5bfcd741238266b2d690d694d2725e101e6187d7",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_114231_7fdf58ab/report.json",
+      "sha256": "5743c47d213e6be82319a76bbc49d555ad0e21f38be2a491294c518c31522bc4",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-10",
+        "file_count": 64,
+        "manifest_sha256": "5a85e80af6100b4f81d5b26034d20587c2c7a0daaf4337b8614c0951ae945cae"
+      },
+      "status": "passed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_202609101144559f3ecb9d_removed": true,
+        "goby_backup_source_r_202609101144559f3ecb9d_removed": true,
+        "goby_backup_target_202609101144559f3ecb9d_removed": true,
+        "goby_backup_target_r_202609101144559f3ecb9d_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": null,
+      "log_sha256": "df092c74148f2c32d1eec36f5bfcd741238266b2d690d694d2725e101e6187d7",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-catalog-20260910_114455_9f3ecb9d/report.json",
+      "sha256": "5428b6394041a5a4e594c25883c139c03ed98a8d0f7a0faa8e2f2b8dfb0c07d0",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-13",
+        "file_count": 65,
+        "manifest_sha256": "ae03bfb235003bcd325b9aa1402e7c872aeadb5b8d9dbb4da455f2c2e3bccbdd"
+      },
+      "status": "passed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_20260910114039164094ec_removed": true,
+        "goby_backup_source_r_20260910114039164094ec_removed": true,
+        "goby_backup_target_20260910114039164094ec_removed": true,
+        "goby_backup_target_r_20260910114039164094ec_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "576a953218e7b08177959f6536d0843415aa2749200711cc79a99c2c202a5048",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-tests-20260910_114039_164094ec/report.json",
+      "sha256": "4db4ebf506b2e490940b55525313ff25583ce93166a08680467ab486ee373d4c",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-8",
+        "file_count": 63,
+        "manifest_sha256": "e7d402decff93a15018818e39d6a34207176366af803357a69eba3e3cecbf586"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_2026091011410994c7a1f5_removed": true,
+        "goby_backup_source_r_2026091011410994c7a1f5_removed": true,
+        "goby_backup_target_2026091011410994c7a1f5_removed": true,
+        "goby_backup_target_r_2026091011410994c7a1f5_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "9672a70f629c1810b814d552279efe1a008b05145cc637efd46800a19ed2e2ba",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-tests-20260910_114109_94c7a1f5/report.json",
+      "sha256": "110a8f476c80e755c7bb9ddbb56ef9f3e68d17b11af6f52b588c48944ccd86ab",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-9",
+        "file_count": 63,
+        "manifest_sha256": "6bd80e806545989d1d08a4779fee4cb53dac139eb2e8775cfcf62329f8947305"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_20260910114254ce65cde9_removed": true,
+        "goby_backup_source_r_20260910114254ce65cde9_removed": true,
+        "goby_backup_target_20260910114254ce65cde9_removed": true,
+        "goby_backup_target_r_20260910114254ce65cde9_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "fe938e3aa950c6ecc8372d3c50f127daeb80e85a5ba3239406083612775d0c02",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-tests-20260910_114254_ce65cde9/report.json",
+      "sha256": "f7a5b9c5e3b6b7d3ada19e07874528d5f6737d48c4e931637cf5c42fe1b778f5",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-11",
+        "file_count": 65,
+        "manifest_sha256": "725017b1e3c0f5ef8f4ab222094939388076a4cb976b5326c6ebeac6faa351e5"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_20260910114409e564ccf7_removed": true,
+        "goby_backup_source_r_20260910114409e564ccf7_removed": true,
+        "goby_backup_target_20260910114409e564ccf7_removed": true,
+        "goby_backup_target_r_20260910114409e564ccf7_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": "Go verification failed; private log retained.",
+      "log_sha256": "052c23b84928eae778e28badad1816389c0d8e52cc3620adc07e33fc5597b797",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-tests-20260910_114409_e564ccf7/report.json",
+      "sha256": "3b8cf968bc534956bc48c3305beef391f6a079ef0b31e1d23a6450114f4c10a1",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-12",
+        "file_count": 65,
+        "manifest_sha256": "c6e447cf1756db52ed0dfc0af68751a88275ee31af87a24a3237191b514fb7c4"
+      },
+      "status": "failed"
+    },
+    {
+      "cleanup": {
+        "goby_backup_source_2026091011452450faa981_removed": true,
+        "goby_backup_source_r_2026091011452450faa981_removed": true,
+        "goby_backup_target_2026091011452450faa981_removed": true,
+        "goby_backup_target_r_2026091011452450faa981_removed": true,
+        "hba_restored_exactly": true,
+        "inflight_control_connections_stopped": true,
+        "owned_cgroup_stopped": true,
+        "preexisting_database_and_role_catalog_unchanged": true,
+        "protected_services_unchanged": true
+      },
+      "error": null,
+      "log_sha256": "5a3926f3d36108af0cab9d7223d04528ea0cc3759b5d8961b58168e4a6d49eae",
+      "path": "/opt/goby-test/exec-work-m5j/backuppg-tests-20260910_114524_50faa981/report.json",
+      "sha256": "dd4450bb4f5d8e219c1dc031122ae777a5b099908a5a16ba9fcb737f0c9ebe50",
+      "source": {
+        "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-14",
+        "file_count": 65,
+        "manifest_sha256": "53d2071f37c4b12f7d36dc2910c3ffc4e380c481b01d7147f526f450f71bca4d"
+      },
+      "status": "passed"
+    }
+  ]
+}

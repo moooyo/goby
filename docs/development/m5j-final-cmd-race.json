@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-26",
+  "sourceManifestSha256": "4b686eb3d26998b788d23f202bd780d2e871f61dfabe3801077745a7a79601d8",
+  "topLevel": {
+    "pass": 16
+  },
+  "logSha256": "2c50ad3f75ee9898bbc589341c4e22dcf8bb80f495ba62f451c9c25712ac9c17",
+  "changedFromFullSource25": [
+    "cmd/goby/recovery_cli.go",
+    "cmd/goby/recovery_cli_test.go"
+  ],
+  "scope": "Final cmd package including CLI completed replay and different-pending refusal. This is not a second complete repository suite."
+}

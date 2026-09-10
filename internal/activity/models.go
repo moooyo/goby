@@ -25,27 +25,41 @@ var (
 type Action string
 
 const (
-	ActionUserCreated            Action = "user.created"
-	ActionUserUpdated            Action = "user.updated"
-	ActionUserPasswordReset      Action = "user.password_reset"
-	ActionSessionLogin           Action = "session.login"
-	ActionSessionRevoked         Action = "session.revoked"
-	ActionApplicationKeyCreated  Action = "application_key.created"
-	ActionApplicationKeyRevealed Action = "application_key.revealed"
-	ActionApplicationKeyRevoked  Action = "application_key.revoked"
-	ActionDeviceUpdated          Action = "device.updated"
-	ActionDeviceRemoved          Action = "device.removed"
-	ActionLibraryCreated         Action = "library.created"
-	ActionLibraryRemoved         Action = "library.removed"
-	ActionScanRequested          Action = "scan.requested"
-	ActionScanCancelRequested    Action = "scan.cancel_requested"
-	ActionScanFinished           Action = "scan.finished"
-	ActionMetadataUpdated        Action = "metadata.updated"
-	ActionSettingsUpdated        Action = "settings.updated"
-	ActionTaskAdmitted           Action = "task.admitted"
-	ActionTaskCancelRequested    Action = "task.cancel_requested"
-	ActionTaskFinished           Action = "task.finished"
-	ActionTaskScheduleUpdated    Action = "task.schedule_updated"
+	ActionUserCreated              Action = "user.created"
+	ActionUserUpdated              Action = "user.updated"
+	ActionUserPasswordReset        Action = "user.password_reset"
+	ActionSessionLogin             Action = "session.login"
+	ActionSessionRevoked           Action = "session.revoked"
+	ActionApplicationKeyCreated    Action = "application_key.created"
+	ActionApplicationKeyRevealed   Action = "application_key.revealed"
+	ActionApplicationKeyRevoked    Action = "application_key.revoked"
+	ActionDeviceUpdated            Action = "device.updated"
+	ActionDeviceRemoved            Action = "device.removed"
+	ActionLibraryCreated           Action = "library.created"
+	ActionLibraryRemoved           Action = "library.removed"
+	ActionScanRequested            Action = "scan.requested"
+	ActionScanCancelRequested      Action = "scan.cancel_requested"
+	ActionScanFinished             Action = "scan.finished"
+	ActionMetadataUpdated          Action = "metadata.updated"
+	ActionSettingsUpdated          Action = "settings.updated"
+	ActionTaskAdmitted             Action = "task.admitted"
+	ActionTaskCancelRequested      Action = "task.cancel_requested"
+	ActionTaskFinished             Action = "task.finished"
+	ActionTaskScheduleUpdated      Action = "task.schedule_updated"
+	ActionBackupRequested          Action = "backup.requested"
+	ActionBackupCancelRequested    Action = "backup.cancel_requested"
+	ActionBackupFinished           Action = "backup.finished"
+	ActionBackupImported           Action = "backup.imported"
+	ActionBackupDeleteRequested    Action = "backup.delete_requested"
+	ActionBackupDeleted            Action = "backup.deleted"
+	ActionBackupDownloaded         Action = "backup.downloaded"
+	ActionRestoreRequested         Action = "restore.requested"
+	ActionRestorePlanned           Action = "restore.planned"
+	ActionRestoreApplyRequested    Action = "restore.apply_requested"
+	ActionRestoreApplied           Action = "restore.applied"
+	ActionRestoreRollbackRequested Action = "restore.rollback_requested"
+	ActionRestoreCancelRequested   Action = "restore.cancel_requested"
+	ActionRestoreFailed            Action = "restore.failed"
 )
 
 type Severity string
@@ -97,6 +111,8 @@ const (
 	ResourceSettings       ResourceKind = "settings"
 	ResourceTask           ResourceKind = "task"
 	ResourceTaskRun        ResourceKind = "task_run"
+	ResourceBackup         ResourceKind = "backup"
+	ResourceRestore        ResourceKind = "restore"
 )
 
 // Resource.ID is a persisted public resource identifier. Bounded historical
@@ -160,8 +176,9 @@ const (
 // optional server-generated correlation identifier, not a client request body
 // value. Revision and Count are nonnegative numerical facts; their zero values
 // mean no revision and no affected resources respectively. State is required
-// only for a first terminal scan/task transition. ChangedFields contains names
-// alone, never before/after values. The writer does not authorize the actor.
+// for terminal scan, task, backup, and restore facts. ChangedFields contains
+// names alone, never before/after values; backup and restore events have none.
+// The writer does not authorize the actor.
 type Event struct {
 	Action        Action
 	Severity      Severity

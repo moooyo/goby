@@ -1,0 +1,33 @@
+{
+  "health": {
+    "/healthz": 200,
+    "/readyz": 200
+  },
+  "privateOperatorDirectoryMode": "0700",
+  "privateOperatorDirectoryOwner": 995,
+  "privatePairingFilesMode": "0600",
+  "privatePassphraseRetained": true,
+  "retainedEncryptedArchive": {
+    "backupId": "1f0070537a1288408a9cb116631a2711",
+    "bytes": 177366,
+    "path": "/var/lib/goby-test/operator-secrets-m5j/attempt-01/1f0070537a1288408a9cb116631a2711.age",
+    "sha256": "d6dddf3fbb7e437409a5a09fbbca9a853b35673ca19e8910b66e49c32cb78f86"
+  },
+  "services": {
+    "goby-emby-reference.service": {
+      "active": true,
+      "binarySha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "pid": 3131777,
+      "startTicks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "active": true,
+      "binarySha256": "a4abba7b289ceb74ca0916484d714dc6baa1b3c5230b06964b89d363a64e8b81",
+      "pid": 3750313,
+      "startTicks": "28911319"
+    }
+  },
+  "status": "passed",
+  "temporaryVerificationServicesRunning": false,
+  "workflowCredentialRevoked": true
+}

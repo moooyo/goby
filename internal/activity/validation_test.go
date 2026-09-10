@@ -126,3 +126,123 @@ func TestQueryRejectsInvalidBoundsAndFiltersBeforeReading(t *testing.T) {
 		}
 	}
 }
+
+func TestBackupRestoreActivityRequiresItsExactTerminalState(t *testing.T) {
+	for _, fixture := range []struct {
+		action   Action
+		resource ResourceKind
+		states   []State
+	}{
+		{ActionBackupRequested, ResourceBackup, []State{""}},
+		{ActionBackupCancelRequested, ResourceBackup, []State{""}},
+		{ActionBackupFinished, ResourceBackup, []State{StateCompleted, StateFailed, StateCancelled, StateInterrupted}},
+		{ActionBackupImported, ResourceBackup, []State{""}},
+		{ActionBackupDeleteRequested, ResourceBackup, []State{""}},
+		{ActionBackupDeleted, ResourceBackup, []State{""}},
+		{ActionBackupDownloaded, ResourceBackup, []State{""}},
+		{ActionRestoreRequested, ResourceRestore, []State{""}},
+		{ActionRestorePlanned, ResourceRestore, []State{""}},
+		{ActionRestoreApplyRequested, ResourceRestore, []State{""}},
+		{ActionRestoreApplied, ResourceRestore, []State{StateCompleted}},
+		{ActionRestoreRollbackRequested, ResourceRestore, []State{""}},
+		{ActionRestoreCancelRequested, ResourceRestore, []State{""}},
+		{ActionRestoreFailed, ResourceRestore, []State{StateFailed}},
+	} {
+		for _, state := range []State{"", StateCompleted, StateFailed, StateCancelled, StateInterrupted, "unknown"} {
+			t.Run(string(fixture.action)+"/"+string(state), func(t *testing.T) {
+				allowed := false
+				for _, permitted := range fixture.states {
+					allowed = allowed || state == permitted
+				}
+				event := Event{Action: fixture.action, Source: SourceSystem, Actor: Actor{Kind: ActorSystem},
+					Resource: Resource{Kind: fixture.resource, ID: "persisted-operation-identity"}, State: state}
+				executor := &activityCaptureExecutor{}
+				err := Record(context.Background(), executor, event)
+				if allowed {
+					if err != nil || executor.calls != 1 {
+						t.Fatalf("allowed backup or restore event: calls=%d error=%v", executor.calls, err)
+					}
+				} else if !errors.Is(err, ErrInvalidInput) || executor.calls != 0 {
+					t.Fatalf("invalid terminal state reached storage: calls=%d error=%v", executor.calls, err)
+				}
+			})
+		}
+	}
+}
+
+func TestBackupRestoreActivityRejectsAllChangedFieldsAndPrivateValues(t *testing.T) {
+	for _, action := range []Action{ActionBackupRequested, ActionBackupCancelRequested, ActionBackupFinished,
+		ActionBackupImported, ActionBackupDeleteRequested, ActionBackupDeleted, ActionBackupDownloaded,
+		ActionRestoreRequested, ActionRestorePlanned, ActionRestoreApplyRequested, ActionRestoreApplied,
+		ActionRestoreRollbackRequested, ActionRestoreCancelRequested, ActionRestoreFailed} {
+		t.Run(string(action), func(t *testing.T) {
+			event := Event{Action: action, Source: SourceNative,
+				Actor:    Actor{Kind: ActorUser, ID: "administrator", CredentialID: "existing-session"},
+				Resource: Resource{Kind: actionResource(action), ID: "persisted-operation-identity"}}
+			switch action {
+			case ActionBackupFinished, ActionRestoreApplied:
+				event.State = StateCompleted
+			case ActionRestoreFailed:
+				event.State = StateFailed
+			}
+			for _, field := range []Field{FieldName, FieldServerName, FieldOverrides,
+				"Passphrase", "MasterKey", "DatabaseURL", "ArchivePath", "Passphrase=synthetic-private-value"} {
+				event.ChangedFields = []Field{field}
+				executor := &activityCaptureExecutor{}
+				if err := Record(context.Background(), executor, event); !errors.Is(err, ErrInvalidInput) || executor.calls != 0 {
+					t.Fatalf("backup or restore field reached storage: calls=%d error=%v", executor.calls, err)
+				}
+			}
+			event.ChangedFields = nil
+			for _, identifier := range []string{"/private/backups/archive.enc", "postgres://user:secret@database/goby", "private passphrase"} {
+				event.Resource.ID = identifier
+				executor := &activityCaptureExecutor{}
+				if err := Record(context.Background(), executor, event); !errors.Is(err, ErrInvalidInput) || executor.calls != 0 {
+					t.Fatalf("private value used as a resource identity reached storage: calls=%d error=%v", executor.calls, err)
+				}
+			}
+		})
+	}
+	name, overview := description(ActionBackupDownloaded, "")
+	if name != "Backup download prepared" || overview != "A backup was prepared for an authorized download." {
+		t.Fatal("download activity must describe preparation without promising complete delivery")
+	}
+}
+
+func TestBackupRestoreAdmissionDescriptionsStateOnlyPersistedRequests(t *testing.T) {
+	for _, fixture := range []struct {
+		action   Action
+		name     string
+		overview string
+	}{
+		{ActionBackupDeleteRequested, "Backup deletion requested", "A backup deletion request was persisted."},
+		{ActionRestoreRequested, "Restore requested", "A restore planning request was persisted."},
+		{ActionRestoreApplyRequested, "Restore application requested", "A restore application request was persisted."},
+		{ActionRestoreRollbackRequested, "Restore rollback requested", "A restore rollback request was persisted."},
+		{ActionRestoreCancelRequested, "Restore cancellation requested", "A restore cancellation request was persisted."},
+	} {
+		t.Run(string(fixture.action), func(t *testing.T) {
+			name, overview := description(fixture.action, "")
+			if name != fixture.name || overview != fixture.overview {
+				t.Fatalf("admission description = %q / %q, want a fixed persisted-request fact", name, overview)
+			}
+		})
+	}
+	for _, fixture := range []struct {
+		action   Action
+		state    State
+		name     string
+		overview string
+	}{
+		{ActionBackupDeleted, "", "Backup deleted", "A backup was removed from the managed backup inventory."},
+		{ActionRestorePlanned, "", "Restore planned", "A restore plan was prepared."},
+		{ActionRestoreApplied, StateCompleted, "Restore applied", "A restored database was activated."},
+	} {
+		t.Run(string(fixture.action), func(t *testing.T) {
+			name, overview := description(fixture.action, fixture.state)
+			if name != fixture.name || overview != fixture.overview {
+				t.Fatalf("completed phase description = %q / %q, want the existing completed fact", name, overview)
+			}
+		})
+	}
+}

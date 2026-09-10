@@ -1,0 +1,14 @@
+{
+  "binary": {
+    "path": "/opt/goby-test/exec-scratch/goby-m5j-linux-amd64",
+    "sha256": "a4abba7b289ceb74ca0916484d714dc6baa1b3c5230b06964b89d363a64e8b81",
+    "size": 25715909
+  },
+  "buildMetadata": "/opt/goby-test/exec-scratch/goby-m5j-linux-amd64: go1.27.1\n\tpath\tgithub.com/moooyo/goby/cmd/goby\n\tmod\tgithub.com/moooyo/goby\t(devel)\t\n\tdep\tfilippo.io/age\tv1.3.2\th1:r6RSZLFSMm6rzKepZ7ZAYkKCu14f3/Me8c7uKYh7C8c=\n\tdep\tfilippo.io/hpke\tv0.4.0\th1:p575VVQ6ted4pL+it6M00V/f2qTZITO0zgmdKCkd5+A=\n\tdep\tgithub.com/coder/websocket\tv1.8.15\th1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=\n\tdep\tgithub.com/jackc/pgpassfile\tv1.0.0\th1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=\n\tdep\tgithub.com/jackc/pgservicefile\tv0.0.0-20240606120523-5a60cdf6a761\th1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=\n\tdep\tgithub.com/jackc/pgx/v5\tv5.11.0\th1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=\n\tdep\tgithub.com/jackc/puddle/v2\tv2.2.2\th1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=\n\tdep\tgolang.org/x/crypto\tv0.57.0\th1:3ZVCjf8Ggz7zneR/EHRVx68Ctf+2pmIMP2UFhh9cC6M=\n\tdep\tgolang.org/x/sync\tv0.23.0\th1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=\n\tdep\tgolang.org/x/sys\tv0.48.0\th1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=\n\tdep\tgolang.org/x/text\tv0.42.0\th1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-trimpath=true\n\tbuild\tCGO_ENABLED=0\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n",
+  "source": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-30",
+  "sourceManifestSha256": "3b2315164a58c15e2f80cc581ef5f19dfe6682bc2e7d962f994d40063305f1e0",
+  "upstreamFullReport": {
+    "path": "/opt/goby-test/exec-work-m5j/backuppg-full-20260910_153334_95e886bc/report.json",
+    "sha256": "8cd4840725190ed9eb226bdfa0bddcc1ab6729a6862b87c4ba102f287955d268"
+  }
+}

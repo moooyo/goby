@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "groups": [
+    {
+      "name": "foundation",
+      "exit": 0,
+      "topLevel": {
+        "pass": 16
+      },
+      "failures": [],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/recoverycontrol",
+          "Action": "pass",
+          "Elapsed": 3.58
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "fb2fed65494211d68f40e11ebc2d5393bf65b72f94ab6a314a3cef3fa1e89817"
+    },
+    {
+      "name": "database",
+      "exit": 0,
+      "topLevel": {
+        "pass": 16
+      },
+      "failures": [],
+      "skips": [],
+      "packages": [
+        {
+          "Package": "github.com/moooyo/goby/internal/server",
+          "Action": "pass",
+          "Elapsed": 9.439
+        }
+      ],
+      "raceWarning": false,
+      "logSha256": "2290cd778cbdcb48c856f81c3ab6611af974dfac0c27dbeca8c25adda0cfdf3b"
+    }
+  ],
+  "protectedServicesAndHBAUnchanged": true,
+  "sourceInputsSha256": "726870c7c47070f15ab6ae1f9d702958827ec4899780541092c378cbce62eccf",
+  "memoryMaxMiB": 1536,
+  "memorySwapMaxBytes": 0,
+  "cpuQuotaPercent": 150
+}

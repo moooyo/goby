@@ -304,11 +304,13 @@ export const activityActions = [
   "application_key.created", "application_key.revealed", "application_key.revoked", "device.updated", "device.removed",
   "library.created", "library.removed", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated",
   "settings.updated", "task.admitted", "task.cancel_requested", "task.finished", "task.schedule_updated",
+  "backup.requested", "backup.cancel_requested", "backup.finished", "backup.imported", "backup.delete_requested", "backup.deleted", "backup.downloaded",
+  "restore.requested", "restore.planned", "restore.apply_requested", "restore.applied", "restore.rollback_requested", "restore.cancel_requested", "restore.failed",
 ] as const;
 export const activitySeverities = ["Info", "Debug", "Warn", "Error", "Fatal"] as const;
 export type ActivityAction = typeof activityActions[number];
 export type ActivitySeverity = typeof activitySeverities[number];
-export type ActivityResourceKind = "user" | "session" | "application_key" | "device" | "library" | "scan" | "item" | "settings" | "task" | "task_run";
+export type ActivityResourceKind = "user" | "session" | "application_key" | "device" | "library" | "scan" | "item" | "settings" | "task" | "task_run" | "backup" | "restore";
 
 export interface ActivityEntry {
   Id: string;
@@ -741,8 +743,10 @@ function invalidResponse(status = 200): ApiError {
 }
 
 interface InternalRequestOptions extends RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "HEAD" | "POST" | "PUT" | "DELETE";
   body?: unknown;
+  rawBody?: File;
+  headers?: Record<string, string>;
   public?: boolean;
 }
 
@@ -750,9 +754,10 @@ async function request<T>(path: string, options: InternalRequestOptions = {}): P
   abortIfNeeded(options.signal);
   const method = options.method ?? "GET";
   const revision = sessionRevision;
-  const headers = new Headers({ Accept: "application/json" });
+  const headers = new Headers({ Accept: "application/json", ...options.headers });
   if (options.body !== undefined) headers.set("Content-Type", "application/json");
-  if (method !== "GET" && !options.public && csrfToken) {
+  if (options.rawBody !== undefined) headers.set("Content-Type", "application/octet-stream");
+  if (method !== "GET" && method !== "HEAD" && !options.public && csrfToken) {
     headers.set("X-CSRF-Token", csrfToken);
   }
 
@@ -765,9 +770,9 @@ async function request<T>(path: string, options: InternalRequestOptions = {}): P
       credentials: "same-origin",
       cache: "no-store",
       signal: options.signal,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.rawBody ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
     });
-    text = await response.text();
+    text = method === "HEAD" ? "" : await response.text();
   } catch (error) {
     abortIfNeeded(options.signal);
     if (isAbortError(error)) throw error;
@@ -788,6 +793,7 @@ async function request<T>(path: string, options: InternalRequestOptions = {}): P
     if (response.status === 401 && !options.public) expireSession(revision);
     throw responseError(response, payload, path === "/session" && method === "POST");
   }
+  if (method === "HEAD") return response as unknown as T;
   if (response.status === 204) return undefined as T;
   if (!isRecord(payload)) throw invalidResponse(response.status);
   return payload as T;
@@ -819,7 +825,7 @@ async function mutate<T>(
   path: string,
   method: "POST" | "PUT" | "DELETE",
   body: unknown,
-  options: RequestOptions,
+  options: InternalRequestOptions,
 ): Promise<T> {
   const revision = sessionRevision;
   if (!csrfToken) {
@@ -841,6 +847,32 @@ async function mutate<T>(
       requestId: error.requestId,
     });
   }
+}
+
+export interface AuthenticatedRequestOptions extends RequestOptions {
+  method?: "GET" | "HEAD" | "POST" | "PUT" | "DELETE";
+  body?: unknown;
+  rawBody?: File;
+  headers?: Record<string, string>;
+}
+
+export async function authenticatedRequest<T>(
+  path: string,
+  options: AuthenticatedRequestOptions = {},
+): Promise<T> {
+  const revision = sessionRevision;
+  const method = options.method ?? "GET";
+  let result: T;
+  try {
+    result = method === "GET" || method === "HEAD"
+      ? await request<T>(path, options)
+      : await mutate<T>(path, method, options.body, options);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 403) expireSession(revision);
+    throw error;
+  }
+  if (revision !== sessionRevision) throw sessionChanged();
+  return result;
 }
 
 function validateManagedUser(result: ManagedUserResponse): void {
@@ -1216,7 +1248,7 @@ function validActivityEntry(value: unknown): value is ActivityEntry {
     || (value.Actor.Id !== null && !nonemptyString(value.Actor.Id))
     || (value.Actor.Name !== null && typeof value.Actor.Name !== "string")
     || !isRecord(value.Resource) || !nonemptyString(value.Resource.Id)
-    || !["user", "session", "application_key", "device", "library", "scan", "item", "settings", "task", "task_run"].includes(value.Resource.Kind as string)
+    || !["user", "session", "application_key", "device", "library", "scan", "item", "settings", "task", "task_run", "backup", "restore"].includes(value.Resource.Kind as string)
     || (value.Revision !== null && !validObservabilityDecimal(value.Revision, true))
     || !validObservabilityDecimal(value.Count)
     || (value.State !== null && !["completed", "failed", "cancelled", "interrupted"].includes(value.State as string))

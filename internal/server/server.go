@@ -42,6 +42,7 @@ type Server struct {
 	taskManager    *tasks.Manager
 	settings       *settings.Store
 	diagnostics    *diagnostics.Store
+	recovery       adminRecoveryManager
 	activityCancel context.CancelFunc
 	activityDone   chan struct{}
 }
@@ -168,6 +169,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
+	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)
 	s.registerObservabilityRoutes(mux)
 	s.registerScheduledTaskRoutes(mux)

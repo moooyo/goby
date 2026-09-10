@@ -1,0 +1,216 @@
+{
+  "catalog_after_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "catalog_before_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "cgroup": {
+    "CPUQuotaPerSecUSec": "1.500000s",
+    "Description": "goby-backuppg-pair-m5j-v1:20260910_134112_6fc6f5df",
+    "KillMode": "control-group",
+    "MainPID": "3684137",
+    "MemoryMax": "1610612736",
+    "MemorySwapMax": "0"
+  },
+  "checks": {
+    "exact_temporary_hba": true,
+    "independent_low_privilege_pair": true,
+    "scratch_cluster_identity": true
+  },
+  "cleanup": {
+    "goby_backup_source_202609101341126fc6f5df_removed": true,
+    "goby_backup_source_r_202609101341126fc6f5df_removed": true,
+    "goby_backup_target_202609101341126fc6f5df_removed": true,
+    "goby_backup_target_r_202609101341126fc6f5df_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "owned_cgroup_stopped": true,
+    "preexisting_database_and_role_catalog_unchanged": true,
+    "protected_services_unchanged": true
+  },
+  "databases": [
+    {
+      "database": "goby_backup_source_202609101341126fc6f5df",
+      "oid": 5817022,
+      "role": "goby_backup_source_r_202609101341126fc6f5df"
+    },
+    {
+      "database": "goby_backup_target_202609101341126fc6f5df",
+      "oid": 5817024,
+      "role": "goby_backup_target_r_202609101341126fc6f5df"
+    }
+  ],
+  "error": "Go verification failed; private log retained.",
+  "hba_after_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_before_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "log_sha256": "d380ec06babc4a1c1a58e1b5e5f671d4cb93329b83935045460263c8e62ceb3c",
+  "marker": "goby-backuppg-pair-m5j-v1",
+  "mode": "full",
+  "observed": {
+    "failed": [
+      {
+        "Package": "github.com/moooyo/goby/internal/diagnostics",
+        "Test": "TestStoreCloseWaitsForConcurrentSnapshotRelease"
+      },
+      {
+        "Package": "github.com/moooyo/goby/internal/diagnostics",
+        "Test": null
+      }
+    ],
+    "note": "The failed ordinary group prevented the final recoverydb package and binary build.",
+    "packages": [
+      {
+        "Action": "pass",
+        "Elapsed": 1.021,
+        "Package": "github.com/moooyo/goby/cmd/goby"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 2.267,
+        "Package": "github.com/moooyo/goby/internal/activity"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.5819999999999999,
+        "Package": "github.com/moooyo/goby/internal/artwork"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 11.52,
+        "Package": "github.com/moooyo/goby/internal/backupformat"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 8.288,
+        "Package": "github.com/moooyo/goby/internal/backuppg"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 2.963,
+        "Package": "github.com/moooyo/goby/internal/backupstore"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.079,
+        "Package": "github.com/moooyo/goby/internal/config"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 5.382,
+        "Package": "github.com/moooyo/goby/internal/database"
+      },
+      {
+        "Action": "fail",
+        "Elapsed": 0.44,
+        "Package": "github.com/moooyo/goby/internal/diagnostics"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.205,
+        "Package": "github.com/moooyo/goby/internal/events"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 325.053,
+        "Package": "github.com/moooyo/goby/internal/identity"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 43.344,
+        "Package": "github.com/moooyo/goby/internal/library"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 3.643,
+        "Package": "github.com/moooyo/goby/internal/lifecycle"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 5.201,
+        "Package": "github.com/moooyo/goby/internal/media"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.502,
+        "Package": "github.com/moooyo/goby/internal/metadata"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.234,
+        "Package": "github.com/moooyo/goby/internal/playback"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 109.006,
+        "Package": "github.com/moooyo/goby/internal/recovery"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 3.584,
+        "Package": "github.com/moooyo/goby/internal/recoverycontrol"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 663.964,
+        "Package": "github.com/moooyo/goby/internal/server"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 16.908,
+        "Package": "github.com/moooyo/goby/internal/settings"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 1.1179999999999999,
+        "Package": "github.com/moooyo/goby/internal/subtitle"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 33.715,
+        "Package": "github.com/moooyo/goby/internal/tasks"
+      },
+      {
+        "Action": "pass",
+        "Elapsed": 59.409,
+        "Package": "github.com/moooyo/goby/internal/transcode"
+      }
+    ],
+    "topLevel": {
+      "fail": 1,
+      "pass": 1587
+    }
+  },
+  "protected_services_after": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "protected_services_before": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "run_id": "20260910_134112_6fc6f5df",
+  "source": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-24",
+    "file_count": 3058,
+    "manifest_sha256": "9aff8c49a470834f40f2bb5bba199602130b3984d7ee4fcaba67a7c8a80a0252"
+  },
+  "status": "failed",
+  "unit_exit": 1
+}

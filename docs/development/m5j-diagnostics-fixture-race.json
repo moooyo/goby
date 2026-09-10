@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "groups": [
+    {
+      "name": "mode-evidence",
+      "topLevel": {
+        "pass": 1
+      },
+      "notes": [
+        "tmpdir_mode_evidence_test.go:13: tempdir_mode=0755 tempdir_uid=0 process_uid=0"
+      ],
+      "logSha256": "f69445aa384bfbbf4c3315963e445027b6fa4e084dae40f3f62ecedcddc0aed7"
+    },
+    {
+      "name": "package",
+      "topLevel": {
+        "pass": 36
+      },
+      "notes": [],
+      "logSha256": "9b638fc03387b1f60fe7be90168d445fbaada86cf8b8c1572189149cd3422471"
+    },
+    {
+      "name": "repeated",
+      "topLevel": {
+        "pass": 200
+      },
+      "notes": [],
+      "logSha256": "dceeffc09d3a0c1495c512a4824579ed77111ccc9c78085d0922b6ddce8f4804"
+    }
+  ],
+  "sourceInputsSha256": "40ee485ccc1c44e2df033bde5c0b3f5f708a5c31d61a8b7dd1985fecc806ffe7",
+  "productionDiagnosticsChanged": false,
+  "fixtureFix": "Explicit private directory mode 0700 before Open; assertions unchanged."
+}

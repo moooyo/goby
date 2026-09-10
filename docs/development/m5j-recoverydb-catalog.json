@@ -1,0 +1,83 @@
+{
+  "catalog_after_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "catalog_before_sha256": "796cb9b097fe4f82df303c99ede68219bcf55a2c3fca3bcffef40c39f63a50b8",
+  "catalog_sha256": "de85f4917dd7409e7e7bed20c7cbe63f0d7afe68f6ed72faff6b5bbb598ed00b",
+  "cgroup": {
+    "CPUQuotaPerSecUSec": "1.500000s",
+    "Description": "goby-backuppg-pair-m5j-v1:20260910_124819_e51b3e18",
+    "KillMode": "control-group",
+    "MainPID": "3677106",
+    "MemoryMax": "1610612736",
+    "MemorySwapMax": "0"
+  },
+  "checks": {
+    "exact_temporary_hba": true,
+    "fresh_trusted_catalog_export": true,
+    "independent_low_privilege_pair": true,
+    "scratch_cluster_identity": true
+  },
+  "cleanup": {
+    "goby_backup_source_20260910124819e51b3e18_removed": true,
+    "goby_backup_source_r_20260910124819e51b3e18_removed": true,
+    "goby_backup_target_20260910124819e51b3e18_removed": true,
+    "goby_backup_target_r_20260910124819e51b3e18_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "owned_cgroup_stopped": true,
+    "preexisting_database_and_role_catalog_unchanged": true,
+    "protected_services_unchanged": true
+  },
+  "databases": [
+    {
+      "database": "goby_backup_source_20260910124819e51b3e18",
+      "oid": 5720857,
+      "role": "goby_backup_source_r_20260910124819e51b3e18"
+    },
+    {
+      "database": "goby_backup_target_20260910124819e51b3e18",
+      "oid": 5720859,
+      "role": "goby_backup_target_r_20260910124819e51b3e18"
+    }
+  ],
+  "hba_after_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_before_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "log_sha256": "df092c74148f2c32d1eec36f5bfcd741238266b2d690d694d2725e101e6187d7",
+  "marker": "goby-backuppg-pair-m5j-v1",
+  "mode": "catalog",
+  "protected_services_after": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "protected_services_before": {
+    "goby-emby-reference.service": {
+      "ActiveState": "active",
+      "MainPID": "3131777",
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "start_ticks": "13964831"
+    },
+    "goby-foundation-test.service": {
+      "ActiveState": "active",
+      "MainPID": "3668655",
+      "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+      "start_ticks": "26912384"
+    }
+  },
+  "run_id": "20260910_124819_e51b3e18",
+  "source": {
+    "directory": "/opt/goby-test/exec-work-m5j/backuppg-source-attempt-18",
+    "file_count": 142,
+    "manifest_sha256": "03d446a94f55c7dec637d1a0d4b453aeb92a511d97cefd4a1f02694f6a720b82"
+  },
+  "status": "passed",
+  "unit_exit": 0
+}
