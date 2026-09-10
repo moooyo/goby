@@ -16,7 +16,7 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 1665 records. The [user-device study](../research/devices-reference.md) adds 348 records after the earlier 1128; the [key-device study](../research/key-devices-reference.md) adds another 189 with independent offline audit recovery and fresh-fixture teardown. [Key playback](../research/api-key-playback-reference.md), [client contexts](../research/api-key-context-reference.md), and [target scope](../research/api-key-scope-reference.md) distinguish credentials, contexts, ACLs and conversion permissions. Global NextUp selection and hidden header-device Info/deletion remain unresolved. Reference conclusions are separate from Goby's completed M5e product acceptance |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 1794 records. The [ScheduledTasks read-only study](../research/scheduled-tasks-reference.md) adds 129 records to the preceding 1665. Earlier [user-device](../research/devices-reference.md), [key-device](../research/key-devices-reference.md), [key playback](../research/api-key-playback-reference.md), [client-context](../research/api-key-context-reference.md), and [target-scope](../research/api-key-scope-reference.md) evidence is preserved. Task mutation/restart/key-auth behavior, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
@@ -24,6 +24,7 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |
 | M4 conversion and hardware pipeline | Engine, HLS VOD, progressive audio/video, ordered profiles and verified video restart increments complete; milestone incomplete | [M4a](verification-m4a-engine.md), [M4b](verification-m4b-hls.md), [M4c](verification-m4c-audio.md), [M4d](verification-m4d-audio-profiles.md) and [M4e](verification-m4e-video-and-users.md) establish the preceding conversion and clock behavior. [M4f](verification-m4f-video-seek.md) adds probe 6 private restart evidence, software-decoder proof with actual threads, and independent linear audio. All 940 top-level race tests and five deployed library upgrades passed with real fast producer observation. [M4g](verification-m4g-media-refresh.md) adds explicit media re-probing, schema-15 task modes, real same-version index reconstruction and five deployed forced scans; all 969 top-level race tests pass. Nonzero copied-video seeking, efficient audio I/O, additional tracks/formats, aggregate resource isolation, actual GPU execution and full client acceptance remain |
 | M5 administrator completion | User, metadata, login-session, application-key and device increments complete; milestone incomplete | [M5a](verification-m4e-video-and-users.md), [M5b](verification-m5b-metadata.md), [M5c](verification-m5c-sessions.md), and [M5d](verification-m5d-application-keys.md) retain the preceding account, metadata, session and key evidence. [M5e](verification-m5e-devices.md) adds native Devices and six compatibility operations, ordinary/shared generations, grouped revocation, alias isolation, schema 18 and exact backfill preservation. All 1085 top-level race tests pass across twelve packages with zero skips or races; focused regressions, browser/restart and the main-service workflow pass. Full policies, online providers, generic tasks, settings, audit/log browsing, backup/restore and broader device/Session wire parity remain |
+| M5f scheduled tasks | Read-only reference complete; product incomplete | [Reference study](../research/scheduled-tasks-reference.md): 128 complete HTTP exchanges and one audit, 22 task definitions, read permissions and trigger declarations. [Implementation plan](../research/scheduled-tasks-plan.md): task/run ownership and authorization foundations are being written. No M5f product test, browser, restart, or deployment acceptance is claimed; task execution and trigger mutations remain unsampled |
 | M6 compatibility release | Incomplete; acceptance pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations, representative large-catalog upgrade timing, and recovery evidence |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
 
@@ -54,7 +55,8 @@ The [completed reference study](../research/key-devices-reference.md) adds 189
 records: guarded original-instance capture with 61 HTTP exchanges and one audit,
 fresh setup with 16 complete HTTP exchanges and one non-HTTP readiness failure,
 109 complete fresh-study HTTP exchanges, and one independent recovery audit.
-The corpus is now 1665; the derived operator teardown is not an extra record.
+The corpus reached 1665 at that checkpoint; the derived operator teardown is
+not an extra record.
 
 The original-instance gate preserved a hidden old server device and created no
 key. A wholly owned fresh instance then showed two keys sharing server-device
@@ -81,11 +83,35 @@ passes. Recreating a new application-key device generation remains a Goby
 safety design, not an observed reference contract. M5e completes this device
 increment only; M4, M5, M6, and the complete goal remain unfinished.
 
+## ScheduledTasks read-only reference increment
+
+The [M5f read-only study](../research/scheduled-tasks-reference.md) adds 129
+records under `scheduled-tasks-m5f-`: 128 complete HTTP exchanges and one audit.
+The current corpus is 1794 records. It observes 22 task definitions, with every
+recorded state `Idle`, and interval, daily, startup, and system-event trigger
+declarations. Tested anonymous requests return `401`, ordinary-viewer reads
+return `403`, and administrator details return `200` for known IDs or `404`
+for unknown IDs. No task start/stop, trigger update, restart, or key request ran.
+
+The [audit](../../tests/compatibility/fixtures/reference/emby-4.9.5.0/scheduled-tasks-m5f-audit.json)
+preserves all 1665 preceding records and 3330 raw/export files, 240 known
+source paths, and 2214 private files. The old twenty listed devices, hidden
+server device `15`, options, task definitions/configuration, and recorded
+runtime state are unchanged. Both new logins are logged out and independently
+denied with `401`; device rows `31` and `32` remain as revoked-login history.
+The original Emby PID 3131777 and Goby PID 3535438 remain unchanged.
+
+The [five pure recorder guard tests](m5f-scheduled-task-recorder-tests.json)
+pass with zero HTTP requests or capture writes. They verify recorder guards,
+not product task execution. M5f ownership/authorization foundations remain
+under development. The deployed M5e `d5d696f`, schema 18/probe 6, and its
+1085-test acceptance remain current; M4, M5, M6, and the full goal are incomplete.
+
 ## Environment observations
 
 `test-env` is reachable as a Debian 13 Linux host. Its root filesystem was initially full; disposable caches were reclaimed while preserving unrelated running workloads. Go and media build caches use dedicated scratch locations. No GPU device was present in the `/dev/dri` and `/dev/nvidia0` inspection. Hardware command generation can be tested there, but actual GPU execution requires suitable hardware and remains unverified.
 
-The current service is active as the unprivileged `goby` user at `http://127.0.0.1:18096` on the test host: PID 3535438, UID 995, start ticks `23604510`, schema 18 through `0018_application_key_devices.sql`, and probe version 6. The [deployment audit](m5e-deployment-evidence.json) verifies executable SHA-256 `394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541`, all 354 Go/module files plus 18 migrations, and all 44 current administrator assets. All old business fields across nineteen tables and the exact ordinary/shared-device backfills are preserved, along with the vault, environment and service configuration.
+The current deployed increment is M5e `d5d696f`. Its service is active as the unprivileged `goby` user at `http://127.0.0.1:18096` on the test host: PID 3535438, UID 995, start ticks `23604510`, schema 18 through `0018_application_key_devices.sql`, and probe version 6. The [deployment audit](m5e-deployment-evidence.json) verifies executable SHA-256 `394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541`, all 354 Go/module files plus 18 migrations, and all 44 current administrator assets. All old business fields across nineteen tables and the exact ordinary/shared-device backfills are preserved, along with the vault, environment and service configuration.
 
 M5e passed [1085 top-level race tests](m5e-full-race-summary.json) across twelve tested packages, with zero skips, no race findings, and Go exit code 0. Its [device regression](m5e-device-regression.json) passes 22 tests and the [legacy regression](m5e-legacy-regression.json) passes four. The [isolated browser journey](m5e-devices-browser.json) passed in 6.930194 seconds with real registrations, conflicts, response-loss recovery, generation deletion, and 21-table restart preservation; all ten cleanup checks pass and four secret-free screenshots document the layout.
 

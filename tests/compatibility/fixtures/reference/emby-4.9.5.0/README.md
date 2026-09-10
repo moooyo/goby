@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 958 audited JSON records from an official, isolated Emby Server 4.9.5.0 instance on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video and metadata studies extend that baseline. They record reference behavior; they are not evidence that Goby passes all these contracts. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 1794 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, and ScheduledTasks studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -13,7 +13,7 @@ HTTP fixtures contain:
 
 Passwords and access tokens are redacted. Private deployment paths use placeholders. Non-sensitive synthetic instance/item/user IDs are preserved to retain type, relationship, and URL semantics. Response headers, including `Content-Length`, are unchanged from the original wire capture; redacted bodies can have different lengths from those headers.
 
-The final export was audited remotely against the private originals: all response headers were exact, JSON structure/types/numeric values were preserved, and all recorded credentials were absent. An earlier generic ID-alias export was replaced entirely because it could alter numeric header values.
+The initial export was audited remotely against the private originals: all response headers were exact, JSON structure/types/numeric values were preserved, and all recorded credentials were absent. An earlier generic ID-alias export was replaced entirely because it could alter numeric header values.
 
 The initial library/list/Latest captures preceded the movie library's `SampleIgnoreSize=0` adjustment. Files named `items-movies-after-sample-filter`, `item-detail-*`, and `playback-info-*` follow that adjustment. No source media file was changed. One-element arrays must remain arrays, and omitted fields must not become explicit nulls during fixture consumption.
 
@@ -67,9 +67,47 @@ source paths retained their hashes. This study does not verify key playback.
 
 The key playback, client-context and target-scope studies add 122 records:
 119 complete HTTP exchanges and three audits. Their prefixes are
-keys-playback-m5d, keys-context-m5d and keys-scope-m5d. The complete corpus now
-contains 1128 records. The later controls resolve earlier combined-policy
+keys-playback-m5d, keys-context-m5d and keys-scope-m5d. The corpus reached
+1128 records at that checkpoint. The later controls resolve earlier combined-policy
 ambiguity: explicit catalog targets obey library ACLs; key profile negotiation
 uses conversion flags, while IsDisabled or EnableMediaPlayback alone did not
 remove the sampled conversion capability. No conversion URL was followed.
 See the separately linked research reports for preservation and cleanup.
+
+The [ordinary-device study](../../../../../docs/research/devices-reference.md)
+adds 348 records: 346 complete HTTP exchanges and two audits. Prefixes
+`devices-m5e-` and `devices-m5e-2-` preserve a partial first capture and complete
+continuation, both with successful cleanup. The corpus reached 1476 at that
+checkpoint. Reported-ID grouping, option clearing, ordinary-login revocation,
+and later registration remain bounded observations rather than full client
+or device-family compatibility claims.
+
+The [key-device study](../../../../../docs/research/key-devices-reference.md)
+adds 189 records, bringing the corpus to 1665 at that checkpoint: 61 guarded
+HTTP exchanges plus an audit, 16 fresh-setup HTTP exchanges plus one non-HTTP
+connection-refused observation, 109 fresh-study HTTP exchanges, and one
+independent recovery audit. The original final-audit serialization failure is
+retained; offline recovery verifies all 109 exports unchanged. The derived
+fixture-teardown report is not an additional corpus record. Shared server-device
+deletion revokes both tested keys, while cached Session DTOs remain distinct
+from credential authority. Hidden header-device Info/deletion and subsequent
+key-device recreation were not sampled.
+
+The [ScheduledTasks read-only study](../../../../../docs/research/scheduled-tasks-reference.md)
+adds 129 records under `scheduled-tasks-m5f-`: 128 complete HTTP exchanges and
+one [audit](scheduled-tasks-m5f-audit.json), bringing the current total to 1794.
+It records 22 task definitions, all sampled states `Idle`, read-permission
+responses, and interval/daily/startup/system-event trigger declarations. It
+does not start or stop a task, change triggers, restart the service, or make
+application-key requests. Existing execution-result DTOs are historical data,
+not new executions performed by this recorder.
+
+Its audit preserves the preceding 1665 records/3330 raw-export files, 240 known
+sources, 2214 private files, twenty listed devices and hidden server device
+`15`, their options, and the original service identities. Both fresh login
+credentials finish with independently observed `401`; device rows `31` and
+`32` remain as revoked-login history. The
+[five pure guard tests](../../../../../docs/development/m5f-scheduled-task-recorder-tests.json)
+pass without HTTP or capture writes. This is recorder/reference evidence;
+Goby's [M5f task service](../../../../../docs/research/scheduled-tasks-plan.md)
+has no new product acceptance in this corpus extension.

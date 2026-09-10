@@ -1,0 +1,103 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/ScheduledTasks/c27fda37dfb6e39be141191aaa1c3060",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "583"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 01:56:57 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "Check for plugin updates",
+      "State": "Idle",
+      "Id": "c27fda37dfb6e39be141191aaa1c3060",
+      "LastExecutionResult": {
+        "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+        "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+        "Status": "Completed",
+        "Name": "Check for plugin updates",
+        "Id": "c27fda37dfb6e39be141191aaa1c3060",
+        "Key": "PluginUpdates"
+      },
+      "Triggers": [
+        {
+          "Type": "StartupTrigger"
+        },
+        {
+          "Type": "IntervalTrigger",
+          "IntervalTicks": 864000000000
+        }
+      ],
+      "Description": "Downloads and installs updates for plugins that are configured to update automatically.",
+      "Category": "Application",
+      "IsHidden": true,
+      "Key": "PluginUpdates"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 583
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T01:56:58.590947+00:00"
+  }
+}

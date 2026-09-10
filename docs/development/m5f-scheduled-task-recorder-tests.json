@@ -1,0 +1,1 @@
+{"suite": "scheduled-task-read-only-guards", "result": "passed", "tests": 5, "failures": 0, "errors": 0, "recorderSha256": "b037ab51f5d0fb9e84d4121466a34263ebbf166c99eff2e56cc2dc5b68ada4f1", "testSha256": "1546e5635765a3579d4909adcb56060198b0c6cf4f53906928b7a4dac615d9b8", "httpRequests": 0, "captureWrites": 0}

@@ -1,0 +1,100 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/ScheduledTasks/c2d62f565f79cd563efbea04a1135a1f",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "518"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 01:56:57 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Media Server Reference"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "ec69ef1cf84140e88489c30326529308"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Name": "Send Download Notifications",
+      "State": "Idle",
+      "Id": "c2d62f565f79cd563efbea04a1135a1f",
+      "LastExecutionResult": {
+        "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+        "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+        "Status": "Completed",
+        "Name": "Send Download Notifications",
+        "Id": "c2d62f565f79cd563efbea04a1135a1f",
+        "Key": "SyncDownloadNotification"
+      },
+      "Triggers": [
+        {
+          "Type": "IntervalTrigger",
+          "IntervalTicks": 108000000000
+        }
+      ],
+      "Description": "Send download notifications",
+      "Category": "Sync",
+      "IsHidden": true,
+      "Key": "SyncDownloadNotification"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 518
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T01:56:58.591811+00:00"
+  }
+}

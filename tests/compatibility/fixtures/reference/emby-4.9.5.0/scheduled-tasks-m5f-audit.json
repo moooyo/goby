@@ -1,0 +1,5353 @@
+{
+  "kind": "capture-audit-observation",
+  "referencePID": 3131777,
+  "serverId": "ec69ef1cf84140e88489c30326529308",
+  "captureFailureType": null,
+  "cleanupPassed": true,
+  "checks": {
+    "taskDefinitionMembershipUnchanged": true,
+    "taskConfigurationUnchanged": true,
+    "oldDeviceStructuralFieldsUnchanged": true,
+    "oldDeviceActivityUnchanged": true,
+    "oldDeviceOptionsUnchanged": true,
+    "noUnownedNewDevices": true,
+    "onlyThisRunOwnedLoginDeviceHistoryAdded": true,
+    "hiddenServerDeviceInfoAndOptionsUnchanged": true,
+    "oldUserMembershipUnchanged": true,
+    "oldUsersUnchangedExceptAttributedParticipantActivity": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "allAttemptedLoginsAcknowledgedOrRejected": true,
+    "originalReferenceProcessUnchanged": true,
+    "mainGobyProcessAndBinaryUnchanged": true,
+    "allPriorEvidenceSourcesAndPrivateFilesUnchanged": true,
+    "scheduledTaskMutationRequestsZero": true,
+    "newRedactionAuditPassed": true
+  },
+  "cleanupErrors": [],
+  "preservedOldRecords": 1665,
+  "preservedOldRecordFiles": 3330,
+  "preservedOldMediaFiles": 240,
+  "preservedOldPrivateFiles": 2214,
+  "historicallyRemovedFreshPathsNotRequiredToExist": [
+    "/dev/shm/goby-emby-key-devices-fresh-m5e-20260910-02/.goby-managed"
+  ],
+  "mainGobyBefore": {
+    "pid": 3535438,
+    "uid": 995,
+    "startTicks": "23604510",
+    "networkNamespace": "net:[4026531840]",
+    "executable": "/opt/goby-dev/goby",
+    "binarySha256": "394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541",
+    "serviceProperties": {
+      "MainPID": "3535438",
+      "ExecStart": "{ path=/opt/goby-dev/goby ; argv[]=/opt/goby-dev/goby ; ignore_errors=no ; start_time=[Thu 2026-09-10 09:14:45 CST] ; stop_time=[n/a] ; pid=3535438 ; code=(null) ; status=0/0 }",
+      "WorkingDirectory": "/var/lib/goby-test",
+      "User": "goby",
+      "ActiveState": "active"
+    }
+  },
+  "oldListedDeviceCount": 20,
+  "oldDeviceActivityDifferences": [],
+  "attributedUserActivityDifferences": [
+    {
+      "userId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "field": "LastActivityDate",
+      "before": "2026-09-10T01:56:57.3883111Z",
+      "after": "2026-09-10T01:56:58.6135252Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastLoginDate",
+      "before": "2026-09-09T22:23:37.7967633Z",
+      "after": "2026-09-10T01:56:58.4927115Z",
+      "attribution": "Owned fresh login and requests"
+    },
+    {
+      "userId": "2118172027b94fd18c3ca6e55478d6d3",
+      "field": "LastActivityDate",
+      "before": "2026-09-09T22:23:37.8159330Z",
+      "after": "2026-09-10T01:56:58.4990632Z",
+      "attribution": "Owned fresh login and requests"
+    }
+  ],
+  "ownedLoginAttempts": [
+    "control",
+    "viewer"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200,
+    "viewer": 200
+  },
+  "ownedLoginInvalidityProofs": {
+    "viewer": {
+      "label": "cleanup-invalid-viewer",
+      "status": 401
+    },
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedLoginLogoutStatuses": {
+    "viewer": 204,
+    "control": 204
+  },
+  "retainedOwnedDeviceHistory": [
+    {
+      "Name": "Scheduled Tasks Viewer",
+      "Id": "32",
+      "ReportedDeviceId": "goby-scheduled-tasks-m5f-20260910-01-viewer",
+      "LastUserName": "reference-session-m3b",
+      "AppName": "Goby Scheduled Tasks M5f 20260910 01 Viewer",
+      "AppVersion": "0.1.0",
+      "LastUserId": "2118172027b94fd18c3ca6e55478d6d3",
+      "DateLastActivity": "2026-09-10T01:56:58.0000000Z",
+      "IpAddress": "127.0.0.1"
+    },
+    {
+      "Name": "Scheduled Tasks Control",
+      "Id": "31",
+      "ReportedDeviceId": "goby-scheduled-tasks-m5f-20260910-01-control",
+      "LastUserName": "reference-admin",
+      "AppName": "Goby Scheduled Tasks M5f 20260910 01 Control",
+      "AppVersion": "0.1.0",
+      "LastUserId": "fa0ec9ecc77b4fb487eceb8233c9a1fb",
+      "DateLastActivity": "2026-09-10T01:56:57.0000000Z",
+      "IpAddress": "127.0.0.1"
+    }
+  ],
+  "retainedHistoryAttribution": "Only this run's reserved ordinary-login device metadata; both acknowledged credentials independently end with 401",
+  "taskObservations": [
+    {
+      "capture": "tasks-baseline-all",
+      "filters": {},
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 22,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "41025d42ea034a89558382b16c965757",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "9c4589c712196c27894f665a58cc42e3",
+        "a1e4a7962c72ac5e491497598d1ee479",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-true",
+      "filters": {
+        "IsHidden": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 14,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "41025d42ea034a89558382b16c965757",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "a1e4a7962c72ac5e491497598d1ee479",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-false",
+      "filters": {
+        "IsHidden": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 8,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9c4589c712196c27894f665a58cc42e3",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753"
+      ],
+      "tasks": [
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-enabled-true",
+      "filters": {
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 20,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "9c4589c712196c27894f665a58cc42e3",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-enabled-false",
+      "filters": {
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 2,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "41025d42ea034a89558382b16c965757",
+        "a1e4a7962c72ac5e491497598d1ee479"
+      ],
+      "tasks": [
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-true-enabled-true",
+      "filters": {
+        "IsHidden": "true",
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 12,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-true-enabled-false",
+      "filters": {
+        "IsHidden": "true",
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 2,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "41025d42ea034a89558382b16c965757",
+        "a1e4a7962c72ac5e491497598d1ee479"
+      ],
+      "tasks": [
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-false-enabled-true",
+      "filters": {
+        "IsHidden": "false",
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 8,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9c4589c712196c27894f665a58cc42e3",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753"
+      ],
+      "tasks": [
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-baseline-hidden-false-enabled-false",
+      "filters": {
+        "IsHidden": "false",
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 0,
+      "completeDefinitionSample": true,
+      "taskIds": [],
+      "tasks": []
+    },
+    {
+      "capture": "task-detail-0",
+      "status": 200,
+      "task": {
+        "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "taskIdentifier": "DownloadSubtitles",
+        "name": "Download subtitles",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+          "Status": "Completed",
+          "Name": "Download subtitles",
+          "taskIdentifier": "DownloadSubtitles",
+          "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-1",
+      "status": 200,
+      "task": {
+        "id": "1c8ede62c521bea0bf851344f5b8ca40",
+        "taskIdentifier": "CleanLogFiles",
+        "name": "Log file cleanup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+          "Status": "Completed",
+          "Name": "Log file cleanup",
+          "taskIdentifier": "CleanLogFiles",
+          "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-2",
+      "status": 200,
+      "task": {
+        "id": "1cc2f60a05befec8b1532ac44630a00f",
+        "taskIdentifier": "SystemUpdateTask",
+        "name": "Check for application updates",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+          "Status": "Completed",
+          "Name": "Check for application updates",
+          "taskIdentifier": "SystemUpdateTask",
+          "Id": "1cc2f60a05befec8b1532ac44630a00f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-3",
+      "status": 200,
+      "task": {
+        "id": "241d4fcb19a1d557ee62428e411da609",
+        "taskIdentifier": "DeleteCacheFiles",
+        "name": "Cache file cleanup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+          "Status": "Completed",
+          "Name": "Cache file cleanup",
+          "taskIdentifier": "DeleteCacheFiles",
+          "Id": "241d4fcb19a1d557ee62428e411da609"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-4",
+      "status": 200,
+      "task": {
+        "id": "41025d42ea034a89558382b16c965757",
+        "taskIdentifier": "markers",
+        "name": "Detect Episode Intros",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ]
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-5",
+      "status": 200,
+      "task": {
+        "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "taskIdentifier": "HardwareDetection",
+        "name": "Hardware Detection",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          },
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+          "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+          "Status": "Completed",
+          "Name": "Hardware Detection",
+          "taskIdentifier": "HardwareDetection",
+          "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-6",
+      "status": 200,
+      "task": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-7",
+      "status": 200,
+      "task": {
+        "id": "66ff02a80e8afc5da71945716f0f53e3",
+        "taskIdentifier": "ScanInternalMetadataFolderTask",
+        "name": "Scan Metadata Folder",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": []
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-8",
+      "status": 200,
+      "task": {
+        "id": "7a7448c261fa47f346b4c061a5d5c163",
+        "taskIdentifier": "RefreshUsers",
+        "name": "Refresh Users",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+          "Status": "Completed",
+          "Name": "Refresh Users",
+          "taskIdentifier": "RefreshUsers",
+          "Id": "7a7448c261fa47f346b4c061a5d5c163"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-9",
+      "status": 200,
+      "task": {
+        "id": "82280a18c237acd24570a386d598c3ba",
+        "taskIdentifier": "VacuumDatabase",
+        "name": "Vacuum Database",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 6048000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+          "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+          "Status": "Completed",
+          "Name": "Vacuum Database",
+          "taskIdentifier": "VacuumDatabase",
+          "Id": "82280a18c237acd24570a386d598c3ba"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-10",
+      "status": 200,
+      "task": {
+        "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+        "taskIdentifier": "SyncPrepare",
+        "name": "Convert media",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+          "Status": "Completed",
+          "Name": "Convert media",
+          "taskIdentifier": "SyncPrepare",
+          "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-11",
+      "status": 200,
+      "task": {
+        "id": "9120755af992e23c502f998cc55e54ac",
+        "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+        "name": "Refresh Emby Connect Data",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 216000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+          "Status": "Completed",
+          "Name": "Refresh Emby Connect Data",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "Id": "9120755af992e23c502f998cc55e54ac"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-12",
+      "status": 200,
+      "task": {
+        "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+        "taskIdentifier": "RefreshGuide",
+        "name": "Refresh Guide",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+          "Status": "Completed",
+          "Name": "Refresh Guide",
+          "taskIdentifier": "RefreshGuide",
+          "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-13",
+      "status": 200,
+      "task": {
+        "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+        "taskIdentifier": "RefreshIntros",
+        "name": "Refresh Custom Intros",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": []
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-14",
+      "status": 200,
+      "task": {
+        "id": "9c4589c712196c27894f665a58cc42e3",
+        "taskIdentifier": "ServerSync",
+        "name": "Transfer media",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+          "Status": "Completed",
+          "Name": "Transfer media",
+          "taskIdentifier": "ServerSync",
+          "Id": "9c4589c712196c27894f665a58cc42e3"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-15",
+      "status": 200,
+      "task": {
+        "id": "a1e4a7962c72ac5e491497598d1ee479",
+        "taskIdentifier": "EmbyServerBackup",
+        "name": "Emby Server Backup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 6000000000
+          }
+        ]
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-16",
+      "status": 200,
+      "task": {
+        "id": "a27c54259520b2e5c509def68c8f4c45",
+        "taskIdentifier": "RefreshInternetChannels",
+        "name": "Refresh Internet Channels",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+          "Status": "Completed",
+          "Name": "Refresh Internet Channels",
+          "taskIdentifier": "RefreshInternetChannels",
+          "Id": "a27c54259520b2e5c509def68c8f4c45"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-17",
+      "status": 200,
+      "task": {
+        "id": "c27fda37dfb6e39be141191aaa1c3060",
+        "taskIdentifier": "PluginUpdates",
+        "name": "Check for plugin updates",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+          "Status": "Completed",
+          "Name": "Check for plugin updates",
+          "taskIdentifier": "PluginUpdates",
+          "Id": "c27fda37dfb6e39be141191aaa1c3060"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-18",
+      "status": 200,
+      "task": {
+        "id": "c2d62f565f79cd563efbea04a1135a1f",
+        "taskIdentifier": "SyncDownloadNotification",
+        "name": "Send Download Notifications",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+          "Status": "Completed",
+          "Name": "Send Download Notifications",
+          "taskIdentifier": "SyncDownloadNotification",
+          "Id": "c2d62f565f79cd563efbea04a1135a1f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-19",
+      "status": 200,
+      "task": {
+        "id": "c3f011675d868fcc11e278b847523ef5",
+        "taskIdentifier": null,
+        "name": "Rotate log file",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 0
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+          "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+          "Status": "Completed",
+          "Name": "Rotate log file",
+          "Id": "c3f011675d868fcc11e278b847523ef5"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-20",
+      "status": 200,
+      "task": {
+        "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+        "taskIdentifier": "RefreshChapterImages",
+        "name": "Video preview thumbnail extraction",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+          "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+          "Status": "Completed",
+          "Name": "Video preview thumbnail extraction",
+          "taskIdentifier": "RefreshChapterImages",
+          "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-detail-21",
+      "status": 200,
+      "task": {
+        "id": "d875342e9b1b199691b89f7a79c0f960",
+        "taskIdentifier": "DownloadOcr",
+        "name": "Download OCR Data",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+          "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+          "Status": "Completed",
+          "Name": "Download OCR Data",
+          "taskIdentifier": "DownloadOcr",
+          "Id": "d875342e9b1b199691b89f7a79c0f960"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "anonymous-tasks-list",
+      "actor": "anonymous",
+      "operation": "list",
+      "status": 401
+    },
+    {
+      "capture": "anonymous-tasks-known-detail",
+      "actor": "anonymous",
+      "operation": "known-detail",
+      "status": 401
+    },
+    {
+      "capture": "anonymous-tasks-unknown-detail",
+      "actor": "anonymous",
+      "operation": "unknown-detail",
+      "status": 401
+    },
+    {
+      "capture": "viewer-tasks-list",
+      "actor": "viewer",
+      "operation": "list",
+      "status": 403
+    },
+    {
+      "capture": "viewer-tasks-known-detail",
+      "actor": "viewer",
+      "operation": "known-detail",
+      "status": 403
+    },
+    {
+      "capture": "viewer-tasks-unknown-detail",
+      "actor": "viewer",
+      "operation": "unknown-detail",
+      "status": 403
+    },
+    {
+      "capture": "admin-tasks-unknown-detail",
+      "actor": "administrator",
+      "operation": "unknown-detail",
+      "status": 404
+    },
+    {
+      "capture": "tasks-final-all",
+      "filters": {},
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 22,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "41025d42ea034a89558382b16c965757",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "9c4589c712196c27894f665a58cc42e3",
+        "a1e4a7962c72ac5e491497598d1ee479",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-true",
+      "filters": {
+        "IsHidden": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 14,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "41025d42ea034a89558382b16c965757",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "a1e4a7962c72ac5e491497598d1ee479",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-false",
+      "filters": {
+        "IsHidden": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 8,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9c4589c712196c27894f665a58cc42e3",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753"
+      ],
+      "tasks": [
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-enabled-true",
+      "filters": {
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 20,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "9c4589c712196c27894f665a58cc42e3",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-enabled-false",
+      "filters": {
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 2,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "41025d42ea034a89558382b16c965757",
+        "a1e4a7962c72ac5e491497598d1ee479"
+      ],
+      "tasks": [
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-true-enabled-true",
+      "filters": {
+        "IsHidden": "true",
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 12,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "1c8ede62c521bea0bf851344f5b8ca40",
+        "1cc2f60a05befec8b1532ac44630a00f",
+        "241d4fcb19a1d557ee62428e411da609",
+        "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "7a7448c261fa47f346b4c061a5d5c163",
+        "9120755af992e23c502f998cc55e54ac",
+        "9492d30c70f7f1bec3757c9d0a4feb45",
+        "9be21c934ee449269f41b7c2b4d4d1d7",
+        "a27c54259520b2e5c509def68c8f4c45",
+        "c27fda37dfb6e39be141191aaa1c3060",
+        "c2d62f565f79cd563efbea04a1135a1f",
+        "d875342e9b1b199691b89f7a79c0f960"
+      ],
+      "tasks": [
+        {
+          "id": "241d4fcb19a1d557ee62428e411da609",
+          "taskIdentifier": "DeleteCacheFiles",
+          "name": "Cache file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+            "Status": "Completed",
+            "Name": "Cache file cleanup",
+            "taskIdentifier": "DeleteCacheFiles",
+            "Id": "241d4fcb19a1d557ee62428e411da609"
+          }
+        },
+        {
+          "id": "1cc2f60a05befec8b1532ac44630a00f",
+          "taskIdentifier": "SystemUpdateTask",
+          "name": "Check for application updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+            "Status": "Completed",
+            "Name": "Check for application updates",
+            "taskIdentifier": "SystemUpdateTask",
+            "Id": "1cc2f60a05befec8b1532ac44630a00f"
+          }
+        },
+        {
+          "id": "c27fda37dfb6e39be141191aaa1c3060",
+          "taskIdentifier": "PluginUpdates",
+          "name": "Check for plugin updates",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            },
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+            "Status": "Completed",
+            "Name": "Check for plugin updates",
+            "taskIdentifier": "PluginUpdates",
+            "Id": "c27fda37dfb6e39be141191aaa1c3060"
+          }
+        },
+        {
+          "id": "d875342e9b1b199691b89f7a79c0f960",
+          "taskIdentifier": "DownloadOcr",
+          "name": "Download OCR Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+            "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+            "Status": "Completed",
+            "Name": "Download OCR Data",
+            "taskIdentifier": "DownloadOcr",
+            "Id": "d875342e9b1b199691b89f7a79c0f960"
+          }
+        },
+        {
+          "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+          "taskIdentifier": "HardwareDetection",
+          "name": "Hardware Detection",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "SystemEventTrigger",
+              "SystemEvent": "DisplayConfigurationChange"
+            },
+            {
+              "Type": "StartupTrigger"
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+            "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+            "Status": "Completed",
+            "Name": "Hardware Detection",
+            "taskIdentifier": "HardwareDetection",
+            "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+          }
+        },
+        {
+          "id": "1c8ede62c521bea0bf851344f5b8ca40",
+          "taskIdentifier": "CleanLogFiles",
+          "name": "Log file cleanup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+            "Status": "Completed",
+            "Name": "Log file cleanup",
+            "taskIdentifier": "CleanLogFiles",
+            "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+          }
+        },
+        {
+          "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+          "taskIdentifier": "RefreshIntros",
+          "name": "Refresh Custom Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": []
+        },
+        {
+          "id": "9120755af992e23c502f998cc55e54ac",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "name": "Refresh Emby Connect Data",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 216000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+            "Status": "Completed",
+            "Name": "Refresh Emby Connect Data",
+            "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+            "Id": "9120755af992e23c502f998cc55e54ac"
+          }
+        },
+        {
+          "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+          "taskIdentifier": "RefreshGuide",
+          "name": "Refresh Guide",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+            "Status": "Completed",
+            "Name": "Refresh Guide",
+            "taskIdentifier": "RefreshGuide",
+            "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+          }
+        },
+        {
+          "id": "a27c54259520b2e5c509def68c8f4c45",
+          "taskIdentifier": "RefreshInternetChannels",
+          "name": "Refresh Internet Channels",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+            "Status": "Completed",
+            "Name": "Refresh Internet Channels",
+            "taskIdentifier": "RefreshInternetChannels",
+            "Id": "a27c54259520b2e5c509def68c8f4c45"
+          }
+        },
+        {
+          "id": "7a7448c261fa47f346b4c061a5d5c163",
+          "taskIdentifier": "RefreshUsers",
+          "name": "Refresh Users",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+            "Status": "Completed",
+            "Name": "Refresh Users",
+            "taskIdentifier": "RefreshUsers",
+            "Id": "7a7448c261fa47f346b4c061a5d5c163"
+          }
+        },
+        {
+          "id": "c2d62f565f79cd563efbea04a1135a1f",
+          "taskIdentifier": "SyncDownloadNotification",
+          "name": "Send Download Notifications",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+            "Status": "Completed",
+            "Name": "Send Download Notifications",
+            "taskIdentifier": "SyncDownloadNotification",
+            "Id": "c2d62f565f79cd563efbea04a1135a1f"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-true-enabled-false",
+      "filters": {
+        "IsHidden": "true",
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 2,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "41025d42ea034a89558382b16c965757",
+        "a1e4a7962c72ac5e491497598d1ee479"
+      ],
+      "tasks": [
+        {
+          "id": "41025d42ea034a89558382b16c965757",
+          "taskIdentifier": "markers",
+          "name": "Detect Episode Intros",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ]
+        },
+        {
+          "id": "a1e4a7962c72ac5e491497598d1ee479",
+          "taskIdentifier": "EmbyServerBackup",
+          "name": "Emby Server Backup",
+          "state": "Idle",
+          "progress": null,
+          "hidden": true,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 6000000000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-false-enabled-true",
+      "filters": {
+        "IsHidden": "false",
+        "IsEnabled": "true"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 8,
+      "completeDefinitionSample": true,
+      "taskIds": [
+        "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "6330ee8fb4a957f33981f89aa78b030f",
+        "66ff02a80e8afc5da71945716f0f53e3",
+        "82280a18c237acd24570a386d598c3ba",
+        "8542b8a00478ef9d9a590e7f2e3b62da",
+        "9c4589c712196c27894f665a58cc42e3",
+        "c3f011675d868fcc11e278b847523ef5",
+        "d15b3f9fc313609ffe7e49bd1c74f753"
+      ],
+      "tasks": [
+        {
+          "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+          "taskIdentifier": "SyncPrepare",
+          "name": "Convert media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+            "Status": "Completed",
+            "Name": "Convert media",
+            "taskIdentifier": "SyncPrepare",
+            "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+          }
+        },
+        {
+          "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+          "taskIdentifier": "DownloadSubtitles",
+          "name": "Download subtitles",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 864000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+            "Status": "Completed",
+            "Name": "Download subtitles",
+            "taskIdentifier": "DownloadSubtitles",
+            "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+          }
+        },
+        {
+          "id": "c3f011675d868fcc11e278b847523ef5",
+          "taskIdentifier": null,
+          "name": "Rotate log file",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 0
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+            "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+            "Status": "Completed",
+            "Name": "Rotate log file",
+            "Id": "c3f011675d868fcc11e278b847523ef5"
+          }
+        },
+        {
+          "id": "6330ee8fb4a957f33981f89aa78b030f",
+          "taskIdentifier": "RefreshLibrary",
+          "name": "Scan media library",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 432000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+            "Status": "Completed",
+            "Name": "Scan media library",
+            "taskIdentifier": "RefreshLibrary",
+            "Id": "6330ee8fb4a957f33981f89aa78b030f"
+          }
+        },
+        {
+          "id": "66ff02a80e8afc5da71945716f0f53e3",
+          "taskIdentifier": "ScanInternalMetadataFolderTask",
+          "name": "Scan Metadata Folder",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": []
+        },
+        {
+          "id": "9c4589c712196c27894f665a58cc42e3",
+          "taskIdentifier": "ServerSync",
+          "name": "Transfer media",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 108000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+            "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+            "Status": "Completed",
+            "Name": "Transfer media",
+            "taskIdentifier": "ServerSync",
+            "Id": "9c4589c712196c27894f665a58cc42e3"
+          }
+        },
+        {
+          "id": "82280a18c237acd24570a386d598c3ba",
+          "taskIdentifier": "VacuumDatabase",
+          "name": "Vacuum Database",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "IntervalTrigger",
+              "IntervalTicks": 6048000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+            "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+            "Status": "Completed",
+            "Name": "Vacuum Database",
+            "taskIdentifier": "VacuumDatabase",
+            "Id": "82280a18c237acd24570a386d598c3ba"
+          }
+        },
+        {
+          "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+          "taskIdentifier": "RefreshChapterImages",
+          "name": "Video preview thumbnail extraction",
+          "state": "Idle",
+          "progress": null,
+          "hidden": false,
+          "triggers": [
+            {
+              "Type": "DailyTrigger",
+              "TimeOfDayTicks": 72000000000,
+              "MaxRuntimeTicks": 144000000000
+            }
+          ],
+          "lastExecution": {
+            "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+            "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+            "Status": "Completed",
+            "Name": "Video preview thumbnail extraction",
+            "taskIdentifier": "RefreshChapterImages",
+            "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+          }
+        }
+      ]
+    },
+    {
+      "capture": "tasks-final-hidden-false-enabled-false",
+      "filters": {
+        "IsHidden": "false",
+        "IsEnabled": "false"
+      },
+      "status": 200,
+      "responseShape": "list",
+      "itemsCount": 0,
+      "completeDefinitionSample": true,
+      "taskIds": [],
+      "tasks": []
+    },
+    {
+      "capture": "task-final-detail-0",
+      "status": 200,
+      "task": {
+        "id": "0ac9e449d14bbda75dc6e7ea6f830b9c",
+        "taskIdentifier": "DownloadSubtitles",
+        "name": "Download subtitles",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0706467Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0758959Z",
+          "Status": "Completed",
+          "Name": "Download subtitles",
+          "taskIdentifier": "DownloadSubtitles",
+          "Id": "0ac9e449d14bbda75dc6e7ea6f830b9c"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-1",
+      "status": 200,
+      "task": {
+        "id": "1c8ede62c521bea0bf851344f5b8ca40",
+        "taskIdentifier": "CleanLogFiles",
+        "name": "Log file cleanup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0826080Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0841114Z",
+          "Status": "Completed",
+          "Name": "Log file cleanup",
+          "taskIdentifier": "CleanLogFiles",
+          "Id": "1c8ede62c521bea0bf851344f5b8ca40"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-2",
+      "status": 200,
+      "task": {
+        "id": "1cc2f60a05befec8b1532ac44630a00f",
+        "taskIdentifier": "SystemUpdateTask",
+        "name": "Check for application updates",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0750014Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0800884Z",
+          "Status": "Completed",
+          "Name": "Check for application updates",
+          "taskIdentifier": "SystemUpdateTask",
+          "Id": "1cc2f60a05befec8b1532ac44630a00f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-3",
+      "status": 200,
+      "task": {
+        "id": "241d4fcb19a1d557ee62428e411da609",
+        "taskIdentifier": "DeleteCacheFiles",
+        "name": "Cache file cleanup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0772808Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0830909Z",
+          "Status": "Completed",
+          "Name": "Cache file cleanup",
+          "taskIdentifier": "DeleteCacheFiles",
+          "Id": "241d4fcb19a1d557ee62428e411da609"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-4",
+      "status": 200,
+      "task": {
+        "id": "41025d42ea034a89558382b16c965757",
+        "taskIdentifier": "markers",
+        "name": "Detect Episode Intros",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ]
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-5",
+      "status": 200,
+      "task": {
+        "id": "4ccba258b890b2b73ee3e1d0ceec11e9",
+        "taskIdentifier": "HardwareDetection",
+        "name": "Hardware Detection",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "SystemEventTrigger",
+            "SystemEvent": "DisplayConfigurationChange"
+          },
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T22:28:10.0814322Z",
+          "EndTimeUtc": "2026-09-08T22:28:10.5105382Z",
+          "Status": "Completed",
+          "Name": "Hardware Detection",
+          "taskIdentifier": "HardwareDetection",
+          "Id": "4ccba258b890b2b73ee3e1d0ceec11e9"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-6",
+      "status": 200,
+      "task": {
+        "id": "6330ee8fb4a957f33981f89aa78b030f",
+        "taskIdentifier": "RefreshLibrary",
+        "name": "Scan media library",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 432000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0843997Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0988689Z",
+          "Status": "Completed",
+          "Name": "Scan media library",
+          "taskIdentifier": "RefreshLibrary",
+          "Id": "6330ee8fb4a957f33981f89aa78b030f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-7",
+      "status": 200,
+      "task": {
+        "id": "66ff02a80e8afc5da71945716f0f53e3",
+        "taskIdentifier": "ScanInternalMetadataFolderTask",
+        "name": "Scan Metadata Folder",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": []
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-8",
+      "status": 200,
+      "task": {
+        "id": "7a7448c261fa47f346b4c061a5d5c163",
+        "taskIdentifier": "RefreshUsers",
+        "name": "Refresh Users",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0827949Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0885982Z",
+          "Status": "Completed",
+          "Name": "Refresh Users",
+          "taskIdentifier": "RefreshUsers",
+          "Id": "7a7448c261fa47f346b4c061a5d5c163"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-9",
+      "status": 200,
+      "task": {
+        "id": "82280a18c237acd24570a386d598c3ba",
+        "taskIdentifier": "VacuumDatabase",
+        "name": "Vacuum Database",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 6048000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T23:28:10.0778074Z",
+          "EndTimeUtc": "2026-09-08T23:28:10.0785873Z",
+          "Status": "Completed",
+          "Name": "Vacuum Database",
+          "taskIdentifier": "VacuumDatabase",
+          "Id": "82280a18c237acd24570a386d598c3ba"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-10",
+      "status": 200,
+      "task": {
+        "id": "8542b8a00478ef9d9a590e7f2e3b62da",
+        "taskIdentifier": "SyncPrepare",
+        "name": "Convert media",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0859044Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0863933Z",
+          "Status": "Completed",
+          "Name": "Convert media",
+          "taskIdentifier": "SyncPrepare",
+          "Id": "8542b8a00478ef9d9a590e7f2e3b62da"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-11",
+      "status": 200,
+      "task": {
+        "id": "9120755af992e23c502f998cc55e54ac",
+        "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+        "name": "Refresh Emby Connect Data",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 216000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0850808Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0850904Z",
+          "Status": "Completed",
+          "Name": "Refresh Emby Connect Data",
+          "taskIdentifier": "RefreshAuthorizationsScheduledTask",
+          "Id": "9120755af992e23c502f998cc55e54ac"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-12",
+      "status": 200,
+      "task": {
+        "id": "9492d30c70f7f1bec3757c9d0a4feb45",
+        "taskIdentifier": "RefreshGuide",
+        "name": "Refresh Guide",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0834466Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0845501Z",
+          "Status": "Completed",
+          "Name": "Refresh Guide",
+          "taskIdentifier": "RefreshGuide",
+          "Id": "9492d30c70f7f1bec3757c9d0a4feb45"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-13",
+      "status": 200,
+      "task": {
+        "id": "9be21c934ee449269f41b7c2b4d4d1d7",
+        "taskIdentifier": "RefreshIntros",
+        "name": "Refresh Custom Intros",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": []
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-14",
+      "status": 200,
+      "task": {
+        "id": "9c4589c712196c27894f665a58cc42e3",
+        "taskIdentifier": "ServerSync",
+        "name": "Transfer media",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0864056Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0864167Z",
+          "Status": "Completed",
+          "Name": "Transfer media",
+          "taskIdentifier": "ServerSync",
+          "Id": "9c4589c712196c27894f665a58cc42e3"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-15",
+      "status": 200,
+      "task": {
+        "id": "a1e4a7962c72ac5e491497598d1ee479",
+        "taskIdentifier": "EmbyServerBackup",
+        "name": "Emby Server Backup",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 6000000000
+          }
+        ]
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-16",
+      "status": 200,
+      "task": {
+        "id": "a27c54259520b2e5c509def68c8f4c45",
+        "taskIdentifier": "RefreshInternetChannels",
+        "name": "Refresh Internet Channels",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0765766Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0769149Z",
+          "Status": "Completed",
+          "Name": "Refresh Internet Channels",
+          "taskIdentifier": "RefreshInternetChannels",
+          "Id": "a27c54259520b2e5c509def68c8f4c45"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-17",
+      "status": 200,
+      "task": {
+        "id": "c27fda37dfb6e39be141191aaa1c3060",
+        "taskIdentifier": "PluginUpdates",
+        "name": "Check for plugin updates",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          },
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 864000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0741925Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0814281Z",
+          "Status": "Completed",
+          "Name": "Check for plugin updates",
+          "taskIdentifier": "PluginUpdates",
+          "Id": "c27fda37dfb6e39be141191aaa1c3060"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-18",
+      "status": 200,
+      "task": {
+        "id": "c2d62f565f79cd563efbea04a1135a1f",
+        "taskIdentifier": "SyncDownloadNotification",
+        "name": "Send Download Notifications",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "IntervalTrigger",
+            "IntervalTicks": 108000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T23:28:10.0857590Z",
+          "EndTimeUtc": "2026-09-09T23:28:10.0858399Z",
+          "Status": "Completed",
+          "Name": "Send Download Notifications",
+          "taskIdentifier": "SyncDownloadNotification",
+          "Id": "c2d62f565f79cd563efbea04a1135a1f"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-19",
+      "status": 200,
+      "task": {
+        "id": "c3f011675d868fcc11e278b847523ef5",
+        "taskIdentifier": null,
+        "name": "Rotate log file",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 0
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T16:00:00.0033998Z",
+          "EndTimeUtc": "2026-09-09T16:00:00.0133283Z",
+          "Status": "Completed",
+          "Name": "Rotate log file",
+          "Id": "c3f011675d868fcc11e278b847523ef5"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-20",
+      "status": 200,
+      "task": {
+        "id": "d15b3f9fc313609ffe7e49bd1c74f753",
+        "taskIdentifier": "RefreshChapterImages",
+        "name": "Video preview thumbnail extraction",
+        "state": "Idle",
+        "progress": null,
+        "hidden": false,
+        "triggers": [
+          {
+            "Type": "DailyTrigger",
+            "TimeOfDayTicks": 72000000000,
+            "MaxRuntimeTicks": 144000000000
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-09T17:59:59.9975626Z",
+          "EndTimeUtc": "2026-09-09T18:00:00.0102796Z",
+          "Status": "Completed",
+          "Name": "Video preview thumbnail extraction",
+          "taskIdentifier": "RefreshChapterImages",
+          "Id": "d15b3f9fc313609ffe7e49bd1c74f753"
+        }
+      },
+      "detailIdentityMatched": true
+    },
+    {
+      "capture": "task-final-detail-21",
+      "status": 200,
+      "task": {
+        "id": "d875342e9b1b199691b89f7a79c0f960",
+        "taskIdentifier": "DownloadOcr",
+        "name": "Download OCR Data",
+        "state": "Idle",
+        "progress": null,
+        "hidden": true,
+        "triggers": [
+          {
+            "Type": "StartupTrigger"
+          }
+        ],
+        "lastExecution": {
+          "StartTimeUtc": "2026-09-08T22:28:13.0788177Z",
+          "EndTimeUtc": "2026-09-08T22:28:13.0881425Z",
+          "Status": "Completed",
+          "Name": "Download OCR Data",
+          "taskIdentifier": "DownloadOcr",
+          "Id": "d875342e9b1b199691b89f7a79c0f960"
+        }
+      },
+      "detailIdentityMatched": true
+    }
+  ],
+  "taskConfigurationChanges": [],
+  "taskRuntimeChanges": [],
+  "taskDefinitionBoundExceeded": false,
+  "completeInitialFilterSet": true,
+  "observedTaskDefinitions": 22,
+  "taskModelPublicIdentifierHandling": "Only TaskInfo.Key and its TaskResult.Key in successful ScheduledTasks response DTOs are public identifiers; known credentials are still redacted everywhere",
+  "scheduledTaskMutationRequests": 0,
+  "deviceMutationRequests": 0,
+  "applicationKeyRequests": 0,
+  "existingCredentialHTTPRequests": 0,
+  "mediaOrEncoderRequests": 0,
+  "sourceWrites": 0,
+  "httpAttempts": 128,
+  "incompleteHTTP": 0,
+  "wireBytes": 182636,
+  "wireByteBudgetCharged": 182636,
+  "elapsedSeconds": 2.164,
+  "limits": {
+    "taskDefinitions": 64,
+    "httpAttempts": 480,
+    "mainHTTPAttempts": 300,
+    "responseBytes": 262144,
+    "totalResponseBytes": 33554432,
+    "phaseSeconds": 360
+  },
+  "dependencies": [
+    {
+      "sourceFile": "reference-devices.py",
+      "sha256": "96d5378d82ce3fcd5dd9a325b02ea3b49bb9c045bcd6b320952222cc888b556d"
+    },
+    {
+      "sourceFile": "reference-api-keys.py",
+      "sha256": "ead25f9d47e8faf0b2b579ca8641b4ddcf4f7993c9e5a16710624c2927e749a8"
+    }
+  ],
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T01:56:58.967019+00:00"
+  }
+}
