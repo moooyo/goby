@@ -127,8 +127,8 @@ func TestMigrateApplicationKeyDevicesPreservesSchema16CredentialsAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("migrate shared application devices: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 19 {
-		t.Fatalf("application device schema = %d, want 19, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
+		t.Fatalf("application device schema = %d, want 20, error=%v", version, err)
 	}
 	if after := applicationKeyDeviceLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("schema 18 changed old key, token digest, ciphertext, client, or account fields")

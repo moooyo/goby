@@ -6,13 +6,15 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
 )
 
 func (s *Server) userDTO(user identity.User) map[string]any {
 	policy := embyUserPolicy(user)
 	if s.hls != nil {
-		limits := hlsUserLimits(s.cfg.Transcoding, user)
+		// User DTOs project permissions, independently of per-plan output limits.
+		limits := hlsUserLimits(config.TranscodingConfig{Enabled: s.cfg.Transcoding.Enabled}, user)
 		policy["EnablePlaybackRemuxing"] = limits.AllowRemux
 		policy["EnableAudioPlaybackTranscoding"] = limits.AllowAudioTranscode
 		policy["EnableVideoPlaybackTranscoding"] = limits.AllowVideoTranscode
@@ -83,12 +85,13 @@ func projectedLibraryAccess(user identity.User, stored map[string]json.RawMessag
 }
 
 func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {
+	snapshot := s.requestSettings(r)
 	initialized, err := s.identity.Initialized(r.Context())
 	if err != nil {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, map[string]any{"Id": s.serverID, "ServerName": s.cfg.ServerName, "Version": s.version, "ProductName": "Goby", "LocalAddress": s.cfg.PublicURL, "StartupWizardCompleted": initialized})
+	jsonResponse(w, 200, map[string]any{"Id": s.serverID, "ServerName": snapshot.Effective.ServerName, "Version": s.version, "ProductName": "Goby", "LocalAddress": s.cfg.PublicURL, "StartupWizardCompleted": initialized})
 }
 
 func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) { s.publicSystemInfo(w, r) }

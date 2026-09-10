@@ -1,0 +1,11 @@
+{
+  "revision": 3,
+  "all_five_overrides_null": true,
+  "schema_version": 20,
+  "observed_at": "2026-09-10T13:59:59.226239+08:00",
+  "status": "passed",
+  "database_port": 5432,
+  "main_pid": 3614026,
+  "deployed_workflow_report_sha256": "ac5ea3ddd0ad6d32d59456ccbb72f6fc0a344fd8f50d26985c3727b67ce556c0",
+  "read_only_observation": true
+}

@@ -22,9 +22,10 @@ func closeFixtureCatalogForReplacement(t *testing.T, f *serverFixture) {
 	}
 }
 
-// Each installed catalog receives the same task reconciliation, run recovery,
-// and manager construction as a new server. Capture the resulting pair so later
-// replacements cannot redirect cleanup to a different owner generation.
+// Each installed catalog receives the same settings initialization, task
+// reconciliation, run recovery, and manager construction as a new server.
+// Capture the resulting pair so later replacements cannot redirect cleanup to
+// a different owner generation.
 func installFixtureCatalog(t *testing.T, f *serverFixture, catalog *library.Store) {
 	t.Helper()
 	f.app.library = catalog
@@ -42,8 +43,18 @@ func installFixtureCatalog(t *testing.T, f *serverFixture, catalog *library.Stor
 			t.Errorf("close replacement fixture catalog: %v", err)
 		}
 	})
+	initializeFixtureSettings(t, f)
 	if err := f.app.initializeTasks(f.ctx); err != nil {
 		t.Fatalf("initialize tasks for replacement fixture catalog: %v", err)
 	}
 	manager = f.app.taskManager
+}
+
+// Fixtures that replace startup configuration explicitly rebuild its frozen
+// defaults on the current owner before constructing or exercising media plans.
+func initializeFixtureSettings(t *testing.T, f *serverFixture) {
+	t.Helper()
+	if err := f.app.initializeSettings(f.ctx); err != nil {
+		t.Fatalf("initialize settings for fixture configuration and catalog owner: %v", err)
+	}
 }

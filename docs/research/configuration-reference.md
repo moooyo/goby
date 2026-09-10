@@ -1,7 +1,8 @@
 # Configuration read-only reference
 
 Research date: 2026-09-10 (Asia/Shanghai).
-Status: **bounded reference read study complete; Goby M5g product acceptance pending**.
+Status: **bounded reference read study complete**. Later write observations and
+native product acceptance are linked separately below.
 
 This study reads configuration from official Emby Server `4.9.5.0`. An
 administrator receives the sampled configuration objects. The ordinary viewer's
@@ -168,9 +169,15 @@ configuration authority, XML negotiation, additional names, path aliases, camera
 upload, and actual encoder/DLNA effects remain unverified. An accepted GET or a
 source declaration does not establish any of those write or execution contracts.
 
-Goby's M5g native implementation is still in development and has not completed
-product acceptance. The current accepted deployment remains
-[M5f](../development/verification-m5f-tasks.md), schema **19** and probe **6**, with
-its separate 1190-test, browser/restart, deployment, and main-service evidence.
-This research increment adds no accepted Goby configuration endpoints. M4, M5,
-M6, and the complete compatibility goal remain unfinished.
+These limits describe this read-only capture. The later
+[fresh write study](configuration-mutation-reference.md) samples bounded
+configuration changes and token-only application-key no-op requests on a
+separate disposable instance. Its evidence does not change the historical
+requests or claims recorded here.
+
+Goby's [native M5g settings increment](../development/verification-m5g-settings.md)
+subsequently passed 1,222 top-level race tests, browser/restart checks, deployment
+at schema **20** and probe **6**, and the deployed native workflow. Its three
+administrator endpoints have a separate contract; the Emby ConfigurationService
+adapter remains unimplemented. M4, M5, M6, and the complete compatibility goal
+remain unfinished.

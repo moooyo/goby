@@ -1,0 +1,18 @@
+{
+  "failedTests": [],
+  "goExitCode": 0,
+  "logSha256": "58fa6181ba9704b71ce6372b99dbb0c41bf4c06e5d79199d0e9ea814049e90b8",
+  "packages": [
+    {
+      "Action": "pass",
+      "Elapsed": 14.276,
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Time": "2026-09-10T12:45:24.309057638+08:00"
+    }
+  ],
+  "raceWarningPresent": false,
+  "status": "passed",
+  "topLevelTests": {
+    "pass": 18
+  }
+}

@@ -271,7 +271,9 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		fresh.SessionID != scope.AuthSessionID || fresh.Client.DeviceID != scope.DeviceID {
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
-	limits := hlsPrincipalLimits(s.cfg.Transcoding, fresh)
+	// Registered outputs retain their original planning limits. Revalidation
+	// checks conversion support and current user permissions without replanning.
+	limits := hlsPrincipalLimits(config.TranscodingConfig{Enabled: s.cfg.Transcoding.Enabled}, fresh)
 	if !hlsPlanAllowed(plan, limits) {
 		return nil, library.MediaFile{}, library.ErrForbidden
 	}

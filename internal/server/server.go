@@ -14,6 +14,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/settings"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -36,6 +37,7 @@ type Server struct {
 	hls           *hlsRuntime
 	taskStore     *tasks.Store
 	taskManager   *tasks.Manager
+	settings      *settings.Store
 }
 
 func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
@@ -67,11 +69,37 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.notifier = newUserDataNotifier(catalog, hub)
+	if err := app.initializeSettings(ctx); err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
 	if err := app.initializeTasks(ctx); err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
 	}
 	return app, nil
+}
+
+func (s *Server) initializeSettings(ctx context.Context) error {
+	limits := s.cfg.Transcoding
+	// Direct constructors historically use the zero value to disable the
+	// conversion engine. Its display/planning defaults still need valid values.
+	if limits == (config.TranscodingConfig{}) {
+		limits.MaxBitrate = config.DefaultMaxBitrate
+		limits.MaxWidth = config.DefaultMaxWidth
+		limits.MaxHeight = config.DefaultMaxHeight
+		limits.MaxAudioChannels = config.DefaultMaxAudioChannels
+	}
+	store, err := settings.New(ctx, s.db, s.library, settings.Values{
+		ServerName: s.cfg.ServerName, MaxBitrate: limits.MaxBitrate,
+		MaxWidth: limits.MaxWidth, MaxHeight: limits.MaxHeight,
+		MaxAudioChannels: limits.MaxAudioChannels,
+	})
+	if err != nil {
+		return err
+	}
+	s.settings = store
+	return nil
 }
 
 func (s *Server) initializeTasks(ctx context.Context) error {
@@ -114,6 +142,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminSessionRoutes(mux)
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
+	s.registerAdminSettingsRoutes(mux)
 	s.registerScheduledTaskRoutes(mux)
 	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)
@@ -154,7 +183,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested resource was not found.")
 	})
-	return s.middleware(mux)
+	return s.withSettingsSnapshot(s.middleware(mux))
 }
 
 type contextKey int

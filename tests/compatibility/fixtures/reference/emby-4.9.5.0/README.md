@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 2051 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 2305 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -134,7 +134,7 @@ unverified. The extension is research evidence, not full Goby M5f acceptance.
 
 The [configuration read study](../../../../../docs/research/configuration-reference.md)
 adds 86 records under `configuration-m5g-`: 85 complete HTTP exchanges and one
-[audit](configuration-m5g-audit.json), bringing the current total to 2051.
+[audit](configuration-m5g-audit.json), bringing the total to 2051 at that checkpoint.
 Administrator total/encoding/devices/DLNA objects have 60/17/2/3 fields. The
 ordinary viewer's total-configuration `200` is exactly `{}`; named reads return
 viewer `403`, while all tested anonymous configuration requests return `401`.
@@ -151,4 +151,31 @@ masked, so its actual value is unobserved. Encoding sentinels and saved hardware
 flags do not establish runtime behavior. The
 [18 pure guard tests](../../../../../docs/development/m5g-configuration-recorder-tests.json)
 pass without HTTP or capture writes. This is a read-only research increment;
-Goby M5g native implementation remains in development without product acceptance.
+native product acceptance is recorded separately from this capture.
+
+The [fresh configuration write study](../../../../../docs/research/configuration-mutation-reference.md)
+adds **254 records**: 17 setup observations and 237 controlled-capture records,
+bringing the corpus to **2305**. The controlled capture contains 236 complete
+HTTP exchanges and one [audit](configuration-fresh-m5g-audit.json), with no
+incomplete replies. Full baseline-clone name updates, partial flat updates,
+array replacement, empty/null names, a mixed invalid partial body, named
+encoding width/MIME requests, permission checks, and reserved unknown names
+have distinct records.
+
+The mixed-invalid partial request returns `500` while later reads still show
+its valid name change. This demonstrates a non-atomic visible update in that
+request; it does not establish restart durability. A uniquely owned application
+key receives `204` for three complete-baseline no-op configuration writes.
+Those no-ops do not prove every field is writable by that credential.
+
+Every case ends with a verified original configuration. Both new ordinary
+credentials and the application key finish with independent `401` proofs.
+The preceding 2051 records, 240 source files, and 2854 private files remain
+preserved. The [operator cleanup](../../../../../docs/development/m5g-fresh-configuration-cleanup.json)
+stops the exact fresh process and removes only its disposable data directory;
+all evidence remains. The passing
+[nine preparation guards](../../../../../docs/development/m5g-fresh-operator-tests.json)
+and [37 recorder guards](../../../../../docs/development/m5g-fresh-configuration-recorder-tests.json)
+are derived reports, not additional corpus records. The separately accepted
+[native settings increment](../../../../../docs/development/verification-m5g-settings.md)
+does not implement the Emby configuration adapter.

@@ -88,8 +88,8 @@ func (c Config) Validate() error {
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
 		return fmt.Errorf("GOBY_PUBLIC_URL must be an HTTP(S) origin without credentials, query, or path")
 	}
-	if strings.TrimSpace(c.ServerName) == "" || len(c.ServerName) > 128 {
-		return fmt.Errorf("GOBY_SERVER_NAME must contain 1 to 128 bytes")
+	if err := ValidateServerName(c.ServerName); err != nil {
+		return err
 	}
 	if c.SetupToken != "" && len(c.SetupToken) < 24 {
 		return fmt.Errorf("GOBY_SETUP_TOKEN must contain at least 24 bytes")

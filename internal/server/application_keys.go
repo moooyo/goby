@@ -154,9 +154,10 @@ func (s *Server) adminApplicationKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createKey(r *http.Request, appName string) (identity.ApplicationKey, error) {
+	snapshot := s.requestSettings(r)
 	actor := r.Context().Value(principalKey).(identity.Principal)
 	key, err := s.identity.CreateApplicationKey(r.Context(), actor, appName, s.clientAddress(r),
-		identity.Client{DeviceID: s.serverID, Device: s.cfg.ServerName, Version: s.version})
+		identity.Client{DeviceID: s.serverID, Device: snapshot.Effective.ServerName, Version: s.version})
 	if err == nil {
 		s.log.Info("application key created", "actor_credential_id", actor.SessionID, "application_key_id", key.ID)
 	}

@@ -6,15 +6,22 @@ configured resource policy for a later restart. A directly constructed, entirely
 zero `TranscodingConfig` remains disabled. Explicit malformed settings fail
 configuration loading even when conversion is disabled.
 
-The same manager serves MPEG-TS HLS and [progressive audio](audio-playback.md).
-Universal/legacy audio conversion needs no additional environment variables or
-separate worker pool. Original-file delivery remains available when conversion
-is disabled and current source/access checks pass. The administrator dashboard
-does not add a consumer audio or video player.
+The same manager serves MPEG-TS HLS, [progressive audio](audio-playback.md), and
+[progressive MP4 video](progressive-video-playback.md). Universal/legacy audio
+and progressive video need no separate worker pool. Original-file delivery
+remains available when conversion is disabled and current source/access checks
+pass. The administrator dashboard does not add a consumer audio or video player.
 
 The checked-in [Linux environment example](../../deploy/linux/.env.example)
 contains all conversion settings. Values are read at startup; changing an
 environment file requires a service restart.
+
+The accepted [M5g managed-settings increment](settings.md) adds database overrides
+for server name and four output-planning ceilings. Environment values supply
+startup defaults; non-null database overrides take precedence. Reset resumes
+the current deployment default. Hardware and resource controls remain
+startup-only. The [native API](../api/settings.md) does not expose an Emby
+ConfigurationService adapter.
 
 | Environment variable | Default | Accepted range or meaning |
 | --- | --- | --- |
@@ -90,12 +97,22 @@ progressive output uses software audio codecs; selecting a video GPU does not
 make that audio path hardware-accelerated. Actual device-specific video execution
 remains unverified on the current GPU-free test host.
 
-## Audio upgrade and response limits
+## Media upgrade and response limits
 
-Migration `0012` adds scoped client playback references; current probe cache
-version **4** requires normal rescans of existing libraries, including version 3
-snapshots. The profile/Ogg increment adds no database migration or environment
-variable. A configured encoder does not
+Migration `0012` introduced scoped client playback references. The current
+probe cache version is **6**; run a normal library scan to upgrade older cached
+probe facts. [M4f acceptance](verification-m4f-video-seek.md) includes the deployed
+probe-5-to-6 upgrade, preserved metadata/user state, and actual verified video
+seeking. The current [M5g deployment](m5g-deployment-evidence.json) retains probe 6
+at database schema 20. These versions describe different stores; a database
+migration alone does not refresh old media facts.
+
+An unchanged source with a current probe-6 snapshot is not re-probed merely
+because its optional seek index is absent or FFmpeg changed. Use
+[Refresh media details](../api/admin-scans.md) to request fresh probing of such
+sources; the [video-seeking contract](video-fast-seek.md) describes eligibility
+and linear fallback. The earlier audio profile/Ogg increment itself added no
+database migration or environment variable. A configured encoder does not
 substitute for current source timing or authorization. Complete continuous audio
 coverage and integer sample facts govern converted length, including accurate
 WAV headers. The supported Ogg Opus/Vorbis/modern FLAC subset requires physical-page
@@ -104,12 +121,13 @@ Matroska/WebM quantized-clock timing remain unproven; supported original-file
 delivery is retained after rescan when conversion cannot establish exact timing.
 
 HLS and progressive consumers share the same manager quotas and reader leases.
-Progressive responses also share the server's 64 original/audio response slots,
+Progressive audio/video responses share the server's 64 original/progressive media response slots,
 wait at most 45 seconds for startup, impose a 30-second individual write deadline,
 and have a four-hour response limit. A partially transmitted failure aborts the
 HTTP response. These HTTP limits are current implementation bounds rather than
 additional environment variables. Detailed lifecycle and supported output formats
-are in [audio playback](audio-playback.md).
+are in [audio playback](audio-playback.md) and
+[progressive video playback](progressive-video-playback.md).
 
 [Audio PlaybackInfo](audio-profile-playback.md) uses these same limits for ordered
 HTTP/HLS profiles and serializes constructible progressive settings into the
@@ -119,10 +137,20 @@ channel ceilings remain distinct, including `TranscodingMaxAudioChannels`, which
 only constrains Universal/legacy selection after an original file has been ruled
 out.
 
-Progressive video, additional input/timing/profile cases, packed-audio HLS and
-richer subtitle/output support remain unfinished. Startup settings and an
-available encoder do not establish complete third-party-client compatibility or
-hard resource isolation.
+[Progressive video](progressive-video-playback.md) supports bounded H.264/AAC
+fragmented MP4, ordered HTTP/HLS profile selection, compatible stream copy at
+zero start, and supported encoded seeks using the verified source format clock.
+Eligible H.264 software-decoded seeks can use
+[verified private restart evidence](verification-m4f-video-seek.md) to skip
+prefix video decoding while selected audio retains its independent linear
+history. Unsupported or stale optional evidence retains the linear path;
+hardware decoding does not borrow the software proof.
+
+Nonzero copied-video seeks, efficient long-source audio I/O, additional
+input/timing/profile cases, packed-audio HLS, richer subtitle/output support,
+actual GPU execution, and aggregate resource isolation remain unfinished.
+Startup settings and an available encoder do not establish complete
+third-party-client compatibility or universal constant-time seeking.
 
 ## Dedicated test deployment
 
@@ -134,11 +162,17 @@ causes deployment to stop without claiming the directory.
 
 The script appends conversion settings to `runtime.env` only when the setting is
 absent. Its default test policy is 128 MiB total, 32 MiB per job, and 16 MiB minimum
-free space, keeping conversion output off the host's constrained root disk. The
-service receives a write exception only for this dedicated cache. Existing
+free space, keeping conversion output in the dedicated memory-backed cache. The
+service's transcode-cache write exception names this dedicated directory. Existing
 explicit configuration remains unchanged and may need its corresponding service
 override when it names a different cache.
 
-These packaging changes do not constitute deployment verification. Configuration
-tests, shell validation, non-root cache initialization, restart recovery, and real
-conversion checks run on the dedicated Linux test host.
+The accepted [M5g deployment evidence](m5g-deployment-evidence.json) records
+PID 3614026, UID 995, schema 20/probe 6, matching installed artifacts, and
+preserved runtime/service configuration. Its [verification report](verification-m5g-settings.md)
+records the full Linux regression, isolated browser/restarts, and main-service
+settings workflow. That live workflow updates and restores settings without
+launching media or planning requests.
+Actual converted-video and fast-seek evidence remains separately recorded in
+[M4f's deployed workflow](m4f-deployed-video-fast-seek.json). These reports establish
+their own bounded workflows; GPU execution and full client acceptance remain pending.

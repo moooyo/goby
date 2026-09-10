@@ -60,9 +60,9 @@ func loadTranscoding() (TranscodingConfig, error) {
 		{"GOBY_TRANSCODE_MAX_SESSION_JOBS", &c.MaxSessionJobs, 1},
 		{"GOBY_TRANSCODE_MAX_QUEUE_JOBS", &c.MaxQueueJobs, 16},
 		{"GOBY_TRANSCODE_MAX_RETAINED_JOBS", &c.MaxRetainedJobs, 128},
-		{"GOBY_TRANSCODE_MAX_WIDTH", &c.MaxWidth, 1920},
-		{"GOBY_TRANSCODE_MAX_HEIGHT", &c.MaxHeight, 1080},
-		{"GOBY_TRANSCODE_MAX_AUDIO_CHANNELS", &c.MaxAudioChannels, 8},
+		{"GOBY_TRANSCODE_MAX_WIDTH", &c.MaxWidth, DefaultMaxWidth},
+		{"GOBY_TRANSCODE_MAX_HEIGHT", &c.MaxHeight, DefaultMaxHeight},
+		{"GOBY_TRANSCODE_MAX_AUDIO_CHANNELS", &c.MaxAudioChannels, DefaultMaxAudioChannels},
 	} {
 		*field.value, err = strconv.Atoi(env(field.name, strconv.Itoa(field.fallback)))
 		if err != nil {
@@ -77,7 +77,7 @@ func loadTranscoding() (TranscodingConfig, error) {
 		{"GOBY_TRANSCODE_MAX_CACHE_BYTES", &c.MaxCacheBytes, 20 << 30},
 		{"GOBY_TRANSCODE_MAX_JOB_BYTES", &c.MaxJobBytes, 8 << 30},
 		{"GOBY_TRANSCODE_MIN_FREE_BYTES", &c.MinFreeBytes, 512 << 20},
-		{"GOBY_TRANSCODE_MAX_BITRATE", &c.MaxBitrate, 20_000_000},
+		{"GOBY_TRANSCODE_MAX_BITRATE", &c.MaxBitrate, DefaultMaxBitrate},
 	} {
 		*field.value, err = strconv.ParseInt(env(field.name, strconv.FormatInt(field.fallback, 10)), 10, 64)
 		if err != nil {
@@ -114,14 +114,13 @@ func (c TranscodingConfig) Validate() error {
 		{"GOBY_TRANSCODE_MAX_CACHE_BYTES", c.MaxCacheBytes, 1, maxConfiguredCacheBytes},
 		{"GOBY_TRANSCODE_MAX_JOB_BYTES", c.MaxJobBytes, 1, c.MaxCacheBytes},
 		{"GOBY_TRANSCODE_MIN_FREE_BYTES", c.MinFreeBytes, 1, maxConfiguredCacheBytes},
-		{"GOBY_TRANSCODE_MAX_BITRATE", c.MaxBitrate, 1, 1_000_000_000},
-		{"GOBY_TRANSCODE_MAX_WIDTH", int64(c.MaxWidth), 1, 8192},
-		{"GOBY_TRANSCODE_MAX_HEIGHT", int64(c.MaxHeight), 1, 8192},
-		{"GOBY_TRANSCODE_MAX_AUDIO_CHANNELS", int64(c.MaxAudioChannels), 1, 8},
 	} {
 		if field.value < field.lowerBound || field.value > field.upperBound {
 			return fmt.Errorf("%s must be between %d and %d", field.name, field.lowerBound, field.upperBound)
 		}
+	}
+	if err := ValidateOutputPlanningLimits(c.MaxBitrate, c.MaxWidth, c.MaxHeight, c.MaxAudioChannels); err != nil {
+		return err
 	}
 	// A minimal encoded-video plan exercises the engine's single hardware
 	// validator while leaving source-specific planning to the playback layer.

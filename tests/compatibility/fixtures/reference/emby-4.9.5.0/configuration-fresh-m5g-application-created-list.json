@@ -1,0 +1,103 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Auth/Keys?StartIndex=[REDACTED_QUERY]&Limit=[REDACTED_QUERY]",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null,
+    "experiment": null,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "402"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 05:53:01 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Configuration Fresh M5g 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "f7fb7ac911e44a42a34c201d786376a5"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Id": 5,
+          "AccessToken": "[REDACTED_SECRET]",
+          "ReportedDeviceId": "f7fb7ac911e44a42a34c201d786376a5",
+          "DeviceId": 5,
+          "AppName": "Goby Configuration Fresh M5g 20260910 01 Owned Credential",
+          "AppVersion": "4.9.5.0",
+          "IpAddress": "127.0.0.1",
+          "DeviceName": "Goby Configuration Fresh M5g 20260910 01",
+          "UserId": 0,
+          "DateCreated": "2026-09-10T05:53:02.0000000Z",
+          "IsActive": true
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 402,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "717348179eef2ed8f93c15a00d1f08921ee78d7c78113d0e92511c9624f1c4bd"
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+    "pid": 3613232,
+    "startTicks": "25216437",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:53:02.877917+00:00"
+  }
+}

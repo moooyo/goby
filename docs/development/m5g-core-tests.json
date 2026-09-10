@@ -1,0 +1,36 @@
+{
+  "failedTests": [],
+  "goExitCode": 0,
+  "logSha256": "a43c707c91a515bb7ced016e87630e904dd2ca4d37396980274e7f7db0223f25",
+  "packages": [
+    {
+      "Action": "pass",
+      "Elapsed": 1.023,
+      "Package": "github.com/moooyo/goby/internal/config",
+      "Time": "2026-09-10T12:34:32.019200985+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 4.342,
+      "Package": "github.com/moooyo/goby/internal/database",
+      "Time": "2026-09-10T12:34:36.907294378+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 5.356,
+      "Package": "github.com/moooyo/goby/internal/settings",
+      "Time": "2026-09-10T12:34:37.33102798+08:00"
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 36.106,
+      "Package": "github.com/moooyo/goby/internal/library",
+      "Time": "2026-09-10T12:35:15.558059096+08:00"
+    }
+  ],
+  "raceWarningPresent": false,
+  "status": "passed",
+  "topLevelTests": {
+    "pass": 284
+  }
+}

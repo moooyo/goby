@@ -101,6 +101,7 @@ func newHLSHTTPFixture(t *testing.T) *hlsHTTPFixture {
 		MaxBitrate: 2_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 2,
 	}
 	f.cfg = f.app.cfg
+	initializeFixtureSettings(t, f)
 	runtime, err := newHLSRuntime(f.ctx, f.app)
 	if err != nil {
 		t.Fatalf("create real HLS runtime (%T)", err)

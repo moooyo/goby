@@ -1,0 +1,12 @@
+{
+  "state": "READY",
+  "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+  "pid": 3613232,
+  "serverId": "f7fb7ac911e44a42a34c201d786376a5",
+  "port": 18099,
+  "setupRecordCount": 17,
+  "oldPreservationVerified": true,
+  "bootstrapCredentialsRevoked": true,
+  "mediaCopiesCreated": 0,
+  "configurationMutationRequests": 0
+}

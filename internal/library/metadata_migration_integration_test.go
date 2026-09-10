@@ -279,8 +279,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 19 {
-		t.Fatalf("metadata migration version = %d, want 19, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
+		t.Fatalf("metadata migration version = %d, want 20, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -337,7 +337,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	}
 	sort.Strings(additions)
 	taskTables := []string{"task_definitions", "task_occurrences", "task_run_children", "task_run_requests", "task_runs", "task_triggers"}
-	expectedAdditions := append([]string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state"}, taskTables...)
+	expectedAdditions := append([]string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state", "managed_settings"}, taskTables...)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
 	}

@@ -67,7 +67,8 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
-	decision, err := videoRequestDecision(input, values, container, hlsPrincipalLimits(s.cfg.Transcoding, principal))
+	planning := s.requestPlanningConfig(r)
+	decision, err := videoRequestDecision(input, values, container, hlsPrincipalLimits(planning, principal))
 	if err != nil {
 		s.videoError(w, r, err)
 		return

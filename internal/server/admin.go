@@ -94,6 +94,7 @@ func (s *Server) runtimeFeatures() map[string]bool {
 }
 
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
+	snapshot := s.requestSettings(r)
 	var userCount, sessionCount, libraryCount, itemCount int
 	err := s.db.QueryRow(r.Context(), `SELECT (SELECT count(*) FROM users),
 		(SELECT count(*) FROM sessions JOIN users ON sessions.user_id=users.id
@@ -105,7 +106,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResponse(w, 200, map[string]any{
-		"Server":   map[string]string{"Id": s.serverID, "Name": s.cfg.ServerName, "Version": s.version},
+		"Server":   map[string]string{"Id": s.serverID, "Name": snapshot.Effective.ServerName, "Version": s.version},
 		"Database": map[string]string{"Status": "connected", "Engine": "PostgreSQL"},
 		"Counts":   map[string]int{"Users": userCount, "Libraries": libraryCount, "Items": itemCount, "ActiveSessions": sessionCount},
 		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": s.runtimeFeatures(),

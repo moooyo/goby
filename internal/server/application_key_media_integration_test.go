@@ -383,6 +383,7 @@ func TestHTTPApplicationKeyMediaConversionUsesGlobalLimits(t *testing.T) {
 	runtime.done, runtime.slots, runtime.probes = make(chan struct{}), make(chan struct{}, 32), make(chan struct{}, 2)
 	f.app.hls = runtime
 	f.app.cfg.Transcoding = config.TranscodingConfig{Enabled: true, MaxBitrate: 800_000, MaxWidth: 96, MaxHeight: 54, MaxAudioChannels: 2}
+	initializeFixtureSettings(t, f)
 	before := applicationMediaSnapshot(t, f)
 	body := map[string]any{"IsPlayback": true, "EnableDirectPlay": false, "EnableDirectStream": false, "EnableTranscoding": true,
 		"AllowVideoStreamCopy": false, "AllowAudioStreamCopy": false, "SubtitleStreamIndex": -1, "DeviceProfile": map[string]any{"TranscodingProfiles": []map[string]any{{
@@ -496,6 +497,7 @@ func TestHTTPApplicationKeyMediaSeparatesClientContextsAndRestoresURLContext(t *
 	runtime.done, runtime.slots, runtime.probes = make(chan struct{}), make(chan struct{}, 32), make(chan struct{}, 2)
 	f.app.hls = runtime
 	f.app.cfg.Transcoding = config.TranscodingConfig{Enabled: true, MaxBitrate: 800_000, MaxWidth: 96, MaxHeight: 54, MaxAudioChannels: 2}
+	initializeFixtureSettings(t, f)
 	before := applicationMediaSnapshot(t, f)
 	for index, key := range fixture.keys {
 		method := http.MethodGet

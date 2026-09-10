@@ -1,0 +1,108 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Configuration/encoding",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null,
+    "experiment": "named-encoding-width",
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "477"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 05:53:01 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Configuration Fresh M5g 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "f7fb7ac911e44a42a34c201d786376a5"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "EncodingThreadCount": -1,
+      "ExtractionThreadCount": 1,
+      "DownMixAudioBoost": 2,
+      "EnableThrottling": false,
+      "ThrottleBufferSize": 120,
+      "ThrottleHysteresis": 8,
+      "ThrottlingMethod": "ByStreamBufferSize",
+      "H264Crf": 23,
+      "EnableHardwareEncoding": true,
+      "EnableSubtitleExtraction": true,
+      "EnableOnTheFlyAttachmentExtraction": true,
+      "CodecConfigurations": [],
+      "HardwareAccelerationMode": 1,
+      "EnableHardwareToneMapping": false,
+      "EnableSoftwareToneMapping": false,
+      "TranscodingMaxWidth": 0,
+      "EnableHevcEncoding": false
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 477,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "db27c226cf1da246078ba259f230c6e30eda942dd0706879e95d477c5392fa06"
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+    "pid": 3613232,
+    "startTicks": "25216437",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:53:02.049553+00:00"
+  }
+}

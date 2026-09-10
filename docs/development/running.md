@@ -2,8 +2,13 @@
 
 The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
-The current database schema is **19** and the probe cache version remains **6**.
-The [M5f task increment](verification-m5f-tasks.md) adds durable library-wide
+The current database schema is **20** and the probe cache version remains **6**.
+The [M5g native settings increment](verification-m5g-settings.md) adds one
+`managed_settings` singleton with five nullable overrides, preserving all old
+rows in the preceding 27 tables. The Settings page manages server name and
+four output ceilings with revision checks; hardware/resource controls remain
+startup-only. Its migration requires no media rescan. The preceding
+[M5f task increment](verification-m5f-tasks.md) adds durable library-wide
 tasks, schedule rules, request receipts, and owned scan-child associations.
 It creates no automatic schedule and does not backfill old scans into task
 runs. The preceding [M5e device increment](verification-m5e-devices.md) adds ordinary
@@ -17,7 +22,7 @@ partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
 reported roughly 96G total and 60G available; existing service PIDs, root
 identity, and boot partitions were preserved. See the
 [capacity evidence](test-env-disk-growth.json). This resolves the earlier root
-capacity shortage. The subsequent M5f deployment uses schema 19.
+capacity shortage. The current M5g native deployment uses schema 20.
 
 ## Build inputs
 
@@ -64,20 +69,31 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_STARTUP_TIMEOUT` | Startup and upgrade time budget as a Go duration; default `5m`, allowed `1s` through `30m` |
 | `GOBY_LISTEN` | HTTP listen address, default `:8096` |
 | `GOBY_PUBLIC_URL` | Exact administrator/client-facing HTTP(S) origin, default `http://localhost:8096` |
-| `GOBY_SERVER_NAME` | Display name, default `Goby` |
+| `GOBY_SERVER_NAME` | Startup default display name, default `Goby`; an explicit managed override takes precedence |
 | `GOBY_SETUP_TOKEN` | One-time deployment secret of at least 24 bytes; required before setup |
 | `GOBY_COOKIE_SECURE` | Secure administrator cookies, default `true` |
 | `GOBY_TRUSTED_PROXIES` | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`; empty by default |
 | `GOBY_WEB_DIR` | Built administrator asset directory, default `web/admin/dist` |
 | `GOBY_API_KEY_MASTER_KEY_FILE` | Persistent 32-byte application-key master file; default `application-key-master.key` resolved against the process working directory; see [key operations](application-keys.md) |
-| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS and progressive audio workers |
+| `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS, progressive audio/video, and optional private video seek analysis |
 | `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans, exact audio timing inspection, and copied-video HLS timeline probes |
 | `GOBY_TRANSCODING_ENABLED` | Enable configured conversion, default `true`; set `false` to disable it |
 | `GOBY_TRANSCODE_CACHE` | Dedicated conversion cache, default `/var/cache/goby/transcodes` |
 | `GOBY_HW_DECODER`, `GOBY_HW_ENCODER`, `GOBY_HW_DEVICE` | Independent hardware selections; software decoding/encoding and no device by default |
 | `GOBY_MEDIA_ROOTS` | Administrator-approved media directories; colon-separated on Linux; empty by default |
 
-The [transcoding configuration reference](transcoding-configuration.md) lists every `GOBY_TRANSCODE_*` setting and accepted range. Defaults allow two running jobs, one per user/authentication session, two configured FFmpeg threads, a 20 GiB cache, an 8 GiB per-job limit, and a 512 MiB free-space reserve. Output planning defaults to 20 Mbps, 1920x1080, and up to eight audio channels. These admission and periodic monitoring limits are not hard filesystem or cgroup ceilings. Settings are loaded at startup, and invalid explicit settings fail even when conversion is disabled.
+The [transcoding configuration reference](transcoding-configuration.md) lists every `GOBY_TRANSCODE_*` setting and accepted range. Defaults allow two running jobs, one per user/authentication session, two configured FFmpeg threads, a 20 GiB cache, an 8 GiB per-job limit, and a 512 MiB free-space reserve. Output planning defaults to 20 Mbps, 1920x1080, and up to eight audio channels. These admission and periodic monitoring limits are not hard filesystem or cgroup ceilings. Environment configuration is read at startup, and invalid explicit values fail even when conversion is disabled.
+
+The [native settings API and page](../api/settings.md) store explicit database
+overrides for `ServerName`, `MaxBitrate`, `MaxWidth`, `MaxHeight`, and
+`MaxAudioChannels`. Overrides take precedence over deployment defaults. Null or
+selective reset uses the current deployment default; a restart with changed
+environment defaults does not rewrite overrides or advance their revision.
+Saved names publish to new requests, and the four ceilings govern new planning.
+Already registered outputs retain their concrete plans. Other resource and
+hardware settings still require a deployment change and restart. See
+[settings operation](settings.md) for transaction, request-snapshot, and recovery
+semantics. The Emby ConfigurationService adapter remains unimplemented.
 
 Progressive audio uses these same process, queue, cache and reader budgets; it needs no additional environment variables or separate encoder pool. Its bitrate target/ceiling applies to encoded media, not instantaneous HTTP transfer speed. Original delivery remains available when conversion is disabled and the source/current account permits it. See [audio playback](audio-playback.md) for output formats, `Container` versus `TranscodingContainer`, and exact targets versus maximum limits.
 
@@ -129,7 +145,28 @@ The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate
 
 The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
-The current M5f deployment runs schema 19 as UID 995, PID 3570491, with probe
+The current M5g native deployment runs schema 20 as UID 995, PID 3614026,
+start ticks `25289276`, with probe version 6. Its
+[deployment evidence](m5g-deployment-evidence.json) binds the accepted executable,
+419 source inputs, and 50 current assets. A complete protected backup at
+`/opt/goby-test/backups/m5g-20260910` preceded service stop, and an actual isolated
+restore verified all 27 old tables exactly before that temporary database was
+removed. The live database was not restored. Old business rows, server identity,
+task history, master and runtime/unit configuration, and media are preserved.
+The new settings row begins at revision 1 with five NULL overrides.
+
+The [main settings workflow](m5g-deployed-settings.json) passes its first attempt
+in 0.701 seconds. One new native cookie temporarily saves all five fields and
+restores their exact nullable values with CAS, then is revoked with an
+independent `401` and final SQL barrier. Old rows remain exact; the new session
+is retained revoked. The [post-workflow read](m5g-post-workflow-settings-state.json)
+confirms revision 3 with all five overrides NULL. This workflow does not restart
+the service or make media, planning, scan, key, or Emby configuration/credential
+requests; it reads anonymous public information through `/emby/System/Info/Public`.
+See [M5g verification](verification-m5g-settings.md) for the 1222-test complete
+race run, two isolated 28-table restarts, and the wider acceptance boundary.
+
+The preceding M5f deployment ran schema 19 as UID 995, PID 3570491, with probe
 version 6. Its [deployment evidence](m5f-deployment-evidence.json) includes a
 complete pre-stop backup, a real isolated database restore with all 21 old
 tables equal, and exact preservation through the migration. The task

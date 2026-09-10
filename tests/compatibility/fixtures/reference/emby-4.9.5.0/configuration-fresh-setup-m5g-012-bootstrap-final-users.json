@@ -1,0 +1,231 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:43:28.050022+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Users",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "X-Emby-Token",
+        "[REDACTED_SECRET]"
+      ]
+    ],
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "4153"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 05:43:27 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Configuration Fresh M5g 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "f7fb7ac911e44a42a34c201d786376a5"
+      ]
+    ],
+    "bodyType": "json",
+    "body": [
+      {
+        "Name": "reference-configuration-fresh-m5g-01",
+        "ServerId": "f7fb7ac911e44a42a34c201d786376a5",
+        "Prefix": "R",
+        "DateCreated": "2026-09-10T05:43:25.8121823Z",
+        "Id": "ac97652bb8cd4264b57e88e4a063608c",
+        "HasPassword": true,
+        "HasConfiguredPassword": true,
+        "LastLoginDate": "2026-09-10T05:43:26.7952470Z",
+        "LastActivityDate": "2026-09-10T05:43:28.0513706Z",
+        "Configuration": {
+          "PlayDefaultAudioTrack": true,
+          "DisplayMissingEpisodes": false,
+          "SubtitleMode": "Smart",
+          "OrderedViews": [],
+          "LatestItemsExcludes": [],
+          "MyMediaExcludes": [],
+          "HidePlayedInLatest": true,
+          "HidePlayedInMoreLikeThis": false,
+          "HidePlayedInSuggestions": false,
+          "RememberAudioSelections": true,
+          "RememberSubtitleSelections": true,
+          "EnableNextEpisodeAutoPlay": true,
+          "ResumeRewindSeconds": 0,
+          "IntroSkipMode": "ShowButton",
+          "EnableLocalPassword": false
+        },
+        "Policy": {
+          "IsAdministrator": true,
+          "IsHidden": false,
+          "IsHiddenRemotely": true,
+          "IsHiddenFromUnusedDevices": false,
+          "IsDisabled": false,
+          "LockedOutDate": 0,
+          "AllowTagOrRating": false,
+          "BlockedTags": [],
+          "IsTagBlockingModeInclusive": false,
+          "IncludeTags": [],
+          "EnableUserPreferenceAccess": true,
+          "AccessSchedules": [],
+          "BlockUnratedItems": [],
+          "EnableRemoteControlOfOtherUsers": true,
+          "EnableSharedDeviceControl": true,
+          "EnableRemoteAccess": true,
+          "EnableLiveTvManagement": true,
+          "EnableLiveTvAccess": true,
+          "EnableMediaPlayback": true,
+          "EnableAudioPlaybackTranscoding": true,
+          "EnableVideoPlaybackTranscoding": true,
+          "AutoRemoteQuality": 0,
+          "EnablePlaybackRemuxing": true,
+          "EnableContentDeletion": true,
+          "RestrictedFeatures": [],
+          "EnableContentDeletionFromFolders": [],
+          "EnableContentDownloading": true,
+          "EnableSubtitleDownloading": true,
+          "EnableSubtitleManagement": true,
+          "EnableSyncTranscoding": true,
+          "EnableMediaConversion": true,
+          "EnabledChannels": [],
+          "EnableAllChannels": true,
+          "EnabledFolders": [],
+          "EnableAllFolders": true,
+          "InvalidLoginAttemptCount": 0,
+          "EnablePublicSharing": true,
+          "RemoteClientBitrateLimit": 0,
+          "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+          "ExcludedSubFolders": [],
+          "SimultaneousStreamLimit": 0,
+          "EnabledDevices": [],
+          "EnableAllDevices": true,
+          "AllowCameraUpload": true,
+          "AllowSharingPersonalItems": true
+        }
+      },
+      {
+        "Name": "reference-configuration-fresh-viewer-m5g-01",
+        "ServerId": "f7fb7ac911e44a42a34c201d786376a5",
+        "Prefix": "R",
+        "DateCreated": "2026-09-10T05:43:26.8607171Z",
+        "Id": "8bb4241f817d4f10bcdebdbd5caac65e",
+        "HasPassword": false,
+        "HasConfiguredPassword": false,
+        "LastLoginDate": "2026-09-10T05:43:27.9911470Z",
+        "LastActivityDate": "2026-09-10T05:43:28.0201223Z",
+        "Configuration": {
+          "PlayDefaultAudioTrack": true,
+          "DisplayMissingEpisodes": false,
+          "SubtitleMode": "Smart",
+          "OrderedViews": [],
+          "LatestItemsExcludes": [],
+          "MyMediaExcludes": [],
+          "HidePlayedInLatest": true,
+          "HidePlayedInMoreLikeThis": false,
+          "HidePlayedInSuggestions": false,
+          "RememberAudioSelections": true,
+          "RememberSubtitleSelections": true,
+          "EnableNextEpisodeAutoPlay": true,
+          "ResumeRewindSeconds": 0,
+          "IntroSkipMode": "ShowButton",
+          "EnableLocalPassword": false
+        },
+        "Policy": {
+          "IsAdministrator": false,
+          "IsHidden": false,
+          "IsHiddenRemotely": true,
+          "IsHiddenFromUnusedDevices": false,
+          "IsDisabled": false,
+          "LockedOutDate": 0,
+          "AllowTagOrRating": false,
+          "BlockedTags": [],
+          "IsTagBlockingModeInclusive": false,
+          "IncludeTags": [],
+          "EnableUserPreferenceAccess": true,
+          "AccessSchedules": [],
+          "BlockUnratedItems": [],
+          "EnableRemoteControlOfOtherUsers": false,
+          "EnableSharedDeviceControl": true,
+          "EnableRemoteAccess": true,
+          "EnableLiveTvManagement": true,
+          "EnableLiveTvAccess": true,
+          "EnableMediaPlayback": true,
+          "EnableAudioPlaybackTranscoding": true,
+          "EnableVideoPlaybackTranscoding": true,
+          "AutoRemoteQuality": 0,
+          "EnablePlaybackRemuxing": true,
+          "EnableContentDeletion": false,
+          "RestrictedFeatures": [],
+          "EnableContentDeletionFromFolders": [],
+          "EnableContentDownloading": true,
+          "EnableSubtitleDownloading": true,
+          "EnableSubtitleManagement": false,
+          "EnableSyncTranscoding": true,
+          "EnableMediaConversion": true,
+          "EnabledChannels": [],
+          "EnableAllChannels": true,
+          "EnabledFolders": [],
+          "EnableAllFolders": true,
+          "InvalidLoginAttemptCount": 0,
+          "EnablePublicSharing": true,
+          "RemoteClientBitrateLimit": 0,
+          "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+          "ExcludedSubFolders": [],
+          "SimultaneousStreamLimit": 0,
+          "EnabledDevices": [],
+          "EnableAllDevices": true,
+          "AllowCameraUpload": true,
+          "AllowSharingPersonalItems": false
+        }
+      }
+    ]
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 4153,
+    "freshFixtureOnly": true
+  }
+}

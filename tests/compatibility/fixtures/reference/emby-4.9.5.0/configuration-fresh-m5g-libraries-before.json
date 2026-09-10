@@ -1,0 +1,89 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Library/VirtualFolders/Query",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "body": null,
+    "bodyPresent": false,
+    "clientMetadata": null,
+    "experiment": null,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "33"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 05:53:00 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Configuration Fresh M5g 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "f7fb7ac911e44a42a34c201d786376a5"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [],
+      "TotalRecordCount": 0
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 33,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "b3d293c48ba018fb33a1834a13af584cf3b4bbd0252a21f742eb7a60760877af"
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+    "pid": 3613232,
+    "startTicks": "25216437",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:53:01.291468+00:00"
+  }
+}

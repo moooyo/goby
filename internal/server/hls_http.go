@@ -146,8 +146,9 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 	if err != nil {
 		return nil, nil, library.MediaFile{}, err
 	}
+	planning := s.requestPlanningConfig(r)
 	decision, err := hlsRequestConversion(values, playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, hlsPrincipalLimits(s.cfg.Transcoding, principal))
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, hlsPrincipalLimits(planning, principal))
 	if err != nil || decision.Plan == nil {
 		_ = file.Close()
 		if err == nil {

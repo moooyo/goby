@@ -1,0 +1,207 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Users/AuthenticateByName",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "Username": "reference-configuration-fresh-m5g-01",
+      "Pw": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": true,
+    "clientMetadata": {
+      "Client": "Goby Configuration Fresh M5g 20260910 01 Capture Control",
+      "DeviceId": "goby-configuration-fresh-m5g-20260910-01-capture-control",
+      "Device": "Fresh Configuration Control",
+      "Version": "0.1.0"
+    },
+    "experiment": null,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "3000"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 05:53:00 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Configuration Fresh M5g 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "f7fb7ac911e44a42a34c201d786376a5"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "User": {
+        "Name": "reference-configuration-fresh-m5g-01",
+        "ServerId": "f7fb7ac911e44a42a34c201d786376a5",
+        "Prefix": "R",
+        "DateCreated": "2026-09-10T05:43:25.8121823Z",
+        "Id": "ac97652bb8cd4264b57e88e4a063608c",
+        "HasPassword": true,
+        "HasConfiguredPassword": true,
+        "LastLoginDate": "2026-09-10T05:53:01.1946591Z",
+        "LastActivityDate": "2026-09-10T05:53:01.1951856Z",
+        "Configuration": {
+          "PlayDefaultAudioTrack": true,
+          "DisplayMissingEpisodes": false,
+          "SubtitleMode": "Smart",
+          "OrderedViews": [],
+          "LatestItemsExcludes": [],
+          "MyMediaExcludes": [],
+          "HidePlayedInLatest": true,
+          "HidePlayedInMoreLikeThis": false,
+          "HidePlayedInSuggestions": false,
+          "RememberAudioSelections": true,
+          "RememberSubtitleSelections": true,
+          "EnableNextEpisodeAutoPlay": true,
+          "ResumeRewindSeconds": 0,
+          "IntroSkipMode": "ShowButton",
+          "EnableLocalPassword": false
+        },
+        "Policy": {
+          "IsAdministrator": true,
+          "IsHidden": false,
+          "IsHiddenRemotely": true,
+          "IsHiddenFromUnusedDevices": false,
+          "IsDisabled": false,
+          "LockedOutDate": 0,
+          "AllowTagOrRating": false,
+          "BlockedTags": [],
+          "IsTagBlockingModeInclusive": false,
+          "IncludeTags": [],
+          "EnableUserPreferenceAccess": true,
+          "AccessSchedules": [],
+          "BlockUnratedItems": [],
+          "EnableRemoteControlOfOtherUsers": true,
+          "EnableSharedDeviceControl": true,
+          "EnableRemoteAccess": true,
+          "EnableLiveTvManagement": true,
+          "EnableLiveTvAccess": true,
+          "EnableMediaPlayback": true,
+          "EnableAudioPlaybackTranscoding": true,
+          "EnableVideoPlaybackTranscoding": true,
+          "AutoRemoteQuality": 0,
+          "EnablePlaybackRemuxing": true,
+          "EnableContentDeletion": true,
+          "RestrictedFeatures": [],
+          "EnableContentDeletionFromFolders": [],
+          "EnableContentDownloading": true,
+          "EnableSubtitleDownloading": true,
+          "EnableSubtitleManagement": true,
+          "EnableSyncTranscoding": true,
+          "EnableMediaConversion": true,
+          "EnabledChannels": [],
+          "EnableAllChannels": true,
+          "EnabledFolders": [],
+          "EnableAllFolders": true,
+          "InvalidLoginAttemptCount": 0,
+          "EnablePublicSharing": true,
+          "RemoteClientBitrateLimit": 0,
+          "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+          "ExcludedSubFolders": [],
+          "SimultaneousStreamLimit": 0,
+          "EnabledDevices": [],
+          "EnableAllDevices": true,
+          "AllowCameraUpload": true,
+          "AllowSharingPersonalItems": true
+        }
+      },
+      "SessionInfo": {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "790da05159fe615f08161d0f7bb9c1d2",
+        "ServerId": "f7fb7ac911e44a42a34c201d786376a5",
+        "UserId": "ac97652bb8cd4264b57e88e4a063608c",
+        "UserName": "reference-configuration-fresh-m5g-01",
+        "Client": "Goby Configuration Fresh M5g 20260910 01 Capture Control",
+        "LastActivityDate": "2026-09-10T05:53:01.1951856Z",
+        "DeviceName": "Fresh Configuration Control",
+        "InternalDeviceId": 3,
+        "DeviceId": "goby-configuration-fresh-m5g-20260910-01-capture-control",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      "AccessToken": "[REDACTED_SECRET]",
+      "ServerId": "f7fb7ac911e44a42a34c201d786376a5"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 3000,
+    "failureType": null,
+    "bodyExportable": true,
+    "privateWireSha256": "4bb27643a806567735d1902b396e4bb3a15a169f4f066a288b87c62452f1abb9"
+  },
+  "transportAuthority": {
+    "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+    "pid": 3613232,
+    "startTicks": "25216437",
+    "networkNamespace": "net:[4026532534]",
+    "port": 18099
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:53:01.197070+00:00"
+  }
+}

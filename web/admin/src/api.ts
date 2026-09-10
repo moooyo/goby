@@ -455,6 +455,39 @@ export interface StorageRootsResponse {
   Configured: boolean;
 }
 
+export interface SettingsValues {
+  ServerName: string;
+  MaxBitrate: number;
+  MaxWidth: number;
+  MaxHeight: number;
+  MaxAudioChannels: number;
+}
+
+export type SettingsField = keyof SettingsValues;
+export type SettingsOverrides = { [Field in SettingsField]: SettingsValues[Field] | null };
+export interface SettingsDeployment {
+  TranscodingEnabled: boolean;
+  HardwareDecoder: string;
+  HardwareEncoder: string;
+  Threads: number;
+  MaxJobs: number;
+  MaxUserJobs: number;
+  MaxSessionJobs: number;
+}
+
+export interface ServerSettings {
+  Revision: string;
+  Defaults: SettingsValues;
+  Overrides: SettingsOverrides;
+  Effective: SettingsValues;
+  Sources: Record<SettingsField, "deployment" | "database">;
+  UpdatedAt: string;
+  Deployment: SettingsDeployment;
+}
+
+export interface SettingsUpdateInput { Revision: string; Overrides: SettingsOverrides }
+export interface SettingsResetInput { Revision: string; Fields: SettingsField[] }
+
 export interface LoginInput {
   Name: string;
   Password: string;
@@ -1016,6 +1049,36 @@ function taskPageParameters(query: TaskPageQuery): URLSearchParams {
   return new URLSearchParams({ StartIndex: String(query.StartIndex ?? 0), Limit: String(query.Limit ?? 50) });
 }
 
+const managedSettingFields: SettingsField[] = ["ServerName", "MaxBitrate", "MaxWidth", "MaxHeight", "MaxAudioChannels"];
+
+function validSettingValue(field: SettingsField, value: unknown): boolean {
+  if (field === "ServerName") return typeof value === "string" && /[^\p{White_Space}]/u.test(value)
+    && !value.includes("\0")
+    && !/[\uD800-\uDFFF]/u.test(value)
+    && new TextEncoder().encode(value).length <= 128;
+  const maximum = field === "MaxBitrate" ? 1000000000 : field === "MaxAudioChannels" ? 8 : 8192;
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= maximum;
+}
+
+function validateSettings(value: ServerSettings): void {
+  if (!isRecord(value) || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
+    || value.Revision.length > 19 || BigInt(value.Revision) > 9223372036854775807n
+    || !validSessionTimestamp(value.UpdatedAt) || !isRecord(value.Defaults) || !isRecord(value.Overrides)
+    || !isRecord(value.Effective) || !isRecord(value.Sources) || !isRecord(value.Deployment)) throw invalidResponse();
+  for (const field of managedSettingFields) {
+    const override = value.Overrides[field];
+    if (!validSettingValue(field, value.Defaults[field]) || !validSettingValue(field, value.Effective[field])
+      || (override !== null && !validSettingValue(field, override))
+      || value.Effective[field] !== (override ?? value.Defaults[field])
+      || value.Sources[field] !== (override === null ? "deployment" : "database")) throw invalidResponse();
+  }
+  const deployment = value.Deployment;
+  if (typeof deployment.TranscodingEnabled !== "boolean"
+    || typeof deployment.HardwareDecoder !== "string" || typeof deployment.HardwareEncoder !== "string"
+    || ![deployment.Threads, deployment.MaxJobs, deployment.MaxUserJobs, deployment.MaxSessionJobs]
+      .every((count) => typeof count === "number" && Number.isSafeInteger(count) && count >= 0)) throw invalidResponse();
+}
+
 export const adminApi = {
   getBootstrap(options: RequestOptions = {}): Promise<BootstrapResponse> {
     return request("/bootstrap", { ...options, public: true });
@@ -1049,6 +1112,30 @@ export const adminApi = {
 
   getOverview(options: RequestOptions = {}): Promise<OverviewResponse> {
     return request("/overview", options);
+  },
+
+  async getSettings(options: RequestOptions = {}): Promise<ServerSettings> {
+    const revision = sessionRevision;
+    const result = await request<ServerSettings>("/settings", options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateSettings(result);
+    return result;
+  },
+
+  async updateSettings(input: SettingsUpdateInput, options: RequestOptions = {}): Promise<ServerSettings> {
+    const revision = sessionRevision;
+    const result = await mutate<ServerSettings>("/settings", "PUT", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateSettings(result);
+    return result;
+  },
+
+  async resetSettings(input: SettingsResetInput, options: RequestOptions = {}): Promise<ServerSettings> {
+    const revision = sessionRevision;
+    const result = await mutate<ServerSettings>("/settings/reset", "POST", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateSettings(result);
+    return result;
   },
 
   getUsers(options: RequestOptions = {}): Promise<UsersResponse> {

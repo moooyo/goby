@@ -1,0 +1,718 @@
+{
+  "kind": "capture-audit-observation",
+  "unit": "goby-emby-configuration-fresh-m5g-20260910-01.service",
+  "referencePID": 3613232,
+  "serverId": "f7fb7ac911e44a42a34c201d786376a5",
+  "captureFailureType": null,
+  "cleanupPassed": true,
+  "checks": {
+    "freshLibrariesRemainEmpty": true,
+    "freshTaskDefinitionsUnchanged": true,
+    "freshUsersAndPoliciesUnchanged": true,
+    "allAcknowledgedLoginsInvalid": true,
+    "applicationCredentialInvalidOrNeverAttempted": true,
+    "configurationRestoredExactly": true,
+    "allAttemptedLoginsAccountedFor": true,
+    "freshAuthorityUnchanged": true,
+    "protectedServicesUnchanged": true,
+    "allPriorEvidenceAndSourcesUnchanged": true,
+    "newRedactionAuditPassed": true,
+    "privateWireEvidenceUnchanged": true
+  },
+  "cleanupErrors": [],
+  "persistenceFailures": [],
+  "preservedOldRecords": 2051,
+  "preservedRecordFilesIncludingSetup": 4136,
+  "preservedSourceFiles": 240,
+  "preservedPrivateFiles": 2854,
+  "configurationObservations": [
+    {
+      "label": "baseline",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "full-name-after",
+      "totalChanged": [
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration M5g Owned First",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "full-name-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "partial-flat-both-after",
+      "totalChanged": [
+        "MaintenanceModeMessage",
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration M5g Owned First",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-flat-name-only-after",
+      "totalChanged": [
+        "MaintenanceModeMessage",
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration M5g Owned Second",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-flat-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "partial-words-two-after",
+      "totalChanged": [
+        "SortRemoveWords"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-words-one-after",
+      "totalChanged": [
+        "SortRemoveWords"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-words-empty-after",
+      "totalChanged": [
+        "SortRemoveWords"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-words-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "partial-name-empty-after",
+      "totalChanged": [
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "test-env",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-name-empty-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "partial-name-null-after",
+      "totalChanged": [
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "test-env",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-name-null-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "partial-invalid-atomicity-after",
+      "totalChanged": [
+        "ServerName"
+      ],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration M5g Owned First",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "partial-invalid-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "encoding-width-after",
+      "totalChanged": [],
+      "encodingChanged": [
+        "TranscodingMaxWidth"
+      ],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "encoding-width-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "encoding-mime-json-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "encoding-mime-json-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "encoding-mime-octet-stream-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "encoding-mime-octet-stream-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "anonymous-permission-total-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "anonymous-permission-total-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "anonymous-permission-partial-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "anonymous-permission-partial-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "anonymous-permission-encoding-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "anonymous-permission-encoding-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "viewer-permission-total-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "viewer-permission-total-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "viewer-permission-partial-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "viewer-permission-partial-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "viewer-permission-encoding-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "viewer-permission-encoding-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "unknown-named-post-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "unknown-named-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "application-permission-total-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "application-permission-total-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "application-permission-partial-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "application-permission-partial-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "application-permission-encoding-after",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": false
+    },
+    {
+      "label": "application-permission-encoding-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    },
+    {
+      "label": "cleanup-configuration-restored",
+      "totalChanged": [],
+      "encodingChanged": [],
+      "publicServerName": "Goby Configuration Fresh M5g 20260910 01",
+      "stableServerId": true,
+      "exactRequired": true
+    }
+  ],
+  "configurationCases": [
+    {
+      "case": "full-server-name",
+      "operation": "total",
+      "actor": "control",
+      "capture": "full-name",
+      "status": 204
+    },
+    {
+      "case": "partial-flat-merge",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-flat-both",
+      "status": 204
+    },
+    {
+      "case": "partial-flat-merge",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-flat-name-only",
+      "status": 204
+    },
+    {
+      "case": "partial-array-replacement",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-words-two",
+      "status": 204
+    },
+    {
+      "case": "partial-array-replacement",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-words-one",
+      "status": 204
+    },
+    {
+      "case": "partial-array-replacement",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-words-empty",
+      "status": 204
+    },
+    {
+      "case": "partial-name-empty",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-name-empty",
+      "status": 204
+    },
+    {
+      "case": "partial-name-null",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-name-null",
+      "status": 204
+    },
+    {
+      "case": "partial-invalid-atomicity",
+      "operation": "partial",
+      "actor": "control",
+      "capture": "partial-invalid-atomicity",
+      "status": 500
+    },
+    {
+      "case": "named-encoding-width",
+      "operation": "encoding",
+      "actor": "control",
+      "capture": "encoding-width",
+      "status": 204
+    },
+    {
+      "case": "named-mime-json",
+      "operation": "encoding",
+      "actor": "control",
+      "capture": "encoding-mime-json",
+      "status": 204
+    },
+    {
+      "case": "named-mime-octet-stream",
+      "operation": "encoding",
+      "actor": "control",
+      "capture": "encoding-mime-octet-stream",
+      "status": 204
+    },
+    {
+      "case": "anonymous-permission-total",
+      "operation": "total",
+      "actor": "anonymous",
+      "capture": "anonymous-permission-total",
+      "status": 401
+    },
+    {
+      "case": "anonymous-permission-partial",
+      "operation": "partial",
+      "actor": "anonymous",
+      "capture": "anonymous-permission-partial",
+      "status": 401
+    },
+    {
+      "case": "anonymous-permission-encoding",
+      "operation": "encoding",
+      "actor": "anonymous",
+      "capture": "anonymous-permission-encoding",
+      "status": 401
+    },
+    {
+      "case": "viewer-permission-total",
+      "operation": "total",
+      "actor": "viewer",
+      "capture": "viewer-permission-total",
+      "status": 403
+    },
+    {
+      "case": "viewer-permission-partial",
+      "operation": "partial",
+      "actor": "viewer",
+      "capture": "viewer-permission-partial",
+      "status": 403
+    },
+    {
+      "case": "viewer-permission-encoding",
+      "operation": "encoding",
+      "actor": "viewer",
+      "capture": "viewer-permission-encoding",
+      "status": 403
+    },
+    {
+      "case": "unknown-named-post",
+      "operation": "unknown",
+      "actor": "control",
+      "capture": "unknown-named-post",
+      "status": 500
+    },
+    {
+      "case": "application-permission-total",
+      "operation": "total",
+      "actor": "application",
+      "capture": "application-permission-total",
+      "status": 204
+    },
+    {
+      "case": "application-permission-partial",
+      "operation": "partial",
+      "actor": "application",
+      "capture": "application-permission-partial",
+      "status": 204
+    },
+    {
+      "case": "application-permission-encoding",
+      "operation": "encoding",
+      "actor": "application",
+      "capture": "application-permission-encoding",
+      "status": 204
+    }
+  ],
+  "restorationProofs": [
+    {
+      "case": "full-server-name",
+      "capture": "full-name",
+      "exact": true
+    },
+    {
+      "case": "partial-flat-merge",
+      "capture": "partial-flat",
+      "exact": true
+    },
+    {
+      "case": "partial-array-replacement",
+      "capture": "partial-words",
+      "exact": true
+    },
+    {
+      "case": "partial-name-empty",
+      "capture": "partial-name-empty",
+      "exact": true
+    },
+    {
+      "case": "partial-name-null",
+      "capture": "partial-name-null",
+      "exact": true
+    },
+    {
+      "case": "partial-invalid-atomicity",
+      "capture": "partial-invalid",
+      "exact": true
+    },
+    {
+      "case": "named-encoding-width",
+      "capture": "encoding-width",
+      "exact": true
+    },
+    {
+      "case": "named-mime-json",
+      "capture": "encoding-mime-json",
+      "exact": true
+    },
+    {
+      "case": "named-mime-octet-stream",
+      "capture": "encoding-mime-octet-stream",
+      "exact": true
+    },
+    {
+      "case": "anonymous-permission-total",
+      "capture": "anonymous-permission-total",
+      "exact": true
+    },
+    {
+      "case": "anonymous-permission-partial",
+      "capture": "anonymous-permission-partial",
+      "exact": true
+    },
+    {
+      "case": "anonymous-permission-encoding",
+      "capture": "anonymous-permission-encoding",
+      "exact": true
+    },
+    {
+      "case": "viewer-permission-total",
+      "capture": "viewer-permission-total",
+      "exact": true
+    },
+    {
+      "case": "viewer-permission-partial",
+      "capture": "viewer-permission-partial",
+      "exact": true
+    },
+    {
+      "case": "viewer-permission-encoding",
+      "capture": "viewer-permission-encoding",
+      "exact": true
+    },
+    {
+      "case": "unknown-named-post",
+      "capture": "unknown-named",
+      "exact": true
+    },
+    {
+      "case": "application-permission-total",
+      "capture": "application-permission-total",
+      "exact": true
+    },
+    {
+      "case": "application-permission-partial",
+      "capture": "application-permission-partial",
+      "exact": true
+    },
+    {
+      "case": "application-permission-encoding",
+      "capture": "application-permission-encoding",
+      "exact": true
+    },
+    {
+      "case": "final-cleanup",
+      "capture": "cleanup-configuration",
+      "exact": true
+    }
+  ],
+  "ordinaryWritesBlocked": false,
+  "writeBlockReasons": [],
+  "ownedLoginAttempts": [
+    "control",
+    "viewer"
+  ],
+  "ownedLoginStatuses": {
+    "control": 200,
+    "viewer": 200
+  },
+  "ownedLoginInvalidityProofs": {
+    "viewer": {
+      "label": "cleanup-invalid-viewer",
+      "status": 401
+    },
+    "control": {
+      "label": "cleanup-invalid-control",
+      "status": 401
+    }
+  },
+  "ownedLoginLogoutStatuses": {
+    "viewer": 204,
+    "control": 204
+  },
+  "applicationCreationAttempted": true,
+  "applicationUniquelyOwned": true,
+  "applicationInvalidityProof": {
+    "label": "cleanup-application-invalid",
+    "status": 401
+  },
+  "applicationRevocationAttempted": true,
+  "scheduledTaskMutationRequests": 0,
+  "libraryMutationRequests": 0,
+  "deviceMutationRequests": 0,
+  "mediaOrEncoderRequests": 0,
+  "sourceWrites": 0,
+  "httpAttempts": 236,
+  "incompleteHTTP": 0,
+  "wireBytes": 145347,
+  "wireByteBudgetCharged": 145347,
+  "privateWireRecords": 236,
+  "elapsedSeconds": 3.238,
+  "limits": {
+    "mainRequests": 240,
+    "allRequests": 280,
+    "requestBodyBytes": 32768,
+    "responseBodyBytes": 262144,
+    "totalResponseBytes": 8388608,
+    "mainSeconds": 360,
+    "cleanupSeconds": 180
+  },
+  "sanitizerSources": {
+    "reference-configuration.py": "baa425eb9680d3e924c4d18d75ad99cc6d0a10ac438ba402501955bb96a359cd",
+    "reference-scheduled-tasks.py": "b037ab51f5d0fb9e84d4121466a34263ebbf166c99eff2e56cc2dc5b68ada4f1",
+    "reference-devices.py": "96d5378d82ce3fcd5dd9a325b02ea3b49bb9c045bcd6b320952222cc888b556d",
+    "reference-api-keys.py": "ead25f9d47e8faf0b2b579ca8641b4ddcf4f7993c9e5a16710624c2927e749a8"
+  },
+  "operatorSha256": "6aa2f03e2db5fd0028159c55bf6fc2cd22bb33597a9c4cb7166e40b2b14329d8",
+  "retainedFreshHistory": "Revoked login/device/application history belongs to the separately attested disposable instance; its operator owns teardown",
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T05:53:03.959303+00:00"
+  }
+}

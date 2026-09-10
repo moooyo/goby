@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "attempt": 1,
+  "attestedFreshPID": 3613232,
+  "dataRemoved": true,
+  "evidenceRetained": true,
+  "oldPreservationVerified": true,
+  "ownedProcessGone": true,
+  "dataBytesBeforeRemoval": 3862841,
+  "privateCleanupReportSha256": "229113c24d22af55a80499f02cc7b1690a55cfde50cf7220060ea25b3eec375a"
+}

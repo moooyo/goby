@@ -143,7 +143,8 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	limits := hlsPrincipalLimits(s.cfg.Transcoding, principal)
+	planning := s.requestPlanningConfig(r)
+	limits := hlsPrincipalLimits(planning, principal)
 	targetConversionDisabled := false
 	if principal.IsApplicationKey() {
 		var target identity.User
@@ -162,7 +163,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if request.UserID != "" {
-				limits = hlsApplicationTargetLimits(s.cfg.Transcoding, target)
+				limits = hlsApplicationTargetLimits(planning, target)
 				targetConversionDisabled = !limits.AllowRemux && !limits.AllowAudioTranscode && !limits.AllowVideoTranscode
 			}
 		}
@@ -256,9 +257,10 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		}
 		var streamURL, container, protocol string
 		if conversion.Plan.OutputMode == "progressive" {
-			// The concrete output settings survive a normal client-side seek URL
-			// change. The media route rechecks current source facts and policy;
-			// negotiation does not reserve capacity or start an encoder.
+			// URLs preserve output choices across client-side seek edits. Each
+			// later GET or HEAD builds a new plan from that request's effective
+			// settings snapshot, current source facts, and policy. Negotiation
+			// neither reserves capacity nor starts an encoder.
 			if source.Item.Type == "Audio" {
 				streamURL = audioPlaybackURL(source.Item.ID, source.SourceID, session.ID, principal.Client.DeviceID, token, *conversion.Plan)
 			} else {

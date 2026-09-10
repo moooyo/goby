@@ -83,7 +83,8 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
-	decision, err := audioRequestDecision(input, values, suffix, universal, hlsPrincipalLimits(s.cfg.Transcoding, principal))
+	planning := s.requestPlanningConfig(r)
+	decision, err := audioRequestDecision(input, values, suffix, universal, hlsPrincipalLimits(planning, principal))
 	if err != nil {
 		s.audioError(w, r, err)
 		return
