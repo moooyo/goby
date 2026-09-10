@@ -504,7 +504,7 @@ func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principa
 	return tx, nil
 }
 
-func authorizeApplicationKeyActor(ctx context.Context, tx pgx.Tx, actor Principal, expectedSelfRevocation *time.Time) error {
+func authorizeApplicationKeyActor(ctx context.Context, tx AuthorizationTx, actor Principal, expectedSelfRevocation *time.Time) error {
 	var authorized bool
 	err := tx.QueryRow(ctx, `SELECT EXISTS (
 		SELECT 1 FROM sessions a LEFT JOIN users u ON u.id = a.user_id

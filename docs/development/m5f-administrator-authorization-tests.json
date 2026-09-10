@@ -1,0 +1,17 @@
+{
+  "suite": "administrator-authorization",
+  "exitCode": 0,
+  "topLevelTests": {
+    "pass": 7
+  },
+  "failedTests": [],
+  "packages": [
+    {
+      "Time": "2026-09-10T10:00:22.445837089+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/identity",
+      "Elapsed": 15.689
+    }
+  ],
+  "logSha256": "a4502fc31bd5db5a7362076df058ad491771f957c4297f5131397e553bd121ea"
+}

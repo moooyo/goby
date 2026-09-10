@@ -185,7 +185,7 @@ func validDeviceActor(actor Principal, native bool) bool {
 		actor.ApplicationKeyID == 0 && actor.ClientSessionID == "" && validRevalidationID(actor.SessionID) && validRevalidationID(actor.User.ID)
 }
 
-func authorizeDeviceActor(ctx context.Context, tx pgx.Tx, actor Principal, native bool, selfRevocation *time.Time) error {
+func authorizeDeviceActor(ctx context.Context, tx AuthorizationTx, actor Principal, native bool, selfRevocation *time.Time) error {
 	if !validDeviceActor(actor, native) {
 		return ErrUnauthorized
 	}

@@ -1,0 +1,17 @@
+{
+  "suite": "owned-transactions",
+  "exitCode": 0,
+  "topLevelTests": {
+    "pass": 14
+  },
+  "failedTests": [],
+  "packages": [
+    {
+      "Time": "2026-09-10T10:03:16.610899918+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/library",
+      "Elapsed": 3.233
+    }
+  ],
+  "logSha256": "27f21204aff7bb009a1c3501170bba4fc84d7678c65382a2199e527796d80c61"
+}

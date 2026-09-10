@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "scope": "Internal task foundations only; no scheduler, HTTP route, migration, or deployment acceptance",
+  "capturedAt": "2026-09-10T02:05:39.163439+00:00",
+  "goVersion": "go version go1.27.1 linux/amd64",
+  "testEnvironment": "test-env Linux; isolated PostgreSQL on port 15432",
+  "sourceFiles": {
+    "internal/library/owned_transactions.go": "9079dc6f18977f34b3e7f5c5aabb565477271ca311caaf82488a6148b10e33bd",
+    "internal/library/owned_transactions_test.go": "9ca7da96335b3530b7d12cc6915728bdf1e18e4882491f033257789d0ce093d4",
+    "internal/library/owned_transactions_integration_test.go": "f16244051e83d6de91ae14d93b4edfe280795743b7d1ef2423cc37429716aaac",
+    "internal/identity/administrator_authorization.go": "033c27d3e0b6d0813881fbca7f4943c187cf5614d76ee7f892e9b1fb2a1a7b80",
+    "internal/identity/administrator_authorization_test.go": "adae98e739d5023a546d47dab703948b8cd6a18112a1dbcfa13c7c4bfcd34b41",
+    "internal/identity/administrator_authorization_integration_test.go": "403155f1ba17388c455f935880522d182ed74faf7e02657af8cd29abe05a3dcb",
+    "internal/identity/application_keys.go": "5474bc8ccf0d7a6d1baa23219d6b76962ed2fab9a03460fd43fd689eaa8a6bae",
+    "internal/identity/devices.go": "ab15296b6ba76474a0fa0e8090c907ce58ab3a8b67375a439982cd52e1dadc7f"
+  },
+  "runs": [
+    {
+      "suite": "administrator-authorization",
+      "exitCode": 0,
+      "topLevelTests": {
+        "pass": 7
+      },
+      "failedTests": [],
+      "packages": [
+        {
+          "Time": "2026-09-10T10:00:22.445837089+08:00",
+          "Action": "pass",
+          "Package": "github.com/moooyo/goby/internal/identity",
+          "Elapsed": 15.689
+        }
+      ],
+      "logSha256": "a4502fc31bd5db5a7362076df058ad491771f957c4297f5131397e553bd121ea"
+    },
+    {
+      "suite": "owned-transactions",
+      "exitCode": 0,
+      "topLevelTests": {
+        "pass": 14
+      },
+      "failedTests": [],
+      "packages": [
+        {
+          "Time": "2026-09-10T10:03:16.610899918+08:00",
+          "Action": "pass",
+          "Package": "github.com/moooyo/goby/internal/library",
+          "Elapsed": 3.233
+        }
+      ],
+      "logSha256": "27f21204aff7bb009a1c3501170bba4fc84d7678c65382a2199e527796d80c61"
+    }
+  ],
+  "topLevelTestsPassed": 21,
+  "skippedTests": 0,
+  "raceFindings": 0,
+  "schemaChanges": 0,
+  "deployedServicePID": 3535438,
+  "deployedBinarySha256": "394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541",
+  "deployedIncrement": "M5e d5d696f",
+  "goRoot": "/opt/goby-toolchains/go1.27.1",
+  "toolchainObservation": "Recorded with the same protected environment and module working directory used by both test commands.",
+  "precedingEvidenceCorrection": {
+    "sha256": "da22ff90cf50aee8157a35c290daa34b0dc8dc8d7758ac5fbc920bf2b18b7d46",
+    "reason": "The first assembler queried go version in the ambient SSH environment outside the module, reporting go1.26.7. The test environment and module select go1.27.1. Test logs and results are unchanged."
+  }
+}
