@@ -1,0 +1,27 @@
+{
+  "owner": "goby-m5e-legacy-regression-v1",
+  "goExitCode": 0,
+  "topLevelTestsPassed": 4,
+  "skippedTests": 0,
+  "failedTests": [],
+  "packages": [
+    {
+      "name": "github.com/moooyo/goby/internal/identity",
+      "action": "pass",
+      "elapsed": 7.2780000000000005
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/server",
+      "action": "pass",
+      "elapsed": 9.634
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/subtitle",
+      "action": "pass",
+      "elapsed": 1.022
+    }
+  ],
+  "logSha256": "a2248f3545c43ae9dc3b9aea0019ebf4001a65090b9c40ca3eb2738973173e1e",
+  "sourceManifestSha256": "6b6054675e286143c32e86b3400d68a0693f7ae1bba443dcdb178fb11d088f95",
+  "finishedAt": "2026-09-10T00:45:49.706864+00:00"
+}

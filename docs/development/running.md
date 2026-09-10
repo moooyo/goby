@@ -1,6 +1,13 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
+
+The current database schema is **18** and the probe cache version remains **6**.
+The [accepted M5e device increment](verification-m5e-devices.md) adds ordinary
+device generations and a separate shared application-key server registry.
+Migrations 17 and 18 preserve existing catalog, playback, credential, and key
+history; they require no media rescan. The separate rescan requirement for
+older probe-cache versions still applies.
 
 ## Build inputs
 
@@ -92,7 +99,7 @@ Migration `0013` adds a user-management revision with default 1. [Native user ma
 
 Migration `0014` adds `item_metadata_state`, initializes it for existing items and supplies an insert trigger for new catalog rows. It preserves the previous NFO projection and every pre-existing table row. [Native metadata editing](../api/admin-metadata.md) stores automatic snapshots, manual overrides, locked values and revisions separately; effective item columns and entity links change in the same catalog transaction. This upgrade needs no new configuration and no probe rescan. Media/NFO files remain unchanged by editor writes. The complete administrator milestone, including provider integration and backup/restore, remains open.
 
-M5c [login-session administration](../api/admin-sessions.md) uses the existing schema-14 authentication records. It adds no migration or probe rescan. The Sessions page lists and filters login history and revokes one selected login; current administrator authorization is checked in the transaction. Self-revocation signs the dashboard out. Active login validity is distinct from online presence, and a single revocation does not block a later sign-in on the same device.
+M5c [login-session administration](../api/admin-sessions.md) was introduced against the existing schema-14 authentication records without a migration or probe rescan. The Sessions page lists and filters native administrator (`admin`) and ordinary Emby (`emby`) login history and revokes one selected login; current administrator authorization is checked in the transaction. Application-key parent credentials also use the database's `sessions` table after migration 16, but they remain on the API keys management surface and are excluded from the native login-session list. Self-revocation signs the dashboard out. Active login validity is distinct from online presence, and a single login revocation does not block a later sign-in on the same device.
 
 Migration `0015` adds the persisted `force_probe` scan-job mode with a false default for historical jobs. The administrator can explicitly [refresh cached media details](verification-m4g-media-refresh.md) to re-probe unchanged files and rebuild eligible private playback indexes. Ordinary same-version scans continue to reuse valid cached facts; the schema migration itself schedules no scan.
 
@@ -111,6 +118,17 @@ Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8
 The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate `/opt/goby-test/browser.env`; neither is part of the repository. Tests create randomly named PostgreSQL schemas and clean up only those schemas.
 
 The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
+
+The accepted M5e deployment checkpoint runs schema 18 as UID 995, PID 3535438,
+with probe version 6. Its [deployment evidence](m5e-deployment-evidence.json)
+preserves all prior business fields, 21 catalog items, 11 media files, and the
+matching application-key master without scheduling a scan. The
+[deployed device workflow](m5e-deployed-devices.json) passed in 1.824 seconds
+and preserved the prior rows and key namespace while cleaning up its newly
+issued credentials and ordinary device generations. The
+[verification report](verification-m5e-devices.md) records the full race suite,
+isolated browser/restart results, and recovery limits; it does not claim a
+completed product backup/restore workflow.
 
 Remote test commands, after loading the protected test environment:
 
@@ -148,6 +166,26 @@ with nullable user/context ownership in playback records. Existing users,
 logins, playback records and saved user data are retained. The administrator
 API keys page creates, reveals and revokes server-wide credentials; ordinary
 login-session management stays separate. See the [key API contract](../api/application-keys.md).
+
+Migration `0017` backfills an ordinary device registry from nonempty reported
+IDs on existing Emby logins, including expired and revoked history. It adds
+`sessions.device_registry_id` without changing those credentials' original
+fields. Native administrator and application-key credentials remain outside
+this association. The [Devices page and API](../api/devices.md) rename or remove
+an ordinary generation; removal revokes all associated ordinary logins and
+retires their WebSocket/conversion consumers while preserving history. A later
+login registers a new generation. Authorization counts are not online presence.
+
+Migration `0018` adds the hidden shared application-key server-device registry.
+Existing key rows retain numeric generation `1`, their ciphertext, and all
+client contexts. Later shared generations use the ordinary device sequence to
+avoid identifier reuse. The shared record is absent from device lists and
+native device mutations; direct privileged compatibility operations can address
+it and revoke every attached parent key and its contexts. An ordinary device
+removal never revokes a key solely because a context reports the same ID.
+Native dashboard logins remain independently managed. These upgrades preserve
+probe-cache version 6 and do not issue or require a rescan; see
+[device implementation and migration details](devices.md).
 
 The supplied systemd unit creates its persistent state directory with mode
 `0700`. The default application-key master file is created lazily there with

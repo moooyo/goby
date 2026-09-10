@@ -53,7 +53,7 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := identity.Client{Name: "Goby Dashboard", DeviceID: "goby-dashboard", Device: "Web browser", Version: s.version}
-	credentials, err := s.identity.Authenticate(r.Context(), body.Name, body.Password, client, "admin")
+	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), body.Name, body.Password, client, "admin", s.clientAddress(r))
 	if err != nil {
 		s.identityError(w, r, err)
 		return

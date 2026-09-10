@@ -104,7 +104,10 @@ if systemctl is-active --quiet goby-foundation-test.service; then
 fi
 install -m 755 /opt/goby-test/goby.next "$deployment/goby"
 cp -a web/admin/dist/. "$deployment/admin/"
-chmod -R a+rX "$deployment/admin"
+# Source archives can retain writable modes from another operating system.
+# Installed static resources stay readable without inheriting those write bits.
+find "$deployment/admin" -type d -exec chmod 755 {} +
+find "$deployment/admin" -type f -exec chmod 644 {} +
 cat > /etc/systemd/system/goby-foundation-test.service <<'UNIT'
 [Unit]
 Description=Goby foundation test deployment

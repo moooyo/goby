@@ -1,0 +1,106 @@
+{
+  "owner": "goby-m5e-full-race-attempt-1-v1",
+  "goExitCode": 1,
+  "topLevelTestsPassed": 1081,
+  "skippedTests": 0,
+  "failedTests": [
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOwners"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreManagedUserMutationRejectsLoginWithPreviouslyReadCredentials/password-reset"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreManagedUserMutationRejectsLoginWithPreviouslyReadCredentials/disable"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreManagedUserMutationRejectsLoginWithPreviouslyReadCredentials"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "test": "TestObservedSRTDeliveryBodies"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPRemoteCommandsUseCurrentOwnersAndAdministratorsWithoutTransport/administrator-cookie-target"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPRemoteCommandsUseCurrentOwnersAndAdministratorsWithoutTransport"
+    }
+  ],
+  "packages": [
+    {
+      "name": "github.com/moooyo/goby/cmd/goby",
+      "action": "skip",
+      "elapsed": 0
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/artwork",
+      "action": "pass",
+      "elapsed": 1.5939999999999999
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/config",
+      "action": "pass",
+      "elapsed": 1.039
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/events",
+      "action": "pass",
+      "elapsed": 1.209
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/database",
+      "action": "pass",
+      "elapsed": 3.261
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/library",
+      "action": "pass",
+      "elapsed": 28.268
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/media",
+      "action": "pass",
+      "elapsed": 5.13
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/metadata",
+      "action": "pass",
+      "elapsed": 1.518
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/playback",
+      "action": "pass",
+      "elapsed": 1.237
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/identity",
+      "action": "fail",
+      "elapsed": 240.746
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/subtitle",
+      "action": "fail",
+      "elapsed": 0.124
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/transcode",
+      "action": "pass",
+      "elapsed": 57.284
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/server",
+      "action": "fail",
+      "elapsed": 553.75
+    }
+  ],
+  "logSha256": "e3b930e637c8947dcd2b97c29c599744e148dea8d5880c5f0cb383bf36b2a472",
+  "sourceManifestSha256": "85dd5719c8dfc92fecf8be011de702a4bf7057eb194c6b35d4037599e053ebf7",
+  "finishedAt": "2026-09-10T00:34:57.334705+00:00"
+}

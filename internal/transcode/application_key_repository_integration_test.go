@@ -12,16 +12,30 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
+const (
+	encodingApplicationServerID      = "encoding-application-fixture-server"
+	encodingApplicationServerName    = "Encoding application fixture server"
+	encodingApplicationServerVersion = "1.0"
+)
+
 func encodingApplicationKeyFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool, item transcode.Scope, name string, sidecar bool) transcode.Scope {
 	t.Helper()
 	scope := transcode.Scope{ApplicationKey: true, AuthSessionID: "key_" + name, DeviceID: "key-device-" + name,
 		PlaySessionID: "key-play-" + name, ItemID: item.ItemID, SourceID: item.SourceID}
 	digest := sha256.Sum256([]byte("encoding-application-key-fixture-" + name))
-	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, device_id)
-		VALUES ($1, $2, 'application_key', $3)`, scope.AuthSessionID, digest[:], scope.DeviceID); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, client_name, device_id, device_name, client_version)
+		VALUES ($1, $2, 'application_key', $3, $4, $5, $6)`, scope.AuthSessionID, digest[:], name,
+		encodingApplicationServerID, encodingApplicationServerName, encodingApplicationServerVersion); err != nil {
 		t.Fatal(err)
 	}
 	if sidecar {
+		if _, err := pool.Exec(ctx, `INSERT INTO application_key_devices
+			(id, reported_device_id, reported_name, app_name, app_version)
+			VALUES (1, $1, $2, $3, $4)
+			ON CONFLICT (id) DO UPDATE SET app_name = EXCLUDED.app_name`,
+			encodingApplicationServerID, encodingApplicationServerName, name, encodingApplicationServerVersion); err != nil {
+			t.Fatalf("insert encoding application device fixture: %v", err)
+		}
 		if _, err := pool.Exec(ctx, `INSERT INTO application_keys (credential_id, secret_ciphertext)
 			VALUES ($1, $2)`, scope.AuthSessionID, []byte("fixture-ciphertext")); err != nil {
 			t.Fatal(err)

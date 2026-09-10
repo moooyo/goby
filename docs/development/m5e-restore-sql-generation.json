@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "scope": "Read-only SQL script generation from the existing private schema-16 archive",
+  "originalInvocationExitCode": 1,
+  "originalInvocationRequiredExplicitOutput": true,
+  "correctedInvocationExitCode": 0,
+  "scriptBytes": 203084,
+  "scriptSha256": "34d15f69bdaf1c83212d9ca100c1268f011e38525d0371da13e18568f28e7c5a",
+  "correctedOperatorSha256": "6d96dfeaf2023a668b9a70389313cce1c1345fd74989d081f24532c6eac608ba",
+  "databaseConnectionRequested": false,
+  "databaseRestoreExecuted": false,
+  "originalBackupModified": false
+}

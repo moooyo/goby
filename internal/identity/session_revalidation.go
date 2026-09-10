@@ -42,10 +42,11 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
 		u.has_password, u.created_at, u.policy, authentication.id,
-		authentication.client_name, authentication.device_id, authentication.device_name,
+		authentication.client_name, authentication.device_id, COALESCE(d.custom_name, authentication.device_name),
 		authentication.client_version, authentication.kind, authentication.expires_at,
 		authentication.last_seen_at
 		FROM sessions authentication JOIN users u ON u.id = authentication.user_id
+		LEFT JOIN devices d ON d.id = authentication.device_registry_id AND d.deleted_at IS NULL
 		WHERE authentication.id = $1 AND authentication.user_id = $2
 		AND authentication.kind = 'emby' AND authentication.revoked_at IS NULL
 		AND authentication.expires_at > clock_timestamp() AND NOT u.is_disabled`,

@@ -86,6 +86,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
 	s.registerAdminUserRoutes(mux)
 	s.registerAdminSessionRoutes(mux)
+	s.registerAdminDeviceRoutes(mux)
+	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
 	s.registerLibraryRoutes(mux)

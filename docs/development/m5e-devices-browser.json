@@ -1,0 +1,146 @@
+{
+  "application_pids": [
+    3534684,
+    3534810
+  ],
+  "assets_archive_sha256": "b1e632731756592db638ad4d3fd0ef61ea7c4fdedcf717b33d882c976dd5885e",
+  "binary_sha256": "394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541",
+  "browser": {
+    "duration_ms": 6930.1939999999995,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_driver_stderr": "",
+  "checks": {
+    "application_uid": 995,
+    "browser_native_device_journey": true,
+    "committed_response_loss_requires_explicit_refresh": true,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "deletion_receipts_remain_idempotent_after_restart": true,
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true,
+    "initial_page_size": 25,
+    "later_login_registers_new_device_generation": true,
+    "literal_search_and_utf8_bounds": true,
+    "native_administrator_logins_preserved_after_restart": true,
+    "native_cookie_survives_reported_id_collision_removal": true,
+    "private_logs_exclude_raw_secrets": true,
+    "real_revision_conflict_and_missing_device_recovery": true,
+    "remaining_devices": 25,
+    "removal_clamps_empty_final_page": true,
+    "removed_device_logins_denied_after_restart": true,
+    "restart_preserved_all_public_table_rows": true,
+    "restart_preserved_device_names_and_revisions": true,
+    "restart_snapshot_public_table_count": 21,
+    "retained_and_replacement_logins_authorized_after_restart": true,
+    "secret_free_screenshots": 4,
+    "target_removal_revokes_two_independent_logins": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "preexisting_database_catalog_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5e_devices_20260910_010107_9c695c500d",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "fixtures": {
+    "login_limit_configuration_unchanged": true,
+    "private_manifest": true,
+    "real_devices": 32,
+    "real_emby_logins": 33,
+    "real_loopback_source_addresses": 32,
+    "reported_dashboard_id_collision": true,
+    "synthetic_credentials": false,
+    "target_logins": 2,
+    "users": 2
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 45971,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "role": "goby_m5e_role_20260910_010107_9c695c500d",
+  "run_id": "20260910_010107_9c695c500d",
+  "scenario": "administrator_devices",
+  "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3494032"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3494032"
+  },
+  "source_spec_sha256": "116aeff215257fb177ddcb15de40c3f1ed83e87507faad994d5b3a077339ba6f",
+  "space_before": {
+    "/": 38789120,
+    "/dev/shm": 115314688,
+    "/dev/shm/goby-pg-m4c": 842412032,
+    "/opt/goby-test/exec-scratch": 182562816
+  },
+  "status": "passed",
+  "verifier_sha256": "699cf78540a26f83f127d0820bece65d24887f72507fc51d82deb5423141fbb7"
+}

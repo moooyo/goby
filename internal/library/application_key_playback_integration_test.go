@@ -17,10 +17,12 @@ func applicationPlaybackOwnerFixture(t *testing.T, ctx context.Context, pool *pg
 	t.Helper()
 	owner := PlaybackOwner{ApplicationKey: true, SessionID: "key_" + name, DeviceID: "key-device-" + name}
 	digest := sha256.Sum256([]byte("application-playback-fixture-" + name))
-	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, device_id)
-		VALUES ($1, $2, 'application_key', $3)`, owner.SessionID, digest[:], owner.DeviceID); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, client_name, device_id, device_name, client_version)
+		VALUES ($1, $2, 'application_key', $3, $4, $5, $6)`, owner.SessionID, digest[:], name,
+		applicationFixtureServerID, applicationFixtureServerName, applicationFixtureServerVersion); err != nil {
 		t.Fatal(err)
 	}
+	seedApplicationFixtureDevice(t, ctx, pool, name)
 	if _, err := pool.Exec(ctx, `INSERT INTO application_keys (credential_id, secret_ciphertext)
 		VALUES ($1, $2)`, owner.SessionID, []byte("fixture-ciphertext")); err != nil {
 		t.Fatal(err)

@@ -57,7 +57,6 @@ func TestHTTPRemoteCommandsUseCurrentOwnersAndAdministratorsWithoutTransport(t *
 		{"disabled-target", "UPDATE users SET is_disabled = true WHERE id = $1", accounts.other.userID},
 		{"revoked-target", "UPDATE sessions SET revoked_at = now() WHERE id = $1", accounts.other.id},
 		{"expired-target", "UPDATE sessions SET created_at = now() - interval '31 days', expires_at = now() - interval '1 second' WHERE id = $1", accounts.other.id},
-		{"administrator-cookie-target", "UPDATE sessions SET kind = 'admin' WHERE id = $1", accounts.other.id},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := f.pool.Exec(f.ctx, test.statement, test.id); err != nil {
@@ -68,11 +67,23 @@ func TestHTTPRemoteCommandsUseCurrentOwnersAndAdministratorsWithoutTransport(t *
 			if _, err := f.pool.Exec(f.ctx, "UPDATE users SET is_disabled = false WHERE id = $1", accounts.other.userID); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := f.pool.Exec(f.ctx, "UPDATE sessions SET kind = 'emby', revoked_at = NULL, expires_at = now() + interval '30 days' WHERE id = $1", accounts.other.id); err != nil {
+			if _, err := f.pool.Exec(f.ctx, "UPDATE sessions SET revoked_at = NULL, expires_at = now() + interval '30 days' WHERE id = $1", accounts.other.id); err != nil {
 				t.Fatal(err)
 			}
 		})
 	}
+	t.Run("administrator-cookie-target", func(t *testing.T) {
+		// Use the real native login, whose credential has no ordinary-device
+		// registry binding. Changing an Emby row's kind fabricates an invalid
+		// identity under the device registry's credential-scope constraint.
+		native, err := f.users.Resolve(f.ctx, accounts.cookie.Value, "admin")
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := f.request(t, http.MethodPost, "/emby/Sessions/"+native.SessionID+"/Command/VolumeUp", nil, accounts.admin.headers)
+		expectStatus(t, response, http.StatusNotFound)
+		expectStatus(t, f.request(t, http.MethodGet, "/admin/v1/session", nil, nil, accounts.cookie), http.StatusOK)
+	})
 	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET is_administrator = false WHERE id = $1", accounts.admin.userID); err != nil {
 		t.Fatal(err)
 	}

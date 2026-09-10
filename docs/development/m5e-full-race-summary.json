@@ -1,0 +1,77 @@
+{
+  "owner": "goby-m5e-full-race-attempt-2-v1",
+  "goExitCode": 0,
+  "topLevelTestsPassed": 1085,
+  "skippedTests": 0,
+  "failedTests": [],
+  "packages": [
+    {
+      "name": "github.com/moooyo/goby/cmd/goby",
+      "action": "skip",
+      "elapsed": 0
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/config",
+      "action": "pass",
+      "elapsed": 1.024
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/artwork",
+      "action": "pass",
+      "elapsed": 1.484
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/events",
+      "action": "pass",
+      "elapsed": 1.199
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/database",
+      "action": "pass",
+      "elapsed": 3.237
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/library",
+      "action": "pass",
+      "elapsed": 27.921
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/media",
+      "action": "pass",
+      "elapsed": 5.09
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/metadata",
+      "action": "pass",
+      "elapsed": 1.509
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/playback",
+      "action": "pass",
+      "elapsed": 1.244
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/identity",
+      "action": "pass",
+      "elapsed": 203.8
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/subtitle",
+      "action": "pass",
+      "elapsed": 1.1219999999999999
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/transcode",
+      "action": "pass",
+      "elapsed": 57.045
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/server",
+      "action": "pass",
+      "elapsed": 531.35
+    }
+  ],
+  "logSha256": "6524047f0acd128f693d5c9dfd405c3dc9f0f44ec3b46380969ca433266db7df",
+  "sourceManifestSha256": "6b6054675e286143c32e86b3400d68a0693f7ae1bba443dcdb178fb11d088f95",
+  "finishedAt": "2026-09-10T00:58:40.046030+00:00"
+}

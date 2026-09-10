@@ -173,10 +173,10 @@ func (s *Server) clientSocket(w http.ResponseWriter, r *http.Request) {
 		}
 		runtime.mu.Unlock()
 	}()
-	s.serveClientSocket(conn, sub, principal)
+	s.serveClientSocket(conn, sub, principal, s.clientAddress(r))
 }
 
-func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscription, principal identity.Principal) {
+func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscription, principal identity.Principal, peerIP string) {
 	ctx, cancel := context.WithCancel(s.sockets.ctx)
 	var workers sync.WaitGroup
 	workers.Add(3)
@@ -193,7 +193,7 @@ func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscriptio
 	go func() {
 		defer workers.Done()
 		defer cancel()
-		s.maintainSocket(ctx, conn, principal)
+		s.maintainSocket(ctx, conn, principal, peerIP)
 	}()
 	go func() {
 		defer workers.Done()
@@ -263,7 +263,7 @@ func readSocketMessages(ctx context.Context, conn *websocket.Conn) {
 	}
 }
 
-func (s *Server) maintainSocket(ctx context.Context, conn *websocket.Conn, principal identity.Principal) {
+func (s *Server) maintainSocket(ctx context.Context, conn *websocket.Conn, principal identity.Principal, peerIP string) {
 	revalidate := time.NewTicker(s.sockets.revalidateEvery)
 	ping := time.NewTicker(s.sockets.pingEvery)
 	defer revalidate.Stop()
@@ -276,7 +276,7 @@ func (s *Server) maintainSocket(ctx context.Context, conn *websocket.Conn, princ
 			checkCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 			fresh, err := s.identity.RevalidateSession(checkCtx, principal)
 			if err == nil && time.Since(fresh.LastSeenAt) >= identity.ClientSessionTouchInterval {
-				err = s.identity.TouchClientSession(checkCtx, fresh)
+				err = s.identity.TouchClientSessionFromAddress(checkCtx, fresh, peerIP)
 			}
 			cancel()
 			if err != nil {

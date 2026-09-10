@@ -76,7 +76,7 @@ func encodingVODDataSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Po
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
 		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' ORDER BY id) FROM users t),
-		'auth', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM sessions t),
+		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'play', (SELECT jsonb_agg(to_jsonb(t) - 'client_correlated' - 'application_client_id' ORDER BY id) FROM play_sessions t),
@@ -174,8 +174,8 @@ func TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds(t *testing.T
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade encoding plans from version 10: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 16 {
-		t.Fatalf("upgraded schema version = %d, want 16, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 18 {
+		t.Fatalf("upgraded schema version = %d, want 18, error = %v", version, err)
 	}
 	if after := encodingVODDataSnapshot(t, ctx, pool); after != before {
 		t.Error("encoding plan migration changed existing jobs or related data")
@@ -189,8 +189,8 @@ func TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds(t *testing.T
 	if oldHistory != historyBefore {
 		t.Error("encoding plan migration changed historical migration rows or applied timestamps")
 	}
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 16 {
-		t.Fatalf("upgraded migration count = %d, want 16, error = %v", count, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 18 {
+		t.Fatalf("upgraded migration count = %d, want 18, error = %v", count, err)
 	}
 	if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 11").Scan(&latestName); err != nil || latestName != "0011_encoding_vod_plans.sql" {
 		t.Fatalf("version 11 migration name = %q, error = %v", latestName, err)

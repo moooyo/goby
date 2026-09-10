@@ -426,6 +426,10 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 	websocketHTTPWaitCount(t, h.f, h.accounts.viewer.id, 2)
 	websocketHTTPWaitCount(t, h.f, h.accounts.second.id, 1)
 	before := adminSessionHTTPSnapshot(t, h.f)
+	activityActor, err := h.f.users.Resolve(h.f.ctx, h.accounts.viewer.headers.Get("X-Emby-Token"), "emby")
+	if err != nil {
+		t.Fatal(err)
+	}
 	blocker, err := h.f.pool.Begin(h.f.ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -435,13 +439,43 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 	if err := blocker.QueryRow(h.f.ctx, "SELECT id FROM sessions WHERE id = $1 FOR UPDATE", h.accounts.viewer.id).Scan(&lockedID); err != nil {
 		t.Fatal(err)
 	}
+	requestCtx, cancelRequest := context.WithTimeout(h.f.ctx, 12*time.Second)
+	defer cancelRequest()
+	// A legitimate activity writer holds the account before waiting for this
+	// credential. The administrator consequently waits behind that writer at
+	// its account lock, rather than directly at the owned credential lock.
+	activityDone := make(chan error, 1)
+	go func() {
+		activityDone <- h.f.users.TouchClientSessionFromAddress(requestCtx, activityActor, "")
+	}()
+	activityWaitCtx, cancelActivityWait := context.WithTimeout(h.f.ctx, 3*time.Second)
+	defer cancelActivityWait()
+	activityTick := time.NewTicker(10 * time.Millisecond)
+	defer activityTick.Stop()
+	var activityPID int32
+	for {
+		if err := h.f.pool.QueryRow(activityWaitCtx, `SELECT COALESCE((SELECT pid FROM pg_stat_activity
+			WHERE $1::integer = ANY(pg_blocking_pids(pid)) AND wait_event_type = 'Lock'
+			AND position('SELECT id FROM sessions' in query) > 0
+			AND position('AND kind = ''emby'' FOR UPDATE' in query) > 0 LIMIT 1), 0)`, blocker.Conn().PgConn().PID()).Scan(&activityPID); err != nil {
+			t.Fatalf("observe activity writer waiting for the owned session lock: %v", err)
+		}
+		if activityPID != 0 {
+			break
+		}
+		select {
+		case err := <-activityDone:
+			t.Fatalf("activity writer completed before its owned session lock was released (%T)", err)
+		case <-activityWaitCtx.Done():
+			t.Fatal("activity writer did not reach the owned authentication row lock")
+		case <-activityTick.C:
+		}
+	}
 	type pendingResult struct {
 		response hlsHTTPResponse
 		err      error
 	}
 	done := make(chan pendingResult, 1)
-	requestCtx, cancelRequest := context.WithTimeout(h.f.ctx, 12*time.Second)
-	defer cancelRequest()
 	go func() {
 		response, err := adminSessionHTTPSend(requestCtx, h.server.Client(), h.server.URL, h.accounts.cookie, csrf, h.accounts.viewer.id)
 		done <- pendingResult{response, err}
@@ -452,9 +486,19 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 	defer tick.Stop()
 	for {
 		var waiting bool
-		if err := h.f.pool.QueryRow(waitCtx, `SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+		if err := h.f.pool.QueryRow(waitCtx, `WITH RECURSIVE blocked AS (
+			SELECT pid, query, ARRAY[$1::integer, pid] AS visited, 1 AS depth FROM pg_stat_activity
 			WHERE $1::integer = ANY(pg_blocking_pids(pid)) AND wait_event_type = 'Lock'
-			AND position('SELECT id, user_id, kind FROM sessions' in query) > 0)`, blocker.Conn().PgConn().PID()).Scan(&waiting); err != nil {
+			UNION ALL
+			SELECT activity.pid, activity.query, blocked.visited || activity.pid, blocked.depth + 1
+			FROM blocked JOIN pg_stat_activity activity ON blocked.pid = ANY(pg_blocking_pids(activity.pid))
+			WHERE activity.wait_event_type = 'Lock' AND blocked.depth < 8
+			AND NOT activity.pid = ANY(blocked.visited)
+		) SELECT EXISTS (SELECT 1 FROM blocked WHERE $2::integer = ANY(visited)
+			AND (position('SELECT id FROM users WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE' in query) > 0
+			OR (position('SELECT id, user_id, kind FROM sessions' in query) > 0
+				AND position('AND kind IN (''admin'', ''emby'') ORDER BY id FOR UPDATE' in query) > 0)))`,
+			blocker.Conn().PgConn().PID(), activityPID).Scan(&waiting); err != nil {
 			t.Fatalf("observe pending session revocation lock: %v", err)
 		}
 		if waiting {
@@ -464,7 +508,7 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 		case result := <-done:
 			t.Fatalf("session revocation returned before its database lock was released: status %d, error type %T", result.response.status, result.err)
 		case <-waitCtx.Done():
-			t.Fatal("session revocation did not reach the owned authentication row lock")
+			t.Fatal("session revocation did not enter the proven activity-to-session blocking chain")
 		case <-tick.C:
 		}
 	}
@@ -480,6 +524,14 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 	peerSocket.ping(t)
 	if err := blocker.Commit(h.f.ctx); err != nil {
 		t.Fatal(err)
+	}
+	select {
+	case err := <-activityDone:
+		if err != nil {
+			t.Fatalf("activity writer failed after release of the owned session lock: %v", err)
+		}
+	case <-requestCtx.Done():
+		t.Fatal("activity writer did not finish after release of its database lock")
 	}
 	var result pendingResult
 	select {

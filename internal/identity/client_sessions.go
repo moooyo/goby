@@ -148,12 +148,19 @@ func (s *Store) UpdateClientCapabilities(ctx context.Context, principal Principa
 		table = "application_key_clients"
 	}
 	if _, err := tx.Exec(ctx, `UPDATE `+table+` SET client_capabilities = $2::jsonb,
-		last_seen_at = CASE WHEN last_seen_at <= now() - ($3::bigint * interval '1 second')
-		THEN now() ELSE last_seen_at END WHERE id = $1`, clientSessionIdentity(principal), encoded,
+		last_seen_at = CASE WHEN last_seen_at <= clock_timestamp() - ($3::bigint * interval '1 second')
+		THEN GREATEST(last_seen_at, clock_timestamp()) ELSE last_seen_at END WHERE id = $1`, clientSessionIdentity(principal), encoded,
 		int64(ClientSessionTouchInterval/time.Second)); err != nil {
 		return fmt.Errorf("update client capabilities: %w", err)
 	}
+	if err := touchOrdinaryDevice(ctx, tx, principal, ""); err != nil {
+		return err
+	}
 	if err := touchApplicationKeyUsage(ctx, tx, principal); err != nil {
+		return err
+	}
+	// Recheck expiration after any registry wait without extending the login.
+	if _, err := lockClientSession(ctx, tx, principal, false); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -165,6 +172,15 @@ func (s *Store) UpdateClientCapabilities(ctx context.Context, principal Principa
 // TouchClientSession records authenticated activity at most once per interval.
 // It revalidates the account and session without extending the login lifetime.
 func (s *Store) TouchClientSession(ctx context.Context, principal Principal) error {
+	return s.TouchClientSessionFromAddress(ctx, principal, "")
+}
+
+// TouchClientSessionFromAddress accepts only a trusted transport peer. Raw
+// client metadata is read from the locked credential, never the principal.
+func (s *Store) TouchClientSessionFromAddress(ctx context.Context, principal Principal, peerIP string) error {
+	if err := validateDevicePeer(peerIP); err != nil {
+		return err
+	}
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin client session activity: %w", err)
@@ -177,12 +193,18 @@ func (s *Store) TouchClientSession(ctx context.Context, principal Principal) err
 	if principal.IsApplicationKey() {
 		table = "application_key_clients"
 	}
-	if _, err := tx.Exec(ctx, `UPDATE `+table+` SET last_seen_at = now()
-		WHERE id = $1 AND last_seen_at <= now() - ($2::bigint * interval '1 second')`,
+	if _, err := tx.Exec(ctx, `UPDATE `+table+` SET last_seen_at = GREATEST(last_seen_at, clock_timestamp())
+		WHERE id = $1 AND last_seen_at <= clock_timestamp() - ($2::bigint * interval '1 second')`,
 		clientSessionIdentity(principal), int64(ClientSessionTouchInterval/time.Second)); err != nil {
 		return fmt.Errorf("record client session activity: %w", err)
 	}
+	if err := touchOrdinaryDevice(ctx, tx, principal, peerIP); err != nil {
+		return err
+	}
 	if err := touchApplicationKeyUsage(ctx, tx, principal); err != nil {
+		return err
+	}
+	if _, err := lockClientSession(ctx, tx, principal, false); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -223,10 +245,11 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	}
 	rows, err := tx.Query(ctx, `WITH clients AS (
 		SELECT a.id, a.id AS credential_id, u.id AS user_id, u.name AS user_name,
-			a.client_name, a.device_id, a.device_name, a.client_version, a.created_at,
+			a.client_name, a.device_id, COALESCE(d.custom_name, a.device_name) AS device_name, a.client_version, a.created_at,
 			a.last_seen_at, a.expires_at, a.client_capabilities, a.kind, 0::bigint AS key_id,
 			NULL::timestamptz AS last_used_at
 		FROM sessions a JOIN users u ON u.id = a.user_id
+		LEFT JOIN devices d ON d.id = a.device_registry_id AND d.deleted_at IS NULL
 		WHERE a.kind = 'emby' AND a.revoked_at IS NULL AND a.expires_at > now()
 		AND NOT u.is_disabled AND ($1::boolean OR a.user_id = $2)
 		UNION ALL
@@ -386,7 +409,7 @@ func touchApplicationKeyUsage(ctx context.Context, tx pgx.Tx, principal Principa
 		principal.SessionID, int64(ClientSessionTouchInterval/time.Second)); err != nil {
 		return fmt.Errorf("record application key activity: %w", err)
 	}
-	return nil
+	return touchApplicationKeyDeviceUsage(ctx, tx, principal)
 }
 
 func capabilityInputError(message string) error {

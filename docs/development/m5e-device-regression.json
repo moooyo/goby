@@ -1,0 +1,22 @@
+{
+  "owner": "goby-m5e-targeted-attempt-2-v1",
+  "goExitCode": 0,
+  "topLevelTestsPassed": 22,
+  "skippedTests": 0,
+  "failedTests": [],
+  "packages": [
+    {
+      "name": "github.com/moooyo/goby/internal/database",
+      "action": "pass",
+      "elapsed": 1.204
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/identity",
+      "action": "pass",
+      "elapsed": 69.721
+    }
+  ],
+  "logSha256": "a9bfa4affda64fa34639eb6fa297112e2fc974d57fb90de4b27d6b8e040d0f6a",
+  "sourceManifestSha256": "85dd5719c8dfc92fecf8be011de702a4bf7057eb194c6b35d4037599e053ebf7",
+  "finishedAt": "2026-09-10T00:23:38.385050+00:00"
+}

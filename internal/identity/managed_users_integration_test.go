@@ -566,7 +566,7 @@ func TestStoreAuthenticateReturnsTheLockedAccountSnapshot(t *testing.T) {
 	}()
 	// The initial lookup sees the old committed name and administrator role;
 	// issuance waits until the changed account becomes visible under its lock.
-	waitManagedBlockedQuery(t, ctx, pool, blockerPID, "WITH account AS MATERIALIZED", done)
+	waitManagedBlockedQuery(t, ctx, pool, blockerPID, "password_hash = $2 AND NOT is_disabled", done)
 	if err := blocker.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -714,7 +714,7 @@ func TestStoreManagedUserMutationRejectsLoginWithPreviouslyReadCredentials(t *te
 				_, err := store.Authenticate(ctx, target.Name, "target-password", identity.Client{}, "emby")
 				logins <- err
 			}()
-			waitManagedBlockedQuery(t, ctx, pool, mutationPID, "WITH account AS MATERIALIZED", loginDone)
+			waitManagedBlockedQuery(t, ctx, pool, mutationPID, "password_hash = $2 AND NOT is_disabled", loginDone)
 			if err := blocker.Commit(ctx); err != nil {
 				t.Fatal(err)
 			}

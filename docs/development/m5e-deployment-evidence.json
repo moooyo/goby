@@ -1,0 +1,205 @@
+{
+  "owner": "goby-m5e-deployment-evidence-v1",
+  "status": "passed",
+  "main_pid": 3535438,
+  "uid": 995,
+  "start_ticks": "23604510",
+  "binary_sha256": "394430272da8ad6268534c1bcaa925ccffc92f61ed0b136a8ec6bbc4dae88541",
+  "previous_binary_sha256": "13857f9c33312bc13aef56d5d881c4a0fad23399ceb8a9dafa43e24c0fb2bad5",
+  "previous_pid": 3494032,
+  "previous_start_ticks": "22367653",
+  "schema_version": 18,
+  "probe_version": 6,
+  "all_preexisting_business_fields_preserved": true,
+  "sessions_device_registry_id_exact_backfill": true,
+  "ordinary_device_projection_exact": true,
+  "application_key_device_projection_exact": true,
+  "old_application_key_numeric_ids_and_ciphertexts_preserved": true,
+  "runtime_service_and_master_unchanged": true,
+  "master_file_uid": 995,
+  "master_file_mode": "0600",
+  "master_file_bytes": 32,
+  "vault_directory_mode": "0700",
+  "media_rescan_issued": false,
+  "tables_before": {
+    "application_key_clients": {
+      "count": 8,
+      "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+    },
+    "application_keys": {
+      "count": 4,
+      "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+    },
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 30,
+      "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+    },
+    "scan_jobs": {
+      "count": 41,
+      "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+    },
+    "schema_migrations": {
+      "count": 16,
+      "sha256": "14cc122c6f869c0106899e4b861b865295d72fdb3a252d3c5851a5613698a4bc"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 86,
+      "sha256": "91a412458a1c69e4eb63fa386139b41499ad62d49b3def82d1924f11a68b6da7"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "tables_after": {
+    "application_key_clients": {
+      "count": 8,
+      "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+    },
+    "application_key_devices": {
+      "count": 1,
+      "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+    },
+    "application_keys": {
+      "count": 4,
+      "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+    },
+    "catalog_entities": {
+      "count": 7,
+      "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+    },
+    "client_playback_references": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "devices": {
+      "count": 8,
+      "sha256": "11d6c027af64e8b659c6c8d1a4d59956cc038f173f8e28407c9c5f6c770557ab"
+    },
+    "encoding_jobs": {
+      "count": 29,
+      "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+    },
+    "item_entities": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_images": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "item_metadata_state": {
+      "count": 21,
+      "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+    },
+    "item_subtitles": {
+      "count": 2,
+      "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+    },
+    "items": {
+      "count": 21,
+      "sha256": "fcff1441073d9c0be6b0c0c99ff798996f856be42795c311731e9c5c1fe0b434"
+    },
+    "libraries": {
+      "count": 5,
+      "sha256": "ca4224428db32a17db295734b88e3203138681abf725749e41a0b1f325e9d7ea"
+    },
+    "library_roots": {
+      "count": 5,
+      "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+    },
+    "play_sessions": {
+      "count": 30,
+      "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+    },
+    "scan_jobs": {
+      "count": 41,
+      "sha256": "d0b45c46ef7692c662c4cde740b6c0b6b50dc71a98a5b4b0d3693d7eead2cb36"
+    },
+    "schema_migrations": {
+      "count": 18,
+      "sha256": "fc217e4290aa2fd518b5f2389b92a9a67757c36ed713be5e7a0a341e1afe00bb"
+    },
+    "server_settings": {
+      "count": 2,
+      "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+    },
+    "sessions": {
+      "count": 86,
+      "sha256": "612095077167378170e5242b4405a86715e3af20878f42d2d1894ab8730c5e67"
+    },
+    "user_item_data": {
+      "count": 15,
+      "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+    },
+    "users": {
+      "count": 10,
+      "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+    }
+  },
+  "assets_archive_sha256": "b1e632731756592db638ad4d3fd0ef61ea7c4fdedcf717b33d882c976dd5885e",
+  "current_asset_files": 44,
+  "retained_asset_files": 185,
+  "source_manifest_sha256": "6b6054675e286143c32e86b3400d68a0693f7ae1bba443dcdb178fb11d088f95",
+  "source_module_files": 354,
+  "migration_manifest_sha256": "a5ae9d724bea52867ef81f05cd5b24439c46f4208a9eecde6bf1d5d76f1a2d59",
+  "installed_go_module_and_migration_files": 372,
+  "http_index_and_entries_verified": true,
+  "backup_directory": "/dev/shm/goby-m5e-deployment-backup",
+  "database_dump_bytes": 177603,
+  "deployment_script_sha256": "ded292de2db8c2fb232d875f38afa25d142c7b61925cd0c93981f965db8d2107",
+  "finishing_script_sha256": "5fb718588d02075039e8df5d2d13f010a5dc7e82ca42e903f9e492a1445e1461",
+  "finished_interrupted_source_installation": true,
+  "source_files_replaced_by_finishing": 342,
+  "service_start_stop_issued_by_finishing": false,
+  "database_restore_issued": false,
+  "original_complete_backup_preserved": true
+}

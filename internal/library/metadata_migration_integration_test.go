@@ -139,6 +139,11 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 		if table == "scan_jobs" {
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
 		}
+		if table == "sessions" {
+			// Device registration adds a foreign key without changing login data.
+			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'device_registry_id'
+				ORDER BY (to_jsonb(original) - 'device_registry_id')::text), '[]'::jsonb)::text FROM sessions original`
+		}
 		if table == "play_sessions" || table == "encoding_jobs" || table == "client_playback_references" {
 			// New application-client columns do not change any historical field.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'application_client_id'
@@ -273,8 +278,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 16 {
-		t.Fatalf("metadata migration version = %d, want 16, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 18 {
+		t.Fatalf("metadata migration version = %d, want 18, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -326,7 +331,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		}
 	}
 	sort.Strings(additions)
-	if !reflect.DeepEqual(additions, []string{"application_key_clients", "application_keys", "item_metadata_state"}) {
+	if !reflect.DeepEqual(additions, []string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state"}) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
 	}
 	var keys, clients int

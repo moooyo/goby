@@ -63,6 +63,7 @@ type Client struct {
 // Credentials contains a newly issued token, which cannot be recovered later.
 type Credentials struct {
 	User      User
+	Client    Client
 	Token     string
 	SessionID string
 	ExpiresAt time.Time
@@ -181,11 +182,21 @@ func (s *Store) Bootstrap(ctx context.Context, name, password string) (User, err
 
 // Authenticate verifies credentials and issues a session scoped to kind.
 func (s *Store) Authenticate(ctx context.Context, name, password string, client Client, kind string) (Credentials, error) {
+	return s.AuthenticateWithPeer(ctx, name, password, client, kind, "")
+}
+
+// AuthenticateWithPeer records the trusted network peer for an ordinary Emby
+// device. Native dashboard logins never register devices, regardless of their
+// reported identifier. The original Authenticate API retains its behavior.
+func (s *Store) AuthenticateWithPeer(ctx context.Context, name, password string, client Client, kind, peerIP string) (Credentials, error) {
 	lifetime, err := sessionLifetime(kind)
 	if err != nil {
 		return Credentials{}, err
 	}
 	if err := validateClient(client); err != nil {
+		return Credentials{}, err
+	}
+	if err := validateDevicePeer(peerIP); err != nil {
 		return Credentials{}, err
 	}
 	if len(password) > 72 || !utf8.ValidString(password) {
@@ -218,31 +229,8 @@ func (s *Store) Authenticate(ctx context.Context, name, password string, client 
 	if err != nil {
 		return Credentials{}, err
 	}
-	// Recheck account state and the password hash while issuing the token, so a
-	// concurrent disable, demotion, or password update cannot issue stale access.
-	// Return that same locked account snapshot in the authentication response.
-	var expiresAt, createdAt time.Time
-	user, err = scanUser(s.pool.QueryRow(ctx, `WITH account AS MATERIALIZED (
-		SELECT `+userColumns+` FROM users
-		WHERE id = $2 AND password_hash = $10 AND NOT is_disabled
-		AND ($4 <> 'admin' OR is_administrator) FOR SHARE
-	), issued AS (
-		INSERT INTO sessions
-		(id, user_id, token_hash, kind, client_name, device_id, device_name, client_version, expires_at)
-		SELECT $1, id, $3, $4, $5, $6, $7, $8, now() + ($9::bigint * interval '1 second')
-		FROM account RETURNING expires_at, created_at
-	)
-	SELECT account.id, account.name, account.is_administrator, account.is_disabled,
-		account.has_password, account.created_at, account.policy, issued.expires_at, issued.created_at
-		FROM account CROSS JOIN issued`, sessionID, user.ID, digest[:], kind,
-		client.Name, client.DeviceID, client.Device, client.Version, int64(lifetime/time.Second), hash), &expiresAt, &createdAt)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Credentials{}, ErrInvalidCredentials
-	}
-	if err != nil {
-		return Credentials{}, fmt.Errorf("create authentication session: %w", err)
-	}
-	return Credentials{User: user, Token: token, SessionID: sessionID, ExpiresAt: expiresAt, CreatedAt: createdAt}, nil
+	return s.issueLogin(ctx, loginIssue{userID: user.ID, passwordHash: hash, token: token, digest: digest[:],
+		sessionID: sessionID, client: client, kind: kind, lifetime: lifetime, peerIP: peerIP})
 }
 
 // Resolve accepts only the requested session kind and checks current user state.
@@ -256,9 +244,10 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 	}
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, s.id, s.client_name, s.device_id, s.device_name,
+		u.has_password, u.created_at, u.policy, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
 		s.client_version, s.kind, s.expires_at, s.last_seen_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
+		LEFT JOIN devices d ON d.id = s.device_registry_id AND d.deleted_at IS NULL
 		WHERE s.token_hash = $1 AND s.kind = $2 AND s.revoked_at IS NULL
 		AND s.expires_at > now() AND NOT u.is_disabled
 		AND ($2 <> 'admin' OR u.is_administrator)`, digest[:], kind).

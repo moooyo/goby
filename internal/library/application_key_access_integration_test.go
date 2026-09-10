@@ -10,14 +10,33 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	applicationFixtureServerID      = "application-key-fixture-server"
+	applicationFixtureServerName    = "Application key fixture server"
+	applicationFixtureServerVersion = "1.0"
+)
+
+func seedApplicationFixtureDevice(t *testing.T, ctx context.Context, pool *pgxpool.Pool, appName string) {
+	t.Helper()
+	if _, err := pool.Exec(ctx, `INSERT INTO application_key_devices
+		(id, reported_device_id, reported_name, app_name, app_version)
+		VALUES (1, $1, $2, $3, $4)
+		ON CONFLICT (id) DO UPDATE SET app_name = EXCLUDED.app_name`,
+		applicationFixtureServerID, applicationFixtureServerName, appName, applicationFixtureServerVersion); err != nil {
+		t.Fatalf("insert application server device fixture: %v", err)
+	}
+}
+
 func seedCatalogApplicationKey(t *testing.T, ctx context.Context, pool *pgxpool.Pool, id string, sidecar bool) Subject {
 	t.Helper()
 	digest := sha256.Sum256([]byte("catalog-application-key-fixture:" + id))
-	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind)
-		VALUES ($1, $2, 'application_key')`, id, digest[:]); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, client_name, device_id, device_name, client_version)
+		VALUES ($1, $2, 'application_key', $1, $3, $4, $5)`, id, digest[:],
+		applicationFixtureServerID, applicationFixtureServerName, applicationFixtureServerVersion); err != nil {
 		t.Fatalf("insert application credential fixture: %v", err)
 	}
 	if sidecar {
+		seedApplicationFixtureDevice(t, ctx, pool, id)
 		if _, err := pool.Exec(ctx, `INSERT INTO application_keys (credential_id, secret_ciphertext)
 			VALUES ($1, $2)`, id, []byte("catalog-fixture-ciphertext")); err != nil {
 			t.Fatalf("insert application key fixture: %v", err)

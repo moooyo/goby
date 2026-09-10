@@ -1,0 +1,611 @@
+{
+  "state": "passed",
+  "scope": "/opt/goby-dev/admin",
+  "changedDirectories": 1,
+  "changedFiles": 59,
+  "all185FileBytesUnchanged": true,
+  "rootOwnershipUnchanged": true,
+  "servicePIDUnchanged": 3494032,
+  "changes": [
+    {
+      "path": "/opt/goby-dev/admin",
+      "directory": true,
+      "mode": 511,
+      "device": 2049,
+      "inode": 396311,
+      "bytes": 4096,
+      "mtimeNs": 1788990517401683841,
+      "sha256": null
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ArrowForwardRounded-BV-pHys1.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400904,
+      "bytes": 318,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "490694cb0faf24d055ded3fec17053e2eb29988288776043f96f18748ff4b0d9"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ArrowForwardRounded-DYUBjSH5.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402345,
+      "bytes": 318,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "8e1026bba21809f5bfaa749f0eb650408ead3539adeafbb0a8a732433417a631"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ArrowForwardRounded-rx2krcV0.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396313,
+      "bytes": 313,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "090eaead63552ec58abb999acdb360f4a279bccdd6ad2cee642f4b0debdb5c05"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/AuthPage-BZfPMO5w.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402952,
+      "bytes": 4205,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "2460ea6ef306b7d7e046f79cdf524b73b91b38341cac862462f81f1eaaafaaca"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/AuthPage-CI-1uevV.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402346,
+      "bytes": 4205,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "4c864100dfe2def8625d2e933ff85f1aafa917c5efeff921f310a9a9ad0e75dc"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/AuthPage-lMTGVgH5.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396314,
+      "bytes": 4119,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "45b2e82c4d261123d980ca07d04846ffa3d0e77596657dc2f29d1780c573b81a"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/AuthPage-sPA8-k8m.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400905,
+      "bytes": 4205,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "e0f3e083f2bb0efb6cdb09c6a726c4be096ae6fcc80d0abc3cc064e98ca0a187"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/CheckCircleOutlineRounded-BOPgWA-3.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400906,
+      "bytes": 416,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "126b543b527b100a1f6cacc311edcd83dd5e07a561ab580918aceb9ab3e132a5"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/CheckCircleOutlineRounded-C6F6Erpc.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402742,
+      "bytes": 416,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "b638a4dacc1bf992bd3cfc60d54257c1c6e8588bb9832993f7249f0d4075f522"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/DeleteOutlineRounded-CQSGiHGX.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400908,
+      "bytes": 4358,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "c98e22c116332c92ac71382d402d7eda173275a49aeb2ca6a452b1639e8867e2"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/DialogTitle-CpgW73v1.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400909,
+      "bytes": 6813,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "b1f84653e3fc2c9956a772b82b277f186dc0e1ae293c65ce8b3b3392c24f4fc7"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/FormControlLabel-BP80gDvc.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400910,
+      "bytes": 7766,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "2e0dbb2d02038dfaff8add0714514a3157e5616cefe314852c02a2d3f0ee346a"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/FormControlLabel-CsGxPof9.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402930,
+      "bytes": 7767,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "b5f208bbfe4b4abb4180bb11d1f52bcccd2ecba8d5ffc0eaaf291681c58d900d"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/FormControlLabel-G6CiSWAD.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402953,
+      "bytes": 7767,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "4872595b6ddaa4dc069e2d0160ada8be09fa52d349594739c7539f1e9abb3491"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/Grow-Bm7MSkGy.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400912,
+      "bytes": 22640,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "9796cb40a77c8ea005dd53e372cd3f6358776aec3fb28c135b169b5e52f3cd9c"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/Grow-CoxzANey.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402932,
+      "bytes": 22640,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "e24920ad83a9725d940de41fe74d4d7339643b414d1eae70117240a31d5054ca"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/LibrariesPage-BN0YolpD.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400914,
+      "bytes": 13328,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "2ac87287a1f383c88909a1bdf3858bcb253d608917fbf53679891d91dc2d8a00"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/LibrariesPage-D4LzdE3z.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402934,
+      "bytes": 16697,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "595b3d8dec0639f6c950ec42c39d4c4f327ed9413202d93b5fe42d8693ba10b9"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/LibrariesPage-pXqK81Xj.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402956,
+      "bytes": 16697,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "19cc17cdd15296f84a1597cf1b2b3233507c463bd42f2ed163a564f7845c45e1"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/List-C0r2-9ch.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400915,
+      "bytes": 3594,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "b40970e188e7572631932db096bc184e93433b8fc112e772d2feb34551ffdf0b"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/MetadataItemsPage-JdYRh-Op.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400916,
+      "bytes": 76640,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "27c823d644ac6ac4000ef1ea447029301d0a7641a4adc58adf9f5f170b1a136c"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/OverviewPage-7Sx4R03F.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396322,
+      "bytes": 7344,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "bc68fb82c929e1e6af76c06768fa45467427f22f2a1ebbaa75647c2ac3a8d0c3"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/OverviewPage-BSv4gws5.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400917,
+      "bytes": 7147,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "2d9965ef19d6c5a70524077b25a846a2eb4cb5612d5514634907da541a1240c8"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/OverviewPage-DnDg02-z.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402957,
+      "bytes": 7147,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "863ffdecee1e3f23f2391c2fb19d2d5008ba396a85eae34553faee8555298152"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/OverviewPage-Q4Z-Cplu.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402935,
+      "bytes": 7147,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "8a61646d22c3d8d445320bd9bceaf6de280d4150fb7208e6a8ec672a3e713bd7"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ShieldOutlined-8ZPP176g.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402936,
+      "bytes": 263,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "3d92faf3b9a3038ad63eccf9da9edb9e36e484e6a876f257fee4bb6d4572dd10"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ShieldOutlined-BwQVTwzl.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400918,
+      "bytes": 263,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "a70491d453557a3eae84f0597eec97678df91f8fc9ade3ed24b4873a695801cc"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/ShieldOutlined-zIEAT5UQ.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396326,
+      "bytes": 258,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "d7d659a88497348199c07b85687c6a943753c7a977f5cda76eb47e9fc10a998d"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/Snackbar-BqO9hdg4.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402937,
+      "bytes": 13410,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "574eead77988ceef3782bf949ad21e72f5a69b0e285b4036734fe7d09e85ea1c"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/Snackbar-CTvcvPTs.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400919,
+      "bytes": 6823,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "fe97779f9fbc3b6c9edc738251c0321687feaa8656ca6256d844b7f864fc6870"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/TasksPage-CHzui3NM.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400920,
+      "bytes": 14327,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "13bda11a291b6334758b27fd8dc63875680d8199ecff43732df2fa87a51f4a0b"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/TasksPage-V72I2xdK.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402958,
+      "bytes": 14288,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "b04b2b9ff6652509ae0085403e57846f6924256478a8d5a32bb50819e122e1a9"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/TasksPage-aHkvn-Lq.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402938,
+      "bytes": 14288,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "496fd315497880b4ba55ff5a3d34a63681370e1dcf66173a8214ec7a35db2b8e"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/UsersPage-BZrbSVv9.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400922,
+      "bytes": 34679,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "6cb910b11e492640b8c877e03f37c3e3d952a32ade98fe401b149e38e0e99963"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/UsersPage-BnV1dLOv.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396327,
+      "bytes": 37413,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "a765cf756358e2d6a2995ce7a7e62a74cf208f17fb98287d38f056f501ffe452"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/UsersPage-QFNhBur9.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402939,
+      "bytes": 42931,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "6e0875b556310f4dab37d6e2edd1831ffa51785ec77c430cf2fa58b714cf41ef"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/UsersPage-SlS7Oqfz.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402960,
+      "bytes": 42939,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "e6d8a373b98389e017bb7dc3df90863974ce262e2f965a438dcb647b1f283b4e"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/components-aByQJRAe.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402929,
+      "bytes": 154369,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "91620c8b0a9b371706e0a8a62a4ceefa9832817210f8b967e2f7df9d270952cb"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/components-lvAUSz-5.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400907,
+      "bytes": 157722,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "f5e87160b5500ac377bbba196fbf4ba7e31c3dd560ffbd3804658e6ad8747d9e"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/formFields-CP3WLeX4.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402931,
+      "bytes": 62629,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "9ab45a84c87fba3df6779f88d8e57d3e0e335d34c16f77f60b246f23edb33d00"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/formFields-CqGzjfUz.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400911,
+      "bytes": 62706,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "000b4389a615ec464f2549865b95181a62e5ebfe8353d1474cf2a4362954bced"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/formFields-CrWRPncs.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402954,
+      "bytes": 62629,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "a0420a492140d342ce0322ad9599edc03a6ff48e19c60da842c41194fb6d7815"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-CKjmcacF.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396315,
+      "bytes": 497341,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "626198584a74de7c4ee4895a112ef192566b9d5e57dfdeed3e5c5b5ff8f10113"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-CqUBu1qg.css",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396316,
+      "bytes": 6951,
+      "mtimeNs": 1788902912000000000,
+      "sha256": "ed8d8e7e6b5ebba1c30dcd25ec71b827949c01a1b1153f3e9e5fce604653b90d"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-CySi7sZM.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402955,
+      "bytes": 263681,
+      "mtimeNs": 1788940431000000000,
+      "sha256": "8e4e5cf7b8ca6cda303b6f07ac5f2227e4b87c5398fd9d3f2c96597d737b9643"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-Di0tN6tC.css",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396473,
+      "bytes": 3675,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "06be1093dcfdef5a82e591bc85112bbd6870376cdd30c40545420d1499c90b52"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-T5wCbyhL.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400913,
+      "bytes": 261345,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "72d4509fcea8f6ddcc8d7ec49745cc203b5476955762e1daf42ad7bbd99b8678"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/index-rASubPXN.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 402933,
+      "bytes": 263681,
+      "mtimeNs": 1788937392000000000,
+      "sha256": "ae2a9ec6d4aedf4f5350416d398a3a484f6f1801a29ae566160829676bf6c6d6"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396457,
+      "bytes": 2552,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396317,
+      "bytes": 14500,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-greek-wght-normal-DL7QRZyv.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396318,
+      "bytes": 9444,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396319,
+      "bytes": 15120,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-latin-wght-normal-DHIcAJRg.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396320,
+      "bytes": 24836,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396321,
+      "bytes": 8520,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/public-sans-latin-ext-wght-normal-MQgHevqp.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396323,
+      "bytes": 18472,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "3a00a32f0242b723dcea79935747d6d27dd93675d03ef23f470dfe274e79586a"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/public-sans-latin-wght-normal-DdeTHZLK.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396324,
+      "bytes": 26832,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/public-sans-vietnamese-wght-normal-CtlIRbEm.woff2",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 396325,
+      "bytes": 7716,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "94593e69fad0885b2b0b74cd18d036c7e9cd6051b2256ab281a20f5bc9ccb46f"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/rolldown-runtime-CbXtAM7H.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 399336,
+      "bytes": 589,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a"
+    },
+    {
+      "path": "/opt/goby-dev/admin/assets/userDraftNavigation-DWblCbi1.js",
+      "directory": false,
+      "mode": 438,
+      "device": 2049,
+      "inode": 400921,
+      "bytes": 8633,
+      "mtimeNs": 1788943848000000000,
+      "sha256": "853a5244b5a527b7e8c377322015d63cb91f648574c47512fb918eb092811091"
+    }
+  ]
+}

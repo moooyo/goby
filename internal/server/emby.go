@@ -164,7 +164,7 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 		embyTextError(w, r, http.StatusBadRequest, embyMissingDeviceMessage)
 		return
 	}
-	credentials, err := s.identity.Authenticate(r.Context(), name, password, client, "emby")
+	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), name, password, client, "emby", s.clientAddress(r))
 	if err != nil {
 		if errors.Is(err, identity.ErrInvalidCredentials) || errors.Is(err, identity.ErrUnauthorized) {
 			embyTextError(w, r, http.StatusUnauthorized, embyInvalidLoginMessage)
@@ -176,7 +176,7 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 	jsonResponse(w, 200, map[string]any{
 		"User": s.userDTO(credentials.User), "AccessToken": credentials.Token, "ServerId": s.serverID,
 		"SessionInfo": s.clientSessionDTO(identity.ClientSession{SessionID: credentials.SessionID,
-			UserID: credentials.User.ID, UserName: credentials.User.Name, Client: client,
+			UserID: credentials.User.ID, UserName: credentials.User.Name, Client: credentials.Client,
 			CreatedAt: credentials.CreatedAt, LastSeenAt: credentials.CreatedAt, ExpiresAt: credentials.ExpiresAt}),
 	})
 }

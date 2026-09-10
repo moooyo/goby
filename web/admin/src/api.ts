@@ -182,6 +182,51 @@ export interface RevokeSessionResponse {
   CurrentSessionRevoked: boolean;
 }
 
+export interface Device {
+  Id: string;
+  Revision: string;
+  ReportedDeviceId: string;
+  Name: string;
+  ReportedName: string;
+  CustomName: string | null;
+  AppName: string;
+  AppVersion: string;
+  LastUserId: string | null;
+  LastUserName: string | null;
+  CreatedAt: string;
+  LastSeenAt: string;
+  IpAddress: string;
+  ActiveLoginCount: number;
+}
+
+export interface DevicesQuery {
+  SearchTerm?: string;
+  StartIndex?: number;
+  Limit?: number;
+}
+
+export interface DevicesResponse {
+  Items: Device[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+}
+
+export interface UpdateDeviceOptionsInput {
+  Revision: string;
+  CustomName: string;
+}
+
+export interface DeleteDeviceInput {
+  Revision: string;
+}
+
+export interface DeleteDeviceResponse {
+  Id: string;
+  DeletedAt: string;
+  RevokedLoginCount: number;
+}
+
 export type ApplicationKeyStatus = "active" | "revoked";
 
 export interface ApplicationKey {
@@ -633,6 +678,46 @@ function validateSessions(result: SessionsResponse, startIndex: number, limit: n
   }
 }
 
+const deviceFields = new Set([
+  "Id", "Revision", "ReportedDeviceId", "Name", "ReportedName", "CustomName", "AppName",
+  "AppVersion", "LastUserId", "LastUserName", "CreatedAt", "LastSeenAt", "IpAddress", "ActiveLoginCount",
+]);
+const devicesResponseFields = new Set(["Items", "TotalRecordCount", "StartIndex", "Limit"]);
+
+function validDeviceNumber(value: unknown): value is string {
+  return typeof value === "string" && /^[1-9]\d*$/.test(value);
+}
+
+function validDevice(value: unknown): value is Device {
+  return isRecord(value) && Object.keys(value).length === deviceFields.size
+    && Object.keys(value).every((field) => deviceFields.has(field))
+    && validDeviceNumber(value.Id) && validDeviceNumber(value.Revision)
+    && Boolean(nonemptyString(value.ReportedDeviceId)) && Boolean(nonemptyString(value.Name))
+    && [value.ReportedName, value.AppName, value.AppVersion, value.IpAddress].every((field) => typeof field === "string")
+    && (value.CustomName === null || (typeof value.CustomName === "string" && value.CustomName.length > 0
+      && value.CustomName === value.CustomName.trim() && value.Name === value.CustomName
+      && !/[\u0000-\u001f\u007f-\u009f]/u.test(value.CustomName)
+      && new TextEncoder().encode(value.CustomName).length <= 256))
+    && (value.LastUserId === null || Boolean(nonemptyString(value.LastUserId)))
+    && (value.LastUserName === null || typeof value.LastUserName === "string")
+    && validSessionTimestamp(value.CreatedAt) && validSessionTimestamp(value.LastSeenAt)
+    && typeof value.ActiveLoginCount === "number" && Number.isSafeInteger(value.ActiveLoginCount)
+    && value.ActiveLoginCount >= 0;
+}
+
+function validateDevices(result: DevicesResponse, startIndex: number, limit: number): void {
+  if (!isRecord(result) || Object.keys(result).length !== devicesResponseFields.size
+    || !Object.keys(result).every((field) => devicesResponseFields.has(field))
+    || !Array.isArray(result.Items) || !Number.isSafeInteger(result.TotalRecordCount) || result.TotalRecordCount < 0
+    || result.StartIndex !== startIndex || result.Limit !== limit
+    || result.Items.length !== Math.min(limit, Math.max(0, result.TotalRecordCount - startIndex))) throw invalidResponse();
+  const ids = new Set<string>();
+  for (const device of result.Items) {
+    if (!validDevice(device) || ids.has(device.Id)) throw invalidResponse();
+    ids.add(device.Id);
+  }
+}
+
 const applicationKeyFields = new Set([
   "Id", "AppName", "CreatedAt", "LastUsedAt", "RevokedAt", "CreatedBy", "IPAddress", "Status",
 ]);
@@ -833,6 +918,47 @@ export const adminApi = {
       || typeof result.CurrentSessionRevoked !== "boolean"
       || (result.CurrentSessionRevoked && result.Kind !== "admin")) throw invalidResponse();
     if (result.CurrentSessionRevoked) expireSession(revision);
+    return result;
+  },
+
+  async getDevices(query: DevicesQuery = {}, options: RequestOptions = {}): Promise<DevicesResponse> {
+    const revision = sessionRevision;
+    const startIndex = query.StartIndex ?? 0;
+    const limit = query.Limit ?? 25;
+    if (!Number.isSafeInteger(startIndex) || startIndex < 0 || startIndex > 2147483647
+      || !Number.isSafeInteger(limit) || limit < 1 || limit > 200) {
+      throw new ApiError("The device page is invalid.", { code: "invalid_device_page" });
+    }
+    const parameters = new URLSearchParams({ StartIndex: String(startIndex), Limit: String(limit) });
+    if (query.SearchTerm) parameters.set("SearchTerm", query.SearchTerm);
+    const result = await request<DevicesResponse>(`/devices?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateDevices(result, startIndex, limit);
+    return result;
+  },
+
+  async updateDeviceOptions(deviceId: string, input: UpdateDeviceOptionsInput, options: RequestOptions = {}): Promise<Device> {
+    const revision = sessionRevision;
+    if (!validDeviceNumber(deviceId) || !validDeviceNumber(input.Revision)) {
+      throw new ApiError("The device ID or revision is invalid. Refresh the device list.", { code: "invalid_device_revision" });
+    }
+    const result = await mutate<Device>(`/devices/${encodeURIComponent(deviceId)}/options`, "POST", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!validDevice(result) || result.Id !== deviceId) throw invalidResponse();
+    return result;
+  },
+
+  async deleteDevice(deviceId: string, input: DeleteDeviceInput, options: RequestOptions = {}): Promise<DeleteDeviceResponse> {
+    const revision = sessionRevision;
+    if (!validDeviceNumber(deviceId) || !validDeviceNumber(input.Revision)) {
+      throw new ApiError("The device ID or revision is invalid. Refresh the device list.", { code: "invalid_device_revision" });
+    }
+    const result = await mutate<DeleteDeviceResponse>(`/devices/${encodeURIComponent(deviceId)}/delete`, "POST", input, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || Object.keys(result).length !== 3
+      || !Object.keys(result).every((field) => ["Id", "DeletedAt", "RevokedLoginCount"].includes(field))
+      || result.Id !== deviceId || !validSessionTimestamp(result.DeletedAt)
+      || !Number.isSafeInteger(result.RevokedLoginCount) || result.RevokedLoginCount < 0) throw invalidResponse();
     return result;
   },
 

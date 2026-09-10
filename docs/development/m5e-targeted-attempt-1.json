@@ -1,0 +1,74 @@
+{
+  "owner": "goby-m5e-targeted-attempt-1-v1",
+  "goExitCode": 1,
+  "topLevelTestsPassed": 97,
+  "skippedTests": 0,
+  "failedTests": [
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "test": "TestMigrateApplicationKeyDevicesPreservesSchema16CredentialsAndProjection"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestApplicationKeyDeviceSharedGenerationDeletionAndOrdinaryIsolation"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestApplicationKeyDeviceOptionsAndIndividualKeyRevocationKeepGeneration"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestApplicationKeyDeviceDeletionSerializesWithNewKeyRegistration"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestApplicationKeyDeviceBlockedMutationRevalidatesActor"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestApplicationKeyDeviceActorExpiryAfterRevocationRollsBack"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreConcurrentDeviceNamesCommitOneRevisionAcrossActivity"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreDeviceRegistryActivityUsesStoredClientAndPreservesOptions"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "test": "TestStoreEmbyDevicesRequireCurrentCompatibilityAuthority"
+    }
+  ],
+  "packages": [
+    {
+      "name": "github.com/moooyo/goby/internal/database",
+      "action": "fail",
+      "elapsed": 0.294
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/identity",
+      "action": "fail",
+      "elapsed": 83.182
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/library",
+      "action": "pass",
+      "elapsed": 2.677
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/transcode",
+      "action": "pass",
+      "elapsed": 1.328
+    },
+    {
+      "name": "github.com/moooyo/goby/internal/server",
+      "action": "pass",
+      "elapsed": 87.05
+    }
+  ],
+  "logSha256": "f4d5af08b6ead473ca2b8a2e9fc3c880196c719b849522d0e9fc4e29ba0471a4",
+  "sourceManifestSha256": "2449b41e94fa618d9dacaf0d3884b3302775d3a8d00fd874bd1a64d6dbfa4892",
+  "finishedAt": "2026-09-10T00:16:45.221981+00:00"
+}

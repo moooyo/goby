@@ -167,17 +167,21 @@ func (s *Store) CreateApplicationKey(ctx context.Context, actor Principal, appNa
 		return ApplicationKey{}, err
 	}
 	result := ApplicationKey{CredentialID: credentialID, AppName: appName, Token: token,
-		CreatedBy: actor.User.ID, IPAddress: peerIP, ReportedDeviceNumericID: 1, Client: serverClient}
+		CreatedBy: actor.User.ID, IPAddress: peerIP, Client: serverClient}
 	if err := tx.QueryRow(ctx, `INSERT INTO sessions
 		(id, user_id, token_hash, kind, client_name, device_id, device_name, client_version, expires_at)
 		VALUES ($1, NULL, $2, 'application_key', $3, $4, $5, $6, NULL) RETURNING created_at`,
 		credentialID, digest[:], appName, serverClient.DeviceID, serverClient.Device, serverClient.Version).Scan(&result.CreatedAt); err != nil {
 		return ApplicationKey{}, fmt.Errorf("create application credential: %w", err)
 	}
+	result.ReportedDeviceNumericID, err = registerApplicationKeyDevice(ctx, tx, serverClient, peerIP)
+	if err != nil {
+		return ApplicationKey{}, err
+	}
 	if err := tx.QueryRow(ctx, `INSERT INTO application_keys
 		(credential_id, secret_ciphertext, created_by, ip_address, reported_device_numeric_id)
-		VALUES ($1, $2, NULLIF($3, ''), $4, 1) RETURNING id`,
-		credentialID, ciphertext, actor.User.ID, peerIP).Scan(&result.ID); err != nil {
+		VALUES ($1, $2, NULLIF($3, ''), $4, $5) RETURNING id`,
+		credentialID, ciphertext, actor.User.ID, peerIP, result.ReportedDeviceNumericID).Scan(&result.ID); err != nil {
 		return ApplicationKey{}, fmt.Errorf("create application key metadata: %w", err)
 	}
 	clientSessionID, err := randomID()

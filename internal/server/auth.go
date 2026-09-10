@@ -95,7 +95,7 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		if principal.IsApplicationKey() || time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
-			if err := s.identity.TouchClientSession(r.Context(), principal); err != nil {
+			if err := s.identity.TouchClientSessionFromAddress(r.Context(), principal, s.clientAddress(r)); err != nil {
 				s.identityError(w, r, err)
 				return
 			}

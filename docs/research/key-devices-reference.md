@@ -286,7 +286,9 @@ hidden Info/deletion, device recreation with old keys, complete metadata cache
 rules, WebSocket termination, media execution, and full-client interoperability
 remain unverified.
 
-Goby's M5e device implementation is in progress and has no accepted deployment
-or completed milestone here. The accepted deployed product remains M5d `563cd0e`,
-schema 16/probe 6, with its separate 1046-test acceptance. M4, M5, M6, and the
-complete planned goal remain unfinished.
+At this research checkpoint, the accepted deployed product was M5d `563cd0e`,
+schema 16/probe 6, with its separate 1046-test acceptance. The subsequent
+[M5e implementation acceptance](../development/verification-m5e-devices.md)
+tracks Goby's device API, dashboard, migrations, and deployment independently
+from these reference captures. M4, M5, M6, and the complete planned goal remain
+unfinished.

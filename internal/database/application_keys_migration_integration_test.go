@@ -43,15 +43,15 @@ func requireApplicationKeyConstraint(t *testing.T, err error, code string) {
 }
 
 // Version 15 already contains management revisions and all login metadata.
-// Exclude only the new nullable client-context column from historical playback
-// rows; every old field, including secrets and timestamps, remains compared.
+// Exclude the new device registry and nullable client-context columns; every
+// old field, including secrets and timestamps, remains compared.
 func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
 		'users', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM users t),
-		'credentials', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM sessions t),
+		'credentials', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
@@ -105,11 +105,25 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("migrate application credentials: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 16 {
-		t.Fatalf("application key schema = %d, want 16, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 18 {
+		t.Fatalf("application key schema = %d, want 18, error=%v", version, err)
 	}
 	if after := applicationKeyLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("application key migration changed historical rows or credential material")
+	}
+	var registeredLogins int
+	var registryMatches bool
+	if err := pool.QueryRow(ctx, `SELECT count(*), bool_and(authentication.device_registry_id IS NOT NULL
+		AND device.id >= 2 AND device.reported_device_id = authentication.device_id
+		AND device.reported_name = authentication.device_name AND device.app_name = authentication.client_name
+		AND device.app_version = authentication.client_version AND device.last_user_id = authentication.user_id)
+		FROM sessions authentication LEFT JOIN devices device ON device.id = authentication.device_registry_id
+		WHERE authentication.kind = 'emby'`).Scan(&registeredLogins, &registryMatches); err != nil || registeredLogins != 2 || !registryMatches {
+		t.Fatalf("ordinary login device backfill lost its historical metadata: count=%d matched=%v error=%v", registeredLogins, registryMatches, err)
+	}
+	var administratorUnregistered bool
+	if err := pool.QueryRow(ctx, "SELECT device_registry_id IS NULL FROM sessions WHERE id = 'key-legacy-admin'").Scan(&administratorUnregistered); err != nil || !administratorUnregistered {
+		t.Fatalf("device migration registered a dashboard credential: %v", err)
 	}
 	var historyAfter string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version <= 15`).Scan(&historyAfter); err != nil || historyAfter != historyBefore {
@@ -124,14 +138,26 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 		_, err := pool.Exec(ctx, statement)
 		requireApplicationKeyConstraint(t, err, "23514")
 	}
-	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, client_name, device_id)
-		VALUES ('key-userless', decode(repeat('31', 32), 'hex'), 'application_key', 'App', 'server-device');
+	if _, err := pool.Exec(ctx, `INSERT INTO sessions (id, token_hash, kind, client_name, device_id, device_name, client_version)
+		VALUES ('key-userless', decode(repeat('31', 32), 'hex'), 'application_key', 'App', 'server-device', 'Server', '1.0');
+		INSERT INTO application_key_devices (id, reported_device_id, reported_name, app_name, app_version)
+		VALUES (1, 'server-device', 'Server', 'App', '1.0');
 		INSERT INTO application_keys (credential_id, secret_ciphertext, created_by)
 		VALUES ('key-userless', decode('123456', 'hex'), 'key-audit-creator');
 		INSERT INTO application_key_clients (id, credential_id, client_name, device_id, device_name, client_version)
 		VALUES ('key-default-client', 'key-userless', 'App', 'server-device', 'Server', '1.0'),
 		('key-second-client', 'key-userless', 'Other App', 'server-device', 'Other Device', '2.0')`); err != nil {
 		t.Fatalf("insert typed userless credential: %v", err)
+	}
+	var defaultDeviceMatches bool
+	if err := pool.QueryRow(ctx, `SELECT application.reported_device_numeric_id = 1
+		AND device.reported_device_id = authentication.device_id AND device.reported_name = authentication.device_name
+		AND device.app_name = authentication.client_name AND device.app_version = authentication.client_version
+		AND authentication.device_registry_id IS NULL
+		FROM application_keys application JOIN sessions authentication ON authentication.id = application.credential_id
+		JOIN application_key_devices device ON device.id = application.reported_device_numeric_id
+		WHERE authentication.id = 'key-userless'`).Scan(&defaultDeviceMatches); err != nil || !defaultDeviceMatches {
+		t.Fatalf("default application device lost the credential's server identity: %v", err)
 	}
 	for _, statement := range []string{
 		"UPDATE sessions SET user_id = 'key-legacy-user' WHERE id = 'key-userless'",
@@ -147,8 +173,10 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	requireApplicationKeyConstraint(t, err, "23505")
 	_, err = pool.Exec(ctx, "UPDATE application_keys SET secret_ciphertext = NULL")
 	requireApplicationKeyConstraint(t, err, "23502")
+	_, err = pool.Exec(ctx, "UPDATE application_keys SET reported_device_numeric_id = NULL")
+	requireApplicationKeyConstraint(t, err, "23502")
 	_, err = pool.Exec(ctx, "UPDATE application_keys SET reported_device_numeric_id = 9")
-	requireApplicationKeyConstraint(t, err, "23514")
+	requireApplicationKeyConstraint(t, err, "23503")
 	if _, err := pool.Exec(ctx, "DELETE FROM users WHERE id = 'key-audit-creator'"); err != nil {
 		t.Fatal(err)
 	}
