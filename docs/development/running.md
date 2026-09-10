@@ -2,7 +2,20 @@
 
 The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
-The current database schema is **21** and the probe cache version remains **6**.
+The completed M5i observability increment adds transactional activity history,
+bounded sanitized diagnostic files, four native and four Emby activity/log GET routes, and the
+React/MUI administrator-only page at `/admin/observability`. See the
+[API contract](../api/observability.md) and
+[storage and operating notes](observability.md). The current schema is
+**22**: migration `0022` adds the initially empty `activity_entries`
+table without backfilling business history or requiring a media rescan.
+The probe cache version remains **6**. The complete remote race suite, source
+and build reconciliation, real browser/restart acceptance, protected upgrade,
+and deployed workflow passed. The current running deployment is M5i at
+schema 22. See [M5i verification](verification-m5i-observability.md) for the
+retained evidence and limits. This completes the observability increment;
+the broader M4, M5, and M6 milestones and full product goal remain open.
+
 The [M5h configuration increment](verification-m5h-configuration.md) adds four
 stored name modes and an independent compatibility width ceiling to the existing
 `managed_settings` row. It preserves every preceding field, revision, timestamp,
@@ -25,13 +38,13 @@ partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
 reported roughly 96G total and 60G available; existing service PIDs, root
 identity, and boot partitions were preserved. See the
 [capacity evidence](test-env-disk-growth.json). This resolves the earlier root
-capacity shortage. The current M5h deployment uses schema 21.
+capacity shortage. The current M5i deployment uses schema 22.
 
 Subsequent [Go cache](m5h-go-cache-relocation.json) and
 [inactive dependency](m5h-dependency-relocation.json) relocations moved verified
 contents from tmpfs to persistent storage while retaining the original paths as
 symlinks. The shared extracted Emby package and active services were preserved.
-Use persistent `exec-work-m5h` storage for new large temporary build inputs, and
+Use persistent `exec-work-m5i` storage for new large temporary build inputs, and
 serialize memory-heavy verification on this shared host. Historical relocation
 operators must not be replayed after normal cache or dependency use resumes.
 
@@ -54,11 +67,14 @@ npm --prefix web/admin run build
 go build ./...
 ```
 
-Do not run the application, tests, browser probes, or FFmpeg checks on the local Windows machine without additional authorization. Functional verification uses `ssh test-env`.
+Local authorization covers compilation only. Run tests, validators, runtime
+probes, browser acceptance, and FFmpeg checks through `ssh test-env` unless
+the current task separately authorizes local verification. If `test-env` is
+unavailable, that verification is blocked; do not fall back to local execution.
 
 ## Linux deployment
 
-1. Build the frontend with the locked npm dependencies and build the Go binary on Linux.
+1. Build the frontend with the locked npm dependencies and build the Go binary for Linux with the pinned toolchain.
 2. Install the binary as `/usr/local/bin/goby` and the complete `web/admin/dist` directory as `/usr/share/goby/admin`. This increment uses packaged read-only assets rather than embedding them into the binary.
 3. Create an unprivileged `goby` user/group, a database and role dedicated to Goby, and the directories referenced by [goby.service](../../deploy/linux/goby.service).
 4. Copy [the environment example](../../deploy/linux/.env.example) to `/etc/goby/goby.env`, restrict it to the service manager, and replace all example secrets. A systemd `EnvironmentFile` may remain root-readable only because systemd reads it before switching to the service user.
@@ -66,7 +82,8 @@ Do not run the application, tests, browser probes, or FFmpeg checks on the local
 6. Use HTTPS and secure cookies for remote access. `GOBY_COOKIE_SECURE=false` is an explicit setting for an isolated HTTP test instance, not the production default.
 7. Review [transcoding configuration](transcoding-configuration.md). Conversion is enabled by default, with a dedicated `/var/cache/goby/transcodes` cache beneath the systemd-managed private cache parent. Configure process/storage/output limits for the host; a custom cache needs a writable parent owned by `goby` and an appropriate service write exception. Configure hardware selections only with the matching driver and device access.
 8. Keep `GOBY_API_KEY_MASTER_KEY_FILE` in a persistent private directory owned by `goby`. The supplied unit creates `/var/lib/goby` with mode `0700`; its default master file is created lazily with mode `0600`. A custom parent must already exist, remain private and be writable through the service sandbox. Back up this file and PostgreSQL together; see [application-key operations](application-keys.md).
-9. Start the service. Migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
+9. Provision [private diagnostic storage](observability.md#linux-deployment-configuration). The supplied unit creates `/var/log/goby` with `LogsDirectory=goby`, `LogsDirectoryMode=0700`, and `UMask=0077`. The final directory must be owned by the service UID with mode `0700`; registered files use mode `0600`. A custom `GOBY_LOG_DIR` needs an accessible existing parent, a dedicated private directory, and an exact service write exception such as `ReadWritePaths=`. Keep one Goby writer per directory and let Goby manage its rotation and retention.
+10. Start the service. Diagnostic storage opens before the database, and migrations run before the listener. Visit `/admin/`, enter the one-time `GOBY_SETUP_TOKEN`, and create the first administrator. Bootstrap closes atomically and remains closed after a restart.
 
 An empty `GOBY_SETUP_TOKEN` prevents startup until setup has completed. After initialization, the deployment secret can be removed from the environment and the service restarted. Never include a real database password or setup token in Git.
 
@@ -86,12 +103,30 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_TRUSTED_PROXIES` | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`; empty by default |
 | `GOBY_WEB_DIR` | Built administrator asset directory, default `web/admin/dist` |
 | `GOBY_API_KEY_MASTER_KEY_FILE` | Persistent 32-byte application-key master file; default `application-key-master.key` resolved against the process working directory; see [key operations](application-keys.md) |
+| `GOBY_LOG_DIR` | Dedicated private diagnostic directory, default `/var/log/goby`; use a clean absolute Linux path |
+| `GOBY_LOG_MAX_FILE_BYTES` | Diagnostic rotation limit per file, default `4194304` (4 MiB) |
+| `GOBY_LOG_MAX_FILES` | Maximum named diagnostic files including the active file, default `16` |
+| `GOBY_LOG_RETENTION_DAYS` | Closed diagnostic file retention by creation time, default `7` days |
+| `GOBY_LOG_MIN_FREE_BYTES` | Diagnostic filesystem free-space reserve, default `33554432` (32 MiB) |
+| `GOBY_ACTIVITY_RETENTION_DAYS` | Committed PostgreSQL activity retention, default `30` days |
 | `GOBY_FFMPEG` | FFmpeg executable path, default `ffmpeg`; used by HLS, progressive audio/video, and optional private video seek analysis |
 | `GOBY_FFPROBE` | ffprobe executable path, default `ffprobe`; used by scans, exact audio timing inspection, and copied-video HLS timeline probes |
 | `GOBY_TRANSCODING_ENABLED` | Enable configured conversion, default `true`; set `false` to disable it |
 | `GOBY_TRANSCODE_CACHE` | Dedicated conversion cache, default `/var/cache/goby/transcodes` |
 | `GOBY_HW_DECODER`, `GOBY_HW_ENCODER`, `GOBY_HW_DEVICE` | Independent hardware selections; software decoding/encoding and no device by default |
 | `GOBY_MEDIA_ROOTS` | Administrator-approved media directories; colon-separated on Linux; empty by default |
+
+Observability settings are startup-only and require a restart; the Settings
+and Observability pages do not save them. See the
+[observability configuration reference](observability.md#linux-deployment-configuration)
+for accepted ranges and ownership requirements. Activity retention uses
+bounded database-time pruning, while diagnostic retention manages registered
+files independently. The named-file payload budget excludes filesystem
+metadata and open snapshots. Existing files, markers, and locks must keep
+their names, identities, ownership, and permissions; external rotation is
+unsupported. A diagnostic store that cannot open prevents startup. A later
+storage failure leaves it degraded until close/reopen, makes diagnostic reads
+fail closed, and makes `/readyz` return `503 diagnostics_not_ready`.
 
 The [transcoding configuration reference](transcoding-configuration.md) lists every `GOBY_TRANSCODE_*` setting and accepted range. Defaults allow two running jobs, one per user/authentication session, two configured FFmpeg threads, a 20 GiB cache, an 8 GiB per-job limit, and a 512 MiB free-space reserve. Output planning defaults to 20 Mbps, 1920x1080, and up to eight audio channels. These admission and periodic monitoring limits are not hard filesystem or cgroup ceilings. Environment configuration is read at startup, and invalid explicit values fail even when conversion is disabled.
 
@@ -160,9 +195,70 @@ Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8
 
 The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate `/opt/goby-test/browser.env`; neither is part of the repository. Tests create randomly named PostgreSQL schemas and clean up only those schemas.
 
-The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
+The historical [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
-The current M5h deployment runs schema 21 as UID 995, PID 3641418,
+That foundation script does not yet provision a private diagnostic directory
+or its service write scope. It is not a complete M5i deployment procedure.
+Provision and verify the Linux observability requirements above before
+starting Goby through any deployment operator. The accepted M5i deployment
+supplies the private diagnostic directory and a dedicated service drop-in.
+The complete M5i race suite passed against the remote snapshot at
+`/opt/goby-test/verify-m5i-full-attempt-2`: the
+[full-suite report](m5i-full-race-summary.json) records 1380 top-level passes
+across 17 tested packages, with no skipped tests or race warnings. The
+[source and build gate](m5i-final-go-source-gate.json) binds 470 Go/module/SQL
+inputs, 10 testdata inputs, and 55 browser inputs to the accepted executable
+and 54 current assets. Official Emby reference captures remain separate
+research evidence.
+
+The [real browser acceptance](m5i-observability-browser.json) passed in
+12.400443 seconds with all 11 documented browser checks, no skips, and no
+retries. Two subsequent isolated restarts each preserved all 29 public tables
+and 66 activity entries exactly. Sixteen completed native downloads verified
+reuse of bounded reader slots; body, header, path, and query sentinels were
+excluded from safe logs. Both issued native sessions were revoked with
+independent `401` responses, and the temporary database, role, and HBA rule
+were cleaned up. Four screenshots received visual review. The
+[first browser attempt](m5i-observability-browser-attempt-1.json) remains
+recorded: its download-request instrumentation was corrected without changing
+the Go implementation or UI assets.
+
+The current M5i deployment runs schema 22 as UID 995, PID 3668655,
+start ticks `26912384`, with probe version 6. Its
+[deployment evidence](m5i-deployment-evidence.json) binds the 470 installed
+Go/module/SQL inputs, accepted executable, and 54 current assets. The binary's
+SHA-256 is
+`1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef`.
+A complete backup at `/opt/goby-test/backups/m5i-20260910` preceded service
+stop; an actual isolated restore compared all 28 old tables exactly before
+the temporary database was removed. The live database was not restored.
+The schema-21 upgrade retained old business fields and added the 29th table
+with zero activity entries. Media, the application-key master, runtime
+configuration, base unit, server identity, and old task history were retained.
+A new owned `30-observability.conf` drop-in provisions access to the dedicated
+`/var/log/goby-test` directory, verified as UID 995 and mode `0700`.
+
+The [deployed observability workflow](m5i-deployed-observability.json) passed
+in 0.776 seconds. One native and one ordinary Emby administrator credential
+verified both activity/log surfaces, native HEAD and range delivery, and
+compatibility HEAD behavior. A native CAS name change and complete restoration
+advanced the managed-settings revision from 6 to 8 while preserving every
+original name, nullable override, and encoding value. Both credentials were
+logged out and independently received `401`. Old rows remained exact except
+for those two settings revision/time advances; two revoked sessions, one
+device, and six activity entries remain as new history. The workflow used
+17 GET, 2 HEAD, 3 POST, 2 PUT, and 1 DELETE requests plus 20 read-only SQL
+queries, with no media modification, scan, task execution, or physical history
+deletion. See [M5i verification](verification-m5i-observability.md) for the
+acceptance boundary and preserved evidence.
+
+The [first deployment attempt](m5i-deployment-attempt-1.json) rejected the
+asset archive contract before stopping the service. The operator's archive
+name check was corrected and its [33 synthetic guards](m5i-deployment-operator-tests.json)
+passed again before the accepted deployment. The completed backups record
+their deployment checkpoints; do not restore them over later business state.
+
+The preceding M5h deployment ran schema 21 as UID 995, PID 3641418,
 start ticks `26048863`, with probe version 6. Its
 [deployment evidence](m5h-deployment-evidence.json) binds 429 Go/module/SQL
 inputs, the accepted executable, and 50 current assets. Before service stop, a
@@ -243,7 +339,7 @@ set -a
 . /opt/goby-test/m4c-test.env
 set +a
 export GOCACHE=/dev/shm/goby-go-cache GOMODCACHE=/dev/shm/goby-go-mod
-export GOTMPDIR=/opt/goby-test/exec-work-m5f TMPDIR=/opt/goby-test/exec-work-m5f
+export GOTMPDIR=/opt/goby-test/exec-work-m5i TMPDIR=/opt/goby-test/exec-work-m5i
 go test -race -count=1 ./internal/library -run '^TestStoreCorrelatedPlaybackReferenceCapacityIncludesTombstonesAndAllowsReuse$'
 ```
 
@@ -251,9 +347,9 @@ Do not put this override in the Goby service environment. Stop the scratch insta
 
 Root filesystem free space was restored during M4c test-host maintenance. The host's persistent PostgreSQL instance was observed with `max_wal_size=128MB` and `min_wal_size=32MB`; these are test-host settings, not new Goby production defaults. `max_wal_size` is a checkpoint target, not a hard WAL ceiling. The scratch cluster separately uses the same WAL targets and a 1 GiB aggregate filesystem limit, which can still fill during oversized tests.
 
-The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. On the current constrained test host, Go module/build caches live in dedicated `/dev/shm/goby-go-*` directories to avoid filling the root filesystem.
+The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. The existing `/dev/shm/goby-go-cache` and `/dev/shm/goby-go-mod` paths are now symlinks to persistent build/module caches under `/opt/goby-test/go-caches-m5h`, following the recorded relocation after disk expansion. Their path spelling no longer means that these caches consume tmpfs. Preserve the links and normally reused contents; do not rerun the historical relocation operators.
 
-The current host also has an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. It retains private verification evidence and isolated browser artifacts. After the root disk expansion, Go verification uses the separate root-owned directory `/opt/goby-test/exec-work-m5f` on the persistent filesystem for `GOTMPDIR` and `TMPDIR`. This avoids exhausting the evidence tmpfs without changing the shared `/dev/shm` mount's execution policy. Both directories are dedicated to verification and are not application media or persistent business-data locations.
+The current host also has an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. It retains private verification evidence and isolated browser artifacts. M5i Go verification uses the separate root-owned directory `/opt/goby-test/exec-work-m5i` on the persistent filesystem for `GOTMPDIR` and `TMPDIR`; older increment directories retain their historical artifacts. This avoids exhausting the evidence tmpfs without changing the shared `/dev/shm` mount's execution policy. Both current directories are dedicated to verification and are not application media or persistent business-data locations.
 
 See [environment evidence](test-env.md) for exact installed versions and the distinction between compiled hardware interfaces and real hardware execution.
 

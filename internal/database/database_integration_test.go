@@ -90,15 +90,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		}
 	}
 	version, err := database.SchemaVersion(ctx, pool)
-	if err != nil || version != 21 {
-		t.Fatalf("schema version after concurrent migration = %d, want 21, error = %v", version, err)
+	if err != nil || version != 22 {
+		t.Fatalf("schema version after concurrent migration = %d, want 22, error = %v", version, err)
 	}
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("count applied migrations: %v", err)
 	}
-	if count != 21 {
-		t.Fatalf("migration history count = %d, want 21", count)
+	if count != 22 {
+		t.Fatalf("migration history count = %d, want 22", count)
 	}
 	before := migrationHistory(t, ctx, pool)
 	if err := database.Migrate(ctx, pool); err != nil {
@@ -107,15 +107,21 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if after := migrationHistory(t, ctx, pool); after != before {
 		t.Errorf("repeated migration changed history: before = %s, after = %s", before, after)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
-		t.Errorf("schema version after repeated migration = %d, want 21, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+		t.Errorf("schema version after repeated migration = %d, want 22, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
-	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings"} {
+	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries"} {
 		var exists bool
 		if err := pool.QueryRow(ctx, "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists); err != nil || !exists {
 			t.Errorf("migrated table %s exists = %v, error = %v", table, exists, err)
 		}
+	}
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != 29 {
+		t.Errorf("current schema table count = %d, want 29, error = %v", count, err)
+	}
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
+		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
 	}
 }
 

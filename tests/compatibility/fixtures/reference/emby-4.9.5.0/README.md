@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 2366 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 2462 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, configuration, and observability studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -205,3 +205,29 @@ derived reports do not increase the corpus count. Goby's five accepted
 [configuration routes](../../../../../docs/api/configuration.md) support only
 the name, read-only setup state and encoding width; these captures do not
 establish complete 60/17-field configuration or all-client compatibility.
+
+The [M5i observability study](../../../../../docs/research/observability-reference.md)
+adds **96 records**, taking the corpus from 2366 to **2462**: fifteen setup
+observations, 76 complete capture HTTP exchanges, one
+[audit](observability-fresh-m5i-audit.json), and four independent operator-cleanup
+HTTP exchanges. One setup readiness attempt is connection-refused with no HTTP
+status or headers; the extension has 94 complete HTTP exchanges in total.
+
+The four administrative GET routes return anonymous/invalid-token 401,
+viewer 403 and administrator/application-key 200. Activity default responses
+contain entries with `TotalRecordCount: 0`; paged count cases differ. Log Lines
+defaults to empty Items with a nonzero total, while the tested undeclared
+`Limit` and `StartIndex` return the first two file lines. SearchTerm and
+StartPosition remain unresolved because those samples omit Limit. Known-file
+HEAD returns 404 for administrator and anonymous requests; the reserved
+unknown filename returns GET 500. File growth and the recorder's own redaction
+prevent inferring a server sanitization algorithm from download lengths.
+
+The [execution summary](../../../../../docs/development/m5i-observability-reference.json)
+records all eight checks passing. The new user provides a real `user.created`
+activity without another login. The one application key and two ordinary
+credentials have independent 401 proofs; operator teardown removes only owned
+DATA and stops its process/cgroup. All earlier 2366 records, 240 media sources
+and private historical evidence remain preserved. Raw diagnostics stay private;
+the 23 synthetic guards and derived execution report do not add corpus records.
+This increment does not establish Goby observability product acceptance.

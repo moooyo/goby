@@ -139,8 +139,8 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade managed users from version 12: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
-		t.Fatalf("managed user schema version = %d, want 21, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+		t.Fatalf("managed user schema version = %d, want 22, error = %v", version, err)
 	}
 	if after := managedUsersLegacySnapshot(t, ctx, pool); after != before {
 		t.Error("managed user migration changed historical identity, settings, catalog, or playback state")

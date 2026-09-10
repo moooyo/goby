@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 var (
@@ -350,6 +351,10 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 		if linked.RowsAffected() != 1 {
 			return taskScanAssociationError()
 		}
+		if err := activity.RecordOwned(tx, catalogSystemEvent(activity.ActionScanRequested,
+			activity.Resource{Kind: activity.ResourceScan, ID: job.ID})); err != nil {
+			return err
+		}
 		result = ScanAdmission{Kind: ScanAdmitted, Job: job}
 		return nil
 	})
@@ -410,6 +415,10 @@ func (s *Store) CancelTaskScan(ctx context.Context, childID string) error {
 }
 
 func (s *Store) cancelLockedScan(tx OwnedTx, job Job, child *taskScanChild) error {
+	return s.cancelLockedScanAs(tx, job, child, nil)
+}
+
+func (s *Store) cancelLockedScanAs(tx OwnedTx, job Job, child *taskScanChild, administrator *catalogAdministrator) error {
 	if job.Status != "Queued" && job.Status != "Running" {
 		return copyTaskScanSnapshot(tx, child, job)
 	}
@@ -425,7 +434,19 @@ func (s *Store) cancelLockedScan(tx OwnedTx, job Job, child *taskScanChild) erro
 	if err != nil {
 		return err
 	}
-	return copyTaskScanSnapshot(tx, child, changed)
+	if err := copyTaskScanSnapshot(tx, child, changed); err != nil {
+		return err
+	}
+	if !job.CancelRequested {
+		if err := activity.RecordOwned(tx, administrator.event(activity.ActionScanCancelRequested,
+			activity.Resource{Kind: activity.ResourceScan, ID: job.ID})); err != nil {
+			return err
+		}
+	}
+	if changed.Status != "Queued" && changed.Status != "Running" {
+		return recordScanFinished(tx, changed)
+	}
+	return nil
 }
 
 func (s *Store) startTaskScan(task *scanTask) (bool, error) {
@@ -538,6 +559,9 @@ func (s *Store) recoverTaskScans(ctx context.Context) error {
 					error = 'Server stopped before the scan finished', finished_at = clock_timestamp()
 					WHERE id = $1 RETURNING `+jobColumns, job.ID))
 				if err != nil {
+					return err
+				}
+				if err := recordScanFinished(tx, job); err != nil {
 					return err
 				}
 			}

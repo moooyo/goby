@@ -194,6 +194,9 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 			if err != nil {
 				return err
 			}
+			if err := recordSettingsActivity(tx, actor, previous, changed); err != nil {
+				return err
+			}
 		}
 		// This must remain the final database operation before owner COMMIT.
 		return checkActor(tx, actor, false)

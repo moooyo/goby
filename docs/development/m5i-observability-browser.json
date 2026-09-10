@@ -1,0 +1,366 @@
+{
+  "application_pids": [
+    3668193,
+    3668326,
+    3668347
+  ],
+  "assets_archive_sha256": "20ed0e16b721515f1e56dddeef818e3102a7c92f25f2a1d8d08aa1d2b756f85b",
+  "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+  "browser": {
+    "duration_ms": 12400.443,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_driver_stderr": "",
+  "browser_result": {
+    "Checks": {
+      "ActualNativeCookieDownloadAndRedactedJSONL": true,
+      "CredentialFreeURLsAndScreenshots": true,
+      "InjectedMissingFileAndUnavailableStorageRecovery": true,
+      "MobileActivityAndLogsWithoutOverflow": true,
+      "ObsoleteRealActivityResponseCancelled": true,
+      "ReadOnlyBrowserRequests": true,
+      "RealActivityFiltersPagingRefreshAndDetails": true,
+      "RealBrowserRevocationClearsActivityAndLogContent": true,
+      "RealEmptyActivityAndInjectedErrorRecovery": true,
+      "RealLogFilesPreviewPagingReloadAndCloseFocus": true,
+      "RealLogPreviewReadMore": true
+    },
+    "Complete": true,
+    "Marker": "goby-observability-result-v1",
+    "NativeSessionCount": 2,
+    "RunId": "20260910_102230_ca77ecaf5a"
+  },
+  "checks": {
+    "application_uid": 995,
+    "audit_fixtures_use_only_committed_native_mutations": true,
+    "browser_business_effects_only_two_session_events": true,
+    "browser_completed_without_skips_or_retries": true,
+    "browser_native_observability_journey": true,
+    "browser_self_revocation_does_not_revoke_control": true,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "every_injection_checked_before_later_rotation": true,
+    "exact_temporary_hba_rule": true,
+    "fresh_dedicated_administrator": true,
+    "loaded_ui_assets_unchanged": true,
+    "original_control_credential_survives_both_restarts": true,
+    "private_driver_and_fallback_logs_exclude_secrets": true,
+    "provided_binary_and_assets_hashes_verified": true,
+    "real_diagnostic_file_rotation": true,
+    "retained_safe_logs_recovered_and_downloaded_after_both_restarts": true,
+    "revoked_browser_stays_revoked_after_both_restarts": true,
+    "schema_22_fresh_activity_empty": true,
+    "secret_free_screenshots": 4,
+    "settings_restored_with_acknowledged_revision": true,
+    "sixteen_completed_native_downloads_reuse_bounded_reader_slots": true,
+    "two_restarts_preserved_all_29_public_tables_exactly": true
+  },
+  "cleanup": {
+    "acknowledged_settings_chain_restored": true,
+    "all_issued_credentials_revoked_control_logout_last": true,
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "browser_stopped_before_credential_cleanup": true,
+    "credential_bearing_temporary_files_removed": true,
+    "credential_invalidation_http_401_and_sql_proven": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "final_private_logs_exclude_secrets": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "native_sessions_revoked_count": 2,
+    "original_control_available_for_cleanup": true,
+    "preexisting_database_catalog_unchanged": true,
+    "private_browser_secrets_collected": true,
+    "shared_application_and_reference_identities_unchanged": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "control_http_requests": 124,
+  "database": "goby_m5i_observe_20260910_102230_ca77ecaf5a",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "fixtures": {
+    "control_logins_issued": 1,
+    "dedicated_administrators": 1,
+    "media_files_created": 0,
+    "playback_requests": 0,
+    "private_manifest": true,
+    "sentinel_channels_checked": [
+      "body",
+      "header",
+      "path",
+      "query"
+    ],
+    "settings_audit_entries": 62,
+    "settings_mutations": 61,
+    "settings_restore_mutations": 1
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 49035,
+  "immediate_injection_evidence": {
+    "body": {
+      "all_retained_bytes_checked": 3414,
+      "all_retained_files_checked": 1,
+      "files_sha256": {
+        "goby-3ce04983db874e687521b9a3b8103acc-f15fa535496667dbec69daa483511f00.jsonl": "a40b64b2fc3db9634817a15a1ece28ba12c983272b78748ca879354140554ccd"
+      },
+      "request_completion_observed": true
+    },
+    "header": {
+      "all_retained_bytes_checked": 2629,
+      "all_retained_files_checked": 1,
+      "files_sha256": {
+        "goby-3ce04983db874e687521b9a3b8103acc-f15fa535496667dbec69daa483511f00.jsonl": "b2b22f2ee1cddbf583fc6a8857af3a756867586b7df4437ca93081ab13b00947"
+      },
+      "request_completion_observed": true
+    },
+    "path": {
+      "all_retained_bytes_checked": 3146,
+      "all_retained_files_checked": 1,
+      "files_sha256": {
+        "goby-3ce04983db874e687521b9a3b8103acc-f15fa535496667dbec69daa483511f00.jsonl": "1ba9defc730550e593863103c03b5ef2a22fcc8b0bc320d5721b918920841e15"
+      },
+      "request_completion_observed": true
+    },
+    "query": {
+      "all_retained_bytes_checked": 2888,
+      "all_retained_files_checked": 1,
+      "files_sha256": {
+        "goby-3ce04983db874e687521b9a3b8103acc-f15fa535496667dbec69daa483511f00.jsonl": "607e2a58841ba86715d7695ef1a27f30064d9d8d13d505869c1e63022951b17b"
+      },
+      "request_completion_observed": true
+    }
+  },
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "provenance": {
+    "assets_archive_sha256": "20ed0e16b721515f1e56dddeef818e3102a7c92f25f2a1d8d08aa1d2b756f85b",
+    "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+    "browser_result_projection_sha256": "60a30d8f5c23c2277bd4f8d91297a18006a3e26294182564721302b8e7c15cc8",
+    "loaded_ui_files_sha256": {
+      "assets/AddRounded-BHIiJ9l-.js": "673716f8410ed248765134f8953b182c29e90f35609aa3a390aff6906e695be5",
+      "assets/ApiKeysPage-DUExTxl2.js": "257a41961ffc36440568d14714042cf7c345420960a2a2e809b8fcc08bd493ef",
+      "assets/ArrowBackRounded-zD_ObaXy.js": "3b468c8d911989067a77f2c3ef02178fa3176ea822caca266572cde9cbcf78c2",
+      "assets/ArrowForwardRounded-DEIeHuAH.js": "191232d6d8cb5cdf4a36a954714a153c28c9a53ad8b5808c4839472f289b273f",
+      "assets/AuthPage-BVu6mMpE.js": "1f3489cdbe0a09a267b7e6d4657d118c9b615448710efec9e503dab81a496856",
+      "assets/Autocomplete-Bsy114qE.js": "bb2e59de7eab764aaf7d5ce79ab687696c2bca73a65d7474b8f4110e6e29f92d",
+      "assets/CheckCircleOutlineRounded-Bcdpwmmo.js": "2838837e38bf7437d7702253f335d6713329801aacd2089376109482cb394250",
+      "assets/Checkbox-CZpSGmD6.js": "9987bd4fcf68ea3807d4ef70a6eb5403df9f5831d595ca0e779dd5e5e2768898",
+      "assets/Collapse-DNaxGqGe.js": "d60e5baade582d48ffbd871694d0c3b208f722ed45985b3fa6ddd5b79257782f",
+      "assets/ContentCopyRounded-XsMcP0OL.js": "6c509dbdda5387c2c2d649b16248c2159bb42b62d21672ce13abda9b08a4dcc7",
+      "assets/DeleteOutlineRounded-BBMEoOND.js": "0c069cd24638695e82462f04dddbfbacf9665505ca9cbf3fbfe3bb5f2f1f04e4",
+      "assets/DevicesPage-BzTX2yHM.js": "de057c463376cb4989fa50ca0bcc30438a74151c83600f76244b03afc494d937",
+      "assets/DialogTitle-DHL4_Xlg.js": "9f90669ddc19a060f682bd93c097522e3496a33d368533a352dc1080ae542052",
+      "assets/EditOutlined-Cm1Q670Z.js": "19ca3f084f1c10035e008d281d3a1718e482b0e4f079ed588f0bdc62a974c81a",
+      "assets/FilterAltOffOutlined-BcpZKNu6.js": "6deb67255197e68ed249be74275230298032097a584895931f45ab8523aebc5f",
+      "assets/FormControlLabel-BkuT39Q2.js": "3eb4af08ee8954fc27ea79e6238fd76af63c49c93ff9c8df8a3e010ec75e36c1",
+      "assets/LibrariesPage-DP10FwIP.js": "7c19211538e8478e1eff114c8f68a88d16773ce6a06dbb69a6ba02dd95988f96",
+      "assets/List-CjrR20md.js": "99ec96e1baeef2c9266db5dac3e645e6c60c9c963c5924aca6aebfc0330289fb",
+      "assets/LockOutlined-2lG3JTtp.js": "8d4d35ebc736758a53f7988b1902bbbf1bb9e25d59bd7b5c0b2e3590b970c936",
+      "assets/MenuItem-DDwyA-8s.js": "5cfe427566b7bd50b7a58993e9f31cb18ae82f6b7444a9adf2c0f355cca28c5a",
+      "assets/MetadataItemsPage-DvIxABnA.js": "a84869b84795fc1ebf0a21889b8e2d02720928aae3d698fda7733cecd8a5c581",
+      "assets/ObservabilityPage-DRw7zD7u.js": "8a236665623053f9451ce5cf8426fb6dc824d953d7700bdaa5c65dbf8417010e",
+      "assets/OverviewPage-CzLU-fQY.js": "adac50e7b12c8673db18241183c28275cee7eb60677efc2badaad770ba1338e7",
+      "assets/RestartAltRounded-CEroWEwO.js": "c2aa90c8e2ecf3729645547452c6a5d440e0b3d0109ae577ff9bb0e61e6dd727",
+      "assets/SaveOutlined-Dm8PAWLM.js": "666072332e24842a267f619ff0ef7f54e60998933158c50dfb0be6ecce93dcdf",
+      "assets/SearchRounded-FwtjzwoC.js": "1587888f5eed8d44b9b18896985422337e6f080bda5893043e1b0ccd54095bef",
+      "assets/SessionsPage-CrOIKfQY.js": "cd66e5faf6a435d330db42eb159c74cd9184801af237a545828ed482f4fd870d",
+      "assets/SettingsPage-D9BOpfBi.js": "2c2b169cf66e60133981198f15490f4a13b96d5b981c753abca8136bd0dea26d",
+      "assets/ShieldOutlined-C5MwXED6.js": "23a028e0cd13b293e6c233cf1373008bfe2736c66c30b6c0f62a4152e53491d2",
+      "assets/Snackbar-DPyWaZ7R.js": "4c3468ca1555f5b49080d64d3b44a3879c7ea8388952f030c4c428b33aef4489",
+      "assets/Switch-DT8QjjOc.js": "8055af8ede8fef162e0cedc1227abba1e787263e4fc15608ce0bc8ec4cb64700",
+      "assets/TablePagination-h7Fgn1Tw.js": "241a62f68d8ec397adbbd4bf5dbcf9134985f82eacd2d2881fbcee34e1fbf0e5",
+      "assets/TableRow--Z9NWB5B.js": "2d6f2060aa7595285777c580b1d8422c75f95e903da2630568b27fed1e7951fb",
+      "assets/Tabs-VmHrBwvf.js": "57447e7bd5900f7fac404724a7c65c9227793d0cf156bcc742d882ca7e90453c",
+      "assets/TasksPage-vBbRjIl0.js": "a7c49f21c8864e310c51fb607bc3f794d59c63203e97cee50f9abc61766291e3",
+      "assets/TextField-CgRyMf33.js": "ea21134711e421fb560b515a5e0a39011babe9c528c045c84b92b06f7b859aad",
+      "assets/UsersPage-DPVgBV5P.js": "026accb7b25aa65fbb1c9475ac395b14974c65c794209d4913eb34830eca82fb",
+      "assets/components-BrJWOki-.js": "28da6cce2fdbbdca0d7d9a97a3a359fcf28b96cf073ca508a8cb6f2fe61e029c",
+      "assets/formFields-B5cSftMH.js": "f8f5cdeb29b0c73702b5ac867b8463f5e0fb3e6257c78e5fd1a3cebda7e5ee47",
+      "assets/index-Di0tN6tC.css": "06be1093dcfdef5a82e591bc85112bbd6870376cdd30c40545420d1499c90b52",
+      "assets/index-qpNn_uJH.js": "9cb42b1ab277044b1d6eec65cade77fe15369c3f5e6c6309a1d5b634ff493cd1",
+      "assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+      "assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+      "assets/manrope-greek-wght-normal-DL7QRZyv.woff2": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+      "assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+      "assets/manrope-latin-wght-normal-DHIcAJRg.woff2": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+      "assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+      "assets/public-sans-latin-ext-wght-normal-MQgHevqp.woff2": "3a00a32f0242b723dcea79935747d6d27dd93675d03ef23f470dfe274e79586a",
+      "assets/public-sans-latin-wght-normal-DdeTHZLK.woff2": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68",
+      "assets/public-sans-vietnamese-wght-normal-CtlIRbEm.woff2": "94593e69fad0885b2b0b74cd18d036c7e9cd6051b2256ab281a20f5bc9ccb46f",
+      "assets/rolldown-runtime-CbXtAM7H.js": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a",
+      "assets/useMediaQuery-CrHf1z2u.js": "10a44cb6f6a170d29e44d774240e88f7ff8ee097894d7625511be13380751e76",
+      "assets/userDraftNavigation-DIACOYik.js": "8afce27a0bb4ad893e17607a1c185e96ce86c96025ee4711628b5350178aa0dd",
+      "index.html": "446dd3819fba402508cf39d389a7135baa7e73b54e40e297f5a0fe164ce035e3"
+    },
+    "loaded_ui_manifest_sha256": "c714191fbb4df4f40b4497b32175d8a50f16a7a05fb77c41683b4320d35f65f6",
+    "private_browser_api_sha256": "e7aa6ca85f4324974dcc2ebdfb6bbd0031f46097e5d95b266e25b91e9ed0f79f",
+    "private_browser_spec_sha256": "baf51b891ce61a4bb59487c02ececea8c6c30d7799ee1ec94de239008ab0ac4e",
+    "screenshots_sha256": {
+      "observability-activity-desktop.png": "6da384017db9c431145a9bb6880d04372a83f186244640dc56bb7e17d4f7df48",
+      "observability-details-desktop.png": "ba172705aef198be8f856e1d5eb73ec9fc88d7250513543e5deece34e8531e5b",
+      "observability-logs-desktop.png": "5bf20e6fe08d42703d4661e9ba552291ebd265056ed102c457847b5feca76d98",
+      "observability-mobile.png": "161da097afcbb83821c7b21784452315a02c668e5b9b6895eb21979be0cfca98"
+    },
+    "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+    "source_inputs_sha256": {
+      "e2e/observability.spec.ts": "baf51b891ce61a4bb59487c02ececea8c6c30d7799ee1ec94de239008ab0ac4e",
+      "package-lock.json": "3f68111eb71283903ac90550e340dd261a3bba33eb4ff2f65f21dd41ab0c9307",
+      "package.json": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b",
+      "playwright.config.ts": "e270b700e65d18a8f5120d6db27850cfd55682551881fd0d103efc6cb44dba44",
+      "src/App.tsx": "9d6294a737fec13c97450b5511d6fec0a3b177485cbe55b9b2f9a190e1ddf617",
+      "src/ObservabilityPage.tsx": "47ee44901640a44f1be0a2e721e2527eefd249570b01b9cce9a140694c7b49db",
+      "src/api.ts": "e7aa6ca85f4324974dcc2ebdfb6bbd0031f46097e5d95b266e25b91e9ed0f79f"
+    },
+    "wrapper_sha256": "2a42c6e54a7ae05ac1d7d3a514ec0fe648ce57c0ae7fb1288bcca0483e23d379"
+  },
+  "restart_evidence": [
+    {
+      "activity_entries_preserved": 66,
+      "all_public_tables_compared": 29,
+      "restart": 1,
+      "retained_download_bytes": 8055,
+      "retained_download_sha256": "8e8909d0a5efe0dea64672950cc0acb70c524095588ddfc62706246b9641f2dc",
+      "retained_files_recovered": 3
+    },
+    {
+      "activity_entries_preserved": 66,
+      "all_public_tables_compared": 29,
+      "restart": 2,
+      "retained_download_bytes": 7976,
+      "retained_download_sha256": "d681bbfbf74118e47165fda88edf3453053a25f702a6d623903b7065d4a5e053",
+      "retained_files_recovered": 3
+    }
+  ],
+  "role": "goby_m5i_role_20260910_102230_ca77ecaf5a",
+  "run_id": "20260910_102230_ca77ecaf5a",
+  "scenario": "administrator_observability",
+  "shared_identities_after": {
+    "goby-emby-reference.service": {
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "pid": 3131777,
+      "start_ticks": 13964831
+    },
+    "goby-foundation-test.service": {
+      "binary_sha256": "62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54",
+      "pid": 3641418,
+      "start_ticks": 26048863
+    }
+  },
+  "shared_identities_before": {
+    "goby-emby-reference.service": {
+      "binary_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+      "pid": 3131777,
+      "start_ticks": 13964831
+    },
+    "goby-foundation-test.service": {
+      "binary_sha256": "62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54",
+      "pid": 3641418,
+      "start_ticks": 26048863
+    }
+  },
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3641418"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3641418"
+  },
+  "snapshot_tables": [
+    "activity_entries",
+    "application_key_clients",
+    "application_key_devices",
+    "application_keys",
+    "catalog_entities",
+    "client_playback_references",
+    "devices",
+    "encoding_jobs",
+    "item_entities",
+    "item_images",
+    "item_metadata_state",
+    "item_subtitles",
+    "items",
+    "libraries",
+    "library_roots",
+    "managed_settings",
+    "play_sessions",
+    "scan_jobs",
+    "schema_migrations",
+    "server_settings",
+    "sessions",
+    "task_definitions",
+    "task_occurrences",
+    "task_run_children",
+    "task_run_requests",
+    "task_runs",
+    "task_triggers",
+    "user_item_data",
+    "users"
+  ],
+  "source_spec_sha256": "baf51b891ce61a4bb59487c02ececea8c6c30d7799ee1ec94de239008ab0ac4e",
+  "space_before": {
+    "/": 60146765824,
+    "/dev/shm": 1798934528,
+    "/dev/shm/goby-pg-m4c": 820645888,
+    "/opt/goby-test/exec-scratch": 274952192
+  },
+  "status": "passed"
+}

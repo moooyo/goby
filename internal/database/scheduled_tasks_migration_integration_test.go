@@ -101,8 +101,8 @@ func scheduledTasksLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 func scheduledTasksAssertEmptyTables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	var totalTables int
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&totalTables); err != nil || totalTables != 28 {
-		t.Fatalf("current schema did not retain six task tables and one settings table beyond schema 18: count=%d error=%v", totalTables, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&totalTables); err != nil || totalTables != 29 {
+		t.Fatalf("current schema did not retain six task tables, one settings table, and one activity table beyond schema 18: count=%d error=%v", totalTables, err)
 	}
 	var actual []string
 	if err := pool.QueryRow(ctx, `SELECT array_agg(tablename ORDER BY tablename)
@@ -117,6 +117,10 @@ func scheduledTasksAssertEmptyTables(t *testing.T, ctx context.Context, pool *pg
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+pgx.Identifier{name}.Sanitize()).Scan(&count); err != nil || count != 0 {
 			t.Errorf("migration populated task table %s: count=%d error=%v", name, count, err)
 		}
+	}
+	var activityCount int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {
+		t.Errorf("migration backfilled historical state into activity entries: count=%d error=%v", activityCount, err)
 	}
 	var settingsCount int
 	var defaultSettings bool
@@ -152,8 +156,8 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 		if err := database.Migrate(ctx, pool); err != nil {
 			t.Fatalf("scheduled-task migration attempt %d: %v", attempt, err)
 		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
-			t.Fatalf("scheduled-task full migration schema = %d, want 21: %v", version, err)
+		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+			t.Fatalf("scheduled-task full migration schema = %d, want 22: %v", version, err)
 		}
 		var name string
 		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 19").Scan(&name); err != nil || name != "0019_scheduled_tasks.sql" {

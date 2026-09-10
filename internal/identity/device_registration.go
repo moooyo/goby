@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 type loginIssue struct {
@@ -72,6 +73,13 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 		issue.client.Device, issue.client.Version, int64(issue.lifetime/time.Second), generation).Scan(&createdAt, &expiresAt)
 	if err != nil {
 		return Credentials{}, fmt.Errorf("create authentication session: %w", err)
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionSessionLogin, Source: identityActivitySource(issue.kind),
+		Actor:    activity.Actor{Kind: activity.ActorUser, ID: user.ID, CredentialID: issue.sessionID},
+		Resource: activity.Resource{Kind: activity.ResourceSession, ID: issue.sessionID}, Count: 1,
+	}); err != nil {
+		return Credentials{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return Credentials{}, fmt.Errorf("commit authentication issuance: %w", err)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 const (
@@ -288,20 +289,23 @@ func (s *Store) RevokeManagedSession(ctx context.Context, actor Principal, id st
 	if err := rows.Err(); err != nil {
 		return ManagedSessionRevocation{}, fmt.Errorf("read locked managed session accounts: %w", err)
 	}
-	rows, err = tx.Query(ctx, `SELECT id, user_id, kind FROM sessions
+	rows, err = tx.Query(ctx, `SELECT id, user_id, kind, revoked_at FROM sessions
 		WHERE id = ANY($1::text[]) AND kind IN ('admin', 'emby') ORDER BY id FOR UPDATE`, []string{actor.SessionID, id})
 	if err != nil {
 		return ManagedSessionRevocation{}, fmt.Errorf("lock managed authentication sessions: %w", err)
 	}
 	var result ManagedSessionRevocation
+	var targetRevokedAt *time.Time
 	for rows.Next() {
 		var sessionID, userID, kind string
-		if err := rows.Scan(&sessionID, &userID, &kind); err != nil {
+		var revokedAt *time.Time
+		if err := rows.Scan(&sessionID, &userID, &kind, &revokedAt); err != nil {
 			rows.Close()
 			return ManagedSessionRevocation{}, fmt.Errorf("read locked authentication session: %w", err)
 		}
 		if sessionID == id && userID == targetUserID {
 			result.SessionID, result.UserID, result.Kind = sessionID, userID, kind
+			targetRevokedAt = revokedAt
 		}
 	}
 	rows.Close()
@@ -314,9 +318,24 @@ func (s *Store) RevokeManagedSession(ctx context.Context, actor Principal, id st
 	if result.SessionID == "" {
 		return ManagedSessionRevocation{}, ErrManagedSessionNotFound
 	}
-	if err := tx.QueryRow(ctx, `UPDATE sessions SET revoked_at = COALESCE(revoked_at, clock_timestamp())
-		WHERE id = $1 AND user_id = $2 RETURNING revoked_at`, result.SessionID, result.UserID).Scan(&result.RevokedAt); err != nil {
-		return ManagedSessionRevocation{}, fmt.Errorf("revoke managed authentication session: %w", err)
+	if targetRevokedAt != nil {
+		result.RevokedAt = *targetRevokedAt
+	} else {
+		if err := tx.QueryRow(ctx, `UPDATE sessions SET revoked_at = clock_timestamp()
+			WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL RETURNING revoked_at`, result.SessionID, result.UserID).Scan(&result.RevokedAt); err != nil {
+			return ManagedSessionRevocation{}, fmt.Errorf("revoke managed authentication session: %w", err)
+		}
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return ManagedSessionRevocation{}, err
+		}
+		if err := activity.Record(ctx, tx, activity.Event{
+			Action: activity.ActionSessionRevoked, Source: activity.SourceNative, Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceSession, ID: result.SessionID},
+			Count:    1,
+		}); err != nil {
+			return ManagedSessionRevocation{}, err
+		}
 	}
 	result.CurrentSessionRevoked = result.SessionID == actor.SessionID && result.UserID == actor.User.ID
 	var expectedSelfRevocation *time.Time

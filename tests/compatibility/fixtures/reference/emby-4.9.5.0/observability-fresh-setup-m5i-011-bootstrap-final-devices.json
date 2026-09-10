@@ -1,0 +1,114 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T09:41:49.644974+00:00"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/emby/Devices",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "Authorization",
+        "[REDACTED_SECRET]"
+      ],
+      [
+        "X-Emby-Token",
+        "[REDACTED_SECRET]"
+      ]
+    ],
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "751"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 09:41:49 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Observability Fresh M5i 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "d538d6052c6e47b2bfda9e94562f880a"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Linux Fresh Test",
+          "Id": "2",
+          "ReportedDeviceId": "goby-observability-fresh-m5i-20260910-01-viewer",
+          "LastUserName": "reference-observability-fresh-viewer-m5i-01",
+          "AppName": "Goby Observability Fresh M5i 01 Viewer",
+          "AppVersion": "0.1.0",
+          "LastUserId": "9b672d7341444254966fee68600a0514",
+          "DateLastActivity": "2026-09-10T09:41:49.0000000Z",
+          "IpAddress": "127.0.0.1"
+        },
+        {
+          "Name": "Linux Fresh Test",
+          "Id": "1",
+          "ReportedDeviceId": "goby-observability-fresh-m5i-20260910-01-admin",
+          "LastUserName": "reference-observability-fresh-admin-m5i-01",
+          "AppName": "Goby Observability Fresh M5i 01 Admin",
+          "AppVersion": "0.1.0",
+          "LastUserId": "352e3d8d06db49b0a46855da82b0dc04",
+          "DateLastActivity": "2026-09-10T09:41:48.0000000Z",
+          "IpAddress": "127.0.0.1"
+        }
+      ],
+      "TotalRecordCount": 0
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 751,
+    "freshFixtureOnly": true
+  }
+}

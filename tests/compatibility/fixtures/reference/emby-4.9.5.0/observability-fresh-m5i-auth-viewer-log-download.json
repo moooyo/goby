@@ -1,0 +1,84 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Logs/embyserver.txt",
+    "headers": {
+      "Accept": "text/plain, application/octet-stream",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Authorization": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "principal": "viewer",
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 403,
+    "reason": "Forbidden",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Content-Length",
+        "94"
+      ],
+      [
+        "Content-Type",
+        "text/plain"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 09:41:53 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Observability Fresh M5i 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "d538d6052c6e47b2bfda9e94562f880a"
+      ]
+    ],
+    "bodyType": "text",
+    "body": "User reference-observability-fresh-viewer-m5i-01 does not have access to ManageServer feature."
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 94,
+    "wireBodySha256": "9bf80fd9aaa3feb98e15a149b7d307453a2f6dbd47ba0595194a1c1a7b6475bd",
+    "bodyExportable": true,
+    "transportFailure": null,
+    "bodyBudget": "json",
+    "privateWireFile": "auth-viewer-log-download.json",
+    "acknowledgementFailure": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T09:41:53.501685+00:00"
+  }
+}

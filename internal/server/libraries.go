@@ -48,6 +48,10 @@ func jobDTO(job library.Job) map[string]any {
 
 func libraryErrorInfo(err error) (int, string, string) {
 	switch {
+	case errors.Is(err, identity.ErrUnauthorized), errors.Is(err, identity.ErrInvalidCredentials):
+		return 401, "unauthorized", "A valid login is required."
+	case errors.Is(err, identity.ErrClientSessionForbidden):
+		return 403, "administrator_required", "Administrator access is required."
 	case errors.Is(err, library.ErrNotFound):
 		return 404, "not_found", "The library resource was not found."
 	case errors.Is(err, library.ErrForbidden):
@@ -93,14 +97,15 @@ func (s *Server) createLibrary(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	item, err := s.library.CreateLibrary(r.Context(), body.Name, body.CollectionType, body.Paths)
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	item, err := s.library.CreateLibraryAsAdministrator(r.Context(), principal, identity.AdministratorNative, body.Name, body.CollectionType, body.Paths)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
 	response := map[string]any{"Library": libraryDTO(item)}
 	if body.Scan {
-		job, err := s.library.StartScan(r.Context(), item.ID)
+		job, err := s.library.StartScanAsAdministrator(r.Context(), principal, identity.AdministratorNative, item.ID, library.ScanOptions{})
 		if err != nil {
 			_, code, message := libraryErrorInfo(err)
 			response["ScanError"] = map[string]string{"Code": code, "Message": message}
@@ -108,18 +113,17 @@ func (s *Server) createLibrary(w http.ResponseWriter, r *http.Request) {
 			response["Job"] = jobDTO(job)
 		}
 	}
-	principal := r.Context().Value(principalKey).(identity.Principal)
 	s.log.Info("library created", "actor_id", principal.User.ID, "library_id", item.ID)
 	jsonResponse(w, 201, response)
 }
 
 func (s *Server) deleteLibrary(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := s.library.DeleteLibrary(r.Context(), id); err != nil {
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	if err := s.library.DeleteLibraryAsAdministrator(r.Context(), principal, identity.AdministratorNative, id); err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
-	principal := r.Context().Value(principalKey).(identity.Principal)
 	s.log.Info("library removed", "actor_id", principal.User.ID, "library_id", id)
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -129,12 +133,12 @@ func (s *Server) scanLibrary(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	job, err := s.library.StartScanWithOptions(r.Context(), r.PathValue("id"), options)
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	job, err := s.library.StartScanAsAdministrator(r.Context(), actor, identity.AdministratorNative, r.PathValue("id"), options)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
-	actor := r.Context().Value(principalKey).(identity.Principal)
 	s.log.Info("library scan requested", "actor_id", actor.User.ID, "library_id", job.LibraryID,
 		"job_id", job.ID, "force_probe", job.ForceProbe)
 	jsonResponse(w, http.StatusAccepted, map[string]any{"Job": jobDTO(job)})
@@ -155,7 +159,8 @@ func (s *Server) listJobs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) cancelJob(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := s.library.CancelJob(r.Context(), id); err != nil {
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	if err := s.library.CancelJobAsAdministrator(r.Context(), actor, identity.AdministratorNative, id); err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
@@ -221,13 +226,14 @@ func (s *Server) embyCreateLibrary(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	item, err := s.library.CreateLibrary(r.Context(), body.Name, body.CollectionType, body.Paths)
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	item, err := s.library.CreateLibraryAsAdministrator(r.Context(), actor, identity.AdministratorEmby, body.Name, body.CollectionType, body.Paths)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
 	if body.RefreshLibrary {
-		if _, err := s.library.StartScan(r.Context(), item.ID); err != nil {
+		if _, err := s.library.StartScanAsAdministrator(r.Context(), actor, identity.AdministratorEmby, item.ID, library.ScanOptions{}); err != nil {
 			s.libraryError(w, r, err)
 			return
 		}
@@ -246,7 +252,8 @@ func (s *Server) embyDeleteLibrary(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	if err := s.library.DeleteLibrary(r.Context(), body.Id); err != nil {
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	if err := s.library.DeleteLibraryAsAdministrator(r.Context(), actor, identity.AdministratorEmby, body.Id); err != nil {
 		s.libraryError(w, r, err)
 		return
 	}

@@ -1,0 +1,76 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T09:41:48.355031+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Startup/RemoteAccess",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "Authorization",
+        "[REDACTED_SECRET]"
+      ],
+      [
+        "Content-Type",
+        "application/x-www-form-urlencoded"
+      ]
+    ],
+    "body": "EnableAutomaticPortMapping=false"
+  },
+  "response": {
+    "status": 204,
+    "headers": [
+      [
+        "Date",
+        "Thu, 10 Sep 2026 09:41:48 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Observability Fresh M5i 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "d538d6052c6e47b2bfda9e94562f880a"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 0,
+    "freshFixtureOnly": true
+  }
+}

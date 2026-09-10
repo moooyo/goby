@@ -1,0 +1,101 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Auth/Keys?StartIndex=0&Limit=5",
+    "headers": {
+      "Accept": "application/json",
+      "X-Emby-Token": "[REDACTED_SECRET]",
+      "Authorization": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "principal": "admin",
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "reason": "OK",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Content-Length",
+        "407"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 09:41:53 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Observability Fresh M5i 20260910 01"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "d538d6052c6e47b2bfda9e94562f880a"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Id": 3,
+          "AccessToken": "[REDACTED_SECRET]",
+          "ReportedDeviceId": "d538d6052c6e47b2bfda9e94562f880a",
+          "DeviceId": 3,
+          "AppName": "Goby Observability Fresh M5i 20260910 01 Owned Read Credential",
+          "AppVersion": "4.9.5.0",
+          "IpAddress": "127.0.0.1",
+          "DeviceName": "Goby Observability Fresh M5i 20260910 01",
+          "UserId": 0,
+          "DateCreated": "2026-09-10T09:41:53.0000000Z",
+          "IsActive": true
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "wireBytes": 407,
+    "wireBodySha256": "6b69c283630c45cd0cda7f73867b7b84085dbead5fad2d91460514cee73179f5",
+    "bodyExportable": true,
+    "transportFailure": null,
+    "bodyBudget": "json",
+    "privateWireFile": "keys-owned-proof.json",
+    "acknowledgementFailure": null
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T09:41:53.347003+00:00"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "stage": "M5i core attempt 2",
+  "command": "go test -race -p 2 -count=1 -timeout 10m -json ./internal/activity ./internal/diagnostics ./internal/database ./internal/config ./cmd/goby",
+  "exit": 0,
+  "topLevel": {
+    "pass": 79
+  },
+  "failures": [],
+  "logSha256": "f6dcbcf63c83d66db03ab1ca5e21e967ca0b7e5242b13fdb5a3710afe6c124b1"
+}

@@ -166,7 +166,7 @@ func TestStoreManagedSessionReciprocalRevocationsSerialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	firstResults, firstDone := revokeManagedSessionAsync(ctx, store, firstActor, secondActor.SessionID)
-	firstPID := waitManagedBlockedQuery(t, ctx, pool, blockerPID, "SELECT id, user_id, kind FROM sessions", firstDone)
+	firstPID := waitManagedBlockedQuery(t, ctx, pool, blockerPID, "SELECT id, user_id, kind, revoked_at FROM sessions", firstDone)
 	secondResults, secondDone := revokeManagedSessionAsync(ctx, store, secondActor, firstActor.SessionID)
 	// The first mutation retains its locks while the reciprocal mutation queues.
 	// Releasing one barrier must produce one success and one authorization error,

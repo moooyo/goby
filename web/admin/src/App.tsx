@@ -9,6 +9,7 @@ import DevicesOutlined from '@mui/icons-material/DevicesOutlined';
 import KeyRounded from '@mui/icons-material/KeyRounded';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -27,9 +28,10 @@ const SessionsPage = lazy(() => import('./SessionsPage').then((module) => ({ def
 const DevicesPage = lazy(() => import('./DevicesPage').then((module) => ({ default: module.DevicesPage })));
 const ApiKeysPage = lazy(() => import('./ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })));
 const SettingsPage = lazy(() => import('./SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const ObservabilityPage = lazy(() => import('./ObservabilityPage').then((module) => ({ default: module.ObservabilityPage })));
 const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -38,7 +40,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -60,6 +62,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/devices')) return 'devices';
   if (path.endsWith('/api-keys')) return 'api-keys';
   if (path.endsWith('/settings')) return 'settings';
+  if (path.endsWith('/observability')) return 'observability';
   return 'overview';
 }
 
@@ -83,6 +86,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'sessions' as const, label: 'Sessions', icon: SensorsRounded },
           { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
           { id: 'api-keys' as const, label: 'API keys', icon: KeyRounded },
+          { id: 'observability' as const, label: 'Activity & logs', icon: HistoryRounded },
           { id: 'settings' as const, label: 'Settings', icon: SettingsOutlined },
         ].map(({ id, label, icon: Icon }) => (
           <ListItemButton key={id} component="a" href={pageURL(id)} selected={selectedPage === id} aria-current={selectedPage === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
@@ -196,6 +200,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'settings' && <SettingsPage onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'observability' && <ObservabilityPage />}
           </Suspense>
         </Box>
       </Box>

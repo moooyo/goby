@@ -1,0 +1,36 @@
+{
+  "status": "failed",
+  "goExitCode": 1,
+  "topLevelTests": {
+    "pass": 43,
+    "fail": 1
+  },
+  "failedTests": [
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Test": "TestTaskActivityRollsBackAtFinalAuthorizationAfterInsertion/admit",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Test": "TestTaskActivityRollsBackAtFinalAuthorizationAfterInsertion/cancel",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Test": "TestTaskActivityRollsBackAtFinalAuthorizationAfterInsertion/schedule",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Test": "TestTaskActivityRollsBackAtFinalAuthorizationAfterInsertion",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Action": "fail"
+    }
+  ],
+  "raceWarningPresent": false,
+  "logSha256": "8145a7a99b71601795fcf86ca1cd8942e32191e98c93695615a5f9cefc9adcba"
+}

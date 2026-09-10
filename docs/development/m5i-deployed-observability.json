@@ -1,0 +1,469 @@
+{
+  "activity": {
+    "emby_settings_facts": 2,
+    "native_settings_facts": 2,
+    "retention_days": 30
+  },
+  "all_old_activity_rows_exact": true,
+  "all_old_rows_preserved_except_two_settings_revision_and_timestamp_advances": true,
+  "cleanup": {
+    "errors": [],
+    "physical_history_deletions": 0,
+    "proven": true
+  },
+  "database_queries": 20,
+  "deployment": {
+    "binary_sha256": "1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef",
+    "database_port": 5432,
+    "database_role": "goby_test",
+    "main_pid": 3668655,
+    "postgresql_forced_read_only": true,
+    "probe_version": 6,
+    "schema_version": 22,
+    "source_evidence_sha256": "bf3902d5744fed5136296197f08c8e009ab4a2b496c00e19dea2eaa865dfa5af",
+    "start_ticks": "26912384",
+    "uid": 995
+  },
+  "deployment_unchanged": true,
+  "diagnostic_configuration_unchanged": true,
+  "diagnostic_directory_unchanged": true,
+  "diagnostics": {
+    "emby_download_bytes": 6769,
+    "emby_download_sha256": "610858a1136105c84eb9a5184931fa7d91e895dc5c34bc86eff642e463347066",
+    "emby_head_status": 404,
+    "fixed_jsonl_keys_and_secret_absence": true,
+    "native_complete_lines": 22,
+    "native_download_bytes": 5645,
+    "native_download_sha256": "fcc5bb374a3046ec366a61ed70c141413acd51c61a5fa08a2604eb5dbf700b39",
+    "native_head_and_single_range": true,
+    "shared_file_name_sha256": "5bb286a442cd02a140a34eb35a9986e65b048c713f284464fbca639b0c35e181"
+  },
+  "elapsed_seconds": 0.776,
+  "http_evidence": [
+    {
+      "audience": "native",
+      "bytes": 908,
+      "method": "GET",
+      "range": false,
+      "route_kind": "activity",
+      "sha256": "22238bfb0b8dfc445f1bf1ae5ccb7038a83143f0ff16f869f5c497ffc2ea0e60",
+      "status": 200
+    },
+    {
+      "audience": "emby",
+      "bytes": 914,
+      "method": "GET",
+      "range": false,
+      "route_kind": "activity",
+      "sha256": "a795e24cff386c298481be827d6fbe22b5b3fbfe80b08f56d8cbf35e118f51d6",
+      "status": 200
+    },
+    {
+      "audience": "native",
+      "bytes": 415,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "1c1877d3cff7febad7f997fe9e289be04f86dce5e719191cd28e0da7cf27a862",
+      "status": 200
+    },
+    {
+      "audience": "emby",
+      "bytes": 223,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "c88da26c8c73b464ab5e8c670b4722e95880c6ae06813b795f8cb3bfcfca0b00",
+      "status": 200
+    },
+    {
+      "audience": "native",
+      "bytes": 5645,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "fcc5bb374a3046ec366a61ed70c141413acd51c61a5fa08a2604eb5dbf700b39",
+      "status": 200
+    },
+    {
+      "audience": "native",
+      "bytes": 0,
+      "method": "HEAD",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": 200
+    },
+    {
+      "audience": "native",
+      "bytes": 64,
+      "method": "GET",
+      "range": true,
+      "route_kind": "diagnostics",
+      "sha256": "f0f0643cd0ef43d18ed685ff9a1453d8d03e8ab007790ab47162fa31195e9d32",
+      "status": 206
+    },
+    {
+      "audience": "native",
+      "bytes": 445,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "78c14bdec9cf4ebcd44add000a941b6e15a2dae1a18f3bcf79ea315f93a20639",
+      "status": 200
+    },
+    {
+      "audience": "emby",
+      "bytes": 6769,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "610858a1136105c84eb9a5184931fa7d91e895dc5c34bc86eff642e463347066",
+      "status": 200
+    },
+    {
+      "audience": "emby",
+      "bytes": 8131,
+      "method": "GET",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "23f5479b1fad69d8a64996b9dfb888cf26deded0a6e31b3ea3d7a41e1ae5f09b",
+      "status": 200
+    },
+    {
+      "audience": "emby",
+      "bytes": 0,
+      "method": "HEAD",
+      "range": false,
+      "route_kind": "diagnostics",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": 404
+    },
+    {
+      "audience": "emby",
+      "bytes": 35,
+      "method": "GET",
+      "range": false,
+      "route_kind": "activity",
+      "sha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+      "status": 401
+    },
+    {
+      "audience": "native",
+      "bytes": 149,
+      "method": "GET",
+      "range": false,
+      "route_kind": "activity",
+      "sha256": "c2328daa59b45e2ab8654bb050a50aa49922527af4de1df7875e6a07d72c5980",
+      "status": 401
+    }
+  ],
+  "http_method_counts": {
+    "DELETE": 1,
+    "GET": 17,
+    "HEAD": 2,
+    "POST": 3,
+    "PUT": 2
+  },
+  "http_transport_retries": 0,
+  "limitations": [
+    "No concurrent external administrator writes may run during this preservation acceptance",
+    "No rotation, retention deletion, revocation during an in-flight download or client compatibility matrix is claimed here"
+  ],
+  "limits": {
+    "database_queries": 80,
+    "fixed_revision_restore_puts": 2,
+    "http_requests": 70,
+    "independent_cleanup_seconds": 45,
+    "initial_native_cas_puts": 1,
+    "main_seconds": 60,
+    "response_bytes": 1048576
+  },
+  "logout_protected_statuses": {
+    "admin": 401,
+    "emby": 401
+  },
+  "logout_response_failures": 0,
+  "media_unchanged": true,
+  "nfo_unchanged": true,
+  "output_scope": {
+    "attempt_marker": "m5i-deployed-observability.attempt.json",
+    "directory": "/opt/goby-test",
+    "report": "m5i-deployed-observability.json",
+    "settings_recovery_intent": "m5i-deployed-observability.settings.private.json"
+  },
+  "owned_history": {
+    "new_activity_entries": 6,
+    "new_devices": 1,
+    "new_sessions": 2,
+    "ordinary_device_rows_touched": 0,
+    "ordinary_session_rows_touched": 0
+  },
+  "owner": "goby-observability-deployed-m5i-v1",
+  "private_runtime_credentials_and_source_evidence_unchanged": true,
+  "raw_response_or_credential_exports": 0,
+  "settings_recovery_intent": {
+    "canonical_content_sha256": "275935530b88ba5990683a2f064de0f13a5a425c50b2a52c99a964fea7ab8cc0",
+    "contains_authentication_secrets": false,
+    "contains_diagnostic_bodies": false,
+    "file": "m5i-deployed-observability.settings.private.json",
+    "mode": "0600"
+  },
+  "settings_restoration": {
+    "exact_original_state_proven": true,
+    "fixed_original_plus_one_restore_revision": true,
+    "initial_cas_attempts": 1,
+    "not_applied_proven_after_writer_revocation": false,
+    "original_encoding_and_all_nullable_overrides_preserved": true,
+    "original_name_mode": "deployment",
+    "restore_attempts": 1
+  },
+  "snapshots": {
+    "after_cleanup": {
+      "activity_entries": {
+        "count": 6,
+        "sha256": "876d7fc3de021b325ebc60fa9ace4bb66adceacf0b5e24ca34e993cf9bf73fce"
+      },
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 14,
+        "sha256": "36cc9610ef2343104fa59c31a2482b84c84bdab72a439381fe5dcd2499bdec7a"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "795c3f4c70e5a5e1448dc586cd3716ee28eaad4cb03615953848e5799465140b"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "76170cf93356bc3ed1d9d0bb038722fd6baaf0593b4144b9e06d2cb71b8e2ad6"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "managed_settings": {
+        "count": 1,
+        "sha256": "21404490b4193997bd014a810d5e4063443969b88d41d27013e563f8a85e6651"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 46,
+        "sha256": "181cf8932556c0d9abfab2ed10a4a47bdfc58e6c4b8ab59cfe191b4cf7b28bf5"
+      },
+      "schema_migrations": {
+        "count": 22,
+        "sha256": "423501b0ab6c751f828cba1ef67c4f01b7c30118aa88896c59aaa51914d69e35"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 98,
+        "sha256": "8e33d1a7834081b7ae189b2fcc342c9b70e9a2baeb55373b25e3c5d9b2327116"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "85c9bc95fe2aa6b153b977de7459a678c320065f8d59a08f59ed729920b5bdd8"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 5,
+        "sha256": "19de137e55286a3fa5eb90a0396e052d9ec8158c02340704a6b8b6b16402e161"
+      },
+      "task_run_requests": {
+        "count": 1,
+        "sha256": "128f2df8b7e072b2a419c1b63ec16563a3dbc57ac9019d392b36695fe9e6a3c9"
+      },
+      "task_runs": {
+        "count": 1,
+        "sha256": "2a269b2c533bbd9b76083f627f6f51e7b9c5c742132a0598f050b98d34cc6cc5"
+      },
+      "task_triggers": {
+        "count": 2,
+        "sha256": "28419fa06506ee6d29120e6a91d8c93ae5e43bd3f295dcfa928f19fb44fed467"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    },
+    "before": {
+      "activity_entries": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 13,
+        "sha256": "376e30933aaf1eb03dc3e5d03a4855683a8f43ea43d54478ac2769881b636212"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "795c3f4c70e5a5e1448dc586cd3716ee28eaad4cb03615953848e5799465140b"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "76170cf93356bc3ed1d9d0bb038722fd6baaf0593b4144b9e06d2cb71b8e2ad6"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "managed_settings": {
+        "count": 1,
+        "sha256": "ee140f7700c97b726d5e9914102612715c9f13eddb9bcddaf4179954d197a2c1"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 46,
+        "sha256": "181cf8932556c0d9abfab2ed10a4a47bdfc58e6c4b8ab59cfe191b4cf7b28bf5"
+      },
+      "schema_migrations": {
+        "count": 22,
+        "sha256": "423501b0ab6c751f828cba1ef67c4f01b7c30118aa88896c59aaa51914d69e35"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 96,
+        "sha256": "8ce3340fde7ee7aa2fbaa8decdd0571de45c7f3136667936b795dedeb70ccfe7"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "85c9bc95fe2aa6b153b977de7459a678c320065f8d59a08f59ed729920b5bdd8"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 5,
+        "sha256": "19de137e55286a3fa5eb90a0396e052d9ec8158c02340704a6b8b6b16402e161"
+      },
+      "task_run_requests": {
+        "count": 1,
+        "sha256": "128f2df8b7e072b2a419c1b63ec16563a3dbc57ac9019d392b36695fe9e6a3c9"
+      },
+      "task_runs": {
+        "count": 1,
+        "sha256": "2a269b2c533bbd9b76083f627f6f51e7b9c5c742132a0598f050b98d34cc6cc5"
+      },
+      "task_triggers": {
+        "count": 2,
+        "sha256": "28419fa06506ee6d29120e6a91d8c93ae5e43bd3f295dcfa928f19fb44fed467"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    }
+  },
+  "source_inventory": {
+    "media_count": 11,
+    "media_sha256": "ff1daa92111afc21eb2726301b02a2545da8b2367fbd89035a5b203d60c5951e",
+    "nfo_count": 0,
+    "nfo_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "status": "passed",
+  "vault_unchanged": true,
+  "verification_run": 1,
+  "write_response_failures": 0
+}

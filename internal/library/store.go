@@ -15,6 +15,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/identity"
 )
 
 // New acquires exclusive catalog ownership before recovering interrupted jobs.
@@ -67,6 +69,16 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string) (*Store, erro
 
 // CreateLibrary registers metadata only; it never modifies media directories.
 func (s *Store) CreateLibrary(ctx context.Context, name, collectionType string, paths []string) (Library, error) {
+	return s.createLibrary(ctx, nil, name, collectionType, paths)
+}
+
+// CreateLibraryAsAdministrator revalidates the API credential inside the owned
+// catalog transaction and records the committed registration without paths.
+func (s *Store) CreateLibraryAsAdministrator(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, name, collectionType string, paths []string) (Library, error) {
+	return s.createLibrary(ctx, &catalogAdministrator{actor: actor, audience: audience}, name, collectionType, paths)
+}
+
+func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string) (Library, error) {
 	name = strings.TrimSpace(name)
 	if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 128 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
 		return Library{}, fmt.Errorf("%w: library name must contain 1 to 128 printable characters", ErrInvalidInput)
@@ -104,6 +116,9 @@ func (s *Store) CreateLibrary(ctx context.Context, name, collectionType string, 
 		return Library{}, fmt.Errorf("begin library creation: %w", err)
 	}
 	defer rollback(tx)
+	if err := administrator.check(ctx, tx, true); err != nil {
+		return Library{}, err
+	}
 	var createdAt time.Time
 	if err := tx.QueryRow(ctx, `INSERT INTO libraries (id, name, collection_type)
 		VALUES ($1, $2, $3) RETURNING created_at`, id, name, collectionType).Scan(&createdAt); err != nil {
@@ -120,6 +135,14 @@ func (s *Store) CreateLibrary(ctx context.Context, name, collectionType string, 
 			return Library{}, fmt.Errorf("register library directory: %w", err)
 		}
 		library.Paths = append(library.Paths, root.path)
+	}
+	event := administrator.event(activity.ActionLibraryCreated, activity.Resource{Kind: activity.ResourceLibrary, ID: id})
+	event.Count = int64(len(roots))
+	if err := activity.RecordOwned(catalogActivityTx{tx: tx}, event); err != nil {
+		return Library{}, err
+	}
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return Library{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return Library{}, fmt.Errorf("commit library creation: %w", err)
@@ -159,6 +182,16 @@ func (s *Store) GetLibrary(ctx context.Context, id string) (Library, error) {
 // DeleteLibrary removes catalog records, retaining every file on disk. An active
 // scan must be cancelled and reach its terminal status before deletion.
 func (s *Store) DeleteLibrary(ctx context.Context, id string) error {
+	return s.deleteLibrary(ctx, nil, id)
+}
+
+// DeleteLibraryAsAdministrator records removal only after a fresh credential
+// check, retaining the same active-scan guard and catalog ownership.
+func (s *Store) DeleteLibraryAsAdministrator(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, id string) error {
+	return s.deleteLibrary(ctx, &catalogAdministrator{actor: actor, audience: audience}, id)
+}
+
+func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdministrator, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
@@ -169,11 +202,17 @@ func (s *Store) DeleteLibrary(ctx context.Context, id string) error {
 		return fmt.Errorf("begin library deletion: %w", err)
 	}
 	defer rollback(tx)
+	if err := administrator.check(ctx, tx, true); err != nil {
+		return err
+	}
 	var exists string
 	if err := tx.QueryRow(ctx, "SELECT id FROM libraries WHERE id = $1 FOR UPDATE", id).Scan(&exists); errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	} else if err != nil {
 		return fmt.Errorf("lock library: %w", err)
+	}
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return err
 	}
 	var active bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM scan_jobs WHERE library_id = $1 AND status IN ('Queued', 'Running'))`, id).Scan(&active); err != nil {
@@ -182,8 +221,20 @@ func (s *Store) DeleteLibrary(ctx context.Context, id string) error {
 	if active {
 		return ErrBusy
 	}
+	var paths int64
+	if err := tx.QueryRow(ctx, "SELECT count(*) FROM library_roots WHERE library_id = $1", id).Scan(&paths); err != nil {
+		return fmt.Errorf("count removed library directories: %w", err)
+	}
 	if _, err := tx.Exec(ctx, "DELETE FROM libraries WHERE id = $1", id); err != nil {
 		return fmt.Errorf("delete library: %w", err)
+	}
+	event := administrator.event(activity.ActionLibraryRemoved, activity.Resource{Kind: activity.ResourceLibrary, ID: id})
+	event.Count = paths
+	if err := activity.RecordOwned(catalogActivityTx{tx: tx}, event); err != nil {
+		return err
+	}
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return err
 	}
 	return tx.Commit(ctx)
 }

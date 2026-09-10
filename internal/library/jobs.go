@@ -9,6 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/identity"
 )
 
 const jobColumns = `id, library_id, status, error, scanned, added, updated, force_probe, created_at, started_at, finished_at,
@@ -21,6 +23,16 @@ func (s *Store) StartScan(ctx context.Context, libraryID string) (Job, error) {
 
 // StartScanWithOptions persists the requested probe policy with the queued job.
 func (s *Store) StartScanWithOptions(ctx context.Context, libraryID string, options ScanOptions) (Job, error) {
+	return s.startScan(ctx, nil, libraryID, options)
+}
+
+// StartScanAsAdministrator admits a manual scan and its activity in the owned
+// transaction while retaining administrator authority until commit.
+func (s *Store) StartScanAsAdministrator(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, libraryID string, options ScanOptions) (Job, error) {
+	return s.startScan(ctx, &catalogAdministrator{actor: actor, audience: audience}, libraryID, options)
+}
+
+func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrator, libraryID string, options ScanOptions) (Job, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
@@ -28,11 +40,18 @@ func (s *Store) StartScanWithOptions(ctx context.Context, libraryID string, opti
 	}
 	var job Job
 	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+		authorization := catalogAuthorizationTx{tx: tx}
+		if err := administrator.check(ctx, authorization, true); err != nil {
+			return err
+		}
 		var existing string
 		if err := tx.QueryRow("SELECT id FROM libraries WHERE id = $1 FOR KEY SHARE", libraryID).Scan(&existing); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
+			return err
+		}
+		if err := administrator.check(ctx, authorization, false); err != nil {
 			return err
 		}
 		err := tx.QueryRow("SELECT id FROM scan_jobs WHERE library_id = $1 AND status IN ('Queued', 'Running')", libraryID).Scan(&existing)
@@ -53,7 +72,14 @@ func (s *Store) StartScanWithOptions(ctx context.Context, libraryID string, opti
 		}
 		job, err = scanJob(tx.QueryRow(`INSERT INTO scan_jobs (id, library_id, status, force_probe)
 			VALUES ($1, $2, 'Queued', $3) RETURNING `+jobColumns, id, libraryID, options.ForceProbe))
-		return err
+		if err != nil {
+			return err
+		}
+		if err := activity.RecordOwned(tx, administrator.event(activity.ActionScanRequested,
+			activity.Resource{Kind: activity.ResourceScan, ID: job.ID})); err != nil {
+			return err
+		}
+		return administrator.check(ctx, authorization, false)
 	})
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "scan_jobs_one_active_library_idx" {
@@ -97,14 +123,34 @@ func (s *Store) GetJob(ctx context.Context, id string) (Job, error) {
 // CancelJob is idempotent for terminal jobs. Running jobs publish their final
 // Cancelled state after their worker stops; queued jobs can finish immediately.
 func (s *Store) CancelJob(ctx context.Context, id string) error {
+	return s.cancelJob(ctx, nil, id)
+}
+
+// CancelJobAsAdministrator revalidates the manual cancellation actor before
+// mutating the owned scan and again after its activity has been recorded.
+func (s *Store) CancelJobAsAdministrator(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, id string) error {
+	return s.cancelJob(ctx, &catalogAdministrator{actor: actor, audience: audience}, id)
+}
+
+func (s *Store) cancelJob(ctx context.Context, administrator *catalogAdministrator, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+		authorization := catalogAuthorizationTx{tx: tx}
+		if err := administrator.check(ctx, authorization, true); err != nil {
+			return err
+		}
 		relation, err := lockTaskScanRelation(tx, id, "")
 		if err != nil {
 			return err
 		}
-		return s.cancelLockedScan(tx, relation.job, relation.child)
+		if err := administrator.check(ctx, authorization, false); err != nil {
+			return err
+		}
+		if err := s.cancelLockedScanAs(tx, relation.job, relation.child, administrator); err != nil {
+			return err
+		}
+		return administrator.check(ctx, authorization, false)
 	})
 	if err != nil {
 		return fmt.Errorf("request scan cancellation: %w", err)
@@ -166,7 +212,7 @@ func (s *Store) runTask(task *scanTask) {
 			return
 		}
 		if attempt == 0 {
-			slog.Warn("Retrying scan job finalization", "job_id", task.job.ID, "error", err)
+			slog.Warn("Retrying scan job finalization", "job_id", task.job.ID, "error_code", "scan_finalize_failed")
 		}
 		if s.ctx.Err() != nil {
 			s.mu.Lock()
@@ -221,7 +267,7 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 				return err
 			}
 		}
-		return nil
+		return recordScanFinished(tx, finished)
 	})
 	if err == nil {
 		if finished.ID != "" {
@@ -254,7 +300,14 @@ func (s *Store) persistProgress(task *scanTask) error {
 		if err != nil {
 			return err
 		}
-		return copyTaskScanSnapshot(tx, relation.child, job)
+		if err := copyTaskScanSnapshot(tx, relation.child, job); err != nil {
+			return err
+		}
+		if cancelled && !relation.job.CancelRequested {
+			return activity.RecordOwned(tx, catalogSystemEvent(activity.ActionScanCancelRequested,
+				activity.Resource{Kind: activity.ResourceScan, ID: job.ID}))
+		}
+		return nil
 	})
 	if err == nil {
 		s.notifyScanUpdate()

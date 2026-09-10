@@ -16,19 +16,100 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
-| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2366 records. The [4K encoding-width study](../research/encoding-width-reference.md) adds 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
+| M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
 | M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |
 | M4 conversion and hardware pipeline | Engine, HLS VOD, progressive audio/video, ordered profiles and verified video restart increments complete; milestone incomplete | [M4a](verification-m4a-engine.md), [M4b](verification-m4b-hls.md), [M4c](verification-m4c-audio.md), [M4d](verification-m4d-audio-profiles.md) and [M4e](verification-m4e-video-and-users.md) establish the preceding conversion and clock behavior. [M4f](verification-m4f-video-seek.md) adds probe 6 private restart evidence, software-decoder proof with actual threads, and independent linear audio. All 940 top-level race tests and five deployed library upgrades passed with real fast producer observation. [M4g](verification-m4g-media-refresh.md) adds explicit media re-probing, schema-15 task modes, real same-version index reconstruction and five deployed forced scans; all 969 top-level race tests pass. Nonzero copied-video seeking, efficient audio I/O, additional tracks/formats, aggregate resource isolation, actual GPU execution and full client acceptance remain |
-| M5 administrator completion | User, metadata, login-session, application-key, device, scheduled-task, native settings, and bounded configuration compatibility increments complete; milestone incomplete | [M5a](verification-m4e-video-and-users.md), [M5b](verification-m5b-metadata.md), [M5c](verification-m5c-sessions.md), [M5d](verification-m5d-application-keys.md), [M5e](verification-m5e-devices.md), [M5f](verification-m5f-tasks.md), and [M5g](verification-m5g-settings.md) retain prior acceptance. [M5h](verification-m5h-configuration.md) passes 1252 race tests, browser/restarts, protected deployment and the main-service workflow. Additional task executors, full policies, providers, broader configuration fields/sections, audit/log browsing, product backup/restore and broader wire/client parity remain |
+| M5 administrator completion | User, metadata, login-session, application-key, device, scheduled-task, native settings, bounded configuration compatibility, and activity/log increments complete; milestone incomplete | [M5a](verification-m4e-video-and-users.md), [M5b](verification-m5b-metadata.md), [M5c](verification-m5c-sessions.md), [M5d](verification-m5d-application-keys.md), [M5e](verification-m5e-devices.md), [M5f](verification-m5f-tasks.md), and [M5g](verification-m5g-settings.md) retain prior acceptance. [M5h](verification-m5h-configuration.md) passes its complete configuration acceptance. [M5i activity/log acceptance](observability.md) adds 1380 race tests, real browser/restarts, protected schema-22 deployment, and the main-service workflow. Additional task executors, full policies, providers, broader configuration fields/sections, product backup/restore and broader wire/client parity remain |
 | M5f scheduled tasks | Initial library executor and scheduling increment complete | [Verification](verification-m5f-tasks.md): 1190 full-race tests, isolated browser acceptance with two restarts, schema-19 deployment, and a successful main-service run/replay/schedule workflow. Eight [native task routes](../api/tasks.md) and six compatibility operations use durable receipts, owned children, typed schedules and recovery. [Reference read](../research/scheduled-tasks-reference.md) and [mutation](../research/scheduled-tasks-mutation-reference.md) studies retain their narrower evidence; timer/reference parity, more executors, and complete client acceptance remain broader work |
 | M5g native settings | Native increment complete | [Verification](verification-m5g-settings.md): 1222 full-race tests across fourteen packages, browser with two exact 28-table restarts, protected schema-20 deployment, and first-pass settings/restore workflow on the main service. Its three native routes managed five nullable overrides with CAS and atomic publication. The later M5h increment adds the bounded adapter; the [read](../research/configuration-reference.md) and [fresh mutation](../research/configuration-mutation-reference.md) studies retain their historical scope |
 | M5h configuration compatibility | Bounded configuration increment complete | [Verification](verification-m5h-configuration.md): 1252 race tests across fourteen packages, 16 browser checks/two 28-table restarts, protected schema-21 deployment with actual 28-table isolated restore, and first-pass main-service writes/restoration/revocation barriers. Five [compatibility routes](../api/configuration.md) expose only name, read-only setup status and encoding width; native settings adds four name modes and six reset selectors. The [4K width study](../research/encoding-width-reference.md) proves the sampled software execution boundary; broader fields/sections, GPU execution and full client acceptance remain |
+| M5i activity and diagnostic logs | Increment complete and deployed | Four [native and four Emby GET routes](../api/observability.md), schema-22 transactional activity, private bounded Linux JSONL storage, and the React/MUI Activity and Server logs page passed acceptance. The [complete race suite](m5i-full-race-summary.json) passed 1380 tests across 17 packages without skips/races; [browser/restarts](m5i-observability-browser.json), [protected deployment](m5i-deployment-evidence.json), and [main workflow](m5i-deployed-observability.json) passed. Current service is M5i/schema 22/probe 6/PID 3668655 |
 | M6 compatibility release | Incomplete; acceptance pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations, representative large-catalog upgrade timing, and recovery evidence |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
+
+## Current M5i acceptance
+
+The [activity/log implementation](observability.md) adds 21 transactional
+activity actions, bounded retention, safe per-event JSONL diagnostics, fixed
+file snapshots with download authorization rechecks, and eight read routes.
+The React/MUI administrator page at `/admin/observability` has Activity and
+Server logs tabs. Migration 22 adds the initially empty
+`activity_entries` table; it does not infer old history or require media
+re-probing. This increment has passed product acceptance and replaced the
+completed M5h deployment, whose historical evidence is retained below.
+
+The [complete remote race suite](m5i-full-race-summary.json) **PASSED** with
+1380 top-level tests across 17 tested packages, zero skips, no race findings,
+and Go exit 0 against `/opt/goby-test/verify-m5i-full-attempt-2`. The complete
+log SHA-256 is `decfdd6344bd8d16d0a06c88f1cc411497d9d6b22d9096b482211dbce9431b53`.
+Its captured inputs include 470
+Go/module/SQL files, ten test-data files, 2462 reference records, and 55 web
+source inputs. These inventory counts identify this candidate snapshot; they
+are not counts of successful tests. The accepted Go
+1.27.1 Linux build uses `CGO_ENABLED=0`, is 23,156,729 bytes, and has SHA-256
+`1ead2fcaa22df227d3d8b6b607978887ccfee7868139fc38f40523dbe24752ef`.
+The React/MUI build produced 54 current assets, with archive SHA-256
+`20ed0e16b721515f1e56dddeef818e3102a7c92f25f2a1d8d08aa1d2b756f85b`.
+The [source/build gate](m5i-final-go-source-gate.json) reconciled 535
+Go/module/SQL, test-data, and browser inputs with the tested executable and
+assets. This is product source/evidence reconciliation; it does not represent
+a Git commit or push result.
+
+| Intermediate evidence | Result | Boundary |
+| --- | --- | --- |
+| [Core race attempt 2](m5i-core-race.json) | 79 top-level tests passed | Captured core snapshot; not the complete final suite |
+| [Selected domain/native HTTP attempt 2](m5i-domain-http-race.json) | 68 top-level tests passed | Historical selected coverage; the subsequent full suite provides complete Go coverage |
+| [Browser-runner guards](m5i-browser-guards.json) | 29 tests passed | Synthetic memory-only guards, not actual browser acceptance |
+| [Deployment-operator guards](m5i-deployment-operator-tests.json) | 33 tests passed | Synthetic memory-only contracts, not a real restore or deployment |
+
+These intermediate counts are not added to the complete 1380-test total.
+The [real browser acceptance](m5i-observability-browser.json) passed 11 scenario
+checks in **12.400443 seconds**, without skips or retries. It covers the native
+activity/log journey, paging, details, downloads, mobile layout, stale-response
+cancellation, and self-revocation; selected UI failure states use controlled
+response injection. The independent runner confirmed real rotation, immediate
+redaction of four request-channel sentinels before later rotation, and 16
+completed downloads reusing bounded reader slots. Two restarts each preserved
+all 29 public tables exactly, including 66 activity entries, and recovered
+registered logs for download. Both native sessions were revoked with 401/SQL
+proofs, and temporary database/role/HBA/process cleanup passed. Four reviewed
+screenshots are retained under [screenshots/m5i](screenshots/m5i).
+
+The [deployment](m5i-deployment-evidence.json) passed a real isolated restore
+rehearsal of all 28 old tables before stopping the service. The live database
+was not restored. Schema 21 became 22 with an initially empty activity table,
+all old business fields and settings revision 6 intact, and media, master,
+runtime/unit settings, and the original Emby reference process preserved. A
+new owned `30-observability.conf` drop-in provisions `/var/log/goby-test`, mode
+`0700`, UID 995. Current deployment is **M5i/schema 22/probe 6**, PID **3668655**,
+start ticks `26912384`; its manifest SHA-256 is
+`bf3902d5744fed5136296197f08c8e009ab4a2b496c00e19dea2eaa865dfa5af`.
+
+The [main-service workflow](m5i-deployed-observability.json) passed in **0.776
+seconds** with 17 GETs, two HEADs, three POSTs, two PUTs, one DELETE, no transport
+retries, and 20 read-only verifier SQL queries. One native and one ordinary
+Emby credential read both API projections. Native CAS changed the name and
+restored every original name/override/encoding value, advancing revision from
+6 to 8. Native HEAD/range and compatibility HEAD 404 were checked. Both logouts
+were independently confirmed by 401 responses; two revoked sessions, one
+device, and six activity entries remain as new history. Old rows remain exact
+apart from the acknowledged settings revision/timestamp advances. No main
+restart, media/planning, scan, task, or history-deletion operation was issued.
+Main-service rotation, retention deletion, and mid-download revocation are
+not claimed by this workflow; separate core/browser evidence covers its own
+recorded scenarios.
+
+The first [browser](m5i-observability-browser-attempt-1.json) and
+[deployment](m5i-deployment-attempt-1.json) failures remain retained. The browser
+instrumentation was corrected without changing production UI or Go code. The
+deployment attempt rejected a `.tar`/`.tar.gz` asset-name contract before
+service stop; the operator literal/fixture was corrected and all 33 pure guards
+passed again before the accepted deployment. The reference study below remains
+separate research, and M4, M5, M6, and the complete planned server remain open.
 
 ## User-device reference increment
 
@@ -193,7 +274,8 @@ This study preceded the accepted M5h adapter, whose supported field set remains 
 
 The [M5h width study](../research/encoding-width-reference.md) adds 61 records:
 12 setup HTTP records, two operator-cleanup HTTP records, 44 capture HTTP
-records, two output probes, and one audit. The corpus reaches 2366 from 2305.
+records, two output probes, and one audit. The corpus reached 2366 from 2305
+at that checkpoint.
 Using the same 4K source and software `libx264`, configured width 1280 produces
 1280x720 and zero produces 3840x2160. Both outputs contain eight frames and
 pass complete decoding. The [execution evidence](m5h-encoding-width-reference.json)
@@ -207,11 +289,50 @@ All owned producers are stopped, the capture credential is revoked with a
 Those preserved private failure files and derived cleanup reports are not
 additional sanitized corpus records.
 
+## Activity and diagnostic log reference increment
+
+The [M5i activity/log study](../research/observability-reference.md) adds 96
+safe records to the preceding 2366, bringing the reference corpus to **2462**.
+The groups are 15 setup records, 76 capture HTTP exchanges, one correspondence
+audit, and four independent operator-cleanup exchanges. This is **94 complete
+HTTP exchanges**, one initial connection-refused readiness record, and one
+audit; all 76 capture HTTP bodies are complete. The initial readiness failure
+is preserved as evidence rather than counted as a successful exchange.
+
+The [reference report](m5i-observability-reference.json) records the GET
+administrator/key permission matrix, viewer `ManageServer` denial, activity
+count anomalies, observed Lines paging/default-empty behavior, download
+framing, and administrator/anonymous log HEAD `404`. The newly created user's
+activity is tied to its actual acknowledged cause. All raw-byte/safe-export
+correspondence and cleanup checks pass, ordinary and application credentials
+are invalidated, and the owned process/data are removed. Earlier services,
+records, and 240 media sources remain preserved.
+
+This study does not establish the complete upstream sanitization algorithm,
+submicrosecond date rounding, retention/rotation execution, Range behavior,
+restart persistence, or client UI acceptance. Goby's
+[declared adapter boundaries](../api/observability.md#compatibility-surface)
+use fixed safe descriptions and error text, actual user identities, bounded
+queries, registered files, and always-sanitized snapshots. The separately
+reported product full suite, browser, and deployment acceptance have passed
+within their recorded scopes; they are not results of this reference study.
+
 ## Environment observations
 
 `test-env` is a Debian 13 Linux host. The earlier root-capacity pressure has been resolved: after the user expanded its virtual disk to 97 GiB, online `growpart` and `resize2fs` grew the root partition and ext4 filesystem. At the [2026-09-10 observation](test-env-disk-growth.json), root reported roughly 96G total and 60G available. Root identity/start and boot partitions were preserved; the original Emby PID 3131777 and main Goby PID 3535438 were unchanged. Go caches now use persistent root-disk storage under `/opt/goby-test/go-caches-m5h` through their original `/dev/shm` path symlinks; media scratch remains separate. No GPU device was present in the recorded `/dev/dri` and `/dev/nvidia0` inspection, so actual GPU execution remains unverified.
 
-The current deployed increment is [M5h configuration compatibility](verification-m5h-configuration.md). The service runs as unprivileged `goby` at `http://127.0.0.1:18096`: PID 3641418, UID 995, start ticks `26048863`, schema 21 through `0021_configuration_compatibility.sql`, and probe 6. The [deployment audit](m5h-deployment-evidence.json) binds executable SHA-256 `62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54`, 429 installed Go/module/SQL inputs and 50 current administrator assets. The migration retains all 28 tables and their old fields, including the managed row's revision 3 and timestamps; only the two new fields are backfilled. Old media, task history, server settings, vault, runtime and unit configuration remain preserved.
+The current M5i service runs as unprivileged `goby` at
+`http://127.0.0.1:18096`, PID 3668655, UID 995, start ticks `26912384`, schema
+22/probe 6. The [deployment evidence](m5i-deployment-evidence.json) binds 470
+installed Go/module/SQL inputs, the accepted executable, and 54 current assets.
+The complete backup at `/opt/goby-test/backups/m5i-20260910` was verified through
+an actual isolated 28-table restore before service stop. It records successful
+deployment and must not be restored over the newer accepted workflow state.
+These operations do not implement shipped product backup/restore.
+
+## Earlier M5h acceptance
+
+The preceding [M5h configuration compatibility](verification-m5h-configuration.md) service ran as unprivileged `goby` at `http://127.0.0.1:18096`: PID 3641418, UID 995, start ticks `26048863`, schema 21 through `0021_configuration_compatibility.sql`, and probe 6. Its [deployment audit](m5h-deployment-evidence.json) binds executable SHA-256 `62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54`, 429 installed Go/module/SQL inputs and 50 assets at that checkpoint. The migration retained all 28 tables and their old fields, including the managed row's revision 3 and timestamps; only the two new fields were backfilled. Old media, task history, server settings, vault, runtime and unit configuration were preserved.
 
 The complete private backup at `/opt/goby-test/backups/m5h-20260910` was verified before stop. A real import into an isolated database proved all 28 old tables exact, and that database was removed. The live database was not restored. Successful deployment evidence is published: this backup must never be restored over the newer accepted workflow state. These operational checks do not implement shipped product backup/restore.
 
@@ -241,6 +362,6 @@ The live workflow preserves old media, NFO, user, key, device, policy, metadata,
 
 The M5f deployment creates and verifies its backup before stopping the service, restores it into an isolated temporary database, confirms raw equality across the 21 pre-upgrade tables, and removes that temporary database. It does not restore the live database. The preceding [M5e interruption and SQL-generation limits](verification-m5e-devices.md) remain documented historically; these operational checks do not constitute a shipped product backup/restore workflow.
 
-The service uses an operator-provisioned private master under `GOBY_API_KEY_MASTER_KEY_FILE`, with UID 995, mode `0600`, 32 bytes, and a mode-0700 parent. [Application-key operations](application-keys.md) require preserving the database and matching master together; secret recovery is not a shipped backup/restore or rotation workflow. Earlier video restart, refresh, session, key, device and task increments remain in place. Broader ConfigurationService fields/sections, additional task executors, settings, providers, audit/log browsing, product backups, actual hardware execution, and full client acceptance remain open. This is a test deployment, not a public production release; M5g native settings and M5h bounded configuration compatibility are completed increments while M4, M5, M6, and the full goal remain unfinished.
+The service uses an operator-provisioned private master under `GOBY_API_KEY_MASTER_KEY_FILE`, with UID 995, mode `0600`, 32 bytes, and a mode-0700 parent. [Application-key operations](application-keys.md) require preserving the database and matching master together; secret recovery is not a shipped backup/restore or rotation workflow. Earlier video restart, refresh, session, key, device and task increments remain in place. Broader ConfigurationService fields/sections, additional task executors and settings, providers, product backups, actual hardware execution, and full client acceptance remain open. M5i activity/log APIs and administration have passed their declared product acceptance and are deployed. This is a test deployment, not a public production release; M5g native settings, M5h bounded configuration compatibility, and M5i activity/log administration are completed increments while M4, M5, M6, and the full goal remain unfinished.
 
 No milestone is complete solely because its build passes. Each implementation increment will append exact test/build results and its pushed revision here or in the corresponding verification report.

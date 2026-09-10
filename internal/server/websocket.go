@@ -49,6 +49,9 @@ func (s *Server) closeSockets(ctx context.Context) error {
 		if err := s.taskManager.Close(ctx); err != nil {
 			return err
 		}
+		if err := s.waitActivityRetention(ctx); err != nil {
+			return err
+		}
 		return s.library.Close(ctx)
 	}
 	runtime := s.sockets
@@ -64,6 +67,7 @@ func (s *Server) closeSockets(ctx context.Context) error {
 			runtime.wg.Wait()
 			s.originals.wait()
 			// Cleanup continues even if an individual Close caller times out.
+			_ = s.waitActivityRetention(context.Background())
 			runtime.shutdownErr = errors.Join(s.hls.Close(context.Background()), s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
 			close(runtime.done)
 		}()

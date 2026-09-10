@@ -1,0 +1,9 @@
+{
+  "stage": "M5i domain and native HTTP attempt 2",
+  "exit": 0,
+  "topLevel": {
+    "pass": 68
+  },
+  "failures": [],
+  "logSha256": "bd6e509700ac8ff0c2a147e101b7dcd9929f0ad18cd9420cd2db033924a1a0d7"
+}

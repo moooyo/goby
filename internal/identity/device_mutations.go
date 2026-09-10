@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 func lockDeviceRegistration(ctx context.Context, tx pgx.Tx, reported string) error {
@@ -104,6 +106,23 @@ func (s *Store) updateDeviceOptions(ctx context.Context, actor Principal, refere
 	result, err := readManagedDevice(ctx, tx, id)
 	if err != nil {
 		return ManagedDevice{}, err
+	}
+	if changed {
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return ManagedDevice{}, err
+		}
+		source := activity.SourceEmby
+		if native {
+			source = activity.SourceNative
+		}
+		if err := activity.Record(ctx, tx, activity.Event{
+			Action: activity.ActionDeviceUpdated, Source: source, Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceDevice, ID: strconv.FormatInt(id, 10)},
+			Revision: result.Revision, Count: 1, ChangedFields: []activity.Field{activity.FieldCustomName},
+		}); err != nil {
+			return ManagedDevice{}, err
+		}
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, native, nil); err != nil {
 		return ManagedDevice{}, err
@@ -252,6 +271,21 @@ func (s *Store) deleteDevice(ctx context.Context, actor Principal, reference dev
 					break
 				}
 			}
+		}
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return DeviceDeletion{}, err
+		}
+		source := activity.SourceEmby
+		if native {
+			source = activity.SourceNative
+		}
+		if err := activity.Record(ctx, tx, activity.Event{
+			Action: activity.ActionDeviceRemoved, Source: source, Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceDevice, ID: strconv.FormatInt(id, 10)},
+			Revision: currentRevision + 1, Count: result.RevokedLoginCount,
+		}); err != nil {
+			return DeviceDeletion{}, err
 		}
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, native, selfRevocation); err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 const (
@@ -194,6 +196,9 @@ func (s *Store) CreateApplicationKey(ctx context.Context, actor Principal, appNa
 		serverClient.Name, serverClient.DeviceID, serverClient.Device, serverClient.Version); err != nil {
 		return ApplicationKey{}, fmt.Errorf("create default application client: %w", err)
 	}
+	if err := recordApplicationKeyActivity(ctx, tx, actor, activity.ActionApplicationKeyCreated, result.ID); err != nil {
+		return ApplicationKey{}, err
+	}
 	if err := authorizeApplicationKeyActor(ctx, tx, actor, nil); err != nil {
 		return ApplicationKey{}, err
 	}
@@ -299,6 +304,11 @@ func (s *Store) ListApplicationKeys(ctx context.Context, actor Principal, filter
 			return ApplicationKeyPage{}, err
 		}
 		result.Items[index].Token = token
+		// The secret is prepared for this response; network delivery is not
+		// observable inside the transaction and is not an audited fact.
+		if err := recordApplicationKeyActivity(ctx, tx, actor, activity.ActionApplicationKeyRevealed, result.Items[index].ID); err != nil {
+			return ApplicationKeyPage{}, err
+		}
 	}
 	if err := authorizeApplicationKeyActor(ctx, tx, actor, nil); err != nil {
 		return ApplicationKeyPage{}, err
@@ -342,6 +352,10 @@ func (s *Store) GetApplicationKey(ctx context.Context, actor Principal, id int64
 		}
 		result.Token, err = s.applicationKeyVault.Open(ctx, result.CredentialID, ciphertext)
 		if err != nil {
+			return ApplicationKey{}, err
+		}
+		// This records successful preparation, not delivery to the caller.
+		if err := recordApplicationKeyActivity(ctx, tx, actor, activity.ActionApplicationKeyRevealed, result.ID); err != nil {
 			return ApplicationKey{}, err
 		}
 	}
@@ -390,9 +404,10 @@ func (s *Store) revokeApplicationKey(ctx context.Context, actor Principal, id in
 	}
 	defer rollback(tx)
 	var result ApplicationKeyRevocation
-	err = tx.QueryRow(ctx, `SELECT k.id, k.credential_id FROM application_keys k
+	var revokedAt *time.Time
+	err = tx.QueryRow(ctx, `SELECT k.id, k.credential_id, a.revoked_at FROM application_keys k
 		JOIN sessions a ON a.id = k.credential_id WHERE k.credential_id = $1 AND a.kind = 'application_key'`, credentialID).
-		Scan(&result.ID, &result.CredentialID)
+		Scan(&result.ID, &result.CredentialID, &revokedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if id > 0 {
 			return ApplicationKeyRevocation{}, ErrNotFound
@@ -408,9 +423,16 @@ func (s *Store) revokeApplicationKey(ctx context.Context, actor Principal, id in
 	if err != nil {
 		return ApplicationKeyRevocation{}, fmt.Errorf("read application key revocation: %w", err)
 	}
-	if err := tx.QueryRow(ctx, `UPDATE sessions SET revoked_at = COALESCE(revoked_at, clock_timestamp())
-		WHERE id = $1 RETURNING revoked_at`, result.CredentialID).Scan(&result.RevokedAt); err != nil {
-		return ApplicationKeyRevocation{}, fmt.Errorf("revoke application credential: %w", err)
+	if revokedAt == nil {
+		if err := tx.QueryRow(ctx, `UPDATE sessions SET revoked_at = clock_timestamp()
+			WHERE id = $1 AND revoked_at IS NULL RETURNING revoked_at`, result.CredentialID).Scan(&result.RevokedAt); err != nil {
+			return ApplicationKeyRevocation{}, fmt.Errorf("revoke application credential: %w", err)
+		}
+		if err := recordApplicationKeyActivity(ctx, tx, actor, activity.ActionApplicationKeyRevoked, result.ID); err != nil {
+			return ApplicationKeyRevocation{}, err
+		}
+	} else {
+		result.RevokedAt = *revokedAt
 	}
 	result.CurrentCredentialRevoked = result.CredentialID == actor.SessionID && actor.IsApplicationKey()
 	var expected *time.Time
@@ -424,6 +446,18 @@ func (s *Store) revokeApplicationKey(ctx context.Context, actor Principal, id in
 		return ApplicationKeyRevocation{}, fmt.Errorf("commit application key revocation: %w", err)
 	}
 	return result, nil
+}
+
+func recordApplicationKeyActivity(ctx context.Context, tx pgx.Tx, principal Principal, action activity.Action, id int64) error {
+	actor, err := identityActivityActor(principal)
+	if err != nil {
+		return err
+	}
+	return activity.Record(ctx, tx, activity.Event{
+		Action: action, Source: identityActivitySource(principal.Kind), Actor: actor,
+		Resource: activity.Resource{Kind: activity.ResourceApplicationKey, ID: strconv.FormatInt(id, 10)},
+		Count:    1,
+	})
 }
 
 func validApplicationKeyActor(actor Principal) bool {

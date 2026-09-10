@@ -49,8 +49,8 @@ func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxp
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 21 {
-		t.Fatalf("compatibility migration history count = %d, want 21: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 22 {
+		t.Fatalf("compatibility full migration history count = %d, want 22: %v", count, err)
 	}
 	return snapshot
 }
@@ -96,20 +96,26 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			}
 			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width")
 			sort.Strings(wantColumns)
+			currentTables := append(append([]string(nil), tables...), "activity_entries")
+			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
-					t.Fatalf("compatibility schema version = %d, want 21: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+					t.Fatalf("compatibility full migration schema version = %d, want 22: %v", version, err)
 				}
 				var name string
 				if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 21").Scan(&name); err != nil || name != "0021_configuration_compatibility.sql" {
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
 				}
-				if after := settingsMigrationTables(t, ctx, pool); strings.Join(after, " ") != strings.Join(tables, " ") {
-					t.Errorf("compatibility migration changed the historical table inventory: %v", after)
+				if after := settingsMigrationTables(t, ctx, pool); len(after) != 29 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
+					t.Errorf("current migration did not retain every historical table and add only activity entries: %v", after)
+				}
+				var activityCount int
+				if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {
+					t.Errorf("current migration backfilled historical state into activity entries: count=%d error=%v", activityCount, err)
 				}
 				if after := compatibilityMigrationManagedColumns(t, ctx, pool); strings.Join(after, " ") != strings.Join(wantColumns, " ") {
 					t.Errorf("compatibility migration did not add exactly its two columns: %v", after)

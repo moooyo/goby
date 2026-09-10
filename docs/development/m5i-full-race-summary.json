@@ -1,0 +1,98 @@
+{
+  "status": "passed",
+  "stage": "M5i full race attempt 1",
+  "goExitCode": 0,
+  "topLevelTests": {
+    "pass": 1380
+  },
+  "failedTests": [],
+  "packages": [
+    {
+      "Package": "github.com/moooyo/goby/cmd/goby",
+      "Action": "pass",
+      "Elapsed": 1.008
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/activity",
+      "Action": "pass",
+      "Elapsed": 1.734
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/artwork",
+      "Action": "pass",
+      "Elapsed": 2.187
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/config",
+      "Action": "pass",
+      "Elapsed": 1.035
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/diagnostics",
+      "Action": "pass",
+      "Elapsed": 1.467
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/events",
+      "Action": "pass",
+      "Elapsed": 1.2
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/database",
+      "Action": "pass",
+      "Elapsed": 4.225
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/library",
+      "Action": "pass",
+      "Elapsed": 44.779
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/media",
+      "Action": "pass",
+      "Elapsed": 5.374
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/metadata",
+      "Action": "pass",
+      "Elapsed": 1.5150000000000001
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/playback",
+      "Action": "pass",
+      "Elapsed": 1.231
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/identity",
+      "Action": "pass",
+      "Elapsed": 320.091
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/settings",
+      "Action": "pass",
+      "Elapsed": 16.914
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/subtitle",
+      "Action": "pass",
+      "Elapsed": 1.116
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Action": "pass",
+      "Elapsed": 34.323
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/transcode",
+      "Action": "pass",
+      "Elapsed": 59.466
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Action": "pass",
+      "Elapsed": 671.31
+    }
+  ],
+  "raceWarningPresent": false,
+  "logSha256": "decfdd6344bd8d16d0a06c88f1cc411497d9d6b22d9096b482211dbce9431b53"
+}

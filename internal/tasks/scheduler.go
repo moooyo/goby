@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/library"
 )
 
@@ -372,6 +373,10 @@ func admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger
 		}
 		if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, runID, children.RowsAffected()); err != nil {
 			return fmt.Errorf("record scheduled task child count: %w", err)
+		}
+		if err := recordTaskActivity(tx, nil, activity.ActionTaskAdmitted, runID,
+			trigger.ScheduleRevision, children.RowsAffected(), ""); err != nil {
+			return err
 		}
 		if _, err := refreshRun(tx, runID); err != nil {
 			return err

@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
 )
 
@@ -73,22 +74,7 @@ func authorizeMetadataActor(ctx context.Context, tx pgx.Tx, actor identity.Princ
 // Managed account changes take the same account-before-session order, so an
 // already authenticated but subsequently revoked caller cannot commit an edit.
 func lockMetadataActor(ctx context.Context, tx pgx.Tx, actor identity.Principal) error {
-	var id string
-	for _, statement := range []string{
-		`SELECT id FROM users WHERE id = $1 FOR SHARE`,
-		`SELECT id FROM sessions WHERE user_id = $1 AND id = $2 FOR SHARE`,
-	} {
-		args := []any{actor.User.ID}
-		if strings.Contains(statement, "$2") {
-			args = append(args, actor.SessionID)
-		}
-		if err := tx.QueryRow(ctx, statement, args...).Scan(&id); errors.Is(err, pgx.ErrNoRows) {
-			return ErrForbidden
-		} else if err != nil {
-			return fmt.Errorf("lock metadata administrator: %w", err)
-		}
-	}
-	return authorizeMetadataActor(ctx, tx, actor)
+	return (&catalogAdministrator{actor: actor, audience: identity.AdministratorNative}).check(ctx, tx, true)
 }
 
 func editableMetadataFields(itemType string) []string {
@@ -276,6 +262,10 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 	if err != nil {
 		return ItemMetadataDetail{}, err
 	}
+	administrator := &catalogAdministrator{actor: actor, audience: identity.AdministratorNative}
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return ItemMetadataDetail{}, err
+	}
 	previousOverrides, err := metadataSourceObject(record.overrides)
 	if err != nil {
 		return ItemMetadataDetail{}, err
@@ -340,11 +330,20 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		if err := applyEffectiveMetadata(ctx, tx, itemID, effective, projection); err != nil {
 			return ItemMetadataDetail{}, err
 		}
+		fields, err := metadataActivityFields(previousOverrides, edit.Overrides, previousLocks, locked)
+		if err != nil {
+			return ItemMetadataDetail{}, err
+		}
+		event := administrator.event(activity.ActionMetadataUpdated, activity.Resource{Kind: activity.ResourceItem, ID: itemID})
+		event.Revision, event.ChangedFields = record.revision, fields
+		if err := activity.RecordOwned(catalogActivityTx{tx: tx}, event); err != nil {
+			return ItemMetadataDetail{}, err
+		}
 		record.overrides, record.locked = overridesJSON, lockedJSON
 		record.lastEditedBy, record.name = actor.User.ID, effective.Name
 	}
 	// Session expiry is clock-based and can pass while waiting for catalog rows.
-	if err := authorizeMetadataActor(ctx, tx, actor); err != nil {
+	if err := administrator.check(ctx, tx, false); err != nil {
 		return ItemMetadataDetail{}, err
 	}
 	detail, err := metadataDetail(record)

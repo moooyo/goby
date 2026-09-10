@@ -279,8 +279,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
-		t.Fatalf("metadata migration version = %d, want 21, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+		t.Fatalf("metadata migration version = %d, want 22, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -293,6 +293,10 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		var taskLinkedScans int
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM scan_jobs WHERE task_child_id IS NOT NULL").Scan(&taskLinkedScans); err != nil || taskLinkedScans != 0 {
 			t.Errorf("metadata migration attached historical scans to task children: count=%d error=%v", taskLinkedScans, err)
+		}
+		var activityCount int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {
+			t.Errorf("metadata migration backfilled historical state into activity entries: count=%d error=%v", activityCount, err)
 		}
 	}
 	assertOldTables()
@@ -337,7 +341,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	}
 	sort.Strings(additions)
 	taskTables := []string{"task_definitions", "task_occurrences", "task_run_children", "task_run_requests", "task_runs", "task_triggers"}
-	expectedAdditions := append([]string{"application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state", "managed_settings"}, taskTables...)
+	expectedAdditions := append([]string{"activity_entries", "application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state", "managed_settings"}, taskTables...)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/moooyo/goby/internal/activity"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -124,6 +125,17 @@ func (s *Store) CreateManagedUser(ctx context.Context, actor Principal, name, pa
 	if err != nil {
 		return User{}, fmt.Errorf("create managed user: %w", err)
 	}
+	auditActor, err := identityActivityActor(actor)
+	if err != nil {
+		return User{}, err
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionUserCreated, Source: activity.SourceNative, Actor: auditActor,
+		Resource: activity.Resource{Kind: activity.ResourceUser, ID: user.ID}, Revision: 1, Count: 1,
+		ChangedFields: []activity.Field{activity.FieldName, activity.FieldIsAdministrator},
+	}); err != nil {
+		return User{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return User{}, fmt.Errorf("commit managed user creation: %w", err)
 	}
@@ -187,6 +199,17 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 			return ManagedUserMutation{}, err
 		}
 	}
+	auditActor, err := identityActivityActor(actor)
+	if err != nil {
+		return ManagedUserMutation{}, err
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionUserUpdated, Source: activity.SourceNative, Actor: auditActor,
+		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: updated.Revision, Count: 1,
+		ChangedFields: managedUserActivityFields(current, updated),
+	}); err != nil {
+		return ManagedUserMutation{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("commit managed user update: %w", err)
 	}
@@ -234,6 +257,16 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	}
 	revoked, err := revokeManagedUserSessions(ctx, tx, actor, id, true)
 	if err != nil {
+		return ManagedUserMutation{}, err
+	}
+	auditActor, err := identityActivityActor(actor)
+	if err != nil {
+		return ManagedUserMutation{}, err
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionUserPasswordReset, Source: activity.SourceNative, Actor: auditActor,
+		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: updated.Revision, Count: 1,
+	}); err != nil {
 		return ManagedUserMutation{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

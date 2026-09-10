@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -18,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/activity"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -174,6 +176,15 @@ func (s *Store) Bootstrap(ctx context.Context, name, password string) (User, err
 		ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`); err != nil {
 		return User{}, fmt.Errorf("complete initialization: %w", err)
 	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionUserCreated, Source: activity.SourceNative,
+		Actor:    activity.Actor{Kind: activity.ActorSystem},
+		Resource: activity.Resource{Kind: activity.ResourceUser, ID: user.ID},
+		Revision: 1, Count: 1,
+		ChangedFields: []activity.Field{activity.FieldName, activity.FieldIsAdministrator},
+	}); err != nil {
+		return User{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return User{}, fmt.Errorf("commit initialization: %w", err)
 	}
@@ -264,15 +275,50 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 	return principal, nil
 }
 
-// Revoke invalidates a token. Revoking an unknown token is intentionally idempotent.
+// Revoke invalidates a token. Unknown and previously revoked tokens are
+// intentionally idempotent. The existing token-only API also permits retiring
+// an expired credential; it does not authorize any other administrative action.
 func (s *Store) Revoke(ctx context.Context, token string) error {
 	digest, ok := tokenDigest(token)
 	if !ok {
 		return nil
 	}
-	if _, err := s.pool.Exec(ctx, `UPDATE sessions SET revoked_at = now()
-		WHERE token_hash = $1 AND revoked_at IS NULL`, digest[:]); err != nil {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin authentication revocation: %w", err)
+	}
+	defer rollback(tx)
+	var sessionID, kind string
+	var userID *string
+	err = tx.QueryRow(ctx, `UPDATE sessions SET revoked_at = clock_timestamp()
+		WHERE token_hash = $1 AND revoked_at IS NULL RETURNING id, user_id, kind`, digest[:]).
+		Scan(&sessionID, &userID, &kind)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
 		return fmt.Errorf("revoke authentication session: %w", err)
+	}
+	event := activity.Event{Action: activity.ActionSessionRevoked, Source: identityActivitySource(kind),
+		Resource: activity.Resource{Kind: activity.ResourceSession, ID: sessionID}, Count: 1}
+	if kind == ApplicationKeyKind && userID == nil {
+		var keyID int64
+		if err := tx.QueryRow(ctx, "SELECT id FROM application_keys WHERE credential_id = $1", sessionID).Scan(&keyID); err != nil {
+			return fmt.Errorf("identify revoked application credential: %w", err)
+		}
+		event.Actor = activity.Actor{Kind: activity.ActorApplicationKey, ID: strconv.FormatInt(keyID, 10), CredentialID: sessionID}
+		event.Action = activity.ActionApplicationKeyRevoked
+		event.Resource = activity.Resource{Kind: activity.ResourceApplicationKey, ID: event.Actor.ID}
+	} else if (kind == "admin" || kind == "emby") && userID != nil {
+		event.Actor = activity.Actor{Kind: activity.ActorUser, ID: *userID, CredentialID: sessionID}
+	} else {
+		return ErrUnauthorized
+	}
+	if err := activity.Record(ctx, tx, event); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit authentication revocation: %w", err)
 	}
 	return nil
 }
@@ -325,7 +371,9 @@ func (s *Store) GetUser(ctx context.Context, id string) (User, error) {
 	return user, nil
 }
 
-// CreateUser creates an account. Callers must enforce their own authorization.
+// CreateUser is an unaudited fixture helper retained for integration tests.
+// Production account creation must use Bootstrap or CreateManagedUser, which
+// establish the actor and record the committed change in the same transaction.
 func (s *Store) CreateUser(ctx context.Context, name, password string, isAdmin bool) (User, error) {
 	name, normalized, err := normalizeName(name)
 	if err != nil {

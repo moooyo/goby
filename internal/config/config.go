@@ -9,26 +9,30 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/moooyo/goby/internal/diagnostics"
 )
 
 const GoVersion = "1.27.1"
 const FFmpegVersion = "9.0.1"
 
 type Config struct {
-	ListenAddress       string
-	DatabaseURL         string
-	PublicURL           string
-	ServerName          string
-	SetupToken          string
-	CookieSecure        bool
-	WebDirectory        string
-	FFmpegPath          string
-	FFprobePath         string
-	TrustedProxies      []netip.Prefix
-	MediaRoots          []string
-	StartupTimeout      time.Duration
-	APIKeyMasterKeyFile string
-	Transcoding         TranscodingConfig
+	ListenAddress         string
+	DatabaseURL           string
+	PublicURL             string
+	ServerName            string
+	SetupToken            string
+	CookieSecure          bool
+	WebDirectory          string
+	FFmpegPath            string
+	FFprobePath           string
+	TrustedProxies        []netip.Prefix
+	MediaRoots            []string
+	StartupTimeout        time.Duration
+	APIKeyMasterKeyFile   string
+	Transcoding           TranscodingConfig
+	Diagnostics           diagnostics.Config
+	ActivityRetentionDays int
 }
 
 func Load() (Config, error) {
@@ -68,6 +72,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	c.Diagnostics, c.ActivityRetentionDays, err = loadObservability()
+	if err != nil {
+		return Config{}, err
+	}
 	if err := c.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -100,6 +108,9 @@ func (c Config) Validate() error {
 	if strings.ContainsRune(c.APIKeyMasterKeyFile, '\x00') || len(c.APIKeyMasterKeyFile) > 4096 ||
 		(c.APIKeyMasterKeyFile != "" && (strings.TrimSpace(c.APIKeyMasterKeyFile) == "" || filepath.Base(c.APIKeyMasterKeyFile) == "." || filepath.Base(c.APIKeyMasterKeyFile) == string(filepath.Separator))) {
 		return fmt.Errorf("GOBY_API_KEY_MASTER_KEY_FILE must name a bounded persistent key file")
+	}
+	if err := validateObservability(c.Diagnostics.WithDefaults(), c.ActivityRetentionDays); err != nil {
+		return err
 	}
 	return c.Transcoding.Validate()
 }

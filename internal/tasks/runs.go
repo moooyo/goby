@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 )
@@ -111,6 +112,10 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			}
 			if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, id, children.RowsAffected()); err != nil {
 				return fmt.Errorf("record task child count: %w", err)
+			}
+			if err := recordTaskActivity(tx, &actor, activity.ActionTaskAdmitted, id,
+				definition.Revision, children.RowsAffected(), ""); err != nil {
+				return err
 			}
 			run, err := refreshRun(tx, id)
 			if err != nil {
@@ -237,6 +242,14 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 			return Run{}, err
 		}
 	}
+	var cancellationCount int64
+	if run.State != RunStopping {
+		counts, err := totals(tx, run.ID)
+		if err != nil {
+			return Run{}, err
+		}
+		cancellationCount = counts.total - counts.terminal
+	}
 	if _, err := tx.Exec(`UPDATE task_runs SET state = 'stopping',
 		stop_requested_at = COALESCE(stop_requested_at, clock_timestamp()),
 		stop_reason = CASE WHEN stop_requested_at IS NULL THEN $2 ELSE stop_reason END
@@ -258,10 +271,23 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 		WHERE run_id = $1 AND state = 'waiting'`, run.ID, childState, childCode, childMessage); err != nil {
 		return Run{}, fmt.Errorf("cancel unadmitted task children: %w", err)
 	}
+	scanIDs, err := taskScanCancellationIDs(tx, run.ID)
+	if err != nil {
+		return Run{}, fmt.Errorf("read owned scan cancellation transitions: %w", err)
+	}
 	if _, err := tx.Exec(`UPDATE scan_jobs j SET cancel_requested = true
 		FROM task_run_children c WHERE c.run_id = $1 AND c.scan_job_id = j.id
 			AND j.task_child_id = c.id AND j.status IN ('Queued','Running')`, run.ID); err != nil {
 		return Run{}, fmt.Errorf("persist owned scan cancellation: %w", err)
+	}
+	if run.State != RunStopping {
+		if err := recordTaskActivity(tx, actor, activity.ActionTaskCancelRequested, run.ID,
+			0, cancellationCount, ""); err != nil {
+			return Run{}, err
+		}
+	}
+	if err := recordTaskScanCancellations(tx, scanIDs); err != nil {
+		return Run{}, err
 	}
 	return refreshRun(tx, run.ID)
 }
@@ -380,7 +406,7 @@ func refreshRun(tx library.OwnedTx, runID string) (Run, error) {
 }
 
 func persistTotals(tx library.OwnedTx, runID string, state RunState, code, message string, counts childTotals) (Run, error) {
-	_, err := tx.Exec(`UPDATE task_runs SET state = $2, error_code = $3, error_message = $4,
+	updated, err := tx.Exec(`UPDATE task_runs SET state = $2, error_code = $3, error_message = $4,
         total_children = $5, terminal_children = $6, completed_children = $7,
         failed_children = $8, cancelled_children = $9, interrupted_children = $10,
         unavailable_children = $11, scanned = $12, added = $13, updated = $14,
@@ -393,7 +419,21 @@ func persistTotals(tx library.OwnedTx, runID string, state RunState, code, messa
 	if err != nil {
 		return Run{}, fmt.Errorf("persist task aggregate: %w", err)
 	}
-	return readRun(tx, runID, false)
+	run, err := readRun(tx, runID, false)
+	if err != nil {
+		return Run{}, err
+	}
+	if updated.RowsAffected() > 0 && !state.Active() {
+		var revision int64
+		if run.TriggerRevision != nil {
+			revision = *run.TriggerRevision
+		}
+		if err := recordTaskActivity(tx, nil, activity.ActionTaskFinished, runID,
+			revision, run.TerminalChildren, activity.State(run.State)); err != nil {
+			return Run{}, err
+		}
+	}
+	return run, nil
 }
 
 // RecoverRuns runs only after scanner startup recovery and before scheduling.

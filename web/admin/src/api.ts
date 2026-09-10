@@ -299,6 +299,72 @@ export interface OverviewResponse {
   };
 }
 
+export const activityActions = [
+  "user.created", "user.updated", "user.password_reset", "session.login", "session.revoked",
+  "application_key.created", "application_key.revealed", "application_key.revoked", "device.updated", "device.removed",
+  "library.created", "library.removed", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated",
+  "settings.updated", "task.admitted", "task.cancel_requested", "task.finished", "task.schedule_updated",
+] as const;
+export const activitySeverities = ["Info", "Debug", "Warn", "Error", "Fatal"] as const;
+export type ActivityAction = typeof activityActions[number];
+export type ActivitySeverity = typeof activitySeverities[number];
+export type ActivityResourceKind = "user" | "session" | "application_key" | "device" | "library" | "scan" | "item" | "settings" | "task" | "task_run";
+
+export interface ActivityEntry {
+  Id: string;
+  Date: string;
+  Action: ActivityAction;
+  Severity: ActivitySeverity;
+  Source: "native" | "emby" | "system";
+  Actor: { Kind: "user" | "application_key" | "system"; Id: string | null; Name: string | null };
+  Resource: { Kind: ActivityResourceKind; Id: string };
+  Revision: string | null;
+  Count: string;
+  State: "completed" | "failed" | "cancelled" | "interrupted" | null;
+  ChangedFields: string[];
+  Name: string;
+  Overview: string;
+}
+
+export interface ObservabilityPageQuery { StartIndex?: number; Limit?: number }
+export interface ActivityQuery extends ObservabilityPageQuery {
+  MinDate?: string;
+  Severity?: ActivitySeverity;
+  Action?: ActivityAction;
+  ActorId?: string;
+}
+export interface ActivityResponse {
+  Items: ActivityEntry[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+  RetentionDays: number;
+}
+export interface ServerLogFile { Name: string; DateCreated: string; DateModified: string; Size: string }
+export interface ServerLogsResponse {
+  Items: ServerLogFile[];
+  TotalRecordCount: number;
+  StartIndex: number;
+  Limit: number;
+  Status: {
+    Healthy: boolean;
+    Degraded: boolean;
+    Closed: boolean;
+    MaxFileBytes: string;
+    MaxFiles: number;
+    RetentionDays: number;
+    MinFreeBytes: string;
+    Format: "jsonl";
+  };
+}
+export interface ServerLogLinesResponse {
+  Items: string[];
+  StartIndex: number;
+  NextIndex: number;
+  TotalRecordCount: number;
+  SnapshotSize: string;
+}
+
 export interface UsersResponse {
   Items: User[];
   TotalRecordCount: number;
@@ -1132,6 +1198,43 @@ function validateSettings(value: ServerSettings): void {
   if (typeof width !== "number" || !Number.isSafeInteger(width) || width < 0 || width > 8192) throw invalidResponse();
 }
 
+function validObservabilityDecimal(value: unknown, positive = false): value is string {
+  return typeof value === "string" && (positive ? /^[1-9]\d*$/ : /^(0|[1-9]\d*)$/).test(value);
+}
+
+function validLogName(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value !== "." && value !== ".."
+    && !/[\\/\u0000-\u001f\u007f]/u.test(value);
+}
+
+function validActivityEntry(value: unknown): value is ActivityEntry {
+  if (!isRecord(value) || !validObservabilityDecimal(value.Id, true) || !validSessionTimestamp(value.Date)
+    || typeof value.Action !== "string" || !(activityActions as readonly string[]).includes(value.Action)
+    || typeof value.Severity !== "string" || !(activitySeverities as readonly string[]).includes(value.Severity)
+    || !["native", "emby", "system"].includes(value.Source as string)
+    || !isRecord(value.Actor) || !["user", "application_key", "system"].includes(value.Actor.Kind as string)
+    || (value.Actor.Id !== null && !nonemptyString(value.Actor.Id))
+    || (value.Actor.Name !== null && typeof value.Actor.Name !== "string")
+    || !isRecord(value.Resource) || !nonemptyString(value.Resource.Id)
+    || !["user", "session", "application_key", "device", "library", "scan", "item", "settings", "task", "task_run"].includes(value.Resource.Kind as string)
+    || (value.Revision !== null && !validObservabilityDecimal(value.Revision, true))
+    || !validObservabilityDecimal(value.Count)
+    || (value.State !== null && !["completed", "failed", "cancelled", "interrupted"].includes(value.State as string))
+    || !Array.isArray(value.ChangedFields) || !value.ChangedFields.every((field) => typeof field === "string")
+    || typeof value.Name !== "string" || typeof value.Overview !== "string") return false;
+  return Object.keys(value).every((field) => ["Id", "Date", "Action", "Severity", "Source", "Actor", "Resource", "Revision", "Count", "State", "ChangedFields", "Name", "Overview"].includes(field))
+    && Object.keys(value.Actor).every((field) => ["Kind", "Id", "Name"].includes(field))
+    && Object.keys(value.Resource).every((field) => ["Kind", "Id"].includes(field));
+}
+
+function validateObservabilityPage(value: { Items: unknown[]; TotalRecordCount: number; StartIndex: number; Limit: number }, query: ObservabilityPageQuery): void {
+  const startIndex = query.StartIndex ?? 0;
+  const limit = query.Limit ?? 50;
+  if (!Array.isArray(value.Items) || !validTaskCount(value.TotalRecordCount)
+    || value.StartIndex !== startIndex || value.Limit !== limit
+    || value.Items.length !== Math.min(limit, Math.max(0, value.TotalRecordCount - startIndex))) throw invalidResponse();
+}
+
 export const adminApi = {
   getBootstrap(options: RequestOptions = {}): Promise<BootstrapResponse> {
     return request("/bootstrap", { ...options, public: true });
@@ -1165,6 +1268,64 @@ export const adminApi = {
 
   getOverview(options: RequestOptions = {}): Promise<OverviewResponse> {
     return request("/overview", options);
+  },
+
+  async getActivity(query: ActivityQuery = {}, options: RequestOptions = {}): Promise<ActivityResponse> {
+    const revision = sessionRevision;
+    const parameters = taskPageParameters(query);
+    for (const field of ["MinDate", "Severity", "Action", "ActorId"] as const) {
+      const value = query[field];
+      if (value) parameters.set(field, value);
+    }
+    const result = await request<ActivityResponse>(`/activity?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateObservabilityPage(result, query);
+    if (!validTaskCount(result.RetentionDays) || !result.Items.every(validActivityEntry)
+      || new Set(result.Items.map((item) => item.Id)).size !== result.Items.length
+      || !Object.keys(result).every((field) => ["Items", "TotalRecordCount", "StartIndex", "Limit", "RetentionDays"].includes(field))) throw invalidResponse();
+    return result;
+  },
+
+  async getServerLogs(query: ObservabilityPageQuery = {}, options: RequestOptions = {}): Promise<ServerLogsResponse> {
+    const revision = sessionRevision;
+    const result = await request<ServerLogsResponse>(`/logs?${taskPageParameters(query)}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateObservabilityPage(result, query);
+    const status = result.Status;
+    if (!isRecord(status) || ![status.Healthy, status.Degraded, status.Closed].every((value) => typeof value === "boolean")
+      || !validObservabilityDecimal(status.MaxFileBytes, true) || !validObservabilityDecimal(status.MinFreeBytes)
+      || !validTaskCount(status.MaxFiles) || status.MaxFiles < 1 || !validTaskCount(status.RetentionDays) || status.Format !== "jsonl"
+      || !Object.keys(status).every((field) => ["Healthy", "Degraded", "Closed", "MaxFileBytes", "MaxFiles", "RetentionDays", "MinFreeBytes", "Format"].includes(field))
+      || !Object.keys(result).every((field) => ["Items", "TotalRecordCount", "StartIndex", "Limit", "Status"].includes(field))) throw invalidResponse();
+    const names = new Set<string>();
+    for (const file of result.Items) {
+      if (!isRecord(file) || !validLogName(file.Name) || names.has(file.Name)
+        || !validSessionTimestamp(file.DateCreated) || !validSessionTimestamp(file.DateModified) || !validObservabilityDecimal(file.Size)
+        || !Object.keys(file).every((field) => ["Name", "DateCreated", "DateModified", "Size"].includes(field))) throw invalidResponse();
+      names.add(file.Name);
+    }
+    return result;
+  },
+
+  async getServerLogLines(name: string, query: ObservabilityPageQuery = {}, options: RequestOptions = {}): Promise<ServerLogLinesResponse> {
+    const revision = sessionRevision;
+    if (!validLogName(name)) throw new ApiError("The log filename is invalid. Refresh the file list.", { code: "invalid_log_name" });
+    const startIndex = query.StartIndex ?? 0;
+    const limit = query.Limit ?? 200;
+    const parameters = new URLSearchParams({ StartIndex: String(startIndex), Limit: String(limit) });
+    const result = await request<ServerLogLinesResponse>(`/logs/${encodeURIComponent(name)}/lines?${parameters}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!Array.isArray(result.Items) || !result.Items.every((line) => typeof line === "string")
+      || !validTaskCount(result.TotalRecordCount) || result.StartIndex !== startIndex
+      || result.Items.length > limit || result.Items.length > Math.max(0, result.TotalRecordCount - startIndex)
+      || result.NextIndex !== startIndex + result.Items.length || !validObservabilityDecimal(result.SnapshotSize)
+      || !Object.keys(result).every((field) => ["Items", "StartIndex", "NextIndex", "TotalRecordCount", "SnapshotSize"].includes(field))) throw invalidResponse();
+    return result;
+  },
+
+  serverLogDownloadURL(name: string): string {
+    if (!validLogName(name)) throw new ApiError("The log filename is invalid. Refresh the file list.", { code: "invalid_log_name" });
+    return `${API_ROOT}/logs/${encodeURIComponent(name)}/download`;
   },
 
   async getSettings(options: RequestOptions = {}): Promise<ServerSettings> {

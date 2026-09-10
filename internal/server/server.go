@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/config"
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/events"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -21,28 +22,39 @@ import (
 )
 
 type Server struct {
-	cfg           config.Config
-	db            *pgxpool.Pool
-	identity      *identity.Store
-	log           *slog.Logger
-	version       string
-	serverID      string
-	limiter       *loginLimiter
-	library       *library.Store
-	images        *imageCache
-	streamSlots   chan struct{}
-	originals     *originalStreamRuntime
-	subtitleSlots chan struct{}
-	eventHub      *events.Hub
-	sockets       *socketRuntime
-	notifier      *userDataNotifier
-	hls           *hlsRuntime
-	taskStore     *tasks.Store
-	taskManager   *tasks.Manager
-	settings      *settings.Store
+	cfg            config.Config
+	db             *pgxpool.Pool
+	identity       *identity.Store
+	log            *slog.Logger
+	version        string
+	serverID       string
+	limiter        *loginLimiter
+	library        *library.Store
+	images         *imageCache
+	streamSlots    chan struct{}
+	originals      *originalStreamRuntime
+	subtitleSlots  chan struct{}
+	eventHub       *events.Hub
+	sockets        *socketRuntime
+	notifier       *userDataNotifier
+	hls            *hlsRuntime
+	taskStore      *tasks.Store
+	taskManager    *tasks.Manager
+	settings       *settings.Store
+	diagnostics    *diagnostics.Store
+	activityCancel context.CancelFunc
+	activityDone   chan struct{}
 }
 
-func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string) (*Server, error) {
+// Option attaches dependencies whose lifetime is owned by the process entry
+// point. Direct repository fixtures need not open a diagnostic directory.
+type Option func(*Server)
+
+func WithDiagnostics(store *diagnostics.Store) Option {
+	return func(server *Server) { server.diagnostics = store }
+}
+
+func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identity.Store, logger *slog.Logger, version string, options ...Option) (*Server, error) {
 	id, err := users.ServerID(ctx)
 	if err != nil {
 		return nil, err
@@ -61,6 +73,11 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	for _, option := range options {
+		if option != nil {
+			option(app)
+		}
+	}
 	app.originals = newOriginalStreamRuntime()
 	app.hls, err = newHLSRuntime(ctx, app)
 	if err != nil {
@@ -79,6 +96,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		_ = app.Close(context.Background())
 		return nil, err
 	}
+	app.startActivityRetention()
 	return app, nil
 }
 
@@ -128,6 +146,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.cancelActivityRetention()
 	return s.closeSockets(ctx)
 }
 
@@ -150,6 +169,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminTaskRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
 	s.registerConfigurationRoutes(mux)
+	s.registerObservabilityRoutes(mux)
 	s.registerScheduledTaskRoutes(mux)
 	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)
@@ -206,6 +226,9 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		requestID := hex.EncodeToString(id)
 		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
 		r = r.WithContext(ctx)
+		response, completeRequest := s.beginRequestLogging(w, r)
+		w = response
+		defer completeRequest()
 		w.Header().Set("X-Request-Id", requestID)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "same-origin")
@@ -216,6 +239,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		}
 		defer func() {
 			if recovered := recover(); recovered != nil {
+				response.markAborted()
 				if recovered == http.ErrAbortHandler {
 					panic(recovered)
 				}
@@ -244,6 +268,10 @@ func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.taskManager != nil && !s.taskManager.Available() {
 		apiError(w, r, 503, "tasks_not_ready", "The task scheduler is not ready.")
+		return
+	}
+	if s.diagnostics != nil && !s.diagnostics.Status().Healthy {
+		apiError(w, r, 503, "diagnostics_not_ready", "Diagnostic storage is unavailable. Check the service logs and configured storage.")
 		return
 	}
 	jsonResponse(w, 200, map[string]string{"Status": "ready"})

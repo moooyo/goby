@@ -60,6 +60,7 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 		if definition.Key != LibraryScanKey {
 			return ErrUnavailable
 		}
+		changed := changedTaskScheduleFields(definition, request.ScheduleTimezone)
 		var now time.Time
 		if err := tx.QueryRow(`SELECT clock_timestamp()`).Scan(&now); err != nil {
 			return fmt.Errorf("read trigger replacement clock: %w", err)
@@ -115,6 +116,9 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 			}
 		}
 		if err := decodeRow(tx.QueryRow(`SELECT `+definitionProjection+` FROM task_definitions d WHERE id = $1`, definition.ID), &result); err != nil {
+			return err
+		}
+		if err := recordTaskScheduleActivity(tx, actor, result, changed); err != nil {
 			return err
 		}
 		return checkActor(tx, actor, false)
