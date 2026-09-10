@@ -31,8 +31,9 @@ func settingsSource(overridden bool) string {
 
 func settingsDTO(snapshot settings.Snapshot, deployment config.TranscodingConfig) map[string]any {
 	return map[string]any{
-		"Revision": strconv.FormatInt(snapshot.Revision, 10),
-		"Defaults": settingsValuesDTO(snapshot.Defaults),
+		"Revision":       strconv.FormatInt(snapshot.Revision, 10),
+		"ServerNameMode": string(snapshot.ServerNameMode),
+		"Defaults":       settingsValuesDTO(snapshot.Defaults),
 		"Overrides": map[string]any{
 			"ServerName":       settingsOverrideValue(snapshot.Overrides.ServerName),
 			"MaxBitrate":       settingsOverrideValue(snapshot.Overrides.MaxBitrate),
@@ -42,14 +43,16 @@ func settingsDTO(snapshot settings.Snapshot, deployment config.TranscodingConfig
 		},
 		"Effective": settingsValuesDTO(snapshot.Effective),
 		"Sources": map[string]any{
-			"ServerName":       settingsSource(snapshot.Overrides.ServerName != nil),
+			"ServerName":       settingsSource(snapshot.ServerNameMode != settings.ServerNameDeployment),
 			"MaxBitrate":       settingsSource(snapshot.Overrides.MaxBitrate != nil),
 			"MaxWidth":         settingsSource(snapshot.Overrides.MaxWidth != nil),
 			"MaxHeight":        settingsSource(snapshot.Overrides.MaxHeight != nil),
 			"MaxAudioChannels": settingsSource(snapshot.Overrides.MaxAudioChannels != nil),
 		},
+		"Encoding":  map[string]any{"TranscodingMaxWidth": snapshot.Encoding.TranscodingMaxWidth},
 		"UpdatedAt": snapshot.UpdatedAt.UTC(),
 		"Deployment": map[string]any{
+			"HostName":           snapshot.HostName,
 			"TranscodingEnabled": deployment.Enabled,
 			"HardwareDecoder":    deployment.Hardware.Decode,
 			"HardwareEncoder":    deployment.Hardware.Encode,

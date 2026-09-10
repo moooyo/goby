@@ -1,6 +1,6 @@
 # Emby 4.9.5.0 Reference Fixtures
 
-This directory contains 2305 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
+This directory contains 2366 audited JSON records from official, isolated Emby Server 4.9.5.0 instances on the authorized Linux `test-env` host. The earliest 107 comprise 65 initial baseline files, 24 `artwork-*` files covering local NFO metadata/images, and 18 `entity-*` files covering entity navigation and filtering. Later playback, subtitle, WebSocket, HLS, audio/video, metadata, key/device, ScheduledTasks, and configuration studies extend that baseline. These records include supporting observations and audits; they are not endpoint counts or evidence that Goby passes every captured contract. Earlier JSON fixtures are unchanged by each extension.
 
 See [reference-server.md](../../../../../docs/research/reference-server.md) for the official package URL/hash, setup, network isolation, source fixtures, observations, and limitations. The recorder is [reference-capture.py](../../../../../scripts/test-env/reference-capture.py).
 
@@ -155,7 +155,7 @@ native product acceptance is recorded separately from this capture.
 
 The [fresh configuration write study](../../../../../docs/research/configuration-mutation-reference.md)
 adds **254 records**: 17 setup observations and 237 controlled-capture records,
-bringing the corpus to **2305**. The controlled capture contains 236 complete
+bringing the corpus to **2305** at that checkpoint. The controlled capture contains 236 complete
 HTTP exchanges and one [audit](configuration-fresh-m5g-audit.json), with no
 incomplete replies. Full baseline-clone name updates, partial flat updates,
 array replacement, empty/null names, a mixed invalid partial body, named
@@ -178,4 +178,30 @@ all evidence remains. The passing
 and [37 recorder guards](../../../../../docs/development/m5g-fresh-configuration-recorder-tests.json)
 are derived reports, not additional corpus records. The separately accepted
 [native settings increment](../../../../../docs/development/verification-m5g-settings.md)
-does not implement the Emby configuration adapter.
+was completed before the later bounded
+[M5h adapter](../../../../../docs/development/verification-m5h-configuration.md).
+
+The [M5h encoding-width study](../../../../../docs/research/encoding-width-reference.md)
+adds **61 records**, bringing the corpus from 2305 to **2366**: twelve setup HTTP
+records, two operator-cleanup HTTP records, 44 capture HTTP records, two output
+probes, and one audit. These retain their separate setup, cleanup, capture,
+probe, and audit meanings.
+
+The same owned 4K source produces 1280x720 at global
+`TranscodingMaxWidth: 1280` and 3840x2160 at zero. Both outputs contain eight
+frames and pass complete decoding; actual commands prove software `libx264`.
+This supports zero removing the extra width cap in that sampled reference flow.
+It does not show that zero removes every other limit, that every client behaves
+the same way, or that hardware encoding was used. The
+[execution summary](../../../../../docs/development/m5h-encoding-width-reference.json)
+binds source/output hashes and the completed checks.
+
+Fresh fixture 02 is stopped, with its exact data and source paths removed.
+Owned producers are stopped, the complete original encoding configuration is
+restored, and the capture credential ends with independently observed `401`.
+All preceding 2305 records, 240 original media paths, and 39 private files from
+the failed first fixture remain preserved. Those private failure files and
+derived reports do not increase the corpus count. Goby's five accepted
+[configuration routes](../../../../../docs/api/configuration.md) support only
+the name, read-only setup state and encoding width; these captures do not
+establish complete 60/17-field configuration or all-client compatibility.

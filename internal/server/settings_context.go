@@ -13,14 +13,16 @@ type settingsSnapshotContextKey struct{}
 // A request carries only committed effective values and their revision. The
 // override pointers and deployment configuration never enter this snapshot.
 type requestSettingsSnapshot struct {
-	Revision  int64
-	Effective settings.Values
+	Revision            int64
+	Effective           settings.Values
+	TranscodingMaxWidth int
 }
 
 func (s *Server) currentSettingsSnapshot() requestSettingsSnapshot {
 	if s.settings != nil {
 		snapshot := s.settings.Snapshot()
-		return requestSettingsSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective}
+		return requestSettingsSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective,
+			TranscodingMaxWidth: snapshot.Encoding.TranscodingMaxWidth}
 	}
 	// Direct handler fixtures may have no settings store. Production startup
 	// initializes the store before its request handler is exposed.
@@ -49,13 +51,17 @@ func (s *Server) requestSettings(r *http.Request) requestSettingsSnapshot {
 }
 
 // New planning receives a private copy of startup execution configuration with
-// just the four effective output limits replaced. Existing plans retain their
-// concrete dimensions, codecs, bitrates, and execution settings.
+// the native output limits and an optional additional configuration ceiling.
+// Removing that additional ceiling cannot relax the native server policy.
+// Existing plans retain their concrete output and execution settings.
 func (s *Server) requestPlanningConfig(r *http.Request) config.TranscodingConfig {
 	snapshot := s.requestSettings(r)
 	planning := s.cfg.Transcoding
 	planning.MaxBitrate = snapshot.Effective.MaxBitrate
 	planning.MaxWidth = snapshot.Effective.MaxWidth
+	if snapshot.TranscodingMaxWidth > 0 && snapshot.TranscodingMaxWidth < planning.MaxWidth {
+		planning.MaxWidth = snapshot.TranscodingMaxWidth
+	}
 	planning.MaxHeight = snapshot.Effective.MaxHeight
 	planning.MaxAudioChannels = snapshot.Effective.MaxAudioChannels
 	return planning

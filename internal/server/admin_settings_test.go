@@ -34,6 +34,10 @@ func adminSettingsUpdateBodyForTest(field, raw string) string {
 	return strings.Replace(adminSettingsNullUpdateForTest, `"`+field+`":null`, `"`+field+`":`+raw, 1)
 }
 
+func adminSettingsExtendedUpdateBodyForTest(extra string) string {
+	return strings.TrimSuffix(adminSettingsNullUpdateForTest, "}") + "," + extra + "}"
+}
+
 func assertAdminSettingsInputError(t *testing.T, response *httptest.ResponseRecorder, status int, field string) {
 	t.Helper()
 	if response.Code != status {
@@ -61,7 +65,7 @@ func assertAdminSettingsInputError(t *testing.T, response *httptest.ResponseReco
 	}
 	for key := range body.Error.Fields {
 		switch key {
-		case "Body", "Query", "Revision", "Overrides", "Fields", "Overrides.ServerName", "Overrides.MaxBitrate", "Overrides.MaxWidth", "Overrides.MaxHeight", "Overrides.MaxAudioChannels":
+		case "Body", "Query", "Revision", "Overrides", "Fields", "Overrides.ServerName", "Overrides.MaxBitrate", "Overrides.MaxWidth", "Overrides.MaxHeight", "Overrides.MaxAudioChannels", "ServerNameMode", "Encoding", "Encoding.TranscodingMaxWidth":
 		default:
 			t.Fatal("native settings error used a request-controlled field name")
 		}
@@ -104,10 +108,12 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 	for _, revision := range []int64{1, 9007199254740993, math.MaxInt64} {
 		for _, explicit := range []bool{false, true} {
 			t.Run(strconv.FormatInt(revision, 10)+"/explicit="+strconv.FormatBool(explicit), func(t *testing.T) {
-				snapshot := settings.Snapshot{Revision: revision, Defaults: defaults, Effective: defaults, UpdatedAt: stamp}
+				snapshot := settings.Snapshot{Revision: revision, Defaults: defaults, Effective: defaults, UpdatedAt: stamp,
+					ServerNameMode: "deployment", HostName: "fixture-host"}
 				overrides := map[string]any{"ServerName": nil, "MaxBitrate": nil, "MaxWidth": nil, "MaxHeight": nil, "MaxAudioChannels": nil}
 				source := "deployment"
 				if explicit {
+					snapshot.ServerNameMode = "custom"
 					snapshot.Overrides = settings.Overrides{
 						ServerName: &defaults.ServerName, MaxBitrate: &defaults.MaxBitrate,
 						MaxWidth: &defaults.MaxWidth, MaxHeight: &defaults.MaxHeight, MaxAudioChannels: &defaults.MaxAudioChannels,
@@ -124,13 +130,15 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 					t.Fatal(err)
 				}
 				want := map[string]any{
-					"Revision":   strconv.FormatInt(revision, 10),
-					"Defaults":   map[string]any{"ServerName": "Deployment Server", "MaxBitrate": float64(20_000_000), "MaxWidth": float64(1920), "MaxHeight": float64(1080), "MaxAudioChannels": float64(8)},
-					"Overrides":  overrides,
-					"Effective":  map[string]any{"ServerName": "Deployment Server", "MaxBitrate": float64(20_000_000), "MaxWidth": float64(1920), "MaxHeight": float64(1080), "MaxAudioChannels": float64(8)},
-					"Sources":    map[string]any{"ServerName": source, "MaxBitrate": source, "MaxWidth": source, "MaxHeight": source, "MaxAudioChannels": source},
-					"UpdatedAt":  "2026-09-10T04:13:14.123456789Z",
-					"Deployment": map[string]any{"TranscodingEnabled": true, "HardwareDecoder": "vaapi", "HardwareEncoder": "qsv", "Threads": float64(3), "MaxJobs": float64(4), "MaxUserJobs": float64(2), "MaxSessionJobs": float64(1)},
+					"Revision":       strconv.FormatInt(revision, 10),
+					"ServerNameMode": string(snapshot.ServerNameMode),
+					"Defaults":       map[string]any{"ServerName": "Deployment Server", "MaxBitrate": float64(20_000_000), "MaxWidth": float64(1920), "MaxHeight": float64(1080), "MaxAudioChannels": float64(8)},
+					"Overrides":      overrides,
+					"Effective":      map[string]any{"ServerName": "Deployment Server", "MaxBitrate": float64(20_000_000), "MaxWidth": float64(1920), "MaxHeight": float64(1080), "MaxAudioChannels": float64(8)},
+					"Sources":        map[string]any{"ServerName": source, "MaxBitrate": source, "MaxWidth": source, "MaxHeight": source, "MaxAudioChannels": source},
+					"Encoding":       map[string]any{"TranscodingMaxWidth": float64(0)},
+					"UpdatedAt":      "2026-09-10T04:13:14.123456789Z",
+					"Deployment":     map[string]any{"HostName": "fixture-host", "TranscodingEnabled": true, "HardwareDecoder": "vaapi", "HardwareEncoder": "qsv", "Threads": float64(3), "MaxJobs": float64(4), "MaxUserJobs": float64(2), "MaxSessionJobs": float64(1)},
 				}
 				if !reflect.DeepEqual(got, want) {
 					t.Fatal("settings DTO changed its exact safe fields, value types, null overrides, explicit sources, revision precision, or UTC timestamp")
@@ -149,6 +157,7 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 func TestSettingsDTOCopiesAllOverrideValuesAndKeepsMixedSources(t *testing.T) {
 	name, bitrate, width, height, channels := "Database Server", int64(12_000_000), 1280, 720, 2
 	snapshot := settings.Snapshot{
+		ServerNameMode: "custom", HostName: "fixture-host", Encoding: settings.Encoding{TranscodingMaxWidth: 3840},
 		Defaults:  settings.Values{ServerName: "Deployment Server", MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8},
 		Overrides: settings.Overrides{ServerName: &name, MaxBitrate: &bitrate, MaxWidth: &width, MaxHeight: &height, MaxAudioChannels: &channels},
 		Effective: settings.Values{ServerName: name, MaxBitrate: bitrate, MaxWidth: width, MaxHeight: height, MaxAudioChannels: channels},
@@ -162,6 +171,10 @@ func TestSettingsDTOCopiesAllOverrideValuesAndKeepsMixedSources(t *testing.T) {
 	if !reflect.DeepEqual(got["Overrides"], want) || !reflect.DeepEqual(got["Effective"], want) {
 		t.Fatal("settings DTO retained mutable override pointers")
 	}
+	snapshot.Encoding.TranscodingMaxWidth = 0
+	if !reflect.DeepEqual(got["Encoding"], map[string]any{"TranscodingMaxWidth": 3840}) {
+		t.Fatal("settings DTO retained mutable encoding values or substituted an output planning limit")
+	}
 	got["Defaults"].(map[string]any)["ServerName"] = "Response Mutation"
 	if snapshot.Defaults.ServerName != "Deployment Server" {
 		t.Fatal("settings DTO retained mutable default values")
@@ -170,7 +183,64 @@ func TestSettingsDTOCopiesAllOverrideValuesAndKeepsMixedSources(t *testing.T) {
 	mixed := settingsDTO(snapshot, config.TranscodingConfig{})
 	wantSources := map[string]any{"ServerName": "database", "MaxBitrate": "deployment", "MaxWidth": "database", "MaxHeight": "deployment", "MaxAudioChannels": "database"}
 	if !reflect.DeepEqual(mixed["Sources"], wantSources) {
-		t.Fatal("settings DTO inferred a source from effective equality instead of each override pointer")
+		t.Fatal("settings DTO changed explicit name provenance or inferred numeric sources from effective equality")
+	}
+}
+
+func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
+	custom, empty := "Custom Server", ""
+	defaults := settings.Values{ServerName: "Deployment Server", MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8}
+	for _, test := range []struct {
+		mode      settings.ServerNameMode
+		override  *string
+		effective string
+		source    string
+	}{
+		{"deployment", nil, "Deployment Server", "deployment"},
+		{"custom", &custom, "Custom Server", "database"},
+		{"empty", &empty, "fixture-host", "database"},
+		{"unset", nil, "fixture-host", "database"},
+	} {
+		for _, width := range []int{0, 1, 8192} {
+			t.Run(string(test.mode)+"/encoding="+strconv.Itoa(width), func(t *testing.T) {
+				effective := defaults
+				effective.ServerName = test.effective
+				snapshot := settings.Snapshot{
+					Revision: 7, Defaults: defaults, Overrides: settings.Overrides{ServerName: test.override}, Effective: effective,
+					ServerNameMode: test.mode, HostName: "fixture-host", Encoding: settings.Encoding{TranscodingMaxWidth: width},
+				}
+				encoded, err := json.Marshal(settingsDTO(snapshot, config.TranscodingConfig{MaxWidth: 4096}))
+				if err != nil {
+					t.Fatal(err)
+				}
+				var got map[string]any
+				if err := json.Unmarshal(encoded, &got); err != nil {
+					t.Fatal(err)
+				}
+				var wantOverride any
+				if test.override != nil {
+					wantOverride = *test.override
+				}
+				overrides := got["Overrides"].(map[string]any)
+				sources := got["Sources"].(map[string]any)
+				deployment := got["Deployment"].(map[string]any)
+				if len(got) != 9 || got["ServerNameMode"] != string(test.mode) || overrides["ServerName"] != wantOverride ||
+					got["Defaults"].(map[string]any)["ServerName"] != defaults.ServerName ||
+					got["Effective"].(map[string]any)["ServerName"] != test.effective || sources["ServerName"] != test.source {
+					t.Fatal("settings DTO collapsed distinct name modes, nullable overrides, or hostname fallback")
+				}
+				if len(deployment) != 8 || deployment["HostName"] != "fixture-host" ||
+					!reflect.DeepEqual(got["Encoding"], map[string]any{"TranscodingMaxWidth": float64(width)}) ||
+					got["Effective"].(map[string]any)["MaxWidth"] != float64(1920) {
+					t.Fatal("settings DTO omitted the hostname or mixed independent encoding with output planning width")
+				}
+				for _, field := range []string{"MaxBitrate", "MaxWidth", "MaxHeight", "MaxAudioChannels"} {
+					if overrides[field] != nil || sources[field] != "deployment" {
+						t.Fatal("name mode or encoding changed numeric override provenance")
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -186,8 +256,8 @@ func TestDecodeAdminSettingsPreservesCanonicalRevisionPrecision(t *testing.T) {
 					var request settings.UpdateRequest
 					request, ok = decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json"))
 					got = request.Revision
-					if !reflect.DeepEqual(request.Overrides, settings.Overrides{}) {
-						t.Fatal("null overrides did not remain nil")
+					if !reflect.DeepEqual(request.Overrides, settings.Overrides{}) || request.NameMode != nil || request.Encoding != nil {
+						t.Fatal("legacy null overrides or omitted optional settings did not remain nil")
 					}
 				} else {
 					var request settings.ResetRequest
@@ -281,6 +351,107 @@ func TestDecodeAdminSettingsPreservesServerNameForSharedDomainValidation(t *test
 	}
 }
 
+func TestDecodeAdminSettingsPreservesOptionalNameModesForDomainValidation(t *testing.T) {
+	for _, mode := range []string{"deployment", "custom", "empty", "unset"} {
+		for _, rawName := range []string{`null`, `""`, `"Original Name"`} {
+			body := strings.TrimSuffix(adminSettingsUpdateBodyForTest("ServerName", rawName), "}") + `,"ServerNameMode":"` + mode + `"}`
+			response := httptest.NewRecorder()
+			request, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json"))
+			var wantName *string
+			if err := json.Unmarshal([]byte(rawName), &wantName); err != nil {
+				t.Fatal(err)
+			}
+			if !ok || request.NameMode == nil || string(*request.NameMode) != mode || request.Encoding != nil ||
+				!reflect.DeepEqual(request.Overrides.ServerName, wantName) || response.Body.Len() != 0 {
+				t.Fatal("settings parser changed an explicit mode/name combination instead of leaving combined validation to the domain")
+			}
+		}
+	}
+	for _, raw := range []string{`null`, `true`, `false`, `1`, `[]`, `{}`, `""`, `"Deployment"`, `"CUSTOM"`, `"hostname"`, `"default"`, `"unset "`, `" private-marker"`} {
+		response := httptest.NewRecorder()
+		body := adminSettingsExtendedUpdateBodyForTest(`"ServerNameMode":` + raw)
+		if _, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json")); ok {
+			t.Fatal("settings parser accepted an unsupported or nonstring name mode")
+		}
+		assertAdminSettingsInputError(t, response, http.StatusBadRequest, "ServerNameMode")
+	}
+}
+
+func TestDecodeAdminSettingsDistinguishesOmittedEncodingFromExplicitZero(t *testing.T) {
+	for _, raw := range []string{"0", "1", "8192", " \t4096\r\n "} {
+		response := httptest.NewRecorder()
+		body := adminSettingsExtendedUpdateBodyForTest(`"Encoding":{"TranscodingMaxWidth":` + raw + `}`)
+		request, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json"))
+		if !ok || request.Encoding == nil || request.NameMode != nil ||
+			strconv.Itoa(request.Encoding.TranscodingMaxWidth) != strings.TrimSpace(raw) ||
+			!reflect.DeepEqual(request.Overrides, settings.Overrides{}) || response.Body.Len() != 0 {
+			t.Fatal("settings parser lost an explicit encoding value or inferred an absent name mode")
+		}
+	}
+	response := httptest.NewRecorder()
+	request, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(adminSettingsNullUpdateForTest, "application/json"))
+	if !ok || request.Encoding != nil || request.NameMode != nil || response.Body.Len() != 0 {
+		t.Fatal("legacy settings update synthesized optional fields instead of preserving omission")
+	}
+	body := `{"Encoding":{"\u0054ranscodingMaxWidth":0},"\u0053erverNameMode":"\u0065mpty","Overrides":{"MaxWidth":null,"ServerName":"","MaxBitrate":null,"MaxAudioChannels":null,"MaxHeight":null},"Revision":"1"}`
+	response = httptest.NewRecorder()
+	request, ok = decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json"))
+	if !ok || request.Encoding == nil || request.Encoding.TranscodingMaxWidth != 0 || request.NameMode == nil || *request.NameMode != "empty" ||
+		request.Overrides.ServerName == nil || *request.Overrides.ServerName != "" || response.Body.Len() != 0 {
+		t.Fatal("settings parser rejected combined optional fields, reordered keys, or escaped canonical names")
+	}
+}
+
+func TestDecodeAdminSettingsEncodingRequiresOneBoundedInteger(t *testing.T) {
+	for _, raw := range []string{"-1", "+1", "01", "8193", "1000000000", "9223372036854775807", "0.0", "1.0", "0e0", "1e0", "1E3", `"0"`, `"private-marker"`, "true", "false", "null", "[]", "{}"} {
+		response := httptest.NewRecorder()
+		body := adminSettingsExtendedUpdateBodyForTest(`"Encoding":{"TranscodingMaxWidth":` + raw + `}`)
+		if _, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json")); ok {
+			t.Fatal("settings parser accepted an invalid encoding integer or a value outside zero through 8192")
+		}
+		assertAdminSettingsInputError(t, response, http.StatusBadRequest, "")
+	}
+	for _, raw := range []string{
+		`null`, `{}`, `[]`, `true`, `1`, `"private-marker"`,
+		`{"transcodingMaxWidth":1}`, `{"MaxWidth":1}`, `{"TranscodingMaxWidth":1,"HostName":"private-marker"}`,
+		`{"TranscodingMaxWidth":1,"TranscodingMaxWidth":1}`, `{"TranscodingMaxWidth":1,"\u0054ranscodingMaxWidth":1}`,
+	} {
+		response := httptest.NewRecorder()
+		body := adminSettingsExtendedUpdateBodyForTest(`"Encoding":` + raw)
+		if _, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json")); ok {
+			t.Fatal("settings parser accepted an incomplete, duplicate, or unsupported encoding object")
+		}
+		assertAdminSettingsInputError(t, response, http.StatusBadRequest, "")
+	}
+}
+
+func TestDecodeAdminSettingsOptionalFieldsRetainExactLosslessObjectContract(t *testing.T) {
+	for _, extra := range []string{
+		`"serverNameMode":"custom"`, `"encoding":{"TranscodingMaxWidth":1}`, `"HostName":"private-marker"`,
+		`"ServerNameMode":"custom","ServerNameMode":"empty"`, `"ServerNameMode":"custom","\u0053erverNameMode":"empty"`,
+		`"Encoding":{"TranscodingMaxWidth":1},"Encoding":{"TranscodingMaxWidth":2}`,
+		`"Encoding":{"TranscodingMaxWidth":1},"\u0045ncoding":{"TranscodingMaxWidth":2}`,
+		`"ServerNameMode":"\ud800"`, `"Encoding":{"\ud800":1}`, "\"ServerNameMode\":\"\xff\"",
+	} {
+		response := httptest.NewRecorder()
+		if _, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(adminSettingsExtendedUpdateBodyForTest(extra), "application/json")); ok {
+			t.Fatal("settings parser accepted a private, duplicate, mis-cased, or lossy optional field")
+		}
+		assertAdminSettingsInputError(t, response, http.StatusBadRequest, "")
+	}
+	for _, body := range []string{
+		`{"Revision":"1","ServerNameMode":"deployment","Encoding":{"TranscodingMaxWidth":0}}`,
+		strings.Replace(adminSettingsExtendedUpdateBodyForTest(`"Encoding":{"TranscodingMaxWidth":0}`), `"Revision":"1",`, "", 1),
+		strings.Replace(adminSettingsExtendedUpdateBodyForTest(`"ServerNameMode":"unset"`), `"MaxWidth":null,`, "", 1),
+	} {
+		response := httptest.NewRecorder()
+		if _, ok := decodeAdminSettingsUpdate(response, adminSettingsRequestForTest(body, "application/json")); ok {
+			t.Fatal("optional settings fields bypassed the complete legacy revision and override requirements")
+		}
+		assertAdminSettingsInputError(t, response, http.StatusBadRequest, "")
+	}
+}
+
 func TestDecodeAdminSettingsUpdateRequiresExactCompleteObjects(t *testing.T) {
 	for _, field := range []string{"ServerName", "MaxBitrate", "MaxWidth", "MaxHeight", "MaxAudioChannels"} {
 		missing := strings.Replace(adminSettingsNullUpdateForTest, `"`+field+`":null,`, "", 1)
@@ -324,18 +495,25 @@ func TestDecodeAdminSettingsUpdateRequiresExactCompleteObjects(t *testing.T) {
 }
 
 func TestDecodeAdminSettingsResetRequiresUniqueSupportedFields(t *testing.T) {
-	valid := `{"Fields":["MaxAudioChannels","MaxHeight","\u004daxWidth","MaxBitrate","ServerName"],"Revision":"1"}`
+	valid := `{"Fields":["TranscodingMaxWidth","MaxAudioChannels","MaxHeight","\u004daxWidth","MaxBitrate","ServerName"],"Revision":"1"}`
 	response := httptest.NewRecorder()
 	request, ok := decodeAdminSettingsReset(response, adminSettingsRequestForTest(valid, "application/json"))
-	want := []settings.Field{settings.FieldMaxAudioChannels, settings.FieldMaxHeight, settings.FieldMaxWidth, settings.FieldMaxBitrate, settings.FieldServerName}
+	want := []settings.Field{settings.FieldTranscodingMaxWidth, settings.FieldMaxAudioChannels, settings.FieldMaxHeight, settings.FieldMaxWidth, settings.FieldMaxBitrate, settings.FieldServerName}
 	if !ok || request.Revision != 1 || !reflect.DeepEqual(request.Fields, want) || response.Body.Len() != 0 {
 		t.Fatal("settings reset changed a valid selection or its order")
 	}
+	response = httptest.NewRecorder()
+	request, ok = decodeAdminSettingsReset(response, adminSettingsRequestForTest(`{"Revision":"1","Fields":["TranscodingMaxWidth"]}`, "application/json"))
+	if !ok || !reflect.DeepEqual(request.Fields, []settings.Field{settings.FieldTranscodingMaxWidth}) || response.Body.Len() != 0 {
+		t.Fatal("settings reset rejected its independent encoding field")
+	}
 	for _, fields := range []string{
 		`null`, `[]`, `{}`, `"ServerName"`, `true`, `1`, `[null]`, `[true]`, `[1]`, `[{}]`, `[[]]`,
-		`[""]`, `["servername"]`, `["private-marker"]`, `["Deployment"]`, `["ServerName "]`,
+		`[""]`, `["servername"]`, `["private-marker"]`, `["Deployment"]`, `["ServerName "]`, `["ServerNameMode"]`, `["HostName"]`, `["Encoding"]`, `["transcodingMaxWidth"]`,
 		`["ServerName","ServerName"]`, `["ServerName","\u0053erverName"]`,
+		`["TranscodingMaxWidth","\u0054ranscodingMaxWidth"]`,
 		`["ServerName","MaxBitrate","MaxWidth","MaxHeight","MaxAudioChannels","ServerName"]`,
+		`["ServerName","MaxBitrate","MaxWidth","MaxHeight","MaxAudioChannels","TranscodingMaxWidth","ServerName"]`,
 	} {
 		response := httptest.NewRecorder()
 		if _, ok := decodeAdminSettingsReset(response, adminSettingsRequestForTest(`{"Revision":"1","Fields":`+fields+`}`, "application/json")); ok {

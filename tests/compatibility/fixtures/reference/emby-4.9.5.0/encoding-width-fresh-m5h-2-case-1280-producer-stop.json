@@ -1,0 +1,73 @@
+{
+  "request": {
+    "method": "DELETE",
+    "path": "/emby/Videos/ActiveEncodings?DeviceId=[REDACTED_QUERY]&PlaySessionId=[REDACTED_QUERY]",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "widthExperiment": 1280,
+    "approvedMutationKind": "encoder-stop"
+  },
+  "response": {
+    "status": 204,
+    "reason": "No Content",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:56:31 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "bodyExportable": true,
+    "wireBytes": 0,
+    "transportFailure": null,
+    "acknowledgementFailure": null,
+    "privateWireSha256": "72512b2172d37c06e3fa7f11500f59a22777b05070461e120490899de4d96606"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:31.242129+00:00"
+  }
+}

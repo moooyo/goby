@@ -1,0 +1,90 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/System/Info/Public",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "widthExperiment": 1280,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "reason": "OK",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Content-Length",
+        "159"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:56:29 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "LocalAddresses": [],
+      "RemoteAddresses": [],
+      "ServerName": "Goby Encoding Width Fresh M5h 20260910 02",
+      "Version": "4.9.5.0",
+      "Id": "61dea10d3f974dc784be57226a8daf62"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "bodyExportable": true,
+    "wireBytes": 159,
+    "transportFailure": null,
+    "acknowledgementFailure": null,
+    "privateWireSha256": "ea220602eece039c181f23f90619dbbdc5bdbf71f67b6d03f878cda73e6613e5"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:29.893581+00:00"
+  }
+}

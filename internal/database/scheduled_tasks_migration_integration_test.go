@@ -121,9 +121,10 @@ func scheduledTasksAssertEmptyTables(t *testing.T, ctx context.Context, pool *pg
 	var settingsCount int
 	var defaultSettings bool
 	if err := pool.QueryRow(ctx, `SELECT count(*),bool_and(id=1 AND revision=1 AND server_name IS NULL
+		AND server_name_mode='deployment' AND compatibility_max_width=0
 		AND max_bitrate IS NULL AND max_width IS NULL AND max_height IS NULL AND max_audio_channels IS NULL)
 		FROM managed_settings`).Scan(&settingsCount, &defaultSettings); err != nil || settingsCount != 1 || !defaultSettings {
-		t.Errorf("current migration did not retain one settings singleton without overrides: count=%d error=%v", settingsCount, err)
+		t.Errorf("current migration did not retain one settings singleton with deployment compatibility defaults and no overrides: count=%d error=%v", settingsCount, err)
 	}
 	var count, linked int
 	if err := pool.QueryRow(ctx, "SELECT count(*), count(task_child_id) FROM scan_jobs").Scan(&count, &linked); err != nil || count != 4 || linked != 0 {
@@ -151,8 +152,8 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 		if err := database.Migrate(ctx, pool); err != nil {
 			t.Fatalf("scheduled-task migration attempt %d: %v", attempt, err)
 		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
-			t.Fatalf("scheduled-task full migration schema = %d, want 20: %v", version, err)
+		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
+			t.Fatalf("scheduled-task full migration schema = %d, want 21: %v", version, err)
 		}
 		var name string
 		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 19").Scan(&name); err != nil || name != "0019_scheduled_tasks.sql" {

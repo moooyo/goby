@@ -75,7 +75,11 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	case "System":
 		literal(1, "Info", "Ping", "Configuration")
-		literal(2, "Public")
+		if len(parts) > 1 && parts[1] == "Configuration" {
+			literal(2, "Partial")
+		} else {
+			literal(2, "Public")
+		}
 	case "Users":
 		literal(1, "Public", "Query", "New", "AuthenticateByName")
 		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "Password", "Policy", "Configuration")

@@ -1,15 +1,20 @@
-import type { ServerSettings, SettingsField, SettingsOverrides, SettingsValues } from './api';
+import type { ServerNameMode, ServerSettings, SettingsField, SettingsOverrides, SettingsResetField, SettingsUpdateInput, SettingsValues } from './api';
 
 export const settingsFields: readonly SettingsField[] = [
   'ServerName', 'MaxBitrate', 'MaxWidth', 'MaxHeight', 'MaxAudioChannels',
 ];
 
-export const settingLabels: Record<SettingsField, string> = {
+export type OutputSettingField = Exclude<SettingsField, 'ServerName'>;
+export const outputSettingsFields: readonly OutputSettingField[] = ['MaxBitrate', 'MaxWidth', 'MaxHeight', 'MaxAudioChannels'];
+export const settingsResetFields: readonly SettingsResetField[] = [...settingsFields, 'TranscodingMaxWidth'];
+
+export const settingLabels: Record<SettingsResetField, string> = {
   ServerName: 'Server name',
   MaxBitrate: 'Maximum bitrate',
   MaxWidth: 'Maximum width',
   MaxHeight: 'Maximum height',
   MaxAudioChannels: 'Maximum audio channels',
+  TranscodingMaxWidth: 'Additional video width limit',
 };
 
 export interface SettingDraft {
@@ -17,8 +22,17 @@ export interface SettingDraft {
   value: string;
 }
 
-export type SettingsDraft = Record<SettingsField, SettingDraft>;
-type SettingsDraftErrors = Partial<Record<SettingsField, string>>;
+export interface ServerNameDraft {
+  mode: ServerNameMode;
+  value: string;
+}
+
+export type SettingsDraft = Record<OutputSettingField, SettingDraft> & {
+  ServerName: ServerNameDraft;
+  TranscodingMaxWidth: string;
+};
+type SettingsDraftErrors = Partial<Record<SettingsResetField, string>>;
+type SettingsDraftInput = Omit<SettingsUpdateInput, 'Revision'>;
 
 const maxNumericInputLength = 64;
 const bitsPerMegabit = 1_000_000n;
@@ -53,11 +67,15 @@ function fieldDraft(field: SettingsField, defaults: SettingsValues, overrides: S
 export function draftFromSettings(value: ServerSettings): SettingsDraft {
   const create = (field: SettingsField): SettingDraft => fieldDraft(field, value.Defaults, value.Overrides);
   return {
-    ServerName: create('ServerName'),
+    // Preserve the saved host-name representation until the administrator
+    // explicitly changes the name choice. Editing another field must not
+    // silently replace an unset name with an empty name or a deployment name.
+    ServerName: { mode: value.ServerNameMode, value: value.Effective.ServerName },
     MaxBitrate: create('MaxBitrate'),
     MaxWidth: create('MaxWidth'),
     MaxHeight: create('MaxHeight'),
     MaxAudioChannels: create('MaxAudioChannels'),
+    TranscodingMaxWidth: String(value.Encoding.TranscodingMaxWidth),
   };
 }
 
@@ -72,15 +90,15 @@ function parseMbps(raw: string): number | undefined {
   return bits >= 1n && bits <= maximumBitrate ? Number(bits) : undefined;
 }
 
-function parseWholeNumber(raw: string, maximum: number): number | undefined {
+function parseWholeNumber(raw: string, maximum: number, minimum = 1): number | undefined {
   if (raw.length > maxNumericInputLength) return undefined;
   const text = raw.trim();
   if (!/^\d+$/.test(text)) return undefined;
   const value = Number(text);
-  return Number.isSafeInteger(value) && value >= 1 && value <= maximum ? value : undefined;
+  return Number.isSafeInteger(value) && value >= minimum && value <= maximum ? value : undefined;
 }
 
-function parseDraft(draft: SettingsDraft): { overrides: SettingsOverrides; errors: SettingsDraftErrors } {
+function parseDraft(draft: SettingsDraft): { input: SettingsDraftInput; errors: SettingsDraftErrors } {
   const overrides: SettingsOverrides = {
     ServerName: null,
     MaxBitrate: null,
@@ -89,19 +107,19 @@ function parseDraft(draft: SettingsDraft): { overrides: SettingsOverrides; error
     MaxAudioChannels: null,
   };
   const errors: SettingsDraftErrors = {};
-  for (const field of settingsFields) {
+  const name = draft.ServerName;
+  if (name.mode === 'custom') {
+    // Go strings.TrimSpace follows Unicode White_Space. Preserve the input
+    // itself, including allowed surrounding whitespace, in the saved value.
+    if (!/[^\p{White_Space}]/u.test(name.value)) errors.ServerName = 'Enter a server name.';
+    else if (name.value.includes('\0')) errors.ServerName = 'Server name cannot contain null characters.';
+    else if (/[\uD800-\uDFFF]/u.test(name.value)) errors.ServerName = 'Use valid Unicode text.';
+    else if (new TextEncoder().encode(name.value).length > 128) errors.ServerName = 'Use at most 128 UTF-8 bytes.';
+    else overrides.ServerName = name.value;
+  } else if (name.mode === 'empty') overrides.ServerName = '';
+  for (const field of outputSettingsFields) {
     const entry = draft[field];
     if (!entry.override) continue;
-    if (field === 'ServerName') {
-      // Go strings.TrimSpace follows Unicode White_Space. Preserve the input
-      // itself, including allowed surrounding whitespace, in the saved value.
-      if (!/[^\p{White_Space}]/u.test(entry.value)) errors[field] = 'Enter a server name.';
-      else if (entry.value.includes('\0')) errors[field] = 'Server name cannot contain null characters.';
-      else if (/[\uD800-\uDFFF]/u.test(entry.value)) errors[field] = 'Use valid Unicode text.';
-      else if (new TextEncoder().encode(entry.value).length > 128) errors[field] = 'Use at most 128 UTF-8 bytes.';
-      else overrides.ServerName = entry.value;
-      continue;
-    }
     const maximum = field === 'MaxAudioChannels' ? 8 : 8192;
     const value = field === 'MaxBitrate' ? parseMbps(entry.value) : parseWholeNumber(entry.value, maximum);
     if (value === undefined) {
@@ -112,25 +130,32 @@ function parseDraft(draft: SettingsDraft): { overrides: SettingsOverrides; error
       overrides[field] = value;
     }
   }
-  return { overrides, errors };
+  const additionalWidth = parseWholeNumber(draft.TranscodingMaxWidth, 8192, 0);
+  if (additionalWidth === undefined) errors.TranscodingMaxWidth = 'Enter a whole number from 0 to 8192.';
+  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 } }, errors };
 }
 
 export function parseSettingsDraft(draft: SettingsDraft): {
-  overrides: SettingsOverrides | undefined;
-  errors: Partial<Record<SettingsField, string>>;
+  input: SettingsDraftInput | undefined;
+  errors: SettingsDraftErrors;
 } {
-  const { overrides, errors } = parseDraft(draft);
-  return { overrides: Object.keys(errors).length ? undefined : overrides, errors };
+  const { input, errors } = parseDraft(draft);
+  return { input: Object.keys(errors).length ? undefined : input, errors };
 }
 
 export function settingsDraftKey(draft: SettingsDraft): string {
-  const { overrides, errors } = parseDraft(draft);
-  return JSON.stringify(settingsFields.map((field) => {
+  const { input, errors } = parseDraft(draft);
+  const output = outputSettingsFields.map((field) => {
     if (!draft[field].override) return [field, false];
     // Invalid edits remain distinguishable while valid numeric spelling and
     // inactive cached values do not make an otherwise unchanged draft dirty.
     return errors[field]
       ? [field, true, 'invalid', draft[field].value]
-      : [field, true, 'valid', overrides[field]];
-  }));
+      : [field, true, 'valid', input.Overrides[field]];
+  });
+  return JSON.stringify([
+    ['ServerName', draft.ServerName.mode, errors.ServerName ? ['invalid', draft.ServerName.value] : input.Overrides.ServerName],
+    ...output,
+    ['TranscodingMaxWidth', errors.TranscodingMaxWidth ? ['invalid', draft.TranscodingMaxWidth] : input.Encoding.TranscodingMaxWidth],
+  ]);
 }

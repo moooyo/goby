@@ -2,12 +2,15 @@
 
 The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
 
-The current database schema is **20** and the probe cache version remains **6**.
-The [M5g native settings increment](verification-m5g-settings.md) adds one
-`managed_settings` singleton with five nullable overrides, preserving all old
-rows in the preceding 27 tables. The Settings page manages server name and
-four output ceilings with revision checks; hardware/resource controls remain
-startup-only. Its migration requires no media rescan. The preceding
+The current database schema is **21** and the probe cache version remains **6**.
+The [M5h configuration increment](verification-m5h-configuration.md) adds four
+stored name modes and an independent compatibility width ceiling to the existing
+`managed_settings` row. It preserves every preceding field, revision, timestamp,
+and old business row across 28 tables. The Settings page manages the name, four
+native output ceilings, and the additional width ceiling with revision checks.
+Five Emby ConfigurationService routes expose supported fields backed by this
+same state. Hardware/resource controls remain startup-only. Neither the M5g
+settings migration nor its M5h extension requires a media rescan. The preceding
 [M5f task increment](verification-m5f-tasks.md) adds durable library-wide
 tasks, schedule rules, request receipts, and owned scan-child associations.
 It creates no automatic schedule and does not backfill old scans into task
@@ -22,7 +25,15 @@ partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
 reported roughly 96G total and 60G available; existing service PIDs, root
 identity, and boot partitions were preserved. See the
 [capacity evidence](test-env-disk-growth.json). This resolves the earlier root
-capacity shortage. The current M5g native deployment uses schema 20.
+capacity shortage. The current M5h deployment uses schema 21.
+
+Subsequent [Go cache](m5h-go-cache-relocation.json) and
+[inactive dependency](m5h-dependency-relocation.json) relocations moved verified
+contents from tmpfs to persistent storage while retaining the original paths as
+symlinks. The shared extracted Emby package and active services were preserved.
+Use persistent `exec-work-m5h` storage for new large temporary build inputs, and
+serialize memory-heavy verification on this shared host. Historical relocation
+operators must not be replayed after normal cache or dependency use resumes.
 
 ## Build inputs
 
@@ -86,14 +97,20 @@ The [transcoding configuration reference](transcoding-configuration.md) lists ev
 
 The [native settings API and page](../api/settings.md) store explicit database
 overrides for `ServerName`, `MaxBitrate`, `MaxWidth`, `MaxHeight`, and
-`MaxAudioChannels`. Overrides take precedence over deployment defaults. Null or
-selective reset uses the current deployment default; a restart with changed
-environment defaults does not rewrite overrides or advance their revision.
-Saved names publish to new requests, and the four ceilings govern new planning.
+`MaxAudioChannels`. Numeric null overrides and selective resets use the current
+deployment defaults. `ServerNameMode` distinguishes deployment, custom, empty,
+and unset names; empty and unset use the actual host name captured at startup.
+A name reset selects deployment mode. A restart with changed environment
+defaults does not rewrite overrides or advance their revision. Saved names
+publish to new requests, and the four native ceilings govern new planning.
+`Encoding.TranscodingMaxWidth` adds an independent ceiling: a positive value
+combines with native width by taking the smaller value, while zero removes only
+the additional ceiling. It does not clear the native width or other limits.
 Already registered outputs retain their concrete plans. Other resource and
 hardware settings still require a deployment change and restart. See
 [settings operation](settings.md) for transaction, request-snapshot, and recovery
-semantics. The Emby ConfigurationService adapter remains unimplemented.
+semantics and the [configuration adapter](../api/configuration.md) for its narrow
+supported projection and atomic section-write contract.
 
 Progressive audio uses these same process, queue, cache and reader budgets; it needs no additional environment variables or separate encoder pool. Its bitrate target/ceiling applies to encoded media, not instantaneous HTTP transfer speed. Original delivery remains available when conversion is disabled and the source/current account permits it. See [audio playback](audio-playback.md) for output formats, `Container` versus `TranscodingContainer`, and exact targets versus maximum limits.
 
@@ -145,7 +162,26 @@ The dedicated test host has a root-only `/opt/goby-test/test.env` and a separate
 
 The maintained [foundation deployment script](../../scripts/test-env/run-foundation.sh) installs a dedicated non-root service at `http://127.0.0.1:18096`, using previously transferred source and built frontend assets. It does not expose this test service publicly. The test deployment has its own administrator and disposable data. Its dedicated `/dev/shm/goby-transcodes-test` cache uses `goby:goby` ownership and mode `0700`, with a separate deployment ownership record. The script only appends absent conversion settings; its default test limits are 128 MiB total, 32 MiB per job, and 16 MiB minimum free space. It also provisions `/var/lib/goby-test/application-key-vault` as a private service-owned directory, adds its exact service write scope, and appends the default master path only when unset. It never replaces an existing master; a custom configured path requires matching directory permissions and a service write exception. [prepare-media-fixtures.sh](../../scripts/test-env/prepare-media-fixtures.sh) creates small synthetic movie, TV, and music inputs inside an ownership-marked `/opt/goby-fixtures` directory and updates the protected test configuration.
 
-The current M5g native deployment runs schema 20 as UID 995, PID 3614026,
+The current M5h deployment runs schema 21 as UID 995, PID 3641418,
+start ticks `26048863`, with probe version 6. Its
+[deployment evidence](m5h-deployment-evidence.json) binds 429 Go/module/SQL
+inputs, the accepted executable, and 50 current assets. Before service stop, a
+complete backup at `/opt/goby-test/backups/m5h-20260910` was restored into an
+isolated disposable database and all 28 old tables compared exactly. The backup
+records successful deployment; do not restore it over later business state.
+
+The [deployed workflow](m5h-deployed-configuration.json) passed in 0.901 seconds.
+One native and one ordinary Emby credential verified both settings surfaces,
+two compatibility writes, revocation of the non-CAS writer, and native CAS
+restoration of all original name/override/encoding state. Both credentials were
+revoked and independently received 401 before the final table audit. Every old
+row in the other 27 tables remained exact; only the settings revision/time and
+two new revoked sessions plus one new device remain as history. It performed no
+media, planning, scan, task, key creation, or restart operation. See
+[M5h verification](verification-m5h-configuration.md) for 1252 complete race
+tests, browser/restarts, and the separate official 4K width study.
+
+The preceding M5g native deployment ran schema 20 as UID 995, PID 3614026,
 start ticks `25289276`, with probe version 6. Its
 [deployment evidence](m5g-deployment-evidence.json) binds the accepted executable,
 419 source inputs, and 50 current assets. A complete protected backup at

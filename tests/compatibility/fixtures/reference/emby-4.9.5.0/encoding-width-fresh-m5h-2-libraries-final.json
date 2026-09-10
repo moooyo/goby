@@ -1,0 +1,170 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Library/VirtualFolders/Query?StartIndex=[REDACTED_QUERY]&Limit=[REDACTED_QUERY]",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "widthExperiment": 0,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "reason": "OK",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Content-Length",
+        "2285"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:56:33 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Goby Encoding Width Fresh M5h 02 Owned Movie",
+          "Locations": [
+            "/opt/goby-test/exec-work-m5h/emby-width-fresh-m5h-20260910-02/source"
+          ],
+          "CollectionType": "movies",
+          "LibraryOptions": {
+            "EnableArchiveMediaFiles": false,
+            "EnablePhotos": true,
+            "EnableRealtimeMonitor": false,
+            "EnableMarkerDetection": false,
+            "EnableMarkerDetectionDuringLibraryScan": false,
+            "IntroDetectionFingerprintLength": 10,
+            "EnableChapterImageExtraction": false,
+            "ExtractChapterImagesDuringLibraryScan": false,
+            "DownloadImagesInAdvance": false,
+            "CacheImages": false,
+            "ExcludeFromSearch": false,
+            "EnablePlexIgnore": false,
+            "PathInfos": [
+              {
+                "Path": "/opt/goby-test/exec-work-m5h/emby-width-fresh-m5h-20260910-02/source"
+              }
+            ],
+            "IgnoreHiddenFiles": false,
+            "IgnoreFileExtensions": [],
+            "SaveLocalMetadata": false,
+            "SaveMetadataHidden": false,
+            "SaveLocalThumbnailSets": false,
+            "ImportPlaylists": true,
+            "EnableAutomaticSeriesGrouping": false,
+            "ShareEmbeddedMusicAlbumImages": true,
+            "EnableEmbeddedTitles": false,
+            "EnableAudioResume": false,
+            "AutoGenerateChapters": true,
+            "MergeTopLevelFolders": false,
+            "AutoGenerateChapterIntervalMinutes": 5,
+            "AutomaticRefreshIntervalDays": 0,
+            "PlaceholderMetadataRefreshIntervalDays": 0,
+            "ContentType": "movies",
+            "MetadataSavers": [],
+            "DisabledLocalMetadataReaders": [],
+            "DisabledLyricsFetchers": [],
+            "SaveLyricsWithMedia": true,
+            "LyricsDownloadMaxAgeDays": 180,
+            "LyricsFetcherOrder": [],
+            "LyricsDownloadLanguages": [],
+            "DisabledSubtitleFetchers": [],
+            "SubtitleFetcherOrder": [],
+            "SkipSubtitlesIfEmbeddedSubtitlesPresent": false,
+            "SkipSubtitlesIfAudioTrackMatches": false,
+            "SubtitleDownloadLanguages": [],
+            "SubtitleDownloadMaxAgeDays": 180,
+            "RequirePerfectSubtitleMatch": true,
+            "SaveSubtitlesWithMedia": true,
+            "ForcedSubtitlesOnly": false,
+            "HearingImpairedSubtitlesOnly": false,
+            "TypeOptions": [
+              {
+                "Type": "Movie",
+                "MetadataFetchers": [],
+                "MetadataFetcherOrder": [],
+                "ImageFetchers": [],
+                "ImageFetcherOrder": [],
+                "ImageOptions": []
+              }
+            ],
+            "CollapseSingleItemFolders": false,
+            "ForceCollapseSingleItemFolders": false,
+            "EnableAdultMetadata": false,
+            "ImportCollections": false,
+            "EnableMultiVersionByFiles": true,
+            "EnableMultiVersionByMetadata": true,
+            "EnableMultiPartItems": true,
+            "MinCollectionItems": 2,
+            "MinResumePct": 2,
+            "MaxResumePct": 90,
+            "MinResumeDurationSeconds": 120,
+            "ThumbnailImagesIntervalSeconds": -1,
+            "SampleIgnoreSize": 0
+          },
+          "ItemId": "3",
+          "Id": "3",
+          "Guid": "58033c1d676b40f9b692d3544b1560c3"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "bodyExportable": true,
+    "wireBytes": 2285,
+    "transportFailure": null,
+    "acknowledgementFailure": null,
+    "privateWireSha256": "23ac3237f91d6739c9cec79f7f7afd44ebce826eba383dc2bf89799b6058cc16"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:33.326824+00:00"
+  }
+}

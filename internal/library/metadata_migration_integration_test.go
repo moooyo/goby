@@ -279,8 +279,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
-		t.Fatalf("metadata migration version = %d, want 20, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 21 {
+		t.Fatalf("metadata migration version = %d, want 21, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()

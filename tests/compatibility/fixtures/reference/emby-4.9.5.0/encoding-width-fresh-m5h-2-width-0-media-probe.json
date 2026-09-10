@@ -1,0 +1,663 @@
+{
+  "kind": "actual-complete-progressive-width-observation",
+  "configuredWidth": 0,
+  "sourceSha256": "65cf7a11f33c785bcf885bec5d115d076e06967ab55c9aebea349d6a5f218953",
+  "outputSha256": "a75589914a0755c07e323dbd690987d0dce111d8669ba71181d85a17d09766dc",
+  "outputBytes": 1177454,
+  "producer": {
+    "softwareCommandProved": true,
+    "commands": [
+      {
+        "origin": "live-owned-cgroup",
+        "pid": 3641060,
+        "startTicks": "26015070",
+        "videoEncoder": "libx264",
+        "softwareVideoCommandProved": true,
+        "inputMatchesOwnedSource": true,
+        "outputDestination": "/reference-data/transcoding-temp/E99469/E99469.mp4",
+        "outputFormat": "mp4",
+        "commandSha256": "e544b2b3f461735fd17773977b87f88668f6d0dd4f4cdadabdea8e78b36a45aa"
+      },
+      {
+        "origin": "retained-owned-transcode-log",
+        "logSha256": "ce7a54e0dbd5a58a3ba5eaf2d1e1fb3034cad852790c525fbd97330eaf65a855",
+        "videoEncoder": "libx264",
+        "softwareVideoCommandProved": true,
+        "inputMatchesOwnedSource": true,
+        "outputDestination": "/reference-data/transcoding-temp/E99469/E99469.mp4",
+        "outputFormat": "mp4",
+        "commandSha256": "e544b2b3f461735fd17773977b87f88668f6d0dd4f4cdadabdea8e78b36a45aa"
+      },
+      {
+        "origin": "retained-owned-transcode-log",
+        "logSha256": "e405d1f55565db32166e9343b8fe92f74c7dc51c1aa5ef4f959c58f6fb0c640a",
+        "videoEncoder": "libx264",
+        "softwareVideoCommandProved": true,
+        "inputMatchesOwnedSource": true,
+        "outputDestination": "/reference-data/transcoding-temp/E99469/E99469.mp4",
+        "outputFormat": "mp4",
+        "commandSha256": "e544b2b3f461735fd17773977b87f88668f6d0dd4f4cdadabdea8e78b36a45aa"
+      }
+    ],
+    "retainedLogCount": 2
+  },
+  "probe": {
+    "kind": "local-media-verification",
+    "label": "width-0-media",
+    "inputIdentity": {
+      "path": "/reference-configuration-private/private/media/width-0-media.mp4",
+      "bytes": 1177454,
+      "sha256": "a75589914a0755c07e323dbd690987d0dce111d8669ba71181d85a17d09766dc",
+      "device": 2049,
+      "inode": 2416314
+    },
+    "binaries": {
+      "ffmpeg": {
+        "path": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+        "sha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e",
+        "version": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+        "versionCommand": {
+          "arguments": [
+            "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+            "-version"
+          ],
+          "namespaceArguments": [
+            "nsenter",
+            "-t",
+            "3640734",
+            "-n",
+            "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+            "-version"
+          ],
+          "timeoutSeconds": 10,
+          "limits": {
+            "addressSpaceBytes": 1073741824,
+            "cpuSeconds": 90,
+            "fileSizeBytes": 33554432,
+            "stdoutBytes": 262144,
+            "stderrBytes": 262144,
+            "threads": 1,
+            "sourceGenerationSeconds": 90,
+            "probeSeconds": 60,
+            "decodeSeconds": 90
+          },
+          "networkNamespace": "net:[4026532534]",
+          "privateDevicesProof": {
+            "privateDevices": true,
+            "mountNamespace": "mnt:[4026532593]",
+            "deviceMount": "443 411 0:54 / /dev ro,nosuid,noexec shared:291 - tmpfs tmpfs rw,size=4096k,nr_inodes=65536,mode=755,inode64",
+            "deviceNodes": [
+              {
+                "name": "full",
+                "major": 1,
+                "minor": 7
+              },
+              {
+                "name": "null",
+                "major": 1,
+                "minor": 3
+              },
+              {
+                "name": "ptmx",
+                "major": 5,
+                "minor": 2
+              },
+              {
+                "name": "random",
+                "major": 1,
+                "minor": 8
+              },
+              {
+                "name": "tty",
+                "major": 5,
+                "minor": 0
+              },
+              {
+                "name": "urandom",
+                "major": 1,
+                "minor": 9
+              },
+              {
+                "name": "zero",
+                "major": 1,
+                "minor": 5
+              }
+            ],
+            "gpuDevicePathsAbsent": true,
+            "sharedPackageVisible": true
+          },
+          "startedAt": "2026-09-10T07:56:32.738992+00:00",
+          "complete": true,
+          "returnCode": 0,
+          "failureType": null,
+          "resourceSamples": [
+            {
+              "at": "2026-09-10T07:56:32.747918+00:00",
+              "MemTotal": 12526923776,
+              "MemAvailable": 1966964736,
+              "persistentFreeBytes": 60955222016,
+              "dataBytes": 6279497,
+              "evidenceBytes": 12113117,
+              "freshCgroupMemoryBytes": 155283456
+            }
+          ],
+          "processGroupExited": true,
+          "stdout": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 14 (Debian 14.2.0-19)\nconfiguration: --prefix=/opt/goby-toolchains/ffmpeg-9.0.1 --enable-gpl --enable-libx264 --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl --enable-ffnvcodec --enable-cuvid --enable-nvenc --disable-debug --disable-doc --disable-ffplay\nlibavutil      61.  1.101 / 61.  1.101\nlibavcodec     63.  1.101 / 63.  1.101\nlibavformat    63.  1.101 / 63.  1.101\nlibavdevice    63.  1.101 / 63.  1.101\nlibavfilter    12.  1.101 / 12.  1.101\nlibswscale     10.  1.101 / 10.  1.101\nlibswresample   7.  1.101 /  7.  1.101\n\nExiting with exit code 0\n",
+          "stderr": "",
+          "elapsedSeconds": 0.024
+        }
+      },
+      "ffprobe": {
+        "path": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+        "sha256": "8b86ad18818830b003f4d5191c1bd0c9b3722539c6203fae30de4da7f04cc872",
+        "version": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers",
+        "versionCommand": {
+          "arguments": [
+            "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+            "-version"
+          ],
+          "namespaceArguments": [
+            "nsenter",
+            "-t",
+            "3640734",
+            "-n",
+            "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+            "-version"
+          ],
+          "timeoutSeconds": 10,
+          "limits": {
+            "addressSpaceBytes": 1073741824,
+            "cpuSeconds": 90,
+            "fileSizeBytes": 33554432,
+            "stdoutBytes": 262144,
+            "stderrBytes": 262144,
+            "threads": 1,
+            "sourceGenerationSeconds": 90,
+            "probeSeconds": 60,
+            "decodeSeconds": 90
+          },
+          "networkNamespace": "net:[4026532534]",
+          "privateDevicesProof": {
+            "privateDevices": true,
+            "mountNamespace": "mnt:[4026532593]",
+            "deviceMount": "443 411 0:54 / /dev ro,nosuid,noexec shared:291 - tmpfs tmpfs rw,size=4096k,nr_inodes=65536,mode=755,inode64",
+            "deviceNodes": [
+              {
+                "name": "full",
+                "major": 1,
+                "minor": 7
+              },
+              {
+                "name": "null",
+                "major": 1,
+                "minor": 3
+              },
+              {
+                "name": "ptmx",
+                "major": 5,
+                "minor": 2
+              },
+              {
+                "name": "random",
+                "major": 1,
+                "minor": 8
+              },
+              {
+                "name": "tty",
+                "major": 5,
+                "minor": 0
+              },
+              {
+                "name": "urandom",
+                "major": 1,
+                "minor": 9
+              },
+              {
+                "name": "zero",
+                "major": 1,
+                "minor": 5
+              }
+            ],
+            "gpuDevicePathsAbsent": true,
+            "sharedPackageVisible": true
+          },
+          "startedAt": "2026-09-10T07:56:32.828185+00:00",
+          "complete": true,
+          "returnCode": 0,
+          "failureType": null,
+          "resourceSamples": [
+            {
+              "at": "2026-09-10T07:56:32.836071+00:00",
+              "MemTotal": 12526923776,
+              "MemAvailable": 1962663936,
+              "persistentFreeBytes": 60955222016,
+              "dataBytes": 6279497,
+              "evidenceBytes": 12113117,
+              "freshCgroupMemoryBytes": 155283456
+            }
+          ],
+          "processGroupExited": true,
+          "stdout": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 14 (Debian 14.2.0-19)\nconfiguration: --prefix=/opt/goby-toolchains/ffmpeg-9.0.1 --enable-gpl --enable-libx264 --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl --enable-ffnvcodec --enable-cuvid --enable-nvenc --disable-debug --disable-doc --disable-ffplay\nlibavutil      61.  1.101 / 61.  1.101\nlibavcodec     63.  1.101 / 63.  1.101\nlibavformat    63.  1.101 / 63.  1.101\nlibavdevice    63.  1.101 / 63.  1.101\nlibavfilter    12.  1.101 / 12.  1.101\nlibswscale     10.  1.101 / 10.  1.101\nlibswresample   7.  1.101 /  7.  1.101\n",
+          "stderr": "",
+          "elapsedSeconds": 0.025
+        }
+      }
+    },
+    "limits": {
+      "addressSpaceBytes": 1073741824,
+      "cpuSeconds": 90,
+      "fileSizeBytes": 33554432,
+      "stdoutBytes": 262144,
+      "stderrBytes": 262144,
+      "threads": 1,
+      "sourceGenerationSeconds": 90,
+      "probeSeconds": 60,
+      "decodeSeconds": 90
+    },
+    "complete": true,
+    "strictDecodePassed": true,
+    "ffprobeCommand": {
+      "arguments": [
+        "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+        "-hide_banner",
+        "-v",
+        "error",
+        "-threads",
+        "1",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-count_frames",
+        "-show_streams",
+        "-show_format",
+        "-of",
+        "json",
+        "/reference-configuration-private/private/media/width-0-media.mp4"
+      ],
+      "namespaceArguments": [
+        "nsenter",
+        "-t",
+        "3640734",
+        "-n",
+        "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+        "-hide_banner",
+        "-v",
+        "error",
+        "-threads",
+        "1",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-count_frames",
+        "-show_streams",
+        "-show_format",
+        "-of",
+        "json",
+        "/reference-configuration-private/private/media/width-0-media.mp4"
+      ],
+      "timeoutSeconds": 60,
+      "limits": {
+        "addressSpaceBytes": 1073741824,
+        "cpuSeconds": 90,
+        "fileSizeBytes": 33554432,
+        "stdoutBytes": 262144,
+        "stderrBytes": 262144,
+        "threads": 1,
+        "sourceGenerationSeconds": 90,
+        "probeSeconds": 60,
+        "decodeSeconds": 90
+      },
+      "networkNamespace": "net:[4026532534]",
+      "privateDevicesProof": {
+        "privateDevices": true,
+        "mountNamespace": "mnt:[4026532593]",
+        "deviceMount": "443 411 0:54 / /dev ro,nosuid,noexec shared:291 - tmpfs tmpfs rw,size=4096k,nr_inodes=65536,mode=755,inode64",
+        "deviceNodes": [
+          {
+            "name": "full",
+            "major": 1,
+            "minor": 7
+          },
+          {
+            "name": "null",
+            "major": 1,
+            "minor": 3
+          },
+          {
+            "name": "ptmx",
+            "major": 5,
+            "minor": 2
+          },
+          {
+            "name": "random",
+            "major": 1,
+            "minor": 8
+          },
+          {
+            "name": "tty",
+            "major": 5,
+            "minor": 0
+          },
+          {
+            "name": "urandom",
+            "major": 1,
+            "minor": 9
+          },
+          {
+            "name": "zero",
+            "major": 1,
+            "minor": 5
+          }
+        ],
+        "gpuDevicePathsAbsent": true,
+        "sharedPackageVisible": true
+      },
+      "startedAt": "2026-09-10T07:56:32.907645+00:00",
+      "complete": true,
+      "returnCode": 0,
+      "failureType": null,
+      "resourceSamples": [
+        {
+          "at": "2026-09-10T07:56:32.915848+00:00",
+          "MemTotal": 12526923776,
+          "MemAvailable": 1939054592,
+          "persistentFreeBytes": 60955222016,
+          "dataBytes": 6279497,
+          "evidenceBytes": 12113117,
+          "freshCgroupMemoryBytes": 155283456
+        }
+      ],
+      "processGroupExited": true,
+      "stdout": "{\n    \"streams\": [\n        {\n            \"index\": 0,\n            \"codec_name\": \"h264\",\n            \"codec_long_name\": \"H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10\",\n            \"profile\": \"Main\",\n            \"codec_type\": \"video\",\n            \"codec_tag_string\": \"avc1\",\n            \"codec_tag\": \"0x31637661\",\n            \"mime_codec_string\": \"avc1.4d4033\",\n            \"width\": 3840,\n            \"height\": 2160,\n            \"coded_width\": 3840,\n            \"coded_height\": 2160,\n            \"has_b_frames\": 2,\n            \"sample_aspect_ratio\": \"1:1\",\n            \"display_aspect_ratio\": \"16:9\",\n            \"pix_fmt\": \"yuv420p\",\n            \"level\": 51,\n            \"chroma_location\": \"left\",\n            \"field_order\": \"progressive\",\n            \"refs\": 4,\n            \"is_avc\": \"true\",\n            \"nal_length_size\": \"4\",\n            \"id\": \"0x1\",\n            \"r_frame_rate\": \"2/1\",\n            \"avg_frame_rate\": \"2/1\",\n            \"time_base\": \"1/16384\",\n            \"start_pts\": 16384,\n            \"start_time\": \"1.000000\",\n            \"duration_ts\": 65536,\n            \"duration\": \"4.000000\",\n            \"bit_rate\": \"2284500\",\n            \"bits_per_raw_sample\": \"8\",\n            \"nb_read_frames\": \"8\",\n            \"extradata_size\": 41,\n            \"disposition\": {\n                \"default\": 1,\n                \"dub\": 0,\n                \"original\": 0,\n                \"comment\": 0,\n                \"lyrics\": 0,\n                \"karaoke\": 0,\n                \"forced\": 0,\n                \"hearing_impaired\": 0,\n                \"visual_impaired\": 0,\n                \"clean_effects\": 0,\n                \"attached_pic\": 0,\n                \"timed_thumbnails\": 0,\n                \"non_diegetic\": 0,\n                \"captions\": 0,\n                \"descriptions\": 0,\n                \"metadata\": 0,\n                \"dependent\": 0,\n                \"still_image\": 0,\n                \"multilayer\": 0\n            },\n            \"tags\": {\n                \"language\": \"und\",\n                \"handler_name\": \"VideoHandler\",\n                \"encoder\": \"Lavc59.37.100 libx264\"\n            }\n        },\n        {\n            \"index\": 1,\n            \"codec_name\": \"aac\",\n            \"codec_long_name\": \"AAC (Advanced Audio Coding)\",\n            \"profile\": \"LC\",\n            \"codec_type\": \"audio\",\n            \"codec_tag_string\": \"mp4a\",\n            \"codec_tag\": \"0x6134706d\",\n            \"mime_codec_string\": \"mp4a.40.2\",\n            \"sample_fmt\": \"fltp\",\n            \"sample_rate\": \"48000\",\n            \"channels\": 1,\n            \"channel_layout\": \"mono\",\n            \"bits_per_sample\": 0,\n            \"initial_padding\": 0,\n            \"id\": \"0x2\",\n            \"r_frame_rate\": \"0/0\",\n            \"avg_frame_rate\": \"0/0\",\n            \"time_base\": \"1/48000\",\n            \"start_pts\": 0,\n            \"start_time\": \"0.000000\",\n            \"duration_ts\": 193536,\n            \"duration\": \"4.032000\",\n            \"bit_rate\": \"65058\",\n            \"nb_read_frames\": \"189\",\n            \"extradata_size\": 5,\n            \"disposition\": {\n                \"default\": 1,\n                \"dub\": 0,\n                \"original\": 0,\n                \"comment\": 0,\n                \"lyrics\": 0,\n                \"karaoke\": 0,\n                \"forced\": 0,\n                \"hearing_impaired\": 0,\n                \"visual_impaired\": 0,\n                \"clean_effects\": 0,\n                \"attached_pic\": 0,\n                \"timed_thumbnails\": 0,\n                \"non_diegetic\": 0,\n                \"captions\": 0,\n                \"descriptions\": 0,\n                \"metadata\": 0,\n                \"dependent\": 0,\n                \"still_image\": 0,\n                \"multilayer\": 0\n            },\n            \"tags\": {\n                \"language\": \"und\",\n                \"handler_name\": \"SoundHandler\"\n            }\n        }\n    ],\n    \"format\": {\n        \"filename\": \"/reference-configuration-private/private/media/width-0-media.mp4\",\n        \"nb_streams\": 2,\n        \"nb_programs\": 0,\n        \"nb_stream_groups\": 0,\n        \"format_name\": \"mov,mp4,m4a,3gp,3g2,mj2\",\n        \"format_long_name\": \"QuickTime / MOV\",\n        \"start_time\": \"0.000000\",\n        \"duration\": \"5.000000\",\n        \"size\": \"1177454\",\n        \"bit_rate\": \"1883926\",\n        \"probe_score\": 100,\n        \"tags\": {\n            \"major_brand\": \"isom\",\n            \"minor_version\": \"512\",\n            \"compatible_brands\": \"isomiso6iso2avc1mp41\",\n            \"encoder\": \"Lavf59.27.100\"\n        }\n    }\n}\n",
+      "stderr": "",
+      "elapsedSeconds": 0.141
+    },
+    "ffprobe": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "Main",
+          "codec_type": "video",
+          "codec_tag_string": "avc1",
+          "codec_tag": "0x31637661",
+          "mime_codec_string": "avc1.4d4033",
+          "width": 3840,
+          "height": 2160,
+          "coded_width": 3840,
+          "coded_height": 2160,
+          "has_b_frames": 2,
+          "sample_aspect_ratio": "1:1",
+          "display_aspect_ratio": "16:9",
+          "pix_fmt": "yuv420p",
+          "level": 51,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "refs": 4,
+          "is_avc": "true",
+          "nal_length_size": "4",
+          "id": "0x1",
+          "r_frame_rate": "2/1",
+          "avg_frame_rate": "2/1",
+          "time_base": "1/16384",
+          "start_pts": 16384,
+          "start_time": "1.000000",
+          "duration_ts": 65536,
+          "duration": "4.000000",
+          "bit_rate": "2284500",
+          "bits_per_raw_sample": "8",
+          "nb_read_frames": "8",
+          "extradata_size": 41,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "encoder": "Lavc59.37.100 libx264"
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "mp4a",
+          "codec_tag": "0x6134706d",
+          "mime_codec_string": "mp4a.40.2",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x2",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/48000",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 193536,
+          "duration": "4.032000",
+          "bit_rate": "65058",
+          "nb_read_frames": "189",
+          "extradata_size": 5,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "SoundHandler"
+          }
+        }
+      ],
+      "format": {
+        "filename": "/reference-configuration-private/private/media/width-0-media.mp4",
+        "nb_streams": 2,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "5.000000",
+        "size": "1177454",
+        "bit_rate": "1883926",
+        "probe_score": 100,
+        "tags": {
+          "major_brand": "isom",
+          "minor_version": "512",
+          "compatible_brands": "isomiso6iso2avc1mp41",
+          "encoder": "Lavf59.27.100"
+        }
+      }
+    },
+    "ffmpegDecodeCommand": {
+      "arguments": [
+        "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-nostdin",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-filter_complex_threads",
+        "1",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-i",
+        "/reference-configuration-private/private/media/width-0-media.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-threads",
+        "1",
+        "-progress",
+        "pipe:1",
+        "-nostats",
+        "-f",
+        "null",
+        "-"
+      ],
+      "namespaceArguments": [
+        "nsenter",
+        "-t",
+        "3640734",
+        "-n",
+        "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-nostdin",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-filter_complex_threads",
+        "1",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-i",
+        "/reference-configuration-private/private/media/width-0-media.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-threads",
+        "1",
+        "-progress",
+        "pipe:1",
+        "-nostats",
+        "-f",
+        "null",
+        "-"
+      ],
+      "timeoutSeconds": 90,
+      "limits": {
+        "addressSpaceBytes": 1073741824,
+        "cpuSeconds": 90,
+        "fileSizeBytes": 33554432,
+        "stdoutBytes": 262144,
+        "stderrBytes": 262144,
+        "threads": 1,
+        "sourceGenerationSeconds": 90,
+        "probeSeconds": 60,
+        "decodeSeconds": 90
+      },
+      "networkNamespace": "net:[4026532534]",
+      "privateDevicesProof": {
+        "privateDevices": true,
+        "mountNamespace": "mnt:[4026532593]",
+        "deviceMount": "443 411 0:54 / /dev ro,nosuid,noexec shared:291 - tmpfs tmpfs rw,size=4096k,nr_inodes=65536,mode=755,inode64",
+        "deviceNodes": [
+          {
+            "name": "full",
+            "major": 1,
+            "minor": 7
+          },
+          {
+            "name": "null",
+            "major": 1,
+            "minor": 3
+          },
+          {
+            "name": "ptmx",
+            "major": 5,
+            "minor": 2
+          },
+          {
+            "name": "random",
+            "major": 1,
+            "minor": 8
+          },
+          {
+            "name": "tty",
+            "major": 5,
+            "minor": 0
+          },
+          {
+            "name": "urandom",
+            "major": 1,
+            "minor": 9
+          },
+          {
+            "name": "zero",
+            "major": 1,
+            "minor": 5
+          }
+        ],
+        "gpuDevicePathsAbsent": true,
+        "sharedPackageVisible": true
+      },
+      "startedAt": "2026-09-10T07:56:33.056125+00:00",
+      "complete": true,
+      "returnCode": 0,
+      "failureType": null,
+      "resourceSamples": [
+        {
+          "at": "2026-09-10T07:56:33.065504+00:00",
+          "MemTotal": 12526923776,
+          "MemAvailable": 1881841664,
+          "persistentFreeBytes": 60955222016,
+          "dataBytes": 6279497,
+          "evidenceBytes": 12113117,
+          "freshCgroupMemoryBytes": 155066368
+        }
+      ],
+      "processGroupExited": true,
+      "stdout": "frame=8\nfps=0.00\nstream_0_0_q=-0.0\nbitrate=N/A\ntotal_size=N/A\nout_time_us=5000000\nout_time_ms=5000000\nout_time=00:00:05.000000\ndup_frames=0\ndrop_frames=0\nspeed=50.4x\nprogress=end\n",
+      "stderr": "",
+      "elapsedSeconds": 0.146
+    },
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "width": 3840,
+    "height": 2160,
+    "decodedFrames": 8
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:33.210835+00:00"
+  }
+}

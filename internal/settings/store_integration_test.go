@@ -98,7 +98,7 @@ func settingsRepository(t *testing.T) (context.Context, *pgxpool.Pool, *library.
 			t.Errorf("close settings test owner: %v", err)
 		}
 	})
-	store, err := New(ctx, pool, scanner, settingsTestDefaults())
+	store, err := New(ctx, pool, scanner, settingsTestDefaults(), "settings-host-alpha")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestManagedSettingsOverridesResetAndReloadPreserveDefaultSources(t *testing
 	}
 	beforeReload := settingsRowSnapshot(t, ctx, pool)
 	newDefaults := Values{ServerName: "Deployment Beta", MaxBitrate: 30_000_000, MaxWidth: 3840, MaxHeight: 2160, MaxAudioChannels: 6}
-	reloaded, err := New(ctx, pool, owner, newDefaults)
+	reloaded, err := New(ctx, pool, owner, newDefaults, "settings-host-beta")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +387,7 @@ func TestManagedSettingsCancelledCallerStillPublishesItsCommittedRevision(t *tes
 		reached.Store(true)
 		cancel()
 		return nil
-	}}, settingsTestDefaults())
+	}}, settingsTestDefaults(), "settings-host-alpha")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -425,7 +425,7 @@ func TestManagedSettingsFinalAuthorizationAndPostWriteFailureNeverPublish(t *tes
 				_, err := tx.Exec(`SELECT pg_sleep((GREATEST(0,EXTRACT(EPOCH FROM
 					(expires_at-clock_timestamp())))+0.03)::double precision) FROM sessions WHERE id=$1`, actor.Principal.SessionID)
 				return err
-			}}, settingsTestDefaults())
+			}}, settingsTestDefaults(), "settings-host-alpha")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -457,7 +457,7 @@ func TestManagedSettingsGetWaitsForPostCommitPublication(t *testing.T) {
 		case <-release:
 		case <-ctx.Done():
 		}
-	}}, settingsTestDefaults())
+	}}, settingsTestDefaults(), "settings-host-alpha")
 	if err != nil {
 		t.Fatal(err)
 	}

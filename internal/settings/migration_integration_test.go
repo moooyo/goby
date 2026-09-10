@@ -132,6 +132,44 @@ func settingsMigrationVersion19(t *testing.T, ctx context.Context, pool *pgxpool
 	}
 }
 
+// Keep schema 20 tests at the published boundary when later migrations exist.
+// Current-runner idempotence belongs to the compatibility upgrade tests.
+func settingsMigrationVersion20(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 19 {
+		t.Fatalf("settings schema 20 fixture must start at version 19, got %d: %v", version, err)
+	}
+	const name = "0020_managed_settings.sql"
+	content, err := os.ReadFile(filepath.Join("..", "database", "migrations", name))
+	if err != nil {
+		t.Fatalf("read historical migration %s: %v", name, err)
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin settings schema 20 fixture: %v", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, string(content)); err != nil {
+		t.Fatalf("apply historical migration %s: %v", name, err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (version, name, applied_at)
+		VALUES (20, $1, '2025-01-02T03:04:05Z')`, name); err != nil {
+		t.Fatalf("record historical migration %s: %v", name, err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("commit settings schema 20 fixture: %v", err)
+	}
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
+		t.Fatalf("settings schema version = %d, want 20: %v", version, err)
+	}
+	var compatibilityColumns int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM pg_attribute
+		WHERE attrelid = 'managed_settings'::regclass AND NOT attisdropped
+		AND attname IN ('server_name_mode', 'compatibility_max_width')`).Scan(&compatibilityColumns); err != nil || compatibilityColumns != 0 {
+		t.Fatalf("schema 20 unexpectedly contains compatibility columns: count=%d error=%v", compatibilityColumns, err)
+	}
+}
+
 func settingsMigrationSeedLegacy(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	if _, err := pool.Exec(ctx, `
@@ -292,78 +330,49 @@ func TestManagedSettingsMigrationPreservesEverySchema19Table(t *testing.T) {
 			t.Fatalf("settings migration fixture left historical table %s empty", table)
 		}
 	}
-	var initialSettings, initialHistory string
-	for attempt := 1; attempt <= 2; attempt++ {
-		if err := database.Migrate(ctx, pool); err != nil {
-			t.Fatalf("settings migration attempt %d: %v", attempt, err)
-		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 20 {
-			t.Fatalf("settings schema version = %d, want 20: %v", version, err)
-		}
-		var name string
-		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 20").Scan(&name); err != nil || name != "0020_managed_settings.sql" {
-			t.Fatalf("managed settings migration history name = %q: %v", name, err)
-		}
-		var history string
-		var historyCount int
-		if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-			FROM schema_migrations m`).Scan(&historyCount, &history); err != nil || historyCount != 20 {
-			t.Fatalf("settings migration history count = %d, want 20: %v", historyCount, err)
-		}
-		var total, defaults int
-		if err := pool.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE id = 1 AND revision = 1
-			AND server_name IS NULL AND max_bitrate IS NULL AND max_width IS NULL
-			AND max_height IS NULL AND max_audio_channels IS NULL
-			AND created_at IS NOT NULL AND updated_at IS NOT NULL) FROM managed_settings`).Scan(&total, &defaults); err != nil || total != 1 || defaults != 1 {
-			t.Fatalf("managed settings initial rows = %d, default rows = %d, want one revision-1 row with five NULL overrides: %v", total, defaults, err)
-		}
-		currentSettings := settingsMigrationSnapshot(t, ctx, pool, "managed_settings")
-		if attempt == 1 {
-			initialSettings, initialHistory = currentSettings, history
-		} else if currentSettings != initialSettings || history != initialHistory {
-			t.Error("reapplying managed settings migration changed its initial row or migration history")
-		}
-		upgradedTables := settingsMigrationTables(t, ctx, pool)
-		var retainedTables []string
-		for _, table := range upgradedTables {
-			if table != "managed_settings" {
-				retainedTables = append(retainedTables, table)
-			}
-		}
-		if len(upgradedTables) != 28 || strings.Join(retainedTables, " ") != settingsMigrationLegacyTables {
-			t.Errorf("settings migration did not add exactly its one table: %v", upgradedTables)
-		}
-		for _, table := range tables {
-			if after := settingsMigrationSnapshot(t, ctx, pool, table); after != before[table] {
-				t.Errorf("settings migration attempt %d changed original rows or fields in %s", attempt, table)
-			}
-		}
-		var serverID, setupCompleted string
-		if err := pool.QueryRow(ctx, `SELECT
-			(SELECT value FROM server_settings WHERE key = 'server_id'),
-			(SELECT value FROM server_settings WHERE key = 'setup_completed')`).Scan(&serverID, &setupCompleted); err != nil || serverID != "0123456789abcdef0123456789abcdef" || setupCompleted != "true" {
-			t.Fatalf("settings migration changed the legacy server identity or setup-completion value: %v", err)
+	settingsMigrationVersion20(t, ctx, pool)
+	var name string
+	if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 20").Scan(&name); err != nil || name != "0020_managed_settings.sql" {
+		t.Fatalf("managed settings migration history name = %q: %v", name, err)
+	}
+	var historyCount int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&historyCount); err != nil || historyCount != 20 {
+		t.Fatalf("settings migration history count = %d, want 20: %v", historyCount, err)
+	}
+	var total, defaults int
+	if err := pool.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE id = 1 AND revision = 1
+		AND server_name IS NULL AND max_bitrate IS NULL AND max_width IS NULL
+		AND max_height IS NULL AND max_audio_channels IS NULL
+		AND created_at IS NOT NULL AND updated_at IS NOT NULL) FROM managed_settings`).Scan(&total, &defaults); err != nil || total != 1 || defaults != 1 {
+		t.Fatalf("managed settings initial rows = %d, default rows = %d, want one revision-1 row with five NULL overrides: %v", total, defaults, err)
+	}
+	upgradedTables := settingsMigrationTables(t, ctx, pool)
+	var retainedTables []string
+	for _, table := range upgradedTables {
+		if table != "managed_settings" {
+			retainedTables = append(retainedTables, table)
 		}
 	}
-	if _, err := pool.Exec(ctx, `UPDATE managed_settings SET revision = 7, server_name = 'Persisted Server',
-		max_bitrate = 64000000, max_width = 3840, max_height = 2160, max_audio_channels = 6,
-		updated_at = '2026-08-01T00:00:00Z' WHERE id = 1`); err != nil {
-		t.Fatalf("persist explicit settings after upgrade: %v", err)
+	if len(upgradedTables) != 28 || strings.Join(retainedTables, " ") != settingsMigrationLegacyTables {
+		t.Errorf("settings migration did not add exactly its one table: %v", upgradedTables)
 	}
-	persisted := settingsMigrationSnapshot(t, ctx, pool, "managed_settings")
-	if err := database.Migrate(ctx, pool); err != nil {
-		t.Fatalf("repeat migration with explicit settings: %v", err)
+	for _, table := range tables {
+		if after := settingsMigrationSnapshot(t, ctx, pool, table); after != before[table] {
+			t.Errorf("settings migration changed original rows or fields in %s", table)
+		}
 	}
-	if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
-		t.Error("repeated migration reset persisted explicit settings or their revision")
+	var serverID, setupCompleted string
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT value FROM server_settings WHERE key = 'server_id'),
+		(SELECT value FROM server_settings WHERE key = 'setup_completed')`).Scan(&serverID, &setupCompleted); err != nil || serverID != "0123456789abcdef0123456789abcdef" || setupCompleted != "true" {
+		t.Fatalf("settings migration changed the legacy server identity or setup-completion value: %v", err)
 	}
 }
 
 func TestManagedSettingsMigrationEnforcesSingletonAndStorageBounds(t *testing.T) {
 	ctx, pool := settingsMigrationPool(t)
-	if err := database.Migrate(ctx, pool); err != nil {
-		t.Fatalf("initialize managed settings constraint schema: %v", err)
-	}
+	settingsMigrationVersion19(t, ctx, pool)
+	settingsMigrationVersion20(t, ctx, pool)
 	for _, test := range []struct {
 		name, statement, code string
 	}{

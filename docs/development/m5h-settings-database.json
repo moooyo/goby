@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "goExitCode": 0,
+  "topLevelTests": {
+    "pass": 41
+  },
+  "failedTests": [],
+  "raceWarningPresent": false,
+  "logSha256": "9f577407e2f24cf26dabfaa2d30ef79e937ce04e9921b569d32b43ce0709a9f7"
+}

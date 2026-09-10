@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -81,6 +83,10 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 }
 
 func (s *Server) initializeSettings(ctx context.Context) error {
+	hostName, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("resolve server host name: %w", err)
+	}
 	limits := s.cfg.Transcoding
 	// Direct constructors historically use the zero value to disable the
 	// conversion engine. Its display/planning defaults still need valid values.
@@ -94,7 +100,7 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 		ServerName: s.cfg.ServerName, MaxBitrate: limits.MaxBitrate,
 		MaxWidth: limits.MaxWidth, MaxHeight: limits.MaxHeight,
 		MaxAudioChannels: limits.MaxAudioChannels,
-	})
+	}, hostName)
 	if err != nil {
 		return err
 	}
@@ -143,6 +149,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
+	s.registerConfigurationRoutes(mux)
 	s.registerScheduledTaskRoutes(mux)
 	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)

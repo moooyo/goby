@@ -1,0 +1,21 @@
+{
+  "status": "failed",
+  "goExitCode": 1,
+  "topLevelTests": {
+    "pass": 12,
+    "fail": 1
+  },
+  "failedTests": [
+    {
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Test": "TestHTTPConfigurationNativeAndCompatibilityConcurrencyPreservesSections",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Action": "fail"
+    }
+  ],
+  "raceWarningPresent": false,
+  "logSha256": "dd7f1dfedb63479d06fccd467eb10ad00d17aca7b957c4a8ea390680bbae8185"
+}

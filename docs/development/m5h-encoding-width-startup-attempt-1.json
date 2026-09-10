@@ -1,0 +1,21 @@
+{
+  "status": "failed",
+  "scope": "fresh official Emby width fixture startup before media generation or login",
+  "failure": "relative ELF interpreter could not resolve from the runtime working directory",
+  "operatorSha256": "f709780d76efb5adada682ec59b7a2a3695ad5c1d6da45137455ef71b1a907f0",
+  "privateFailureEvidenceSha256": "b062ba5cb528057d1a0919e61e9058b908251bfb00cc23f0688fcfee1d3210cb",
+  "privateCleanupEvidenceSha256": "48f8cad319f182c7ca87af3162decf24f5b9ef1ef75616185e75080a46345738",
+  "cleanup": {
+    "status": "passed",
+    "sourceRemoved": true,
+    "dataRemoved": true,
+    "ownedServiceStopped": true,
+    "ownedCgroupEmpty": true,
+    "credentialNeverAcknowledged": true,
+    "oldPreservationVerified": true
+  },
+  "mediaGenerated": false,
+  "ordinaryCredentialsCreated": 0,
+  "httpRecordsAdded": 0,
+  "evidenceRetained": true
+}

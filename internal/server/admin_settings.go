@@ -116,7 +116,7 @@ func adminSettingsUnicode(data []byte) bool {
 	return true
 }
 
-func adminSettingsBody(w http.ResponseWriter, r *http.Request, fields []string) (map[string]json.RawMessage, bool) {
+func adminSettingsBody(w http.ResponseWriter, r *http.Request, allowed, required []string) (map[string]json.RawMessage, bool) {
 	if !adminSettingsNoQuery(w, r) {
 		return nil, false
 	}
@@ -139,7 +139,7 @@ func adminSettingsBody(w http.ResponseWriter, r *http.Request, fields []string) 
 		adminSettingsInputError(w, r, map[string]string{"Body": "Supply a lossless UTF-8 JSON object no larger than 16 KiB."})
 		return nil, false
 	}
-	values, invalid := adminTaskObject(data, fields, fields, "")
+	values, invalid := adminTaskObject(data, allowed, required, "")
 	if invalid != nil {
 		adminSettingsInputError(w, r, invalid)
 		return nil, false
@@ -168,12 +168,40 @@ func adminSettingsNumber(raw json.RawMessage, field string, invalid map[string]s
 }
 
 func decodeAdminSettingsUpdate(w http.ResponseWriter, r *http.Request) (settings.UpdateRequest, bool) {
-	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides"})
+	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding"}, []string{"Revision", "Overrides"})
 	if !ok {
 		return settings.UpdateRequest{}, false
 	}
 	invalid := make(map[string]string)
 	request := settings.UpdateRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
+	if raw, present := values["ServerNameMode"]; present {
+		var mode settings.ServerNameMode
+		if json.Unmarshal(raw, &mode) != nil {
+			invalid["ServerNameMode"] = "Select deployment, custom, empty, or unset."
+		} else {
+			switch mode {
+			case settings.ServerNameDeployment, settings.ServerNameCustom, settings.ServerNameEmpty, settings.ServerNameUnset:
+				request.NameMode = &mode
+			default:
+				invalid["ServerNameMode"] = "Select deployment, custom, empty, or unset."
+			}
+		}
+	}
+	if raw, present := values["Encoding"]; present {
+		encoding, fieldsInvalid := adminTaskObject(raw, []string{"TranscodingMaxWidth"}, []string{"TranscodingMaxWidth"}, "Encoding")
+		for field, message := range fieldsInvalid {
+			invalid[field] = message
+		}
+		if fieldsInvalid == nil {
+			var width int64
+			rawWidth := encoding["TranscodingMaxWidth"]
+			if bytes.Equal(bytes.TrimSpace(rawWidth), []byte("null")) || json.Unmarshal(rawWidth, &width) != nil || width < 0 || width > 8192 {
+				invalid["Encoding.TranscodingMaxWidth"] = "Supply an integer JSON number between 0 and 8192."
+			} else {
+				request.Encoding = &settings.Encoding{TranscodingMaxWidth: int(width)}
+			}
+		}
+	}
 	overrides, fieldsInvalid := adminTaskObject(values["Overrides"], adminSettingsValueFields, adminSettingsValueFields, "Overrides")
 	for field, message := range fieldsInvalid {
 		invalid[field] = message
@@ -211,20 +239,20 @@ func decodeAdminSettingsUpdate(w http.ResponseWriter, r *http.Request) (settings
 }
 
 func decodeAdminSettingsReset(w http.ResponseWriter, r *http.Request) (settings.ResetRequest, bool) {
-	values, ok := adminSettingsBody(w, r, []string{"Revision", "Fields"})
+	values, ok := adminSettingsBody(w, r, []string{"Revision", "Fields"}, []string{"Revision", "Fields"})
 	if !ok {
 		return settings.ResetRequest{}, false
 	}
 	invalid := make(map[string]string)
 	request := settings.ResetRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
 	var fields []settings.Field
-	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields) {
-		invalid["Fields"] = "Select between one and five supported settings to reset."
+	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+1 {
+		invalid["Fields"] = "Select between one and six supported settings to reset."
 	} else {
 		seen := make(map[settings.Field]bool, len(fields))
 		for _, field := range fields {
 			switch field {
-			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels:
+			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth:
 				if seen[field] {
 					invalid["Fields"] = "Select each supported setting at most once."
 				}
@@ -314,7 +342,11 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 		for field := range invalid.Fields {
 			switch field {
 			case "ServerName":
-				fields["Overrides.ServerName"] = "Use a nonblank UTF-8 server name of at most 128 bytes without NUL characters."
+				fields["Overrides.ServerName"] = "Match the selected name mode; custom names require nonblank UTF-8 text of at most 128 bytes without NUL characters."
+			case "ServerNameMode", "NameMode":
+				fields["ServerNameMode"] = "Select deployment, custom, empty, or unset with a matching server name value."
+			case "TranscodingMaxWidth":
+				fields["Encoding.TranscodingMaxWidth"] = "Supply an integer between 0 and 8192."
 			case "MaxBitrate":
 				fields["Overrides.MaxBitrate"] = "Supply an integer between 1 and 1000000000."
 			case "MaxWidth", "MaxHeight":
@@ -324,7 +356,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 			case "Revision":
 				fields[field] = "Supply the current positive decimal revision string with room for its successor."
 			case "Fields":
-				fields[field] = "Select between one and five unique supported settings."
+				fields[field] = "Select between one and six unique supported settings."
 			default:
 				fields["Body"] = "Supply supported settings values."
 			}

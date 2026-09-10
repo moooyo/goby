@@ -1,0 +1,342 @@
+{
+  "allowed_old_row_changes": {
+    "managed_settings": "Only revision and updated_at remain advanced after complete original state is restored"
+  },
+  "checks": {
+    "anonymous_public_name_follows_commits": true,
+    "compatibility_revision_increments": 2,
+    "encoding_noop_at_minimum": false,
+    "encoding_posts": 1,
+    "issued_credentials": 2,
+    "media_or_planning_requests": 0,
+    "native_and_emby_configured_name_semantics_match": true,
+    "native_numeric_overrides_unchanged": true,
+    "native_restore_includes_original_name_mode_and_encoding": true,
+    "new_ordinary_devices": 1,
+    "partial_name_posts": 1,
+    "temporary_encoding_does_not_relax_original_combined_ceiling": true
+  },
+  "cleanup": {
+    "errors": [],
+    "new_credentials_revoked": 2,
+    "physical_history_deletions": 0,
+    "proven": true,
+    "retained_ordinary_devices": 1
+  },
+  "database_queries": 25,
+  "deployment": {
+    "binary_sha256": "62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54",
+    "database_port": 5432,
+    "database_role": "goby_test",
+    "main_pid": 3641418,
+    "postgresql_forced_read_only": true,
+    "schema_version": 21,
+    "server_namespace_sha256": "3f6a7f16d5b958b7eff0d220752ccf53630c998737701e63e5a763a837989e7d",
+    "source_evidence_sha256": "5f449fc3ffd5d2663198f24c1c75cae74355ed4cdeb2dbd1f6806806596481ba",
+    "start_ticks": "26048863",
+    "uid": 995
+  },
+  "deployment_unchanged": true,
+  "elapsed_seconds": 0.901,
+  "http_method_counts": {
+    "DELETE": 1,
+    "GET": 23,
+    "POST": 5,
+    "PUT": 1
+  },
+  "http_transport_retries": 0,
+  "limitations": [
+    "No external configuration writer may run during this acceptance; the Emby interface has no CAS and read checks cannot eliminate that race",
+    "No planning, playback, conversion, scan, task execution, device management, key creation, or service restart",
+    "An encoding value already at the minimum safe ceiling may be verified as a no-op instead of relaxing that ceiling"
+  ],
+  "limits": {
+    "database_queries": 80,
+    "encoding_posts": 1,
+    "http_requests": 100,
+    "native_restore_puts": 2,
+    "partial_name_posts": 1,
+    "response_bytes": 2097152,
+    "workflow_seconds": 180
+  },
+  "logout_protected_statuses": {
+    "admin": 401,
+    "emby": 401
+  },
+  "logout_response_failures": 0,
+  "media_unchanged": true,
+  "nfo_unchanged": true,
+  "old_other_twenty_seven_table_rows_exact": true,
+  "old_users_credentials_keys_devices_metadata_jobs_and_task_history_exact": true,
+  "output_scope": {
+    "attempt_marker": "m5h-deployed-configuration.attempt.json",
+    "directory": "/opt/goby-test",
+    "private_failure_log": "m5h-deployed-configuration.private.json",
+    "report": "m5h-deployed-configuration.json"
+  },
+  "owned_activity_scope": "Only new ordinary session/device last_seen_at through real Touch; native session changes only revoked_at",
+  "owned_history": {
+    "new_devices": 1,
+    "new_sessions": 2,
+    "ordinary_device_rows_touched": 0,
+    "ordinary_session_rows_touched": 0
+  },
+  "owner": "goby-configuration-deployed-m5h-v1",
+  "private_runtime_credentials_and_source_evidence_unchanged": true,
+  "settings_restoration": {
+    "encoding_attempts": 1,
+    "exact_original_state_proven": true,
+    "fixed_restore_revision": true,
+    "native_restore_attempts": 1,
+    "not_applied_proven_after_issuer_revocation": false,
+    "only_revision_and_updated_at_remain_advanced": true,
+    "original_name_mode": "deployment",
+    "partial_attempts": 1
+  },
+  "snapshots": {
+    "after_cleanup": {
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 13,
+        "sha256": "376e30933aaf1eb03dc3e5d03a4855683a8f43ea43d54478ac2769881b636212"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "795c3f4c70e5a5e1448dc586cd3716ee28eaad4cb03615953848e5799465140b"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "76170cf93356bc3ed1d9d0bb038722fd6baaf0593b4144b9e06d2cb71b8e2ad6"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "managed_settings": {
+        "count": 1,
+        "sha256": "ee140f7700c97b726d5e9914102612715c9f13eddb9bcddaf4179954d197a2c1"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 46,
+        "sha256": "181cf8932556c0d9abfab2ed10a4a47bdfc58e6c4b8ab59cfe191b4cf7b28bf5"
+      },
+      "schema_migrations": {
+        "count": 21,
+        "sha256": "7a103ac66a57e752678bcac6e171c962a521704b05b09e41a5259114582c430b"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 96,
+        "sha256": "8ce3340fde7ee7aa2fbaa8decdd0571de45c7f3136667936b795dedeb70ccfe7"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "85c9bc95fe2aa6b153b977de7459a678c320065f8d59a08f59ed729920b5bdd8"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 5,
+        "sha256": "19de137e55286a3fa5eb90a0396e052d9ec8158c02340704a6b8b6b16402e161"
+      },
+      "task_run_requests": {
+        "count": 1,
+        "sha256": "128f2df8b7e072b2a419c1b63ec16563a3dbc57ac9019d392b36695fe9e6a3c9"
+      },
+      "task_runs": {
+        "count": 1,
+        "sha256": "2a269b2c533bbd9b76083f627f6f51e7b9c5c742132a0598f050b98d34cc6cc5"
+      },
+      "task_triggers": {
+        "count": 2,
+        "sha256": "28419fa06506ee6d29120e6a91d8c93ae5e43bd3f295dcfa928f19fb44fed467"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    },
+    "before": {
+      "application_key_clients": {
+        "count": 8,
+        "sha256": "2b075b9408a9303b44dffc2ec52d6cae0e1cf15962dca6c462ff53de3dceb93a"
+      },
+      "application_key_devices": {
+        "count": 1,
+        "sha256": "4ab3888ee12ea5c4b3586c7894c6690b472e7d5f54044325a012642bd107196b"
+      },
+      "application_keys": {
+        "count": 4,
+        "sha256": "d5a98c024ffbdb159fff7abb43c5959e76f1ed06d0571d82e85fab80e428c589"
+      },
+      "catalog_entities": {
+        "count": 7,
+        "sha256": "2b20ee06bd13ad9574c9b906994b284cd344abc86a426501dcd04006863ec9d4"
+      },
+      "client_playback_references": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "devices": {
+        "count": 12,
+        "sha256": "6232403a1303e77a4e1a81bdfed37ef874947cb7f58695820171ceaad8939f9b"
+      },
+      "encoding_jobs": {
+        "count": 29,
+        "sha256": "75269d8ec020df0abc812b9fd7383bbccdf186f903faf8a4a05ff65e8154bbfb"
+      },
+      "item_entities": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_images": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "item_metadata_state": {
+        "count": 21,
+        "sha256": "72dfb94b52c3e88131663c3d807a23a4e936bb75b47a7d17897dd1458e679026"
+      },
+      "item_subtitles": {
+        "count": 2,
+        "sha256": "6619b278d3f418a9556f968ade1a30266741c9f9bfd146ccbcc21fbb93016af6"
+      },
+      "items": {
+        "count": 21,
+        "sha256": "795c3f4c70e5a5e1448dc586cd3716ee28eaad4cb03615953848e5799465140b"
+      },
+      "libraries": {
+        "count": 5,
+        "sha256": "76170cf93356bc3ed1d9d0bb038722fd6baaf0593b4144b9e06d2cb71b8e2ad6"
+      },
+      "library_roots": {
+        "count": 5,
+        "sha256": "114ff17ceb85f94613d1ad8692a0e75998258d01f7d331807da0c27dfbff3d4f"
+      },
+      "managed_settings": {
+        "count": 1,
+        "sha256": "366965bfa9e2f56c052fbc4d771c8122ad86b9102a38b9db2e8fea4b0c638754"
+      },
+      "play_sessions": {
+        "count": 30,
+        "sha256": "ff4cd61afbf6ed5b4198967d7a16adfcafc56ff6e4f23402ece1bb75d0747c8b"
+      },
+      "scan_jobs": {
+        "count": 46,
+        "sha256": "181cf8932556c0d9abfab2ed10a4a47bdfc58e6c4b8ab59cfe191b4cf7b28bf5"
+      },
+      "schema_migrations": {
+        "count": 21,
+        "sha256": "7a103ac66a57e752678bcac6e171c962a521704b05b09e41a5259114582c430b"
+      },
+      "server_settings": {
+        "count": 2,
+        "sha256": "aa111cc733da678b5fc007c365d6dd4dbe5e41bf65492b9279e66ea1602e2348"
+      },
+      "sessions": {
+        "count": 94,
+        "sha256": "d778cc33cb47b2f99c980f309a62660a0ccc97f1fe89828be5686a1022adc1fd"
+      },
+      "task_definitions": {
+        "count": 1,
+        "sha256": "85c9bc95fe2aa6b153b977de7459a678c320065f8d59a08f59ed729920b5bdd8"
+      },
+      "task_occurrences": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "task_run_children": {
+        "count": 5,
+        "sha256": "19de137e55286a3fa5eb90a0396e052d9ec8158c02340704a6b8b6b16402e161"
+      },
+      "task_run_requests": {
+        "count": 1,
+        "sha256": "128f2df8b7e072b2a419c1b63ec16563a3dbc57ac9019d392b36695fe9e6a3c9"
+      },
+      "task_runs": {
+        "count": 1,
+        "sha256": "2a269b2c533bbd9b76083f627f6f51e7b9c5c742132a0598f050b98d34cc6cc5"
+      },
+      "task_triggers": {
+        "count": 2,
+        "sha256": "28419fa06506ee6d29120e6a91d8c93ae5e43bd3f295dcfa928f19fb44fed467"
+      },
+      "user_item_data": {
+        "count": 15,
+        "sha256": "f02eab21e839f9d94e6a1aa54b159e6ab915206a57ef0e3afc68372e82f84d50"
+      },
+      "users": {
+        "count": 10,
+        "sha256": "e190ef418c91356ffeb9058aaf8ee6ae2e74b5f3b4ea3ce930ff4dee6dd22bd9"
+      }
+    }
+  },
+  "source_hashes_before": {
+    "media_count": 11,
+    "media_sha256": "ff1daa92111afc21eb2726301b02a2545da8b2367fbd89035a5b203d60c5951e",
+    "nfo_count": 0,
+    "nfo_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "status": "passed",
+  "vault": {
+    "bytes": 32,
+    "directory_mode": "0700",
+    "mode": "0600",
+    "uid": 995
+  },
+  "vault_unchanged": true,
+  "verification_run": 1,
+  "write_response_failures": 0
+}

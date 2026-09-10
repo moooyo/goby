@@ -46,13 +46,13 @@ func validateRevision(revision int64) error {
 }
 
 func validateReset(fields []Field) error {
-	if len(fields) < 1 || len(fields) > 5 {
-		return &ValidationError{Fields: map[string]string{"Fields": "select between one and five settings to reset"}}
+	if len(fields) < 1 || len(fields) > 6 {
+		return &ValidationError{Fields: map[string]string{"Fields": "select between one and six settings to reset"}}
 	}
 	seen := make(map[Field]struct{}, len(fields))
 	for _, field := range fields {
 		switch field {
-		case FieldServerName, FieldMaxBitrate, FieldMaxWidth, FieldMaxHeight, FieldMaxAudioChannels:
+		case FieldServerName, FieldMaxBitrate, FieldMaxWidth, FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth:
 		default:
 			return &ValidationError{Fields: map[string]string{"Fields": "reset contains an unsupported setting"}}
 		}
@@ -62,6 +62,43 @@ func validateReset(fields []Field) error {
 		seen[field] = struct{}{}
 	}
 	return nil
+}
+
+func validateName(mode ServerNameMode, value *string) error {
+	switch mode {
+	case ServerNameDeployment, ServerNameUnset:
+		if value == nil {
+			return nil
+		}
+	case ServerNameEmpty:
+		if value != nil && *value == "" {
+			return nil
+		}
+	case ServerNameCustom:
+		if value != nil {
+			if err := config.ValidateServerName(*value); err != nil {
+				return &ValidationError{Fields: map[string]string{"ServerName": strings.TrimPrefix(err.Error(), "GOBY_SERVER_NAME ")}}
+			}
+			return nil
+		}
+	default:
+		return &ValidationError{Fields: map[string]string{"ServerNameMode": "use deployment, custom, empty, or unset"}}
+	}
+	return &ValidationError{Fields: map[string]string{"ServerName": "configured name does not match the selected name mode"}}
+}
+
+func validateEncoding(value Encoding) error {
+	if value.TranscodingMaxWidth < 0 || value.TranscodingMaxWidth > 8192 {
+		return &ValidationError{Fields: map[string]string{"TranscodingMaxWidth": "encoding width must be between 0 and 8192"}}
+	}
+	return nil
+}
+
+func inferredNameMode(value *string) ServerNameMode {
+	if value == nil {
+		return ServerNameDeployment
+	}
+	return ServerNameCustom
 }
 
 func clearFields(value Overrides, fields []Field) Overrides {

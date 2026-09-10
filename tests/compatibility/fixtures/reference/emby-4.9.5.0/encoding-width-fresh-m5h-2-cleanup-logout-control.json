@@ -1,0 +1,73 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/emby/Sessions/Logout",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "widthExperiment": 0,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 204,
+    "reason": "No Content",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:56:33 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "text",
+    "body": ""
+  },
+  "observation": {
+    "completeHTTP": true,
+    "bodyExportable": true,
+    "wireBytes": 0,
+    "transportFailure": null,
+    "acknowledgementFailure": null,
+    "privateWireSha256": "473f3999a7f90a35c8d5d8918ff2394d81870146f8e9412663516af8ecdd9935"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:33.337942+00:00"
+  }
+}

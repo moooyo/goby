@@ -1,0 +1,199 @@
+{
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:55:50.850849+00:00"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/emby/Users/AuthenticateByName",
+    "headers": [
+      [
+        "Accept",
+        "application/json"
+      ],
+      [
+        "Authorization",
+        "[REDACTED_SECRET]"
+      ],
+      [
+        "Content-Type",
+        "application/json"
+      ]
+    ],
+    "body": {
+      "Username": "reference-encoding-width-fresh-m5h-02",
+      "Pw": "[REDACTED_SECRET]"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": [
+      [
+        "Content-Length",
+        "2960"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:55:50 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "User": {
+        "Name": "reference-encoding-width-fresh-m5h-02",
+        "ServerId": "61dea10d3f974dc784be57226a8daf62",
+        "Prefix": "R",
+        "DateCreated": "2026-09-10T07:55:49.2599168Z",
+        "Id": "82ff64dc3e3142f78529158dc75fed38",
+        "HasPassword": true,
+        "HasConfiguredPassword": true,
+        "LastLoginDate": "2026-09-10T07:55:50.8595858Z",
+        "LastActivityDate": "2026-09-10T07:55:50.8625443Z",
+        "Configuration": {
+          "PlayDefaultAudioTrack": true,
+          "DisplayMissingEpisodes": false,
+          "SubtitleMode": "Smart",
+          "OrderedViews": [],
+          "LatestItemsExcludes": [],
+          "MyMediaExcludes": [],
+          "HidePlayedInLatest": true,
+          "HidePlayedInMoreLikeThis": false,
+          "HidePlayedInSuggestions": false,
+          "RememberAudioSelections": true,
+          "RememberSubtitleSelections": true,
+          "EnableNextEpisodeAutoPlay": true,
+          "ResumeRewindSeconds": 0,
+          "IntroSkipMode": "ShowButton",
+          "EnableLocalPassword": false
+        },
+        "Policy": {
+          "IsAdministrator": true,
+          "IsHidden": false,
+          "IsHiddenRemotely": true,
+          "IsHiddenFromUnusedDevices": false,
+          "IsDisabled": false,
+          "LockedOutDate": 0,
+          "AllowTagOrRating": false,
+          "BlockedTags": [],
+          "IsTagBlockingModeInclusive": false,
+          "IncludeTags": [],
+          "EnableUserPreferenceAccess": true,
+          "AccessSchedules": [],
+          "BlockUnratedItems": [],
+          "EnableRemoteControlOfOtherUsers": true,
+          "EnableSharedDeviceControl": true,
+          "EnableRemoteAccess": true,
+          "EnableLiveTvManagement": true,
+          "EnableLiveTvAccess": true,
+          "EnableMediaPlayback": true,
+          "EnableAudioPlaybackTranscoding": true,
+          "EnableVideoPlaybackTranscoding": true,
+          "AutoRemoteQuality": 0,
+          "EnablePlaybackRemuxing": true,
+          "EnableContentDeletion": true,
+          "RestrictedFeatures": [],
+          "EnableContentDeletionFromFolders": [],
+          "EnableContentDownloading": true,
+          "EnableSubtitleDownloading": true,
+          "EnableSubtitleManagement": true,
+          "EnableSyncTranscoding": true,
+          "EnableMediaConversion": true,
+          "EnabledChannels": [],
+          "EnableAllChannels": true,
+          "EnabledFolders": [],
+          "EnableAllFolders": true,
+          "InvalidLoginAttemptCount": 0,
+          "EnablePublicSharing": true,
+          "RemoteClientBitrateLimit": 0,
+          "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+          "ExcludedSubFolders": [],
+          "SimultaneousStreamLimit": 0,
+          "EnabledDevices": [],
+          "EnableAllDevices": true,
+          "AllowCameraUpload": true,
+          "AllowSharingPersonalItems": true
+        }
+      },
+      "SessionInfo": {
+        "PlayState": {
+          "CanSeek": false,
+          "IsPaused": false,
+          "IsMuted": false,
+          "RepeatMode": "RepeatNone",
+          "SleepTimerMode": "None",
+          "SubtitleOffset": 0,
+          "Shuffle": false,
+          "PlaybackRate": 1
+        },
+        "AdditionalUsers": [],
+        "RemoteEndPoint": "127.0.0.1",
+        "Protocol": "HTTP/1.1",
+        "PlayableMediaTypes": [],
+        "PlaylistIndex": 0,
+        "PlaylistLength": 0,
+        "Id": "c06555f590e0fbdb55ddc3345e1c67fe",
+        "ServerId": "61dea10d3f974dc784be57226a8daf62",
+        "UserId": "82ff64dc3e3142f78529158dc75fed38",
+        "UserName": "reference-encoding-width-fresh-m5h-02",
+        "Client": "Goby Encoding Width Fresh M5h 02",
+        "LastActivityDate": "2026-09-10T07:55:50.8625443Z",
+        "DeviceName": "Linux Fresh Test",
+        "InternalDeviceId": 1,
+        "DeviceId": "goby-encoding-width-fresh-m5h-20260910-02-control",
+        "ApplicationVersion": "0.1.0",
+        "SupportedCommands": [],
+        "SupportsRemoteControl": false
+      },
+      "AccessToken": "[REDACTED_SECRET]",
+      "ServerId": "61dea10d3f974dc784be57226a8daf62"
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "captureIncomplete": false,
+    "failureType": null,
+    "wireBytes": 2960,
+    "freshFixtureOnly": true
+  }
+}

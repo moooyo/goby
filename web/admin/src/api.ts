@@ -465,7 +465,14 @@ export interface SettingsValues {
 
 export type SettingsField = keyof SettingsValues;
 export type SettingsOverrides = { [Field in SettingsField]: SettingsValues[Field] | null };
+export type ServerNameMode = "deployment" | "custom" | "empty" | "unset";
+export type SettingsResetField = SettingsField | "TranscodingMaxWidth";
+export interface SettingsEncoding {
+  TranscodingMaxWidth: number;
+}
+
 export interface SettingsDeployment {
+  HostName: string;
   TranscodingEnabled: boolean;
   HardwareDecoder: string;
   HardwareEncoder: string;
@@ -483,10 +490,17 @@ export interface ServerSettings {
   Sources: Record<SettingsField, "deployment" | "database">;
   UpdatedAt: string;
   Deployment: SettingsDeployment;
+  ServerNameMode: ServerNameMode;
+  Encoding: SettingsEncoding;
 }
 
-export interface SettingsUpdateInput { Revision: string; Overrides: SettingsOverrides }
-export interface SettingsResetInput { Revision: string; Fields: SettingsField[] }
+export interface SettingsUpdateInput {
+  Revision: string;
+  Overrides: SettingsOverrides;
+  ServerNameMode: ServerNameMode;
+  Encoding: SettingsEncoding;
+}
+export interface SettingsResetInput { Revision: string; Fields: SettingsResetField[] }
 
 export interface LoginInput {
   Name: string;
@@ -1051,21 +1065,36 @@ function taskPageParameters(query: TaskPageQuery): URLSearchParams {
 
 const managedSettingFields: SettingsField[] = ["ServerName", "MaxBitrate", "MaxWidth", "MaxHeight", "MaxAudioChannels"];
 
+function validSettingsRecord(value: unknown, fields: readonly string[]): value is Record<string, unknown> {
+  return isRecord(value) && Object.keys(value).length === fields.length
+    && Object.keys(value).every((field) => fields.includes(field));
+}
+
+function validSettingsText(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && !value.includes("\0")
+    && !/[\uD800-\uDFFF]/u.test(value);
+}
+
 function validSettingValue(field: SettingsField, value: unknown): boolean {
-  if (field === "ServerName") return typeof value === "string" && /[^\p{White_Space}]/u.test(value)
-    && !value.includes("\0")
-    && !/[\uD800-\uDFFF]/u.test(value)
+  if (field === "ServerName") return validSettingsText(value) && /[^\p{White_Space}]/u.test(value)
     && new TextEncoder().encode(value).length <= 128;
   const maximum = field === "MaxBitrate" ? 1000000000 : field === "MaxAudioChannels" ? 8 : 8192;
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= maximum;
 }
 
 function validateSettings(value: ServerSettings): void {
-  if (!isRecord(value) || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
+  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding"])
+    || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
     || value.Revision.length > 19 || BigInt(value.Revision) > 9223372036854775807n
-    || !validSessionTimestamp(value.UpdatedAt) || !isRecord(value.Defaults) || !isRecord(value.Overrides)
-    || !isRecord(value.Effective) || !isRecord(value.Sources) || !isRecord(value.Deployment)) throw invalidResponse();
+    || !validSessionTimestamp(value.UpdatedAt)
+    || !validSettingsRecord(value.Defaults, managedSettingFields)
+    || !validSettingsRecord(value.Overrides, managedSettingFields)
+    || !validSettingsRecord(value.Effective, managedSettingFields)
+    || !validSettingsRecord(value.Sources, managedSettingFields)
+    || !validSettingsRecord(value.Deployment, ["HostName", "TranscodingEnabled", "HardwareDecoder", "HardwareEncoder", "Threads", "MaxJobs", "MaxUserJobs", "MaxSessionJobs"])
+    || !validSettingsRecord(value.Encoding, ["TranscodingMaxWidth"])) throw invalidResponse();
   for (const field of managedSettingFields) {
+    if (field === "ServerName") continue;
     const override = value.Overrides[field];
     if (!validSettingValue(field, value.Defaults[field]) || !validSettingValue(field, value.Effective[field])
       || (override !== null && !validSettingValue(field, override))
@@ -1073,10 +1102,34 @@ function validateSettings(value: ServerSettings): void {
       || value.Sources[field] !== (override === null ? "deployment" : "database")) throw invalidResponse();
   }
   const deployment = value.Deployment;
-  if (typeof deployment.TranscodingEnabled !== "boolean"
+  if (!validSettingsText(deployment.HostName) || typeof deployment.TranscodingEnabled !== "boolean"
     || typeof deployment.HardwareDecoder !== "string" || typeof deployment.HardwareEncoder !== "string"
     || ![deployment.Threads, deployment.MaxJobs, deployment.MaxUserJobs, deployment.MaxSessionJobs]
       .every((count) => typeof count === "number" && Number.isSafeInteger(count) && count >= 0)) throw invalidResponse();
+  if (!validSettingValue("ServerName", value.Defaults.ServerName)) throw invalidResponse();
+  const name = value.Overrides.ServerName;
+  switch (value.ServerNameMode) {
+    case "deployment":
+      if (name !== null || value.Effective.ServerName !== value.Defaults.ServerName
+        || value.Sources.ServerName !== "deployment") throw invalidResponse();
+      break;
+    case "custom":
+      if (!validSettingValue("ServerName", name) || value.Effective.ServerName !== name
+        || value.Sources.ServerName !== "database") throw invalidResponse();
+      break;
+    case "empty":
+      if (name !== "" || value.Effective.ServerName !== deployment.HostName
+        || value.Sources.ServerName !== "database") throw invalidResponse();
+      break;
+    case "unset":
+      if (name !== null || value.Effective.ServerName !== deployment.HostName
+        || value.Sources.ServerName !== "database") throw invalidResponse();
+      break;
+    default:
+      throw invalidResponse();
+  }
+  const width = value.Encoding.TranscodingMaxWidth;
+  if (typeof width !== "number" || !Number.isSafeInteger(width) || width < 0 || width > 8192) throw invalidResponse();
 }
 
 export const adminApi = {

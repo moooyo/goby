@@ -16,12 +16,17 @@ The checked-in [Linux environment example](../../deploy/linux/.env.example)
 contains all conversion settings. Values are read at startup; changing an
 environment file requires a service restart.
 
-The accepted [M5g managed-settings increment](settings.md) adds database overrides
-for server name and four output-planning ceilings. Environment values supply
-startup defaults; non-null database overrides take precedence. Reset resumes
-the current deployment default. Hardware and resource controls remain
-startup-only. The [native API](../api/settings.md) does not expose an Emby
-ConfigurationService adapter.
+The accepted [managed settings](settings.md) provide four native output-planning
+overrides over environment defaults, together with explicit server-name modes.
+Resetting a native numeric override resumes its deployment default. M5h adds
+the independent `Encoding.TranscodingMaxWidth` ceiling through the
+[native API](../api/settings.md) and supported
+[Emby configuration routes](../api/configuration.md). A positive additional
+width combines with native width by taking the smaller value; zero removes only
+the additional ceiling. Native width, height, bitrate, and resource budgets still
+apply. This value has no additional environment variable. Hardware and resource
+controls remain startup-only, and previously registered plans retain their
+concrete settings.
 
 | Environment variable | Default | Accepted range or meaning |
 | --- | --- | --- |

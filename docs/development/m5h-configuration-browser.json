@@ -1,0 +1,537 @@
+{
+  "application_pids": [
+    3640439,
+    3640558,
+    3640578
+  ],
+  "application_startup_defaults": [
+    {
+      "MaxAudioChannels": 8,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 1920,
+      "ServerName": "Settings deployment 20260910_075230_8bc7a22dfd"
+    },
+    {
+      "MaxAudioChannels": 8,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 1920,
+      "ServerName": "Settings deployment 20260910_075230_8bc7a22dfd"
+    },
+    {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 2560,
+      "ServerName": "Settings replacement 20260910_075230_8bc7a22dfd"
+    }
+  ],
+  "assets_archive_sha256": "bacaf77d3f98e3d7df07bc439e75854eeb67a82faf9ca09c84ba262af6efc9e8",
+  "binary_sha256": "62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54",
+  "browser": {
+    "duration_ms": 7808.112,
+    "exit_code": 0,
+    "expected": 1,
+    "failures": [],
+    "flaky": 0,
+    "skipped": 0,
+    "unexpected": 0
+  },
+  "browser_checks": {
+    "AdditionalWidthSubsetResetPreservesNativeDraftAndSavedLimit": true,
+    "AllSixSettingsResetTogether": true,
+    "CommittedResponseLossRequiresReloadWithoutRewrite": true,
+    "FiveOverridesAndExactMbpsInteger": true,
+    "InitialSourcesDefaultsAndReadonlyDeployment": true,
+    "MixedOverridesPreparedForRestartChecks": true,
+    "MobileLayoutAndDirtyNavigationGuard": true,
+    "PositiveAndZeroAdditionalWidthPreserveNativeWidth": true,
+    "ResetCancellationAndFullReset": true,
+    "RevisionConflictRequiresExplicitReload": true,
+    "ServerNamePublishesToPublicInfoAndOverview": true,
+    "SubsetResetPreservesUnselectedDraft": true,
+    "ThreeNameChoicesAndFourStoredModes": true,
+    "UnsetAndPositiveAdditionalWidthPreparedForRestartChecks": true,
+    "UnsetNamePresentedAsHostName": true,
+    "UnsetNameSurvivesOtherFieldEdits": true
+  },
+  "browser_driver_stderr": "",
+  "browser_result": {
+    "Checks": {
+      "AdditionalWidthSubsetResetPreservesNativeDraftAndSavedLimit": true,
+      "AllSixSettingsResetTogether": true,
+      "CommittedResponseLossRequiresReloadWithoutRewrite": true,
+      "FiveOverridesAndExactMbpsInteger": true,
+      "InitialSourcesDefaultsAndReadonlyDeployment": true,
+      "MixedOverridesPreparedForRestartChecks": true,
+      "MobileLayoutAndDirtyNavigationGuard": true,
+      "PositiveAndZeroAdditionalWidthPreserveNativeWidth": true,
+      "ResetCancellationAndFullReset": true,
+      "RevisionConflictRequiresExplicitReload": true,
+      "ServerNamePublishesToPublicInfoAndOverview": true,
+      "SubsetResetPreservesUnselectedDraft": true,
+      "ThreeNameChoicesAndFourStoredModes": true,
+      "UnsetAndPositiveAdditionalWidthPreparedForRestartChecks": true,
+      "UnsetNamePresentedAsHostName": true,
+      "UnsetNameSurvivesOtherFieldEdits": true
+    },
+    "Complete": true,
+    "FinalSettings": {
+      "Defaults": {
+        "MaxAudioChannels": 8,
+        "MaxBitrate": 20000000,
+        "MaxHeight": 1080,
+        "MaxWidth": 1920,
+        "ServerName": "Settings deployment 20260910_075230_8bc7a22dfd"
+      },
+      "Deployment": {
+        "HardwareDecoder": "software",
+        "HardwareEncoder": "software",
+        "HostName": "test-env",
+        "MaxJobs": 2,
+        "MaxSessionJobs": 1,
+        "MaxUserJobs": 1,
+        "Threads": 2,
+        "TranscodingEnabled": false
+      },
+      "Effective": {
+        "MaxAudioChannels": 8,
+        "MaxBitrate": 1234567,
+        "MaxHeight": 720,
+        "MaxWidth": 1920,
+        "ServerName": "test-env"
+      },
+      "Encoding": {
+        "TranscodingMaxWidth": 640
+      },
+      "Overrides": {
+        "MaxAudioChannels": null,
+        "MaxBitrate": 1234567,
+        "MaxHeight": 720,
+        "MaxWidth": null,
+        "ServerName": null
+      },
+      "Revision": "17",
+      "ServerNameMode": "unset",
+      "Sources": {
+        "MaxAudioChannels": "deployment",
+        "MaxBitrate": "database",
+        "MaxHeight": "database",
+        "MaxWidth": "deployment",
+        "ServerName": "database"
+      },
+      "UpdatedAt": "2026-09-10T07:52:38.98697Z"
+    },
+    "Marker": "goby-configuration-settings-result-v1",
+    "NativeSessionCount": 2,
+    "RunId": "20260910_075230_8bc7a22dfd"
+  },
+  "browser_result_status": {
+    "complete": true,
+    "marker": "goby-configuration-settings-result-v1",
+    "run_id": "20260910_075230_8bc7a22dfd"
+  },
+  "checks": {
+    "application_uid": 995,
+    "browser_completed_without_skips_or_retries": true,
+    "browser_native_settings_journey": true,
+    "database_bitrate_height_and_encoding_width_survive_restart": true,
+    "dedicated_low_privilege_role": {
+      "bypass_rls": false,
+      "create_db": false,
+      "create_role": false,
+      "login": true,
+      "replication": false,
+      "superuser": false
+    },
+    "deployment_defaults_never_written_to_managed_settings": true,
+    "exact_temporary_hba_rule": true,
+    "first_restart_preserved_all_28_public_tables_exactly": true,
+    "first_restart_preserved_name_mode_encoding_and_native_settings": true,
+    "fresh_dedicated_administrator": true,
+    "initial_unset_mode_seeded_by_native_cas_put": true,
+    "loaded_ui_assets_unchanged": true,
+    "native_credentials_before_cleanup": 2,
+    "native_null_width_and_channels_use_new_startup_defaults": true,
+    "original_browser_login_survives_first_restart": true,
+    "original_browser_login_survives_second_restart": true,
+    "private_logs_exclude_raw_secrets": true,
+    "provided_binary_and_assets_hashes_verified": true,
+    "public_info_and_overview_use_effective_server_name": true,
+    "restart_snapshot_public_table_count": 28,
+    "schema_version": 21,
+    "second_restart_changed_only_null_override_default_fields": true,
+    "second_restart_preserved_all_28_public_tables_exactly": true,
+    "secret_free_screenshots": 4,
+    "six_field_reset_restores_deployment_mode_and_zero_encoding_width": true,
+    "unset_name_keeps_host_fallback_after_deployment_name_changes": true
+  },
+  "cleanup": {
+    "application_runtime_removed": true,
+    "application_stopped": true,
+    "browser_stopped_before_session_cleanup": true,
+    "credential_bearing_temporary_files_removed": true,
+    "dedicated_database_removed": true,
+    "dedicated_role_removed": true,
+    "every_issued_session_revoked_control_last": true,
+    "hba_restored_exactly": true,
+    "inflight_control_connections_stopped": true,
+    "native_cleanup_control_available": true,
+    "native_sessions_revoked_count": 2,
+    "preexisting_database_catalog_unchanged": true,
+    "private_browser_secrets_collected": true,
+    "shared_application_service_unchanged": true,
+    "tagged_processes_stopped": true
+  },
+  "cleanup_errors": {},
+  "database": "goby_m5h_configuration_20260910_075230_8bc7a22dfd",
+  "database_port": 15432,
+  "databases_after": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "databases_before": [
+    {
+      "allows_connections": true,
+      "name": "goby_test",
+      "owner": "goby_test"
+    },
+    {
+      "allows_connections": true,
+      "name": "postgres",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": false,
+      "name": "template0",
+      "owner": "postgres"
+    },
+    {
+      "allows_connections": true,
+      "name": "template1",
+      "owner": "postgres"
+    }
+  ],
+  "fixtures": {
+    "dedicated_administrators": 1,
+    "final_encoding": {
+      "TranscodingMaxWidth": 640
+    },
+    "final_overrides": {
+      "MaxAudioChannels": null,
+      "MaxBitrate": 1234567,
+      "MaxHeight": 720,
+      "MaxWidth": null,
+      "ServerName": null
+    },
+    "final_server_name_mode": "unset",
+    "initial_defaults": {
+      "MaxAudioChannels": 8,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 1920,
+      "ServerName": "Settings deployment 20260910_075230_8bc7a22dfd"
+    },
+    "initial_native_sessions": 1,
+    "initial_settings": {
+      "Defaults": {
+        "MaxAudioChannels": 8,
+        "MaxBitrate": 20000000,
+        "MaxHeight": 1080,
+        "MaxWidth": 1920,
+        "ServerName": "Settings deployment 20260910_075230_8bc7a22dfd"
+      },
+      "Deployment": {
+        "HardwareDecoder": "software",
+        "HardwareEncoder": "software",
+        "HostName": "test-env",
+        "MaxJobs": 2,
+        "MaxSessionJobs": 1,
+        "MaxUserJobs": 1,
+        "Threads": 2,
+        "TranscodingEnabled": false
+      },
+      "Effective": {
+        "MaxAudioChannels": 8,
+        "MaxBitrate": 20000000,
+        "MaxHeight": 1080,
+        "MaxWidth": 1920,
+        "ServerName": "test-env"
+      },
+      "Encoding": {
+        "TranscodingMaxWidth": 0
+      },
+      "Overrides": {
+        "MaxAudioChannels": null,
+        "MaxBitrate": null,
+        "MaxHeight": null,
+        "MaxWidth": null,
+        "ServerName": null
+      },
+      "Revision": "2",
+      "ServerNameMode": "unset",
+      "Sources": {
+        "MaxAudioChannels": "deployment",
+        "MaxBitrate": "deployment",
+        "MaxHeight": "deployment",
+        "MaxWidth": "deployment",
+        "ServerName": "database"
+      },
+      "UpdatedAt": "2026-09-10T07:52:30.687292Z"
+    },
+    "media_files_created": 0,
+    "playback_requests": 0,
+    "private_manifest": true,
+    "replacement_defaults": {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 2560,
+      "ServerName": "Settings replacement 20260910_075230_8bc7a22dfd"
+    }
+  },
+  "hba_original_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "hba_restored_sha256": "f75dfda5c65b0d2e3aa2ffa15b9e33a0709a2bfbfd4f5d84ba39e981d2b6415e",
+  "http_port": 49285,
+  "node_version": "v20.19.2",
+  "playwright_version": "1.63.0",
+  "provenance": {
+    "assets_archive_sha256": "bacaf77d3f98e3d7df07bc439e75854eeb67a82faf9ca09c84ba262af6efc9e8",
+    "binary_sha256": "62729fa1ba6b7d5f191d598c79a14606cb139bcdec6346ff5c3f1676551afd54",
+    "browser_result_projection_sha256": "d6e16eec205f4aacb846f16563b81702d0bdeed8f45d2fae4cee291d8ee43c99",
+    "loaded_ui_files_sha256": {
+      "assets/AddRounded-B4VbVs6J.js": "7b5747e346224d66be97daadcee7d321a831bd7d5be91ed1181d17bac5b13829",
+      "assets/ApiKeysPage-w4vLXu1d.js": "ee7e168b80d04496b1697cf5e9e079f9d5b83eeca5feb6db1ddf576b6111aece",
+      "assets/ArrowBackRounded-xyFfXWYz.js": "4f3ccd4a1e7055314e7e645e6cdea2cc153f02cbd956ccb1fb6f7116d56597f4",
+      "assets/ArrowForwardRounded-Du1Xt2I1.js": "21f5028a1af8090404a42f7ee9400f7b93ea83424805344dfbbdec44fd0d28a5",
+      "assets/AuthPage-rBUKQuqP.js": "3dcfb80ea89aabb699b44dc84e0c2c4bb54c9851844a7d29113d4d6640357729",
+      "assets/Autocomplete-DpwG6Ji_.js": "9303b8988407d3766eb3ffc73649335bb04605147bb12b3536ef69dab70802f5",
+      "assets/CheckCircleOutlineRounded-CcAqKMBn.js": "aa88ee94e53263ac4a1c1cab176f539d196fb22ed93f909cb9096dc1811f1d5c",
+      "assets/Checkbox-C8Xr-_g2.js": "fc70a67d39f03a0ac9292cd601d46f598dba2b1da3b098844650d0799eedfd89",
+      "assets/ContentCopyRounded-CwU1_his.js": "28c6255b72d1877012c70a0e00ce5f2395a4b534f52f0f740806de9b5205a934",
+      "assets/DeleteOutlineRounded-BAapdqA2.js": "47d4684e4bbaca5f2f4425b137d6da74c73bb5ea73b4a4b032fff6907bf610b1",
+      "assets/DevicesPage-CrpNqq3H.js": "6a0c717f02db9e91e5de74e5937e17cc9844615009a67f32734e03c5fd466203",
+      "assets/DialogTitle-Cjq_h4JW.js": "96579a34ac33bbbf6a4fbb4355c7a09371de854987d8f3305ccc89fe6200f804",
+      "assets/EditOutlined-BY8TfFON.js": "f2d851da4dca3aa552a614901e2ced90ddaddd76171e911477e22dd96db9bb92",
+      "assets/FilterAltOffOutlined-BBBb06y2.js": "2b428c503a06a92434562f71c6b548239faee063af9cc8ae2a02e6626731e42e",
+      "assets/FormControlLabel-CCnWINLR.js": "452706a84bd81b01eca1fe14a166178bf298e25e387974bc3834113285776d21",
+      "assets/LibrariesPage-DVXRQcC-.js": "e1e369e8040865257e0748f8ca1ac32c105ae00a193038976c9513d367268566",
+      "assets/List-C4jBiCeY.js": "731509b1ab252fbc7aa006787599d50f6817ab5f96c491d1a2cafc91b729a2d8",
+      "assets/LockOutlined-DC5H8v4u.js": "d9e19867db7b06af86d3febb67014d0103a2315de8f689369ec4cda699688a0b",
+      "assets/MenuItem-EeDGaSYs.js": "a085bc57a3bfb2fbcf38480576d79b5c7ee572e35c584e54af437d0706fca0a7",
+      "assets/MetadataItemsPage-DNPSSXpo.js": "984e4f483204f9c2fec3cc285cea37041779442e49435222ad0d34e1fc0c498b",
+      "assets/OverviewPage-C1BmYNcT.js": "19813fa6867abf9ac852cdf95d6700c02af099855ecd804092b1865299c249e6",
+      "assets/RestartAltRounded-BvI2p_se.js": "945c3e758f741e27a74fd979058505277715a241d39a66cb3855f711eeffae54",
+      "assets/SaveOutlined-wY4EpDl6.js": "86de50fbe073e8e9127a52f99c79a4d542fcb82707694dbbd0d8d1712635d7f3",
+      "assets/SearchRounded-BUuhj9KO.js": "382a74c8b44d7288b00d3f9f065220642f465d7e12c51580dfa1433215f16196",
+      "assets/SessionsPage-BS7hLnMf.js": "0c9143945a7e34d1d71e916221811eddd420fda0c36cf426d81d609612f9177d",
+      "assets/SettingsPage-CzDKbY-R.js": "464ff82cae0587d91103943b72feb55e29916b0632d51a7183911c4004932291",
+      "assets/ShieldOutlined-B0plQK8E.js": "d0acbff3d59ae1ff547d8549899d09fb6dcffc7b7696829444ed288d0eaf00dc",
+      "assets/Snackbar-onIvUGtK.js": "5b86021b6505b64d9784851b072bcf37d5c8fd12ee4eb9aa7f555b72665ee6f2",
+      "assets/Switch-C9-4XX_R.js": "d7e8daeab76a3f2f627ec68ed49b92a39a446c17ddea2da5451ff36cbdc6b245",
+      "assets/TablePagination-gacTYJVp.js": "74d77b6c391817e50dfd623317de4460de55fab0aca9788818f04e93412fde6b",
+      "assets/TableRow-BOuKAk4K.js": "b58082847a0271fa0f6bb2d431a8981bf9dce1789c4f9ccf381072acd3408aee",
+      "assets/TasksPage-DjQre57q.js": "268e6e8778c8871ade2c8c2d9bd7484c946526187d86df10089f2a5c15cb6171",
+      "assets/UsersPage-uh677T9m.js": "12c3b22eaa82397d0111050ea90d75c5a85c33194c62dc6b5e64e844a05424f4",
+      "assets/components-BhCC6uWC.js": "5c58010376dc80c482a1b415ddbe8faed338a066df0c5841ec8898a153b5bcc3",
+      "assets/formFields-B7KS_hO1.js": "baa49d226c97b171b84be3db083033bfa6e822bfe01786cce008500f6325be33",
+      "assets/index-CZ92pu2H.js": "0aab6246be75de20cf40b103555886f787fb965256fbe8367e0d5de65a5731ac",
+      "assets/index-Di0tN6tC.css": "06be1093dcfdef5a82e591bc85112bbd6870376cdd30c40545420d1499c90b52",
+      "assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+      "assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+      "assets/manrope-greek-wght-normal-DL7QRZyv.woff2": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+      "assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+      "assets/manrope-latin-wght-normal-DHIcAJRg.woff2": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+      "assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+      "assets/public-sans-latin-ext-wght-normal-MQgHevqp.woff2": "3a00a32f0242b723dcea79935747d6d27dd93675d03ef23f470dfe274e79586a",
+      "assets/public-sans-latin-wght-normal-DdeTHZLK.woff2": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68",
+      "assets/public-sans-vietnamese-wght-normal-CtlIRbEm.woff2": "94593e69fad0885b2b0b74cd18d036c7e9cd6051b2256ab281a20f5bc9ccb46f",
+      "assets/rolldown-runtime-CbXtAM7H.js": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a",
+      "assets/useMediaQuery-BWuSTqUZ.js": "e548cba686a077b7a82838e8e1dfdcda67368cfd1b8f7386ea4af7120c78fcce",
+      "assets/userDraftNavigation-BOBq_HcT.js": "bd7a75db0a7e50f424aec72f726bb70ecd1a7ee6ecfdcd7b67df374ad2be2c8f",
+      "index.html": "d867c58968ef453530183f8955b394059c9a3405ea7d633756c690a30304ce37"
+    },
+    "loaded_ui_manifest_sha256": "cf7d0411e82fe1116ce0a57c7114f9cd9b4866150d1c8674fea807614b5608ce",
+    "private_browser_api_sha256": "29223546b0d4bb87a2ad696362504457e1bdcecf80fb024f1552e458d6004267",
+    "private_browser_spec_sha256": "d90fd8c26b6b361a5ba60f3be2e3cff32d5d281a0ea4a7f55f138f84df58c811",
+    "screenshots_sha256": {
+      "settings-defaults-desktop.png": "f49ba9545affa61a09ff0c3bc56932354848464075d2cf7db301477bbb294199",
+      "settings-mobile.png": "15705d06431070e93690a3172ed3f69bf436676b187b1547d0e83196684da855",
+      "settings-overrides-desktop.png": "6fac9b4aa36e26a0a9bf150206219a8b857981141448939ba17369df8abef8c6",
+      "settings-reset-desktop.png": "ab0363b0b74c703823fc99dcac80b8819cfba652346430035f34318f7328df87"
+    },
+    "settings_runner_sha256": "4f6cac961e2097794f0bd67aa7456f614c040af3dc51de5e9e7e9a51b4632ffe",
+    "shared_runner_sha256": "3ae1311d6559187365600cb34a36a60c4cc02bf52e53bf7746c8e025956ad319",
+    "source_inputs_sha256": {
+      "e2e/settings.spec.ts": "d90fd8c26b6b361a5ba60f3be2e3cff32d5d281a0ea4a7f55f138f84df58c811",
+      "package-lock.json": "3f68111eb71283903ac90550e340dd261a3bba33eb4ff2f65f21dd41ab0c9307",
+      "package.json": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b",
+      "playwright.config.ts": "e270b700e65d18a8f5120d6db27850cfd55682551881fd0d103efc6cb44dba44",
+      "src/App.tsx": "057d76e127036c64904f064e76bce8f050139eb0f5e466d7644419d3262fd323",
+      "src/SettingsPage.tsx": "bcdd87822f2c6bc39e1f89199a982fde57732582951d9e41c6cdc14a25125388",
+      "src/api.ts": "29223546b0d4bb87a2ad696362504457e1bdcecf80fb024f1552e458d6004267",
+      "src/settingsDraft.ts": "26bea4184aaf350d3c01a59993312081f111a0da22f984e7549633d61aa4c57d"
+    },
+    "wrapper_sha256": "8c09b89a4f238b5bbda483acdc895534343c1cb8474ba82e10512dc35ea0638d"
+  },
+  "replacement_settings": {
+    "Defaults": {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 2560,
+      "ServerName": "Settings replacement 20260910_075230_8bc7a22dfd"
+    },
+    "Deployment": {
+      "HardwareDecoder": "software",
+      "HardwareEncoder": "software",
+      "HostName": "test-env",
+      "MaxJobs": 2,
+      "MaxSessionJobs": 1,
+      "MaxUserJobs": 1,
+      "Threads": 2,
+      "TranscodingEnabled": false
+    },
+    "Effective": {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 1234567,
+      "MaxHeight": 720,
+      "MaxWidth": 2560,
+      "ServerName": "test-env"
+    },
+    "Encoding": {
+      "TranscodingMaxWidth": 640
+    },
+    "Overrides": {
+      "MaxAudioChannels": null,
+      "MaxBitrate": 1234567,
+      "MaxHeight": 720,
+      "MaxWidth": null,
+      "ServerName": null
+    },
+    "Revision": "17",
+    "ServerNameMode": "unset",
+    "Sources": {
+      "MaxAudioChannels": "deployment",
+      "MaxBitrate": "database",
+      "MaxHeight": "database",
+      "MaxWidth": "deployment",
+      "ServerName": "database"
+    },
+    "UpdatedAt": "2026-09-10T07:52:38.98697Z"
+  },
+  "reset_settings": {
+    "Defaults": {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 2560,
+      "ServerName": "Settings replacement 20260910_075230_8bc7a22dfd"
+    },
+    "Deployment": {
+      "HardwareDecoder": "software",
+      "HardwareEncoder": "software",
+      "HostName": "test-env",
+      "MaxJobs": 2,
+      "MaxSessionJobs": 1,
+      "MaxUserJobs": 1,
+      "Threads": 2,
+      "TranscodingEnabled": false
+    },
+    "Effective": {
+      "MaxAudioChannels": 6,
+      "MaxBitrate": 20000000,
+      "MaxHeight": 1080,
+      "MaxWidth": 2560,
+      "ServerName": "Settings replacement 20260910_075230_8bc7a22dfd"
+    },
+    "Encoding": {
+      "TranscodingMaxWidth": 0
+    },
+    "Overrides": {
+      "MaxAudioChannels": null,
+      "MaxBitrate": null,
+      "MaxHeight": null,
+      "MaxWidth": null,
+      "ServerName": null
+    },
+    "Revision": "18",
+    "ServerNameMode": "deployment",
+    "Sources": {
+      "MaxAudioChannels": "deployment",
+      "MaxBitrate": "deployment",
+      "MaxHeight": "deployment",
+      "MaxWidth": "deployment",
+      "ServerName": "deployment"
+    },
+    "UpdatedAt": "2026-09-10T07:52:39.520557Z"
+  },
+  "role": "goby_m5h_role_20260910_075230_8bc7a22dfd",
+  "run_id": "20260910_075230_8bc7a22dfd",
+  "scenario": "configuration_settings",
+  "shared_service_after": {
+    "ActiveState": "active",
+    "MainPID": "3614026"
+  },
+  "shared_service_before": {
+    "ActiveState": "active",
+    "MainPID": "3614026"
+  },
+  "snapshot_tables": [
+    "application_key_clients",
+    "application_key_devices",
+    "application_keys",
+    "catalog_entities",
+    "client_playback_references",
+    "devices",
+    "encoding_jobs",
+    "item_entities",
+    "item_images",
+    "item_metadata_state",
+    "item_subtitles",
+    "items",
+    "libraries",
+    "library_roots",
+    "managed_settings",
+    "play_sessions",
+    "scan_jobs",
+    "schema_migrations",
+    "server_settings",
+    "sessions",
+    "task_definitions",
+    "task_occurrences",
+    "task_run_children",
+    "task_run_requests",
+    "task_runs",
+    "task_triggers",
+    "user_item_data",
+    "users"
+  ],
+  "source_spec_sha256": "d90fd8c26b6b361a5ba60f3be2e3cff32d5d281a0ea4a7f55f138f84df58c811",
+  "space_before": {
+    "/": 60974800896,
+    "/dev/shm": 1798934528,
+    "/dev/shm/goby-pg-m4c": 821317632,
+    "/opt/goby-test/exec-scratch": 323768320
+  },
+  "status": "passed"
+}

@@ -10,7 +10,8 @@ func TestManagedSettingsSnapshotRemainsAvailableWhilePublicationIsLocked(t *test
 	// No owner or pool exists here. A runtime snapshot must use only the
 	// already published immutable value, even while a writer holds its lock.
 	store := &Store{}
-	initial := Snapshot{Revision: 1, Defaults: settingsTestDefaults(), Effective: settingsTestDefaults(), UpdatedAt: time.Unix(1, 0).UTC()}
+	initial := Snapshot{Revision: 1, Defaults: settingsTestDefaults(), Effective: settingsTestDefaults(),
+		ServerNameMode: ServerNameDeployment, HostName: "settings-host-alpha", UpdatedAt: time.Unix(1, 0).UTC()}
 	store.publish(initial)
 	store.publicationMu.Lock()
 	defer store.publicationMu.Unlock()
@@ -30,8 +31,9 @@ func TestManagedSettingsPublicationRejectsOlderRevisionsAndOwnsEveryPointer(t *t
 	store := &Store{}
 	name, bitrate, width, height, channels := "Current", int64(10_000_000), 1280, 720, 2
 	value := Snapshot{Revision: 5, Defaults: settingsTestDefaults(), UpdatedAt: time.Unix(5, 0).UTC(),
+		ServerNameMode: ServerNameCustom, HostName: "settings-host-alpha",
 		Overrides: Overrides{ServerName: &name, MaxBitrate: &bitrate, MaxWidth: &width, MaxHeight: &height, MaxAudioChannels: &channels}}
-	value.Effective = effectiveValues(value.Defaults, value.Overrides)
+	value.Effective = effectiveValues(value.Defaults, value.Overrides, value.ServerNameMode, value.HostName)
 	published := store.publish(value)
 	name, bitrate, width, height, channels = "Changed input", 1, 1, 1, 1
 	*published.Overrides.ServerName = "Changed returned name"
@@ -41,17 +43,18 @@ func TestManagedSettingsPublicationRejectsOlderRevisionsAndOwnsEveryPointer(t *t
 	*published.Overrides.MaxAudioChannels = 1
 	current := store.Snapshot()
 	if current.Effective != (Values{ServerName: "Current", MaxBitrate: 10_000_000, MaxWidth: 1280, MaxHeight: 720, MaxAudioChannels: 2}) ||
-		current.Effective != effectiveValues(current.Defaults, current.Overrides) {
+		current.Effective != effectiveValues(current.Defaults, current.Overrides, current.ServerNameMode, current.HostName) {
 		t.Fatal("publication retained caller-owned override pointers")
 	}
-	stale := Snapshot{Revision: 4, Defaults: settingsTestDefaults(), Effective: settingsTestDefaults()}
+	stale := Snapshot{Revision: 4, Defaults: settingsTestDefaults(), Effective: settingsTestDefaults(),
+		ServerNameMode: ServerNameDeployment, HostName: "settings-host-alpha"}
 	returned := store.publish(stale)
 	if !reflect.DeepEqual(returned, current) || !reflect.DeepEqual(store.Snapshot(), current) {
 		t.Fatal("a delayed publisher replaced a newer revision")
 	}
 	*returned.Overrides.MaxWidth = 3
 	*current.Overrides.MaxHeight = 3
-	if store.Snapshot().Effective != effectiveValues(store.Snapshot().Defaults, store.Snapshot().Overrides) {
+	if store.Snapshot().Effective != effectiveValues(store.Snapshot().Defaults, store.Snapshot().Overrides, store.Snapshot().ServerNameMode, store.Snapshot().HostName) {
 		t.Fatal("read snapshots leaked mutable override references")
 	}
 }

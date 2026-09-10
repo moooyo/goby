@@ -1,0 +1,102 @@
+{
+  "status": "passed",
+  "goExitCode": 0,
+  "topLevelTests": {
+    "pass": 1252
+  },
+  "failedTests": [],
+  "packages": [
+    {
+      "Time": "2026-09-10T15:39:16.998527958+08:00",
+      "Action": "skip",
+      "Package": "github.com/moooyo/goby/cmd/goby",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-09-10T15:39:18.038716562+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/config",
+      "Elapsed": 1.022
+    },
+    {
+      "Time": "2026-09-10T15:39:19.099448844+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/artwork",
+      "Elapsed": 2.101
+    },
+    {
+      "Time": "2026-09-10T15:39:20.533252834+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/events",
+      "Elapsed": 1.204
+    },
+    {
+      "Time": "2026-09-10T15:39:22.237939608+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/database",
+      "Elapsed": 4.174
+    },
+    {
+      "Time": "2026-09-10T15:40:03.738203155+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/library",
+      "Elapsed": 38.716
+    },
+    {
+      "Time": "2026-09-10T15:40:10.216051904+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/media",
+      "Elapsed": 5.344
+    },
+    {
+      "Time": "2026-09-10T15:40:12.045367537+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/metadata",
+      "Elapsed": 1.564
+    },
+    {
+      "Time": "2026-09-10T15:40:14.441203319+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/playback",
+      "Elapsed": 1.237
+    },
+    {
+      "Time": "2026-09-10T15:43:04.606036391+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/identity",
+      "Elapsed": 222.638
+    },
+    {
+      "Time": "2026-09-10T15:43:15.373982145+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/settings",
+      "Elapsed": 10.1
+    },
+    {
+      "Time": "2026-09-10T15:43:16.748662918+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/subtitle",
+      "Elapsed": 1.1280000000000001
+    },
+    {
+      "Time": "2026-09-10T15:43:49.607854737+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Elapsed": 31.924
+    },
+    {
+      "Time": "2026-09-10T15:44:52.850373208+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/transcode",
+      "Elapsed": 60.553
+    },
+    {
+      "Time": "2026-09-10T15:50:20.070792976+08:00",
+      "Action": "pass",
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Elapsed": 605.198
+    }
+  ],
+  "raceWarningPresent": false,
+  "logSha256": "2ca4c8a1e14f7825761b14399578cba131f4e101719c45e3893c938e1976fcaf"
+}

@@ -1,0 +1,264 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/emby/Items?UserId=[REDACTED_QUERY]&Recursive=[REDACTED_QUERY]&Path=[REDACTED_QUERY]&Fields=[REDACTED_QUERY]&StartIndex=[REDACTED_QUERY]&Limit=[REDACTED_QUERY]",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "[REDACTED_SECRET]",
+      "X-Emby-Token": "[REDACTED_SECRET]"
+    },
+    "bodyPresent": false,
+    "body": null,
+    "widthExperiment": null,
+    "approvedMutationKind": null
+  },
+  "response": {
+    "status": 200,
+    "reason": "OK",
+    "httpVersion": 11,
+    "headers": [
+      [
+        "Content-Length",
+        "3573"
+      ],
+      [
+        "Content-Type",
+        "application/json; charset=utf-8"
+      ],
+      [
+        "Date",
+        "Thu, 10 Sep 2026 07:56:29 GMT"
+      ],
+      [
+        "Server",
+        "UPnP/1.0 DLNADOC/1.50"
+      ],
+      [
+        "Access-Control-Allow-Headers",
+        "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization"
+      ],
+      [
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      ],
+      [
+        "Access-Control-Allow-Origin",
+        "*"
+      ],
+      [
+        "Expires",
+        "-1"
+      ],
+      [
+        "Cross-Origin-Resource-Policy",
+        "cross-origin"
+      ],
+      [
+        "Access-Control-Allow-Private-Network",
+        "true"
+      ],
+      [
+        "Private-Network-Access-Name",
+        "Goby Encoding Width Fresh M5h 20260910 02"
+      ],
+      [
+        "Private-Network-Access-Id",
+        "61dea10d3f974dc784be57226a8daf62"
+      ]
+    ],
+    "bodyType": "json",
+    "body": {
+      "Items": [
+        {
+          "Name": "Width Source M5h",
+          "ServerId": "61dea10d3f974dc784be57226a8daf62",
+          "Id": "6",
+          "Container": "mp4",
+          "MediaSources": [
+            {
+              "Chapters": [],
+              "Protocol": "File",
+              "Id": "mediasource_6",
+              "Path": "/opt/goby-test/exec-work-m5h/emby-width-fresh-m5h-20260910-02/source/Width Source M5h (2026)/Width Source M5h (2026).mp4",
+              "Type": "Default",
+              "Container": "mp4",
+              "Size": 3983557,
+              "Name": "Width Source M5h",
+              "IsRemote": false,
+              "HasMixedProtocols": false,
+              "RunTimeTicks": 40000000,
+              "SupportsTranscoding": true,
+              "SupportsDirectStream": true,
+              "SupportsDirectPlay": true,
+              "IsInfiniteStream": false,
+              "RequiresOpening": false,
+              "RequiresClosing": false,
+              "RequiresLooping": false,
+              "SupportsProbing": true,
+              "MediaStreams": [
+                {
+                  "Codec": "mpeg4",
+                  "CodecTag": "mp4v",
+                  "Language": "und",
+                  "TimeBase": "1/16384",
+                  "VideoRange": "SDR",
+                  "DisplayTitle": "4K MPEG4",
+                  "IsInterlaced": false,
+                  "BitRate": 7897246,
+                  "BitDepth": 8,
+                  "RefFrames": 1,
+                  "IsDefault": true,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Height": 2160,
+                  "Width": 3840,
+                  "AverageFrameRate": 2,
+                  "RealFrameRate": 2,
+                  "Profile": "Simple Profile",
+                  "Type": "Video",
+                  "AspectRatio": "16:9",
+                  "Index": 0,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "PixelFormat": "yuv420p",
+                  "Level": 1,
+                  "IsAnamorphic": false,
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                },
+                {
+                  "Codec": "aac",
+                  "CodecTag": "mp4a",
+                  "Language": "und",
+                  "TimeBase": "1/48000",
+                  "DisplayTitle": "AAC mono (Default)",
+                  "IsInterlaced": false,
+                  "ChannelLayout": "mono",
+                  "BitRate": 64683,
+                  "Channels": 1,
+                  "SampleRate": 48000,
+                  "IsDefault": true,
+                  "IsForced": false,
+                  "IsHearingImpaired": false,
+                  "Profile": "LC",
+                  "Type": "Audio",
+                  "Index": 1,
+                  "IsExternal": false,
+                  "IsTextSubtitleStream": false,
+                  "SupportsExternalStream": false,
+                  "Protocol": "File",
+                  "ExtendedVideoType": "None",
+                  "ExtendedVideoSubType": "None",
+                  "ExtendedVideoSubTypeDescription": "None",
+                  "AttachmentSize": 0
+                }
+              ],
+              "Formats": [],
+              "Bitrate": 7967114,
+              "RequiredHttpHeaders": {},
+              "AddApiKeyToDirectStreamUrl": false,
+              "ReadAtNativeFramerate": false,
+              "DefaultAudioStreamIndex": 1,
+              "ItemId": "6"
+            }
+          ],
+          "Path": "/opt/goby-test/exec-work-m5h/emby-width-fresh-m5h-20260910-02/source/Width Source M5h (2026)/Width Source M5h (2026).mp4",
+          "RunTimeTicks": 40000000,
+          "Size": 3983557,
+          "Bitrate": 7967114,
+          "IsFolder": false,
+          "Type": "Movie",
+          "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          },
+          "MediaStreams": [
+            {
+              "Codec": "mpeg4",
+              "CodecTag": "mp4v",
+              "Language": "und",
+              "TimeBase": "1/16384",
+              "VideoRange": "SDR",
+              "DisplayTitle": "4K MPEG4",
+              "IsInterlaced": false,
+              "BitRate": 7897246,
+              "BitDepth": 8,
+              "RefFrames": 1,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Height": 2160,
+              "Width": 3840,
+              "AverageFrameRate": 2,
+              "RealFrameRate": 2,
+              "Profile": "Simple Profile",
+              "Type": "Video",
+              "AspectRatio": "16:9",
+              "Index": 0,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "PixelFormat": "yuv420p",
+              "Level": 1,
+              "IsAnamorphic": false,
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            },
+            {
+              "Codec": "aac",
+              "CodecTag": "mp4a",
+              "Language": "und",
+              "TimeBase": "1/48000",
+              "DisplayTitle": "AAC mono (Default)",
+              "IsInterlaced": false,
+              "ChannelLayout": "mono",
+              "BitRate": 64683,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true,
+              "IsForced": false,
+              "IsHearingImpaired": false,
+              "Profile": "LC",
+              "Type": "Audio",
+              "Index": 1,
+              "IsExternal": false,
+              "IsTextSubtitleStream": false,
+              "SupportsExternalStream": false,
+              "Protocol": "File",
+              "ExtendedVideoType": "None",
+              "ExtendedVideoSubType": "None",
+              "ExtendedVideoSubTypeDescription": "None",
+              "AttachmentSize": 0
+            }
+          ],
+          "ImageTags": {},
+          "BackdropImageTags": [],
+          "MediaType": "Video"
+        }
+      ],
+      "TotalRecordCount": 1
+    }
+  },
+  "observation": {
+    "completeHTTP": true,
+    "bodyExportable": true,
+    "wireBytes": 3573,
+    "transportFailure": null,
+    "acknowledgementFailure": null,
+    "privateWireSha256": "0d0c4018ca848e0207ea80a7b53ab99d70b7ee5905b67b57431b9e06500cc6ef"
+  },
+  "reference": {
+    "product": "Emby Server",
+    "version": "4.9.5.0",
+    "capturedAt": "2026-09-10T07:56:29.859199+00:00"
+  }
+}
