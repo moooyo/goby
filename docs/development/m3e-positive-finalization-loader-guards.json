@@ -1,0 +1,21 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "input_directory": "/opt/goby-test/exec-work-m3e/client-special-features-browser-input-03",
+  "loader_sha256": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7",
+  "guards_sha256": "7763387e08c7bae2f47b53f8a62db0e9e926590c9386d2efa059aadd5de3d3c1",
+  "syntax_checks": 2,
+  "pure_guards": 97,
+  "failures": 0,
+  "stdout_sha256": "013b41d9e3446e86e391455b4dae62ed02a1fef800eee839fb09ede914a31707",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "actual_readonly_binding": {
+    "result": "passed",
+    "completed_sha256": "b443e5f6d5faceb3486d68644298b0a1527f6dcc1e4ac1109ff6d0c252fdfb36",
+    "report_sha256": "929e6b6fc0014e6b3afc7ce023ea981b749ce884ed6eb33c34b3617ac116855d",
+    "inspection_sha256": "fdc8a38f5937964d3dba8e0e47f897108475011e70f4802e30c1803068dc4b5e",
+    "state_sha256": "5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1",
+    "http_requests": 0
+  },
+  "boundary": "The pure guards and file/process binding are separate from the later successful original-client UI report. The intermediate 9aa/2e2d loader pair remains retained and unexecuted."
+}

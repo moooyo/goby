@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-positive-prepare-tool-03",
+  "observer_sha256": "49bcc8a4a7303e5348e6b1a73b70fc46bc7ed21844fcdd9b4d72adb2a323706d",
+  "comparator_sha256": "d22c4f1d3798fde35b7a12addba4117682396d189e29dfd837e4867f1cd2e5dc",
+  "guards_sha256": "c90e3c2c0249c8c0b9f0d1f3d96ce014d6ddadb12a2d64b6f5e0c83938c9450d",
+  "syntax_checks": 3,
+  "pure_guards": 28,
+  "failures": 0,
+  "stderr_sha256": "44140a71b8aca80cd518da6f7f616b487b653e8fe1099503debb174f53413419",
+  "boundary": "These guards passed before actual observations. The first comparison later rejected the new driver's marker because the comparator retained the old cross-user marker. Tool04 corrects only that mismatch and preserves all original observation/report bytes."
+}

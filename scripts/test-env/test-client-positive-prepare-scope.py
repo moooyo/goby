@@ -78,7 +78,7 @@ def fixture(existing_data=False):
     before = document('before', rows, 10)
     before['approved_expiry_id_sha256'] = observer.eligible_expiry(before, proof)
     final = copy.deepcopy(rows)
-    report = {'marker': 'goby-client-cross-user-m3e-v1', 'format': 6, 'mode': 'acceptance-preparation',
+    report = {'marker': 'goby-client-special-features-browser-v1', 'format': 6, 'mode': 'acceptance-preparation',
               'preparation_scope': observer.SCOPE, 'result': 'passed', 'client_acceptance': True, 'failure': None,
               'started_at': timestamp(11), 'finished_at': timestamp(19), 'fixture': {'profile': copy.deepcopy(proof['profile'])}, 'accounts': []}
     for row in final['play_sessions']:
@@ -246,6 +246,13 @@ class PositiveLedgerGuards(unittest.TestCase):
             mutate(values[2])
             self.reject(values, 'ui_report_scope_or_profile_mismatch')
 
+    def test_positive_driver_marker_rejects_the_old_cross_user_report(self):
+        values = fixture()
+        self.assertEqual(values[2]['marker'], 'goby-client-special-features-browser-v1')
+        self.compare(values)
+        values[2]['marker'] = 'goby-client-cross-user-m3e-v1'
+        self.reject(values, 'ui_report_scope_or_profile_mismatch')
+
     def test_observer_sql_has_one_readonly_snapshot_and_validated_ids(self):
         proof = fixture()[3]
         sql = observer.statement(proof, 'before').decode()
@@ -383,6 +390,92 @@ class PositiveLedgerGuards(unittest.TestCase):
             snapshot['database']['tables']['sessions'][1] = dict(creation, revoked_at=None)
             with self.assertRaisesRegex(observer.ScopeError, 'continued_auth_population_changed'):
                 observer.read_continuation(completed, report, inspection, snapshot)
+
+    def finalization(self):
+        _, completed, report, inspection = self.continuation()
+        chain = {key: {'path': str(path), 'sha256': pin} for key, (path, pin) in observer.FINALIZATION_PINS.items()}
+        chain.update({key: {'path': str(observer.WORK / 'frozen-scan-tools' / name), 'sha256': pin}
+                      for key, (name, pin) in observer.FINALIZATION_SOURCE_PINS.items()})
+        chain.update(marker=observer.FINALIZATION, scan_job_id=observer.FINALIZATION_JOB, viewer_user_id='b' * 32,
+                     new_viewer_session_id='5' * 32, new_device_id=7, request_count=11, full_resource_count=4, range_resource_count=4,
+                     library_creates=0, scan_dispatches=0, retained_failures_preserved=True, new_viewer_revoked=True,
+                     parent_projection={'special_feature_count_present': False, 'local_trailer_count': 1},
+                     continuation_evidence={'path': str(observer.FINALIZATION_ROOT / 'continuation-evidence.json'), 'sha256': '9' * 64})
+        completed.update(profile_version=3, finalization=chain, users={'av_user_id': 'b' * 32}, job_id=observer.FINALIZATION_JOB)
+        report['finalization'] = copy.deepcopy(chain)
+        inspection['finalization'] = copy.deepcopy(chain)
+        return chain, completed, report, inspection
+
+    def test_finalization_is_a_third_explicit_profile_not_scan_success_relabelling(self):
+        chain, completed, _, _ = self.finalization()
+        ledger = {'profile': {'path': str(observer.FINALIZATION_ROOT / 'completed.json')},
+                  'profile_report': {'path': str(observer.FINALIZATION_ROOT / 'report.json')},
+                  'profile_inspection': {'path': str(observer.WORK / 'client-special-features-finalization-inspection-v1/report.json')},
+                  'fixture_state': {'path': str(observer.WORK / 'client-fixture.json')}}
+        self.assertEqual(observer.profile_paths(ledger, completed), 'goby-client-special-features-finalization-inspection-v1')
+        for version in (1, 2, True):
+            with self.assertRaisesRegex(observer.ScopeError, 'profile_path_mismatch'):
+                observer.profile_paths(ledger, dict(completed, profile_version=version))
+        ledger['profile']['path'] = str(observer.CONTINUATION_ROOT / 'completed.json')
+        with self.assertRaisesRegex(observer.ScopeError, 'profile_path_mismatch'):
+            observer.profile_paths(ledger, completed)
+
+    def test_finalization_requires_retained_failure_and_exact_read_scope(self):
+        observer.finalization_contract(*self.finalization())
+        for key, value, code in (
+                ('scan_dispatches', 1, 'finalization_effect_scope_changed'),
+                ('request_count', 12, 'finalization_effect_scope_changed'),
+                ('full_resource_count', 3, 'finalization_effect_scope_changed'),
+                ('new_device_id', True, 'finalization_effect_scope_changed'),
+                ('parent_projection', {'special_feature_count_present': True, 'local_trailer_count': 1}, 'finalization_effect_scope_changed'),
+                ('continuation_failure', {'path': str(observer.FINALIZATION_ROOT / 'failure.json'), 'sha256': '0' * 64}, 'finalization_origin_pin_changed')):
+            with self.subTest(key=key):
+                chain, completed, report, inspection = self.finalization()
+                chain[key] = value
+                report['finalization'] = copy.deepcopy(chain)
+                inspection['finalization'] = copy.deepcopy(chain)
+                with self.assertRaisesRegex(observer.ScopeError, code):
+                    observer.finalization_contract(chain, completed, report, inspection)
+
+    def test_finalization_new_viewer_is_separate_and_cannot_prefill_userdata(self):
+        chain, completed, report, inspection = self.finalization()
+        process = {'pid': 123, 'start_ticks': 456, 'boot_id': '0' * 36}
+        completed['candidate'] = {'process': process}
+        scan_proof = {'aggregate_session_count': 3, 'aggregate_audit_count': 9}
+        proof = {'aggregate_session_count': 4, 'aggregate_audit_count': 11, 'finalization_session_count': 1, 'finalization_audit_count': 2,
+                 'finalizer_session_id': chain['new_viewer_session_id'], 'finalizer_device_id': 7, 'all_scanned_rows_preserved': True}
+        for document in (completed, report, inspection):
+            document.update(retained_scan_proof=copy.deepcopy(scan_proof), proof=copy.deepcopy(proof))
+        old = {name: [] for name in (*observer.TABLE_KEYS, 'devices', 'activity_entries')}
+        old['sessions'] = [{'id': '1' * 32, 'revoked_at': timestamp(1)}]
+        retained = {'database': {'tables': old}}
+        current = copy.deepcopy(old)
+        current['sessions'].append({'id': chain['new_viewer_session_id'], 'user_id': chain['viewer_user_id'], 'kind': 'emby',
+                                   'revoked_at': timestamp(2), 'device_registry_id': 7, 'device_id': 'new-finalizer'})
+        current['devices'].append({'id': 7, 'reported_device_id': 'new-finalizer', 'last_user_id': chain['viewer_user_id']})
+        current['activity_entries'] = [{'id': index, 'action': action, 'source': 'emby', 'actor_kind': 'user',
+            'actor_id': chain['viewer_user_id'], 'actor_credential_id': chain['new_viewer_session_id'],
+            'resource_kind': 'session', 'resource_id': chain['new_viewer_session_id']}
+            for index, action in enumerate(('session.login', 'session.revoked'), 1)]
+        documents = {'continuation_failure': {'marker': observer.CONTINUATION, 'result': 'retained_for_review', 'phase': 'scan_complete',
+                     'retry_permitted': False, 'library_id': observer.CONTINUATION_LIBRARY, 'root_id': observer.CONTINUATION_ROOT_ID,
+                     'job_id': observer.FINALIZATION_JOB, 'authentication': {role: {'login_status': 200, 'logout_status': 204, 'exact_status': 401}
+                         for role in ('admin', 'viewer')}},
+                     'continuation_state': {'phase': 'continuing_special_features_fixture', 'stage': 'scan_complete', 'process': process},
+                     'continuation_snapshot': retained, 'retained_structure_proof': {'proof': scan_proof},
+                     'retained_protocol_proof': {}, 'continuation_evidence': {}}
+        by_path = {chain[key]['path']: value for key, value in documents.items()}
+
+        def read(record, **kwargs):
+            return b'frozen source bytes' if kwargs.get('raw') else copy.deepcopy(by_path[record['path']])
+
+        with mock.patch.object(observer, 'read_record', side_effect=read):
+            result, pin = observer.read_finalization(completed, report, inspection, {'database': {'tables': current}})
+            self.assertEqual(result, retained)
+            self.assertEqual(pin, observer.digest(observer.exact(chain).encode()))
+            current['user_item_data'].append({'user_id': chain['viewer_user_id'], 'item_id': 'c' * 32})
+            with self.assertRaisesRegex(observer.ScopeError, 'finalization_changed_user_item_data'):
+                observer.read_finalization(completed, report, inspection, {'database': {'tables': current}})
 
 
 if __name__ == '__main__':

@@ -1,6 +1,79 @@
 # Movie SpecialFeatures implementation plan
 
-Latest execution: **continuation tool03 scanned the existing library successfully
+Latest state: **the primary schema26-to27 upgrade completed successfully in one
+attempt, with no new failure. Both primary and candidate run source32/schema27.**
+The [primary completion](m3e-main-schema27-completed.json) records active/running
+PID762090/start ticks7637121; an independent systemctl read matched that state.
+The installed executable SHA-256 is
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The run is
+`/opt/goby-test/backups/main-schema27-v1/run-20260911T190452Z-94ef1ef5242d2335018f8dac`,
+terminal SHA-256
+`0b0695556716bf78f414f146c2ab5f84fa273455679969050d69cf086af46b5a`.
+
+Preflight passed, followed by one 307,429-byte schema26 backup dump, an
+independent restore/schema26-to27 rehearsal, owned database/role cleanup,
+the committed primary26-to27 migration, installation/start and 13 native smoke
+calls including logout204/exact401. The migration preserved all old 33 tables'
+rows, columns, relation OIDs, ACLs and sequences, plus private credentials,
+runtime, media and historical archives. Its before/preserved-state SHA-256 is
+`dd7f4564c121fbe088390a3d6a179b2048a5089a4fc9e3d8d5af7b1be49e175a`.
+The primary's two new Extra tables are empty. The candidate remains PID748513/
+start ticks6996875 with 22 items/four libraries and its indexed positive extras;
+these are separate databases and acceptance scopes.
+
+Smoke used only one new owned session, with no archive create/delete or restore.
+Legitimate authentication and audit history is retained; post-smoke whole-table
+byte equality is not claimed. No primary restore, old-binary rollback, automatic
+retry, force cleanup or backend termination occurred. All older failed attempts
+remain unchanged historical evidence.
+
+The candidate protocol/media finalization, independent inspection and positive
+Movie A/B flow below remain passed within their recorded scope.
+The [protocol finalization](m3e-positive-protocol-finalization.json) used one
+fresh ordinary AV token/device for exactly 11 HTTP exchanges: login, four
+complete-file200 responses, four Range206 responses, logout204 and exact401.
+Complete bytes, prefix SHA-256 and Content-Range matched. It added one session,
+one device and two audit entries, reused the original 15 protocol proofs and
+performed zero library creates, rescans or service actions. Both failed trees
+remain unchanged. The prior three-session/nine-audit scan prefix is preserved;
+aggregate setup history is four sessions/eleven audits.
+The [independent inspection](m3e-positive-finalization-inspection.json) passed
+with zero HTTP calls. Fixture state is ready/complete, SHA-256
+`5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`;
+candidate PID748513/start ticks6996875, schema27 and source32 binary are unchanged.
+
+The [positive original-client run](m3e-positive-original-client.json) passed
+for A and B: each completed Home-to-Movie-to-Home, one genuine PlaybackInfo200
+with finished transfer, and SpecialFeatures200 containing all three resources
+with three visible cards. Ten item-UserData projections, preferences,
+Configuration and Policy were unchanged; own200/foreign403, zero page errors,
+UI logout204/exact401 and WebSocket1 opened/1 closed/0 active with no cleanup
+failures all passed. Each user retained one blocked-resource console warning/error.
+Cards were matched by unique title; the report records `id_present=false`,
+so this is not DOM card-ID proof. LocalTrailers UI was `not_observed` for both
+users: API and media evidence exists, but no original-client trailer-playback
+claim is made.
+
+The [first comparison failure](m3e-positive-client-comparison-marker-failed.json)
+is retained: an old cross-user marker was hardcoded. Only that marker changed;
+the observer, original snapshots, UI report and failed comparison were preserved.
+After 29 remote guards, the [repaired comparison](m3e-positive-client-comparison.json)
+passed: 24 to 26 play rows, 55 to 57 selected A/B auth rows, the two eligible old
+Prepared rows became Expired and the other 22 old play rows stayed exact.
+Two new Prepared rows and two new revoked auth rows were added. The five old
+UserData rows stayed exact; two strictly default rows bring the total to seven.
+References/encoding stayed zero and the other declared scope checks passed.
+This is a bounded preparation comparison, not whole-database preservation.
+
+Main consumer04's two remote syntax checks, 27 guards and build preceded the
+separate successful primary execution above. Next, return to the remaining M3
+[library-restriction/restore matrix](m3e-library-restriction-plan.md) and other compatibility cases. That matrix
+has not executed. The complete M3/M4/M5/M6 milestones remain open; this deployed
+increment does not complete the active project goal. Completed operations and
+failed trees must not be replayed or relabeled.
+
+Historical tool03 execution: **it scanned the existing library successfully
 (`Completed`, 6/6/0), then failed an incorrect parent-count assertion.** Job
 `d7aa0acaee023dd4c82ea7a303c354ca` retained the library/root IDs below. The
 inherited `84af.capture` expected `SpecialFeatureCount=3`, whereas the correct
@@ -15,22 +88,20 @@ reads, eight lists and the parent read: all 15 complete200, with correct
 membership, paths, owner and sources. The [snapshot review](m3e-positive-protocol-snapshot-review.json)
 proves original 13-item/all-old-row preservation, new 9 items/four Extra resources/
 three markers, three revoked sessions, exactly nine new audits and exact
-sequences. Current counts are 35 tables, 22 items, 4 libraries, 5 UserData rows,
-24 plays, zero encoding, 61 global sessions and 135 audits. Current state is
+sequences. Counts at that failure were 35 tables, 22 items, 4 libraries, 5 UserData rows,
+24 plays, zero encoding, 61 global sessions and 135 audits. The retained failed state is
 `continuing_special_features_fixture`/`scan_complete`, SHA-256
 `0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83`;
 PID748513/start ticks6996875, schema27, binary and runtime remain unchanged.
 
-Next is the authorized independent protocol-finalization/inspection chain in
-[extras verification](verification-m3e-extras.md): reuse the 15 responses and
-perform only one full200/Range206 pair per resource under a fresh ordinary AV
-token/device, with logout204/exact401, 11 HTTP exchanges total. Preserve all
-old `550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8` snapshot rows; only one session/device and two audits
-may be added. Global 62 sessions/137 audits are anticipated, not actual results.
-Do not rescan/recreate or mark failed trees successful. Positive UI, ledger
-and main consumers must use the final chain. Main consumer03 passed 26 guards
-and its build but is undeployed; primary remains 26. Both execution failures
-and both preflight diagnostics remain preserved.
+The independent finalization/inspection later reused those 15 responses and
+completed one full200/Range206 pair per resource plus login/logout/exact-token
+proof in 11 HTTP exchanges. It added one session/device and two audits while
+preserving old snapshot rows, without rescan/recreation or changing failed
+results. Positive UI and its repaired comparison subsequently passed. Main
+consumer03's 26 guards/build remain historical; consumer04 passed 27 guards/build,
+while the primary was then still26; it has since completed schema27 deployment. Both execution failures, both preflight diagnostics and
+the first comparison failure are preserved.
 
 Historical setup01 execution: **it created the positive library with create201, then
 failed at its private phase checkpoint before any scan.** The [12 pure guards](m3e-positive-fixture-tool01-guards.json),
@@ -59,12 +130,12 @@ tree. Use a new administrator for the existing-library scan, then a viewer
 for protocol and complete/range delivery. The three-stage profile and UI,
 ledger and main consumers must separate creation, continued scan and viewer
 actors. The independent snapshot review now proves three sessions/nine audits
-and exact sequences. The scan completed; only the remaining full/range checks
-may be continued under the separate finalization scopes. Primary remains source28/schema26.
+and exact sequences. The scan completed; the separate full/range finalization
+and positive UI later passed. The primary was source28/schema26 at that historical checkpoint; its source32/schema27 deployment is recorded above.
 
 Established checkpoint: **source32 published; remote regression, build,
 candidate upgrade, original-Movie dual-user flow and precise media-root extension passed**.
-The candidate now runs source32/schema27; the primary remains source28/schema26.
+Both candidate and primary now run source32/schema27 in their separate databases.
 The schema27 catalog was generated on
 PostgreSQL17. After two retained source30 fixture failures, the corrected
 [source31 targeted run](m3e-source31-extras-targeted.json) passed 105 tests
@@ -104,9 +175,11 @@ is retained: tool01 and its mock used `encoding_states` instead of actual
 occurred. Tool02 corrected the name, added an actual catalog regression and
 passed two syntax checks, 11 pure guards, preflight and execution.
 
-Next, independently finalize the remaining full/range checks and verify the
-positive original-client flow. Completed media/reference phases must not be replayed.
-Positive-extra acceptance, primary schema27, library restriction and the full
+The sampled positive-extra protocol/media and original-client flow passed.
+Primary backup/rehearsal/migration/native smoke subsequently passed in one
+attempt. Next is the unexecuted library-restriction/restore matrix and other
+compatibility cases. Completed media/reference phases must not be replayed.
+Library restriction, broader compatibility and the full
 M3/M4/M5/M6 scope remain open; earlier failures remain retained.
 
 The historical source28 actual-client failure was a `404` for

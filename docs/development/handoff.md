@@ -1,6 +1,79 @@
 # Development handoff
 
-Latest state: **continuation tool03 scanned the existing library successfully
+Latest state: **the primary schema26-to27 upgrade completed successfully in one
+attempt, with no new failure. Both primary and candidate run source32/schema27.**
+The [primary completion](m3e-main-schema27-completed.json) records active/running
+PID762090/start ticks7637121; an independent systemctl read matched that state.
+The installed executable SHA-256 is
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The run is
+`/opt/goby-test/backups/main-schema27-v1/run-20260911T190452Z-94ef1ef5242d2335018f8dac`,
+terminal SHA-256
+`0b0695556716bf78f414f146c2ab5f84fa273455679969050d69cf086af46b5a`.
+
+Preflight passed, followed by one 307,429-byte schema26 backup dump, an
+independent restore/schema26-to27 rehearsal, owned database/role cleanup,
+the committed primary26-to27 migration, installation/start and 13 native smoke
+calls including logout204/exact401. The migration preserved all old 33 tables'
+rows, columns, relation OIDs, ACLs and sequences, plus private credentials,
+runtime, media and historical archives. Its before/preserved-state SHA-256 is
+`dd7f4564c121fbe088390a3d6a179b2048a5089a4fc9e3d8d5af7b1be49e175a`.
+The primary's two new Extra tables are empty. The candidate remains PID748513/
+start ticks6996875 with 22 items/four libraries and its indexed positive extras;
+these are separate databases and acceptance scopes.
+
+Smoke used only one new owned session, with no archive create/delete or restore.
+Legitimate authentication and audit history is retained; post-smoke whole-table
+byte equality is not claimed. No primary restore, old-binary rollback, automatic
+retry, force cleanup or backend termination occurred. All older failed attempts
+remain unchanged historical evidence.
+
+The candidate protocol/media finalization, independent inspection and positive
+Movie A/B flow below remain passed within their recorded scope.
+The [protocol finalization](m3e-positive-protocol-finalization.json) used one
+fresh ordinary AV token/device for exactly 11 HTTP exchanges: login, four
+complete-file200 responses, four Range206 responses, logout204 and exact401.
+Complete bytes, prefix SHA-256 and Content-Range matched. It added one session,
+one device and two audit entries, reused the original 15 protocol proofs and
+performed zero library creates, rescans or service actions. Both failed trees
+remain unchanged. The prior three-session/nine-audit scan prefix is preserved;
+aggregate setup history is four sessions/eleven audits.
+The [independent inspection](m3e-positive-finalization-inspection.json) passed
+with zero HTTP calls. Fixture state is ready/complete, SHA-256
+`5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`;
+candidate PID748513/start ticks6996875, schema27 and source32 binary are unchanged.
+
+The [positive original-client run](m3e-positive-original-client.json) passed
+for A and B: each completed Home-to-Movie-to-Home, one genuine PlaybackInfo200
+with finished transfer, and SpecialFeatures200 containing all three resources
+with three visible cards. Ten item-UserData projections, preferences,
+Configuration and Policy were unchanged; own200/foreign403, zero page errors,
+UI logout204/exact401 and WebSocket1 opened/1 closed/0 active with no cleanup
+failures all passed. Each user retained one blocked-resource console warning/error.
+Cards were matched by unique title; the report records `id_present=false`,
+so this is not DOM card-ID proof. LocalTrailers UI was `not_observed` for both
+users: API and media evidence exists, but no original-client trailer-playback
+claim is made.
+
+The [first comparison failure](m3e-positive-client-comparison-marker-failed.json)
+is retained: an old cross-user marker was hardcoded. Only that marker changed;
+the observer, original snapshots, UI report and failed comparison were preserved.
+After 29 remote guards, the [repaired comparison](m3e-positive-client-comparison.json)
+passed: 24 to 26 play rows, 55 to 57 selected A/B auth rows, the two eligible old
+Prepared rows became Expired and the other 22 old play rows stayed exact.
+Two new Prepared rows and two new revoked auth rows were added. The five old
+UserData rows stayed exact; two strictly default rows bring the total to seven.
+References/encoding stayed zero and the other declared scope checks passed.
+This is a bounded preparation comparison, not whole-database preservation.
+
+Main consumer04's two remote syntax checks, 27 guards and build preceded the
+separate successful primary execution above. Next, return to the remaining M3
+[library-restriction/restore matrix](m3e-library-restriction-plan.md) and other compatibility cases. That matrix
+has not executed. The complete M3/M4/M5/M6 milestones remain open; this deployed
+increment does not complete the active project goal. Completed operations and
+failed trees must not be replayed or relabeled.
+
+Historical tool03 state: **it scanned the existing library successfully
 (`Completed`, 6/6/0), then failed an incorrect parent-count assertion.** Job
 `d7aa0acaee023dd4c82ea7a303c354ca` kept the library/root IDs below. The inherited
 `84af.capture` demanded `SpecialFeatureCount=3`; the correct sampled response
@@ -14,25 +87,25 @@ passed six direct reads, eight lists and the parent read, all complete200 with
 correct membership, paths, owners and sources. The [snapshot review](m3e-positive-protocol-snapshot-review.json)
 passed original 13-item/all-old-row preservation, new 9 items/four resources/
 three markers, all three actor sessions revoked, exactly nine new audit entries
-and exact sequences. Current counts are 35 tables, 22 items, 4 libraries,
+and exact sequences. At that failure the counts were 35 tables, 22 items, 4 libraries,
 three markers/four Extra resources, 5 UserData rows, 24 plays, zero encoding,
 61 global sessions and 135 audits. PID748513/start ticks6996875, schema27,
-source32 binary and runtime configuration remain unchanged. Current phase is
+source32 binary and runtime configuration were unchanged. The retained failed phase is
 `continuing_special_features_fixture`, stage `scan_complete`, state SHA-256
 `0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83`;
 the retained full-snapshot SHA-256 is
 `550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8`.
 
-Next, use only the authorized independent
+The subsequent successful finalization used the independent scopes
 `/opt/goby-test/exec-work-m3e/client-special-features-protocol-finalization-v1`
 and `/opt/goby-test/exec-work-m3e/client-special-features-finalization-inspection-v1`.
-Reuse the 15 responses; do not rescan/recreate or mark old trees successful.
-Use a fresh ordinary AV token/device for one full200 and one Range206 for
-each of four resources, then logout204/exact401: 11 HTTP exchanges total.
-Only one new session/device and two audits are permitted; all old snapshot
-rows must remain. Expected 62 global sessions/137 audits are not actual results.
-Positive UI, ledger and main consumers must bind that final chain. Main
-consumer03 passed 26 guards/build but has not deployed; primary remains 26.
+It reused the 15 responses, added one session/device and two audits, and
+preserved the old snapshot rows. The four full200/four Range206 reads and
+login/logout/exact-token proof completed in 11 HTTP exchanges. The earlier
+62-session/137-audit expectation belongs to this pre-UI setup boundary, not
+to the later UI comparison. Positive UI and its scoped comparison subsequently
+passed as recorded above. Main consumer03's 26 guards/build remain historical;
+consumer04 was verified before the separately recorded successful primary deployment.
 
 Historical setup01 failed after create201 and before its scan. Subsequent
 continuation read-only preflight exposed two separate guard-model defects in the
@@ -77,8 +150,8 @@ recreate/delete the library, replay setup01 or mark its old v1 tree successful.
 A new administrator scanned the library and a viewer made the 15 protocol
 reads. The three-actor session/audit/sequence transition has now passed the
 independent snapshot review, but the tool's incorrect count assertion stopped
-full/range checks. The next action is the separate finalization above, not a
-replay of either failed execution. Primary remains source28/schema26.
+full/range checks in that attempt. The separate finalization later passed;
+neither failed execution was replayed or relabeled. The primary was source28/schema26 at that historical checkpoint; its source32/schema27 deployment is recorded above.
 Exact failure/tool/diagnosis pins are in
 [extras verification](verification-m3e-extras.md); frozen tool01 stays unchanged.
 
@@ -150,28 +223,34 @@ of `encoding_jobs`; it stopped before output-directory creation and left
 state/environment/service unchanged. Tool02 fixed that name, added an actual
 catalog regression, and passed two syntax checks, 11 pure guards and execution.
 See the [verification record](verification-m3e-extras.md) for exact report/tool
-and completion-receipt hashes. Finalize only the remaining full/range protocol
-checks under the independent scope above, then verify the positive client flow. The primary remains
-source28/schema26; completed media/reference phases must not be replayed.
+and completion-receipt hashes. Full/range finalization and the positive client
+flow have now passed within their declared scope. The primary source32/schema27
+deployment also passed; completed media/reference phases must not be replayed.
 The independent [nonempty-profile guards](m3e-schema27-positive-profile-guards.json)
 and [actual read-only baseline check](m3e-schema27-positive-profile-baseline.json)
 passed before setup01 created the new library and failed at its checkpoint.
 The [main27 deployment tools](verification-m3e-main-schema27-tools.md)
 passed two syntax checks, 24 pure guards and the helper build. Their real
-preflight/deployment still awaits positive candidate/client evidence and the
-finalization-chain consumer binding; main consumer03's 26-guard/build result
-does not itself establish deployment or completed media acceptance.
+deployment prerequisites were subsequently satisfied by the positive candidate
+evidence and consumer04. Main consumer03's 26-guard/build result stays separate
+from the successful actual primary deployment recorded at the top.
 The additional [20-case reference capture](m3e-reference-special-features-projections-v2.json)
 completed with state/media preservation and token revocation. It proves known-ID
 extra retrieval, positive LocalTrailerCount, field switches and sampled error
 responses. The cross-user403 policy remains an intentional Goby requirement,
 despite the sampled reference returning200 for another existing user path.
-Primary schema27 deployment and positive-extra original-client verification remain open.
+Primary schema27 deployment and the scoped positive-extra candidate client run passed.
 
 Current operational state: the primary service is **active/running** at
-source28/schema26, PID 688833/start ticks 5620918, executable SHA-256
+source32/schema27, PID762090/start ticks7637121, executable SHA-256
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The [schema27 primary completion](m3e-main-schema27-completed.json) passed in
+one attempt. The candidate remains its own PID748513 process and positive
+fixture database; the primary's new Extra tables are empty.
+
+Historical source28 primary state was source28/schema26, PID688833/start ticks5620918, executable SHA-256
 `83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
-The [primary deployment completion](m3e-main-schema26-completed.json) **passed**,
+The historical [schema26 deployment completion](m3e-main-schema26-completed.json) **passed**,
 closing the main-service gate. The independent completion made 13 native calls
 using one new owned session, including logout204 and the paired session401.
 It performed zero service writes, migrations or restores and preserved all
@@ -242,8 +321,8 @@ hashes identify `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures` returning
 The first [positive reference capture](m3e-special-features-positive-contracts.md)
 has now completed. The [persistent SpecialFeatures implementation](special-features-implementation-plan.md)
 has passed source32 remote regression/build verification and candidate deployment;
-the original empty-extra Movie flow also passed. Positive-extra client checks
-and broader projection/access coverage remain open.
+the original empty-extra and positive-extra Movie flows also passed. Broader
+projection/access coverage remains open.
 Library restriction has not executed.
 
 The two synthetic SpecialFeatures main movies were
@@ -264,8 +343,10 @@ complete HTTP200 responses. SpecialFeatures returns three Video attachments
 Both stages proved logout204/exact-token401 for each new admin/viewer token.
 See the [exact checkpoint](m3e-special-features-positive-checkpoint.json) for
 report and media receipt hashes. Neither media nor reference phase may be rerun.
-Parent counts, projection switches, broader access/layout cases, real delivery
-and original-client verification remain open. The unfiltered new-library
+That initial reference capture left parent counts, projection switches and
+delivery/client checks open. Later bounded reference and candidate evidence
+above covers the sampled fields, full/range media and positive A/B UI; broader
+access/layout coverage remains open. The unfiltered new-library
 recursive query returned only main Movies and Folders. The separate old-state
 preservation query excluded Trailer by type and is not a trailer-visibility proof.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
@@ -276,13 +357,13 @@ its successful fresh backup and later rehearsal-query failure remain distinct.
 Primary schema26 deployment and its formal smoke/finalization are complete.
 Complete dual-user and M3/M4/M5/M6 acceptance remain open.
 
-Development resumed on 2026-09-11 at the user's request. The active next increment
-is [M3e real-client acceptance](client-acceptance-m3e.md), following the priorities
-below. The previous round closed after M5j native backup/recovery, deployment,
+Development resumed on 2026-09-11 at the user's request. At that historical
+checkpoint, the next increment was [M3e real-client acceptance](client-acceptance-m3e.md),
+following the priorities below. The previous round closed after M5j native backup/recovery, deployment,
 documentation and publication to `origin/main` at commit `4a840fb`.
 The partial [source18 M3e checkpoint](verification-m3e-source18-checkpoint.md) was
-deployed and published to `origin/main` at `f339b69`; source28 has
-now replaced that primary installation as recorded above. The complete planned server
+deployed and published to `origin/main` at `f339b69`; source28 later replaced
+that installation, followed by the current source32 primary recorded above. The complete planned server
 and full Emby compatibility remain unfinished. The
 [Similar and ThemeMedia contract capture](client-auxiliary-reads-plan.md) used
 separate synthetic comparison fixtures while retaining the source18 deployment.
@@ -517,8 +598,8 @@ run uses source28/schema26 and all of `internal/database`,
 The whole recovery integration test ran, including finalizer cancellation,
 lease loss, refusal and commit. The complete-source run and build follow
 successful targeted verification; no source26 or source27 binary is eligible.
-Its embedded operator/browser copies remain historical; the pending
-schema26 deployment operator and lineage checker are verified separately.
+Its embedded operator/browser copies remain historical; the then-pending
+schema26 deployment operator and lineage checker were verified separately.
 
 The [schema26 candidate guards](m3e-schema26-upgrade-guards.json) passed 50
 tests and 207 pure lineage checks. An initial 120-second guard timeout is
@@ -659,7 +740,7 @@ The [tool04 attempt](m3e-main-schema26-start-verification-failed-01.json) is ret
 `/opt/goby-test/backups/main-schema26-rehearsal-repair-v1/run-20260911T132850Z-7f17a39a6e1e08ce9639d6a1`.
 The rehearsal completed and was removed. Main schema26 migration is recorded
 in `main-migrated.json`, with its post-migration capture completed. Installation
-and start completed: the primary is active/running as PID688833 with the
+and start completed: the primary was then active/running as PID688833 with the
 source28 executable. The original terminal still reports failure at
 `start-requested`, after 71 intents and before smoke. Its effective-identity
 error is retained verbatim in the public summary. Later observed UID995/GID986
@@ -919,7 +1000,7 @@ replaced by the source20 candidate above.
 The historical [main source18 deployment](m3e-source18-main-deployment.json) passed
 and ran schema25 with that same executable SHA-256, PID 539535/start ticks 3115871.
 That historical primary process was stopped during the main-schema26 work;
-the new primary is source28/PID688833 as recorded above.
+source28/PID688833 succeeded it and is now historical after the source32/schema27 primary deployment.
 The isolated candidate is now source32/schema27, PID748513/start ticks6996875;
 the former source28 process was PID682417/start ticks5168373.
 All old business columns and sequences were preserved through the
@@ -1104,7 +1185,7 @@ with its failed receipt, report and log preserved; that failed run is terminal.
 Source10's single canonical JSON test failure is retained; its corrected test
 separates empty-slice representation from semantic equality. Source10 was never
 deployed. M5j is the previous published baseline; the main retains the
-historical source18/schema25 checkpoint; source28/schema26 is now running with
+historical source18/schema25 checkpoint; source28/schema26 subsequently ran with
 primary acceptance completed separately as recorded above.
 
 The fixture now has one explicitly added ordinary AV account,

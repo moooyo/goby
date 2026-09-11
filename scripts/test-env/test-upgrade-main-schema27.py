@@ -336,7 +336,7 @@ class MainSchema27GuardTests(unittest.TestCase):
         documents, fixed_hashes = {}, {}
         chain = {'marker': OPERATOR.CONTINUATION_MARKER, 'library_id': '57a85c1ca5b6c7ae602c587755250b2f',
             'root_id': '604d2c0f5c78919a6ee360cda2048066', 'creation_admin_session_id': 'a' * 32,
-            'new_scan_admin_session_id': 'b' * 32, 'new_viewer_session_id': 'c' * 32, 'scan_job_id': 'd' * 32,
+            'new_scan_admin_session_id': 'b' * 32, 'new_viewer_session_id': 'c' * 32, 'scan_job_id': 'd7aa0acaee023dd4c82ea7a303c354ca',
             'creation_requests': 5, 'continuation_library_creates': 0, 'continuation_scan_dispatches': 1,
             'original_failure_preserved': True, 'creation_admin_revoked': True, 'continuation_sessions_revoked': True}
         for key, (fixed, digest) in OPERATOR.CONTINUATION_ORIGIN_PINS.items():
@@ -348,7 +348,7 @@ class MainSchema27GuardTests(unittest.TestCase):
         documents[evidence_path] = b'{"synthetic":"complete-origin-inventory"}'
         chain['origin_evidence'] = {'path': str(evidence_path), 'sha256': original_sha(documents[evidence_path])}
         self.replace(OPERATOR, 'sha', lambda raw: fixed_hashes.get(raw, original_sha(raw)))
-        completed_path = OPERATOR.CONTINUATION_ROOT / 'completed.json'
+        completed_path = OPERATOR.FINALIZATION_ROOT / 'completed.json'
         current = {'continuation': copy.deepcopy(chain), 'binary_sha256': OPERATOR.TARGET_BINARY_SHA,
             'process': {'pid': 900001, 'start_ticks': 7000000, 'boot_id': BOOT_ID}, 'runtime_sha256': '1' * 64,
             'state_sha256': '2' * 64, 'source': {'owned': 'source32'}, 'upgrade': {'owned': 'historical-upgrade'},
@@ -363,25 +363,45 @@ class MainSchema27GuardTests(unittest.TestCase):
             'viewer_session_id': chain['new_viewer_session_id'], 'item_ids': current['profile']['item_ids'],
             'creation_admin_revoked': True, 'old_rows_preserved': True, 'expected_increment_preserved': True,
             'creation_audit_count': 3, 'continuation_audit_count': 6, 'aggregate_session_count': 3, 'aggregate_audit_count': 9}
+        final = {'marker': OPERATOR.FINALIZATION_MARKER, 'scan_job_id': chain['scan_job_id'],
+            'viewer_user_id': '34b4c24f6568659af7ce17938fae7f81', 'new_viewer_session_id': 'f' * 32,
+            'new_device_id': 9007199254740993, 'request_count': 11, 'full_resource_count': 4, 'range_resource_count': 4,
+            'library_creates': 0, 'scan_dispatches': 0, 'retained_failures_preserved': True, 'new_viewer_revoked': True,
+            'parent_projection': {'special_feature_count_present': False, 'local_trailer_count': 1}}
+        for key, (fixed, digest) in OPERATOR.FINALIZATION_PINS.items():
+            path = fixed or WORK / 'frozen-continuation' / (key + '.py')
+            raw = ('Synthetic retained scan artifact: ' + key).encode()
+            documents[path], fixed_hashes[raw] = raw, digest
+            final[key] = {'path': str(path), 'sha256': digest}
+        path = OPERATOR.FINALIZATION_ROOT / 'continuation-evidence.json'
+        documents[path] = b'{"synthetic":"complete-retained-scan-inventory"}'
+        final['continuation_evidence'] = {'path': str(path), 'sha256': original_sha(documents[path])}
+        final_proof = {**proof, 'aggregate_session_count': 4, 'aggregate_audit_count': 11,
+            'finalization_session_count': 1, 'finalization_audit_count': 2, 'finalizer_session_id': final['new_viewer_session_id'],
+            'finalizer_device_id': final['new_device_id'], 'all_scanned_rows_preserved': True}
+        current.update(retained_scan_proof=copy.deepcopy(proof), proof=copy.deepcopy(final_proof), finalization=copy.deepcopy(final))
         completed = {'marker': 'goby-client-special-features-fixture-v1', 'phase': 'complete', 'schema': 27,
-            'profile_version': 2, 'continuation': copy.deepcopy(chain), 'library_id': chain['library_id'], 'root_id': chain['root_id'],
-            'job_id': chain['scan_job_id'], 'proof': copy.deepcopy(proof),
+            'profile_version': 3, 'source_state_sha256': OPERATOR.FINALIZATION_PINS['continuation_state'][1],
+            'continuation': copy.deepcopy(chain), 'library_id': chain['library_id'], 'root_id': chain['root_id'],
+            'job_id': chain['scan_job_id'], 'proof': copy.deepcopy(final_proof), 'retained_scan_proof': copy.deepcopy(proof),
+            'finalization': copy.deepcopy(final),
             'candidate': {key: current[key] for key in ('binary_sha256', 'process', 'runtime_sha256')},
             **{key: copy.deepcopy(current[key]) for key in ('source', 'upgrade', 'extension', 'setup_source', 'profile_source')}}
         report = {'marker': 'goby-client-special-features-setup-report-v1', 'result': 'passed', 'phase': 'complete',
             'receipt_path': str(completed_path), 'state_sha256': current['state_sha256'], 'candidate': copy.deepcopy(completed['candidate']),
-            'continuation': copy.deepcopy(chain), 'proof': copy.deepcopy(proof)}
+            'continuation': copy.deepcopy(chain), 'proof': copy.deepcopy(final_proof),
+            'retained_scan_proof': copy.deepcopy(proof), 'finalization': copy.deepcopy(final)}
         def refresh():
             documents[completed_path] = OPERATOR.canonical(completed)
             digest = original_sha(documents[completed_path])
             current['receipt_sha256'] = current['profile']['receipt_sha256'] = report['receipt_sha256'] = digest
-            documents[OPERATOR.CONTINUATION_ROOT / 'report.json'] = OPERATOR.canonical(report)
+            documents[OPERATOR.FINALIZATION_ROOT / 'report.json'] = OPERATOR.canonical(report)
         refresh()
         dependency = types.SimpleNamespace(read_file=lambda path, **_kwargs: documents[path])
         return current, completed, report, documents, dependency, refresh
 
     def test_continuation_preserves_actual_origin_pins_and_requires_three_artifacts(self):
-        self.assertEqual(OPERATOR.CONTINUATION_INSPECTION, WORK / 'client-special-features-continuation-inspection-v1/report.json')
+        self.assertEqual(OPERATOR.FINALIZATION_INSPECTION, WORK / 'client-special-features-finalization-inspection-v1/report.json')
         self.assertEqual(OPERATOR.CONTINUATION_ORIGIN_PINS['origin_failure'][1],
             '9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0')
         self.assertEqual(OPERATOR.CONTINUATION_ORIGIN_PINS['origin_library_ack'][1],
@@ -390,8 +410,11 @@ class MainSchema27GuardTests(unittest.TestCase):
             '513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1')
         current, completed, report, documents, dependency, refresh = self.continuation_fixture()
         accepted = OPERATOR.verify_candidate_continuation(dependency, current)
-        self.assertEqual(set(accepted), {str(OPERATOR.CONTINUATION_ROOT / name) for name in
-            ('completed.json', 'report.json', 'origin-evidence.json')} | {str(OPERATOR.ORIGIN_FIXTURE / 'failure.json')})
+        self.assertEqual(set(accepted), {str(OPERATOR.FINALIZATION_ROOT / name) for name in
+            ('completed.json', 'report.json', 'continuation-evidence.json')} |
+            {str(OPERATOR.CONTINUATION_ROOT / name) for name in ('origin-evidence.json', 'failure.json')} |
+            {str(OPERATOR.ORIGIN_FIXTURE / 'failure.json')} |
+            {str(WORK / 'client-special-features-protocol-review-01' / name) for name in ('report.json', 'protocol-proof.json')})
         saved = copy.deepcopy((current, completed, report, documents))
         for key, value in (('continuation_library_creates', 1), ('continuation_scan_dispatches', 2), ('creation_requests', True),
                 ('original_failure_preserved', False), ('creation_admin_revoked', False), ('continuation_sessions_revoked', False),
@@ -416,13 +439,39 @@ class MainSchema27GuardTests(unittest.TestCase):
             with self.subTest(defect=defect), contextlib.ExitStack():
                 current, completed, report, documents, dependency, refresh = self.continuation_fixture()
                 if defect == 'old-path': current['profile']['receipt_path'] = str(OPERATOR.ORIGIN_FIXTURE / 'completed.json')
-                elif defect == 'old-version': completed['profile_version'] = 1
+                elif defect == 'old-version': completed['profile_version'] = 2
                 elif defect == 'report-failed': report['result'] = 'failed'
                 elif defect == 'seven-audits': completed['proof']['aggregate_audit_count'] = report['proof']['aggregate_audit_count'] = 7
                 elif defect == 'two-sessions': completed['proof']['aggregate_session_count'] = report['proof']['aggregate_session_count'] = 2
                 elif defect == 'wrong-scan-actor': completed['proof']['native_session_id'] = report['proof']['native_session_id'] = 'a' * 32
                 refresh()
                 self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, current))
+
+    def test_finalization_requires_distinct_fourth_actor_exact_byte_scope_and_retained_proofs(self):
+        self.assertEqual(OPERATOR.FINALIZATION_PINS['continuation_failure'][1],
+            '5696a8f7b57f2fec0b2a6bc4d056426f02faaa860ef830c4abc7989e49a54f4d')
+        self.assertEqual(OPERATOR.FINALIZATION_PINS['continuation_snapshot'][1],
+            '550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8')
+        self.assertEqual(OPERATOR.FINALIZATION_PINS['continuation_state'][1],
+            '0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83')
+        for field, value in (('request_count', 12), ('full_resource_count', 3), ('range_resource_count', 5),
+                ('library_creates', 1), ('scan_dispatches', 1), ('retained_failures_preserved', False), ('new_viewer_revoked', False),
+                ('new_viewer_session_id', 'c' * 32), ('new_device_id', True), ('new_device_id', 9007199254740992.0),
+                ('viewer_user_id', 'f' * 32), ('scan_job_id', 'f' * 32),
+                ('parent_projection', {'special_feature_count_present': True, 'local_trailer_count': 1})):
+            with self.subTest(field=field, value=value):
+                current, completed, report, documents, dependency, refresh = self.continuation_fixture()
+                for value_owner in (current, completed, report):
+                    value_owner['finalization'][field] = value
+                refresh()
+                self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, current))
+        current, completed, report, documents, dependency, refresh = self.continuation_fixture()
+        self.assertTrue(OPERATOR.verify_candidate_continuation(dependency, current))
+        self.assertEqual(completed['proof']['finalizer_device_id'], 9007199254740993)
+        for value_owner in (current, completed, report):
+            value_owner['retained_scan_proof']['aggregate_audit_count'] = 11
+        refresh()
+        self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, current))
 
     def test_private_json_rejects_duplicate_keys_and_nonfinite_numbers(self):
         self.assertEqual(OPERATOR.decode(b'{"owner":{"id":16385},"flags":[true,false,null]}'),

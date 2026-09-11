@@ -43,6 +43,20 @@ ORIGIN_SOURCE_PINS = {
     'origin_setup_source': ('prepare-client-special-features-fixture.py', '84af95f1d34227dc9c465b73545c6de6939963d44fb3fc2d2df50e7f0f759465'),
     'origin_profile_source': ('client-special-features-profile.py', '6bbc0bfd17b1c7eef44028fe34481436d39a3e6645442340189e2da35c382252'),
 }
+FINALIZATION = 'goby-client-special-features-protocol-finalization-v1'
+FINALIZATION_ROOT = WORK / 'client-special-features-protocol-finalization-v1'
+FINALIZATION_JOB = 'd7aa0acaee023dd4c82ea7a303c354ca'
+FINALIZATION_PINS = {
+    'continuation_failure': (CONTINUATION_ROOT / 'failure.json', '5696a8f7b57f2fec0b2a6bc4d056426f02faaa860ef830c4abc7989e49a54f4d'),
+    'continuation_state': (FINALIZATION_ROOT / 'continuation-state.json', '0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83'),
+    'continuation_snapshot': (CONTINUATION_ROOT / 'failed-current-full.json', '550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8'),
+    'retained_structure_proof': (WORK / 'client-special-features-protocol-review-01/report.json', '3a6b4d35b27944335bf9838f64618dc41254a79447b7cb9bceb540be1ca540c0'),
+    'retained_protocol_proof': (WORK / 'client-special-features-protocol-review-01/protocol-proof.json', 'db65b1016efed40297ab3014105d4748bd8febc5ba4a3d8284721872c3045c21'),
+}
+FINALIZATION_SOURCE_PINS = {
+    'continuation_setup_source': ('continue-client-special-features-fixture-v2.py', 'f5b448b5715456e0539b79afa84fab0ad53acee00bc6e5fb77051ff49131fca8'),
+    'continuation_profile_source': ('client-special-features-continuation-profile-v2.py', '71d549fd60193d6813ad97a4cc587460c14d47fc0a96ce74c0367b4acf45019a'),
+}
 OPERATOR_SHA = '84d21e8ac0b48c5dfd3d2c7ae35b0aec0d7f4f811e65658081490aa44947b49c'
 OPERATOR = WORK / 'client-schema27-tool-01/prepare-client-fixture.py'
 MAX_BYTES = 32 << 20
@@ -214,14 +228,16 @@ def setup_ledger_contract(declared, pin, actors, baseline, tables):
 
 
 def profile_paths(ledger, completed):
-    continued = ledger['profile']['path'] == str(CONTINUATION_ROOT / 'completed.json')
-    root = CONTINUATION_ROOT if continued else ORIGINAL_ROOT
-    inspection = 'client-special-features-continuation-inspection-v1' if continued else 'client-special-features-inspection-v1'
+    finalized = ledger['profile']['path'] == str(FINALIZATION_ROOT / 'completed.json')
+    continued = finalized or ledger['profile']['path'] == str(CONTINUATION_ROOT / 'completed.json')
+    root = FINALIZATION_ROOT if finalized else CONTINUATION_ROOT if continued else ORIGINAL_ROOT
+    inspection = ('client-special-features-finalization-inspection-v1' if finalized else
+                  'client-special-features-continuation-inspection-v1' if continued else 'client-special-features-inspection-v1')
     require(ledger['profile']['path'] == str(root / 'completed.json') and ledger['profile_report']['path'] == str(root / 'report.json') and
             ledger['profile_inspection']['path'] == str(WORK / inspection / 'report.json') and
             ledger['fixture_state']['path'] == str(WORK / 'client-fixture.json') and
-            type(completed.get('profile_version')) is int and completed['profile_version'] == (2 if continued else 1) and
-            ('continuation' in completed) == continued, 'profile_path_mismatch')
+            type(completed.get('profile_version')) is int and completed['profile_version'] == (3 if finalized else 2 if continued else 1) and
+            ('continuation' in completed) == continued and ('finalization' in completed) == finalized, 'profile_path_mismatch')
     return 'goby-' + inspection
 
 
@@ -301,6 +317,79 @@ def read_continuation(completed, setup, inspection, snapshot):
             len(jobs) == 1 and jobs[0]['library_id'] == CONTINUATION_LIBRARY and jobs[0]['status'] == 'Completed',
             'continued_existing_library_scan_changed')
     return digest(exact(chain).encode())
+
+
+def finalization_contract(chain, completed, setup, inspection):
+    keys = {*FINALIZATION_PINS, *FINALIZATION_SOURCE_PINS, 'continuation_evidence', 'marker', 'scan_job_id', 'viewer_user_id',
+            'new_viewer_session_id', 'new_device_id', 'request_count', 'full_resource_count', 'range_resource_count',
+            'library_creates', 'scan_dispatches', 'retained_failures_preserved', 'new_viewer_revoked', 'parent_projection'}
+    require(isinstance(chain, dict) and set(chain) == keys and chain['marker'] == FINALIZATION and
+            same(setup.get('finalization'), chain) and same(inspection.get('finalization'), chain), 'finalization_chain_missing_or_changed')
+    require(chain['scan_job_id'] == completed['job_id'] == FINALIZATION_JOB and
+            chain['viewer_user_id'] == completed['users']['av_user_id'] and
+            isinstance(chain['new_viewer_session_id'], str) and ID.fullmatch(chain['new_viewer_session_id']) and
+            type(chain['new_device_id']) is int and chain['new_device_id'] > 0 and
+            same({key: chain[key] for key in ('request_count', 'full_resource_count', 'range_resource_count', 'library_creates', 'scan_dispatches')},
+                 {'request_count': 11, 'full_resource_count': 4, 'range_resource_count': 4, 'library_creates': 0, 'scan_dispatches': 0}) and
+            chain['retained_failures_preserved'] is True and chain['new_viewer_revoked'] is True and
+            same(chain['parent_projection'], {'special_feature_count_present': False, 'local_trailer_count': 1}),
+            'finalization_effect_scope_changed')
+    for key, (path, expected) in FINALIZATION_PINS.items():
+        require(chain[key] == {'path': str(path), 'sha256': expected}, 'finalization_origin_pin_changed')
+    for key, (name, expected) in FINALIZATION_SOURCE_PINS.items():
+        require(set(chain[key]) == {'path', 'sha256'} and Path(chain[key]['path']).name == name and chain[key]['sha256'] == expected,
+                'finalization_origin_source_changed')
+    require(set(chain['continuation_evidence']) == {'path', 'sha256'} and
+            chain['continuation_evidence']['path'] == str(FINALIZATION_ROOT / 'continuation-evidence.json') and
+            HASH.fullmatch(chain['continuation_evidence'].get('sha256', '')), 'finalization_inventory_pin_missing')
+
+
+def read_finalization(completed, setup, inspection, snapshot):
+    chain = completed['finalization']
+    finalization_contract(chain, completed, setup, inspection)
+    documents = {key: read_record(chain[key]) for key in (*FINALIZATION_PINS, 'continuation_evidence')}
+    for key in FINALIZATION_SOURCE_PINS:
+        read_record(chain[key], modes=(0o600, 0o644), raw=True)
+    failure, state, retained = (documents[key] for key in ('continuation_failure', 'continuation_state', 'continuation_snapshot'))
+    require(failure.get('marker') == CONTINUATION and failure.get('result') == 'retained_for_review' and
+            failure.get('phase') == 'scan_complete' and failure.get('retry_permitted') is False and
+            failure.get('library_id') == CONTINUATION_LIBRARY and failure.get('root_id') == CONTINUATION_ROOT_ID and
+            failure.get('job_id') == FINALIZATION_JOB and state.get('phase') == 'continuing_special_features_fixture' and
+            state.get('stage') == 'scan_complete' and state.get('process') == completed['candidate']['process'],
+            'retained_scan_failure_changed')
+    require(all(failure.get('authentication', {}).get(role, {}).get(key) == value for role in ('admin', 'viewer')
+                for key, value in (('login_status', 200), ('logout_status', 204), ('exact_status', 401))), 'retained_scan_cleanup_changed')
+    proof, scan_proof = completed.get('proof', {}), completed.get('retained_scan_proof', {})
+    require(same(scan_proof, documents['retained_structure_proof'].get('proof')) and
+            same(setup.get('retained_scan_proof'), scan_proof) and same(inspection.get('retained_scan_proof'), scan_proof) and
+            same(setup.get('proof'), proof) and same(inspection.get('proof'), proof) and
+            same({key: scan_proof.get(key) for key in ('aggregate_session_count', 'aggregate_audit_count')},
+                 {'aggregate_session_count': 3, 'aggregate_audit_count': 9}) and
+            same({key: proof.get(key) for key in ('aggregate_session_count', 'aggregate_audit_count', 'finalization_session_count', 'finalization_audit_count')},
+                 {'aggregate_session_count': 4, 'aggregate_audit_count': 11, 'finalization_session_count': 1, 'finalization_audit_count': 2}) and
+            proof.get('finalizer_session_id') == chain['new_viewer_session_id'] and proof.get('finalizer_device_id') == chain['new_device_id'] and
+            proof.get('all_scanned_rows_preserved') is True, 'finalization_stage_proof_changed')
+    old, new = retained['database']['tables'], snapshot['database']['tables']
+    for name in TABLE_KEYS:
+        if name != 'sessions':
+            require(same(ordered(old[name]), ordered(new[name])), 'finalization_changed_' + name)
+    for name, identifier in (('sessions', chain['new_viewer_session_id']), ('devices', chain['new_device_id'])):
+        before, after = keyed(old[name], ('id',)), keyed(new[name], ('id',))
+        require(set(after) - set(before) == {(identifier,)} and all(same(row, after.get(key)) for key, row in before.items()),
+                'finalization_' + name + '_population_changed')
+    auth = next(row for row in new['sessions'] if row['id'] == chain['new_viewer_session_id'])
+    device = next(row for row in new['devices'] if row['id'] == chain['new_device_id'])
+    require(auth['kind'] == 'emby' and auth['user_id'] == chain['viewer_user_id'] and auth['revoked_at'] is not None and
+            auth['device_registry_id'] == device['id'] and auth['device_id'] == device['reported_device_id'] and
+            device['last_user_id'] == chain['viewer_user_id'], 'finalization_viewer_identity_changed')
+    before_audit, after_audit = keyed(old['activity_entries'], ('id',)), keyed(new['activity_entries'], ('id',))
+    added_audit = [row for key, row in after_audit.items() if key not in before_audit]
+    require(all(same(row, after_audit.get(key)) for key, row in before_audit.items()) and len(added_audit) == 2 and
+            {row['action'] for row in added_audit} == {'session.login', 'session.revoked'} and
+            all(row['source'] == 'emby' and row['actor_kind'] == 'user' and row['actor_id'] == chain['viewer_user_id'] and
+                row['actor_credential_id'] == auth['id'] and row['resource_kind'] == 'session' and row['resource_id'] == auth['id']
+                for row in added_audit), 'finalization_audit_scope_changed')
+    return retained, digest(exact(chain).encode())
 
 
 def profile_contract(ledger, state, completed, setup, inspection):
@@ -395,7 +484,11 @@ def authority(record, *, live=False):
     baseline = projection(snapshot['database']['tables'], actors, item['id'])
     require(same(baseline, projection(inspected['database']['tables'], actors, item['id'])), 'inspection_ledger_drift')
     setup_ledger_contract(declared, after_pin, actors, baseline, snapshot['database']['tables'])
-    continuation_sha256 = read_continuation(completed, setup, inspection, snapshot) if 'continuation' in completed else None
+    finalization_sha256 = None
+    continuation_snapshot = snapshot
+    if 'finalization' in completed:
+        continuation_snapshot, finalization_sha256 = read_finalization(completed, setup, inspection, snapshot)
+    continuation_sha256 = read_continuation(completed, setup, inspection, continuation_snapshot) if 'continuation' in completed else None
     ordinary_movie(baseline, item['id'])
     actual = baseline['movie_rows'][0]
     require(all(actual[key] == item[key] for key in ('id', 'type', 'name', 'path', 'relative_path', 'parent_id')) and
@@ -416,6 +509,8 @@ def authority(record, *, live=False):
               'baseline_counts': declared['counts']}
     if continuation_sha256 is not None:
         result['continuation_sha256'] = continuation_sha256
+    if finalization_sha256 is not None:
+        result['finalization_sha256'] = finalization_sha256
     if live:
         raw = read_record({'path': str(OPERATOR), 'sha256': OPERATOR_SHA}, modes=(0o600, 0o644, 0o700, 0o755), raw=True)
         module = types.ModuleType('positive_profile_readonly_service_proof')

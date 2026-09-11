@@ -67,7 +67,7 @@ def compare(op, before, after, report, proof, baseline):
     require(same(before.get('approved_expiry_id_sha256'), permitted), 'fresh_expiry_declaration_changed')
     for name in ('users_state', 'user_settings', 'movie_rows', *op.AUXILIARY):
         require(same(before['rows'][name], after['rows'][name]), name + '_changed')
-    require(report.get('marker') == 'goby-client-cross-user-m3e-v1' and type(report.get('format')) is int and report['format'] == 6 and
+    require(report.get('marker') == 'goby-client-special-features-browser-v1' and type(report.get('format')) is int and report['format'] == 6 and
             report.get('mode') == 'acceptance-preparation' and report.get('preparation_scope') == SCOPE and
             report.get('result') in ('passed', 'failed') and type(report.get('client_acceptance')) is bool and
             lower <= instant(report['started_at']) <= instant(report['finished_at']) <= upper and

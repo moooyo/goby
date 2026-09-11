@@ -1,0 +1,171 @@
+{
+  "artifacts": {
+    "build.stderr": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build.stdout": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gofmt-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/gofmt-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "guard-report.json": {
+      "bytes": 2658,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/guard-report.json",
+      "sha256": "094b9b612ee41a97980b02a7c1393e494cce596146e27e4ffa106dfabf731335"
+    },
+    "guards.stderr": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/guards.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guards.stdout": {
+      "bytes": 2516,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/guards.stdout",
+      "sha256": "f53d7ae0c16cdd8b25124e2a09bcff01b38e0f6b393c735632d769712e5ca58c"
+    },
+    "helper-build-report.json": {
+      "bytes": 465,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/helper-build-report.json",
+      "sha256": "8b4e2104470cd4cdc120e34363505b21f8b86725cd50571b54bea71cc0a96551"
+    },
+    "syntax-guard-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/syntax-guard-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "syntax-operator-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/syntax-operator-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "tool-snapshot.json": {
+      "bytes": 609,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/tool-snapshot.json",
+      "sha256": "560141f286634c719fe4e930413f775ecfac658e2b47e84f29219f26df95e702"
+    },
+    "unit-journal.jsonl": {
+      "bytes": 12666,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/unit-journal.jsonl",
+      "sha256": "e520e0ebd78945dddb111a8db2f4225e4af50ee85811c2b256c10d22a732a931"
+    },
+    "unit-launch.json": {
+      "bytes": 195,
+      "mode": 420,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/unit-launch.json",
+      "sha256": "176a7cf7b6c0355c88a3d1dc415d534b22e414b841169904fbde7c06f6299ca0"
+    },
+    "unit-runtime-properties.json": {
+      "bytes": 281,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/unit-runtime-properties.json",
+      "sha256": "04aecf4465a0496d79da23674d096efc36078031eb063118dc6d54be22ed4f24"
+    },
+    "verification.json": {
+      "bytes": 454,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/verification.json",
+      "sha256": "f0b97403e055541ef56c7adab589f76aa1b381fc9ca17ae5265f6fc5bbe2c166"
+    },
+    "verify.py": {
+      "bytes": 6349,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/verify.py",
+      "sha256": "ee791fde88404e81af31beea70d6f61195631afa302c96b01720d158a5cbf442"
+    }
+  },
+  "attempt": "04",
+  "candidate_finalization_validated_live": false,
+  "candidate_service_mutations": 0,
+  "database_commands": 0,
+  "helper_binary": {
+    "bytes": 17373609,
+    "mode": 493,
+    "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-04/migrate-main-schema27",
+    "sha256": "4ba5866c8aa874ec230d5adcddce0f339860c35f3cde6cff9ef4ab32698e3044"
+  },
+  "helper_source_changed_from_tool03": false,
+  "main_service_mutations": 0,
+  "primary_protection_changed": false,
+  "prior_tool03": {
+    "bytes": 6834,
+    "mode": 384,
+    "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-03/public-verification.json",
+    "sha256": "4dad32376b84fca962e7f26c261880e13dc85b8286f3e391a272b95296f6a18e"
+  },
+  "pure_guard_count": 27,
+  "python_syntax_checks": 2,
+  "retained_failure_pins": {
+    "continuation": "5696a8f7b57f2fec0b2a6bc4d056426f02faaa860ef830c4abc7989e49a54f4d",
+    "creation": "9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0"
+  },
+  "schema": "goby-main-schema27-tool-verification",
+  "schema27_operator_preflight_executed": false,
+  "scope": "Finalization consumer provenance, pure guards and independent helper compilation only. No live finalization/profile or primary preflight acceptance.",
+  "source32_files": 4002,
+  "source32_manifest_sha256": "a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65",
+  "source32_unchanged": true,
+  "status": "passed",
+  "tool_files": {
+    "migrate-main-schema27.go": {
+      "bytes": 57727,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-04/scripts/test-env/migrate-main-schema27.go",
+      "sha256": "78287abc317df9fad9038d9682a74c5603c8c8be9adcef3d82813433adea0558"
+    },
+    "test-upgrade-main-schema27.py": {
+      "bytes": 92468,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-04/scripts/test-env/test-upgrade-main-schema27.py",
+      "sha256": "b86504336d0042c062e0412e96527fbe164d251f85b90474e074cd5fcffd3519"
+    },
+    "upgrade-main-schema27.py": {
+      "bytes": 130863,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-04/scripts/test-env/upgrade-main-schema27.py",
+      "sha256": "f979d00abe639905e93a1e9c739e735047c6417531c0d4ccfe64361a3587decd"
+    }
+  },
+  "tool_manifest": {
+    "bytes": 611793,
+    "mode": 384,
+    "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-04/main-schema27-tool-inputs.json",
+    "sha256": "785666813f965c26de253b421773135eeba36224700d25c968b09fa4040b371a"
+  },
+  "tool_source": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-04",
+  "tool_source_unchanged_after_freeze": true,
+  "unit": {
+    "journal_deactivation_success": true,
+    "name": "goby-main-schema27-tools-04.service",
+    "runtime_properties": {
+      "CPUQuotaPerSecUSec": "1.500000s",
+      "KillMode": "control-group",
+      "MainPID": "756851",
+      "MemoryMax": "1610612736",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "yes",
+      "ProtectSystem": "strict",
+      "RuntimeMaxUSec": "15min",
+      "TasksMax": "256"
+    }
+  },
+  "version": 1
+}

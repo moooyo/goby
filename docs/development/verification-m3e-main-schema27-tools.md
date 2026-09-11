@@ -1,6 +1,49 @@
 # Main schema27 deployment tooling verification
 
-Current consumer revision: [tool03](m3e-main-schema27-tool03-verification.json)
+The separate [primary deployment](m3e-main-schema27-completed.json) passed on
+2026-09-11 after the candidate protocol, original-client and scoped database
+acceptance gates. Both services now run source32/schema27. The primary is
+`goby-foundation-test.service`, PID `762090`, start ticks `7637121`, with binary
+SHA-256 `af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+An independent service read confirmed active/running and the same PID.
+
+The execution directory is
+`/opt/goby-test/backups/main-schema27-v1/run-20260911T190452Z-94ef1ef5242d2335018f8dac`.
+Its terminal SHA-256 is
+`0b0695556716bf78f414f146c2ab5f84fa273455679969050d69cf086af46b5a`.
+Preflight and the schema26 backup completed before an independent
+[restore and migration rehearsal](m3e-main-schema27-rehearsal.json).
+The [rehearsal cleanup](m3e-main-schema27-rehearsal-disposal.json) confirmed the
+owned database and role absent, without force or backend termination.
+
+The [primary migration](m3e-main-schema27-migration.json) committed schema27
+while preserving the old 33 tables' rows, columns, relation OIDs, ACLs and
+sequences. The before/preserved-state SHA-256 is
+`dd7f4564c121fbe088390a3d6a179b2048a5089a4fc9e3d8d5af7b1be49e175a`.
+The two new Extra tables are empty on the primary. Private runtime state,
+media and historical archives were retained. The primary database was not
+restored and no old-binary rollback or automatic retry occurred.
+
+The [native smoke receipt](m3e-main-schema27-native-smoke.json) records 13
+successful expected responses, including logout204 and rejection of the exact
+session with401. It used one newly owned session and made no backup creation,
+archive deletion or restore request. Authentication and audit history added
+by smoke is retained; whole-table equality after smoke is not claimed.
+The completed execution and earlier failed trees must not be replayed.
+
+Latest consumer revision: [tool04](m3e-main-schema27-tool04-verification.json)
+passed two remote syntax checks, 27 pure guards and an independent helper build.
+It accepts the explicit version3 finalization inspection and requires both
+retained failure trees, the scan proof and the final one-viewer media proof.
+Its manifest SHA-256 is
+`785666813f965c26de253b421773135eeba36224700d25c968b09fa4040b371a`.
+Helper bytes remain unchanged. The source, live resource-limit observations,
+build and guard receipts are preserved in `main-schema27-build-04`.
+The actual main service input bundle was prepared after candidate finalization,
+inspection, original-client UI and scoped database comparison passed, and was
+consumed by the separate successful deployment above.
+
+Earlier consumer revision: [tool03](m3e-main-schema27-tool03-verification.json)
 passed two remote syntax checks, 26 pure guards and the helper build. Its
 manifest SHA-256 is
 `b58163bd0fedace1ea2d2339cc6813ef369f619fb5e3b3493c3ecaf2c3486cb4`.
@@ -9,7 +52,8 @@ original failed creation, its 201 acknowledgment and the later completion.
 The migration helper source and binary are unchanged from tool02. Actual
 runtime limits were captured while the tool03 unit was live. No primary
 preflight, candidate action or database command ran in this verification.
-Positive continuation and client evidence remain required before deployment.
+At that historical tooling boundary, positive continuation and client evidence
+were still required before deployment. Those gates subsequently passed.
 
 The earlier tool02 result remains preserved below.
 
@@ -42,9 +86,10 @@ readback is not retained; default properties after collection are not proof
 of the limits used. Both that boundary and the accepted launch parameters are
 recorded in the verification receipt.
 
-This verifies tooling only. No main operator preflight, helper execution,
-database command, migration, service stop or installation ran. The primary
-remains source28/schema26. Deployment still requires the actual nonempty
-candidate inspection, positive original-client report and database comparison,
-followed by a fresh service pin, startup plan and release attestation. Historical
-candidate upgrade and root-extension process identities remain separate.
+The tool02 run verified tooling only; it performed no main operator preflight,
+helper execution, database command, migration, service stop or installation.
+At that historical boundary the primary remained source28/schema26. The later
+nonempty candidate inspection, positive original-client report, scoped database
+comparison, fresh service pin, startup plan and release attestation preceded
+the successful deployment recorded above. Historical candidate upgrade and
+root-extension process identities remain separate.

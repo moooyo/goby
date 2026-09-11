@@ -63,8 +63,19 @@ CANDIDATE_UPGRADE_SHA = 'e9d502f16722d73b754d810de5b8ff5d7f6ccba512bd3eece3b1a1f
 CATALOG27_SHA = '1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d'
 MIGRATION27_SHA = 'b62d0422dddb9e258f46589898f672b08fc6e4c12fea7456059f855a6600353c'
 CONTINUATION_ROOT = WORK / 'client-special-features-fixture-continuation-v1'
-CONTINUATION_INSPECTION = WORK / 'client-special-features-continuation-inspection-v1/report.json'
 CONTINUATION_MARKER = 'goby-client-special-features-fixture-continuation-v1'
+FINALIZATION_ROOT = WORK / 'client-special-features-protocol-finalization-v1'
+FINALIZATION_INSPECTION = WORK / 'client-special-features-finalization-inspection-v1/report.json'
+FINALIZATION_MARKER = 'goby-client-special-features-protocol-finalization-v1'
+FINALIZATION_PINS = {
+    'continuation_failure': (CONTINUATION_ROOT / 'failure.json', '5696a8f7b57f2fec0b2a6bc4d056426f02faaa860ef830c4abc7989e49a54f4d'),
+    'continuation_state': (FINALIZATION_ROOT / 'continuation-state.json', '0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83'),
+    'continuation_snapshot': (CONTINUATION_ROOT / 'failed-current-full.json', '550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8'),
+    'continuation_setup_source': (None, 'f5b448b5715456e0539b79afa84fab0ad53acee00bc6e5fb77051ff49131fca8'),
+    'continuation_profile_source': (None, '71d549fd60193d6813ad97a4cc587460c14d47fc0a96ce74c0367b4acf45019a'),
+    'retained_structure_proof': (WORK / 'client-special-features-protocol-review-01/report.json', '3a6b4d35b27944335bf9838f64618dc41254a79447b7cb9bceb540be1ca540c0'),
+    'retained_protocol_proof': (WORK / 'client-special-features-protocol-review-01/protocol-proof.json', 'db65b1016efed40297ab3014105d4748bd8febc5ba4a3d8284721872c3045c21'),
+}
 ORIGIN_FIXTURE = WORK / 'client-special-features-fixture-v1'
 CONTINUATION_ORIGIN_PINS = {
     'origin_failure': (ORIGIN_FIXTURE / 'failure.json', '9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0'),
@@ -398,7 +409,7 @@ def candidate_inputs(op, args, published):
             'Release acceptance omits the original upgrade, current candidate, or scoped client evidence.')
     continuation_evidence = verify_candidate_continuation(op, reports['candidate_state_report'])
     require(all(evidence.get(path) == digest for path, digest in continuation_evidence.items()),
-            'Release acceptance omits the original failed setup or the independently completed continuation chain.')
+            'Release acceptance omits a retained failure or the independently completed finalization chain.')
     clients = release.get('client_evidence', {})
     require(isinstance(clients, dict) and set(clients) == {'original_movie', 'positive_extras'},
             'Both the original Movie and new positive Extra client scopes must be explicitly accepted.')
@@ -441,8 +452,8 @@ def verify_candidate(op, args, current):
                 'migration_27_sha256': MIGRATION27_SHA, 'catalog_sha256': CATALOG27_SHA},
             'The candidate has no exact completed source32 schema transition.')
     process = {'pid': args.candidate_pid, 'start_ticks': int(args.candidate_start_ticks), 'boot_id': OLD_BOOT}
-    require(args.candidate_state_report == CONTINUATION_INSPECTION and
-            current.get('marker') == 'goby-client-special-features-continuation-inspection-v1' and current.get('result') == 'passed' and
+    require(args.candidate_state_report == FINALIZATION_INSPECTION and
+            current.get('marker') == 'goby-client-special-features-finalization-inspection-v1' and current.get('result') == 'passed' and
             current.get('schema') == 27 and current.get('profile_marker') == 'goby-client-special-features-fixture-v1' and
             current.get('binary_sha256') == TARGET_BINARY_SHA and current.get('process') == process and
             current.get('source') == {'path': str(TARGET_SOURCE), 'manifest_sha256': TARGET_MANIFEST_SHA,
@@ -491,8 +502,8 @@ def verify_candidate(op, args, current):
 
 
 def verify_candidate_continuation(op, current):
-    # A continuation proves a new scan and two new actors after the separately
-    # retained create-only failure. It never turns that failed run into success.
+    # The retained continuation proves its scan and two actors, despite its
+    # later protocol failure. Only the new finalizer may publish completion.
     chain = current.get('continuation', {})
     scalar_keys = {'marker', 'library_id', 'root_id', 'creation_admin_session_id', 'new_scan_admin_session_id',
         'new_viewer_session_id', 'scan_job_id', 'creation_requests', 'continuation_library_creates',
@@ -523,16 +534,17 @@ def verify_candidate_continuation(op, current):
         if key in ('origin_failure', 'origin_evidence'):
             evidence[str(path)] = digest
     profile = current['profile']
-    completed_path, report_path = CONTINUATION_ROOT / 'completed.json', CONTINUATION_ROOT / 'report.json'
+    completed_path, report_path = FINALIZATION_ROOT / 'completed.json', FINALIZATION_ROOT / 'report.json'
     require(profile.get('receipt_path') == current.get('receipt_path') == str(completed_path) and
             profile.get('receipt_sha256') == current.get('receipt_sha256') and HASH.fullmatch(profile.get('receipt_sha256', '')) and
             profile.get('library_id') == chain['library_id'] and profile.get('root_id') == chain['root_id'],
-            'The inspected profile does not select the independent continuation receipt.')
+            'The inspected profile does not select the independent protocol-finalization receipt.')
     completed_raw, report_raw = op.read_file(completed_path), op.read_file(report_path)
-    require(sha(completed_raw) == profile['receipt_sha256'], 'The completed continuation receipt changed.')
+    require(sha(completed_raw) == profile['receipt_sha256'], 'The completed finalization receipt changed.')
     completed, report = decode(completed_raw), decode(report_raw)
     require(completed.get('marker') == 'goby-client-special-features-fixture-v1' and completed.get('phase') == 'complete' and
-            completed.get('schema') == 27 and type(completed.get('profile_version')) is int and completed['profile_version'] == 2 and
+            completed.get('schema') == 27 and type(completed.get('profile_version')) is int and completed['profile_version'] == 3 and
+            completed.get('source_state_sha256') == FINALIZATION_PINS['continuation_state'][1] and
             completed.get('continuation') == report.get('continuation') == chain and
             completed.get('library_id') == chain['library_id'] and completed.get('root_id') == chain['root_id'] and
             completed.get('job_id') == chain['scan_job_id'] and
@@ -542,15 +554,17 @@ def verify_candidate_continuation(op, current):
             report.get('marker') == 'goby-client-special-features-setup-report-v1' and report.get('result') == 'passed' and
             report.get('phase') == 'complete' and report.get('receipt_path') == str(completed_path) and
             report.get('receipt_sha256') == profile['receipt_sha256'] and report.get('state_sha256') == current['state_sha256'] and
-            report.get('candidate') == completed['candidate'], 'The three continuation artifacts disagree about completion or identity.')
-    proof = completed.get('proof', {})
-    require(proof == report.get('proof') and proof.get('creation_admin_session_id') == chain['creation_admin_session_id'] and
+            report.get('candidate') == completed['candidate'], 'The three finalization artifacts disagree about completion or identity.')
+    proof = completed.get('retained_scan_proof', {})
+    require(proof == report.get('retained_scan_proof') == current.get('retained_scan_proof') and
+            proof.get('creation_admin_session_id') == chain['creation_admin_session_id'] and
             proof.get('native_session_id') == chain['new_scan_admin_session_id'] and proof.get('viewer_session_id') == chain['new_viewer_session_id'] and
             proof.get('item_ids') == profile['item_ids'] and all(proof.get(key) is True for key in
                 ('creation_admin_revoked', 'old_rows_preserved', 'expected_increment_preserved')) and
             all(type(proof.get(key)) is int and proof[key] == value for key, value in
                 (('creation_audit_count', 3), ('continuation_audit_count', 6), ('aggregate_session_count', 3), ('aggregate_audit_count', 9))),
-            'The continuation lacks its precise three-actor, nine-audit preservation proof.')
+            'The retained scan lacks its precise three-actor, nine-audit preservation proof.')
+    evidence.update(verify_candidate_finalization(op, current, completed, report, proof))
     for key in ('setup_source', 'profile_source'):
         row = current.get(key, {})
         require(isinstance(row, dict) and set(row) == {'path', 'sha256'} and HASH.fullmatch(row.get('sha256', '')),
@@ -559,6 +573,52 @@ def verify_candidate_continuation(op, current):
         require(path.is_absolute() and path.is_relative_to(WORK) and '..' not in path.parts and path.suffix == '.py' and
                 sha(op.read_file(path, modes=(0o600, 0o644))) == row['sha256'], 'The continued fixture source bytes changed.')
     evidence.update({str(completed_path): sha(completed_raw), str(report_path): sha(report_raw)})
+    return evidence
+
+
+def verify_candidate_finalization(op, current, completed, report, retained):
+    final = current.get('finalization', {})
+    scalar_keys = {'marker', 'scan_job_id', 'viewer_user_id', 'new_viewer_session_id', 'new_device_id', 'request_count',
+        'full_resource_count', 'range_resource_count', 'library_creates', 'scan_dispatches',
+        'retained_failures_preserved', 'new_viewer_revoked', 'parent_projection'}
+    require(isinstance(final, dict) and set(final) == set(FINALIZATION_PINS) | {'continuation_evidence'} | scalar_keys and
+            final == completed.get('finalization') == report.get('finalization') and final.get('marker') == FINALIZATION_MARKER and
+            final.get('scan_job_id') == current['continuation']['scan_job_id'] == 'd7aa0acaee023dd4c82ea7a303c354ca' and
+            final.get('viewer_user_id') == '34b4c24f6568659af7ce17938fae7f81' and
+            all(final.get(key) is True for key in ('retained_failures_preserved', 'new_viewer_revoked')) and
+            all(type(final.get(key)) is int and final[key] == value for key, value in
+                (('request_count', 11), ('full_resource_count', 4), ('range_resource_count', 4), ('library_creates', 0), ('scan_dispatches', 0))),
+            'The finalization exceeds the one-viewer byte-delivery scope or changes a retained scan.')
+    projection = final.get('parent_projection', {})
+    require(isinstance(projection, dict) and set(projection) == {'special_feature_count_present', 'local_trailer_count'} and
+            projection['special_feature_count_present'] is False and type(projection['local_trailer_count']) is int and
+            projection['local_trailer_count'] == 1, 'The finalization changed the observed parent count projection.')
+    require(isinstance(final.get('new_viewer_session_id'), str) and re.fullmatch(r'[0-9a-f]{32}', final['new_viewer_session_id']) and
+            final['new_viewer_session_id'] not in {retained['creation_admin_session_id'], retained['native_session_id'], retained['viewer_session_id']} and
+            type(final.get('new_device_id')) is int and 0 < final['new_device_id'] <= 9223372036854775807,
+            'The finalizer reused a retained session or lost its exact registry identity.')
+    evidence = {}
+    for key in (*FINALIZATION_PINS, 'continuation_evidence'):
+        row = final[key]
+        require(isinstance(row, dict) and set(row) == {'path', 'sha256'} and HASH.fullmatch(row.get('sha256', '')),
+                'A finalization predecessor has no exact artifact descriptor.')
+        path = Path(row['path'])
+        fixed, digest = FINALIZATION_PINS.get(key, (FINALIZATION_ROOT / 'continuation-evidence.json', row['sha256']))
+        require(path.is_absolute() and path.is_relative_to(WORK) and '..' not in path.parts and
+                (fixed is None or path == fixed) and row['sha256'] == digest and
+                path.suffix == ('.py' if key.endswith('_source') else '.json') and
+                sha(op.read_file(path, modes=(0o600, 0o644) if key.endswith('_source') else (0o600,))) == digest,
+                'The retained scan failure, snapshot, source, or real protocol proof changed.')
+        if key in ('continuation_failure', 'continuation_evidence', 'retained_structure_proof', 'retained_protocol_proof'):
+            evidence[str(path)] = digest
+    expected = {**retained, 'aggregate_session_count': 4, 'aggregate_audit_count': 11,
+        'finalization_session_count': 1, 'finalization_audit_count': 2, 'finalizer_session_id': final['new_viewer_session_id'],
+        'finalizer_device_id': final['new_device_id'], 'all_scanned_rows_preserved': True}
+    proof = completed.get('proof', {})
+    require(proof == current.get('proof') == report.get('proof') == expected and proof.get('all_scanned_rows_preserved') is True and
+            all(type(proof.get(key)) is int for key in ('aggregate_session_count', 'aggregate_audit_count',
+                'finalization_session_count', 'finalization_audit_count', 'finalizer_device_id')),
+            'The final proof does not preserve the complete scan while adding exactly one actor and two audit rows.')
     return evidence
 
 
