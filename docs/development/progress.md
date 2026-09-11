@@ -1,5 +1,16 @@
 # Implementation progress
 
+Current reference work: the first controlled LibraryChanged attempt indexed a
+new movie but stopped because an NFO edit and scoped FullRefresh did not change
+the requested Name/Overview. Removal was not executed. The old seven-library/
+five-user public state and old media were preserved; both recorder sessions
+were revoked. A separate four-minute tail completed with no events and its
+session revoked. The reference now retains one new library/user. See the
+[controlled study](../research/library-changed-reference.md) and current
+[handoff](handoff.md). The next step is the already observed metadata-write API
+and longer separate removal/re-add windows; product event implementation is
+still pending. Candidate source32/schema27 is unchanged.
+
 Latest state: **the original-client Home permission gate passed after explicit
 reloads: four libraries, three while restricted, then four after restoration,
 using the same new B token.** Both ten-second passive windows retained stale

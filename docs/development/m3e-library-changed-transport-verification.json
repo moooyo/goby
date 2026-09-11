@@ -1,0 +1,13 @@
+{
+  "marker": "goby-library-changed-transport-v1",
+  "result": "passed",
+  "sources": {
+    "bounded_websocket_capture.py": "54fd18d50cf254aa6e93ac587f0d8fdf17d6897432e0448c2d00ddeb75ec7f0e",
+    "test_bounded_websocket_capture.py": "ca3f0f42ffea3f1e0f40bc4a51bada12753f830e8d6043b6c7a32b15d50f1ac8"
+  },
+  "syntaxChecks": 2,
+  "testExitCode": 0,
+  "stderrSha256": "64cf8c0355e2ed1bb0f8e9ca8e5ee59d4d70e311bf16bf6f5d31b6e401fc7425",
+  "httpRequests": 0,
+  "referenceMutations": 0
+}

@@ -1,0 +1,13 @@
+{
+  "marker": "goby-library-changed-reference-tool-v1",
+  "result": "passed",
+  "sources": {
+    "capture-client-library-changed-reference.py": "51c05a0c826cd18983901f631d5c04163372f37591b980459c7fedac2fb5d445",
+    "test_capture_client_library_changed_reference.py": "74ebe7f340bff6c9cf8519ea08edc620581358d72a019d33c2ce40586f46740f"
+  },
+  "syntaxChecks": 2,
+  "testExitCode": 0,
+  "stderrSha256": "b061429c3189a1918361449baaac83f136b845855cb15969abebdc1e866604bb",
+  "httpRequests": 0,
+  "referenceMutations": 0
+}

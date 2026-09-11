@@ -1,0 +1,57 @@
+{
+  "marker": "goby-library-changed-unchanged-dto-observation-v1",
+  "referenceScope": "/opt/goby-test/exec-work-m3e/reference-library-changed-v1",
+  "beforeSourceSha256": "a468cf14166512ed29238c7b0c52781addec11e94ec3a5012cae0f8fb9bd9dd9",
+  "afterSourceSha256": "4fdce7b71859d4915f7cbedfed03c9bf0b83e3db7b663f577a9af6d41686c5db",
+  "requestedItemIds": [
+    "94",
+    "95",
+    "96",
+    "97",
+    "98"
+  ],
+  "allRequestedDTOsExactlyEqual": true,
+  "items": [
+    {
+      "Id": "96",
+      "ParentId": "95",
+      "Type": "Movie",
+      "Name": "LibraryChanged Anchor",
+      "Path": "/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Anchor (2030)/LibraryChanged Anchor (2030).mp4",
+      "Overview": "Controlled anchor for the new library."
+    },
+    {
+      "Id": "95",
+      "ParentId": "94",
+      "Type": "Folder",
+      "Name": "LibraryChanged Anchor (2030)",
+      "Path": "/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Anchor (2030)",
+      "Overview": null
+    },
+    {
+      "Id": "98",
+      "ParentId": "97",
+      "Type": "Movie",
+      "Name": "LibraryChanged Observed",
+      "Path": "/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Observed (2031)/LibraryChanged Observed (2031).mp4",
+      "Overview": "Controlled original overview for LibraryChanged."
+    },
+    {
+      "Id": "97",
+      "ParentId": "94",
+      "Type": "Folder",
+      "Name": "LibraryChanged Observed (2031)",
+      "Path": "/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Observed (2031)",
+      "Overview": null
+    },
+    {
+      "Id": "94",
+      "ParentId": "1",
+      "Type": "Folder",
+      "Name": "Movies",
+      "Path": "/opt/goby-fixtures/client-library-changed-v1/Movies",
+      "Overview": null
+    }
+  ],
+  "boundary": "Equality covers the five requested recursive catalog DTOs, not unrequested private state or CollectionFolder93."
+}

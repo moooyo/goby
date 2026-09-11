@@ -1,6 +1,52 @@
 # Development handoff
 
-Latest state: **the original-client library permission UI gate passed once
+Latest reference work: **the first controlled LibraryChanged attempt indexed
+the new movie, then stopped at an unproven NFO metadata update. Removal did not
+run.** The [reference study](../research/library-changed-reference.md) and
+[initial report](m3e-library-changed-reference-initial.json) retain this failed
+scope. A setup notification arrived during the pre-action quiet period. The
+controlled add window had no event; the subsequent FullRefresh produced an
+ItemsUpdated message while all five requested catalog DTOs stayed equal.
+Do not assume that equal DTOs prohibit reference refresh notifications.
+
+Reference service PID332054 and its binary are unchanged. It now has eight
+libraries/six users: new library93, root folder94, anchor folder95/movie96,
+added folder97/movie98 and ordinary user `c5f36699a54f4971a891682cd9de410f`.
+The source media remains under `/opt/goby-fixtures/client-library-changed-v1`;
+the changed NFO did not produce the requested Name/Overview change. The initial
+scope's 334 requests preserved the captured old seven-library/five-user public
+state and all three old media trees. Both new sessions completed logout204 and
+exact401. Its unit `goby-reference-library-changed-v1.service` is terminal with
+exit1, MainPID0 and an empty cgroup; terminal SHA-256 is
+`2586b86a3ea0087be67c397f3c3c3dca2e75b7210d90c969d72225f2a1171b2f`.
+
+Current reference continuation inputs under
+`/opt/goby-test/exec-work-m3e/reference-library-changed-v1` are the export report
+SHA-256 `f502223df8e7de2afeb49b5a6285498d967f5c95e1435121b455d7e8ee8b0a33`,
+`private/final-old-state.json`
+`5898de2a2e99754d34a0b4402f8803a2aca07332781feba62e7d0dbb8b4d6710`,
+and `private/update-media-after.json`
+`ecba10ca770ad5d021e98b2a8f6f1748eb06316833322376d1419b3f8a26a370`.
+Preserve the entire consumed scope and its credentials; do not rerun setup.
+
+The separate four-minute read-only catalog tail completed with zero events and
+its fresh viewer session revoked. Its report at
+`reference-library-changed-tail-v1/export/report.json` has SHA-256
+`2dae87e06e3beda64421cc10c26c14889124f9885943cb29b960ccaf253d4aff`.
+Its retained unit `goby-reference-library-changed-tail-v1.service` is exited0,
+MainPID0 with an empty cgroup. Terminal SHA-256 is
+`2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
+It began after the first controller terminated and made no catalog mutations.
+
+Next: use the already observed administrator `POST /emby/Items/98` metadata
+contract with current EDIT_FIELDS values and only Name/Overview changes, then
+separate remove and re-add observations with longer continuous windows. A new
+continuation operator is being prepared; none of those actions has run yet.
+LibraryChanged product implementation and complete M3/M4/M5/M6 remain open.
+The candidate's source32/schema27 and 73-session/62-device/163-audit authority
+below are unchanged by this independent reference work.
+
+Latest candidate state: **the original-client library permission UI gate passed once
 after explicit browser reloads. Policy restoration and both owned session
 cleanups passed. Automatic refresh was not observed in either bounded window.**
 The [controller report](m3e-library-permission-ui.json), SHA-256
