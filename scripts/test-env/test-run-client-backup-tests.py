@@ -126,17 +126,17 @@ class RunnerGuardTests(unittest.TestCase):
             self.reject(lambda: RUNNER.validate_arguments(self.args))
 
     def test_arguments_only_accept_explicit_supported_schema_versions(self):
-        for schema in (24, 25, 26):
+        for schema in (24, 25, 26, 27):
             self.args.schema = schema
             RUNNER.validate_arguments(self.args)
-        for schema in (None, True, False, "25", "26", 0, 1, 23, 27, 25.0, 26.0):
+        for schema in (None, True, False, "25", "26", "27", 0, 1, 23, 28, 25.0, 26.0, 27.0):
             self.args.schema = schema
             self.reject(lambda: RUNNER.validate_arguments(self.args))
 
-    def test_catalog_arguments_require_explicit_schema25_or26_without_test_selectors(self):
+    def test_catalog_arguments_require_explicit_schema25_or26_or27_without_test_selectors(self):
         self.args.mode = "catalog"
         self.reject(lambda: RUNNER.validate_arguments(self.args))
-        for schema in (25, 26):
+        for schema in (25, 26, 27):
             self.args.schema, self.args.run, self.args.package = schema, "", []
             RUNNER.validate_arguments(self.args)
             self.args.run = "TestOne"
@@ -156,7 +156,7 @@ class RunnerGuardTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, 2)
         self.assertIn("--manifest-sha256", error.getvalue())
 
-    def test_cli_defaults_to_schema24_and_requires_explicit25_or26_for_catalog_mode(self):
+    def test_cli_defaults_to_schema24_and_requires_explicit25_or26_or27_for_catalog_mode(self):
         self.replace(RUNNER.argparse, "_", lambda message: message)
         initialize = RUNNER.argparse.HelpFormatter.__init__
         def fixed_width(formatter, *args, **kwargs):
@@ -171,10 +171,14 @@ class RunnerGuardTests(unittest.TestCase):
         factory.reset_mock()
         self.reject(lambda: RUNNER.main(base + ["--mode", "catalog"]))
         factory.assert_not_called()
-        for schema in (25, 26):
+        for schema in (25, 26, 27):
             factory.reset_mock()
             self.assertEqual(RUNNER.main(base + ["--mode", "catalog", "--schema", str(schema)]), 0)
             self.assertEqual((factory.call_args.args[0].schema, factory.call_args.args[0].mode), (schema, "catalog"))
+        for mode in ("full", "targeted"):
+            factory.reset_mock()
+            self.assertEqual(RUNNER.main(base + ["--mode", mode, "--schema", "27"]), 0)
+            self.assertEqual((factory.call_args.args[0].schema, factory.call_args.args[0].mode), (27, mode))
 
     def test_cli_rejects_unsupported_and_noninteger_schema_before_runner_construction(self):
         self.replace(RUNNER.argparse, "_", lambda message: message)
@@ -185,29 +189,34 @@ class RunnerGuardTests(unittest.TestCase):
         self.enterContext(contextlib.redirect_stderr(io.StringIO()))
         factory = self.replace(RUNNER, "Runner", Mock())
         base = ["--source", str(self.args.source), "--manifest-sha256", self.args.manifest_sha256, "--mode", "catalog"]
-        for schema in ("23", "27", "0", "true", "false", "26.0"):
+        for schema in ("23", "28", "0", "true", "false", "26.0", "27.0"):
             with self.assertRaises(SystemExit) as caught:
                 RUNNER.main(base + ["--schema", schema])
             self.assertEqual(caught.exception.code, 2)
         factory.assert_not_called()
 
-    def test_historical_catalog_pins_and_reviewed_schema26_identity_are_fixed(self):
+    def test_historical_catalog_pins_and_reviewed_schema27_identity_are_fixed(self):
         self.assertEqual(RUNNER.HISTORICAL_CATALOG_SHA256, {
             23: "de85f4917dd7409e7e7bed20c7cbe63f0d7afe68f6ed72faff6b5bbb598ed00b",
             24: "6ba8a30d7648f3fdd73f977cc5d2aafac39232704542f28f20f0898d93ef575c",
             25: "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+            26: "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
         })
         self.assertEqual(RUNNER.MIGRATION_26_NAME, "0026_theme_owners.sql")
-        for schema in (23, 24, 25, 26):
+        self.assertEqual(RUNNER.MIGRATION_27_NAME, "0027_movie_extras.sql")
+        self.assertEqual(RUNNER.CATALOG_TABLE_COUNTS, {23: 29, 24: 30, 25: 30, 26: 33, 27: 35})
+        self.assertEqual(RUNNER.BOOTSTRAP_MIGRATIONS, {25: RUNNER.MIGRATION_25_NAME,
+            26: RUNNER.MIGRATION_26_NAME, 27: RUNNER.MIGRATION_27_NAME})
+        for schema in (23, 24, 25, 26, 27):
             self.assertEqual(RUNNER.catalog_name(schema), f"internal/backuppg/catalogs/schema-{schema}-postgresql-17.json")
-        for schema in (None, True, False, "26", 22, 27, 26.0):
+        for schema in (None, True, False, "26", "27", 22, 28, 26.0, 27.0):
             self.reject(lambda: RUNNER.catalog_name(schema))
 
     def test_runner_constructor_binds_output_and_report_to_selected_schema(self):
         self.replace(RUNNER.time, "strftime", lambda *args: "20260911_010203")
         self.replace(RUNNER.time, "gmtime", lambda: ())
         self.replace(RUNNER.secrets, "token_hex", lambda length: "abcdef012345")
-        for schema in (24, 25, 26):
+        for schema in (24, 25, 26, 27):
             self.args.schema = schema
             runner = RUNNER.Runner(self.args)
             self.assertEqual(runner.catalog_output, runner.output / f"schema-{schema}-postgresql-17.json")
@@ -444,6 +453,13 @@ class RunnerGuardTests(unittest.TestCase):
         self.read_catalog.assert_called_once_with(self.args.source, runner.source_files, 26)
         self.assertTrue(all(query.args[0].startswith("SELECT") for query in self.queries.call_args_list))
 
+    def test_cleanup_uses_explicit_schema27_before_any_database_fence(self):
+        runner = self.remove_fixture(objects=[{"foreign": True}], schema=27)
+        self.reject(lambda: runner.remove_pair(self.pair))
+        self.verified_source.assert_called_once_with(self.args.source, self.args.manifest_sha256, 27, catalog_bootstrap=False)
+        self.read_catalog.assert_called_once_with(self.args.source, runner.source_files, 27)
+        self.assertTrue(all(query.args[0].startswith("SELECT") for query in self.queries.call_args_list))
+
     def test_cleanup_refuses_changed_frozen_source_before_database_fence(self):
         runner = self.remove_fixture(schema=25)
         self.verified_source.return_value = (runner.source_identity, {"changed": "b" * 64})
@@ -482,12 +498,12 @@ class RunnerGuardTests(unittest.TestCase):
         self.source_bytes[self.args.source / RUNNER.catalog_name(version)] = json.dumps(self.source_catalogs[version], sort_keys=True).encode()
         self.refresh_source_manifest()
         if reattest_synthetic:
-            # Descriptor guards must reach validation even though schema 25 is
-            # now historical. Only this explicit in-memory fixture can rebind
+            # Descriptor guards must reach validation even though schemas25/26
+            # are now historical. Only this explicit in-memory fixture can rebind
             # its synthetic digest; immutable-history guards never use it.
-            self.assertEqual(version, 25)
+            self.assertIn(version, (25, 26))
             pins = dict(RUNNER.HISTORICAL_CATALOG_SHA256)
-            pins[25] = RUNNER.sha(self.source_bytes[self.args.source / RUNNER.catalog_name(25)])
+            pins[version] = RUNNER.sha(self.source_bytes[self.args.source / RUNNER.catalog_name(version)])
             self.replace(RUNNER, "HISTORICAL_CATALOG_SHA256", pins)
 
     def source_fixture(self, number="07", schema=24, bootstrap=False):
@@ -499,7 +515,7 @@ class RunnerGuardTests(unittest.TestCase):
         migrations = []
         for version in range(1, schema + 1):
             name = {24: RUNNER.MIGRATION_24_NAME, 25: RUNNER.MIGRATION_25_NAME,
-                    26: RUNNER.MIGRATION_26_NAME}.get(version, f"{version:04d}_fixture.sql")
+                    26: RUNNER.MIGRATION_26_NAME, 27: RUNNER.MIGRATION_27_NAME}.get(version, f"{version:04d}_fixture.sql")
             content = f"Synthetic migration {version}.\n".encode()
             self.source_bytes[source / (RUNNER.MIGRATION_DIRECTORY + name)] = content
             migrations.append({"version": version, "name": name, "sha256": RUNNER.sha(content)})
@@ -509,7 +525,7 @@ class RunnerGuardTests(unittest.TestCase):
                 "kind": "r", "persistence": "p", "partition": False, "replica_identity": "d",
                 "row_security": False, "force_row_security": False, "options": None}}]
             tables = [{"Name": f"fixture_{index:02d}", "Columns": ["id"], "PrimaryKey": ["id"], "SortKey": ["id"]}
-                      for index in range({23: 29, 24: 30, 25: 30, 26: 33}[version])]
+                      for index in range({23: 29, 24: 30, 25: 30, 26: 33, 27: 35}[version])]
             tables[-1]["PrimaryKey"] = []
             if version >= 25:
                 tables[0]["Columns"].append("music_source")
@@ -521,7 +537,7 @@ class RunnerGuardTests(unittest.TestCase):
         # These synthetic in-memory catalogs are never trusted production input.
         # The unpatched historical digest constants have their own exact guard.
         self.replace(RUNNER, "HISTORICAL_CATALOG_SHA256", {version: RUNNER.sha(self.source_bytes[source / RUNNER.catalog_name(version)])
-            for version in range(23, min(schema, 25) + 1)})
+            for version in range(23, min(schema, 26) + 1)})
         if bootstrap:
             self.bootstrap_catalog_raw = self.source_bytes.pop(source / RUNNER.catalog_name(schema))
         directory_info = types.SimpleNamespace(st_mode=stat.S_IFDIR | 0o755, st_uid=0, st_gid=0,
@@ -569,6 +585,95 @@ class RunnerGuardTests(unittest.TestCase):
         self.assertEqual(baseline["migrations"][:-1], self.source_catalogs[25]["migrations"])
         self.assertEqual({name for name in files if name.startswith(RUNNER.CATALOG_DIRECTORY)},
                          {RUNNER.catalog_name(version) for version in (23, 24, 25, 26)})
+
+    def test_schema27_source_requires_35_tables_and_immutable_schema26_history(self):
+        source = self.source_fixture("29", schema=27)
+        identity, files = RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27)
+        baseline = RUNNER.read_source_catalog(source, files, 27)
+        self.assertEqual(identity, {"device": 1, "inode": 2})
+        self.assertEqual((baseline["version"], len(baseline["catalog"]["Tables"])), (27, 35))
+        self.assertEqual(baseline["migrations"][-1]["name"], "0027_movie_extras.sql")
+        self.assertEqual(baseline["migrations"][:-1], self.source_catalogs[26]["migrations"])
+        self.assertEqual({name for name in files if name.startswith(RUNNER.CATALOG_DIRECTORY)},
+                         {RUNNER.catalog_name(version) for version in (23, 24, 25, 26, 27)})
+        for schema in (24, 25, 26):
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), schema))
+
+    def test_schema27_bootstrap_requires_four_historical_catalogs_and_no_current_catalog(self):
+        source = self.source_fixture("29", schema=27, bootstrap=True)
+        _, files = RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=True)
+        self.assertEqual({name for name in files if name.startswith(RUNNER.CATALOG_DIRECTORY)},
+                         {RUNNER.catalog_name(version) for version in (23, 24, 25, 26)})
+        self.assertEqual(len([name for name in files if name.startswith(RUNNER.MIGRATION_DIRECTORY)]), 27)
+        self.assertIn(RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_27_NAME, files)
+        self.assertNotIn(RUNNER.catalog_name(27), files)
+        self.assertIsNone(RUNNER.read_source_catalog(source, files, 27, catalog_bootstrap=True))
+        self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27))
+        for schema in (None, True, False, "27", 24, 25, 26, 28, 27.0):
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), schema, catalog_bootstrap=True))
+            self.reject(lambda: RUNNER.generated_catalog(self.bootstrap_catalog_raw, files, schema=schema))
+
+    def test_schema27_rejects_missing_or_rewritten_historical26_catalog_even_when_manifest_matches(self):
+        for bootstrap in (False, True):
+            for changed in ("missing", "bytes"):
+                with self.subTest(bootstrap=bootstrap, changed=changed):
+                    source = self.source_fixture(schema=27, bootstrap=bootstrap)
+                    path = source / RUNNER.catalog_name(26)
+                    if changed == "missing":
+                        del self.source_bytes[path]
+                        self.source_entries.remove(path)
+                    else:
+                        self.source_bytes[path] += b"\n"
+                    self.refresh_source_manifest()
+                    self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=bootstrap))
+            source = self.source_fixture(schema=27, bootstrap=bootstrap)
+            self.source_bytes[source / (RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_26_NAME)] += b"Changed historical DDL.\n"
+            self.refresh_source_manifest()
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=bootstrap))
+
+    def test_schema27_requires_exact_current_inputs_and_rejects_future_members(self):
+        for bootstrap in (False, True):
+            for name in (RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_27_NAME,
+                         RUNNER.CATALOG_GENERATOR if bootstrap else RUNNER.catalog_name(27)):
+                source = self.source_fixture(schema=27, bootstrap=bootstrap)
+                del self.source_bytes[source / name]
+                self.source_entries.remove(source / name)
+                self.refresh_source_manifest()
+                self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=bootstrap))
+            extras = [RUNNER.MIGRATION_DIRECTORY + "0027_unowned.sql", RUNNER.MIGRATION_DIRECTORY + "0028_future.sql",
+                      RUNNER.CATALOG_DIRECTORY + "schema-28-postgresql-17.json"]
+            if bootstrap:
+                extras.append(RUNNER.catalog_name(27))
+            for name in extras:
+                source = self.source_fixture(schema=27, bootstrap=bootstrap)
+                path = source / name
+                self.source_bytes[path] = b"Unowned source member.\n"
+                self.source_metadata[path] = self.source_metadata[source / "go.mod"]
+                self.source_entries.append(path)
+                self.refresh_source_manifest()
+                self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=bootstrap))
+            source = self.source_fixture(schema=27, bootstrap=bootstrap)
+            self.source_bytes[source / (RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_27_NAME)] += b"Changed current DDL.\n"
+            if not bootstrap:
+                self.refresh_source_manifest()
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27, catalog_bootstrap=bootstrap))
+
+    def test_schema27_catalog_rejects_non35_tables_and_rewritten_or_untyped_history(self):
+        for size in (30, 33, 34, 36):
+            source = self.source_fixture(schema=27)
+            tables = self.source_catalogs[27]["catalog"]["Tables"]
+            if size == 36:
+                tables.append({"Name": "unowned", "Columns": ["id"], "PrimaryKey": ["id"], "SortKey": ["id"]})
+            else:
+                del tables[size:]
+            self.change_catalog(27)
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27))
+        for index, field, value in ((25, "sha256", "f" * 64), (26, "name", "0027_foreign.sql"),
+                                   (26, "sha256", "f" * 64), (26, "version", True), (26, "version", 27.0)):
+            source = self.source_fixture(schema=27)
+            self.source_catalogs[27]["migrations"][index][field] = value
+            self.change_catalog(27)
+            self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 27))
 
     def test_schema26_source_and_generated_apis_reject_implicit_or_confused_versions(self):
         source = self.source_fixture(schema=26, bootstrap=True)
@@ -654,7 +759,7 @@ class RunnerGuardTests(unittest.TestCase):
                              ("postgresql_major", True), ("postgresql_major", 16), ("postgresql_major", 17.0)):
             source = self.source_fixture(schema=26)
             self.source_catalogs[26][field] = value
-            self.change_catalog(26)
+            self.change_catalog(26, reattest_synthetic=True)
             self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
         for size in (0, 30, 32, 34):
             source = self.source_fixture(schema=26)
@@ -663,7 +768,7 @@ class RunnerGuardTests(unittest.TestCase):
                 tables.append({"Name": "unowned", "Columns": ["id"], "PrimaryKey": ["id"], "SortKey": ["id"]})
             else:
                 del tables[size:]
-            self.change_catalog(26)
+            self.change_catalog(26, reattest_synthetic=True)
             self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
 
     def test_schema26_catalog_rejects_rewritten_or_incomplete_migration_history(self):
@@ -672,7 +777,7 @@ class RunnerGuardTests(unittest.TestCase):
                                    (25, "version", True), (25, "version", 26.0), (25, "version", 25)):
             source = self.source_fixture(schema=26)
             self.source_catalogs[26]["migrations"][index][field] = value
-            self.change_catalog(26)
+            self.change_catalog(26, reattest_synthetic=True)
             self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
         for extra in (False, True):
             source = self.source_fixture(schema=26)
@@ -681,7 +786,7 @@ class RunnerGuardTests(unittest.TestCase):
                 history.append({"version": 27, "name": "0027_future.sql", "sha256": "f" * 64})
             else:
                 history.pop()
-            self.change_catalog(26)
+            self.change_catalog(26, reattest_synthetic=True)
             self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
 
     def test_schema26_catalog_rejects_unowned_fields_and_object_fingerprint_drift(self):
@@ -697,11 +802,11 @@ class RunnerGuardTests(unittest.TestCase):
                 "table": catalog["Tables"][0], "sequence": sequence, "consumer": sequence["Consumers"][0],
                 "constraint": constraint, "object": baseline["objects"][0], "value": baseline["objects"][0]["value"]}[boundary]
             target["unowned"] = True
-            self.change_catalog(26)
+            self.change_catalog(26, reattest_synthetic=True)
             self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
         source = self.source_fixture(schema=26)
         self.source_catalogs[26]["objects"][0]["value"]["row_security"] = True
-        self.change_catalog(26)
+        self.change_catalog(26, reattest_synthetic=True)
         self.reject(lambda: RUNNER.verify_source(source, RUNNER.sha(self.source_raw), 26))
 
     def test_catalog_bootstrap_requires_exact_schema25_migrations_without_a_catalog25_input(self):
@@ -768,6 +873,29 @@ class RunnerGuardTests(unittest.TestCase):
         self.reject(lambda: RUNNER.generated_catalog(raw25, self.source_manifest["files"], schema=26))
         self.reject(lambda: RUNNER.generated_catalog(self.bootstrap_catalog_raw, files25, schema=26))
 
+    def test_generated_catalog27_requires_exact_27_history_and_never_accepts_schema26(self):
+        self.source_fixture(schema=27, bootstrap=True)
+        raw, files = self.bootstrap_catalog_raw, copy.deepcopy(self.source_manifest["files"])
+        baseline = RUNNER.generated_catalog(raw, files, schema=27)
+        self.assertEqual((baseline["version"], len(baseline["catalog"]["Tables"])), (27, 35))
+        for mutate in (
+                lambda value: value.pop(RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_27_NAME),
+                lambda value: value.update({RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_27_NAME: "f" * 64}),
+                lambda value: value.update({RUNNER.MIGRATION_DIRECTORY + RUNNER.MIGRATION_26_NAME: "f" * 64}),
+                lambda value: value.update({RUNNER.MIGRATION_DIRECTORY + "0028_future.sql": "f" * 64})):
+            changed = copy.deepcopy(files)
+            mutate(changed)
+            self.reject(lambda: RUNNER.generated_catalog(raw, changed, schema=27))
+        for mutate in (lambda value: value.update(version=26), lambda value: value.update(version=True),
+                       lambda value: value["migrations"][-1].update(name="0027_foreign.sql"),
+                       lambda value: value["migrations"].pop(), lambda value: value.update(unowned=True)):
+            changed = copy.deepcopy(baseline)
+            mutate(changed)
+            self.reject(lambda: RUNNER.generated_catalog(json.dumps(changed).encode(), files, schema=27))
+        raw26 = json.dumps(self.source_catalogs[26], sort_keys=True).encode()
+        self.reject(lambda: RUNNER.generated_catalog(raw26, files, schema=27))
+        self.reject(lambda: RUNNER.generated_catalog(raw, files, schema=26))
+
     def generated_artifact_fixture(self, schema=25):
         self.source_fixture(schema=schema, bootstrap=True)
         self.args.schema, self.args.mode = schema, "catalog"
@@ -820,6 +948,52 @@ class RunnerGuardTests(unittest.TestCase):
         self.assertEqual(runner.read_generated_catalog(),
                          RUNNER.generated_catalog(self.bootstrap_catalog_raw, runner.source_files, schema=26))
         self.reject(lambda: runner.inspect_catalog_result(b"Generated trusted schema 26 catalog.\n"))
+
+    def test_catalog27_completion_binds_35_table_artifact_receipt_and_empty_target(self):
+        runner = self.generated_artifact_fixture(schema=27)
+        runner.inspect_catalog_result(b"Generated trusted schema 27 catalog.\n")
+        runner.inspect_catalog_pairs.assert_called_once_with(self.source_catalogs[27]["objects"], [])
+        runner.save.assert_called_once()
+        expected = {"path": str(runner.output / "schema-27-postgresql-17.json"),
+                    "sha256": RUNNER.sha(self.bootstrap_catalog_raw), "schema": 27,
+                    "source_manifest_sha256": self.args.manifest_sha256}
+        self.assertEqual(runner.catalog_artifact, expected)
+        self.assertEqual(runner.receipt["catalog_artifact"], expected)
+        self.assertEqual(runner.report["catalog_artifact"], expected)
+        self.assertEqual(len(runner.read_generated_catalog()["catalog"]["Tables"]), 35)
+        runner.catalog_artifact = dict(expected, schema=26)
+        runner.receipt["catalog_artifact"] = copy.deepcopy(runner.catalog_artifact)
+        self.reject(runner.read_generated_catalog)
+
+    def test_catalog27_launch_and_completion_reject_schema26_paths_logs_or_bytes(self):
+        runner = self.generated_artifact_fixture(schema=27)
+        exists = self.replace(RUNNER, "present", Mock(return_value=False))
+        runner.check_catalog_launch()
+        exists.assert_called_once_with(runner.output / "schema-27-postgresql-17.json")
+        runner.inspect_catalog_pairs.assert_called_once_with([], [])
+        runner.inspect_catalog_pairs.reset_mock()
+        exists.return_value = True
+        self.reject(runner.check_catalog_launch)
+        runner.inspect_catalog_pairs.assert_not_called()
+        exists.return_value = False
+        expected_path = runner.catalog_output
+        for schema, path in ((27, runner.output / "schema-26-postgresql-17.json"), (26, expected_path),
+                             (True, expected_path), (27.0, expected_path), (28, expected_path)):
+            runner.args.schema, runner.catalog_output = schema, path
+            self.reject(runner.check_catalog_launch)
+            runner.inspect_catalog_pairs.assert_not_called()
+        for log in (b"Generated trusted schema 26 catalog.\n", b"Generated trusted schema 27 catalog.\n" * 2):
+            runner = self.generated_artifact_fixture(schema=27)
+            self.reject(lambda: runner.inspect_catalog_result(log))
+            runner.save.assert_not_called()
+            runner.inspect_catalog_pairs.assert_not_called()
+        runner = self.generated_artifact_fixture(schema=27)
+        raw26 = json.dumps(self.source_catalogs[26], sort_keys=True).encode()
+        self.replace(RUNNER, "private_read", lambda path, **kwargs: raw26 if path == runner.catalog_output else runner.receipt_bytes)
+        self.reject(lambda: runner.inspect_catalog_result(b"Generated trusted schema 27 catalog.\n"))
+        runner.save.assert_not_called()
+        runner.inspect_catalog_pairs.assert_not_called()
+        self.assertIsNone(runner.catalog_artifact)
 
     def test_catalog26_completion_rejects_wrong_schema_log_duplicate_and_unsaved_artifact(self):
         for log in (b"", b"Generated trusted schema 25 catalog.\n", b"Generated trusted schema 27 catalog.\n",
@@ -890,6 +1064,20 @@ class RunnerGuardTests(unittest.TestCase):
         self.assertNotIn(b"schema-25-postgresql", script)
         self.assertTrue(all(call.args[0].parent == runner.output for call in created.call_args_list))
 
+    def test_catalog27_environment_targets_only_the_owned_schema27_artifact(self):
+        runner = self.generated_artifact_fixture(schema=27)
+        runner.run = "20260911_010203_abcdef012345"
+        created = self.replace(RUNNER, "create_private", Mock())
+        self.replace(Path, "mkdir", Mock())
+        self.replace(RUNNER, "command", lambda arguments, **kwargs:
+            f"{arguments[arguments.index('-d') + 1]}|{arguments[arguments.index('-d') + 1]}|15432")
+        runner.write_environment({name: "synthetic-password" for name in RUNNER.NAMES})
+        script = next(call.args[1] for call in created.call_args_list if call.args[0] == runner.output / "run.sh")
+        self.assertEqual(script, ("#!/bin/bash\nset -euo pipefail\numask 077\nexec " + str(RUNNER.GO) + " run " +
+            RUNNER.CATALOG_GENERATOR + " " + str(runner.output / "schema-27-postgresql-17.json") + "\n").encode())
+        self.assertNotIn(b"schema-26-postgresql", script)
+        self.assertTrue(all(call.args[0].parent == runner.output for call in created.call_args_list))
+
     def test_catalog26_cleanup_rejects_missing_or_rewritten_bytes_before_database_fence(self):
         for missing in (False, True):
             runner = self.remove_fixture(objects=[{"known": True}], schema=26)
@@ -916,6 +1104,22 @@ class RunnerGuardTests(unittest.TestCase):
             self.read_catalog.assert_not_called()
             self.verified_source.assert_called_once_with(self.args.source, self.args.manifest_sha256, 26, catalog_bootstrap=True)
             self.assertTrue(all(query.args[0].startswith("SELECT") for query in self.queries.call_args_list))
+
+    def test_catalog27_cleanup_requires_its_receipted_artifact_before_database_fence(self):
+        runner = self.remove_fixture(objects=[{"known": True}], schema=27)
+        runner.args.mode = "catalog"
+        runner.catalog_output = runner.output / "schema-27-postgresql-17.json"
+        runner.catalog_artifact = {"path": str(runner.catalog_output), "sha256": RUNNER.sha(b"Original artifact.\n"),
+                                  "schema": 27, "source_manifest_sha256": self.args.manifest_sha256}
+        runner.receipt = {"catalog_artifact": copy.deepcopy(runner.catalog_artifact)}
+        runner.receipt_bytes, runner.output_identity = b"Synthetic receipt.\n", {"device": 1, "inode": 2}
+        self.replace(RUNNER, "directory", Mock(return_value=runner.output_identity))
+        self.replace(RUNNER, "private_read", lambda path, **kwargs:
+            runner.receipt_bytes if path == RUNNER.RECEIPT else b"Changed artifact.\n")
+        self.reject(lambda: runner.remove_pair(self.pair))
+        self.read_catalog.assert_not_called()
+        self.verified_source.assert_called_once_with(self.args.source, self.args.manifest_sha256, 27, catalog_bootstrap=True)
+        self.assertTrue(all(query.args[0].startswith("SELECT") for query in self.queries.call_args_list))
 
     def test_catalog_environment_runs_only_the_bound_generator_into_owned_output(self):
         runner = self.generated_artifact_fixture()

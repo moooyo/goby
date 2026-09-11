@@ -46,12 +46,14 @@ HISTORICAL_CATALOG_SHA256 = {
     23: "de85f4917dd7409e7e7bed20c7cbe63f0d7afe68f6ed72faff6b5bbb598ed00b",
     24: "6ba8a30d7648f3fdd73f977cc5d2aafac39232704542f28f20f0898d93ef575c",
     25: "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+    26: "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
 }
 MIGRATION_24_NAME = "0024_user_settings.sql"
 MIGRATION_25_NAME = "0025_music_artists.sql"
 MIGRATION_26_NAME = "0026_theme_owners.sql"
-CATALOG_TABLE_COUNTS = {23: 29, 24: 30, 25: 30, 26: 33}
-BOOTSTRAP_MIGRATIONS = {25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME}
+MIGRATION_27_NAME = "0027_movie_extras.sql"
+CATALOG_TABLE_COUNTS = {23: 29, 24: 30, 25: 30, 26: 33, 27: 35}
+BOOTSTRAP_MIGRATIONS = {25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME, 27: MIGRATION_27_NAME}
 CATALOG_GENERATOR = "scripts/test-env/generate-backuppg-catalog.go"
 CATALOG_OBJECT_FIELDS = {
     "column": {"name", "type", "not_null", "identity", "generated", "dropped", "storage", "compression", "collation", "default"},
@@ -185,7 +187,7 @@ def validate_arguments(args):
             re.fullmatch(r"source-attempt-(?:0[1-9]|[1-9][0-9]+)", args.source.name),
             "The source must be a directly contained source-attempt-NN snapshot with a canonical positive number.")
     require(re.fullmatch(r"[0-9a-f]{64}", args.manifest_sha256), "The manifest digest is invalid.")
-    require(type(args.schema) is int and args.schema in (24, 25, 26), "The verification schema must be explicitly supported.")
+    require(type(args.schema) is int and args.schema in (24, 25, 26, 27), "The verification schema must be explicitly supported.")
     require(args.mode in ("full", "targeted", "catalog"), "The verification mode is invalid.")
     require(not args.run or (args.mode == "targeted" and len(args.run) <= 512 and
             all(32 <= ord(character) < 127 for character in args.run)), "The targeted test expression is invalid.")
@@ -234,6 +236,8 @@ def validate_catalog(baseline, version):
         require(history[24]["name"] == MIGRATION_25_NAME, "The schema25 migration name differs from the reviewed input.")
     if version >= 26:
         require(history[25]["name"] == MIGRATION_26_NAME, "The schema26 migration name differs from the reviewed input.")
+    if version >= 27:
+        require(history[26]["name"] == MIGRATION_27_NAME, "The schema27 migration name differs from the reviewed input.")
     catalog = baseline["catalog"]
     exact_fields(catalog, {"Schema", "Tables", "Sequences", "SHA256", "Constraints"},
                  "A catalog descriptor contains missing or unowned fields.")
@@ -281,7 +285,7 @@ def validate_catalog(baseline, version):
 
 def read_source_catalog(source, files, schema, *, catalog_bootstrap=False):
     """Verify exact source catalogs and migrations; bootstrap has no current catalog."""
-    require(type(schema) is int and schema in (24, 25, 26), "The source schema must be explicitly supported.")
+    require(type(schema) is int and schema in (24, 25, 26, 27), "The source schema must be explicitly supported.")
     require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema in BOOTSTRAP_MIGRATIONS),
             "Catalog bootstrap is only permitted for an explicit supported schema.")
     versions = range(23, schema if catalog_bootstrap else schema + 1)
@@ -319,7 +323,7 @@ def read_source_catalog(source, files, schema, *, catalog_bootstrap=False):
 
 
 def verify_source(source, expected_digest, schema=24, *, catalog_bootstrap=False):
-    require(type(schema) is int and schema in (24, 25, 26), "The source schema must be explicitly supported.")
+    require(type(schema) is int and schema in (24, 25, 26, 27), "The source schema must be explicitly supported.")
     require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema in BOOTSTRAP_MIGRATIONS),
             "Catalog bootstrap is only permitted for an explicit supported schema.")
     identity = directory(source)
@@ -352,6 +356,9 @@ def verify_source(source, expected_digest, schema=24, *, catalog_bootstrap=False
     if schema >= 26:
         required.add(MIGRATION_DIRECTORY + MIGRATION_26_NAME)
         required.add(catalog_name(25))
+    if schema >= 27:
+        required.add(MIGRATION_DIRECTORY + MIGRATION_27_NAME)
+        required.add(catalog_name(26))
     if schema >= 25:
         required.add(CATALOG_GENERATOR if catalog_bootstrap else catalog_name(schema))
     require(required <= actual.keys(), "The source omits a required current or historical backup input.")
@@ -1054,8 +1061,8 @@ def main(arguments=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--manifest-sha256", required=True)
-    parser.add_argument("--schema", type=int, choices=(24, 25, 26), default=24,
-                        help="Explicit source schema; schema25/26 require this option and no schema is inferred.")
+    parser.add_argument("--schema", type=int, choices=(24, 25, 26, 27), default=24,
+                        help="Explicit source schema; schema25/26/27 require this option and no schema is inferred.")
     parser.add_argument("--mode", choices=("full", "targeted", "catalog"), required=True)
     parser.add_argument("--package", action="append", default=[])
     parser.add_argument("--run", default="")

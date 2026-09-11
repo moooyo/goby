@@ -3,7 +3,7 @@
 
 The trusted schema catalogs are read as immutable inputs. Database, service,
 binary-replacement, and credential mutations are never exercised by this suite.
-Schema25 and schema26 positive cases require actual generated catalogs in root-pinned
+Schema25 through schema27 positive cases require actual generated catalogs in root-pinned
 source manifests; no catalog object inventory or production digest is invented.
 """
 
@@ -38,7 +38,7 @@ class ClientFixtureGuards(unittest.TestCase):
         cls.baselines = {version: OP.trusted_schema_baseline(version) for version in (23, 24)}
         options = SCHEMA25_OPTIONS
         if options is None:
-            raise OP.FixtureError("The future fixture guards require explicitly bound real schema25 and schema26 catalogs.")
+            raise OP.FixtureError("The fixture guards require explicitly bound real schema25, schema26, and schema27 catalogs.")
         artifacts = OP.verify_schema_upgrade_sources(OP.WORK / "guard-unused-binary", 25,
             options.schema25_source, options.schema25_source_manifest_sha256, options.schema25_catalog_sha256)
         cls.binding = artifacts["schema25_binding"]
@@ -50,11 +50,18 @@ class ClientFixtureGuards(unittest.TestCase):
         cls.binding26 = artifacts26["schema26_binding"]
         cls.baselines[26] = OP.trusted_schema_baseline(26, cls.binding26)
         cls.catalog26_bytes = OP.read(options.schema26_source / "internal/backuppg/catalogs/schema-26-postgresql-17.json", mode=0o644)
+        artifacts27 = OP.verify_schema_upgrade_sources(OP.WORK / "guard-unused-binary", 27,
+            options.schema27_source, options.schema27_source_manifest_sha256,
+            schema27_catalog_sha256=options.schema27_catalog_sha256)
+        cls.binding27 = artifacts27["schema27_binding"]
+        cls.baselines[27] = OP.trusted_schema_baseline(27, cls.binding27)
+        cls.catalog27_bytes = OP.read(options.schema27_source / "internal/backuppg/catalogs/schema-27-postgresql-17.json", mode=0o644)
 
     def setUp(self):
         self.state = {"schema": 23, "phase": "ready", "admin_id": "a" * 32, "viewer_id": "b" * 32,
                       "server_id": "c" * 32, "runtime_sha256": "d" * 64, "browser_sha256": "e" * 64,
-                      "schema25_source": copy.deepcopy(self.binding), "schema26_source": copy.deepcopy(self.binding26)}
+                      "schema25_source": copy.deepcopy(self.binding), "schema26_source": copy.deepcopy(self.binding26),
+                      "schema27_source": copy.deepcopy(self.binding27)}
 
     def snapshot(self, version):
         baseline = self.baselines[version]
@@ -72,19 +79,19 @@ class ClientFixtureGuards(unittest.TestCase):
         tables["schema_migrations"] = [row("schema_migrations", version=migration["version"], name=migration["name"],
             applied_at="2026-09-11T00:00:00+00:00" if migration["version"] < 24 else
                 {24: "2026-09-11T01:00:30+00:00", 25: "2026-09-11T01:01:30+00:00",
-                 26: "2026-09-11T01:02:30+00:00"}[migration["version"]])
+                 26: "2026-09-11T01:02:30+00:00", 27: "2026-09-11T01:03:30+00:00"}[migration["version"]])
             for migration in baseline["migrations"]]
         relations = {item["name"]: {"oid": int(hashlib.sha256(item["name"].encode()).hexdigest()[:8], 16),
             "owner": OP.ROLE, "acl": None, "column_acl": []} for item in baseline["objects"] if item["kind"] == "relation"}
         database = {"metadata": {"captured_at": {23: "2026-09-11T01:00:00+00:00", 24: "2026-09-11T01:01:00+00:00",
-                                                 25: "2026-09-11T01:02:00+00:00", 26: "2026-09-11T01:03:00+00:00"}[version],
+                                                 25: "2026-09-11T01:02:00+00:00", 26: "2026-09-11T01:03:00+00:00", 27: "2026-09-11T01:04:00+00:00"}[version],
             "server_version_num": 170011, "database": OP.ROLE, "schemas": ["public"],
             "public_schema": {"oid": 2200, "owner": "pg_database_owner", "acl": None},
             "columns": copy.deepcopy(columns), "relations": relations},
             "catalog": copy.deepcopy(baseline["objects"]), "unsupported": False,
             "tables": tables, "sequences": {sequence["Name"]: {"last_value": 3, "is_called": True}
                 for sequence in baseline["catalog"].get("Sequences", [])}}
-        if version == 26:
+        if version >= 26:
             tables["theme_owner_ids"] = [row("theme_owner_ids", id=1, item_id=None, virtual_root=True)]
             database["sequences"]["theme_owner_ids_id_seq"] = {"last_value": 1, "is_called": True}
         return {"schema": version, "database": database, "recovery": {"master.key": {"sha256": "f" * 64, "size": 32}},
@@ -94,7 +101,7 @@ class ClientFixtureGuards(unittest.TestCase):
         def verified_baseline(version, binding=None):
             OP.require(type(version) is int and version in self.baselines,
                        "The comparison requested an unverified schema baseline.")
-            expected_binding = self.binding if version == 25 else self.binding26 if version == 26 else None
+            expected_binding = self.binding if version == 25 else self.binding26 if version == 26 else self.binding27 if version == 27 else None
             OP.require(OP.equal_json(binding, expected_binding),
                        "The comparison changed the explicitly verified source binding.")
             return copy.deepcopy(self.baselines[version])
@@ -133,12 +140,12 @@ class ClientFixtureGuards(unittest.TestCase):
                 verifier.assert_called_once()
 
     def test_only_supported_schema_transitions_are_accepted(self):
-        for source, target in ((23, 23), (23, 24), (24, 24), (24, 25), (25, 25), (25, 26), (26, 26)):
+        for source, target in ((23, 23), (23, 24), (24, 24), (24, 25), (25, 25), (25, 26), (26, 26), (26, 27), (27, 27)):
             self.assertEqual(OP.target_schema_version({"schema": source}, target), target)
         self.assertEqual(OP.target_schema_version({"schema": 24}), 24)
         self.assertEqual(OP.target_schema_version({"schema": 25}), 25)
         self.assertEqual(OP.target_schema_version({"schema": 26}), 26)
-        for source, target in ((24, 23), (23, 25), (25, 24), (24, 26), (26, 25), (26, 27), (22, 23), (True, 24), (23, True), ("23", 24), (23, "24")):
+        for source, target in ((24, 23), (23, 25), (25, 24), (24, 26), (26, 25), (25, 27), (27, 26), (22, 23), (True, 24), (23, True), ("23", 24), (23, "24")):
             with self.subTest(source=source, target=target), self.assertRaises(OP.FixtureError):
                 OP.target_schema_version({"schema": source}, target)
 
@@ -149,7 +156,7 @@ class ClientFixtureGuards(unittest.TestCase):
         self.assertEqual(len(after["database"]["tables"]), 30)
 
     def test_same_schema_upgrade_retains_preferences(self):
-        for version in (23, 24, 25, 26):
+        for version in (23, 24, 25, 26, 27):
             before = self.snapshot(version)
             if version >= 24:
                 before["database"]["tables"]["user_settings"] = [{"user_id": self.state["viewer_id"],
@@ -624,8 +631,8 @@ class ClientFixtureGuards(unittest.TestCase):
                 OP.validate_schema26_delta(self.baselines[25], changed)
 
     @contextmanager
-    def product_report_environment(self):
-        source = OP.WORK / "source-attempt-26"
+    def product_report_environment(self, target=26):
+        source = OP.WORK / f"source-attempt-{target}"
         report_path = OP.WORK / "client-backup-run-20260911_010203_012345abcdef" / "report.json"
         binary = source / "goby"
         built = b"x" * ((1 << 20) + 1)
@@ -646,15 +653,129 @@ class ClientFixtureGuards(unittest.TestCase):
                 "TestRecoveryManagerNativeWorkflow", "TestRecoveryDatabaseStoreIntegration"]},
             "packages": packages, "binary": {"path": str(report_path.parent / "tmp/goby-linux-amd64"), "sha256": "b" * 64, "bytes": len(built)}}
         model = {"document": document, "final_sha": None}
+        if target == 27:
+            document.update(schema=27, catalog_sha256=OP.CATALOG_27_SHA)
+            document["tests"]["passed"] += sorted(OP.PRODUCT_27_REQUIRED_TESTS)
+            document["tests"]["top_level_passes"] = len(document["tests"]["passed"])
         raw = lambda: OP.canonical_json(model["document"])
         with patch.object(OP, "directory"), patch.object(OP, "canonical", return_value=types.SimpleNamespace(st_gid=0)), \
              patch.object(OP, "read", side_effect=lambda *_args, **_kwargs: raw()), \
              patch.object(OP, "sha", side_effect=lambda *_args, **_kwargs: model["final_sha"] or hashlib.sha256(raw()).hexdigest()), \
              patch.object(OP, "verify_upgrade_input", return_value=(built, {"device": 1, "inode": 2})) as inputs, \
-             patch.object(OP, "verify_complete_product_source") as complete:
+             patch.object(OP, "verify_complete_product_source") as complete, \
+             patch.object(OP, "schema27_support_proof", return_value={"guard_count": 108}), \
+             patch.object(OP, "source_manifest", return_value={"files": {
+                 "internal/database/migrations/" + OP.MIGRATION_27_NAME: OP.MIGRATION_27_SHA,
+                 "internal/backuppg/catalogs/schema-27-postgresql-17.json": OP.CATALOG_27_SHA}}):
             def invoke():
-                return OP.verify_product_upgrade(binary, "b" * 64, source, "a" * 64, report_path, hashlib.sha256(raw()).hexdigest())
+                return OP.verify_product_upgrade(binary, "b" * 64, source, "a" * 64, report_path, hashlib.sha256(raw()).hexdigest(), target)
             yield model, invoke, inputs, complete, report_path
+
+    @contextmanager
+    def source27_environment(self):
+        source = OP.WORK / "source-attempt-31"
+        files = {"internal/database/migrations/" + row["name"]: row["sha256"] for row in self.baselines[27]["migrations"]}
+        for version in (23, 24, 25, 26, 27):
+            files[f"internal/backuppg/catalogs/schema-{version}-postgresql-17.json"] = (
+                OP.SCHEMA_ARTIFACTS[version][1] if version < 25 else getattr(OP, f"CATALOG_{version}_SHA"))
+        model = {"files": files, "actual": dict(files), "catalog25_bytes": self.catalog25_bytes,
+                 "catalog26_bytes": self.catalog26_bytes, "catalog27_bytes": self.catalog27_bytes,
+                 "migration_names": [row["name"] for row in self.baselines[27]["migrations"]],
+                 "catalog_names": [f"schema-{version}-postgresql-17.json" for version in (23, 24, 25, 26, 27)]}
+        original_read = OP.read
+        def read(path, **kwargs):
+            for version in (25, 26, 27):
+                if path == source / f"internal/backuppg/catalogs/schema-{version}-postgresql-17.json":
+                    return model[f"catalog{version}_bytes"]
+            return original_read(path, **kwargs)
+        def glob(path, _pattern):
+            return [path / name for name in model["migration_names" if path.name == "migrations" else "catalog_names"]]
+        with patch.object(OP, "source_manifest", return_value={"files": files}), patch.object(OP, "read", side_effect=read), \
+             patch.object(Path, "glob", side_effect=glob, autospec=True), \
+             patch.object(OP, "sha", side_effect=lambda path, **_kwargs: model["actual"].get(str(path.relative_to(source)))):
+            yield source, model
+
+    def test_schema27_sources_require_exact_new_and_historical_catalog_migration_bytes(self):
+        with self.source27_environment() as (source, model):
+            invoke = lambda: OP.verify_schema_upgrade_sources(source / "goby", 27, source, "a" * 64, schema27_catalog_sha256=OP.CATALOG_27_SHA)
+            self.assertEqual(invoke()["schema27_binding"]["migration_27_sha256"], OP.MIGRATION_27_SHA)
+            for name in ("internal/database/migrations/" + OP.MIGRATION_27_NAME,
+                         "internal/database/migrations/" + OP.MIGRATION_26_NAME,
+                         "internal/backuppg/catalogs/schema-26-postgresql-17.json"):
+                old = model["files"][name]
+                model["files"][name] = "0" * 64
+                with self.subTest(name=name), self.assertRaises(OP.FixtureError):
+                    invoke()
+                model["files"][name] = old
+            model["catalog_names"].append("schema-28-postgresql-17.json")
+            with self.assertRaises(OP.FixtureError):
+                invoke()
+        for binding in (None, dict(self.binding27, schema=True), dict(self.binding27, migration_27_sha256="0" * 64), dict(self.binding27, extra=True)):
+            with self.assertRaises(OP.FixtureError):
+                OP.schema27_binding({"schema27_source": binding})
+
+    def test_schema27_delta_preserves_every_old_definition_and_has_no_sequence_change(self):
+        OP.validate_schema27_delta(self.baselines[26], self.baselines[27])
+        for kind in ("old-table", "old-object", "sequence", "foreign", "history"):
+            changed = copy.deepcopy(self.baselines[27])
+            if kind == "old-table": changed["catalog"]["Tables"][0]["Columns"].append("unowned")
+            elif kind == "old-object": changed["objects"][0]["value"] = {}
+            elif kind == "sequence": changed["catalog"]["Sequences"][0]["Increment"] = 2
+            elif kind == "foreign": changed["catalog"]["Constraints"].pop()
+            else: changed["migrations"][0]["sha256"] = "0" * 64
+            with self.subTest(kind=kind), self.assertRaises(OP.FixtureError):
+                OP.validate_schema27_delta(self.baselines[26], changed)
+
+    def test_schema26_to27_preserves_current_history_preferences_and_all_old_relations(self):
+        before, after = self.snapshot(26), self.snapshot(27)
+        for table, count in (("play_sessions", 22), ("sessions", 51), ("user_item_data", 5)):
+            rows = [dict(dict.fromkeys(before["database"]["metadata"]["columns"][table]), id=f"owned-{number}") for number in range(count)]
+            # Set only actual declared columns; some history tables use a composite key.
+            rows = [{key: value for key, value in row.items() if key in before["database"]["metadata"]["columns"][table]} for row in rows]
+            before["database"]["tables"][table] = copy.deepcopy(rows)
+            after["database"]["tables"][table] = copy.deepcopy(rows)
+        self.compare(before, after, 26, 27)
+        for kind in ("history", "extra", "owner", "sequence", "relation"):
+            changed = copy.deepcopy(after)
+            if kind == "history": changed["database"]["tables"]["play_sessions"].pop()
+            elif kind == "extra": changed["database"]["tables"]["item_extra_resources"].append(dict.fromkeys(changed["database"]["metadata"]["columns"]["item_extra_resources"]))
+            elif kind == "owner": changed["database"]["tables"]["theme_owner_ids"][0]["id"] = 2
+            elif kind == "sequence": changed["database"]["sequences"]["theme_owner_ids_id_seq"]["last_value"] = 2
+            else: changed["database"]["metadata"]["relations"]["users"]["oid"] += 1
+            with self.subTest(kind=kind), self.assertRaises(OP.FixtureError):
+                self.compare(before, changed, 26, 27)
+        self.assertEqual(after["database"]["tables"]["client_playback_references"], [])
+
+    def test_schema27_fixture_scope_rejects_new_reservations_and_active_themes(self):
+        tables = self.snapshot(26)["database"]["tables"]
+        tables["libraries"] = [{"id": "library", "collection_type": "movies"}]
+        tables["library_roots"] = [{"id": "root", "library_id": "library"}]
+        def item(path):
+            return {"id": "item", "root_id": "root", "library_id": "library", "relative_path": path, "is_folder": False}
+        for path in ("Movie/featurettes/a.mp4", "Movie/DELETED SCENES/a.mp4", "Movie/trailers/nested/a.mp4"):
+            tables["items"] = [item(path)]
+            with self.assertRaises(OP.FixtureError):
+                OP.validate_empty_extra_scope(tables)
+        for path in ("Movie/backdrops/featurettes/a.mp4", "Movie/featurettes-lookalike/a.mp4", "Movie/movie.mp4"):
+            tables["items"] = [item(path)]
+            OP.validate_empty_extra_scope(tables)
+        tables["item_theme_resources"] = [{"active": True}]
+        with self.assertRaises(OP.FixtureError):
+            OP.validate_empty_extra_scope(tables)
+
+    def test_schema27_product_requires_new_cases_and_exact_support_runner_guards(self):
+        with self.product_report_environment(27) as (model, invoke, _inputs, _complete, _path):
+            self.assertEqual(invoke()["schema27_support"], {"guard_count": 108})
+            model["document"]["tests"]["passed"].remove(next(iter(OP.PRODUCT_27_REQUIRED_TESTS)))
+            model["document"]["tests"]["top_level_passes"] -= 1
+            with self.assertRaises(OP.FixtureError):
+                invoke()
+        with patch.object(OP, "directory"), patch.object(OP, "canonical", return_value=types.SimpleNamespace(st_mode=0o100600)), \
+             patch.object(OP, "sha", side_effect=lambda path, **_: OP.SCHEMA_27_SUPPORT_HASHES[path.name]):
+            self.assertEqual(OP.schema27_support_proof()["guard_count"], 108)
+        with patch.object(OP, "directory"), patch.object(OP, "canonical", return_value=types.SimpleNamespace(st_mode=0o100600)), patch.object(OP, "sha", return_value="0" * 64):
+            with self.assertRaises(OP.FixtureError):
+                OP.schema27_support_proof()
 
     def test_schema26_product_report_requires_complete_source_run_and_exact_binary(self):
         # All report I/O is mocked; the real schema catalog is loaded in setUpClass.
@@ -695,21 +816,22 @@ class ClientFixtureGuards(unittest.TestCase):
             with self.assertRaises(OP.FixtureError):
                 invoke()
 
-    def test_schema26_upgrade_without_full_report_never_schedules_mutations(self):
-        for version in (25, 26):
+    def test_product_upgrade_without_full_report_never_schedules_mutations(self):
+        for version, target in ((25, 26), (26, 26), (26, 27), (27, 27)):
             state = dict(self.state, schema=version, binary_sha256="1" * 64, process={"pid": 123})
             original = copy.deepcopy(state)
             api = Mock()
             api.request.side_effect = lambda route: {"Status": "ready"} if route == "/readyz" else {"Id": state["server_id"]}
-            with self.subTest(version=version), patch.object(OP, "verify_fixture_directories"), patch.object(OP, "verify_database"), \
+            binding = self.binding26 if target == 26 else self.binding27
+            source = OP.WORK / f"source-attempt-{target}"
+            with self.subTest(version=version, target=target), patch.object(OP, "verify_fixture_directories"), patch.object(OP, "verify_database"), \
                  patch.object(OP, "verify_service", return_value=state["process"]), patch.object(OP, "NativeAPI", return_value=api), \
                  patch.object(OP, "verify_upgrade_input", return_value=(b"candidate", {})), \
-                 patch.object(OP, "verify_schema_upgrade_sources", return_value={"catalog_sha256": self.binding26["catalog_sha256"]}), \
+                 patch.object(OP, "verify_schema_upgrade_sources", return_value={"catalog_sha256": binding["catalog_sha256"]}), \
                  patch.object(OP, "command") as commands, patch.object(OP, "create") as creates, patch.object(OP, "save_state") as saves:
                 with self.assertRaises(OP.FixtureError):
-                    OP.upgrade_fixture(state, OP.WORK / "source-attempt-26/goby", "2" * 64, 26,
-                        source=OP.WORK / "source-attempt-26", source_manifest_sha256="a" * 64,
-                        schema26_catalog_sha256=self.binding26["catalog_sha256"])
+                    OP.upgrade_fixture(state, source / "goby", "2" * 64, target, source=source, source_manifest_sha256="a" * 64,
+                        **{f"schema{target}_catalog_sha256": binding["catalog_sha256"]})
                 commands.assert_not_called()
                 creates.assert_not_called()
                 saves.assert_not_called()
@@ -1162,6 +1284,9 @@ if __name__ == "__main__":
     parser.add_argument("--schema26-source", type=Path, required=True)
     parser.add_argument("--schema26-source-manifest-sha256", required=True)
     parser.add_argument("--schema26-catalog-sha256", required=True)
+    parser.add_argument("--schema27-source", type=Path, required=True)
+    parser.add_argument("--schema27-source-manifest-sha256", required=True)
+    parser.add_argument("--schema27-catalog-sha256", required=True)
     SCHEMA25_OPTIONS = parser.parse_args()
     output = io.StringIO()
     result = unittest.TextTestRunner(stream=output, verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ClientFixtureGuards))
@@ -1173,5 +1298,6 @@ if __name__ == "__main__":
                       "guard_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       "schema25_catalog_sha256": getattr(ClientFixtureGuards, "binding", {}).get("catalog_sha256"),
                       "schema26_catalog_sha256": getattr(ClientFixtureGuards, "binding26", {}).get("catalog_sha256"),
+                      "schema27_catalog_sha256": getattr(ClientFixtureGuards, "binding27", {}).get("catalog_sha256"),
                       "database_mutations": 0, "service_actions": 0}))
     raise SystemExit(0 if passed else 1)

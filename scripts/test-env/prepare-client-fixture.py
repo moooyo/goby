@@ -81,6 +81,24 @@ SCHEMA_26_SOURCE_MARKER = "goby-client-schema26-source-m3e-v1"
 SCHEMA_25_NEW_COLUMNS = {"item_metadata_state": ("music_source", {}), "item_entities": ("credit_group", 0)}
 SCHEMA_26_TABLES = {"theme_owner_ids", "theme_reserved_paths", "item_theme_resources"}
 SCHEMA_26_SEQUENCE = "theme_owner_ids_id_seq"
+MIGRATION_27_NAME = "0027_movie_extras.sql"
+MIGRATION_27_SHA = "b62d0422dddb9e258f46589898f672b08fc6e4c12fea7456059f855a6600353c"
+CATALOG_27_SHA = "1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d"
+CATALOG_27_OBJECTS_SHA = "48636d8091fa51c3f653e3b0f44e98c0f4cde278934392a46d4ad472afb94875"
+SCHEMA_TABLE_COUNTS[27] = 35
+SCHEMA_27_SOURCE_MARKER = "goby-client-schema27-source-m3e-v1"
+SCHEMA_27_TABLES = {"extra_reserved_paths", "item_extra_resources"}
+SCHEMA_27_SUPPORT = WORK / "backup-schema27-tool-01"
+SCHEMA_27_SUPPORT_HASHES = {
+    "run-client-backup-tests.py": "7cf91591efaeca841907cfe1950d0bfcb6c33ef091a17fe54c69db167a74c22a",
+    "guards.stdout": "9ecb9d07c61c61b7510c8ed16e895ad2c146d0244920914906663d1d40703ea9",
+    "guards.stderr": "990ab0a20e53bd44e889ebd85482fb5bf15631275d8b187e056c324fd560f09c",
+}
+PRODUCT_27_REQUIRED_TESTS = {"TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes",
+    "TestExtraMigrationRejectsOldThemeCorruptionBeforeRepair", "TestExtraMigrationValidatesAfterWaitingForSchema26Writer",
+    "TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer",
+    "TestPostgreSQLExtraSnapshotAndRestoreRejectSemanticCorruption",
+    "TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration"}
 THEME_AUDIO_EXTENSIONS = {"mp3", "flac", "m4a", "aac", "ogg", "opus", "wav", "wma", "aiff", "aif", "alac", "ape", "mka"}
 PRODUCT_PACKAGES = {"github.com/moooyo/goby/cmd/goby"} | {"github.com/moooyo/goby/internal/" + name for name in (
     "activity", "artwork", "backupformat", "backuppg", "backupstore", "config", "database", "diagnostics", "events",
@@ -774,7 +792,7 @@ def target_schema_version(state, requested=None):
     current = state.get("schema")
     target = current if requested is None else requested
     require(type(current) is int and type(target) is int and
-            (current, target) in ((23, 23), (23, 24), (24, 24), (24, 25), (25, 25), (25, 26), (26, 26)),
+            (current, target) in ((23, 23), (23, 24), (24, 24), (24, 25), (25, 25), (25, 26), (26, 26), (26, 27), (27, 27)),
             "Only explicit published adjacent schema upgrades and supported same-schema replacements are permitted.")
     return target
 
@@ -826,6 +844,20 @@ def schema26_binding(state):
                 for key in ("source_manifest_sha256", "catalog_sha256", "migration_26_sha256")) and
             binding["catalog_sha256"] == CATALOG_26_SHA and binding["migration_26_sha256"] == MIGRATION_26_SHA,
             "Schema26 requires the exact reviewed source, catalog, and migration binding.")
+    return binding
+
+
+def schema27_binding(state):
+    binding = state.get("schema27_source")
+    if binding is None and state.get("phase") == "upgrading" and state.get("upgrade", {}).get("to_schema") == 27:
+        binding = state["upgrade"].get("schema_artifacts", {}).get("schema27_binding")
+    require(isinstance(binding, dict) and set(binding) == {"marker", "schema", "source", "source_manifest_sha256",
+            "catalog_sha256", "migration_27_sha256"} and binding["marker"] == SCHEMA_27_SOURCE_MARKER and
+            type(binding["schema"]) is int and binding["schema"] == 27 and isinstance(binding["source"], str) and
+            all(isinstance(binding[key], str) and re.fullmatch(r"[0-9a-f]{64}", binding[key])
+                for key in ("source_manifest_sha256", "catalog_sha256", "migration_27_sha256")) and
+            binding["catalog_sha256"] == CATALOG_27_SHA and binding["migration_27_sha256"] == MIGRATION_27_SHA,
+            "Schema27 requires the exact reviewed source, catalog, and migration binding.")
     return binding
 
 
@@ -975,18 +1007,57 @@ def validate_schema26_delta(previous, baseline):
             "Theme object definitions differ from the actually generated, reviewed catalog26.")
 
 
+def validate_schema27_delta(previous, baseline):
+    require(previous.get("version") == 26 and type(baseline.get("version")) is int and baseline["version"] == 27 and
+            equal_json(previous["migrations"], baseline["migrations"][:26]) and
+            baseline["migrations"][26:] == [{"version": 27, "name": MIGRATION_27_NAME, "sha256": MIGRATION_27_SHA}],
+            "Schema27 changed the retained migration prefix or the frozen Extras migration.")
+    old_tables = {row["Name"]: row for row in previous["catalog"]["Tables"]}
+    new_tables = {row["Name"]: row for row in baseline["catalog"]["Tables"]}
+    require(len(old_tables) == 33 and len(new_tables) == 35 and set(new_tables) == set(old_tables) | SCHEMA_27_TABLES and
+            all(equal_json(row, new_tables[name]) for name, row in old_tables.items()), "Schema27 changed an old table descriptor.")
+    for name, columns, key in (("extra_reserved_paths", ["root_id", "relative_path", "is_directory"], ["root_id", "relative_path"]),
+                               ("item_extra_resources", ["resource_item_id", "owner_item_id", "kind", "active"], ["resource_item_id"])):
+        require(equal_json(new_tables[name], {"Name": name, "Columns": columns, "PrimaryKey": key, "SortKey": key}),
+                "A new Extras table has a different complete descriptor.")
+    require(equal_json(previous["catalog"]["Sequences"], baseline["catalog"]["Sequences"]), "Schema27 changed an existing sequence.")
+    foreign = [{"Table": table, "Name": name, "Definition": f"FOREIGN KEY ({column}) REFERENCES {parent}(id) ON DELETE CASCADE"}
+               for table, name, column, parent in (
+                   ("extra_reserved_paths", "extra_reserved_paths_root_id_fkey", "root_id", "library_roots"),
+                   ("item_extra_resources", "item_extra_resources_owner_item_id_fkey", "owner_item_id", "items"),
+                   ("item_extra_resources", "item_extra_resources_resource_item_id_fkey", "resource_item_id", "items"))]
+    require(equal_json([row for row in baseline["catalog"]["Constraints"] if row["Table"] not in SCHEMA_27_TABLES], previous["catalog"]["Constraints"]) and
+            equal_json([row for row in baseline["catalog"]["Constraints"] if row["Table"] in SCHEMA_27_TABLES], foreign),
+            "Schema27 changed an old foreign key or a new ownership cascade.")
+    old = {(row["kind"], row["name"]): row["value"] for row in previous["objects"]}
+    new = {(row["kind"], row["name"]): row["value"] for row in baseline["objects"]}
+    columns = {"extra_reserved_paths": 3, "extra_reserved_paths_pkey": 2, "item_extra_resources": 4,
+               "item_extra_resources_pkey": 1, "item_extra_resources_owner_idx": 3}
+    added = {("relation", name) for name in columns} | {("index", name) for name in columns if name not in SCHEMA_27_TABLES}
+    added |= {("column", f"{name}.{number:05d}") for name, count in columns.items() for number in range(1, count + 1)}
+    added |= {("constraint", f"{table}.{table}_{suffix}") for table, suffixes in {
+        "extra_reserved_paths": ("canonical_check", "pkey", "root_id_fkey"),
+        "item_extra_resources": ("distinct_owner_check", "kind_check", "owner_item_id_fkey", "pkey", "resource_item_id_fkey")}.items()
+        for suffix in suffixes}
+    require(set(new) - set(old) == added and not set(old) - set(new) and all(equal_json(value, new[key]) for key, value in old.items()),
+            "Schema27 changed an old object or added an unowned catalog object.")
+    normalized = canonical_json(baseline["objects"]).decode().replace("\u2028", "\\u2028").replace("\u2029", "\\u2029").encode()
+    require(baseline["catalog"]["SHA256"] == CATALOG_27_OBJECTS_SHA and hashlib.sha256(normalized).hexdigest() == CATALOG_27_OBJECTS_SHA,
+            "Extras definitions differ from the actually generated schema27 catalog.")
+
+
 def trusted_schema_baseline(version, binding=None):
     require(type(version) is int and version in SCHEMA_TABLE_COUNTS, "The requested schema has no trusted catalog.")
     manifest = None
-    if version in (25, 26):
-        binding = schema25_binding({"schema25_source": binding}) if version == 25 else schema26_binding({"schema26_source": binding})
+    if version in (25, 26, 27):
+        binding = {25: schema25_binding, 26: schema26_binding, 27: schema27_binding}[version]({f"schema{version}_source": binding})
         source = Path(binding["source"])
         manifest = source_manifest(source, binding["source_manifest_sha256"])
         relative = f"internal/backuppg/catalogs/schema-{version}-postgresql-17.json"
         path, expected = source / relative, binding["catalog_sha256"]
-        migration_name = MIGRATION_25_NAME if version == 25 else MIGRATION_26_NAME
+        migration_name = {25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME, 27: MIGRATION_27_NAME}[version]
         require(manifest["files"].get(relative) == expected and
-                expected == (CATALOG_25_SHA if version == 25 else CATALOG_26_SHA) and
+                expected == {25: CATALOG_25_SHA, 26: CATALOG_26_SHA, 27: CATALOG_27_SHA}[version] and
                 manifest["files"].get("internal/database/migrations/" + migration_name) == binding[f"migration_{version}_sha256"],
                 "The manifest does not bind the requested catalog and migration.")
     else:
@@ -1045,15 +1116,34 @@ def trusted_schema_baseline(version, binding=None):
                 "The schema26 source does not retain the immutable schema25 catalog.")
         validate_schema26_delta(precise_json(previous_raw), baseline)
         verify_source_schema_membership(source, baseline, manifest)
+    elif version == 27:
+        previous_raw = read(source / "internal/backuppg/catalogs/schema-26-postgresql-17.json", mode=0o644)
+        require(hashlib.sha256(previous_raw).hexdigest() == CATALOG_26_SHA and
+                manifest["files"].get("internal/backuppg/catalogs/schema-26-postgresql-17.json") == CATALOG_26_SHA,
+                "The schema27 source changed the immutable schema26 catalog.")
+        validate_schema27_delta(precise_json(previous_raw), baseline)
+        verify_source_schema_membership(source, baseline, manifest)
     return baseline
 
 
 def verify_schema_upgrade_sources(path, target, source=None, source_manifest_sha256=None, schema25_catalog_sha256=None,
-                                  schema26_catalog_sha256=None):
+                                  schema26_catalog_sha256=None, schema27_catalog_sha256=None):
     require(type(target) is int and target in SCHEMA_TABLE_COUNTS, "The requested source schema is unsupported or untyped.")
     require((source is None) == (source_manifest_sha256 is None), "An explicit source snapshot requires its manifest SHA-256.")
     require(target == 25 or schema25_catalog_sha256 is None, "Only schema25 accepts a new explicit catalog digest.")
     require(target == 26 or schema26_catalog_sha256 is None, "Only schema26 accepts its explicit catalog digest.")
+    require(target == 27 or schema27_catalog_sha256 is None, "Only schema27 accepts its explicit catalog digest.")
+    if target == 27:
+        require(source is not None and schema27_catalog_sha256 == CATALOG_27_SHA,
+                "Schema27 requires its actually generated catalog and an explicit source manifest.")
+        manifest = source_manifest(source, source_manifest_sha256)
+        binding = {"marker": SCHEMA_27_SOURCE_MARKER, "schema": 27, "source": str(source),
+                   "source_manifest_sha256": source_manifest_sha256, "catalog_sha256": schema27_catalog_sha256,
+                   "migration_27_sha256": manifest["files"].get("internal/database/migrations/" + MIGRATION_27_NAME)}
+        trusted_schema_baseline(27, binding)
+        return {"source": str(source), "catalog_sha256": schema27_catalog_sha256, "source_manifest_sha256": source_manifest_sha256,
+                "migration_count": 27, "migration_24_sha256": MIGRATION_24_SHA, "migration_25_sha256": MIGRATION_25_SHA,
+                "migration_26_sha256": MIGRATION_26_SHA, "schema27_binding": binding}
     if target == 26:
         require(source is not None and schema26_catalog_sha256 == CATALOG_26_SHA,
                 "Schema26 requires its actually generated catalog and an explicit source manifest.")
@@ -1103,7 +1193,7 @@ def verify_complete_product_source(source, manifest_sha256):
     require(isinstance(source, Path) and source.parent == WORK and
             re.fullmatch(r"source-attempt-([1-9][0-9]*)", source.name) is not None and
             int(source.name.rsplit("-", 1)[1]) > 22,
-            "Schema26 product upgrades cannot use historical, catalog-only source21, or database-only source22 inputs.")
+            "Full-source candidate upgrades cannot use historical, catalog-only source21, or database-only source22 inputs.")
     directory(source, 0, 0o700, 0)
     manifest = source_manifest(source, manifest_sha256)
     actual = {}
@@ -1136,11 +1226,22 @@ def verify_complete_product_source(source, manifest_sha256):
             "The complete product source bytes, membership, or manifest changed.")
 
 
-def verify_product_upgrade(path, expected_sha, source, manifest_sha256, full_report, full_report_sha256):
+def schema27_support_proof():
+    directory(SCHEMA_27_SUPPORT, 0, 0o700, 0)
+    for name, expected in SCHEMA_27_SUPPORT_HASHES.items():
+        path = SCHEMA_27_SUPPORT / name
+        mode = stat.S_IMODE(canonical(path).st_mode)
+        require(mode in (0o600, 0o644) and sha(path, mode=mode) == expected,
+                "The fixed schema27 runner or its 108-guard verification evidence changed.")
+    return {"path": str(SCHEMA_27_SUPPORT), "files": dict(SCHEMA_27_SUPPORT_HASHES), "guard_count": 108}
+
+
+def verify_product_upgrade(path, expected_sha, source, manifest_sha256, full_report, full_report_sha256, target=26):
+    require(type(target) is int and target in (26, 27), "A full product report requires schema26 or schema27.")
     require(isinstance(full_report, Path) and full_report.name == "report.json" and full_report.parent.parent == WORK and
             re.fullmatch(r"client-backup-run-[0-9]{8}_[0-9]{6}_[0-9a-f]{12}", full_report.parent.name) is not None and
             isinstance(full_report_sha256, str) and re.fullmatch(r"[0-9a-f]{64}", full_report_sha256),
-            "Schema26 upgrade requires an explicitly pinned complete verification report.")
+            "Schema26/27 upgrade requires an explicitly pinned complete verification report.")
     directory(full_report.parent, 0, 0o700, 0)
     require(canonical(full_report).st_gid == 0, "The complete verification report has a different group owner.")
     raw = read(full_report)
@@ -1148,10 +1249,10 @@ def verify_product_upgrade(path, expected_sha, source, manifest_sha256, full_rep
     report = precise_json(raw)
     require(isinstance(report, dict) and report.get("marker") == "goby-client-backup-pair-m3e-v1" and
             report.get("status") == "passed" and report.get("mode") == "full" and type(report.get("schema")) is int and
-            report["schema"] == 26 and report.get("catalog_sha256") == CATALOG_26_SHA and report.get("source") == str(source) and
+            report["schema"] == target and report.get("catalog_sha256") == {26: CATALOG_26_SHA, 27: CATALOG_27_SHA}[target] and report.get("source") == str(source) and
             report.get("source_manifest_sha256") == manifest_sha256 and type(report.get("unit_exit")) is int and
             report["unit_exit"] == 0 and report.get("run_id") == full_report.parent.name.removeprefix("client-backup-run-"),
-            "The report is not a successful complete schema26 run for this exact product source.")
+            "The report is not a successful complete run for this exact product source and schema.")
     cleanup = report.get("cleanup")
     required_cleanup = {"unit_terminal", "hba_restored_exactly", "goby_backup_m3e_source_removed",
                         "goby_backup_m3e_target_removed", "preexisting_catalog_unchanged", "receipt_saved"}
@@ -1162,7 +1263,7 @@ def verify_product_upgrade(path, expected_sha, source, manifest_sha256, full_rep
             type(tests.get("skips")) is int and tests["skips"] == 0 and type(tests.get("top_level_passes")) is int and
             isinstance(tests.get("passed"), list) and all(isinstance(name, str) and name for name in tests["passed"]) and
             tests["top_level_passes"] == len(tests["passed"]) == len(set(tests["passed"])) and
-            PRODUCT_REQUIRED_TESTS <= set(tests["passed"]) and isinstance(packages, list) and
+            (PRODUCT_REQUIRED_TESTS | (PRODUCT_27_REQUIRED_TESTS if target == 27 else set())) <= set(tests["passed"]) and isinstance(packages, list) and
             all(isinstance(name, str) for name in packages) and len(set(packages)) == len(packages) and set(packages) == PRODUCT_PACKAGES,
             "The report lacks complete package coverage or reports skipped, failed, or empty tests.")
     binary = report.get("binary")
@@ -1174,13 +1275,20 @@ def verify_product_upgrade(path, expected_sha, source, manifest_sha256, full_rep
     require(len(built) == binary["bytes"], "The verified binary size changed.")
     verify_upgrade_input(path, expected_sha)
     verify_complete_product_source(source, manifest_sha256)
+    if target == 27:
+        manifest = source_manifest(source, manifest_sha256)
+        require(manifest["files"].get("internal/database/migrations/" + MIGRATION_27_NAME) == MIGRATION_27_SHA and
+                manifest["files"].get("internal/backuppg/catalogs/schema-27-postgresql-17.json") == CATALOG_27_SHA,
+                "The complete schema27 product omits its accepted migration or catalog.")
+        support = schema27_support_proof()
     require(sha(full_report) == full_report_sha256, "The complete verification report changed during input validation.")
-    return {"report_path": str(full_report), "report_sha256": full_report_sha256}
+    return {"report_path": str(full_report), "report_sha256": full_report_sha256,
+            **({"schema27_support": support} if target == 27 else {})}
 
 
 def upgrade_operator_proof():
     path = WORK / "prepare-client-fixture.py"
-    require(Path(__file__).absolute() == path, "Schema26 upgrades must use the fixed reviewed candidate operator path.")
+    require(Path(__file__).absolute() == path, "Full-source upgrades must use the fixed reviewed candidate operator path.")
     mode = stat.S_IMODE(canonical(path).st_mode)
     require(mode in (0o600, 0o644, 0o700, 0o755), "The candidate operator has an unexpected source mode.")
     return {"path": str(path), "sha256": sha(path, mode=mode)}
@@ -1371,11 +1479,43 @@ def theme_summary(tables):
             "owner_rows_sha256": digest(owners), "reserved_paths_sha256": digest(paths), "resource_rows_sha256": digest(resources)}
 
 
+def expected_extra_reserved_paths(tables):
+    """Derive only M27's first ASCII layout boundary in canonical Movies roots."""
+    roots = {row["id"]: row for row in tables["library_roots"]}
+    libraries = {row["id"]: row for row in tables["libraries"]}
+    fold = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+    markers = set()
+    for item in tables["items"]:
+        root = roots.get(item.get("root_id"))
+        library = libraries.get(root.get("library_id")) if root else None
+        path = item.get("relative_path")
+        if not root or root.get("library_id") != item.get("library_id") or not library or library.get("collection_type") != "movies" or not canonical_theme_path(path):
+            continue
+        require(type(item.get("is_folder")) is bool, "A retained Extras path has an untyped folder flag.")
+        parts = path.split("/")
+        for index, component in enumerate(parts):
+            layout = component.translate(fold)
+            if (index < len(parts) - 1 or item["is_folder"]) and layout in ("theme-music", "backdrops", "featurettes", "deleted scenes", "trailers"):
+                if layout in ("featurettes", "deleted scenes", "trailers"):
+                    markers.add((root["id"], "/".join(parts[:index + 1])))
+                break
+    return [{"root_id": root, "relative_path": path, "is_directory": True} for root, path in sorted(markers)]
+
+
+def validate_empty_extra_scope(tables):
+    require(expected_extra_reserved_paths(tables) == [] and
+            all(row.get("active") is False for row in tables["item_theme_resources"]) and
+            all(tables.get(name, []) == [] for name in SCHEMA_27_TABLES),
+            "This candidate upgrade requires no Extras paths, active Theme resources, or existing Extras history; use a separate reviewed plan.")
+
+
 def validate_database_snapshot(database, version, state):
-    binding = schema26_binding(state) if version == 26 else schema25_binding(state) if version == 25 else None
+    binding = schema27_binding(state) if version == 27 else schema26_binding(state) if version == 26 else schema25_binding(state) if version == 25 else None
     baseline = trusted_schema_baseline(version, binding)
-    if version == 26:
+    if version >= 26:
         trusted_schema_baseline(25, schema25_binding(state))
+    if version == 27:
+        trusted_schema_baseline(26, schema26_binding(state))
     metadata = database.get("metadata", {})
     require(metadata.get("database") == ROLE and type(metadata.get("server_version_num")) is int and
             metadata["server_version_num"] // 10000 == 17 and metadata.get("schemas") == ["public"],
@@ -1411,7 +1551,7 @@ def validate_database_snapshot(database, version, state):
     require(set(metadata.get("relations", {})) == relation_names and
             all(row.get("owner") == ROLE for row in metadata["relations"].values()),
             "The live relation ownership inventory differs from the candidate role.")
-    if version == 26:
+    if version >= 26:
         validate_theme_state(tables)
         for sequence in baseline["catalog"]["Sequences"]:
             value = database["sequences"][sequence["Name"]]
@@ -1424,6 +1564,8 @@ def validate_database_snapshot(database, version, state):
                 all(type(row[consumer["Column"]]) is int and row[consumer["Column"]] < next_value
                     for row in tables[consumer["Table"]]) for consumer in sequence["Consumers"]),
                     "A schema26 sequence may collide with a retained identifier.")
+    if version == 27:
+        validate_empty_extra_scope(tables)
 
 
 def preservation_snapshot(state, version=None):
@@ -1452,8 +1594,10 @@ def preservation_summary(snapshot):
             "table_count": len(tables), "row_counts": {name: len(rows) for name, rows in sorted(tables.items())},
             "item_count": len(tables.get("items", [])), "library_count": len(tables.get("libraries", [])),
             "added_viewer_credentials": snapshot.get("added_viewer_credentials")}
-    if snapshot["schema"] == 26:
+    if snapshot["schema"] >= 26:
         result["theme"] = theme_summary(tables)
+    if snapshot["schema"] == 27:
+        result["extras"] = {name: len(tables[name]) for name in sorted(SCHEMA_27_TABLES)}
     return result
 
 
@@ -1535,6 +1679,18 @@ def compare_preservation_snapshots(before, after, source_schema, target_schema, 
             right["metadata"]["relations"][name].get("owner") == ROLE and right["metadata"]["relations"][name].get("acl") is None and
             right["metadata"]["relations"][name].get("column_acl") == [] for name in added_relations),
             "A new Theme relation has unowned identity or grants.")
+    elif (source_schema, target_schema) == (26, 27):
+        require(set(right["tables"]) == set(left["tables"]) | SCHEMA_27_TABLES and
+                all(right["tables"][name] == [] for name in SCHEMA_27_TABLES), "The candidate Extras transition must be additive and empty.")
+        validate_empty_extra_scope(left["tables"])
+        baseline = trusted_schema_baseline(27, schema27_binding(state))
+        validate_schema27_delta(trusted_schema_baseline(26, schema26_binding(state)), baseline)
+        added = set(right["metadata"]["relations"]) - set(left["metadata"]["relations"])
+        require(added == {row["name"] for row in baseline["objects"] if row["kind"] == "relation"} - set(left["metadata"]["relations"]) and
+                all(type(right["metadata"]["relations"][name].get("oid")) is int and right["metadata"]["relations"][name]["oid"] > 0 and
+                    right["metadata"]["relations"][name].get("owner") == ROLE and right["metadata"]["relations"][name].get("acl") is None and
+                    right["metadata"]["relations"][name].get("column_acl") == [] for name in added),
+                "A new Extras relation has unowned identity or privileges.")
     else:
         require((source_schema, target_schema) == (24, 25) and set(left["tables"]) == set(right["tables"]) and
                 set(left["metadata"]["relations"]) == set(right["metadata"]["relations"]),
@@ -1547,7 +1703,7 @@ def compare_preservation_snapshots(before, after, source_schema, target_schema, 
         in_window = applied.tzinfo is not None and lower <= applied <= upper
     except (TypeError, ValueError):
         in_window = False
-    require(in_window and migration["name"] == {24: MIGRATION_24_NAME, 25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME}[target_schema],
+    require(in_window and migration["name"] == {24: MIGRATION_24_NAME, 25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME, 27: MIGRATION_27_NAME}[target_schema],
             "The new migration history entry is outside the controlled upgrade window.")
 
 
@@ -1583,7 +1739,7 @@ def start_upgrade_candidate(state, binary_sha256, binary_identity):
 
 
 def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, source_manifest_sha256=None, schema25_catalog_sha256=None,
-                    schema26_catalog_sha256=None, full_report=None, full_report_sha256=None):
+                    schema26_catalog_sha256=None, full_report=None, full_report_sha256=None, schema27_catalog_sha256=None):
     target_schema = target_schema_version(state, target_schema)
     source_schema = state["schema"]
     require(state.get("phase") == "ready" and not state.get("start_pending") and
@@ -1601,25 +1757,29 @@ def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, 
             "The live candidate identity is not ready for a controlled upgrade.")
     content, input_identity = verify_upgrade_input(path, expected_sha)
     source_artifacts = verify_schema_upgrade_sources(path, target_schema, source, source_manifest_sha256, schema25_catalog_sha256,
-                                                      schema26_catalog_sha256)
+                                                      schema26_catalog_sha256, schema27_catalog_sha256)
     if source_schema == target_schema == 25:
         require(source_artifacts["catalog_sha256"] == schema25_binding(state)["catalog_sha256"],
                 "A same-schema upgrade cannot replace the accepted schema25 catalog identity.")
-    if target_schema == 26:
+    if target_schema in (26, 27):
         source_artifacts["product_verification"] = verify_product_upgrade(path, expected_sha, source, source_manifest_sha256,
-                                                                          full_report, full_report_sha256)
+                                                                          full_report, full_report_sha256, target_schema)
         source_artifacts["operator"] = upgrade_operator_proof()
-        # The earlier schema25 source remains a separate immutable historical
-        # binding, including after later schema26-to26 binary replacements.
+        # Historical schema25/26 source bindings remain separate from each
+        # later schema binding and same-schema binary replacement.
         trusted_schema_baseline(25, schema25_binding(state))
+        if target_schema == 27:
+            trusted_schema_baseline(26, schema26_binding(state))
     else:
-        require(full_report is None and full_report_sha256 is None, "Only schema26 upgrades accept a full-source report.")
+        require(full_report is None and full_report_sha256 is None, "Only schema26/27 upgrades accept a full-source report.")
     original_sha = state["binary_sha256"]
     require(expected_sha != original_sha, "The requested executable is already current; use inspect without restarting.")
     # Freeze every read-only preservation check before scheduling a stop. A
     # second snapshot after the stop captures any final in-flight state writes.
     live_snapshot = preservation_snapshot(state, source_schema)
     validate_preservation_snapshot(live_snapshot, source_schema, state)
+    if target_schema == 27:
+        validate_empty_extra_scope(live_snapshot["database"]["tables"])
     before = json.loads(json.dumps(state))
     nonce = secrets.token_hex(16)
     retained = WORK / ("client-upgrade-" + nonce)
@@ -1646,8 +1806,8 @@ def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, 
     verify_database(state)
     require(verify_service(state) == original_process and media_snapshot() == state["media"],
             "The candidate or media changed immediately before its owned stop.")
-    if target_schema == 26:
-        require(verify_product_upgrade(path, expected_sha, source, source_manifest_sha256, full_report, full_report_sha256) ==
+    if target_schema in (26, 27):
+        require(verify_product_upgrade(path, expected_sha, source, source_manifest_sha256, full_report, full_report_sha256, target_schema) ==
                 source_artifacts["product_verification"] and upgrade_operator_proof() == source_artifacts["operator"],
                 "The verified product or candidate operator changed before stop.")
     upgrade_phase(state, "stop_requested")
@@ -1660,6 +1820,8 @@ def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, 
     preserved = preservation_snapshot(state, source_schema)
     create(retained / "preservation-full.json", preserved)
     validate_preservation_snapshot(preserved, source_schema, state)
+    if target_schema == 27:
+        validate_empty_extra_scope(preserved["database"]["tables"])
     state["upgrade"]["preservation"] = preservation_summary(preserved)
     create(retained / "preservation.json", state["upgrade"]["preservation"])
     require(identity(regular(BINARY, mode=0o755, limit=64 << 20)) == state["upgrade"]["old_binary_identity"] and
@@ -1679,8 +1841,8 @@ def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, 
     before_start = preservation_snapshot(state, source_schema)
     create(retained / "before-start-full.json", before_start)
     compare_preservation_snapshots(preserved, before_start, source_schema, source_schema, state)
-    if target_schema == 26:
-        require(verify_product_upgrade(path, expected_sha, source, source_manifest_sha256, full_report, full_report_sha256) ==
+    if target_schema in (26, 27):
+        require(verify_product_upgrade(path, expected_sha, source, source_manifest_sha256, full_report, full_report_sha256, target_schema) ==
                 source_artifacts["product_verification"] and upgrade_operator_proof() == source_artifacts["operator"],
                 "The verified product or candidate operator changed before startup.")
     upgrade_phase(state, "start_requested")
@@ -1702,6 +1864,8 @@ def upgrade_fixture(state, path, expected_sha, target_schema=None, source=None, 
         state["schema25_source"] = dict(source_artifacts["schema25_binding"])
     elif target_schema == 26:
         state["schema26_source"] = dict(source_artifacts["schema26_binding"])
+    elif target_schema == 27:
+        state["schema27_source"] = dict(source_artifacts["schema27_binding"])
     state["upgrade"].update(new_process=state["process"], completed_at=utc(), phase="complete",
                             protocol_version=information.get("Version"), product_version=information.get("GobyVersion"),
                             after_preservation=preservation_summary(after_start))
@@ -2099,6 +2263,7 @@ def main():
     parser.add_argument("--source-manifest-sha256")
     parser.add_argument("--schema25-catalog-sha256")
     parser.add_argument("--schema26-catalog-sha256")
+    parser.add_argument("--schema27-catalog-sha256")
     parser.add_argument("--full-report", type=Path)
     parser.add_argument("--full-report-sha256")
     options = parser.parse_args()
@@ -2108,7 +2273,7 @@ def main():
         require((options.mode == "upgrade" and options.binary is not None and options.sha256 is not None) or
                 (options.mode != "upgrade" and options.binary is None and options.sha256 is None and options.target_schema is None and
                  options.source is None and options.source_manifest_sha256 is None and options.schema25_catalog_sha256 is None and
-                 options.schema26_catalog_sha256 is None and options.full_report is None and options.full_report_sha256 is None),
+                 options.schema26_catalog_sha256 is None and options.schema27_catalog_sha256 is None and options.full_report is None and options.full_report_sha256 is None),
                 "Only upgrade accepts and requires --binary ABSOLUTE_PATH --sha256 DIGEST.")
         require((options.source is None) == (options.source_manifest_sha256 is None), "--source and --source-manifest-sha256 must be supplied together.")
         require((options.full_report is None) == (options.full_report_sha256 is None), "--full-report and its SHA-256 must be supplied together.")
@@ -2189,7 +2354,7 @@ def main():
         elif options.mode == "upgrade":
             upgrade_fixture(state, options.binary, options.sha256, options.target_schema, options.source,
                             options.source_manifest_sha256, options.schema25_catalog_sha256,
-                            options.schema26_catalog_sha256, options.full_report, options.full_report_sha256)
+                            options.schema26_catalog_sha256, options.full_report, options.full_report_sha256, options.schema27_catalog_sha256)
         elif options.mode == "add-viewer":
             add_viewer(state)
         else:

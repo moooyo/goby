@@ -1,0 +1,56 @@
+{
+  "catalog_sha256": "1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d",
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "cluster": {
+    "process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 327173,
+      "start_ticks": 289359
+    },
+    "system_identifier": "7684040109719526738"
+  },
+  "error": "The test stream contains skips, failures, or a race warning.",
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "hba_before_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "marker": "goby-client-backup-pair-m3e-v1",
+  "mode": "full",
+  "pair_evidence_retained": true,
+  "run_id": "20260911_154145_d9df2c8f78f8",
+  "schema": 27,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-31",
+  "source_manifest_sha256": "0468c7e557c82249a866b81ae7b22924c2dc456bf5cd333af45b9a6d1ad7aa92",
+  "status": "failed",
+  "tools": {
+    "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg": {
+      "sha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e",
+      "version": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers"
+    },
+    "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe": {
+      "sha256": "8b86ad18818830b003f4d5191c1bd0c9b3722539c6203fae30de4da7f04cc872",
+      "version": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers"
+    },
+    "/opt/goby-toolchains/go1.27.1/bin/go": {
+      "sha256": "30969f97169d7f43fe6a085873d75613adc21e30818a8c61d95bd27275df4624",
+      "version": "go version go1.27.1 linux/amd64"
+    },
+    "/usr/lib/postgresql/17/bin/pg_dump": {
+      "sha256": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793",
+      "version": "pg_dump (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)"
+    },
+    "/usr/lib/postgresql/17/bin/pg_restore": {
+      "sha256": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692",
+      "version": "pg_restore (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)"
+    }
+  },
+  "unit": "goby-client-backup-20260911-154145-d9df2c8f78f8.service",
+  "unit_exit": 0,
+  "unit_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 700802,
+    "start_ticks": 6417182
+  }
+}
