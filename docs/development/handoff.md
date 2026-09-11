@@ -71,6 +71,11 @@ See the [verification record](verification-m3e-extras.md) for exact report/tool
 and completion-receipt hashes. Next, independently prepare the nonempty
 positive candidate fixture and its original-client flow. The primary remains
 source28/schema26; completed media/reference phases must not be replayed.
+The independent [nonempty-profile guards](m3e-schema27-positive-profile-guards.json)
+and [actual read-only baseline check](m3e-schema27-positive-profile-baseline.json)
+passed; the new library has not been created. The [main27 deployment tools](verification-m3e-main-schema27-tools.md)
+passed two syntax checks, 24 pure guards and the helper build. Their real
+preflight/deployment still awaits the positive candidate/client evidence.
 The additional [20-case reference capture](m3e-reference-special-features-projections-v2.json)
 completed with state/media preservation and token revocation. It proves known-ID
 extra retrieval, positive LocalTrailerCount, field switches and sampled error

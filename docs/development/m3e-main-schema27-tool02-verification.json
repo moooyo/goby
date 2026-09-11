@@ -1,0 +1,166 @@
+{
+  "artifacts": {
+    "build.stderr": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build.stdout": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gofmt-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/gofmt-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "guard-report.json": {
+      "bytes": 2401,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/guard-report.json",
+      "sha256": "9a651e1fafa817c7c90a71e732bb0d40cbee29b3f68c2953355742509958ca4c"
+    },
+    "guards.stderr": {
+      "bytes": 0,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/guards.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guards.stdout": {
+      "bytes": 2271,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/guards.stdout",
+      "sha256": "5b94d40010867096bdc5a91018d8ded32f5ee5bccb3eb7be48e9ceb84e3fd2b0"
+    },
+    "helper-build-report.json": {
+      "bytes": 465,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/helper-build-report.json",
+      "sha256": "33a99438ebebe0585a29406173a992c77353da38d526b2cd9cdfb82b833d2e90"
+    },
+    "syntax-guard-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/syntax-guard-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "syntax-operator-result.json": {
+      "bytes": 195,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/syntax-operator-result.json",
+      "sha256": "d434a6989fc672336a9271cc1e4c214a5a303271cfdc5b9cf5522d63f9f6d42b"
+    },
+    "tool-snapshot.json": {
+      "bytes": 609,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/tool-snapshot.json",
+      "sha256": "a9b6901361c6320f146f4a8287ac466802bbeb94cafe181e686f77bca3779d31"
+    },
+    "unit-journal.jsonl": {
+      "bytes": 12666,
+      "mode": 420,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/unit-journal.jsonl",
+      "sha256": "155ac0e02756baf1a889e4a8c164192a4e4b71349dad64eec88ff204c5fd519a"
+    },
+    "unit-launch.json": {
+      "bytes": 195,
+      "mode": 420,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/unit-launch.json",
+      "sha256": "faa9c445b89bc990b1b0cf4037f900cf24e7810b7935ba224f276ea439aa6ea3"
+    },
+    "verification.json": {
+      "bytes": 454,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/verification.json",
+      "sha256": "0c3deaa0cae77dfe2808b000cc55026a961e397e673b4e4b2129930b87cd3194"
+    },
+    "verify.py": {
+      "bytes": 5443,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/verify.py",
+      "sha256": "f295ea0648e2db476309eda0d3d7151a1373594285d7962204a5f628a350e4e6"
+    }
+  },
+  "attempt": "02",
+  "automatic_retry_of_prior_attempt": false,
+  "database_commands": 0,
+  "helper_binary": {
+    "bytes": 17373609,
+    "mode": 493,
+    "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-02/migrate-main-schema27",
+    "sha256": "4ba5866c8aa874ec230d5adcddce0f339860c35f3cde6cff9ef4ab32698e3044"
+  },
+  "main_service_mutations": 0,
+  "prior_attempt": {
+    "build_error": "Two obsolete repair-root identifiers remained in the new helper directory check.",
+    "path": "/opt/goby-test/exec-work-m3e/main-schema27-build-01/verification.json",
+    "pure_guard_count": 23,
+    "pure_guards_passed": true,
+    "python_syntax_passed": true,
+    "sha256": "176c360a1f3d52131f75226733b24ceaa9cbc10adb859d6096392d272ef12425",
+    "status": "failed"
+  },
+  "pure_guard_count": 24,
+  "python_syntax_checks": 2,
+  "schema": "goby-main-schema27-tool-verification",
+  "schema27_operator_preflight_executed": false,
+  "source32_files": 4002,
+  "source32_manifest_sha256": "a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65",
+  "source32_unchanged": true,
+  "status": "passed",
+  "tool_files": {
+    "migrate-main-schema27.go": {
+      "bytes": 57727,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02/scripts/test-env/migrate-main-schema27.go",
+      "sha256": "78287abc317df9fad9038d9682a74c5603c8c8be9adcef3d82813433adea0558"
+    },
+    "test-upgrade-main-schema27.py": {
+      "bytes": 80445,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02/scripts/test-env/test-upgrade-main-schema27.py",
+      "sha256": "79d9026d66dce819dcd2a9048949c02a15b465f3e5c61d62adf09a3de5dc9f95"
+    },
+    "upgrade-main-schema27.py": {
+      "bytes": 116981,
+      "mode": 384,
+      "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02/scripts/test-env/upgrade-main-schema27.py",
+      "sha256": "83a0c18d268a738443a68ab30119cc8da41fe58044b517edf3411b114ad16bea"
+    }
+  },
+  "tool_manifest": {
+    "bytes": 611793,
+    "mode": 384,
+    "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02/main-schema27-tool-inputs.json",
+    "sha256": "4bfc09d99ed411b66bf6e0f147b5f17e1f9f8c4eaef27019e9a813d1039a5b31"
+  },
+  "tool_source": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02",
+  "unit": {
+    "accepted_launch_limits": {
+      "CPUQuota": "150%",
+      "KillMode": "control-group",
+      "MemoryMax": "1536M",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": [
+        "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-02",
+        "/opt/goby-test/exec-work-m3e/main-schema27-build-02"
+      ],
+      "RuntimeMaxSec": "900",
+      "TasksMax": "256",
+      "TimeoutStopSec": "15"
+    },
+    "journal_deactivation_success": true,
+    "launch_observed_pid": 750436,
+    "name": "goby-main-schema27-tools-02.service",
+    "runtime_resource_property_readback_retained": false,
+    "transient_unit_collected": true
+  },
+  "version": 1
+}

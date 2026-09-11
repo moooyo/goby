@@ -1,0 +1,22 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-special-features-profile-tool-01",
+  "profile_sha256": "6bbc0bfd17b1c7eef44028fe34481436d39a3e6645442340189e2da35c382252",
+  "guard_sha256": "0ef61fdebacb5a140442e2f5f30df10dd7b894a4a27693e181673c1fb492e91b",
+  "fixture_operator_sha256": "84d21e8ac0b48c5dfd3d2c7ae35b0aec0d7f4f811e65658081490aa44947b49c",
+  "catalog_sha256": "1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d",
+  "syntax_checks": 2,
+  "guard_groups": 6,
+  "failures": 0,
+  "guards_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "guards_stderr_sha256": "bdbbfc7c2b7337bf30a70761de7a5effa21735820554ebc5a29c171e0cc3fdb1",
+  "coverage": [
+    "All 35 actual catalog tables and complete column sets",
+    "Owned nine-item addition with four Extra resources and three reserved directories",
+    "Old row, user-data, policy, configuration and private-state preservation",
+    "Resource owner, root, kind, path and population rejection cases",
+    "Owned authentication, device, audit and sequence increments"
+  ],
+  "boundary": "Pure memory verification with table and column membership from the pinned generated catalog. No HTTP, database mutation, service action or real library setup occurred."
+}

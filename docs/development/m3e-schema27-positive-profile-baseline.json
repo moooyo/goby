@@ -1,0 +1,21 @@
+{
+  "database_mutations": 0,
+  "extra_reserved_paths": 0,
+  "extra_resources": 0,
+  "http_requests": 0,
+  "item_count": 13,
+  "library_count": 3,
+  "marker": "goby-client-special-features-profile-baseline-v1",
+  "mode": "readonly_existing_empty_fixture",
+  "process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 748513,
+    "start_ticks": 6996875
+  },
+  "profile_sha256": "6bbc0bfd17b1c7eef44028fe34481436d39a3e6645442340189e2da35c382252",
+  "result": "passed",
+  "service_actions": 0,
+  "snapshot_sha256": "3269902736d4eff490b27ab46fa45bca9a2cb60941b9857f40eba34d38ba4077",
+  "state_sha256": "6d719ab6f3cd6c13ebf9fe3d6a927abaf5040e6e87e84be5d81a57318440cefe",
+  "table_count": 35
+}

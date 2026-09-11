@@ -1,0 +1,13 @@
+{
+  "build_exit_code": 1,
+  "database_commands": 0,
+  "guard_exit_code": 0,
+  "main_service_mutations": 0,
+  "schema": "goby-main-schema27-tool-verification",
+  "source32_unchanged": true,
+  "status": "failed",
+  "syntax_passed": true,
+  "tool_manifest_sha256": "e491f7fbf00dc076ee3b1f68887f6b7eabc417b5c06dc1f6d93278ba7a80b598",
+  "tool_source": "/opt/goby-test/exec-work-m3e/tool-build-main-schema27-01",
+  "tool_source_unchanged_after_freeze": true
+}

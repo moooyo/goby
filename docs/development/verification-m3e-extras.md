@@ -254,6 +254,25 @@ The preceding upgrade's `new_process` remains PID746709 in its immutable receipt
 
 ## Outstanding positive-fixture and primary gates
 
+The independent nonempty-profile validator passed [two remote syntax checks
+and six pure guard groups](m3e-schema27-positive-profile-guards.json). Its full
+35-table membership and column sets come from the generated schema27 catalog.
+It retains the existing empty-profile validator and separately constrains the
+owned new library, items, resources, sessions, audit records and sequence
+increments. These synthetic guard results do not establish a real indexed
+candidate fixture; the single-create/scan operator is still being prepared.
+An [independent read-only baseline check](m3e-schema27-positive-profile-baseline.json)
+also passed against the actual current candidate: 35 tables, 13 items, three
+libraries and two empty Extra tables. It checked the full existing structure
+and preserved the current state/process, with zero HTTP, database mutations
+or service actions. It is not a substitute for the setup operation's fresh
+before snapshot or a positive-fixture result.
+
+The [main schema27 tools](verification-m3e-main-schema27-tools.md) passed their
+remote syntax checks, 24 pure guards and helper build. Their first compilation
+failure is retained separately. Actual primary deployment remains dependent
+on the outstanding positive-fixture/client evidence.
+
 Next, independently set up the nonempty positive candidate fixture and run its
 positive original-client flow. The original Movie's empty-array success and
 the permission extension do not establish indexed extra delivery. Completed
