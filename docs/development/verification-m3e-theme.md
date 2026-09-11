@@ -1,6 +1,12 @@
 # M3e Theme implementation verification
 
 Status: **product checkpoint published; primary schema26 deployment completed; broader client acceptance open**.
+
+The [latest input06 diagnostic](m3e-source28-special-features-blocker.json)
+identified the missing SpecialFeatures user-item GET404 behind the two
+recorded Movie detail errors. Its 107 guards and bounded preparation-state
+comparison passed; the client run correctly failed its page-error gate.
+Real extras capture and implementation are tracked separately from ThemeMedia.
 Source28/schema26 passed 1,830 race tests across 24 packages and is installed
 on the isolated candidate. The original-client auxiliary album workflow passed;
 the primary is now source28/schema26, active/running as PID688833/start ticks5620918. The earlier

@@ -1,11 +1,18 @@
 # Post-source18 auxiliary client reads
 
+This document retains the historical Similar/ThemeMedia research sequence.
+Source28/schema26 is now deployed and its scoped auxiliary-album flow passed.
+The current Movie detail blocker is the missing SpecialFeatures user-item
+route, identified in [input06](m3e-source28-special-features-blocker.json).
+The next positive capture is tracked in the
+[SpecialFeatures reference plan](m3e-special-features-reference-plan.md).
+
 Status: the initial capture, five positive comparison captures, and metadata
 combination v2/v3 captures are complete. Metadata v1 remains a preserved failed
 attempt. These are reference protocol observations, not original-client
 acceptance or a recovered private scoring specification.
 
-The deployed product remains source18. Source19 music tests passed, but its
+At the following historical checkpoint, the deployed product remained source18. Source19 music tests passed, but its
 Similar test run retained a complete-catalog timeout. Source20 contains a frozen
 scoring/SQL revision with 43 targeted and 1,763 complete-source remote race tests
 passed. It is installed only on the isolated candidate. The original client

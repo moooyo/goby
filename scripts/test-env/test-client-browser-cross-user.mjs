@@ -18,6 +18,7 @@ const A_TOKEN = 'synthetic-a-token', B_TOKEN = 'synthetic-b-token';
 const A_PASSWORD = '1'.repeat(48), B_PASSWORD = '2'.repeat(48);
 const ASSET_PAYLOAD = 'synthetic-private-asset-payload';
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
+const PREPARATION_SCOPE = 'source28-page-error-01';
 const MOVIE_PATH = '/opt/goby-fixtures/client-m3e/Movies/M3e Client Movie.mp4';
 const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'classifyBrowserRequest', 'observedAuthority',
   'validateReadPrincipal', 'itemState', 'compareCrossUserState', 'foreignAccessDenied', 'readBoundedJSON', 'crossUserResult',
@@ -26,7 +27,8 @@ const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'clas
   'runCrossUserAcceptance', 'frameRequestContext', 'websocketRequestPlan', 'websocketResponsePlan',
   'websocketFrameState', 'inspectWebSocketFrames', 'forwardBrowserWebSocket', 'administratorAccessDenied',
   'websocketConnectPlan', 'websocketConnectInner', 'forwardWebSocketConnect', 'bindOwnedMovieSource',
-  'preparationRequestEvidence', 'preparationResponseEvidence', 'homeNavigationLocation', 'selectHomeControl', 'confirmedHomeNavigation'];
+  'preparationRequestEvidence', 'preparationResponseEvidence', 'homeNavigationLocation', 'selectHomeControl', 'confirmedHomeNavigation',
+  'sanitizeBrowserMessage', 'browserEventDiagnostic', 'recordBrowserPageError', 'resanitizeBrowserDiagnostics'];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const syntheticHash = label => hash(`synthetic-cross-user:${label}`);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -135,7 +137,7 @@ function completedReport() {
   return { mode: 'acceptance', failure: null, accounts: ['A', 'B'].map(slot => {
     const tokenFingerprint = hash(slot === 'A' ? A_TOKEN : B_TOKEN);
     return { ...actor(slot), login: { status: 200, request_count: 1 }, principal_confirmed: true,
-      ordinary_authority_confirmed: true, proxy_login_status: 200,
+      ordinary_authority_confirmed: true, proxy_login_status: 200, page_error_count: 0,
       ui: { outcome: 'passed' }, own_item_reads: 8,
       foreign_read: { status: 403, error_code: 'access_denied', target_user_id: slot === 'A' ? B_ID : A_ID },
       comparison: { items_unchanged: true, preferences_unchanged: true, configuration_unchanged: true, policy_unchanged: true },
@@ -440,7 +442,8 @@ export async function runCrossUserGuards(source) {
     const legacy = api.parseCrossUserArguments(validArguments());
     check(same(legacy, api.parseCrossUserArguments([...validArguments(), '--mode', 'acceptance'])));
     check(api.parseCrossUserArguments([...validArguments(), '--mode', 'prelogin']).mode === 'prelogin');
-    check(api.parseCrossUserArguments([...validArguments(), '--mode', 'acceptance-preparation']).mode === 'acceptance-preparation');
+    check(api.parseCrossUserArguments([...validArguments(), '--mode', 'acceptance-preparation',
+      '--preparation-scope', PREPARATION_SCOPE]).mode === 'acceptance-preparation');
     for (const value of ['', 'diagnostic', 'Prelogin', 'prelogin/acceptance']) {
       rejected(() => api.parseCrossUserArguments([...validArguments(), '--mode', value]));
     }
@@ -882,7 +885,8 @@ export async function runCrossUserGuards(source) {
     }
   });
   test('forwarding_execution_accepts_known_modes_and_rejects_unknown_modes_without_effects', async () => {
-    for (const mode of ['prelogin', 'acceptance', 'acceptance-preparation']) check(api.requireProxyExecutionMode(mode) === undefined);
+    for (const mode of ['prelogin', 'acceptance']) check(api.requireProxyExecutionMode(mode) === undefined);
+    check(api.requireProxyExecutionMode('acceptance-preparation', PREPARATION_SCOPE) === undefined);
     for (const mode of [undefined, '', 'Prelogin', 'unsupported']) rejected(() => api.requireProxyExecutionMode(mode));
     const argv = validArguments(), input = {};
     for (let index = 0; index < argv.length; index += 2) input[argv[index].slice(2)] = argv[index + 1];
@@ -1748,7 +1752,7 @@ export async function runCrossUserGuards(source) {
   });
   test('preparation_acceptance_requires_each_validated_physical_post_and_real_ui_completion', () => {
     const preparedReport = () => {
-      const report = completedReport(); report.mode = 'acceptance-preparation';
+      const report = completedReport(); report.mode = 'acceptance-preparation'; report.preparation_scope = PREPARATION_SCOPE;
       for (const [index, account] of report.accounts.entries()) {
         account.proxy.mode = report.mode; account.proxy.preparation = 1;
         account.proxy.seen += 1; account.proxy.admitted += 1; account.proxy.completed += 1;
@@ -1763,6 +1767,9 @@ export async function runCrossUserGuards(source) {
       return report;
     };
     check(api.crossUserResult(preparedReport()) === true);
+    for (const scope of [undefined, null, '', 'source28-page-error-00', false]) {
+      const report = preparedReport(); report.preparation_scope = scope; check(api.crossUserResult(report) === false);
+    }
     for (const slot of [0, 1]) for (const mutate of [value => { value.proxy.preparation = 0; }, value => { value.proxy.preparation = 2; },
       value => { value.preparation.request_validated = false; }, value => { value.preparation.item_id = '1'.repeat(32); },
       value => { value.preparation.token_fingerprint = syntheticHash('wrong-preparation-token'); },
@@ -1773,6 +1780,149 @@ export async function runCrossUserGuards(source) {
     }
     const readonly = completedReport(); readonly.accounts[0].proxy.preparation = 1; check(api.crossUserResult(readonly) === false);
     const prelogin = preloginReport(); prelogin.accounts[0].proxy.preparation = 1; check(api.preloginDiagnosticsComplete(prelogin) === false);
+  });
+  test('acceptance_requires_explicit_zero_page_errors_for_both_actors', () => {
+    check(api.crossUserResult(completedReport()) === true);
+    for (const slot of [0, 1]) {
+      for (const count of [1, 16, 17, -1, null, false, NaN, '0', undefined]) {
+        const report = completedReport(); report.accounts[slot].page_error_count = count;
+        check(api.crossUserResult(report) === false);
+      }
+      const report = completedReport(); delete report.accounts[slot].page_error_count;
+      check(api.crossUserResult(report) === false);
+      report.accounts[slot].page_errors = [];
+      check(api.crossUserResult(report) === false);
+    }
+  });
+  test('diagnostic_messages_redact_known_secrets_and_bounded_encoding_variants', () => {
+    const secret = 'Secret7!', bytes = Buffer.from(secret), letters = [...secret];
+    const hex = value => value.charCodeAt(0).toString(16);
+    const percent = letters.map(value => '%' + hex(value).padStart(2, '0')).join('');
+    const variants = [secret, secret.toLowerCase(), percent, percent.replaceAll('%', '%25'),
+      letters.map((value, index) => index % 2 ? value : '%' + hex(value)).join(''),
+      letters.map(value => '\\u' + hex(value).padStart(4, '0')).join(''),
+      letters.map(value => '\\u{' + hex(value) + '}').join(''),
+      letters.map(value => '\\x' + hex(value).padStart(2, '0')).join(''),
+      letters.map(value => '%u' + hex(value).padStart(4, '0')).join(''),
+      letters.map(value => '&#' + value.charCodeAt(0) + ';').join(''),
+      letters.map(value => '&#x' + hex(value) + ';').join(''),
+      bytes.toString('base64'), bytes.toString('base64').replace(/=+$/, ''),
+      bytes.toString('base64url'), bytes.toString('hex')];
+    for (const value of variants) {
+      check(api.sanitizeBrowserMessage('Fault ' + value + ' observed', [secret]) === 'Fault [secret] observed');
+      const result = api.sanitizeBrowserMessage('Malformed %zz then ' + value, [secret]);
+      check(result.includes('[secret]') && !result.toLowerCase().includes(secret.toLowerCase()) && result.length <= 512);
+    }
+    const literal = 'Pin.+[7]';
+    check(api.sanitizeBrowserMessage('Fault ' + literal + ' observed', [literal]) === 'Fault [secret] observed');
+    const union = [A_PASSWORD, B_PASSWORD, A_TOKEN, B_TOKEN, '3'.repeat(48)];
+    check(union.every(value => !api.sanitizeBrowserMessage(union.join(' '), union).includes(value)));
+  });
+  test('diagnostic_messages_omit_oversize_inputs_and_remove_locations_and_opaque_values', () => {
+    check(api.sanitizeBrowserMessage('A readable failure') === 'A readable failure');
+    check(api.sanitizeBrowserMessage('UniquePrefix ' + 'x'.repeat(8192)) === '[diagnostic omitted: input limit]');
+    for (const value of [null, undefined, 7, {}, Buffer.from('private')]) {
+      check(api.sanitizeBrowserMessage(value) === '[diagnostic unavailable]');
+    }
+    for (const value of ['https://host.invalid/private?ticket=SmallKey', 'wss://host.invalid/ws#SmallKey',
+      'file:///private/SmallKey', 'blob:https://host.invalid/SmallKey', 'data:text/plain,SmallKey',
+      'custom://host.invalid/SmallKey', '//host.invalid/SmallKey', '/private/SmallKey',
+      'folder/SmallKey', '\\\\server\\SmallKey', 'localhost:18196?ticket=SmallKey',
+      '?ticket=SmallKey', 'ticket=SmallKey', 'token:SmallKey', 'https://host.invalid/"quoted"?ticket=SmallKey']) {
+      const result = api.sanitizeBrowserMessage('Failure ' + value + ' observed');
+      check(!result.includes('SmallKey') && !result.includes('host.invalid') && result.length <= 512);
+    }
+    const opaque = 'Ab7cd9EFgh2JKlm4NOPqr6STuv8WXyz0';
+    check(api.sanitizeBrowserMessage('Fault ' + opaque + ' observed') === 'Fault [opaque] observed');
+    const long = api.sanitizeBrowserMessage('readable '.repeat(160));
+    check(long.length <= 512 && long.endsWith(' [truncated]') && !long.includes('readabl [truncated]'));
+    const controls = api.sanitizeBrowserMessage('before\u0000\u001b\u2028after');
+    check(/^[\x20-\x7e]*$/.test(controls));
+    const name = api.browserEventDiagnostic({ name: 'Readable '.repeat(20), message: 'Fault' }, 'ui_movie');
+    check(name.diagnostic_name === '[diagnostic omitted: name limit]' && name.diagnostic_name.length <= 80);
+  });
+  test('browser_event_diagnostics_read_only_name_and_message_even_when_getters_throw', () => {
+    const reads = [], error = Object.create(null);
+    Object.defineProperties(error, {
+      name: { get() { reads.push('name'); return 'TypeError'; } },
+      message: { get() { reads.push('message'); return 'Fault ' + A_TOKEN; } },
+      stack: { get() { throw new Error('forbidden stack read'); } },
+      errors: { get() { throw new Error('forbidden aggregate read'); } },
+      cause: { get() { throw new Error('forbidden cause read'); } },
+      toString: { get() { throw new Error('forbidden coercion'); } },
+    });
+    const diagnostic = api.browserEventDiagnostic(error, 'ui_movie', [A_TOKEN]);
+    check(same(reads, ['name', 'message']) && diagnostic.phase === 'ui_movie' && diagnostic.diagnostic_name === 'TypeError');
+    check(diagnostic.message === 'Fault [secret]' && diagnostic.diagnostic_unavailable === false);
+    check(same(Object.keys(diagnostic).sort(), ['phase', 'name', 'category', 'causes', 'causes_truncated',
+      'diagnostic_name', 'message', 'diagnostic_unavailable'].sort()));
+    const throwing = Object.create(null);
+    for (const key of ['name', 'message']) Object.defineProperty(throwing, key, { get() { throw new Error(A_TOKEN); } });
+    const unavailable = api.browserEventDiagnostic(throwing, A_TOKEN, [A_TOKEN]);
+    check(unavailable.diagnostic_unavailable === true && unavailable.phase === 'unknown');
+    check(!JSON.stringify(unavailable).includes(A_TOKEN));
+    check(api.browserEventDiagnostic({ name: 3, message: null }, 'ui_movie').diagnostic_unavailable === true);
+  });
+  test('page_error_count_survives_throwing_messages_and_the_sixteen_entry_limit', () => {
+    const actor = { page_error_count: 0, page_errors: [] };
+    for (let index = 0; index < 21; index += 1) {
+      const error = index === 0 ? Object.defineProperties({}, {
+        name: { get() { throw new Error(A_TOKEN); } }, message: { get() { throw new Error(A_TOKEN); } },
+      }) : { name: 'Error', message: 'Fault ' + A_TOKEN };
+      api.recordBrowserPageError(actor, error, 'ui_movie', index, [A_TOKEN]);
+    }
+    check(actor.page_error_count === 21 && actor.page_errors.length === 16);
+    check(actor.page_errors[0].diagnostic_unavailable === true && actor.page_errors[15].elapsed_ms === 15);
+    let accessed = false;
+    const beyondLimit = Object.defineProperty({}, 'message', { get() { accessed = true; throw new Error(A_TOKEN); } });
+    api.recordBrowserPageError(actor, beyondLimit, 'ui_movie', 22, [A_TOKEN]);
+    check(actor.page_error_count === 22 && actor.page_errors.length === 16 && !accessed);
+    check(!JSON.stringify(actor).includes(A_TOKEN));
+  });
+  test('final_diagnostic_resanitization_removes_late_secrets_from_each_actor_and_event_list', () => {
+    const late = 'LateKey7', other = 'OtherKey8';
+    const report = { accounts: ['A', 'B'].map(slot => ({ ...actor(slot), page_error_count: 1,
+      page_errors: [api.browserEventDiagnostic({ name: late, message: 'Fault ' + other }, 'ui_movie')],
+      console_diagnostics: [api.browserEventDiagnostic({ name: other, message: 'Fault ' + late }, 'ui_home')] })) };
+    check(JSON.stringify(report).includes(late) && JSON.stringify(report).includes(other));
+    api.resanitizeBrowserDiagnostics(report, [late, other]);
+    check(!JSON.stringify(report).includes(late) && !JSON.stringify(report).includes(other));
+    for (const account of report.accounts) {
+      check(account.page_error_count === 1 && account.page_errors.length === 1 && account.console_diagnostics.length === 1);
+      check(account.page_errors[0].message === 'Fault [secret]' && account.page_errors[0].diagnostic_name === '[secret]');
+      check(account.console_diagnostics[0].message === 'Fault [secret]' && account.console_diagnostics[0].diagnostic_name === '[secret]');
+    }
+    const once = clone(report); api.resanitizeBrowserDiagnostics(report, [late, other]); check(same(report, once));
+  });
+  test('preparation_scope_is_explicit_mode_bound_and_rejected_before_external_effects', async () => {
+    const args = [...validArguments(), '--mode', 'acceptance-preparation', '--preparation-scope', PREPARATION_SCOPE];
+    const parsed = api.parseCrossUserArguments(args);
+    check(parsed.mode === 'acceptance-preparation' && parsed['preparation-scope'] === PREPARATION_SCOPE);
+    for (const invalid of [[...validArguments(), '--mode', 'acceptance-preparation'],
+      [...validArguments(), '--preparation-scope', PREPARATION_SCOPE],
+      [...validArguments(), '--mode', 'prelogin', '--preparation-scope', PREPARATION_SCOPE],
+      [...validArguments(), '--mode', 'acceptance', '--preparation-scope', PREPARATION_SCOPE]]) {
+      rejected(() => api.parseCrossUserArguments(invalid));
+    }
+    for (const value of ['', 'source28-page-error-00', PREPARATION_SCOPE + '/..', 'SOURCE28-PAGE-ERROR-01']) {
+      const invalid = [...args]; invalid[17] = value; rejected(() => api.parseCrossUserArguments(invalid));
+    }
+    const duplicate = [...args]; duplicate[14] = '--preparation-scope'; duplicate[15] = PREPARATION_SCOPE;
+    rejected(() => api.parseCrossUserArguments(duplicate));
+    for (const mode of ['acceptance', 'prelogin']) for (const scope of [PREPARATION_SCOPE, '', null]) {
+      rejected(() => api.requireProxyExecutionMode(mode, scope));
+    }
+    for (const scope of [undefined, null, '', 'source28-page-error-00']) {
+      rejected(() => api.requireProxyExecutionMode('acceptance-preparation', scope));
+      const options = { ...parsed, 'preparation-scope': scope };
+      let refused = false;
+      try { await api.runCrossUserAcceptance(options); } catch (error) { refused = error?.message === 'cross_user_guard_rejected'; }
+      check(refused && loaded.effects.length === 0 && loaded.timers.size === 0);
+    }
+    for (const scope of [PREPARATION_SCOPE, '', false]) {
+      const report = completedReport(); report.preparation_scope = scope; check(api.crossUserResult(report) === false);
+    }
+    const report = completedReport(); report.preparation_scope = null; check(api.crossUserResult(report) === true);
   });
   const report = { format: 1, mode: 'pure', result: 'blocked', harness_guards_only: true, client_acceptance: false,
     source_sha256: hash(source), planned_test_count: cases.length, tests: [] };

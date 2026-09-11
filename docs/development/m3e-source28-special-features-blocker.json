@@ -1,0 +1,263 @@
+{
+  "accounts": [
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_diagnostics": [
+        {
+          "category": "network",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "Error",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 2382,
+          "message": "Failed to load resource: net::[opaque]",
+          "name": "Error",
+          "phase": "login_form_closed",
+          "type": "error"
+        },
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "Error",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 14253,
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "name": "Error",
+          "phase": "ui_movie",
+          "type": "error"
+        }
+      ],
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "ecbbe4cb82403879bc4b4f78894c5738"
+      },
+      "home_navigation": {
+        "buttons": 0,
+        "card_id_matches": true,
+        "card_id_present": true,
+        "card_present": true,
+        "clicked": true,
+        "control": "link",
+        "detail_heading_count": 0,
+        "library_card_count": 1,
+        "links": 1,
+        "navigation_observed": true,
+        "route": "home",
+        "same_origin": true,
+        "supported_path": true
+      },
+      "id": "34b4c24f6568659af7ce17938fae7f81",
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof_outcome": "all_observed_logout_tokens_rejected",
+      "missing_request": {
+        "method": "GET",
+        "path": "/emby/Users/34b4c24f6568659af7ce17938fae7f81/Items/268051d3ca734aefcf94e245fb25ad55/SpecialFeatures",
+        "path_sha256": "7f399c08383b3dab0501fbf8b6429f8efcdcce05a835ca8893707918506c48a8",
+        "phase": "ui_movie",
+        "physical_transfer_completed": true,
+        "request_index": 251,
+        "response_bytes": 104,
+        "status": 404,
+        "token_matches_session": true
+      },
+      "page_error_count": 1,
+      "page_errors": [
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 14255,
+          "message": "Response",
+          "name": "other",
+          "phase": "ui_movie"
+        }
+      ],
+      "preparation_status": 200,
+      "slot": "A",
+      "ui_outcome": "passed"
+    },
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_diagnostics": [
+        {
+          "category": "network",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "Error",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 2831,
+          "message": "Failed to load resource: net::[opaque]",
+          "name": "Error",
+          "phase": "login_form_closed",
+          "type": "error"
+        },
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "Error",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 8830,
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "name": "Error",
+          "phase": "ui_movie",
+          "type": "error"
+        }
+      ],
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "34b4c24f6568659af7ce17938fae7f81"
+      },
+      "home_navigation": {
+        "buttons": 0,
+        "card_id_matches": true,
+        "card_id_present": true,
+        "card_present": true,
+        "clicked": true,
+        "control": "link",
+        "detail_heading_count": 0,
+        "library_card_count": 1,
+        "links": 1,
+        "navigation_observed": true,
+        "route": "home",
+        "same_origin": true,
+        "supported_path": true
+      },
+      "id": "ecbbe4cb82403879bc4b4f78894c5738",
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof_outcome": "all_observed_logout_tokens_rejected",
+      "missing_request": {
+        "method": "GET",
+        "path": "/emby/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55/SpecialFeatures",
+        "path_sha256": "c3e403ab48cf7657ad349b227a006e54f7151da3fde745694d20857627b6bb19",
+        "phase": "ui_movie",
+        "physical_transfer_completed": true,
+        "request_index": 251,
+        "response_bytes": 104,
+        "status": 404,
+        "token_matches_session": true
+      },
+      "page_error_count": 1,
+      "page_errors": [
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "diagnostic_name": "",
+          "diagnostic_unavailable": false,
+          "elapsed_ms": 8830,
+          "message": "Response",
+          "name": "other",
+          "phase": "ui_movie"
+        }
+      ],
+      "preparation_status": 200,
+      "slot": "B",
+      "ui_outcome": "passed"
+    }
+  ],
+  "client_acceptance": false,
+  "client_interventions": {
+    "external_network_permission_granted": false,
+    "external_posts_blocked": 2,
+    "impact": "Blocked requests remain reported client interventions and are not counted as successful endpoint responses",
+    "playback_preparations_blocked": 0
+  },
+  "database_comparison": {
+    "counts_and_hashes": {
+      "encoding_rows_unchanged": 0,
+      "expired_old_play_count": 2,
+      "expired_old_play_id_hashes": [
+        "be39a4afd1ce9e19c6d7ff1cf0666031839dd4d9f082733947a463d9e163d134",
+        "c0ec1dbf6701d6a42c06f5843353d875e07f75613ca0f92a4d6905fc5818ed09"
+      ],
+      "new_auth_count": 2,
+      "new_auth_id_hashes": [
+        "0e9e4b6b0f2ae8db8a944d63022198f92e658b64ab22d68957a7d64daa94c4f9",
+        "7c52095620ce8c3ae87f79ff9a9d0a59c78cdb2935f02fff57ccf3fc4568e75c"
+      ],
+      "new_play_count": 2,
+      "new_play_id_hashes": [
+        "675c2349f4779d06cadd708e923a041c0149aa246caf707e7af0c52f839426f1",
+        "b84e37a97b741efc9e485659ea149c94dd9ebe27b4f1a1c23c5c5cc85d31c43c"
+      ],
+      "new_reference_count": 0,
+      "old_auth_rows_unchanged": 49,
+      "old_play_rows_retained": 20,
+      "old_play_rows_unchanged": 18,
+      "removed_revoked_reference_count": 0,
+      "userdata_rows_unchanged": 5
+    },
+    "database_scope_result": "passed",
+    "database_wide_preservation_claimed": false,
+    "input_sha256": {
+      "after": "0c005aeb0a2ea4a0b8362650a7e62102f1b938828be7c0cbe735ea92d3cf279c",
+      "baseline_after": "4aff79e9798fcab89652a5bdc3b83b408cdc67a1a52b8d086a6ff99c8e3f6a63",
+      "before": "ab0333aa939c3193aa6348a845badcb0805e162674568bebff4806818f17a01a",
+      "report": "0de99523578ae67df05c424940e12b1d42b3a2d457196e77c8d55081bf88ee70"
+    },
+    "marker": "goby-client-prepare-scope-comparison-v1",
+    "preparation_scope": "source28-page-error-01",
+    "reason_codes": [],
+    "ui_client_acceptance": false,
+    "ui_failure_sha256": "585510d639aaaa8541dcac44023c5f5f0d736476472f80714c5665ba4ae0eb55",
+    "ui_report_failure": "page_errors_observed",
+    "ui_report_result": "failed",
+    "ui_result_promoted": false
+  },
+  "database_comparison_stdout_sha256": "381f921c92314807f96cc82e857ec18e703d5133e1a18738f8b56ed3cf851641",
+  "failure": "page_errors_observed",
+  "finished_at": "2026-09-11T14:25:27.169Z",
+  "guard_counts": {
+    "executed": 107,
+    "failed": 0,
+    "passed": 107
+  },
+  "guard_stdout_sha256": "ed06402a477ddc4322cdd4f04fc86ecd8bfa01ef73d4a4c2e37ace7b753404a6",
+  "input_closure": {
+    "client-browser-cross-user.mjs": "34afd0342d2b5116dd85bcb82781f44e2ac2fb6d4c91a314372b5e07fbc082ae",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "input_revision": "input06",
+  "known_reference_contract": "The retained reference capture for one movie with no special features returned HTTP200 and an empty JSON array, including the Fields variant. Positive SpecialFeatures behavior still requires a new fixture and capture.",
+  "mode": "acceptance-preparation",
+  "next_work": "Capture actual positive movie extras, then implement authorized persistent indexing, DTO projection and media access. Do not replace the missing feature with a permanent empty-response fixture workaround.",
+  "preparation_scope": "source28-page-error-01",
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/client-cross-user-source28-04/report.json",
+    "sha256": "0de99523578ae67df05c424940e12b1d42b3a2d457196e77c8d55081bf88ee70"
+  },
+  "scope": "The two exact request-path hashes identify the unregistered SpecialFeatures user-item route. Its404 and the Response page errors are retained together. Navigation, preparation, isolation and logout checks plus the bounded DB comparison passed, but full client acceptance remains open.",
+  "started_at": "2026-09-11T14:25:02.501Z",
+  "status": "failed"
+}

@@ -22,6 +22,7 @@ const STATE = `${ROOT}/client-fixture.json`;
 const A_CREDENTIALS = `${ROOT}/goby-av-browser.json`;
 const B_CREDENTIALS = `${ROOT}/browser.json`;
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
+const PREPARATION_SCOPE = 'source28-page-error-01';
 const LIMIT = 2 * 1024 * 1024;
 const INPUT_NAMES = ['client-browser-cross-user.mjs', 'client-browser-goby-fixture.mjs', 'client-browser-session-proof.mjs'];
 const ID = /^[0-9a-f]{32}$/;
@@ -49,16 +50,16 @@ function remoteEnvironment() {
 export function parseCrossUserArguments(argv) {
   const names = ['candidate-sha256', 'source', 'source-manifest-sha256', 'music-scan-receipt-sha256',
     'music-upgrade-chain', 'music-upgrade-chain-sha256', 'output'];
-  requireThat(Array.isArray(argv) && [names.length * 2, (names.length + 1) * 2].includes(argv.length));
+  requireThat(Array.isArray(argv) && [names.length * 2, (names.length + 1) * 2, (names.length + 2) * 2].includes(argv.length));
   const result = {};
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index]?.slice(2), value = argv[index + 1];
-    requireThat(argv[index]?.startsWith('--') && [...names, 'mode'].includes(name) && !Object.hasOwn(result, name) && typeof value === 'string');
+    requireThat(argv[index]?.startsWith('--') && [...names, 'mode', 'preparation-scope'].includes(name) && !Object.hasOwn(result, name) && typeof value === 'string');
     result[name] = value;
   }
   requireThat(names.every(name => Object.hasOwn(result, name)));
   result.mode ??= 'acceptance';
-  requireThat(['acceptance', 'acceptance-preparation', 'prelogin'].includes(result.mode));
+  requireProxyExecutionMode(result.mode, result['preparation-scope']);
   for (const name of names.filter(name => name.endsWith('sha256'))) requireThat(SHA.test(result[name]));
   requireThat(new RegExp(`^${ROOT}/source-attempt-[1-9][0-9]*$`).test(result.source) &&
     new RegExp(`^${ROOT}/client-music-upgrade-chain-[A-Za-z0-9_-]{1,64}\\.json$`).test(result['music-upgrade-chain']) &&
@@ -66,9 +67,10 @@ export function parseCrossUserArguments(argv) {
   return result;
 }
 
-/** Both modes retain the fixed-target transport and their distinct acceptance requirements. */
-export function requireProxyExecutionMode(mode) {
+/** Preparation requires this run's explicit authority before any external effects. */
+export function requireProxyExecutionMode(mode, preparationScope = undefined) {
   requireThat(['prelogin', 'acceptance', 'acceptance-preparation'].includes(mode));
+  requireThat(mode === 'acceptance-preparation' ? preparationScope === PREPARATION_SCOPE : preparationScope === undefined);
 }
 
 export function bindCrossUserCredentials(stateFile, aFile, bFile, fixture) {
@@ -167,6 +169,112 @@ export function safeBrowserFailure(error, phase) {
     'ui_home_click', 'ui_home_confirmation', 'ui_logout'];
   return { phase: phases.includes(phase) ? phase : 'unknown',
     ...describe(error), causes, causes_truncated: Array.isArray(error?.errors) && error.errors.length > 2 };
+}
+
+const DIAGNOSTIC_INPUT_LIMIT = 8192;
+const DIAGNOSTIC_OUTPUT_LIMIT = 512;
+const DIAGNOSTIC_ENTRY_LIMIT = 16;
+
+function normalizeDiagnosticEncoding(value) {
+  const character = number => Number.isSafeInteger(number) && number >= 0 && number <= 0x10ffff
+    ? String.fromCodePoint(number) : ' ';
+  for (let pass = 0; pass < 4; pass += 1) {
+    const before = value;
+    value = value.replace(/\\u\{([0-9a-f]{1,6})\}|\\u([0-9a-f]{4})|\\x([0-9a-f]{2})/gi,
+      (_match, point, unicode, byte) => character(parseInt(point ?? unicode ?? byte, 16)))
+      .replace(/%u([0-9a-f]{4})/gi, (_match, unicode) => character(parseInt(unicode, 16)))
+      .replace(/%([0-9a-f]{2})/gi, (_match, byte) => character(parseInt(byte, 16)))
+      .replace(/&#(?:x([0-9a-f]{1,6})|([0-9]{1,7}));?/gi,
+        (_match, hex, decimal) => character(parseInt(hex ?? decimal, hex ? 16 : 10)))
+      .replace(/&(amp|quot|apos|colon|sol|bsol|quest|equals|num);/gi,
+        (_match, name) => ({ amp: '&', quot: '"', apos: "'", colon: ':', sol: '/', bsol: '\\',
+          quest: '?', equals: '=', num: '#' })[name.toLowerCase()])
+      .replace(/\\\//g, '/');
+    if (value === before) break;
+  }
+  return value;
+}
+
+function diagnosticSecretVariants(secrets) {
+  requireThat(Array.isArray(secrets) && secrets.length <= 128);
+  const values = new Set();
+  for (const secret of secrets) {
+    if (secret === null || secret === undefined || secret === '') continue;
+    requireThat(typeof secret === 'string' && secret.length <= 4096);
+    const bytes = Buffer.from(secret, 'utf8');
+    for (const variant of [secret, normalizeDiagnosticEncoding(secret), JSON.stringify(secret).slice(1, -1),
+      bytes.toString('base64'), bytes.toString('base64').replace(/=+$/, ''), bytes.toString('base64url'), bytes.toString('hex'),
+      [...bytes].map(byte => '%' + byte.toString(16).padStart(2, '0')).join('')]) {
+      if (variant) values.add(variant);
+    }
+  }
+  return [...values].sort((left, right) => right.length - left.length);
+}
+
+function redactDiagnosticSecrets(value, variants) {
+  for (const variant of variants) value = value.replace(new RegExp(variant.replace(/[.*+?^$(){}|[\]\\]/g, '\\$&'), 'gi'), '[secret]');
+  return value;
+}
+
+/** Only bounded diagnostic text is retained; an oversized input is never partially copied. */
+export function sanitizeBrowserMessage(value, secrets = []) {
+  try {
+    if (typeof value !== 'string') return '[diagnostic unavailable]';
+    if (value.length > DIAGNOSTIC_INPUT_LIMIT) return '[diagnostic omitted: input limit]';
+    const variants = diagnosticSecretVariants(secrets);
+    let result = redactDiagnosticSecrets(value, variants);
+    result = redactDiagnosticSecrets(normalizeDiagnosticEncoding(result), variants);
+    result = result
+      .replace(/\b(?:https?|wss?|file|blob|data):\S*/gi, '[url]')
+      .replace(/\b[a-z][a-z0-9+.-]{1,15}:\/+\S*/gi, '[url]')
+      .replace(/(?:\/\/|\\\\)[^\s"'<>()[\]{}]+/g, '[path]')
+      .replace(/(^|[\s"'<>()[\]{}])[^\s"'<>()[\]{}]*[\/\\][^\s"'<>()[\]{}]+/g, '$1[path]')
+      .replace(/\b(?:localhost|(?:[0-9]{1,3}\.){3}[0-9]{1,3}|(?:[a-z0-9-]+\.)+[a-z]{2,63})(?::[0-9]+)?(?:[?#][^\s"'<>()[\]{}]*)?/gi, '[address]')
+      .replace(/[?#]\S*/g, '[query]')
+      .replace(/\b[A-Za-z_$][A-Za-z0-9_.$-]{0,63}\s*=\s*(?:"[^"]*"|'[^']*'|[^\s,;)\]}]+)/g, '[parameter]')
+      .replace(/\b(?:api[_-]?key|access[_-]?token|x[_-]emby[_-]token|authorization|password|token)\s*:\s*(?:"[^"]*"|'[^']*'|[^\s,;)\]}]+)/gi, '[credential]')
+      .replace(/(?:%[0-9a-f]{2})+|\\(?:u\{[0-9a-f]+\}|u[0-9a-f]{4}|x[0-9a-f]{2})/gi, '[encoded]')
+      .replace(/[A-Za-z0-9][A-Za-z0-9_+/.=-]{23,}/g, '[opaque]')
+      .replace(/[^\x20-\x7e]/g, ' ').replace(/\s+/g, ' ').trim();
+    result = redactDiagnosticSecrets(result, variants);
+    if (result.length <= DIAGNOSTIC_OUTPUT_LIMIT) return result;
+    const boundary = result.lastIndexOf(' ', DIAGNOSTIC_OUTPUT_LIMIT - 12);
+    return boundary < 0 ? '[diagnostic omitted: output limit]' : result.slice(0, boundary) + ' [truncated]';
+  } catch { return '[diagnostic unavailable]'; }
+}
+
+function sanitizeDiagnosticName(value, secrets) {
+  const name = sanitizeBrowserMessage(value, secrets);
+  return name.length <= 80 ? name : '[diagnostic omitted: name limit]';
+}
+
+/** Read only the ordinary error name and message; never inspect stacks, causes or browser objects. */
+export function browserEventDiagnostic(error, phase, secrets = []) {
+  let name = '', message = '', unavailable = false;
+  try { const value = error?.name; if (typeof value === 'string') name = value; else unavailable = true; }
+  catch { unavailable = true; }
+  try { const value = error?.message; if (typeof value === 'string') message = value; else unavailable = true; }
+  catch { unavailable = true; }
+  return { ...safeBrowserFailure({ name, message }, phase),
+    diagnostic_name: sanitizeDiagnosticName(name, secrets),
+    message: sanitizeBrowserMessage(message, secrets), diagnostic_unavailable: unavailable };
+}
+
+export function recordBrowserPageError(report, error, phase, elapsedMs, secrets = []) {
+  // The count must survive missing messages, throwing getters and the diagnostic entry limit.
+  report.page_error_count += 1;
+  if (report.page_errors.length < DIAGNOSTIC_ENTRY_LIMIT) report.page_errors.push({
+    ...browserEventDiagnostic(error, phase, secrets), elapsed_ms: elapsedMs });
+}
+
+/** Reapply the final secret union after logout; late token capture cannot expose an earlier message. */
+export function resanitizeBrowserDiagnostics(report, secrets) {
+  for (const actor of report.accounts ?? []) {
+    for (const entries of [actor.page_errors ?? [], actor.console_diagnostics ?? []]) for (const entry of entries) {
+      if (Object.hasOwn(entry, 'message')) entry.message = sanitizeBrowserMessage(entry.message, secrets);
+      if (Object.hasOwn(entry, 'diagnostic_name')) entry.diagnostic_name = sanitizeDiagnosticName(entry.diagnostic_name, secrets);
+    }
+  }
 }
 
 export function sanitizeBootstrapDOM(raw) {
@@ -1095,10 +1203,12 @@ function stateEvidence(value) {
 }
 
 export function crossUserResult(report) {
-  return acceptanceMode(report.mode) && report.failure === null && report.accounts?.length === 2 && report.accounts[0].id !== report.accounts[1].id &&
+  return acceptanceMode(report.mode) &&
+    (report.mode === 'acceptance-preparation' ? report.preparation_scope === PREPARATION_SCOPE : report.preparation_scope == null) &&
+    report.failure === null && report.accounts?.length === 2 && report.accounts[0].id !== report.accounts[1].id &&
     report.accounts.every((actor, index) => ID.test(actor.id) && SHA.test(actor.token_fingerprint) &&
       actor.login?.status === 200 && actor.login?.request_count === 1 && actor.principal_confirmed === true && actor.ui?.outcome === 'passed' &&
-      actor.ordinary_authority_confirmed === true &&
+      actor.ordinary_authority_confirmed === true && actor.page_error_count === 0 &&
       actor.own_item_reads === 8 && actor.foreign_read?.status === 403 && actor.foreign_read?.error_code === 'access_denied' &&
       actor.foreign_read.target_user_id === report.accounts[1 - index].id &&
       record(actor.comparison) && same(Object.keys(actor.comparison).sort(),
@@ -1152,9 +1262,10 @@ export function preloginDiagnosticsComplete(report) {
 }
 
 class BrowserActor {
-  constructor(account, pin, report, mode = 'acceptance') {
-    requireProxyExecutionMode(mode); this.mode = mode;
+  constructor(account, pin, report, mode = 'acceptance', preparationScope = undefined) {
+    requireProxyExecutionMode(mode, preparationScope); this.mode = mode; this.preparationScope = preparationScope;
     this.account = account; this.pin = pin; this.report = report; this.token = null; this.proven = false;
+    this.diagnosticSecrets = () => [this.account.password, this.token]; this.rememberSecret = () => {};
     this.pending = new Set(); this.entries = new WeakMap(); this.sockets = new Set(); this.closed = false;
     this.loginIntent = false; this.logoutIntent = false; this.ownershipLost = false; this.phase = 'not_started';
     this.started = Date.now(); this.preloginOnly = mode === 'prelogin';
@@ -1222,7 +1333,7 @@ class BrowserActor {
     this.report.network[key] += 1;
   }
   preparationAllowed() {
-    return this.mode === 'acceptance-preparation' && this.phase === 'ui_movie' && this.proven &&
+    return this.mode === 'acceptance-preparation' && this.preparationScope === PREPARATION_SCOPE && this.phase === 'ui_movie' && this.proven &&
       this.report.ordinary_authority_confirmed === true && this.report.proxy_login_status === 200 && !this.logoutIntent &&
       this.movie?.id === PREPARATION_ITEM && this.preparationSource?.item_id === PREPARATION_ITEM && typeof this.token === 'string';
   }
@@ -1299,6 +1410,7 @@ class BrowserActor {
             !this.logoutIntent && !this.ownershipLost);
         },
         authorize: async token => {
+          this.rememberSecret(token);
           await bounded(this.loginCompleted, 5000);
           requireThat(this.loginIntent && this.report.proxy_login_status === 200 && this.report.proxy.login === 1 &&
             !this.logoutIntent && typeof this.authorizeSocket === 'function' && (this.token === null || this.token === token));
@@ -1354,6 +1466,7 @@ class BrowserActor {
         const authority = entry.owned_preparation ? authorityForURL(url, headers, this.token)
           : observedAuthority(request.url(), headers, this.account.id, boundItem ? this.token : undefined);
         if (!authority) return;
+        this.rememberSecret(authority.token);
         requireThat(this.token === null || this.token === authority.token);
         this.token = authority.token; this.report.token_fingerprint = authority.fingerprint;
         this.report.token_sources = authority.sources; entry.token_matches_session = true;
@@ -1429,15 +1542,19 @@ class BrowserActor {
     });
     this.phase = 'new_page';
     this.page = await this.context.newPage();
-    this.page.on('pageerror', error => {
-      this.report.page_error_count += 1;
-      if (this.report.page_errors.length < 32) this.report.page_errors.push({ ...safeBrowserFailure(error, this.phase), elapsed_ms: Date.now() - this.started });
-    });
+    this.page.on('pageerror', error => recordBrowserPageError(this.report, error, this.phase,
+      Date.now() - this.started, this.diagnosticSecrets()));
     this.page.on('console', message => {
-      if (!['error', 'warning'].includes(message.type())) return;
+      let type;
+      try { type = message.type(); } catch { this.report.network.observer_errors += 1; return; }
+      if (!['error', 'warning'].includes(type)) return;
       this.report.console_warning_error_count += 1;
-      if (this.report.console_diagnostics.length < 32) this.report.console_diagnostics.push({ type: message.type(),
-        ...safeBrowserFailure({ message: message.text() }, this.phase), elapsed_ms: Date.now() - this.started });
+      if (this.report.console_diagnostics.length >= DIAGNOSTIC_ENTRY_LIMIT) return;
+      let text;
+      try { text = message.text(); } catch { /* Keep a fixed unavailable diagnostic without inspecting other properties. */ }
+      this.report.console_diagnostics.push({ type,
+        ...browserEventDiagnostic({ name: 'Error', message: text }, this.phase, this.diagnosticSecrets()),
+        elapsed_ms: Date.now() - this.started });
     });
     this.phase = 'navigation';
     const navigation = await this.page.goto(`${ORIGIN}/web/index.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -1637,11 +1754,12 @@ class BrowserActor {
 export async function runCrossUserAcceptance(input) {
   remoteEnvironment();
   const options = parseCrossUserArguments(Object.entries(input).flatMap(([name, value]) => ['--' + name, value]));
-  requireProxyExecutionMode(options.mode);
+  requireProxyExecutionMode(options.mode, options['preparation-scope']);
   await privateDirectory(ROOT); process.umask(0o077);
   await fs.mkdir(options.output, { mode: 0o700 });
   const deadline = Date.now() + 240000;
   const report = { marker: 'goby-client-cross-user-m3e-v1', format: 5, mode: options.mode, client_acceptance: false,
+    preparation_scope: options['preparation-scope'] ?? null,
     diagnostic_only: options.mode === 'prelogin', result: 'in_progress', failure: null,
     started_at: new Date().toISOString(), accounts: [], api_reads: [],
     scope: { accounts: 'Existing AV viewer A and initial viewer B; two independent fresh browsers',
@@ -1655,6 +1773,9 @@ export async function runCrossUserAcceptance(input) {
       database_wide_preservation_claimed: false, library_policy_restriction_milestone: 'not_exercised',
       token_storage: 'Observed request authority and opaque relay buffers stay in memory; no storageState, HAR, trace, authentication-response decoding or token extraction from authentication responses' },
     limits: { work_ms: 240000, api_requests: 40, api_timeout_ms: 10000, api_response_bytes: LIMIT, browser_requests_per_user: 2000, proxy: PROXY_LIMITS, websocket: WS_LIMITS,
+      browser_diagnostics: { events_per_kind_per_actor: DIAGNOSTIC_ENTRY_LIMIT, input_characters: DIAGNOSTIC_INPUT_LIMIT,
+        output_characters: DIAGNOSTIC_OUTPUT_LIMIT, success_requires_page_error_count: 0,
+        privacy: 'Only error name and message; no stacks or browser internals; bounded messages are redacted at capture and again before writing' },
       cleanup: 'Cleanup has its own bounded UI, proof and browser-close waits after the work deadline' } };
   if (options.mode === 'prelogin') Object.assign(report.scope, {
     accounts: 'One fresh anonymous browser; the AV account identifier is an expected fixture binding only',
@@ -1664,17 +1785,22 @@ export async function runCrossUserAcceptance(input) {
   });
   if (options.mode === 'acceptance-preparation') Object.assign(report.scope, {
     state_mutations: 'One physical owned-Movie PlaybackInfo POST per actor is explicitly allowed during detail preparation; no Playing, media delivery, policy, metadata, preference or UserData value writes',
-    preparation: { item_id: PREPARATION_ITEM, physical_posts_per_actor: 1,
+    preparation: { id: PREPARATION_SCOPE, item_id: PREPARATION_ITEM, physical_posts_per_actor: 1,
       source_binding: 'Unique MediaSources entry from the existing authenticated before-snapshot Movie read',
       acknowledged_effects: ['Prepare or refresh a Prepared row under each new UI authentication session',
-        'Expire the specifically approved revoked and expired viewer-B Prepared row', 'Prune the specifically approved inactive viewer-A playback reference',
+        'Expire only the two input05 Prepared rows whose authentication sessions have been revoked; preserve the other 18 prior play rows exactly',
         'A negotiated HLS descriptor may be registered in memory without starting an encoder'],
+      existing_database_baseline: { play_sessions: 20, auth_sessions: 49, playback_references: 0, user_data: 5, encoding_jobs: 0 },
+      existing_rows: 'No old play or reference deletion; all 49 prior authentication rows, all five UserData rows and zero encoding jobs remain unchanged',
       existing_movie_userdata_rows: 'Confirmed present by the root-owned database ledger preflight',
-      database_proof: 'The root operator records the database ledger immediately before and after this run; no whole-database equality claim' },
+      database_proof: 'A fresh root-owned before ledger must match the input05 after ledger; use the source28-page-error-01 comparison authority, never the original 18-play/47-auth authority; no whole-database equality claim' },
   });
   let terminalReport = report;
   let phase = 'input_closure', fixture, accounts = [], pins = [], observedBefore = new Map(), items, reads = 0, trustLost = false;
   const sessions = [], secrets = [];
+  const rememberSecret = value => {
+    if (typeof value === 'string' && value.length > 0 && !secrets.includes(value)) secrets.push(value);
+  };
   const fail = value => { report.failure ??= value; };
   async function pin() {
     requireThat(!trustLost);
@@ -1752,25 +1878,29 @@ export async function runCrossUserAcceptance(input) {
         credentialsPath: A_CREDENTIALS, credentialsSHA: fixture.evidence.browser_alias_sha256 }];
     } else {
       const aFile = await readOwnedFile(A_CREDENTIALS), bFile = await readOwnedFile(B_CREDENTIALS);
+      for (const credentials of [aFile.value, bFile.value]) {
+        rememberSecret(credentials?.admin?.password); rememberSecret(credentials?.viewer?.password);
+      }
       accounts = bindCrossUserCredentials(stateFile, aFile, bFile, fixture);
       pins.push([B_CREDENTIALS, bFile.sha256, [0o600], true]);
       report.initial_viewer_credentials_sha256 = bFile.sha256;
     }
     report.fixture = fixture.evidence;
-    secrets.push(...accounts.map(actor => actor.password));
+    for (const account of accounts) rememberSecret(account.password);
     await writePrivate(path.join(options.output, 'intent.json'), JSON.stringify({ marker: report.marker, mode: options.mode, candidate_sha256: options['candidate-sha256'],
       source: options.source, source_manifest_sha256: options['source-manifest-sha256'], fixture_state_sha256: stateFile.sha256,
       account_ids: acceptanceMode(options.mode) ? accounts.map(actor => actor.id) : [], input_closure: report.input_closure,
-      preparation_scope: options.mode === 'acceptance-preparation' ? report.scope.preparation : null,
+      preparation_scope: report.preparation_scope, preparation: options.mode === 'acceptance-preparation' ? report.scope.preparation : null,
       retry_policy: 'Never reuse this output' }, null, 2) + '\n');
     for (const account of accounts) {
       const actorReport = {}; report.accounts.push(actorReport);
-      const session = new BrowserActor(account, pin, actorReport, options.mode); sessions.push(session);
+      const session = new BrowserActor(account, pin, actorReport, options.mode, options['preparation-scope']); sessions.push(session);
+      session.diagnosticSecrets = () => secrets; session.rememberSecret = rememberSecret;
       session.authorizeSocket = () => ordinaryPrincipal(session);
       phase = options.mode === 'prelogin' ? 'prelogin_diagnostic' : `login_${account.slot}`;
       requireThat(Date.now() < deadline); await session.open({ preloginOnly: options.mode === 'prelogin' });
       if (options.mode === 'prelogin') break;
-      secrets.push(session.token);
+      rememberSecret(session.token);
       await ordinaryPrincipal(session);
       if (!items) {
         const catalog = await read(session, `/emby/Users/${account.id}/Items`, 'owned_movie_discovery',
@@ -1815,7 +1945,7 @@ export async function runCrossUserAcceptance(input) {
     }
   } catch { fail(phase); }
   finally {
-    secrets.push(...sessions.map(session => session.token).filter(value => typeof value === 'string' && value.length > 0));
+    for (const session of sessions) rememberSecret(session.token);
     for (const session of sessions) {
       if (session.proven && observedBefore.has(session.account.slot) && !session.ownershipLost) {
         try {
@@ -1830,6 +1960,7 @@ export async function runCrossUserAcceptance(input) {
       catch { fail(`cleanup_${session.account.slot}`); session.report.closed = false; }
     }
     if (fixture) try { await pin(); } catch { fail('final_fixture_pin'); }
+    resanitizeBrowserDiagnostics(report, secrets);
     report.finished_at = new Date().toISOString();
     const observedRequests = report.accounts.flatMap(actor => actor.requests ?? []);
     report.client_interventions = {
@@ -1842,11 +1973,18 @@ export async function runCrossUserAcceptance(input) {
       : crossUserResult(report) ? 'passed' : 'failed';
     report.client_acceptance = report.result === 'passed';
     if (report.result === 'failed') report.failure ??= options.mode === 'prelogin' ? 'prelogin_diagnostic_incomplete'
-      : report.client_interventions.playback_preparations_blocked > 0 ? 'needs_preparation_scope'
+      : report.accounts.some(actor => actor.page_error_count !== 0) ? 'page_errors_observed'
+        : report.client_interventions.playback_preparations_blocked > 0 ? 'needs_preparation_scope'
         : options.mode === 'acceptance-preparation' && report.accounts.some(actor => !actor.preparation?.completed) ? 'preparation_incomplete' : 'acceptance_incomplete';
     let encoded = JSON.stringify(report, null, 2) + '\n';
-    if (secrets.some(secret => typeof secret === 'string' && secret.length > 0 && encoded.includes(secret))) {
-      terminalReport = { marker: report.marker, mode: options.mode, client_acceptance: false, result: 'failed', failure: 'report_secret_guard',
+    let secretPresent = true;
+    try {
+      const lower = encoded.toLowerCase();
+      secretPresent = diagnosticSecretVariants(secrets).some(secret => lower.includes(secret.toLowerCase()));
+    } catch { /* Invalid secret bounds must never permit a diagnostic report to escape. */ }
+    if (secretPresent) {
+      terminalReport = { marker: report.marker, mode: options.mode, preparation_scope: report.preparation_scope,
+        client_acceptance: false, result: 'failed', failure: 'report_secret_guard',
         closed: sessions.every(session => session.report.closed === true) };
       encoded = JSON.stringify(terminalReport) + '\n';
     }

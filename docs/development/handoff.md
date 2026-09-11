@@ -67,8 +67,13 @@ own/foreign checks, four state projections and both UI logout204/exact-token401
 proofs after 100 pure guards. Its private database comparison also passed.
 However, each client recorded one unclassified `ui_movie` page error. The driver
 did not reject page errors, so its passed result does not close full client
-acceptance. Input06 is adding a strict page-error gate and sanitized normal-event
-diagnostics. Library restriction has not executed; diagnose these errors first.
+acceptance. [Input06](m3e-source28-special-features-blocker.json) passed 107
+guards, then correctly failed its strict page-error gate. Both exact request
+hashes identify `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures` returning
+404 alongside the `Response` errors. Its separate database comparison passed.
+The next work is the [positive reference capture](m3e-special-features-reference-plan.md)
+and [persistent SpecialFeatures implementation](special-features-implementation-plan.md).
+Library restriction has not executed.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
 read-only retention rejection, and its later stopped-service baseline failure
 are separate evidence. One real PostgreSQL17 read-only ACL regression passed.
@@ -626,8 +631,8 @@ authentication rows, both now revoked after UI logout. All 47 old authentication
 rows and all five UserData rows were unchanged; encoding remained zero. These
 are the explicitly bounded preparation effects, not whole-database equality.
 
-The next isolated-candidate starting point is 20 play rows, 49 authentication
-rows and zero client-playback references. Input06 must explicitly select
+The input06 starting point was 20 play rows, 49 authentication
+rows and zero client-playback references. Input06 explicitly selected
 `--preparation-scope source28-page-error-01`. Its only permitted old cleanup is
 the two input05 Prepared rows, whose authentication is revoked, becoming
 Expired. No old reference may be deleted; the other 18 old play rows, all 49
@@ -637,16 +642,37 @@ The immediately preceding fresh snapshot must match the private input05 after
 image row by row, whose SHA-256 is
 `4aff79e9798fcab89652a5bdc3b83b408cdc67a1a52b8d086a6ff99c8e3f6a63`.
 Neither that old image nor the original 18-play/47-auth comparator is itself
-fresh authority; the new scope comparator is being implemented.
+fresh authority. The new comparator was separately frozen and verified.
 
-Input06 adds the strict `page_error_count === 0` gate and bounded, sanitized
+Input06 added the strict `page_error_count === 0` gate and bounded, sanitized
 message diagnostics from normal browser events. The observed reproduction
 contrast is input04's blocked PlaybackInfo with zero page errors versus
 input05's real PlaybackInfo200 with one error per client; it does not establish
 the error's mechanism. Keep normal preparation in the explicitly bound
 diagnostic scope. The original input05 comparator remains frozen and must not
-be reused for this new baseline. No input06 run or error-free acceptance is
-claimed, and library restriction remains planned and unexecuted.
+be reused for that new baseline.
+
+The actual input06 report is `client-cross-user-source28-04/report.json`,
+SHA-256 `0de99523578ae67df05c424940e12b1d42b3a2d457196e77c8d55081bf88ee70`.
+It correctly remains failed with `page_errors_observed`; both users completed
+navigation, preparation200 and exact UI logout204/session401. The missing
+SpecialFeatures user-item GET returned404 for each actor, with a complete
+104-byte proxy response and a matching `Response` page error. These exact
+paths were identified by matching their SHA-256 against the recorded request
+hashes, without inspecting client implementation code.
+
+The input06 before/after records in `prepare-scope-observation-source28-02`
+have SHA-256 `ab0333aa939c3193aa6348a845badcb0805e162674568bebff4806818f17a01a`
+and `0c005aeb0a2ea4a0b8362650a7e62102f1b938828be7c0cbe735ea92d3cf279c`.
+Comparator02, SHA-256 `ae6cce79aabb157e790fea6fe47d06c82b9e0fd0b7b684c2ea0a85cf94d32e68`,
+passed with output SHA-256
+`381f921c92314807f96cc82e857ec18e703d5133e1a18738f8b56ed3cf851641`.
+All 20 old play rows remain, with only the two approved Prepared rows becoming
+Expired. All 49 old auth rows and five UserData rows remain exact. There are
+two new Prepared rows and two new, now-revoked auth rows; references and
+encoding jobs remain zero. The candidate now has 22 plays and 51 auth rows.
+This result does not authorize replaying either earlier preparation scope.
+No error-free acceptance is claimed, and library restriction remains planned.
 The harness uses existing AV viewer A and initial
 viewer B. It is designed to prove own-user reads and cross-user denial, compare four media
 UserData projections and preferences after UI login and before logout, and

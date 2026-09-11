@@ -2,6 +2,14 @@
 
 The goal remains the complete planned Linux backend and administrator dashboard. A completed engineering increment does not establish full Emby compatibility.
 
+The latest [input06 diagnostic](m3e-source28-special-features-blocker.json)
+passed 107 guards and its bounded database comparison, but failed the strict
+page-error gate. The two Movie detail errors now correlate with exact
+SpecialFeatures user-item GET404 requests. Positive extras reference capture
+and persistent SpecialFeatures support are the next work; the earlier empty
+reference response does not prove the nonempty feature. Library restriction
+and full M3 acceptance remain open.
+
 The M5j round is complete: native backup/recovery, deployment and the
 [handoff](handoff.md) are recorded at `4a840fb`. Development resumed on 2026-09-11
 at the user's request. [M3e real-client acceptance](client-acceptance-m3e.md) is

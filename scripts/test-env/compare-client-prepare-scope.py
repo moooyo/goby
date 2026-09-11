@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare private candidate preparation observations with one pinned UI report.
 
-This offline comparator only reads three explicitly pinned files. It does not
+This offline comparator only reads explicitly pinned observation files. It does not
 connect to PostgreSQL, send HTTP, modify observations, or turn a database-scope
 result into UI acceptance. Exact numeric JSON is retained during comparisons.
 """
@@ -27,6 +27,14 @@ SOURCE = 'mediasource_' + MOVIE
 EXPIRED_PLAY_SHA = 'cd995d310e36a7df473db87ace16eca87d261cf1df63e0f6f124f3fd1d63966a'
 REVOKED_REFERENCE_SHA = '9709926f1bfcdbe5a6f96c201f8dee12bf246e80203b5644ca38b9547093346c'
 REFERENCE_PLAY_SHA = 'b94d23d26eb858fd9b1d945fd3d734efa4bae384af11039cadd886aa92cdc0c9'
+PAGE_ERROR_SCOPE = 'source28-page-error-01'
+PAGE_ERROR_BASELINE_SHA = '4aff79e9798fcab89652a5bdc3b83b408cdc67a1a52b8d086a6ff99c8e3f6a63'
+PAGE_ERROR_EXPIRED_SHAS = {
+    'be39a4afd1ce9e19c6d7ff1cf0666031839dd4d9f082733947a463d9e163d134',
+    'c0ec1dbf6701d6a42c06f5843353d875e07f75613ca0f92a4d6905fc5818ed09',
+}
+REFERENCE_FIELDS = {'user_id', 'auth_session_id', 'device_id', 'client_nonce', 'play_session_id',
+                    'created_at', 'application_client_id'}
 HASH = re.compile(r'[0-9a-f]{64}')
 EXPECTED_IDENTITY = {'database': 'goby_client_m3e', 'port': 15432, 'readonly': 'on', 'postgresql': 170011,
                      'schema': 26, 'system_identifier': '7684040109719526738'}
@@ -163,18 +171,31 @@ def observe_shape(value, phase):
     return tables
 
 
-def compare(before, after, report):
+def compare(before, after, report, scope='original', baseline_after=None):
+    require(scope in ('original', PAGE_ERROR_SCOPE), 'unsupported_preparation_scope')
+    page_error_scope = scope == PAGE_ERROR_SCOPE
     old, new = observe_shape(before, 'before'), observe_shape(after, 'after')
     lower, upper = instant(before['observed_at']), instant(after['observed_at'])
     require(lower <= upper and same(before['actors'], after['actors']) and same(before['movie'], after['movie']),
             'actor_movie_or_window_changed')
-    require(before['counts'] == {'play_sessions': 18, 'client_playback_references': 1,
-            'user_item_data': 5, 'sessions': 47, 'encoding_jobs': 0}, 'unreviewed_before_population')
+    expected_counts = {'play_sessions': 20 if page_error_scope else 18,
+                       'client_playback_references': 0 if page_error_scope else 1,
+                       'user_item_data': 5, 'sessions': 49 if page_error_scope else 47, 'encoding_jobs': 0}
+    require(before['counts'] == expected_counts, 'unreviewed_before_population')
+    if page_error_scope:
+        require(isinstance(baseline_after, dict), 'reviewed_baseline_after_required')
+        observe_shape(baseline_after, 'after')
+        require(instant(baseline_after['observed_at']) <= lower and
+                same(without(before, {'phase', 'observed_at'}), without(baseline_after, {'phase', 'observed_at'})),
+                'reviewed_baseline_after_rows_changed')
+    else:
+        require(baseline_after is None, 'unexpected_baseline_after')
     require(report.get('marker') == 'goby-client-cross-user-m3e-v1' and report.get('format') == 5 and
             report.get('mode') == 'acceptance-preparation' and report.get('result') in ('passed', 'failed') and
             type(report.get('client_acceptance')) is bool and
             lower <= instant(report['started_at']) <= instant(report['finished_at']) <= upper,
             'ui_report_identity_or_window_mismatch')
+    require(report.get('preparation_scope') == (PAGE_ERROR_SCOPE if page_error_scope else None), 'ui_preparation_scope_mismatch')
     movie_rows = [row for row in report.get('owned_items', []) if row.get('key') == 'movie']
     require(len(movie_rows) == 1 and movie_rows[0].get('id') == MOVIE and movie_rows[0].get('type') == 'Movie', 'ui_movie_mismatch')
     accounts = keyed(report.get('accounts'), ('slot',))
@@ -227,22 +248,31 @@ def compare(before, after, report):
         else:
             require(actor.get('proxy', {}).get('preparation', 0) == 0, 'unacknowledged_preparation')
     require(len({row['token_fingerprint_sha256'] for row in auth_by_actor.values()}) == 2, 'shared_ui_authentication')
+    if page_error_scope:
+        require(len(accepted_plays) == 2, 'page_error_scope_requires_two_preparations')
     changed_old = []
-    approved = [row for row in old['play_sessions'].values() if id_digest(row['id']) == EXPIRED_PLAY_SHA]
-    require(len(approved) == 1 and approved[0]['user_id'] == ACTORS['B'] and approved[0]['state'] == 'Prepared' and
-            instant(approved[0]['expires_at']) <= lower and old['sessions'][(approved[0]['auth_session_id'],)]['revoked_at'] is not None,
+    expired_shas = PAGE_ERROR_EXPIRED_SHAS if page_error_scope else {EXPIRED_PLAY_SHA}
+    approved = [row for row in old['play_sessions'].values() if id_digest(row['id']) in expired_shas]
+    expected_owners = set(ACTORS.values()) if page_error_scope else {ACTORS['B']}
+    require(len(approved) == len(expired_shas) and {id_digest(row['id']) for row in approved} == expired_shas and
+            {row['user_id'] for row in approved} == expected_owners and
+            all(row['state'] == 'Prepared' and row['item_id'] == MOVIE and row['media_source_id'] == SOURCE and
+                (page_error_scope or instant(row['expires_at']) <= lower) and
+                old['sessions'][(row['auth_session_id'],)]['user_id'] == row['user_id'] and
+                old['sessions'][(row['auth_session_id'],)]['revoked_at'] is not None and
+                instant(old['sessions'][(row['auth_session_id'],)]['revoked_at']) <= lower for row in approved),
             'reviewed_expired_play_missing')
     for key, row in old['play_sessions'].items():
         require(key in new['play_sessions'], 'old_play_deleted')
         current = new['play_sessions'][key]
         if same(row, current):
             continue
-        require(id_digest(row['id']) == EXPIRED_PLAY_SHA and set(row) == set(current) and current['state'] == 'Expired' and
+        require(id_digest(row['id']) in expired_shas and set(row) == set(current) and current['state'] == 'Expired' and
                 same(without(row, {'state', 'stopped_at', 'updated_at'}), without(current, {'state', 'stopped_at', 'updated_at'})) and
                 in_window(current['updated_at'], max(lower, instant(row['updated_at'])), upper) and
                 (current['stopped_at'] == row['stopped_at'] if row['stopped_at'] is not None else in_window(current['stopped_at'], lower, upper)),
                 'unapproved_old_play_change')
-        changed_old.append(EXPIRED_PLAY_SHA)
+        changed_old.append(id_digest(row['id']))
     added = [row for key, row in new['play_sessions'].items() if key not in old['play_sessions']]
     require(len(added) == len(accepted_plays) and len({row['user_id'] for row in added}) == len(added), 'unexpected_new_play_count')
     play_keys = set(next(iter(old['play_sessions'].values())))
@@ -274,14 +304,16 @@ def compare(before, after, report):
     require(len(fresh_refs) <= len(added) and len({row['play_session_id'] for row in fresh_refs}) == len(fresh_refs), 'unexpected_new_reference_count')
     for row in fresh_refs:
         auth = auth_by_actor[row['user_id']]
-        require(set(row) == set(next(iter(old['client_playback_references'].values()))) and
+        require(set(row) == REFERENCE_FIELDS and
                 row['auth_session_id'] == auth['id'] and row['device_id'] == auth['device_id'] and
                 row['application_client_id'] is None and row['play_session_id'] == accepted_plays.get(row['user_id']) and
                 in_window(row['created_at'], instant(auth['created_at']), instant(auth['revoked_at'])), 'new_reference_scope_mismatch')
-    return {'old_play_rows_retained': 18, 'old_play_rows_unchanged': 18 - len(changed_old), 'expired_old_play_count': len(changed_old),
+    return {'old_play_rows_retained': expected_counts['play_sessions'],
+            'old_play_rows_unchanged': expected_counts['play_sessions'] - len(changed_old), 'expired_old_play_count': len(changed_old),
+            'expired_old_play_id_hashes': sorted(changed_old),
             'removed_revoked_reference_count': removed_refs, 'new_play_count': len(added), 'new_auth_count': 2,
             'new_reference_count': len(fresh_refs), 'userdata_rows_unchanged': 5, 'encoding_rows_unchanged': 0,
-            'old_auth_rows_unchanged': 47, 'new_play_id_hashes': sorted(id_digest(row['id']) for row in added),
+            'old_auth_rows_unchanged': expected_counts['sessions'], 'new_play_id_hashes': sorted(id_digest(row['id']) for row in added),
             'new_auth_id_hashes': sorted(id_digest(row['id']) for row in fresh_auth.values())}
 
 
@@ -290,8 +322,12 @@ def main():
     for name in ('before', 'after', 'report'):
         parser.add_argument('--' + name, type=Path, required=True)
         parser.add_argument('--' + name + '-sha256', required=True)
+    parser.add_argument('--preparation-scope', choices=('original', PAGE_ERROR_SCOPE), default='original')
+    parser.add_argument('--baseline-after', type=Path)
+    parser.add_argument('--baseline-after-sha256')
     args = parser.parse_args()
     summary = {'marker': 'goby-client-prepare-scope-comparison-v1', 'database_scope_result': 'failed',
+               'preparation_scope': args.preparation_scope,
                'database_wide_preservation_claimed': False, 'ui_result_promoted': False, 'reason_codes': [],
                'input_sha256': {name: getattr(args, name + '_sha256') if HASH.fullmatch(getattr(args, name + '_sha256')) else None
                                 for name in ('before', 'after', 'report')}}
@@ -303,6 +339,15 @@ def main():
         before = read_pinned(args.before, args.before_sha256)
         after = read_pinned(args.after, args.after_sha256)
         report = read_pinned(args.report, args.report_sha256)
+        baseline_after = None
+        if args.preparation_scope == PAGE_ERROR_SCOPE:
+            require(args.baseline_after is not None and args.baseline_after.name == 'after.json' and
+                    args.baseline_after not in (args.before, args.after) and args.baseline_after_sha256 == PAGE_ERROR_BASELINE_SHA,
+                    'reviewed_baseline_after_pin_required')
+            baseline_after = read_pinned(args.baseline_after, PAGE_ERROR_BASELINE_SHA)
+            summary['input_sha256']['baseline_after'] = PAGE_ERROR_BASELINE_SHA
+        else:
+            require(args.baseline_after is None and args.baseline_after_sha256 is None, 'unexpected_baseline_after')
         require(report.get('marker') == 'goby-client-cross-user-m3e-v1' and report.get('result') in ('passed', 'failed') and
                 type(report.get('client_acceptance')) is bool, 'invalid_ui_report_header')
         failure = report.get('failure')
@@ -310,7 +355,7 @@ def main():
                        ui_failure_sha256=digest(exact(failure).encode()))
         if failure is None or isinstance(failure, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,160}', failure):
             summary['ui_report_failure'] = failure
-        summary['counts_and_hashes'] = compare(before, after, report)
+        summary['counts_and_hashes'] = compare(before, after, report, args.preparation_scope, baseline_after)
         summary['database_scope_result'] = 'passed'
     except ScopeError as error:
         summary['reason_codes'] = [str(error)]
