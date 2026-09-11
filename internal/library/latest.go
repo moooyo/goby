@@ -29,7 +29,7 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-	parentLibraryID, err := readQueryParent(ctx, tx, query.ParentID, access)
+	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +97,13 @@ func latestGroupedSQL(prefix, filter string) string {
 			ARRAY[source.id, parent.id] AS visited
 		FROM source_items source
 		JOIN items parent ON parent.id = source.parent_id AND parent.library_id = source.library_id
-		WHERE source.type IN ('Episode', 'Audio') AND parent.id <> source.id
+		WHERE source.type IN ('Episode', 'Audio') AND parent.id <> source.id AND ` + ordinaryItemSQL("parent") + `
 		UNION ALL
 		SELECT ancestor.source_id, ancestor.library_id, parent.id, parent.parent_id, parent.type,
 			ancestor.target_type, ancestor.visited || parent.id
 		FROM ancestors ancestor
 		JOIN items parent ON parent.id = ancestor.parent_id AND parent.library_id = ancestor.library_id
-		WHERE ancestor.type <> ancestor.target_type AND NOT parent.id = ANY(ancestor.visited)
+		WHERE ancestor.type <> ancestor.target_type AND NOT parent.id = ANY(ancestor.visited) AND ` + ordinaryItemSQL("parent") + `
 	), latest_groups AS (
 		SELECT COALESCE(ancestor.id, source.id) AS group_id, source.library_id,
 			count(*) AS child_count, max(source.created_at) AS newest_created_at
@@ -114,6 +114,6 @@ func latestGroupedSQL(prefix, filter string) string {
 	SELECT ` + itemColumns + `, latest.child_count
 	FROM latest_groups latest
 	JOIN items i ON i.id = latest.group_id AND i.library_id = latest.library_id
-	WHERE ($1::boolean OR i.library_id = ANY($2::text[]))
+	WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND ` + ordinaryItemSQL("i") + `
 	ORDER BY latest.newest_created_at DESC, i.id ASC`
 }

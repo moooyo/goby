@@ -120,6 +120,7 @@ func musicArtistsLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 	return snapshot
 }
 
+// This historical contract ends at schema 25, before later theme storage.
 func TestMigrateMusicArtistsPreservesSchema24RowsAndUnboundedLegacyCredits(t *testing.T) {
 	ctx, pool := migrationTestPool(t)
 	musicArtistsVersion24Baseline(t, ctx, pool)
@@ -133,7 +134,7 @@ func TestMigrateMusicArtistsPreservesSchema24RowsAndUnboundedLegacyCredits(t *te
 	}
 	var firstHistory string
 	for attempt := 1; attempt <= 2; attempt++ {
-		if err := database.Migrate(ctx, pool); err != nil {
+		if err := migratePublishedSchema25TestPrefix(ctx, pool); err != nil {
 			t.Fatalf("music migration attempt %d with long historical credit: %v", attempt, err)
 		}
 		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
@@ -185,8 +186,8 @@ func TestMusicArtistSynchronizationPreservesLegacyCreditsAndStableRoleIdentities
 	musicArtistsVersion24Baseline(t, ctx, pool)
 	legacyMetadata := seedMusicArtistsLegacyMetadata(t, ctx, pool)
 	legacyBefore := musicArtistsLegacyEntityState(t, ctx, pool)
-	if err := database.Migrate(ctx, pool); err != nil {
-		t.Fatalf("migrate catalog synchronization fixture: %v", err)
+	if err := migratePublishedSchema25TestPrefix(ctx, pool); err != nil {
+		t.Fatalf("migrate catalog synchronization fixture through schema 25: %v", err)
 	}
 	if _, err := pool.Exec(ctx, "SELECT sync_catalog_item_entities('device-migration-item',$1::jsonb)", legacyMetadata); err != nil {
 		t.Fatalf("synchronize all historical kinds with schema 25: %v", err)

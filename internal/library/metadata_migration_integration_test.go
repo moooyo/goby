@@ -178,8 +178,17 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		// while supplying their known group-zero semantics without reading the
 		// column introduced by migration 25.
 		columns = strings.ReplaceAll(columns, "association.credit_group", "0")
+		// The historical catalog predates permanent theme classification. Supply
+		// its original ordinary-child and ordinary-ancestor semantics without
+		// querying the tables introduced by migration 26.
+		for _, alias := range []string{"child", "parent"} {
+			columns = strings.ReplaceAll(columns, ordinaryItemSQL(alias), "true")
+		}
 		if strings.Contains(columns, "item_metadata_state") {
 			t.Fatal("legacy projection still depends on the new metadata table")
+		}
+		if strings.Contains(columns, "theme_reserved_paths") || strings.Contains(columns, "item_theme_resources") {
+			t.Fatal("legacy projection still depends on theme classification tables")
 		}
 	}
 	item, err := scanItem(pool.QueryRow(ctx, "SELECT "+columns+" FROM items i WHERE id = $1", itemID))
@@ -288,8 +297,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
-		t.Fatalf("metadata migration version = %d, want 25, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
+		t.Fatalf("metadata migration version = %d, want 26, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -360,8 +369,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	}
 	sort.Strings(additions)
 	taskTables := []string{"task_definitions", "task_occurrences", "task_run_children", "task_run_requests", "task_runs", "task_triggers"}
-	expectedAdditions := append([]string{"activity_entries", "application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state", "managed_settings"}, taskTables...)
-	expectedAdditions = append(expectedAdditions, "user_settings")
+	expectedAdditions := append([]string{"activity_entries", "application_key_clients", "application_key_devices", "application_keys", "devices", "item_metadata_state", "item_theme_resources", "managed_settings"}, taskTables...)
+	expectedAdditions = append(expectedAdditions, "theme_owner_ids", "theme_reserved_paths", "user_settings")
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
 	}

@@ -39,6 +39,8 @@ type scanState struct {
 	imageDirectories    map[string]*imageDirectoryIndex
 	subtitleDirectories map[string]*subtitleDirectoryIndex
 	musicParents        map[string]bool
+	themes              *themeScan
+	themeLibrary        *themeLibraryScan
 }
 
 type storedFile struct {
@@ -75,6 +77,8 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		return "Library directories could not be read", err
 	}
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
+	themeOwners := &themeLibraryScan{roots: make(map[string]*scanState), expected: roots,
+		claimed: make(map[string]string), issues: make(map[string]int)}
 	musicParents := make(map[string]bool)
 	completeRoots := make(map[string]bool)
 	for _, root := range roots {
@@ -86,9 +90,19 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			failedRoots++
 			continue
 		}
-		state := &scanState{store: s, task: task, library: library, root: root, opened: opened}
-		err = state.walk(".", hierarchy{parentID: library.ID}, 0)
+		state := &scanState{store: s, task: task, library: library, root: root, opened: opened, themeLibrary: themeOwners}
+		err = state.startThemeScan()
+		if err == nil {
+			err = state.walk(".", hierarchy{parentID: library.ID}, 0)
+		}
+		if err == nil && state.themes != nil {
+			state.themes.walkComplete = true
+		}
+		if err == nil && state.warnings == 0 {
+			err = state.finishThemeScan()
+		}
 		_ = opened.Close()
+		state.opened = nil
 		for parentID := range state.musicParents {
 			musicParents[parentID] = true
 		}
@@ -102,6 +116,16 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			failedRoots++
 		}
 	}
+	themeWarnings, err := s.finishCollectionThemes(task, library, themeOwners, completeRoots)
+	if err != nil {
+		return "Theme owner resources could not be published", err
+	}
+	warnings += themeWarnings
+	for _, state := range themeOwners.roots {
+		for parentID := range state.musicParents {
+			musicParents[parentID] = true
+		}
+	}
 	if _, musicEnabled := s.prober.(interface{ MusicMetadataVersion() int }); musicEnabled {
 		musicWarnings, err := s.refreshScannedMusicAlbums(task.ctx, library.ID, musicParents, completeRoots)
 		if err != nil {
@@ -113,6 +137,7 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 	if numberingConflicts > 0 {
 		numberingMessage = fmt.Sprintf("; %d local metadata numbering conflicts were ignored to preserve the existing hierarchy", numberingConflicts)
 	}
+	numberingMessage += themeWarningMessage(themeOwners)
 	if failedRoots > 0 {
 		return fmt.Sprintf("%d media directories could not be scanned; existing catalog records were retained", failedRoots) + numberingMessage, ErrUnavailable
 	}
@@ -126,7 +151,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
-	if depth > 128 {
+	if depth > MaxThemeAncestorDepth {
 		state.warnings++
 		return nil
 	}
@@ -146,6 +171,10 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	if err != nil {
 		return err
 	}
+	entries, err = state.classifyThemeDirectory(relative, entries, info)
+	if err != nil {
+		return err
+	}
 	if state.directoryIdentities == nil {
 		state.directoryIdentities = make(map[string]os.FileInfo)
 	}
@@ -157,6 +186,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	// A directory containing audio files is the album boundary. Local metadata
 	// may describe this existing hierarchy but cannot choose a different kind.
 	folderType := current.folderType
+	folderWarnings := state.warnings
 	albumDirectory := (state.library.CollectionType == "music" || state.library.CollectionType == "mixed") && containsAudio(entries)
 	if relative == "." {
 		if albumDirectory {
@@ -182,6 +212,12 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		} else if folderType == "MusicAlbum" {
 			current.albumID = id
 		}
+	}
+	if state.warnings != folderWarnings {
+		state.failThemeDirectory(relative)
+	}
+	if err := state.recordThemeDirectoryOwner(relative, current, folderType); err != nil {
+		return err
 	}
 	for _, entry := range entries {
 		if err := state.task.ctx.Err(); err != nil {
@@ -219,79 +255,26 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		if kind == "" || (state.library.CollectionType == "music" && kind != "audio") || ((state.library.CollectionType == "movies" || state.library.CollectionType == "tvshows") && kind != "video") {
 			continue
 		}
+		fileWarnings := state.warnings
 		if err := state.scanFile(path, kind, current); err != nil {
 			return err
 		}
+		if state.warnings != fileWarnings {
+			state.failThemeDirectory(relative)
+		}
 	}
-	return nil
+	return state.publishThemeDirectory(relative)
 }
 
 func (state *scanState) scanFile(path, kind string, current hierarchy) error {
-	file, err := openScanFile(state.opened, path)
-	if err != nil {
-		state.warnings++
-		return nil
-	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() {
-		state.warnings++
-		return nil
-	}
-	state.task.job.Scanned++
-	if err := state.store.persistProgress(state.task); err != nil {
+	input, err := state.inspectScannedMedia(path, kind, false)
+	if err != nil || input == nil {
 		return err
 	}
+	defer input.file.Close()
+	info, stored, probe := input.info, input.stored, input.probe
+	unchanged, checksVersion := input.unchanged, input.checksVersion
 	relative := filepath.ToSlash(path)
-	stored, err := state.findStoredFile(relative, info)
-	if err != nil {
-		return err
-	}
-	probe := stored.media
-	// A forced refresh uses the same descriptor checks and persistence path as
-	// any changed source, even when the accepted probe facts remain identical.
-	unchanged := !state.task.job.ForceProbe && probe != nil && stored.size == info.Size() && stored.modified != nil && stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
-	versioned, checksVersion := state.store.prober.(interface{ CacheVersion() int })
-	if checksVersion {
-		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&
-			probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs == media.FileChangeTime(info)
-	}
-	if musicVersioned, ok := state.store.prober.(interface{ MusicMetadataVersion() int }); kind == "audio" && ok {
-		unchanged = unchanged && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == musicVersioned.MusicMetadataVersion()
-	}
-	if !unchanged {
-		probed, probeErr := state.store.prober.ProbeFile(state.task.ctx, file)
-		if probeErr != nil {
-			if state.task.ctx.Err() != nil {
-				return state.task.ctx.Err()
-			}
-			state.warnings++
-			return state.store.persistProgress(state.task)
-		}
-		probe = &probed
-		// A writer may modify the opened inode during probing. Preserve the old
-		// catalog entry until a later scan observes a consistent file snapshot.
-		after, statErr := file.Stat()
-		if statErr != nil || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) ||
-			(checksVersion && media.FileChangeTime(after) != media.FileChangeTime(info)) {
-			state.warnings++
-			return state.store.persistProgress(state.task)
-		}
-	}
-	if err := state.task.ctx.Err(); err != nil {
-		return err
-	}
-	if kind == "audio" && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion {
-		if !validTrackMusic(*probe.EmbeddedMusic) {
-			state.warnings++
-			return state.store.persistProgress(state.task)
-		}
-		rawMusic, err := json.Marshal(probe.EmbeddedMusic)
-		if _, accepted := acceptedTrackMusic(rawMusic); err != nil || !accepted {
-			state.warnings++
-			return state.store.persistProgress(state.task)
-		}
-	}
 	name := cleanName(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
 	itemType, parentID, indexNumber, parentIndex := "Movie", current.parentID, 0, 0
 	parentNumberDefined := false
@@ -385,6 +368,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if err := state.scanImages(stored.id, itemType, path, false); err != nil {
 			return err
 		}
+		state.recordThemePrimary(path, stored.id, itemType)
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
@@ -432,6 +416,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: stored.id == ""}); err != nil {
 		return err
 	}
+	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {
+		return err
+	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return err
 	}
@@ -446,10 +433,14 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := state.scanImages(id, itemType, path, false); err != nil {
 		return err
 	}
+	state.recordThemePrimary(path, id, itemType)
 	return state.store.persistProgress(state.task)
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
+	if !strings.HasPrefix(relative, "//") && state.themePathReserved(filepath.ToSlash(relative)) {
+		return "", fmt.Errorf("%w: a permanently reserved theme path cannot become an ordinary folder", ErrUnavailable)
+	}
 	metadataPath := relative
 	if strings.HasPrefix(relative, "//") {
 		metadataPath = ""
@@ -507,6 +498,9 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: id == insertID}); err != nil {
 		return "", err
 	}
+	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {
+		return "", err
+	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return "", err
 	}
@@ -555,8 +549,20 @@ func readStoredFile(row rowScanner) (storedFile, error) {
 }
 
 func (state *scanState) findStoredFile(relative string, info os.FileInfo) (storedFile, error) {
+	return state.findStoredFileForRole(relative, info, false)
+}
+
+func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, theme bool) (storedFile, error) {
+	excluded := state.claimedThemeIDs(relative, theme)
+	visibility := ordinaryItemSQL("items")
+	if theme {
+		// Theme acceptance may retain a former ordinary item's identity. The
+		// reverse transition cannot reuse any permanent resource or marker.
+		visibility = "TRUE"
+	}
 	stored, err := readStoredFile(state.store.pool.QueryRow(state.task.ctx,
-		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2", state.root.id, relative))
+		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2 AND NOT (id=ANY($3::text[])) AND "+visibility,
+		state.root.id, relative, excluded))
 	if err == nil {
 		return stored, nil
 	}
@@ -571,7 +577,8 @@ func (state *scanState) findStoredFile(relative string, info os.FileInfo) (store
 	// Size and modification time reduce accidental reuse after inode recycling.
 	rows, err := state.store.pool.Query(state.task.ctx, "SELECT "+storedFileColumns+` FROM items
 		WHERE library_id = $1 AND file_identity = $2 AND NOT is_folder AND file_size = $3
-		AND modified_at = $4 ORDER BY created_at, id LIMIT 8`, state.library.ID, identity, info.Size(), catalogModifiedTime(info))
+		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+visibility+` ORDER BY created_at, id LIMIT 8`,
+		state.library.ID, identity, info.Size(), catalogModifiedTime(info), excluded)
 	if err != nil {
 		return storedFile{}, err
 	}
@@ -627,6 +634,9 @@ func cleanName(name string) string {
 }
 
 func containsAudio(entries []os.DirEntry) bool {
+	// The walker already filtered these entries using their root-relative
+	// theme classification. Reclassifying a basename changes that context and
+	// can reject ordinary Linux names such as C:Track.mp3.
 	for _, entry := range entries {
 		if !entry.IsDir() && entry.Type()&os.ModeSymlink == 0 && !ignoredName(entry.Name()) && extensionKind(entry.Name()) == "audio" {
 			return true

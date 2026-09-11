@@ -101,7 +101,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 		failed, restoreErr := RestoreOfflineFinalized(ctx, target, archive, facts, offlineOptions,
 			func(callbackCtx context.Context, tx pgx.Tx, raw RestoreResult) error {
 				called = true
-				if raw.SourceVersion != 23 || raw.CurrentVersion < 25 || !equalJSON(raw.Tables, facts.Tables) {
+				if raw.SourceVersion != 23 || raw.CurrentVersion < 26 || !equalJSON(raw.Tables, facts.Tables) {
 					return errors.New("finalizer did not receive preserved source facts after migration")
 				}
 				var version int64
@@ -165,7 +165,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 		t.Fatal("read current compiled migration inventory")
 	}
 	current := migrations[len(migrations)-1].Version
-	if current < 25 || result.SourceVersion != 23 || result.CurrentVersion != current || !equalJSON(result.Tables, facts.Tables) {
+	if current < 26 || result.SourceVersion != 23 || result.CurrentVersion != current || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("cross-version restore result source=%d current=%d, want source 23 and compiled version %d with unchanged source table facts", result.SourceVersion, result.CurrentVersion, current)
 	}
 	factsAfter, err := json.Marshal(facts)
@@ -191,6 +191,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 		t.Fatalf("restored schema 23 configuration was backfilled into separate user preferences: count=%d error=%v", count, err)
 	}
 	assertHistoricalArchiveMusicDefaults(t, ctx, target)
+	assertHistoricalArchiveThemeDefaults(t, ctx, target)
 	var migrationName string
 	if err := target.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version=24").Scan(&migrationName); err != nil || migrationName != "0024_user_settings.sql" {
 		t.Fatalf("restored schema 24 migration name = %q: %v", migrationName, err)

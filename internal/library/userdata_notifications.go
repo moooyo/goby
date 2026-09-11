@@ -39,8 +39,8 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 	defer rollback(tx)
 	var libraryID string
 	var folder bool
-	err = tx.QueryRow(ctx, `SELECT library_id, is_folder FROM items WHERE id = $1
-		AND ($2::boolean OR library_id = ANY($3::text[]))`, query.ItemID, access.all, access.folders).Scan(&libraryID, &folder)
+	err = tx.QueryRow(ctx, `SELECT i.library_id, i.is_folder FROM items i WHERE i.id = $1
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"), query.ItemID, access.all, access.folders).Scan(&libraryID, &folder)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return UserDataNotificationResult{}, ErrNotFound
 	}
@@ -103,15 +103,17 @@ func normalizeUserDataNotificationQuery(query UserDataNotificationQuery) (UserDa
 // Only identifiers and item types are read before loading the current user data.
 func userDataNotificationItemsSQL() string {
 	return `WITH RECURSIVE ancestors AS (
-		SELECT id, parent_id, library_id FROM items WHERE id = $1::text AND library_id = $2::text
+		SELECT i.id, i.parent_id, i.library_id FROM items i WHERE i.id = $1::text AND i.library_id = $2::text AND ` + directItemSQL("i") + `
 		UNION
 		SELECT parent.id, parent.parent_id, parent.library_id FROM ancestors child JOIN items parent
 			ON parent.id = child.parent_id AND parent.library_id = child.library_id
+		WHERE ` + ordinaryItemSQL("parent") + `
 	), descendants AS (
-		SELECT id, library_id FROM items WHERE id = $1::text AND library_id = $2::text AND $3::boolean
+		SELECT i.id, i.library_id FROM items i WHERE i.id = $1::text AND i.library_id = $2::text AND $3::boolean AND ` + ordinaryItemSQL("i") + `
 		UNION
 		SELECT child.id, child.library_id FROM descendants parent JOIN items child
 			ON child.parent_id = parent.id AND child.library_id = parent.library_id
+		WHERE ` + ordinaryItemSQL("child") + `
 	), related AS (
 		SELECT id, library_id FROM ancestors
 		UNION
@@ -120,6 +122,7 @@ func userDataNotificationItemsSQL() string {
 	SELECT item.id, item.type FROM related JOIN items item
 		ON item.id = related.id AND item.library_id = related.library_id
 	WHERE item.type IN (` + userDataFolderTypesSQL + `)
+		AND (` + ordinaryItemSQL("item") + ` OR (item.id = $1::text AND ` + directItemSQL("item") + `))
 		AND item.id COLLATE "C" > $4::text COLLATE "C"
 	ORDER BY item.id COLLATE "C" LIMIT $5`
 }

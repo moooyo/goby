@@ -129,7 +129,7 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 		return nil, err
 	}
 	rows, err := tx.Query(ctx, "SELECT "+storedImageColumns+storedImageSource+`
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]))`+storedImageOrder,
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+storedImageOrder,
 		itemID, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("%w: query item images: %w", ErrUnavailable, err)
@@ -176,7 +176,7 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 	result := make(map[string][]Image)
 	if len(ids) != 0 {
 		rows, err := tx.Query(ctx, "SELECT i.id, "+storedImageColumns+storedImageSource+`
-			WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[]))`+
+			WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+
 			strings.Replace(storedImageOrder, " ORDER BY ", " ORDER BY i.id, ", 1),
 			ids, access.all, access.folders)
 		if err != nil {
@@ -219,7 +219,7 @@ func (s *Store) OpenPublicImage(ctx context.Context, itemID, imageType string, i
 	}
 	return runPublicImageWorker(ctx, publicImageWorkers, func() (*os.File, Image, error) {
 		stored, err := scanStoredImage(s.pool.QueryRow(ctx, "SELECT "+storedImageColumns+storedImageSource+`
-			WHERE i.id = $1 AND im.image_type = $2 AND im.image_index = $3`, itemID, imageType, index))
+			WHERE i.id = $1 AND im.image_type = $2 AND im.image_index = $3 AND `+directItemSQL("i"), itemID, imageType, index))
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, Image{}, ErrNotFound
 		}

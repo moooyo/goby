@@ -706,8 +706,8 @@ func cleanupManagerPublicObjects(t *testing.T, pool *pgxpool.Pool) {
 		return
 	}
 	defer tx.Rollback(ctx)
-	const ownedTables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs item_entities item_images item_metadata_state item_subtitles items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers user_item_data user_settings users"
-	qualified := make([]string, 0, 30)
+	const ownedTables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs item_entities item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users"
+	qualified := make([]string, 0, 33)
 	for _, table := range strings.Fields(ownedTables) {
 		qualified = append(qualified, pgx.Identifier{"public", table}.Sanitize())
 	}
@@ -719,7 +719,7 @@ func cleanupManagerPublicObjects(t *testing.T, pool *pgxpool.Pool) {
 	if _, err := tx.Exec(ctx, `DROP FUNCTION IF EXISTS
 		public.catalog_metadata_automatic_values(text,text,text,text,integer,integer,jsonb),
 		public.initialize_catalog_metadata_state(),public.set_catalog_entity_name_hash(),
-		public.sync_catalog_item_entities(text,jsonb)`); err != nil {
+		public.sync_catalog_item_entities(text,jsonb),public.assign_theme_owner_id()`); err != nil {
 		t.Error("remove only explicitly owned compiled fixture functions")
 		return
 	}

@@ -15,27 +15,27 @@ import (
 
 const itemMetadataColumn = `COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)`
 
-const itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
+var itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
 	i.parent_index_number, i.created_at, i.media,
 	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
 	CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
-		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id)
+		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id AND ` + ordinaryItemSQL("child") + `)
 	END, ` + itemAlbumColumn
 
-const itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
+var itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
 		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
 			ARRAY[i.id, parent.id] AS visited, 1 AS depth
-		FROM items parent WHERE parent.id = i.parent_id AND parent.library_id = i.library_id AND parent.id <> i.id
+		FROM items parent WHERE parent.id = i.parent_id AND parent.library_id = i.library_id AND parent.id <> i.id AND ` + ordinaryItemSQL("parent") + `
 		UNION ALL
 		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
 			ancestor.visited || parent.id, ancestor.depth + 1
 		FROM album_ancestors ancestor JOIN items parent ON parent.id = ancestor.parent_id
 		WHERE parent.library_id = i.library_id AND NOT (ancestor.type = 'MusicAlbum' AND ancestor.is_folder)
-			AND NOT parent.id = ANY(ancestor.visited)
+			AND NOT parent.id = ANY(ancestor.visited) AND ` + ordinaryItemSQL("parent") + `
 	) `
 
-const itemAlbumColumn = `CASE WHEN i.type IN ('Audio', 'MusicVideo') THEN (` + itemAlbumAncestorsSQL + `
+var itemAlbumColumn = `CASE WHEN i.type IN ('Audio', 'MusicVideo') THEN (` + itemAlbumAncestorsSQL + `
 	SELECT jsonb_build_object('ID', id, 'Name', name, 'AlbumArtists', (
 		SELECT COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
 			ORDER BY association.position, entity.id), '[]'::jsonb)
@@ -89,7 +89,7 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 	}
 	defer tx.Rollback(ctx)
 
-	parentLibraryID, err := readQueryParent(ctx, tx, query.ParentID, access)
+	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -165,7 +165,7 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 	}
 	defer tx.Rollback(ctx)
 	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+itemColumns+` FROM items i
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]))`,
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"),
 		id, access.all, access.folders))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
@@ -175,6 +175,9 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 	}
 	item.CanPlay = access.canPlay
 	items := []Item{item}
+	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+		return Item{}, err
+	}
 	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
 		return Item{}, err
 	}
@@ -185,6 +188,61 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 		return Item{}, fmt.Errorf("complete item read: %w", err)
 	}
 	return items[0], nil
+}
+
+// GetItemsByIDFor projects only these explicitly supplied IDs in one current
+// authorization snapshot. Missing or inaccessible IDs are omitted. This is an
+// internal direct-read path for playback projections, not a browse switch.
+func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []string) ([]Item, error) {
+	if len(ids) > 1000 {
+		return nil, ErrInvalidInput
+	}
+	seen := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		if strings.TrimSpace(id) == "" || len(id) > 256 || !utf8.ValidString(id) || strings.ContainsRune(id, '\x00') || seen[id] {
+			return nil, ErrInvalidInput
+		}
+		seen[id] = true
+	}
+	ids = append([]string{}, ids...)
+	tx, access, err := s.beginSubjectRead(ctx, subject)
+	if err != nil {
+		return nil, err
+	}
+	defer rollback(tx)
+	rows, err := tx.Query(ctx, "SELECT "+itemColumns+` FROM items i
+		WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+`
+		ORDER BY array_position($1::text[], i.id)`, ids, access.all, access.folders)
+	if err != nil {
+		return nil, fmt.Errorf("query direct item identities: %w", err)
+	}
+	defer rows.Close()
+	items := make([]Item, 0, len(ids))
+	for rows.Next() {
+		item, err := scanItem(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan direct item: %w", err)
+		}
+		item.CanPlay = access.canPlay
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read direct item identities: %w", err)
+	}
+	rows.Close()
+	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+		return nil, err
+	}
+	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
+		return nil, err
+	}
+	if err := attachSubtitles(ctx, tx, items); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("complete direct item identities: %w", err)
+	}
+	return items, nil
 }
 
 // ListUserLibraries returns only the libraries granted by the user's policy.
@@ -264,12 +322,20 @@ func (s *Store) beginUserRead(ctx context.Context, userID string) (pgx.Tx, libra
 }
 
 func readQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess) (string, error) {
+	return readVisibleQueryParent(ctx, tx, parentID, access, directItemSQL("i"))
+}
+
+func readOrdinaryQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess) (string, error) {
+	return readVisibleQueryParent(ctx, tx, parentID, access, ordinaryItemSQL("i"))
+}
+
+func readVisibleQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess, visibility string) (string, error) {
 	if parentID == "" {
 		return "", nil
 	}
 	var libraryID string
 	err := tx.QueryRow(ctx, `SELECT i.library_id FROM items i
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]))`,
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+visibility,
 		parentID, access.all, access.folders).Scan(&libraryID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound
@@ -429,7 +495,7 @@ func normalizeQueryValues(values []string, allowed map[string]string) ([]string,
 
 func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (string, string, []any) {
 	args := []any{access.all, access.folders}
-	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]))"}
+	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]))", ordinaryItemSQL("i")}
 	prefix := ""
 	if query.ParentID != "" {
 		args = append(args, query.ParentID, parentLibraryID)
@@ -437,11 +503,12 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 			// UNION bounds traversal even if corrupt rows contain a parent cycle.
 			prefix = `WITH RECURSIVE descendants AS (
 				SELECT child.id, child.library_id FROM items child
-				WHERE child.parent_id = $3 AND child.library_id = $4
+				WHERE child.parent_id = $3 AND child.library_id = $4 AND ` + ordinaryItemSQL("child") + `
 				UNION
 				SELECT child.id, child.library_id FROM items child
 				JOIN descendants parent ON child.parent_id = parent.id
 					AND child.library_id = parent.library_id
+				WHERE ` + ordinaryItemSQL("child") + `
 			) `
 			conditions = append(conditions, "i.id IN (SELECT id FROM descendants)", "i.id <> $3")
 		} else {

@@ -10,7 +10,7 @@ import (
 // The album filter follows the same physical relationship as the Audio DTO.
 // A MusicAlbum itself is its album scope; an Audio item uses its nearest
 // same-library album, without crossing a corrupt parent cycle.
-const physicalMusicAlbumIDSQL = `(CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN i.id
+var physicalMusicAlbumIDSQL = `(CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN i.id
 	WHEN i.type IN ('Audio', 'MusicVideo') THEN (` + itemAlbumAncestorsSQL + `
 		SELECT id FROM album_ancestors WHERE type = 'MusicAlbum' AND is_folder ORDER BY depth LIMIT 1)
 	END)`
@@ -18,7 +18,7 @@ const physicalMusicAlbumIDSQL = `(CASE WHEN i.type = 'MusicAlbum' AND i.is_folde
 // Choose the complete effective album-artist group before matching an artist.
 // Own persisted music credits take precedence; only their absence inherits the
 // nearest physical album. Other item types never gain music membership.
-const effectiveMusicAlbumArtistItemSQL = `(CASE WHEN i.type IN ('Audio', 'MusicVideo', 'MusicAlbum') THEN
+var effectiveMusicAlbumArtistItemSQL = `(CASE WHEN i.type IN ('Audio', 'MusicVideo', 'MusicAlbum') THEN
 	CASE WHEN EXISTS (SELECT 1 FROM item_entities own_album_credit
 		JOIN catalog_entities own_album_artist ON own_album_artist.id = own_album_credit.entity_id
 		WHERE own_album_credit.item_id = i.id AND own_album_artist.kind = 'MusicArtist'

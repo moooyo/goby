@@ -55,8 +55,8 @@ func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxp
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 25 {
-		t.Fatalf("compatibility full migration history count = %d, want 25: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 26 {
+		t.Fatalf("compatibility full migration history count = %d, want 26: %v", count, err)
 	}
 	return snapshot
 }
@@ -102,22 +102,22 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			}
 			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width")
 			sort.Strings(wantColumns)
-			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings")
+			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
-					t.Fatalf("compatibility full migration schema version = %d, want 25: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
+					t.Fatalf("compatibility full migration schema version = %d, want 26: %v", version, err)
 				}
 				var name string
 				if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 21").Scan(&name); err != nil || name != "0021_configuration_compatibility.sql" {
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
 				}
-				if after := settingsMigrationTables(t, ctx, pool); len(after) != 30 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
-					t.Errorf("current migration did not retain every historical table and add only activity entries and user settings: %v", after)
+				if after := settingsMigrationTables(t, ctx, pool); len(after) != 33 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
+					t.Errorf("current migration did not retain every historical table and add activity entries, user settings, and three theme tables: %v", after)
 				}
 				var activityCount int
 				if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {

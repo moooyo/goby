@@ -157,7 +157,7 @@ func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error 
 					AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
 					AND (authentication.kind <> 'admin' OR account.is_administrator)))
 		) OR NOT EXISTS (SELECT 1 FROM items i WHERE i.id = play.item_id
-			AND ($2::boolean OR i.library_id = ANY($3::text[]))))
+			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+`))
 		ORDER BY play.expires_at, play.id LIMIT 256 FOR UPDATE OF play SKIP LOCKED
 	) UPDATE play_sessions SET state = 'Expired', stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp()
 	WHERE id IN (SELECT id FROM expired)`, owner.UserID, access.all, access.folders, owner.ApplicationKey, owner.SessionID, owner.ApplicationClientID); err != nil {
@@ -499,7 +499,7 @@ func (s *Store) listPlaybackSessions(ctx context.Context, subject Subject, admin
 					ELSE '[]'::jsonb END) AS folder(value) WHERE jsonb_typeof(folder.value) <> 'string')
 				AND (account.policy -> 'EnabledFolders') ? i.library_id
 			))))
-		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[]))` + filter
+		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[])) AND ` + directItemSQL("i") + filter
 	if nowPlayingOnly {
 		statement += " ORDER BY play.auth_session_id, play.application_client_id, play.updated_at DESC, play.id DESC"
 		statement = "SELECT * FROM (" + statement + ") AS current_playback ORDER BY updated_at DESC, id DESC LIMIT 256"

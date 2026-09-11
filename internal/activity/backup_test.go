@@ -87,8 +87,8 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 	if after := snapshotActivityRows(t, ctx, pool); after != before {
 		t.Fatal("schema 23 changed or backfilled retained activity history")
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
-		t.Fatalf("upgraded activity schema version = %d, want 25: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
+		t.Fatalf("upgraded activity schema version = %d, want 26: %v", version, err)
 	}
 	insertActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionBackupFinished,
 		Source: activity.SourceSystem, Actor: activity.Actor{Kind: activity.ActorSystem},

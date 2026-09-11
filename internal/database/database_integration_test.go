@@ -72,6 +72,24 @@ func migrationHistory(t *testing.T, ctx context.Context, pool *pgxpool.Pool) str
 	return snapshot
 }
 
+// Historical settings and music migrations keep their published schema25
+// endpoint even after the current runner gains later schema additions.
+func migratePublishedSchema25TestPrefix(ctx context.Context, pool *pgxpool.Pool) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(cleanupCtx)
+	}()
+	if err := database.RecoveryMigrateTo(ctx, tx, 25); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	ctx, pool := migrationTestPool(t)
 	const attempts = 4
@@ -90,15 +108,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		}
 	}
 	version, err := database.SchemaVersion(ctx, pool)
-	if err != nil || version != 25 {
-		t.Fatalf("schema version after concurrent migration = %d, want 25, error = %v", version, err)
+	if err != nil || version != 26 {
+		t.Fatalf("schema version after concurrent migration = %d, want 26, error = %v", version, err)
 	}
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("count applied migrations: %v", err)
 	}
-	if count != 25 {
-		t.Fatalf("migration history count = %d, want 25", count)
+	if count != 26 {
+		t.Fatalf("migration history count = %d, want 26", count)
 	}
 	before := migrationHistory(t, ctx, pool)
 	if err := database.Migrate(ctx, pool); err != nil {
@@ -107,24 +125,32 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if after := migrationHistory(t, ctx, pool); after != before {
 		t.Errorf("repeated migration changed history: before = %s, after = %s", before, after)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
-		t.Errorf("schema version after repeated migration = %d, want 25, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
+		t.Errorf("schema version after repeated migration = %d, want 26, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
-	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings"} {
+	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources"} {
 		var exists bool
 		if err := pool.QueryRow(ctx, "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists); err != nil || !exists {
 			t.Errorf("migrated table %s exists = %v, error = %v", table, exists, err)
 		}
 	}
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != 30 {
-		t.Errorf("current schema table count = %d, want 30, error = %v", count, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != 33 {
+		t.Errorf("current schema table count = %d, want 33, error = %v", count, err)
 	}
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
 	}
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM user_settings").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated user settings: count=%d error=%v", count, err)
+	}
+	var owners, virtualRoots, reservedPaths, themeResources int
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM theme_owner_ids),
+		(SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL),
+		(SELECT count(*) FROM theme_reserved_paths),
+		(SELECT count(*) FROM item_theme_resources)`).Scan(&owners, &virtualRoots, &reservedPaths, &themeResources); err != nil || owners != 1 || virtualRoots != 1 || reservedPaths != 0 || themeResources != 0 {
+		t.Errorf("fresh theme state must contain one virtual owner and no discovered resources: owners=%d roots=%d paths=%d resources=%d error=%v", owners, virtualRoots, reservedPaths, themeResources, err)
 	}
 }
 

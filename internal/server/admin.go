@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/config"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/identity"
 )
 
@@ -100,7 +101,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM sessions JOIN users ON sessions.user_id=users.id
 		WHERE revoked_at IS NULL AND expires_at>now() AND NOT users.is_disabled
 		AND (sessions.kind='emby' OR users.is_administrator)),
-		(SELECT count(*) FROM libraries), (SELECT count(*) FROM items WHERE NOT is_folder)`).Scan(&userCount, &sessionCount, &libraryCount, &itemCount)
+		(SELECT count(*) FROM libraries), (SELECT count(*) FROM items i WHERE NOT i.is_folder AND `+database.ThemeOrdinaryItemSQL("i")+`)`).Scan(&userCount, &sessionCount, &libraryCount, &itemCount)
 	if err != nil {
 		s.identityError(w, r, err)
 		return

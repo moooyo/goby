@@ -75,6 +75,9 @@ func InspectRecoveryTransaction(ctx context.Context, tx pgx.Tx, schema string) (
 	if err != nil || !equalJSON(actual, catalog) {
 		return nil, ErrSchema
 	}
+	if err := validateThemeState(ctx, tx, version); err != nil {
+		return nil, err
+	}
 	var owner string
 	var publicUsage, defaultComment bool
 	if tx.QueryRow(ctx, `SELECT pg_catalog.pg_get_userbyid(n.nspowner),
@@ -131,6 +134,9 @@ func (inspection *RecoveryInspection) LockTables(ctx context.Context) error {
 func (inspection *RecoveryInspection) Facts(ctx context.Context, probeVersion int64) (backupformat.SourceFacts, error) {
 	if inspection == nil || !inspection.locked || probeVersion < 1 {
 		return backupformat.SourceFacts{}, ErrConfiguration
+	}
+	if err := validateThemeState(ctx, inspection.tx, inspection.version); err != nil {
+		return backupformat.SourceFacts{}, err
 	}
 	migrations, err := compiledMigrations(inspection.version)
 	if err != nil {

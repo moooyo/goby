@@ -78,6 +78,7 @@ func userSettingsLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 	return snapshot
 }
 
+// Keep the published settings/music prefix separate from later theme backfill.
 func TestMigrateUserSettingsPreservesSchema23DataAndLeavesPreferencesEmpty(t *testing.T) {
 	ctx, pool := migrationTestPool(t)
 	userSettingsVersion23Baseline(t, ctx, pool)
@@ -90,7 +91,7 @@ func TestMigrateUserSettingsPreservesSchema23DataAndLeavesPreferencesEmpty(t *te
 	}
 	var firstHistory string
 	for attempt := 1; attempt <= 2; attempt++ {
-		if err := database.Migrate(ctx, pool); err != nil {
+		if err := migratePublishedSchema25TestPrefix(ctx, pool); err != nil {
 			t.Fatalf("user settings migration attempt %d: %v", attempt, err)
 		}
 		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
@@ -129,8 +130,8 @@ func TestMigrateUserSettingsPreservesSchema23DataAndLeavesPreferencesEmpty(t *te
 		t.Fatalf("persist independent user preferences after migration: %v", err)
 	}
 	preferencesBefore := userSettingsLegacySnapshot(t, ctx, pool, "user_settings")
-	if err := database.Migrate(ctx, pool); err != nil {
-		t.Fatalf("repeat migration after preferences were written: %v", err)
+	if err := migratePublishedSchema25TestPrefix(ctx, pool); err != nil {
+		t.Fatalf("repeat published migration prefix after preferences were written: %v", err)
 	}
 	if after := userSettingsLegacySnapshot(t, ctx, pool, "user_settings"); after != preferencesBefore {
 		t.Error("repeated migration reset persisted preferences or their update time")

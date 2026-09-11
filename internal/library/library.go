@@ -51,6 +51,7 @@ type ScanOptions struct {
 // Path is server data: only authorized item projections may expose it.
 type Item struct {
 	ID, LibraryID, ParentID, Name, SortName, Type, Path, Overview string
+	ThemeKind                                                     string
 	IsFolder                                                      bool
 	IndexNumber, ParentIndexNumber                                int
 	ChildCount                                                    *int

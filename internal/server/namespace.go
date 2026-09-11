@@ -93,7 +93,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 		literal(4, "Delete")
 	case "Items":
-		literal(2, "PlaybackInfo", "Images", "Refresh", "File", "Similar")
+		literal(2, "PlaybackInfo", "Images", "Refresh", "File", "Similar", "ThemeMedia")
 		literal(3, "Subtitles")
 	case "Videos", "Audio":
 		literal(1, "ActiveEncodings")

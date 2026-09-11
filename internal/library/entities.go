@@ -75,7 +75,7 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 		return EntityResult{}, err
 	}
 	defer rollback(tx)
-	parentLibraryID, err := readQueryParent(ctx, tx, query.ParentID, access)
+	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return EntityResult{}, err
 	}
@@ -167,7 +167,7 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, condition string
 		FROM catalog_entities entity JOIN item_entities association ON association.entity_id = entity.id
 		JOIN items i ON i.id = association.item_id
 		WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND i.type <> 'CollectionFolder'
-		AND `+validEntityAssociationSQL+` AND `+condition+` GROUP BY entity.id, entity.name, entity.kind`, args...))
+		AND `+ordinaryItemSQL("i")+` AND `+validEntityAssociationSQL+` AND `+condition+` GROUP BY entity.id, entity.name, entity.kind`, args...))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Entity{}, ErrNotFound
 	}

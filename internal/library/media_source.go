@@ -147,7 +147,7 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
-		AND ($2::boolean OR i.library_id = ANY($3::text[]))`, itemID, access.all, access.folders),
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"), itemID, access.all, access.folders),
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
 		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
 	if errors.Is(err, pgx.ErrNoRows) {

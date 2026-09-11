@@ -12,7 +12,7 @@ func TestPublishedRecoveryCatalogsRetainHistoricalMigrationPrefixes(t *testing.T
 	for _, baseline := range []struct {
 		version int64
 		tables  int
-	}{{23, 29}, {24, 30}, {25, 30}} {
+	}{{23, 29}, {24, 30}, {25, 30}, {26, 33}} {
 		t.Run(fmt.Sprintf("schema%d", baseline.version), func(t *testing.T) {
 			catalog, migrations, err := loadCatalog(baseline.version, "published_catalog_test")
 			if err != nil {

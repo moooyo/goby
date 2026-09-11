@@ -100,8 +100,8 @@ func deriveUserDataFolders(ctx context.Context, tx pgx.Tx, userID string, data m
 	for id := range data {
 		ids = append(ids, id)
 	}
-	rootQuery := `SELECT id, library_id FROM items WHERE id = ANY($1::text[])
-		AND is_folder AND type IN (` + userDataFolderTypesSQL + `)`
+	rootQuery := `SELECT i.id, i.library_id FROM items i WHERE i.id = ANY($1::text[])
+		AND i.is_folder AND i.type IN (` + userDataFolderTypesSQL + `) AND ` + ordinaryItemSQL("i")
 	rows, err := tx.Query(ctx, folderUserDataCountsSQL(rootQuery, 2), ids, userID)
 	if err != nil {
 		return fmt.Errorf("query folder user data: %w", err)
@@ -138,12 +138,13 @@ func folderUserDataCountsSQL(rootQuery string, userParameter int) string {
 		SELECT parent.root_id, child.id, child.library_id
 		FROM folder_descendants parent JOIN items child
 			ON child.parent_id = parent.item_id AND child.library_id = parent.library_id
+		WHERE `+ordinaryItemSQL("child")+`
 	)
 	SELECT roots.id, count(DISTINCT leaf.id) AS total_count,
 		count(DISTINCT leaf.id) FILTER (WHERE NOT COALESCE(user_data.played, false)) AS unplayed_count
 	FROM roots LEFT JOIN folder_descendants descendant ON descendant.root_id = roots.id
 	LEFT JOIN items leaf ON leaf.id = descendant.item_id AND leaf.library_id = descendant.library_id
-		AND leaf.id <> roots.id AND NOT leaf.is_folder AND leaf.type IN ('Movie', 'Episode', 'Video', 'Audio')
+		AND leaf.id <> roots.id AND NOT leaf.is_folder AND leaf.type IN ('Movie', 'Episode', 'Video', 'Audio') AND `+ordinaryItemSQL("leaf")+`
 	LEFT JOIN user_item_data user_data ON user_data.item_id = leaf.id AND user_data.user_id = $%d::text
 	GROUP BY roots.id`, rootQuery, userParameter)
 }

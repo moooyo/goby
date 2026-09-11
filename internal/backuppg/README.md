@@ -82,6 +82,21 @@ Sequence values are not MVCC facts. The engine preserves the values that
 requires the next allocated value to be within the trusted sequence range and
 above all restored IDs. It does not claim sequences share the exported snapshot.
 
+Schema 26 adds independent theme owner IDs, permanent reserved paths, and
+resource classifications. Backup and recovery require exactly one virtual-root
+owner and complete item-to-owner coverage. Resource rows must retain a valid
+kind, nonfolder media type, registered root in the same library, canonical
+parent/owner relationship, and reserved-path coverage. Active resources also
+require an ordinary owner in that root, or the actual library CollectionFolder.
+Inactive history remains valid when its owner moves between roots in the same
+library or becomes reserved; it remains hidden from ordinary and direct reads.
+These checks use the same database predicates as catalog visibility. They do
+not allocate IDs or repair missing records. They run at snapshot/locked-recovery
+inspection, after restored source data, after migration, and after a finalizer.
+Archives from schemas 23, 24, and 25 keep their source semantics until the
+trusted migration reaches 26. The independent theme sequence uses the existing
+next-value validation rather than a shared numeric namespace.
+
 Schema baselines under `catalogs/` are release artifacts generated using
 `ExportCatalog` on a fresh database built from the compiled migrations. They
 must be reviewed, verified on PostgreSQL 17, and committed. The first supported

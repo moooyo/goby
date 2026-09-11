@@ -112,6 +112,9 @@ func OpenSnapshot(ctx context.Context, pool *pgxpool.Pool, options Options) (*Sn
 	if err := validateOwnership(jobCtx, tx, options.Schema); err != nil {
 		return nil, err
 	}
+	if err := validateThemeState(jobCtx, tx, version); err != nil {
+		return nil, err
+	}
 	var exported string
 	if tx.QueryRow(jobCtx, `SELECT pg_catalog.pg_export_snapshot()`).Scan(&exported) != nil {
 		return nil, ErrDatabase

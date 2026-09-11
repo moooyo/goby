@@ -454,22 +454,24 @@ func TestStoreSimilarRanksBeyondOrdinaryPageAndUsesEffectiveMetadataControls(t *
 type similarSeedTraceKey struct{}
 
 type similarSnapshotTracer struct {
-	writer *pgxpool.Pool
-	once   sync.Once
-	err    error
-	begins []string
+	writer    *pgxpool.Pool
+	once      sync.Once
+	err       error
+	begins    []string
+	writerRan bool
 }
 
 func (trace *similarSnapshotTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	if strings.HasPrefix(strings.ToLower(data.SQL), "begin") {
 		trace.begins = append(trace.begins, strings.ToLower(data.SQL))
 	}
-	return context.WithValue(ctx, similarSeedTraceKey{}, strings.HasPrefix(data.SQL, "SELECT type FROM items"))
+	return context.WithValue(ctx, similarSeedTraceKey{}, strings.HasPrefix(data.SQL, "SELECT i.type FROM items i"))
 }
 
 func (trace *similarSnapshotTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryEndData) {
 	if selected, _ := ctx.Value(similarSeedTraceKey{}).(bool); selected {
 		trace.once.Do(func() {
+			trace.writerRan = true
 			_, trace.err = trace.writer.Exec(ctx, `UPDATE users SET policy='{"EnableAllFolders":false,"EnabledFolders":[]}' WHERE id='restricted';
 				DELETE FROM item_entities WHERE item_id='AllMatches';
 				UPDATE user_item_data SET play_count=99 WHERE user_id='restricted' AND item_id='AllMatches'`)
@@ -490,9 +492,9 @@ func TestStoreSimilarAuthorizationScoringAndUserDataShareOneReadSnapshot(t *test
 	defer reader.Close()
 	result := similarQuery(t, ctx, &Store{pool: reader}, "Seed", SimilarQuery{Query: Query{UserID: "restricted", Limit: 1}})
 	similarSet(t, result, "AllMatches")
-	if trace.err != nil || len(trace.begins) != 1 || !strings.Contains(trace.begins[0], "repeatable read") ||
+	if !trace.writerRan || trace.err != nil || len(trace.begins) != 1 || !strings.Contains(trace.begins[0], "repeatable read") ||
 		!strings.Contains(trace.begins[0], "read only") || result.Items[0].UserData == nil || result.Items[0].UserData.PlayCount != 3 {
-		t.Fatalf("similar did not retain one authorized read-only snapshot: begins=%v, writer=%v", trace.begins, trace.err)
+		t.Fatalf("similar did not retain one authorized read-only snapshot: begins=%v, writer_ran=%v, writer=%v", trace.begins, trace.writerRan, trace.err)
 	}
 	if _, err := store.QuerySimilar(ctx, "Seed", SimilarQuery{Query: Query{UserID: "restricted", Limit: 1}}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("the next independent read did not observe committed permission revocation: %v", err)

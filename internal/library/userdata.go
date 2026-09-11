@@ -100,14 +100,24 @@ func lockStateItem(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID 
 	}
 	var item stateItem
 	var raw []byte
-	err := tx.QueryRow(ctx, `SELECT id, type, library_id, is_folder, media FROM items
-		WHERE id = $1 AND ($2::boolean OR library_id = ANY($3::text[])) FOR SHARE`,
+	err := tx.QueryRow(ctx, `SELECT i.id, i.type, i.library_id, i.is_folder, i.media FROM items i
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+` FOR SHARE OF i`,
 		itemID, access.all, access.folders).Scan(&item.id, &item.itemType, &item.libraryID, &item.isFolder, &raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return stateItem{}, ErrNotFound
 	}
 	if err != nil {
 		return stateItem{}, fmt.Errorf("authorize user state item: %w", err)
+	}
+	// A scanner locks affected items before changing theme classification. If
+	// this statement waited for that lock, its original READ COMMITTED snapshot
+	// may predate the marker or relationship change; reread after acquiring SHARE.
+	var direct bool
+	if err := tx.QueryRow(ctx, "SELECT "+directItemSQL("i")+" FROM items i WHERE i.id=$1", itemID).Scan(&direct); err != nil {
+		return stateItem{}, fmt.Errorf("recheck user state item visibility: %w", err)
+	}
+	if !direct {
+		return stateItem{}, ErrNotFound
 	}
 	if !supportsUserData(item.itemType) {
 		return stateItem{}, ErrNotFound
@@ -192,7 +202,7 @@ func (s *Store) GetUserDataBatchFor(ctx context.Context, subject Subject, itemID
 		COALESCE(data.play_count, 0), COALESCE(data.is_favorite, false), COALESCE(data.played, false), data.last_played_at
 		FROM items i LEFT JOIN user_item_data data ON data.item_id = i.id AND data.user_id = $1
 		WHERE i.id = ANY($2::text[]) AND ($3::boolean OR i.library_id = ANY($4::text[]))
-		AND i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist')`,
+		AND i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist') AND `+directItemSQL("i"),
 		userID, itemIDs, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("query user item data: %w", err)
@@ -256,9 +266,9 @@ func (s *Store) SetFavoriteFor(ctx context.Context, subject Subject, itemID stri
 	return data, nil
 }
 
-// SetPlayed updates a supported folder and its same-library descendants in one
-// transaction. Leaf watched state ensures at least one play; clearing resets
-// history. Folder playback summaries are derived from their current leaves.
+// SetPlayed updates a supported folder and its ordinary same-library descendants
+// in one transaction, preserving attachment history. An explicitly selected
+// active theme remains writable. Folder summaries use only ordinary leaves.
 func (s *Store) SetPlayed(ctx context.Context, userID, itemID string, played bool, datePlayed *time.Time) (UserData, error) {
 	return s.SetPlayedFor(ctx, Subject{UserID: userID}, itemID, played, datePlayed)
 }
@@ -320,12 +330,13 @@ func lockPlayedTargets(ctx context.Context, tx pgx.Tx, root stateItem) ([]string
 		return []string{root.id}, nil
 	}
 	rows, err := tx.Query(ctx, `WITH RECURSIVE targets AS (
-		SELECT id, library_id FROM items WHERE id = $1 AND library_id = $2
+		SELECT i.id, i.library_id FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
 		UNION
 		SELECT child.id, child.library_id FROM items child JOIN targets parent
 			ON child.parent_id = parent.id AND child.library_id = parent.library_id
+		WHERE `+ordinaryItemSQL("child")+`
 	) SELECT i.id FROM items i JOIN targets target ON target.id = i.id AND target.library_id = i.library_id
-	WHERE i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist')
+	WHERE i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist') AND `+ordinaryItemSQL("i")+`
 	ORDER BY i.id FOR SHARE OF i`, root.id, root.libraryID)
 	if err != nil {
 		return nil, fmt.Errorf("lock played folder descendants: %w", err)
@@ -339,7 +350,22 @@ func lockPlayedTargets(ctx context.Context, tx pgx.Tx, root stateItem) ([]string
 		}
 		ids = append(ids, id)
 	}
-	return ids, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	// The classification writer takes UPDATE locks on these same item rows.
+	// Recheck in a fresh statement before any user-data row is created or changed;
+	// a marker committed while the locking query waited must reject the batch.
+	var ordinaryCount int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM items i
+		WHERE i.id=ANY($1::text[]) AND i.library_id=$2 AND `+ordinaryItemSQL("i"), ids, root.libraryID).Scan(&ordinaryCount); err != nil {
+		return nil, fmt.Errorf("recheck played folder item visibility: %w", err)
+	}
+	if ordinaryCount != len(ids) || ordinaryCount == 0 {
+		return nil, ErrNotFound
+	}
+	return ids, nil
 }
 
 func lockUserDataTargets(ctx context.Context, tx pgx.Tx, userID string, ids []string) error {

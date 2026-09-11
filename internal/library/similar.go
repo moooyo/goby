@@ -61,7 +61,7 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 	}
 	defer rollback(tx)
 	var seedType string
-	err = tx.QueryRow(ctx, `SELECT type FROM items WHERE id = $1 AND ($2::boolean OR library_id = ANY($3::text[]))`,
+	err = tx.QueryRow(ctx, `SELECT i.type FROM items i WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+ordinaryItemSQL("i"),
 		seedID, access.all, access.folders).Scan(&seedType)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ItemResult{}, similarMissingSeed(ctx, tx, seedID, access)
@@ -69,7 +69,7 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("authorize similar seed: %w", err)
 	}
-	parentLibraryID, err := readQueryParent(ctx, tx, query.ParentID, access)
+	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -166,7 +166,7 @@ func similarRelationSQL(seedID, seedType string, query SimilarQuery, access libr
 	}
 	prefix += fmt.Sprintf(`similar_scope_albums AS MATERIALIZED (
 		SELECT i.id, i.type, `+album+` AS album_id FROM items i
-		WHERE i.id = $%d::text OR (`+filter+`)
+		WHERE `+ordinaryItemSQL("i")+` AND (i.id = $%d::text OR (`+filter+`))
 	), `, seedParameter)
 	artistOwner := "NULL::text"
 	if music {
@@ -235,7 +235,7 @@ func similarMissingSeed(ctx context.Context, tx pgx.Tx, seedID string, access li
 	err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM catalog_entities entity
 		JOIN item_entities association ON association.entity_id = entity.id JOIN items i ON i.id = association.item_id
 		WHERE entity.id = $1 AND i.type <> 'CollectionFolder' AND `+validEntityAssociationSQL+`
-		AND ($2::boolean OR i.library_id = ANY($3::text[])))`, id, access.all, access.folders).Scan(&visible)
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+ordinaryItemSQL("i")+`)`, id, access.all, access.folders).Scan(&visible)
 	if err != nil {
 		return fmt.Errorf("authorize similar entity seed: %w", err)
 	}

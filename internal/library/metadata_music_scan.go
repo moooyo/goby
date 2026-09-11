@@ -151,13 +151,13 @@ func (s *Store) refreshScannedMusicAlbums(ctx context.Context, libraryID string,
 	for _, parentID := range parentIDs {
 		var albumID, rootID string
 		err := tx.QueryRow(ctx, `WITH RECURSIVE ancestors AS (
-			SELECT id, parent_id, library_id, root_id, type, is_folder, ARRAY[id] AS visited
-			FROM items WHERE id = $1 AND library_id = $2
+			SELECT i.id, i.parent_id, i.library_id, i.root_id, i.type, i.is_folder, ARRAY[i.id] AS visited
+			FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
 			UNION ALL
 			SELECT parent.id, parent.parent_id, parent.library_id, parent.root_id, parent.type, parent.is_folder,
 				child.visited || parent.id FROM ancestors child JOIN items parent
 				ON parent.id = child.parent_id AND parent.library_id = child.library_id
-			WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder) AND NOT parent.id = ANY(child.visited)
+			WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder) AND NOT parent.id = ANY(child.visited) AND `+ordinaryItemSQL("parent")+`
 		) SELECT id, COALESCE(root_id, '') FROM ancestors WHERE type = 'MusicAlbum' AND is_folder`,
 			parentID, libraryID).Scan(&albumID, &rootID)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -213,7 +213,7 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 	err := tx.QueryRow(ctx, `SELECT i.path, COALESCE(root.path, ''), i.name, i.local_metadata
 		FROM items i JOIN item_metadata_state ms ON ms.item_id = i.id
 		LEFT JOIN library_roots root ON root.id = i.root_id AND root.library_id = i.library_id
-		WHERE i.id = $1 AND i.library_id = $2 AND i.type = 'MusicAlbum' AND i.is_folder
+		WHERE i.id = $1 AND i.library_id = $2 AND i.type = 'MusicAlbum' AND i.is_folder AND `+ordinaryItemSQL("i")+`
 		FOR UPDATE OF i, ms`, albumID, libraryID).Scan(&path, &rootPath, &existingName, &localSource)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return true, nil
@@ -228,13 +228,13 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 		queryCtx = owned.ctx
 	}
 	rows, err := tx.Query(queryCtx, `WITH RECURSIVE members AS (
-		SELECT id, library_id FROM items WHERE id = $1 AND library_id = $2
+		SELECT i.id, i.library_id FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
 		UNION
 		SELECT child.id, child.library_id FROM members parent JOIN items child
 			ON child.parent_id = parent.id AND child.library_id = parent.library_id
-		WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder)
+		WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder) AND `+ordinaryItemSQL("child")+`
 	) SELECT i.media -> 'EmbeddedMusic' FROM members member JOIN items i ON i.id = member.id AND i.library_id = member.library_id
-		WHERE i.type = 'Audio' AND NOT i.is_folder
+		WHERE i.type = 'Audio' AND NOT i.is_folder AND `+ordinaryItemSQL("i")+`
 		ORDER BY i.parent_index_number, i.index_number, i.id`, albumID, libraryID)
 	if err != nil {
 		return false, fmt.Errorf("read accepted album members: %w", err)

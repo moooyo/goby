@@ -192,12 +192,12 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	items, itemDTOs := map[string]map[string]any{}, []map[string]any{}
 	if len(ids) > 0 {
-		result, err := s.library.QueryItems(r.Context(), library.Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID, Ids: ids, Recursive: true, Limit: len(ids)})
+		result, err := s.library.GetItemsByIDFor(r.Context(), subject, ids)
 		if err != nil {
 			s.libraryError(w, r, err)
 			return
 		}
-		for _, item := range result.Items {
+		for _, item := range result {
 			item.UserData = nil
 			dto := s.itemDTO(item, nil, false)
 			items[item.ID], itemDTOs = dto, append(itemDTOs, dto)

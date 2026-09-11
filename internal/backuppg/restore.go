@@ -2,6 +2,7 @@ package backuppg
 
 import (
 	"context"
+	"errors"
 	"io"
 	"math"
 	"strings"
@@ -229,6 +230,12 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err := validateHistory(ctx, tx, options.Schema, migrations); err != nil {
 		return result, ErrArchive
 	}
+	if err := validateThemeState(ctx, tx, facts.SchemaVersion); err != nil {
+		if errors.Is(err, ErrSchema) {
+			return result, ErrArchive
+		}
+		return result, err
+	}
 	tables, err := fingerprints(ctx, tx, catalog)
 	if err != nil {
 		return result, err
@@ -264,9 +271,15 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err := validateOwnership(ctx, tx, options.Schema); err != nil {
 		return result, err
 	}
+	if err := validateThemeState(ctx, tx, current); err != nil {
+		return result, err
+	}
 	completed := RestoreResult{SourceVersion: facts.SchemaVersion, CurrentVersion: current, Tables: append([]backupformat.TableFact(nil), tables...)}
 	if finalizer != nil {
 		if err := finalizer(ctx, tx, completed); err != nil {
+			return result, err
+		}
+		if err := validateThemeState(ctx, tx, current); err != nil {
 			return result, err
 		}
 	}

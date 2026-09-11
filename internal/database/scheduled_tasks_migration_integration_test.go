@@ -101,8 +101,8 @@ func scheduledTasksLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 func scheduledTasksAssertEmptyTables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	var totalTables int
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&totalTables); err != nil || totalTables != 30 {
-		t.Fatalf("current schema did not retain six task tables, two settings tables, and one activity table beyond schema 18: count=%d error=%v", totalTables, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&totalTables); err != nil || totalTables != 33 {
+		t.Fatalf("current schema did not retain six task tables, two settings tables, one activity table, and three theme tables beyond schema 18: count=%d error=%v", totalTables, err)
 	}
 	var actual []string
 	if err := pool.QueryRow(ctx, `SELECT array_agg(tablename ORDER BY tablename)
@@ -125,6 +125,16 @@ func scheduledTasksAssertEmptyTables(t *testing.T, ctx context.Context, pool *pg
 	var userSettingsCount int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM user_settings").Scan(&userSettingsCount); err != nil || userSettingsCount != 0 {
 		t.Errorf("migration populated user settings: count=%d error=%v", userSettingsCount, err)
+	}
+	var items, owners, mappedItems, virtualRoots, reservedPaths, themeResources int
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM items),
+		(SELECT count(*) FROM theme_owner_ids),
+		(SELECT count(*) FROM items item JOIN theme_owner_ids owner ON owner.item_id=item.id WHERE NOT owner.virtual_root),
+		(SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL),
+		(SELECT count(*) FROM theme_reserved_paths),
+		(SELECT count(*) FROM item_theme_resources)`).Scan(&items, &owners, &mappedItems, &virtualRoots, &reservedPaths, &themeResources); err != nil || owners != items+1 || mappedItems != items || virtualRoots != 1 || reservedPaths != 0 || themeResources != 0 {
+		t.Errorf("theme migration must map every retained item and one virtual root without inferring resources: items=%d owners=%d mapped=%d roots=%d paths=%d resources=%d error=%v", items, owners, mappedItems, virtualRoots, reservedPaths, themeResources, err)
 	}
 	var musicSourceCount, creditGroupCount int
 	if err := pool.QueryRow(ctx, `SELECT
@@ -166,8 +176,8 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 		if err := database.Migrate(ctx, pool); err != nil {
 			t.Fatalf("scheduled-task migration attempt %d: %v", attempt, err)
 		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
-			t.Fatalf("scheduled-task full migration schema = %d, want 25: %v", version, err)
+		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
+			t.Fatalf("scheduled-task full migration schema = %d, want 26: %v", version, err)
 		}
 		var name string
 		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 19").Scan(&name); err != nil || name != "0019_scheduled_tasks.sql" {

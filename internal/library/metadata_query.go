@@ -42,9 +42,9 @@ type MetadataItemResult struct {
 	TotalRecordCount int                   `json:"TotalRecordCount"`
 }
 
-const metadataItemFilterSQL = `i.library_id = $1 AND i.id <> $1
+var metadataItemFilterSQL = `i.library_id = $1 AND i.id <> $1
 	AND i.type = ANY($2::text[])
-	AND strpos(lower(i.name), lower($3::text)) > 0`
+	AND strpos(lower(i.name), lower($3::text)) > 0 AND ` + ordinaryItemSQL("i")
 
 const metadataItemSummaryColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''),
 	COALESCE(parent.name, ''), i.name, i.type, i.path, i.is_folder,
@@ -85,7 +85,7 @@ func (s *Store) QueryMetadataItems(ctx context.Context, actor identity.Principal
 
 	args = append(args, query.Limit, query.StartIndex)
 	rows, err := tx.Query(ctx, "SELECT "+metadataItemSummaryColumns+` FROM items i
-		LEFT JOIN items parent ON parent.id = i.parent_id AND parent.library_id = i.library_id
+		LEFT JOIN items parent ON parent.id = i.parent_id AND parent.library_id = i.library_id AND `+ordinaryItemSQL("parent")+`
 		LEFT JOIN item_metadata_state ms ON ms.item_id = i.id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(ms.effective, i.local_metadata)->'ProductionYear' AS value
