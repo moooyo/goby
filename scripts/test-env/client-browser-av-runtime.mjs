@@ -86,12 +86,18 @@ export async function runGuardedAV({ url, credentialsPath, output, workflow, ass
       other_query_values: 'Not retained; duplicate or nonliteral boolean values are rejected' },
     evidence_boundary: 'Original UI login, workflow and logout; request field names, allowlisted browse boolean literals, and response status. No client source or authentication response bodies are read.' };
   let target, account, browser, context, page, guard, proof, privateOutput;
-  let phase = 'configuration', failedPhase = null, submitted = false, targetPinFailed = false;
+  let phase = 'configuration', actionPhase = null, failedPhase = null, submitted = false, targetPinFailed = false;
   let exceptionSession = null, exceptionChain = Promise.resolve(), exceptionStopping = false, exceptionPaused = false;
   let exceptionPauseHandler = null, exceptionResumeHandler = null, exceptionLimitApplied = false;
   let secrets = [];
   const sockets = new Set(), entries = new WeakMap();
   const elapsed = () => Date.now() - started;
+  const observedPhase = () => phase === 'workflow' && actionPhase ? `workflow:${actionPhase}` : phase;
+  function setActionPhase(value) {
+    if (typeof value !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(value)) throw new Error('invalid_action_phase');
+    actionPhase = value;
+    (report.action_phases ??= []).push({ phase: observedPhase(), elapsed_ms: elapsed() });
+  }
   async function assertTargetAt(label) {
     if (assertTarget === undefined) return;
     phase = `target_pin_${label}`;
@@ -359,7 +365,7 @@ export async function runGuardedAV({ url, credentialsPath, output, workflow, ass
         if (report.requests.length >= 4000) { report.request_overflow += 1; return; }
         const headers = request.headers(), requestURL = new URL(request.url());
         const sameOrigin = networkOrigin(request.url()) === target.origin;
-        const entry = { index: report.requests.length, elapsed_ms: elapsed(), method: request.method(),
+        const entry = { index: report.requests.length, elapsed_ms: elapsed(), phase: observedPhase(), method: request.method(),
           origin: ['data:', 'blob:'].includes(requestURL.protocol) ? 'non-network' : sameOrigin ? 'target' : 'external',
           route: safeRoute(request.url()), query_field_names: queryFields(request.url()), resource_type: request.resourceType(),
           content_type: mediaType(headers['content-type']), response_content_type: null, status: null };
@@ -383,13 +389,25 @@ export async function runGuardedAV({ url, credentialsPath, output, workflow, ass
     context.on('response', response => {
       try {
         const entry = entries.get(response.request());
-        if (entry) { entry.status = response.status(); entry.response_content_type = mediaType(response.headers()['content-type']); }
+        if (entry) {
+          entry.status = response.status(); entry.response_content_type = mediaType(response.headers()['content-type']);
+          entry.response_elapsed_ms = elapsed(); entry.response_phase = observedPhase();
+        }
       } catch { report.request_observer_errors = (report.request_observer_errors ?? 0) + 1; }
     });
     context.on('requestfailed', request => {
       try {
         const entry = entries.get(request), failure = request.failure()?.errorText ?? '';
-        if (entry) entry.failure = /^net::ERR_[A-Z0-9_]+$/.test(failure) ? failure : 'browser_request_failed';
+        if (entry) {
+          entry.failure = /^net::ERR_[A-Z0-9_]+$/.test(failure) ? failure : 'browser_request_failed';
+          entry.failure_elapsed_ms = elapsed(); entry.failure_phase = observedPhase();
+        }
+      } catch { report.request_observer_errors = (report.request_observer_errors ?? 0) + 1; }
+    });
+    context.on('requestfinished', request => {
+      try {
+        const entry = entries.get(request);
+        if (entry) { entry.finished_elapsed_ms = elapsed(); entry.finished_phase = observedPhase(); }
       } catch { report.request_observer_errors = (report.request_observer_errors ?? 0) + 1; }
     });
     page = await context.newPage();
@@ -404,7 +422,7 @@ export async function runGuardedAV({ url, credentialsPath, output, workflow, ass
     });
     page.on('pageerror', error => {
       report.page_error_count += 1;
-      if (report.page_errors.length < 64) report.page_errors.push({ elapsed_ms: elapsed(),
+      if (report.page_errors.length < 64) report.page_errors.push({ elapsed_ms: elapsed(), phase: observedPhase(),
         name: /^[A-Za-z]{1,50}Error$/.test(error.name ?? '') ? error.name : 'Error',
         message: safeText(String(error.message ?? '').split(/[\r\n]/, 1)[0]).slice(0, 1200) });
     });
@@ -443,7 +461,8 @@ export async function runGuardedAV({ url, credentialsPath, output, workflow, ass
     await snapshot('after-login');
     await assertTargetAt('before_workflow');
     phase = 'workflow';
-    await workflow({ page, context, target, report, snapshot });
+    await workflow({ page, context, target, report, snapshot, setActionPhase,
+      requestObservation: request => entries.get(request) });
   } catch { failedPhase = phase; if (page) await snapshot('failure').catch(() => {}); }
   finally {
     try { await stopRuntimeExceptions(); }

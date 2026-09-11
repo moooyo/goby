@@ -1,0 +1,225 @@
+{
+  "allMediaPreserved": true,
+  "automaticFieldAllowlist": [
+    "DateLastRefreshed",
+    "DateLastSaved",
+    "ETag",
+    "Etag"
+  ],
+  "bytesRead": 410765,
+  "cases": [
+    {
+      "automaticChanges": [
+        {
+          "fields": {},
+          "phase": "prewrite"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              },
+              "before": {
+                "present": true,
+                "value": "6c25800b997d81fa4a4ecd61ac183759"
+              }
+            }
+          },
+          "phase": "accepted"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              },
+              "before": {
+                "present": true,
+                "value": "6c25800b997d81fa4a4ecd61ac183759"
+              }
+            }
+          },
+          "phase": "prerestore"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              },
+              "before": {
+                "present": true,
+                "value": "6c25800b997d81fa4a4ecd61ac183759"
+              }
+            }
+          },
+          "phase": "restored"
+        }
+      ],
+      "itemId": "40",
+      "restored": true,
+      "similar": {
+        "acceptedMetadata": {
+          "Studios": [
+            {
+              "Id": 50,
+              "Name": "SharedStudio"
+            }
+          ]
+        },
+        "mutatedBusinessStateConfirmedBeforeAndAfterReads": true,
+        "observations": [
+          {
+            "observation": 1,
+            "returnedIds": [
+              "44",
+              "41",
+              "37",
+              "40"
+            ],
+            "sequence": 16,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          }
+        ]
+      },
+      "variant": "eligibility"
+    },
+    {
+      "automaticChanges": [
+        {
+          "fields": {},
+          "phase": "prewrite"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              },
+              "before": {
+                "present": true,
+                "value": "e8c89ce5de2fd53ed554411fbdd6079d"
+              }
+            }
+          },
+          "phase": "accepted"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              },
+              "before": {
+                "present": true,
+                "value": "e8c89ce5de2fd53ed554411fbdd6079d"
+              }
+            }
+          },
+          "phase": "prerestore"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "8847667225510ecf4d28f54f475b3ee7"
+              },
+              "before": {
+                "present": true,
+                "value": "e8c89ce5de2fd53ed554411fbdd6079d"
+              }
+            }
+          },
+          "phase": "restored"
+        }
+      ],
+      "itemId": "49",
+      "restored": true,
+      "similar": {
+        "acceptedMetadata": {
+          "GenreItems": [
+            {
+              "Id": 53,
+              "Name": "Drama"
+            }
+          ],
+          "Genres": [
+            "Drama"
+          ]
+        },
+        "mutatedBusinessStateConfirmedBeforeAndAfterReads": true,
+        "observations": [
+          {
+            "observation": 1,
+            "returnedIds": [
+              "44",
+              "41",
+              "37"
+            ],
+            "sequence": 23,
+            "targetReturned": false,
+            "totalRecordCount": 3
+          }
+        ]
+      },
+      "variant": "eligibility"
+    }
+  ],
+  "classification": "Reference-only metadata protocol research; not client acceptance or a scoring specification.",
+  "cleanup": {
+    "exactTokenStatus": 401,
+    "logoutStatus": 204,
+    "result": "logout204-exact-token401"
+  },
+  "elapsedSeconds": 2.255802420004329,
+  "failure": null,
+  "helperSha256": "9af752745a5e9d9a9047491c03b9f32da2e9a70d01d78d17e1504ad760204d75",
+  "indexReportSha256": "457a4d88f86617c448b980f31b7dd5b7d8bbeb31e3cfe807103371859f2d7998",
+  "logoutSeconds": 20,
+  "manifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+  "marker": "goby-reference-similarity-combinations-m3e-v3-eligibility",
+  "maximumRequestAttempts": 45,
+  "newRecorderTokenRevoked": true,
+  "normalRequestPlan": 37,
+  "normalSeconds": 120,
+  "operatorSha256": "29f159a2580e178dce65b6c23ef14ad9875971240e534546eb5e8a14ce88c160",
+  "originalSixItemsAndAllFiveUsersPreserved": true,
+  "ownerSha256": "3bdbeee28406f9809624f3619b38915ab4445fa1a7c8aca30cbe445d3d1ddb40",
+  "rawDetailEqualityClaimedForModifiedItems": false,
+  "readOnlySeedFullDetailPreserved": true,
+  "recovery": {
+    "result": "no-pending-metadata-write"
+  },
+  "recoverySeconds": 45,
+  "referenceBinarySha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requestAttempts": 37,
+  "restoredBusinessMetadata": {
+    "40": true,
+    "49": true
+  },
+  "result": "complete",
+  "retryPermitted": false,
+  "scriptSha256": "0bd9ce0318ed86a05e3a7f7256d62671134b47ad15f7b34a190a885ab4c04f63",
+  "sentMutationIntents": [
+    "login",
+    "logout",
+    "modify-40",
+    "modify-49",
+    "restore-40",
+    "restore-49"
+  ],
+  "similarReadsPerCase": 1,
+  "unreturnedUserDataFieldsClaimed": false,
+  "userDataScope": "Exact equality of every returned UserData field for all five users visible subsets of the original six playables and the two target movies, using the accepted bounded Items projection.",
+  "variant": "eligibility"
+}

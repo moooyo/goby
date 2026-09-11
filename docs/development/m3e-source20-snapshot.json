@@ -1,0 +1,12 @@
+{
+  "changed_from_source19": {
+    "internal/library/similar.go": "101b85be63f3c6a4a7dfb86084a7d3038cae23532f95a32a94f4bd1dd1c91e0e",
+    "internal/library/similar_integration_test.go": "6e9df1e3d68aa399f706e0b2f848455e6d69b336c611c973373abcfb0b8a4ff9"
+  },
+  "files": 3803,
+  "installed": false,
+  "manifest_sha256": "456f90464a0c18d8f1a31e268a67a5c65dcf1264a7ee69fc45be4d085d94e945",
+  "scope": "Reference-constrained Similar scoring and complete-catalog SQL optimization; music metadata v2 remains identical to its source19 targeted pass.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-20",
+  "status": "frozen"
+}

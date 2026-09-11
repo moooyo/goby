@@ -49,6 +49,7 @@ func (p *metadataMusicScanProber) ProbeFile(ctx context.Context, file *os.File) 
 	if err != nil {
 		return media.Info{}, err
 	}
+	info.ProbeVersion = media.CurrentProbeVersion
 	p.sourceMu.Lock()
 	source, fail := p.sources[filepath.Base(file.Name())], p.failures[filepath.Base(file.Name())]
 	if source != nil {
@@ -64,11 +65,11 @@ func (p *metadataMusicScanProber) ProbeFile(ctx context.Context, file *os.File) 
 
 func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.T) {
 	prober := &metadataMusicScanProber{}
-	firstFacts := &media.MusicMetadata{Version: 1, Title: "  First embedded title  ", Album: "  Shared album  ", Artist: "  Artist; One / Two  "}
-	secondFacts := &media.MusicMetadata{Version: 1, Title: "Second embedded title", Album: firstFacts.Album, Artist: firstFacts.Artist}
+	firstFacts := &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "  First embedded title  ", Album: "  Shared album  ", Artist: "  Artist; One / Two  "}
+	secondFacts := &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Second embedded title", Album: firstFacts.Album, Artist: firstFacts.Artist}
 	prober.set("01 First.flac", firstFacts, false)
 	prober.set("02 Second.flac", secondFacts, false)
-	prober.set("03 Empty.flac", &media.MusicMetadata{Version: 1}, false)
+	prober.set("03 Empty.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion}, false)
 	ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, prober)
 	firstPath := libraryIntegrationFile(t, allowedRoot, "mixed/01 First.flac", "audio:music-first")
 	secondPath := libraryIntegrationFile(t, allowedRoot, "mixed/02 Second.flac", "audio:music-second")
@@ -81,13 +82,28 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 	empty := nfoCatalogItem(t, ctx, store, userID, library.ID, emptyPath)
 	video := nfoCatalogItem(t, ctx, store, userID, library.ID, videoPath)
 	audioIDs := []string{first.ID, second.ID, empty.ID}
+	if _, err := pool.Exec(ctx, `INSERT INTO user_item_data(user_id,item_id,playback_position_ticks,play_count,is_favorite,last_played_at,updated_at)
+		VALUES($1,$2,9007199254740993,7,true,'2025-01-01T00:00:00Z','2025-01-02T00:00:00Z')`, userID, first.ID); err != nil {
+		t.Fatalf("seed independent user data before music probe refresh: %v", err)
+	}
+	var userDataBefore string
+	if err := pool.QueryRow(ctx, "SELECT to_jsonb(d)::text FROM user_item_data d WHERE user_id=$1 AND item_id=$2", userID, first.ID).Scan(&userDataBefore); err != nil {
+		t.Fatalf("snapshot user playback state before music probe refresh: %v", err)
+	}
 	// Remove only the new music facts to model a valid legacy technical cache.
-	if _, err := pool.Exec(ctx, "UPDATE items SET media = media - 'EmbeddedMusic' WHERE id = ANY($1::text[])", audioIDs); err != nil {
+	if _, err := pool.Exec(ctx, "UPDATE items SET media = media - 'EmbeddedMusic' WHERE id = ANY($1::text[])", []string{first.ID, empty.ID}); err != nil {
 		t.Fatalf("seed legacy audio probe snapshots: %v", err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE items SET media=jsonb_set(media,'{EmbeddedMusic}',
+		((media->'EmbeddedMusic') - 'AlbumArtist') || '{"Version":1}'::jsonb) WHERE id=$1`, second.ID); err != nil {
+		t.Fatalf("seed the old version-one music cache without album_artist extraction: %v", err)
 	}
 	if _, err := pool.Exec(ctx, "UPDATE item_metadata_state SET music_source = '{}'::jsonb WHERE item_id = ANY($1::text[])", audioIDs); err != nil {
 		t.Fatalf("seed unextracted accepted audio sources: %v", err)
 	}
+	firstFacts.AlbumArtist, secondFacts.AlbumArtist = "  Explicit album ensemble  ", "  Explicit album ensemble  "
+	prober.set("01 First.flac", firstFacts, false)
+	prober.set("02 Second.flac", secondFacts, false)
 	videoBefore := metadataEditTestSnapshot(t, ctx, pool, video.ID)
 	job := libraryIntegrationScan(t, ctx, store, library.ID, "Completed")
 	if job.Error != "" {
@@ -103,13 +119,13 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 		t.Errorf("embedded titles were changed: first = %q, second = %q", first.Name, second.Name)
 	}
 	for _, item := range []Item{first, second, empty} {
-		if item.Media == nil || item.Media.EmbeddedMusic == nil || item.Media.EmbeddedMusic.Version != 1 {
+		if item.Media == nil || item.Media.ProbeVersion != 6 || item.Media.EmbeddedMusic == nil || item.Media.EmbeddedMusic.Version != media.CurrentMusicMetadataVersion {
 			t.Fatalf("audio %s retained an unversioned music cache", item.ID)
 		}
 	}
 	metadataMusicScanAssertSource(t, ctx, pool, first.ID, musicMetadataSource{
 		Version: 1, Name: firstFacts.Title, Album: firstFacts.Album,
-		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{},
+		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{firstFacts.AlbumArtist},
 	})
 	metadataMusicScanAssertSource(t, ctx, pool, empty.ID, musicMetadataSource{
 		Version: 1, Artists: []string{}, AlbumArtists: []string{},
@@ -123,11 +139,14 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 	}
 	metadataMusicScanAssertSource(t, ctx, pool, album.ID, musicMetadataSource{
 		Version: 1, Name: firstFacts.Album, Album: firstFacts.Album,
-		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{firstFacts.Artist},
+		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{firstFacts.AlbumArtist},
 	})
 	if len(first.Entities.Artists) != 1 || len(album.Entities.Artists) != 1 ||
 		first.Entities.Artists[0].ID != album.Entities.Artists[0].ID ||
-		len(album.Entities.AlbumArtists) != 1 || album.Entities.AlbumArtists[0].ID != first.Entities.Artists[0].ID {
+		len(first.Entities.AlbumArtists) != 1 || len(second.Entities.AlbumArtists) != 1 || len(album.Entities.AlbumArtists) != 1 ||
+		album.Entities.AlbumArtists[0].ID != first.Entities.AlbumArtists[0].ID ||
+		second.Entities.AlbumArtists[0].ID != first.Entities.AlbumArtists[0].ID ||
+		album.Entities.AlbumArtists[0].ID == first.Entities.Artists[0].ID {
 		t.Errorf("audio and album did not share the real artist entity: audio = %+v, album = %+v", first.Entities, album.Entities)
 	}
 	metadataMusicScanAssertProbeCount(t, prober, "audio:music-first", 2)
@@ -150,7 +169,7 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 	}
 	metadataMusicScanAssertSource(t, ctx, pool, album.ID, musicMetadataSource{
 		Version: 1, Name: firstFacts.Album, Album: firstFacts.Album,
-		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{firstFacts.Artist},
+		Artists: []string{firstFacts.Artist}, AlbumArtists: []string{firstFacts.AlbumArtist},
 	})
 	if len(prober.calls()) != callsBefore {
 		t.Error("accepted empty or populated music facts were probed again")
@@ -162,12 +181,16 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 	if metadataEditTestSnapshot(t, ctx, pool, video.ID) != videoBefore {
 		t.Error("independent music cache refresh changed a video item")
 	}
+	var userDataAfter string
+	if err := pool.QueryRow(ctx, "SELECT to_jsonb(d)::text FROM user_item_data d WHERE user_id=$1 AND item_id=$2", userID, first.ID).Scan(&userDataAfter); err != nil || userDataAfter != userDataBefore {
+		t.Fatalf("music probe refresh changed exact user playback state, favorite, or timestamps: %v", err)
+	}
 }
 
 func TestStoreMusicMetadataPreservesControlsAndCachedRelations(t *testing.T) {
 	prober := &metadataMusicScanProber{}
-	prober.set("01 First.flac", &media.MusicMetadata{Version: 1, Title: "First source", Album: "Original embedded album", Artist: "Original artist"}, false)
-	prober.set("02 Second.flac", &media.MusicMetadata{Version: 1, Title: "Second source", Album: "Original embedded album", Artist: "Original artist"}, false)
+	prober.set("01 First.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "First source", Album: "Original embedded album", Artist: "Original artist", AlbumArtist: "Original ensemble"}, false)
+	prober.set("02 Second.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Second source", Album: "Original embedded album", Artist: "Original artist", AlbumArtist: "Original ensemble"}, false)
 	ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, prober)
 	actor := metadataEditTestActor(t, ctx, pool, "music-metadata-editor")
 	firstPath := libraryIntegrationFile(t, allowedRoot, "music/Album/01 First.flac", "audio:controlled-first")
@@ -190,8 +213,8 @@ func TestStoreMusicMetadataPreservesControlsAndCachedRelations(t *testing.T) {
 	albumDetail = metadataEditTestUpdate(t, ctx, store, actor, albumDetail,
 		map[string]json.RawMessage{"Name": json.RawMessage(`"Manual album title"`)}, []string{"Name"})
 	firstLocks, albumLocks := metadataEditTestCopy(firstDetail.LockedValues), metadataEditTestCopy(albumDetail.LockedValues)
-	prober.set("01 First.flac", &media.MusicMetadata{Version: 1, Title: "Changed audio title", Album: "Changed embedded album", Artist: "Changed artist"}, false)
-	prober.set("02 Second.flac", &media.MusicMetadata{Version: 1, Title: "Changed second title", Album: "Changed embedded album", Artist: "Changed artist"}, false)
+	prober.set("01 First.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Changed audio title", Album: "Changed embedded album", Artist: "Changed artist", AlbumArtist: "Changed ensemble"}, false)
+	prober.set("02 Second.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Changed second title", Album: "Changed embedded album", Artist: "Changed artist", AlbumArtist: "Changed ensemble"}, false)
 	if job := forceProbeTestScan(t, ctx, store, library.ID, "Completed"); job.Error != "" {
 		t.Fatalf("refresh accepted music behind administrator controls: %+v", job)
 	}
@@ -255,11 +278,11 @@ func TestStoreMusicMetadataPreservesControlsAndCachedRelations(t *testing.T) {
 	}
 	metadataMusicScanAssertSource(t, ctx, pool, first.ID, musicMetadataSource{
 		Version: 1, Name: "Changed audio title", Album: "Changed embedded album",
-		Artists: []string{"Changed artist"}, AlbumArtists: []string{},
+		Artists: []string{"Changed artist"}, AlbumArtists: []string{"Changed ensemble"},
 	})
 	metadataMusicScanAssertSource(t, ctx, pool, album.ID, musicMetadataSource{
 		Version: 1, Name: "Changed embedded album", Album: "Changed embedded album",
-		Artists: []string{"Changed artist"}, AlbumArtists: []string{"Changed artist"},
+		Artists: []string{"Changed artist"}, AlbumArtists: []string{"Changed ensemble"},
 	})
 }
 
@@ -271,17 +294,17 @@ func TestStoreMusicMetadataRequiresCompleteMembersBeforeAlbumPublication(t *test
 		retainAlbum  bool
 		wantArtists  []string
 	}{
-		{name: "MixedTags", second: &media.MusicMetadata{Version: 1, Album: "Other album", Artist: "Other artist"}, wantArtists: []string{"Original artist", "Other artist"}},
-		{name: "InspectedEmptyTags", second: &media.MusicMetadata{Version: 1}, wantArtists: []string{"Original artist"}},
+		{name: "MixedTags", second: &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Album: "Other album", Artist: "Other artist"}, wantArtists: []string{"Original artist", "Other artist"}},
+		{name: "InspectedEmptyTags", second: &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion}, wantArtists: []string{"Original artist"}},
 		{name: "UnextractedMember", retainAlbum: true},
-		{name: "UnknownVersionMember", second: &media.MusicMetadata{Version: 2, Album: "Unknown album", Artist: "Unknown artist"}, retainAlbum: true},
-		{name: "OversizedMember", second: &media.MusicMetadata{Version: 1, Artist: strings.Repeat("x", 1025)}, retainAlbum: true},
+		{name: "UnknownVersionMember", second: &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion + 1, Album: "Unknown album", Artist: "Unknown artist"}, retainAlbum: true},
+		{name: "OversizedMember", second: &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Artist: strings.Repeat("x", 1025)}, retainAlbum: true},
 		{name: "FailedMember", probeFailure: true, retainAlbum: true},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			prober := &metadataMusicScanProber{}
-			initialFirst := &media.MusicMetadata{Version: 1, Title: "First title", Album: "Original album", Artist: "Original artist"}
-			initialSecond := &media.MusicMetadata{Version: 1, Title: "Second title", Album: "Original album", Artist: "Original artist"}
+			initialFirst := &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "First title", Album: "Original album", Artist: "Original artist"}
+			initialSecond := &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Second title", Album: "Original album", Artist: "Original artist"}
 			prober.set("01 First.flac", initialFirst, false)
 			prober.set("02 Second.flac", initialSecond, false)
 			ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, prober)
@@ -298,7 +321,7 @@ func TestStoreMusicMetadataRequiresCompleteMembersBeforeAlbumPublication(t *test
 			albumBefore := metadataMusicScanStateSnapshot(t, ctx, pool, album.ID)
 			secondBefore := metadataEditTestSnapshot(t, ctx, pool, second.ID)
 			if scenario.retainAlbum {
-				prober.set("01 First.flac", &media.MusicMetadata{Version: 1, Title: "Fresh first title", Album: "Fresh album", Artist: "Fresh artist"}, false)
+				prober.set("01 First.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Fresh first title", Album: "Fresh album", Artist: "Fresh artist"}, false)
 			}
 			prober.set("02 Second.flac", scenario.second, scenario.probeFailure)
 			job := forceProbeTestScan(t, ctx, store, library.ID, "Completed")
@@ -390,8 +413,8 @@ func metadataMusicScanStateSnapshot(t *testing.T, ctx context.Context, pool *pgx
 
 func TestStoreMusicMetadataKeepsPublishedAlbumWhenNextPublicationIsCancelled(t *testing.T) {
 	prober := &metadataMusicScanProber{}
-	prober.set("01 First.flac", &media.MusicMetadata{Version: 1, Title: "First track", Album: "Original first album", Artist: "Original first artist"}, false)
-	prober.set("02 Second.flac", &media.MusicMetadata{Version: 1, Title: "Second track", Album: "Original second album", Artist: "Original second artist"}, false)
+	prober.set("01 First.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "First track", Album: "Original first album", Artist: "Original first artist"}, false)
+	prober.set("02 Second.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Second track", Album: "Original second album", Artist: "Original second artist"}, false)
 	ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, prober)
 	firstPath := libraryIntegrationFile(t, allowedRoot, "music/First/01 First.flac", "audio:cancel-first")
 	secondPath := libraryIntegrationFile(t, allowedRoot, "music/Second/02 Second.flac", "audio:cancel-second")
@@ -404,12 +427,12 @@ func TestStoreMusicMetadataKeepsPublishedAlbumWhenNextPublicationIsCancelled(t *
 		{
 			item:  nfoCatalogItem(t, ctx, store, userID, library.ID, filepath.Dir(firstPath)),
 			track: nfoCatalogItem(t, ctx, store, userID, library.ID, firstPath),
-			facts: media.MusicMetadata{Version: 1, Title: "Accepted first track", Album: "Accepted first album", Artist: "Accepted first artist"},
+			facts: media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Accepted first track", Album: "Accepted first album", Artist: "Accepted first artist"},
 		},
 		{
 			item:  nfoCatalogItem(t, ctx, store, userID, library.ID, filepath.Dir(secondPath)),
 			track: nfoCatalogItem(t, ctx, store, userID, library.ID, secondPath),
-			facts: media.MusicMetadata{Version: 1, Title: "Accepted second track", Album: "Accepted second album", Artist: "Accepted second artist"},
+			facts: media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Accepted second track", Album: "Accepted second album", Artist: "Accepted second artist"},
 		},
 	}
 	if albums[1].item.ID < albums[0].item.ID {
@@ -474,9 +497,9 @@ func TestStoreMusicMetadataMoveRefreshesBothAlbumsWithoutReprobing(t *testing.T)
 		t.Skip("stable filesystem identity is supported on Linux")
 	}
 	prober := &metadataMusicScanProber{}
-	prober.set("01 Moving.flac", &media.MusicMetadata{Version: 1, Title: "Moving title", Album: "Alpha", Artist: "Artist A"}, false)
-	prober.set("03 Remain.flac", &media.MusicMetadata{Version: 1, Title: "Remaining title", Album: "Gamma", Artist: "Artist C"}, false)
-	prober.set("02 Target.flac", &media.MusicMetadata{Version: 1, Title: "Target title", Album: "Beta", Artist: "Artist B"}, false)
+	prober.set("01 Moving.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Moving title", Album: "Alpha", Artist: "Artist A"}, false)
+	prober.set("03 Remain.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Remaining title", Album: "Gamma", Artist: "Artist C"}, false)
+	prober.set("02 Target.flac", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "Target title", Album: "Beta", Artist: "Artist B"}, false)
 	ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, prober)
 	movingPath := libraryIntegrationFile(t, allowedRoot, "music/Old/01 Moving.flac", "audio:moving-track")
 	libraryIntegrationFile(t, allowedRoot, "music/Old/03 Remain.flac", "audio:remaining-track")

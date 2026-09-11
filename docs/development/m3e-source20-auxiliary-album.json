@@ -1,0 +1,116 @@
+{
+  "auxiliary_album": {
+    "card": {
+      "card_present": true,
+      "id_matches_receipt": null,
+      "id_present": false,
+      "type": null
+    },
+    "detail": {
+      "album_id_matches_receipt": true,
+      "navigation_observed": true,
+      "visible_receipted_track_rows": 2
+    },
+    "expected_album_id": "002c2ea2c77769ae9b0b84b6e788998b",
+    "outcome": "in_progress",
+    "phase": "auxiliary_album_wait",
+    "responses": [
+      {
+        "failure": null,
+        "finished_elapsed_ms": 3059,
+        "request_elapsed_ms": 3036,
+        "request_index": 251,
+        "request_phase": "workflow:auxiliary_album_wait",
+        "response_elapsed_ms": 3058,
+        "response_phase": "workflow:auxiliary_album_wait",
+        "route": "/emby/Items/{value}/Similar",
+        "seed_matches_receipted_album": true,
+        "status": 200
+      },
+      {
+        "failure": null,
+        "request_elapsed_ms": 3037,
+        "request_index": 252,
+        "request_phase": "workflow:auxiliary_album_wait",
+        "response_elapsed_ms": 3044,
+        "response_phase": "workflow:auxiliary_album_wait",
+        "route": "/emby/Items/{value}/ThemeMedia",
+        "seed_matches_receipted_album": true,
+        "status": 404
+      }
+    ],
+    "scope": "Original UI album navigation and auxiliary HTTP responses; no playback or history reset",
+    "steps": [
+      {
+        "action": "click_unique_album_title_in_latest_music",
+        "requested_album_id": "002c2ea2c77769ae9b0b84b6e788998b"
+      }
+    ]
+  },
+  "browser_elapsed_ms": 14996,
+  "candidate_binary_sha256": "a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9",
+  "candidate_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 581075,
+    "start_ticks": 3900536
+  },
+  "driver_source_sha256": {
+    "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232",
+    "client-browser-auxiliary-album.mjs": "b53bf58a6cb403c725b2bd0ce8eec96e4258dd74367d7a2d91b3886d8212c39c",
+    "client-browser-av-runtime.mjs": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0",
+    "client-browser-av.mjs": "b49239c48897ed52d88ca76e82633b1e273dc18a02ffa63b69aeff7385b2fba3",
+    "client-browser-goby-fixture.mjs": "e559cc83079b7dc10faec3bc75f49a7684996ba0c523ad42197fe959ce271a16",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"
+  },
+  "home_completed": false,
+  "login": {
+    "attempted": true,
+    "http_status": 200,
+    "request_observed": true,
+    "result": "http_accepted_and_login_form_closed"
+  },
+  "logout": {
+    "attempted": true,
+    "http_status": 204,
+    "result": "ui_logout_http_accepted_and_login_view_visible"
+  },
+  "observation_sha256": "a74d8e11fffce4339fc9ccbd094b775dcb2b283fd4c42abd82a59ff08fd4d820",
+  "original_failure": "workflow",
+  "original_report_rewritten": false,
+  "page_errors": [
+    {
+      "elapsed_ms": 3045,
+      "message": "Response",
+      "name": "Error",
+      "phase": "workflow:auxiliary_album_wait"
+    }
+  ],
+  "preferences": {
+    "configuration_unchanged": true,
+    "policy_unchanged": true,
+    "user_settings_unchanged": true
+  },
+  "request_count": 259,
+  "run": "/opt/goby-test/exec-work-m3e/source20-auxiliary-album-ui-04",
+  "scope": "Original-client Similar response and owned album/track identity passed; the complete auxiliary navigation remained failed at the unimplemented ThemeMedia response and did not return Home.",
+  "similar_core_passed": true,
+  "source_manifest_sha256": "456f90464a0c18d8f1a31e268a67a5c65dcf1264a7ee69fc45be4d085d94e945",
+  "state_proof": {
+    "all_bound_auxiliary_transfers_completed": false,
+    "all_observed_item_user_data_unchanged": true,
+    "event_scope": "Complete observed browser request set after browser shutdown",
+    "independent_state_reads_are_ui_acceptance": false,
+    "observed_item_count": 4,
+    "observed_media_elements_inactive": true,
+    "playback_request_count": 0,
+    "request_overflow": 0
+  },
+  "status": "partial",
+  "timing_interpretation": "The page error followed ThemeMedia response headers and preceded Similar response headers on the same observer clock; no error-to-request identifier proves unique causality.",
+  "token_proof_outcome": "all_observed_logout_tokens_rejected"
+}

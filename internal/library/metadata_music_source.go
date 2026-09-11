@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	// The persisted source shape is independent from the refreshable probe
+	// facts. Existing version 1 sources remain valid after probe upgrades.
+	musicSourceVersion    = 1
 	musicSourceMaxBytes   = 1 << 20
 	musicSourceMaxEntries = 1024
 )
@@ -134,7 +137,7 @@ func decodeAcceptedMusicSource(raw []byte) (musicMetadataSource, bool, error) {
 		}
 	}
 	music := musicMetadataSource{Artists: []string{}, AlbumArtists: []string{}}
-	if err := json.Unmarshal(object["Version"], &music.Version); err != nil || music.Version != 1 {
+	if err := json.Unmarshal(object["Version"], &music.Version); err != nil || music.Version != musicSourceVersion {
 		return musicMetadataSource{}, false, fmt.Errorf("accepted music source must have Version 1")
 	}
 	for _, field := range []struct {

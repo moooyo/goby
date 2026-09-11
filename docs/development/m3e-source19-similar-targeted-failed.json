@@ -1,0 +1,43 @@
+{
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "counts": {
+    "fail": 1,
+    "pass": 11,
+    "skip": 0
+  },
+  "finding": "The complete-catalog similarity test timed out at its existing 90-second fixture deadline with 1,050 low-score candidates and a later high-score candidate. Keep that workload; optimize the SQL rather than relaxing the timeout or limiting the scored population.",
+  "installed": false,
+  "log_sha256": "a1cae0248fa6a2e8004b4012d1ad0ee4a35a068795ca97b35407822088ee46b6",
+  "model_limit": "The source19 equal-weight Person model was independently contradicted by reference combinations and is being corrected in the working source.",
+  "pair_evidence_retained": true,
+  "report_sha256": "3fd116765f17978e70a1bb53202281ae0d1df5d608b555dc28962ca476793199",
+  "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_075321_2bae7b2afb21",
+  "schema": "goby-m3e-source19-similar-targeted",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-19",
+  "source_manifest_sha256": "cdf8775d7ffd0973046d83fef48d8ab3a813105164f807755ae9783a18545708",
+  "status": "failed",
+  "top_level": {
+    "fail": [
+      "TestStoreSimilarRanksBeyondOrdinaryPageAndUsesEffectiveMetadataControls"
+    ],
+    "pass": [
+      "TestHTTPMusicSimilarityKeepsArtistDirectionAndAlbumIdentity",
+      "TestHTTPSimilarUsesScopedMetadataAndReturnedPageCounts",
+      "TestQuerySimilarRejectsInvalidInputsBeforeDatabaseAccess",
+      "TestSimilarNamespaceKeepsOpaqueSeedSpelling",
+      "TestSimilarQueryPreservesZeroLimitAndDistinctExclusions",
+      "TestSimilarQueryRejectsAmbiguousAndMalformedControls",
+      "TestStoreSimilarAppliesAccessBeforeRankingAndRejectsEntitySeeds",
+      "TestStoreSimilarAuthorizationScoringAndUserDataShareOneReadSnapshot",
+      "TestStoreSimilarEffectiveCreditsRejectDuplicatesAndParentArtistLeakage",
+      "TestStoreSimilarMoviesMatchRecordedSetsAndPageContract",
+      "TestStoreSimilarMusicUsesDirectedRoleMatchesAndPhysicalAlbum"
+    ],
+    "skip": []
+  },
+  "version": 1
+}

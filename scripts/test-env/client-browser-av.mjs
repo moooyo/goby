@@ -13,6 +13,7 @@ import { loadGobyAVFixture } from './client-browser-goby-fixture.mjs';
 import { runAlbumDiagnostics } from './client-browser-album-diagnostics.mjs';
 import { runSubtitleContractDiagnostics } from './client-browser-subtitle-diagnostics.mjs';
 import { createAudioReportDiagnostics } from './client-browser-audio-report-diagnostics.mjs';
+import { auditOwnedItemIdentity, runAuxiliaryAlbumUI } from './client-browser-auxiliary-album.mjs';
 
 const ROOT = '/opt/goby-test/exec-work-m3e';
 const SETUP = path.join(ROOT, 'av-user-setup');
@@ -27,7 +28,7 @@ for (let index = 2; index < process.argv.length; index += 2) {
 }
 const hasMusicUpgrade = musicUpgradeFlags.some(flag => Object.hasOwn(options, flag));
 const hasMusicChain = musicChainFlags.some(flag => Object.hasOwn(options, flag));
-if (process.platform !== 'linux' || process.getuid() !== 0 || !['mp3', 'flac', 'subtitles', 'browse-audio', 'tv', 'diagnose-album', 'diagnose-subtitles', 'diagnose-audio'].includes(options.check) ||
+if (process.platform !== 'linux' || process.getuid() !== 0 || !['mp3', 'flac', 'subtitles', 'browse-audio', 'tv', 'diagnose-album', 'diagnose-subtitles', 'diagnose-audio', 'auxiliary-album'].includes(options.check) ||
     !['reference', 'goby'].includes(options.backend) ||
     (options.backend === 'goby' ? !/^[a-f0-9]{64}$/.test(options['candidate-sha256'] ?? '') : Boolean(options['candidate-sha256'])) ||
     (options['music-scan-receipt-sha256'] && (options.backend !== 'goby' || !/^[a-f0-9]{64}$/.test(options['music-scan-receipt-sha256']))) ||
@@ -36,6 +37,7 @@ if (process.platform !== 'linux' || process.getuid() !== 0 || !['mp3', 'flac', '
     (hasMusicChain && (options.backend !== 'goby' || hasMusicUpgrade || !options['music-scan-receipt-sha256'] ||
       musicChainFlags.some(flag => !Object.hasOwn(options, flag)))) ||
     (options.check === 'diagnose-audio' && (options.backend !== 'goby' || !(hasMusicUpgrade || hasMusicChain))) ||
+    (options.check === 'auxiliary-album' && (options.backend !== 'goby' || !(hasMusicUpgrade || hasMusicChain))) ||
     (options.backend === 'goby' && ['mp3', 'flac', 'diagnose-audio'].includes(options.check) && !options['music-scan-receipt-sha256']) ||
     !options.output || path.dirname(path.resolve(options.output)) !== ROOT) throw new Error('An explicit private remote AV output is required.');
 const goby = options.backend === 'goby' ? await loadGobyAVFixture({ expectedSHA256: options['candidate-sha256'],
@@ -55,7 +57,7 @@ const driverSourceHashes = {};
 for (const filename of ['client-browser-av.mjs', 'client-browser-av-runtime.mjs', 'client-browser-audio-flow.mjs',
   'client-browser-subtitle-flow.mjs', 'client-browser-tv-flow.mjs', 'client-browser-session-proof.mjs',
   'client-browser-goby-fixture.mjs', 'client-browser-album-diagnostics.mjs', 'client-browser-subtitle-diagnostics.mjs',
-  'client-browser-audio-report-diagnostics.mjs']) {
+  'client-browser-audio-report-diagnostics.mjs', 'client-browser-auxiliary-album.mjs']) {
   driverSourceHashes[filename] = sha(await fs.readFile(new URL(filename, import.meta.url)));
 }
 function stable(value) {
@@ -214,8 +216,9 @@ async function readState(owned, report, label) {
   const items = [];
   for (const expected of expectedMedia) {
     const actual = await apiRead('/emby/Users/' + owned.userId + '/Items/' + expected.id, owned.token, report, `${label}-${expected.name}`);
-    if (actual.Id !== expected.id || actual.Name !== expected.name || actual.Path !== expected.path ||
-        (expected.type && actual.Type !== expected.type) || (expected.parentId && actual.ParentId !== expected.parentId)) {
+    const identity = auditOwnedItemIdentity(actual, expected);
+    (report.fixture_identity_checks ??= []).push({ label, scope: expected.scope ?? 'av-media', ...identity });
+    if (Object.values(identity).some(value => value !== true)) {
       throw new Error('An observed item left the owned synthetic media whitelist.');
     }
     items.push({ id: expected.id, name: expected.name, scope: expected.scope ?? 'av-media', user_data: actual.UserData });
@@ -258,6 +261,31 @@ async function readBrowseMedia(page) {
 }
 
 function finalizeEvidence(report) {
+  if (report.auxiliary_album_state_proof) {
+    const playback = report.requests.filter(entry => entry.origin === 'target' &&
+      (/\/(?:Playing|Progress|Stopped)(?:\/|$)/i.test(entry.route) ||
+        /\/(?:Videos|Audio)\/[^/]+\/(?:stream|universal|original|master|hls|main)(?:[./]|$)/i.test(entry.route)));
+    const state = report.auxiliary_album_state_proof;
+    const responses = report.auxiliary_album?.responses ?? [];
+    state.all_bound_auxiliary_transfers_completed = responses.length >= 2 && responses.every(response => {
+      const entry = report.requests[response.request_index];
+      return response.seed_matches_receipted_album === true && entry && entry.route === response.route &&
+        Number.isInteger(entry.status) && Number.isInteger(entry.finished_elapsed_ms) && !entry.failure &&
+        (!/\/Similar\/?$/i.test(entry.route) || entry.status === 200);
+    });
+    for (const response of responses) {
+      const entry = report.requests[response.request_index];
+      if (!entry || entry.route !== response.route) continue;
+      Object.assign(response, { status: entry.status, response_elapsed_ms: entry.response_elapsed_ms,
+        response_phase: entry.response_phase, finished_elapsed_ms: entry.finished_elapsed_ms, failure: entry.failure ?? null });
+    }
+    state.playback_request_count = playback.length;
+    state.request_overflow = report.request_overflow;
+    state.event_scope = 'Complete observed browser request set after browser shutdown';
+    if (playback.length || report.request_overflow || report.auxiliary_album?.request_binding_error ||
+        !state.all_bound_auxiliary_transfers_completed || !state.all_observed_item_user_data_unchanged ||
+        !state.observed_media_elements_inactive) throw new Error('The final auxiliary album read boundary differs.');
+  }
   if (report.tv_browse_state_proof) {
     const playback = report.requests.filter(entry => entry.origin === 'target' &&
       (/\/(?:Playing|Progress|Stopped)(?:\/|$)/i.test(entry.route) ||
@@ -295,11 +323,21 @@ try {
       report.fixture_state_reads = [];
       const owned = await principal(context.context);
       if (goby) await discoverGobyMedia(owned, report);
+      if (options.check === 'auxiliary-album') {
+        // The receipted //album/root item has an empty stored path, so its DTO
+        // omits Path. The scan's album.path names the owning media directory.
+        expectedMedia.push({ id: goby.music.album.id, name: goby.music.album.name, pathOmitted: true,
+          parentId: goby.evidence.libraries.music, type: 'MusicAlbum', scope: 'auxiliary-album-owner' });
+      }
       report.av_state_before = await readState(owned, report, 'before');
       if (options.check === 'tv') report.tv_browse_media_before = await readBrowseMedia(page);
+      if (options.check === 'auxiliary-album') report.auxiliary_album_media_before = await readBrowseMedia(page);
       let workflowError = null;
       try {
-        if (options.check === 'browse-audio') {
+        if (options.check === 'auxiliary-album') {
+          await runAuxiliaryAlbumUI({ ...context, album: ALBUM, albumId: goby.music.album.id,
+            libraryName: 'M3e Client Music', tracks: Object.values(goby.music.tracks) });
+        } else if (options.check === 'browse-audio') {
           const album = page.locator('.card button.cardTextActionButton[data-action="link"],.cardBox button.cardTextActionButton[data-action="link"]')
             .filter({ hasText: ALBUM }).filter({ visible: true });
           await album.first().waitFor({ state: 'visible', timeout: 20000 });
@@ -345,6 +383,7 @@ try {
         }
       } catch (error) { workflowError = error; }
       if (options.check === 'tv') report.tv_browse_media_after = await readBrowseMedia(page);
+      if (options.check === 'auxiliary-album') report.auxiliary_album_media_after = await readBrowseMedia(page);
       report.av_state_after = await readState(owned, report, 'after');
       report.av_preferences_comparison = {
         configuration_unchanged: report.av_state_before.configuration_sha256 === report.av_state_after.configuration_sha256,
@@ -353,6 +392,15 @@ try {
       };
       if (Object.values(report.av_preferences_comparison).some(value => value !== true)) {
         workflowError ??= new Error('The observed AV preferences changed.');
+      }
+      if (options.check === 'auxiliary-album') {
+        report.auxiliary_album_state_proof = {
+          all_observed_item_user_data_unchanged: JSON.stringify(stable(report.av_state_before.items)) === JSON.stringify(stable(report.av_state_after.items)),
+          observed_item_count: report.av_state_before.items.length,
+          observed_media_elements_inactive: [...report.auxiliary_album_media_before, ...report.auxiliary_album_media_after]
+            .every(element => element.paused && element.current_time === 0),
+          independent_state_reads_are_ui_acceptance: false,
+        };
       }
       if (options.check === 'tv') {
         const playbackRequests = report.requests.filter(entry => entry.origin === 'target' &&
@@ -381,6 +429,7 @@ try {
   process.stdout.write(JSON.stringify({ result: diagnosticOnly ? 'diagnostic_completed' : 'completed', backend: options.backend, check: options.check,
     audio_outcome: result.audio_flow?.outcome, subtitle_outcome: result.subtitle_flow?.outcome, tv_outcome: result.tv_browse?.outcome,
     album_diagnostics: result.album_diagnostics?.outcome,
+    auxiliary_album: result.auxiliary_album?.outcome,
     subtitle_diagnostics: result.subtitle_contract_diagnostics?.outcome,
     session_proof: result.session_proof?.outcome, output: options.output }) + '\n');
 } catch (error) {

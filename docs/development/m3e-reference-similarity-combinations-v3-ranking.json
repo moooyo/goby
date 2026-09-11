@@ -1,0 +1,317 @@
+{
+  "allMediaPreserved": true,
+  "automaticFieldAllowlist": [
+    "DateLastRefreshed",
+    "DateLastSaved",
+    "ETag",
+    "Etag"
+  ],
+  "bytesRead": 427762,
+  "cases": [
+    {
+      "automaticChanges": [
+        {
+          "fields": {},
+          "phase": "prewrite"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "cd8372f88fd1fcfe5ed7a6c4634645de"
+              },
+              "before": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              }
+            }
+          },
+          "phase": "accepted"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "cd8372f88fd1fcfe5ed7a6c4634645de"
+              },
+              "before": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              }
+            }
+          },
+          "phase": "prerestore"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "dce74f705ace861b73acc53f26ee5e2e"
+              },
+              "before": {
+                "present": true,
+                "value": "1d9f4b1dffae323b0bea642dabd68ade"
+              }
+            }
+          },
+          "phase": "restored"
+        }
+      ],
+      "itemId": "40",
+      "restored": true,
+      "similar": {
+        "acceptedMetadata": {
+          "GenreItems": [
+            {
+              "Id": 53,
+              "Name": "Drama"
+            },
+            {
+              "Id": 54,
+              "Name": "Adventure"
+            }
+          ],
+          "Genres": [
+            "Drama",
+            "Adventure"
+          ],
+          "Studios": [
+            {
+              "Id": 50,
+              "Name": "SharedStudio"
+            }
+          ]
+        },
+        "mutatedBusinessStateConfirmedBeforeAndAfterReads": true,
+        "observations": [
+          {
+            "observation": 1,
+            "returnedIds": [
+              "44",
+              "40",
+              "41",
+              "37"
+            ],
+            "sequence": 16,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 2,
+            "returnedIds": [
+              "44",
+              "40",
+              "41",
+              "37"
+            ],
+            "sequence": 17,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 3,
+            "returnedIds": [
+              "44",
+              "40",
+              "37",
+              "41"
+            ],
+            "sequence": 18,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 4,
+            "returnedIds": [
+              "44",
+              "40",
+              "37",
+              "41"
+            ],
+            "sequence": 19,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          }
+        ]
+      },
+      "variant": "ranking"
+    },
+    {
+      "automaticChanges": [
+        {
+          "fields": {},
+          "phase": "prewrite"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "dce74f705ace861b73acc53f26ee5e2e"
+              },
+              "before": {
+                "present": true,
+                "value": "8847667225510ecf4d28f54f475b3ee7"
+              }
+            }
+          },
+          "phase": "accepted"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "dce74f705ace861b73acc53f26ee5e2e"
+              },
+              "before": {
+                "present": true,
+                "value": "8847667225510ecf4d28f54f475b3ee7"
+              }
+            }
+          },
+          "phase": "prerestore"
+        },
+        {
+          "fields": {
+            "Etag": {
+              "after": {
+                "present": true,
+                "value": "df4b5dc3da77daa17722d6cd9cd788b4"
+              },
+              "before": {
+                "present": true,
+                "value": "8847667225510ecf4d28f54f475b3ee7"
+              }
+            }
+          },
+          "phase": "restored"
+        }
+      ],
+      "itemId": "49",
+      "restored": true,
+      "similar": {
+        "acceptedMetadata": {
+          "GenreItems": [
+            {
+              "Id": 53,
+              "Name": "Drama"
+            },
+            {
+              "Id": 54,
+              "Name": "Adventure"
+            }
+          ],
+          "Genres": [
+            "Drama",
+            "Adventure"
+          ]
+        },
+        "mutatedBusinessStateConfirmedBeforeAndAfterReads": true,
+        "observations": [
+          {
+            "observation": 1,
+            "returnedIds": [
+              "44",
+              "41",
+              "49",
+              "37"
+            ],
+            "sequence": 26,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 2,
+            "returnedIds": [
+              "44",
+              "49",
+              "37",
+              "41"
+            ],
+            "sequence": 27,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 3,
+            "returnedIds": [
+              "44",
+              "49",
+              "41",
+              "37"
+            ],
+            "sequence": 28,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          },
+          {
+            "observation": 4,
+            "returnedIds": [
+              "44",
+              "49",
+              "37",
+              "41"
+            ],
+            "sequence": 29,
+            "targetReturned": true,
+            "totalRecordCount": 4
+          }
+        ]
+      },
+      "variant": "ranking"
+    }
+  ],
+  "classification": "Reference-only metadata protocol research; not client acceptance or a scoring specification.",
+  "cleanup": {
+    "exactTokenStatus": 401,
+    "logoutStatus": 204,
+    "result": "logout204-exact-token401"
+  },
+  "elapsedSeconds": 2.5222852130027604,
+  "failure": null,
+  "helperSha256": "9af752745a5e9d9a9047491c03b9f32da2e9a70d01d78d17e1504ad760204d75",
+  "indexReportSha256": "457a4d88f86617c448b980f31b7dd5b7d8bbeb31e3cfe807103371859f2d7998",
+  "logoutSeconds": 20,
+  "manifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+  "marker": "goby-reference-similarity-combinations-m3e-v3-ranking",
+  "maximumRequestAttempts": 45,
+  "newRecorderTokenRevoked": true,
+  "normalRequestPlan": 43,
+  "normalSeconds": 120,
+  "operatorSha256": "29f159a2580e178dce65b6c23ef14ad9875971240e534546eb5e8a14ce88c160",
+  "originalSixItemsAndAllFiveUsersPreserved": true,
+  "ownerSha256": "3bdbeee28406f9809624f3619b38915ab4445fa1a7c8aca30cbe445d3d1ddb40",
+  "rawDetailEqualityClaimedForModifiedItems": false,
+  "readOnlySeedFullDetailPreserved": true,
+  "recovery": {
+    "result": "no-pending-metadata-write"
+  },
+  "recoverySeconds": 45,
+  "referenceBinarySha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requestAttempts": 43,
+  "restoredBusinessMetadata": {
+    "40": true,
+    "49": true
+  },
+  "result": "complete",
+  "retryPermitted": false,
+  "scriptSha256": "0bd9ce0318ed86a05e3a7f7256d62671134b47ad15f7b34a190a885ab4c04f63",
+  "sentMutationIntents": [
+    "login",
+    "logout",
+    "modify-40",
+    "modify-49",
+    "restore-40",
+    "restore-49"
+  ],
+  "similarReadsPerCase": 4,
+  "unreturnedUserDataFieldsClaimed": false,
+  "userDataScope": "Exact equality of every returned UserData field for all five users visible subsets of the original six playables and the two target movies, using the accepted bounded Items projection.",
+  "variant": "ranking"
+}

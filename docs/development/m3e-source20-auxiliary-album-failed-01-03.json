@@ -1,0 +1,64 @@
+{
+  "attempts": [
+    {
+      "auxiliary_request_count": 0,
+      "browser_elapsed_ms": 3845,
+      "history_reset": false,
+      "login": 200,
+      "logout": 204,
+      "observation_sha256": "246b34163e2f4fed475a9d80513219b9aed36a0460f5a0f1c4da0e1581fc5758",
+      "original_failure": "workflow",
+      "preferences": null,
+      "reason": "The harness expected the owning directory as the synthetic album Path.",
+      "rewritten": false,
+      "run": "/opt/goby-test/exec-work-m3e/source20-auxiliary-album-ui-01",
+      "state_proof": null,
+      "token_proof": "all_observed_logout_tokens_rejected"
+    },
+    {
+      "auxiliary_request_count": 0,
+      "browser_elapsed_ms": 3821,
+      "history_reset": false,
+      "login": 200,
+      "logout": 204,
+      "observation_sha256": "19da913c84072d9834ffc3558da4430df93a96e2ff545ad53e96d6852477258b",
+      "original_failure": "workflow",
+      "preferences": null,
+      "reason": "The harness expected an empty Path value, while the DTO omits that field.",
+      "rewritten": false,
+      "run": "/opt/goby-test/exec-work-m3e/source20-auxiliary-album-ui-02",
+      "state_proof": null,
+      "token_proof": "all_observed_logout_tokens_rejected"
+    },
+    {
+      "auxiliary_request_count": 0,
+      "browser_elapsed_ms": 4830,
+      "history_reset": false,
+      "login": 200,
+      "logout": 204,
+      "observation_sha256": "55e1f43450746536255cc34db20c0f0db1e87b46a489596218117d8b42d15c08",
+      "original_failure": "workflow",
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "reason": "The harness required data-id/data-type on a card whose original-client DOM omits both.",
+      "rewritten": false,
+      "run": "/opt/goby-test/exec-work-m3e/source20-auxiliary-album-ui-03",
+      "state_proof": {
+        "all_bound_auxiliary_transfers_completed": false,
+        "all_observed_item_user_data_unchanged": true,
+        "event_scope": "Complete observed browser request set after browser shutdown",
+        "independent_state_reads_are_ui_acceptance": false,
+        "observed_item_count": 4,
+        "observed_media_elements_inactive": true,
+        "playback_request_count": 0,
+        "request_overflow": 0
+      },
+      "token_proof": "all_observed_logout_tokens_rejected"
+    }
+  ],
+  "scope": "Three original runs stopped before auxiliary reads; no original report was relabeled or reused. Attempts1-2 lack a completed before/after state comparison.",
+  "status": "failed_attempts_preserved"
+}

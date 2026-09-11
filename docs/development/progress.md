@@ -9,6 +9,13 @@ in progress. The partial [source18/schema25 checkpoint](verification-m3e-source1
 is deployed on the primary service; M5j remains a preserved historical baseline.
 This source18 checkpoint records the deployed product and its verification evidence together.
 
+The subsequent [source20 candidate checkpoint](verification-m3e-source20-similar.md)
+adds Similar queries and album-artist metadata. It passed 1,763 complete-source
+race tests and a 30-table same-schema candidate upgrade. Original-client Similar
+200 transfer, item state and logout passed within a retained failed auxiliary
+flow: ThemeMedia still returned 404 and Home was not reached. The main remains
+source18; complete M3 acceptance and the next Theme implementation remain open.
+
 ## Decisions
 
 - Develop directly on `main`; commit and push each completed increment.

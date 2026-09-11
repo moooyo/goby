@@ -1,0 +1,30 @@
+{
+  "changed_files": [
+    "docs/development/music-metadata.md",
+    "internal/library/metadata_album_artist_scan_integration_test.go",
+    "internal/library/metadata_music_scan.go",
+    "internal/library/metadata_music_scan_integration_test.go",
+    "internal/library/metadata_music_scan_test.go",
+    "internal/library/metadata_music_source.go",
+    "internal/library/music_query.go",
+    "internal/library/music_query_test.go",
+    "internal/library/scan.go",
+    "internal/library/similar.go",
+    "internal/library/similar_integration_test.go",
+    "internal/media/music_metadata.go",
+    "internal/media/music_metadata_test.go",
+    "internal/server/libraries.go",
+    "internal/server/music_dto.go",
+    "internal/server/music_dto_test.go",
+    "internal/server/namespace.go",
+    "internal/server/similar.go",
+    "internal/server/similar_integration_test.go",
+    "internal/server/similar_test.go"
+  ],
+  "files": 3803,
+  "installed": false,
+  "manifest_sha256": "cdf8775d7ffd0973046d83fef48d8ab3a813105164f807755ae9783a18545708",
+  "scope": "Music metadata v2 and preliminary Similar implementation; only targeted music verification is planned for this source. The inferred similarity model is still being refined against reference combinations.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-19",
+  "status": "frozen"
+}

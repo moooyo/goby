@@ -224,6 +224,7 @@ The [configuration contract](configuration.md) defines the five closed projectio
 | `GET /emby/Users/{UserId}/Items/Root` | Stable virtual navigation root |
 | `GET /emby/Users/{UserId}/Items` and `GET /emby/Items` | ACL-filtered browsing/search, recursive parents, IDs/types/media-type filters, paging and selected sorts |
 | `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and probe metadata, including the item's path; also resolves visible catalog entities by positive decimal ID |
+| `GET /emby/Items/{Id}/Similar` | Source20 candidate: same-type authorized candidates, reference-constrained scoring, returned-page counts and artist exclusions; complete tests and scoped original-client 200 transfer passed; primary deployment and complete auxiliary navigation remain separate |
 | `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
 | `GET /emby/Shows/NextUp` | SeriesId selects the unplayed sequence after the watched cursor; global mode selects one continuation per series under a documented Goby policy; [evidence boundary](../development/next-up.md) |
 | `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
@@ -300,7 +301,21 @@ Library authorization currently implements administrator access plus `EnableAllF
 
 The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Optional `IsFolder`, `IsSpecialSeason`, and `IsSpecialEpisode` filters use actual typed catalog facts before counting or paging; season-zero classification and the unmodeled `IsStandaloneSpecial` boundary are documented in [TV query filters](../development/client-tv-query-filters.md). User-state filters include `IsPlayed`, `IsFavorite`, and the documented initial `Filters` subset in the playback guide. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
 
-MusicAlbum and Audio DTOs expose non-null music arrays. The schema25 music implementation derives `Artists`, `ArtistItems`, and `AlbumArtists` from actual accepted format tags and authorized MusicArtist relationships; composer extraction remains absent. Technical probe version 6 remains unchanged, with independent music metadata version 1 refreshed by music scans. MusicAlbum `ChildCount` counts actual same-library direct children; Audio album references use the physical authorized album. See [music metadata](../development/music-metadata.md) for source precedence, stable IDs, per-album commits and scope. The isolated source18 candidate preserved the controlled source15 scan and passed all 1,741 full-suite tests. Both original-client audio core journeys passed; FLAC completed Home, while MP3 retains its original Home harness failure. Similar/ThemeMedia responses and broader music compatibility remain open.
+MusicAlbum and Audio DTOs expose non-null music arrays. The schema25 music implementation derives `Artists`, `ArtistItems`, and `AlbumArtists` from actual accepted format tags and authorized MusicArtist relationships; composer extraction remains absent. Source20 adds explicit `album_artist` through music probe version 2, preserving technical probe version 6 and stored music-source version 1. A track's own accepted album-artist group takes precedence over physical-album fallback, including artist filtering. MusicAlbum `ChildCount` counts actual same-library direct children; Audio album references use the physical authorized album. See [music metadata](../development/music-metadata.md) for source precedence, stable IDs, incomplete-member publication and scope. Source20 passed [43 targeted remote tests](../development/m3e-source20-targeted.json) and [1,763 full-source tests](../development/m3e-source20-full.json). Its [candidate and scoped client evidence](../development/verification-m3e-source20-similar.md) remains separate from primary deployment and complete auxiliary navigation. The deployed source18 checkpoint retains its earlier music probe and original-client evidence: both audio core journeys passed, FLAC completed Home, and MP3 retains its original Home harness failure.
+
+Source20 implements `GET /emby/Items/{Id}/Similar` for authorized catalog items,
+using the observed item projection switches and same-type candidate scope.
+Authorization, effective metadata scoring and UserData share a repeatable-read
+snapshot. All eligible candidates are scored before pagination; the returned
+count is the page length, including when `EnableTotalRecordCount=false`.
+Movie `Limit=0` returns at most one result; music `Limit=0` returns none.
+Explicit sorting overrides score order, while equal-score order is randomized.
+`ExcludeArtistIds` considers the candidate's own Artist and effective AlbumArtist
+groups. The scorer is a Goby model fitted to the [recorded comparison fixtures](../development/client-auxiliary-reads-plan.md),
+not a uniquely recovered private ranking algorithm. Visible entity seeds and
+unindexed `ListItemIds` remain unsupported. ThemeMedia, wider aliases and broader
+music compatibility remain open. Source18 still returns the recorded auxiliary
+404 responses until a later deployment is separately accepted.
 
 Music browsing supports the observed three-key `ProductionYear,PremiereDate,SortName` order and corresponding directions, plus current-user played-date/play-count ordering. Artist/album filters use actual authorized associations. `ListItemIds` has no membership model: ordinary item browsing can return a proven empty candidate set, but a nonempty candidate universe returns `501 unsupported_filter`; other related query paths reject it explicitly. This does not claim playlist or collection membership support.
 

@@ -1,0 +1,3743 @@
+{
+  "cases": {
+    "differentalbum-b-baseline": {
+      "case": "differentalbum-b-baseline",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/81/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "differentaudio-b-artist-type-albumartist": {
+      "case": "differentaudio-b-artist-type-albumartist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/75/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=AlbumArtist"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "differentaudio-b-artist-type-artist": {
+      "case": "differentaudio-b-artist-type-artist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/75/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=Artist"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "mixedalbum-artist-type-albumartist": {
+      "case": "mixedalbum-artist-type-albumartist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/78/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=AlbumArtist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "82",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SameArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistB",
+              "AlbumArtists": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "Artists": [
+                "ArtistB"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "81",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary DifferentArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary DifferentArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "80",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SeedAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SeedAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 3
+        },
+        "bodyKind": "json",
+        "bodySha256": "b6f1118c0ab6d0f86efebaaf00795f83dc330766c240e7d82f98a6f5c345b8b4",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 3,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1776,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1776",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "mixedalbum-artist-type-artist": {
+      "case": "mixedalbum-artist-type-artist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/78/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=Artist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "AlbumArtist": "ArtistB",
+              "AlbumArtists": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "Artists": [
+                "ArtistB"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "81",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary DifferentArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary DifferentArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "80",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SeedAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SeedAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "82",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SameArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 3
+        },
+        "bodyKind": "json",
+        "bodySha256": "fc88e3ccf731c568a97f933c942f380a70a39ece274a8e00f1f17baaf3794e96",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 3,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1776,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1776",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "mixedaudio-track1-a-baseline": {
+      "case": "mixedaudio-track1-a-baseline",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/73/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "Album": "M3e Auxiliary SameArtistAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "82",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "76",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+              "ParentId": "71",
+              "Path": "[auxiliary fixture]/Music/SameArtistAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary SeedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "80",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "74",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SeedAlbum Track 1",
+              "ParentId": "69",
+              "Path": "[auxiliary fixture]/Music/SeedAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SeedAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary MixedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "78",
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "Artists": [
+                "ArtistB"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "72",
+              "ImageTags": {},
+              "IndexNumber": 2,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary MixedAlbum Track 2",
+              "ParentId": "68",
+              "Path": "[auxiliary fixture]/Music/MixedAlbum/02.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum Track 2",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 3
+        },
+        "bodyKind": "json",
+        "bodySha256": "242be256d5a3baaace0357bc87419c04407b211214ea53ce46bcda8031021100",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 3,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 2316,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2316",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "mixedaudio-track2-b-baseline": {
+      "case": "mixedaudio-track2-b-baseline",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/72/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "Album": "M3e Auxiliary MixedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "78",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "73",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary MixedAlbum Track 1",
+              "ParentId": "68",
+              "Path": "[auxiliary fixture]/Music/MixedAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary SameArtistAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "82",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "76",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+              "ParentId": "71",
+              "Path": "[auxiliary fixture]/Music/SameArtistAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary SeedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "80",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "74",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SeedAlbum Track 1",
+              "ParentId": "69",
+              "Path": "[auxiliary fixture]/Music/SeedAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SeedAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary DifferentArtistAlbum",
+              "AlbumArtist": "ArtistB",
+              "AlbumArtists": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "AlbumId": "81",
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                }
+              ],
+              "Artists": [
+                "ArtistB"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "75",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary DifferentArtistAlbum Track 1",
+              "ParentId": "70",
+              "Path": "[auxiliary fixture]/Music/DifferentArtistAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary DifferentArtistAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 4
+        },
+        "bodyKind": "json",
+        "bodySha256": "28e83112606fc6451062ab8f25da16d312128e6ce8e8df62e386591d7f2a13b5",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 4,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 3112,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "3112",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedalbum-a-artist-type-albumartist": {
+      "case": "seedalbum-a-artist-type-albumartist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/80/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=AlbumArtist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                },
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistB",
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "78",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary MixedAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 240480000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "82",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SameArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 2
+        },
+        "bodyKind": "json",
+        "bodySha256": "92f474e5abe0524aef2bedd7a65c9770d3adef31a7601c4155faa4e9e2fe0334",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 2,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 2,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 2,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1225,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1225",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedalbum-a-artist-type-artist": {
+      "case": "seedalbum-a-artist-type-artist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/80/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=Artist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "79",
+                  "Name": "ArtistB"
+                },
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistB",
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "78",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary MixedAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 240480000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "82",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Auxiliary SameArtistAlbum",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 2
+        },
+        "bodyKind": "json",
+        "bodySha256": "92f474e5abe0524aef2bedd7a65c9770d3adef31a7601c4155faa4e9e2fe0334",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 2,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 2,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 2,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1225,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1225",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedalbum-limit0": {
+      "case": "seedalbum-limit0",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/80/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=0&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedaudio-a-artist-type-albumartist": {
+      "case": "seedaudio-a-artist-type-albumartist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/74/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=AlbumArtist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "Album": "M3e Auxiliary SameArtistAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "82",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "76",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+              "ParentId": "71",
+              "Path": "[auxiliary fixture]/Music/SameArtistAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary MixedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "78",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "73",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary MixedAlbum Track 1",
+              "ParentId": "68",
+              "Path": "[auxiliary fixture]/Music/MixedAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 2
+        },
+        "bodyKind": "json",
+        "bodySha256": "3ac12065d1c079f7bfb97c010f3ffb8e0fc05de2ef3b962dc82e3f597a7960b4",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 2,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1564,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1564",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedaudio-a-artist-type-artist": {
+      "case": "seedaudio-a-artist-type-artist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/74/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=12&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1&ArtistType=Artist"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "Album": "M3e Auxiliary MixedAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "78",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "73",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary MixedAlbum Track 1",
+              "ParentId": "68",
+              "Path": "[auxiliary fixture]/Music/MixedAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary MixedAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Auxiliary SameArtistAlbum",
+              "AlbumArtist": "ArtistA",
+              "AlbumArtists": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "AlbumId": "82",
+              "ArtistItems": [
+                {
+                  "Id": "77",
+                  "Name": "ArtistA"
+                }
+              ],
+              "Artists": [
+                "ArtistA"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-11T06:48:27.0000000Z",
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "76",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+              "ParentId": "71",
+              "Path": "[auxiliary fixture]/Music/SameArtistAlbum/01.mp3",
+              "ProviderIds": {},
+              "RunTimeTicks": 120240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 2
+        },
+        "bodyKind": "json",
+        "bodySha256": "4ce3192dd6b23b21757157b8300fe4e402718d1bd6e4b7c35ee8fdb3854181f7",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "ProviderIds": {},
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "SortName": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 2,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 1564,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "1564",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "seedaudio-limit0": {
+      "case": "seedaudio-limit0",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/74/Similar?UserId=46c1e1006a2c47ada1b482a96e89c549&Limit=0&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId%2CSortName%2CDateCreated%2COverview%2CProviderIds%2CPrimaryImageAspectRatio&ImageTypeLimit=1"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 07:06:41 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 524288,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    }
+  },
+  "report": {
+    "acceptedIndexReportSha256": "457a4d88f86617c448b980f31b7dd5b7d8bbeb31e3cfe807103371859f2d7998",
+    "acceptedReaderSha256": "4e06ff3ea848f1e3bece6d73f0969de9480ba5a62aed23c6a322bebd92f587f9",
+    "approvedFixtureCatalog": [
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "49",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Actor",
+        "ParentId": "33",
+        "Path": "[auxiliary fixture]/Movies/Actor/movie.mp4",
+        "People": [
+          {
+            "Id": "51",
+            "Name": "CommonActor",
+            "Type": "Actor"
+          }
+        ],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Actor",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [
+          {
+            "Id": 53,
+            "Name": "Drama"
+          },
+          {
+            "Id": 54,
+            "Name": "Adventure"
+          }
+        ],
+        "Genres": [
+          "Drama",
+          "Adventure"
+        ],
+        "Id": "44",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "AllMatches",
+        "ParentId": "30",
+        "Path": "[auxiliary fixture]/Movies/AllMatches/movie.mp4",
+        "People": [
+          {
+            "Id": "51",
+            "Name": "CommonActor",
+            "Type": "Actor"
+          },
+          {
+            "Id": "52",
+            "Name": "CommonDirector",
+            "Type": "Director"
+          }
+        ],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "AllMatches",
+        "Studios": [
+          {
+            "Id": 50,
+            "Name": "SharedStudio"
+          }
+        ],
+        "TagItems": [
+          {
+            "Id": 55,
+            "Name": "SharedOne"
+          },
+          {
+            "Id": 56,
+            "Name": "SharedTwo"
+          }
+        ],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "47",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Director",
+        "ParentId": "31",
+        "Path": "[auxiliary fixture]/Movies/Director/movie.mp4",
+        "People": [
+          {
+            "Id": "52",
+            "Name": "CommonDirector",
+            "Type": "Director"
+          }
+        ],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Director",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [
+          {
+            "Id": 53,
+            "Name": "Drama"
+          },
+          {
+            "Id": 54,
+            "Name": "Adventure"
+          }
+        ],
+        "Genres": [
+          "Drama",
+          "Adventure"
+        ],
+        "Id": "37",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "GenreBoth",
+        "ParentId": "24",
+        "Path": "[auxiliary fixture]/Movies/GenreBoth/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "GenreBoth",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [
+          {
+            "Id": 53,
+            "Name": "Drama"
+          }
+        ],
+        "Genres": [
+          "Drama"
+        ],
+        "Id": "40",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "GenreOne",
+        "ParentId": "26",
+        "Path": "[auxiliary fixture]/Movies/GenreOne/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "GenreOne",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "ArtistB",
+        "AlbumArtists": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          }
+        ],
+        "Artists": [
+          "ArtistB"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "81",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Auxiliary DifferentArtistAlbum",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary DifferentArtistAlbum",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          },
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistB",
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "78",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Auxiliary MixedAlbum",
+        "ProviderIds": {},
+        "RunTimeTicks": 240480000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary MixedAlbum",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "82",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Auxiliary SameArtistAlbum",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary SameArtistAlbum",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "80",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Auxiliary SeedAlbum",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary SeedAlbum",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AirDays": [],
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "59",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Auxiliary Series",
+        "ParentId": "58",
+        "Path": "[auxiliary fixture]/TV/M3e Auxiliary Series",
+        "People": [],
+        "ProviderIds": {},
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary Series",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Series",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "9",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "M3e Client Movie",
+        "Overview": "Synthetic 600-second client playback fixture.",
+        "ParentId": "4",
+        "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+        "People": [],
+        "ProductionYear": 2026,
+        "ProviderIds": {},
+        "RunTimeTicks": 6000000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Client Movie",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 1228562570,
+          "Played": false,
+          "PlayedPercentage": 20.476042833333334
+        }
+      },
+      {
+        "AirDays": [],
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "14",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Client Series",
+        "ParentId": "6",
+        "Path": "[fixture media]/TV/M3e Client Series",
+        "People": [],
+        "ProviderIds": {},
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Client Series",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Series",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 3
+        }
+      },
+      {
+        "Album": "M3e Synthetic Album",
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "AlbumId": "13",
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-10T22:39:36.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "10",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e FLAC",
+        "ParentId": "8",
+        "Path": "[fixture media]/Music/M3e Client Audio.flac",
+        "ProviderIds": {},
+        "RunTimeTicks": 1800000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e FLAC",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Synthetic Album",
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "AlbumId": "13",
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-10T22:39:36.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "11",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e MP3",
+        "ParentId": "8",
+        "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 1800240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e MP3",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-10T22:39:36.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "13",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Synthetic Album",
+        "ProviderIds": {},
+        "RunTimeTicks": 3600240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Synthetic Album",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "38",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "NoShared",
+        "ParentId": "25",
+        "Path": "[auxiliary fixture]/Movies/NoShared/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "NoShared",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [
+          {
+            "Id": 53,
+            "Name": "Drama"
+          },
+          {
+            "Id": 54,
+            "Name": "Adventure"
+          }
+        ],
+        "Genres": [
+          "Drama",
+          "Adventure"
+        ],
+        "Id": "35",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Seed",
+        "ParentId": "23",
+        "Path": "[auxiliary fixture]/Movies/Seed/movie.mp4",
+        "People": [
+          {
+            "Id": "51",
+            "Name": "CommonActor",
+            "Type": "Actor"
+          },
+          {
+            "Id": "52",
+            "Name": "CommonDirector",
+            "Type": "Director"
+          }
+        ],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Seed",
+        "Studios": [
+          {
+            "Id": 50,
+            "Name": "SharedStudio"
+          }
+        ],
+        "TagItems": [
+          {
+            "Id": 55,
+            "Name": "SharedOne"
+          },
+          {
+            "Id": 56,
+            "Name": "SharedTwo"
+          }
+        ],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "34",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Studio",
+        "ParentId": "22",
+        "Path": "[auxiliary fixture]/Movies/Studio/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Studio",
+        "Studios": [
+          {
+            "Id": 50,
+            "Name": "SharedStudio"
+          }
+        ],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "41",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "TagBoth",
+        "ParentId": "27",
+        "Path": "[auxiliary fixture]/Movies/TagBoth/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "TagBoth",
+        "Studios": [],
+        "TagItems": [
+          {
+            "Id": 55,
+            "Name": "SharedOne"
+          },
+          {
+            "Id": 56,
+            "Name": "SharedTwo"
+          }
+        ],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "42",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "TagOne",
+        "ParentId": "28",
+        "Path": "[auxiliary fixture]/Movies/TagOne/movie.mp4",
+        "People": [],
+        "ProductionYear": 2000,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "TagOne",
+        "Studios": [],
+        "TagItems": [
+          {
+            "Id": 55,
+            "Name": "SharedOne"
+          }
+        ],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "43",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "YearFar",
+        "ParentId": "29",
+        "Path": "[auxiliary fixture]/Movies/YearFar/movie.mp4",
+        "People": [],
+        "ProductionYear": 2025,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "YearFar",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:26.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "48",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "YearNear",
+        "ParentId": "32",
+        "Path": "[auxiliary fixture]/Movies/YearNear/movie.mp4",
+        "People": [],
+        "ProductionYear": 2001,
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "YearNear",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Auxiliary DifferentArtistAlbum",
+        "AlbumArtist": "ArtistB",
+        "AlbumArtists": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          }
+        ],
+        "AlbumId": "81",
+        "ArtistItems": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          }
+        ],
+        "Artists": [
+          "ArtistB"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "75",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e Auxiliary DifferentArtistAlbum Track 1",
+        "ParentId": "70",
+        "Path": "[auxiliary fixture]/Music/DifferentArtistAlbum/01.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary DifferentArtistAlbum Track 1",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Auxiliary MixedAlbum",
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "AlbumId": "78",
+        "ArtistItems": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "73",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e Auxiliary MixedAlbum Track 1",
+        "ParentId": "68",
+        "Path": "[auxiliary fixture]/Music/MixedAlbum/01.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary MixedAlbum Track 1",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Auxiliary SameArtistAlbum",
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "AlbumId": "82",
+        "ArtistItems": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "76",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+        "ParentId": "71",
+        "Path": "[auxiliary fixture]/Music/SameArtistAlbum/01.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Auxiliary SeedAlbum",
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "AlbumId": "80",
+        "ArtistItems": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "Artists": [
+          "ArtistA"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "74",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e Auxiliary SeedAlbum Track 1",
+        "ParentId": "69",
+        "Path": "[auxiliary fixture]/Music/SeedAlbum/01.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary SeedAlbum Track 1",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "60",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": true,
+        "Name": "Season 1",
+        "ParentId": "59",
+        "Path": "[auxiliary fixture]/TV/M3e Auxiliary Series/Season 01",
+        "People": [],
+        "ProviderIds": {},
+        "SeriesId": "59",
+        "SeriesName": "M3e Auxiliary Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Season 1",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "15",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": true,
+        "Name": "Season 1",
+        "ParentId": "14",
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01",
+        "People": [],
+        "ProviderIds": {},
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Season 1",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        }
+      },
+      {
+        "Album": "M3e Auxiliary MixedAlbum",
+        "AlbumArtist": "ArtistA",
+        "AlbumArtists": [
+          {
+            "Id": "77",
+            "Name": "ArtistA"
+          }
+        ],
+        "AlbumId": "78",
+        "ArtistItems": [
+          {
+            "Id": "79",
+            "Name": "ArtistB"
+          }
+        ],
+        "Artists": [
+          "ArtistB"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "72",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e Auxiliary MixedAlbum Track 2",
+        "ParentId": "68",
+        "Path": "[auxiliary fixture]/Music/MixedAlbum/02.mp3",
+        "ProviderIds": {},
+        "RunTimeTicks": 120240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary MixedAlbum Track 2",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "61",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": true,
+        "Name": "Season 2",
+        "ParentId": "59",
+        "Path": "[auxiliary fixture]/TV/M3e Auxiliary Series/Season 02",
+        "People": [],
+        "ProviderIds": {},
+        "SeriesId": "59",
+        "SeriesName": "M3e Auxiliary Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Season 2",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "16",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": true,
+        "Name": "Season 2",
+        "ParentId": "14",
+        "Path": "[fixture media]/TV/M3e Client Series/Season 02",
+        "People": [],
+        "ProviderIds": {},
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Season 2",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "18",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 1-1",
+        "ParentId": "15",
+        "ParentIndexNumber": 1,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+        "People": [],
+        "ProviderIds": {},
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "15",
+        "SeasonName": "Season 1",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Episode 1-1",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "63",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "M3e Auxiliary Series S01E01",
+        "ParentId": "60",
+        "ParentIndexNumber": 1,
+        "Path": "[auxiliary fixture]/TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+        "People": [],
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "SeasonId": "60",
+        "SeasonName": "Season 1",
+        "SeriesId": "59",
+        "SeriesName": "M3e Auxiliary Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary Series S01E01",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "17",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 1-2",
+        "ParentId": "15",
+        "ParentIndexNumber": 1,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+        "People": [],
+        "ProviderIds": {},
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "15",
+        "SeasonName": "Season 1",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Episode 1-2",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-10T22:39:35.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "19",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 2-1",
+        "ParentId": "16",
+        "ParentIndexNumber": 2,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+        "People": [],
+        "ProviderIds": {},
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "16",
+        "SeasonName": "Season 2",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "Episode 2-1",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "DateCreated": "2026-09-11T06:48:27.0000000Z",
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "64",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "M3e Auxiliary Series S02E01",
+        "ParentId": "61",
+        "ParentIndexNumber": 2,
+        "Path": "[auxiliary fixture]/TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+        "People": [],
+        "ProviderIds": {},
+        "RunTimeTicks": 120000000,
+        "SeasonId": "61",
+        "SeasonName": "Season 2",
+        "SeriesId": "59",
+        "SeriesName": "M3e Auxiliary Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "SortName": "M3e Auxiliary Series S02E01",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    ],
+    "auxiliaryManifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+    "baselineRequests": 4,
+    "boundary": "Status, ranking order, pagination, and theme owner IDs are observations. No expected score or unknown-owner constant is imposed. Names and generated tags identify controls, not verified ranking behavior. Complete non-200 cases do not stop capture.",
+    "browserSessionUsedOrRevoked": false,
+    "businessRequestsReserved": 17,
+    "businessWrites": 0,
+    "caseStatuses": {
+      "catalog-after": 200,
+      "catalog-before": 200,
+      "differentalbum-b-baseline": 200,
+      "differentaudio-b-artist-type-albumartist": 200,
+      "differentaudio-b-artist-type-artist": 200,
+      "mixedalbum-artist-type-albumartist": 200,
+      "mixedalbum-artist-type-artist": 200,
+      "mixedaudio-track1-a-baseline": 200,
+      "mixedaudio-track2-b-baseline": 200,
+      "recorder-login": 200,
+      "recorder-logout": 204,
+      "recorder-token-invalid": 401,
+      "seedalbum-a-artist-type-albumartist": 200,
+      "seedalbum-a-artist-type-artist": 200,
+      "seedalbum-limit0": 200,
+      "seedaudio-a-artist-type-albumartist": 200,
+      "seedaudio-a-artist-type-artist": 200,
+      "seedaudio-limit0": 200,
+      "viewer-after": 200,
+      "viewer-before": 200
+    },
+    "catalogMetadataUserDataAndIdsPreserved": true,
+    "classification": "protocol research; not client acceptance",
+    "configurationAndPolicyPreserved": true,
+    "failureType": null,
+    "headRequests": 0,
+    "httpAttemptsReserved": 20,
+    "marker": "goby-m3e-reference-auxiliary-positive-v1-music-roles",
+    "maximumBusinessCases": 13,
+    "maximumHttpAttempts": 20,
+    "maximumPhaseResponseBytes": 10485760,
+    "maximumSingleResponseBytes": 524288,
+    "newRecorderTokenRevoked": true,
+    "observedCases": [
+      "differentalbum-b-baseline",
+      "mixedaudio-track2-b-baseline",
+      "mixedaudio-track1-a-baseline",
+      "differentaudio-b-artist-type-artist",
+      "differentaudio-b-artist-type-albumartist",
+      "seedaudio-a-artist-type-artist",
+      "seedaudio-a-artist-type-albumartist",
+      "seedalbum-a-artist-type-artist",
+      "seedalbum-a-artist-type-albumartist",
+      "mixedalbum-artist-type-artist",
+      "mixedalbum-artist-type-albumartist",
+      "seedalbum-limit0",
+      "seedaudio-limit0"
+    ],
+    "oldAndNewMediaBytesIdsAndManifestsPreserved": true,
+    "omittedCases": [],
+    "phase": "music-roles",
+    "playbackRequests": 0,
+    "priorReaderEvidenceResponseLimitBytes": 65536,
+    "recoveryOnly": false,
+    "referenceIdentity": {
+      "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cgroup": "0::/system.slice/goby-emby-client-m3e.service\n",
+      "cmdline": [
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+        "-programdata",
+        "/opt/goby-test/exec-work-m3e/reference-data",
+        "-ffdetect",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffdetect",
+        "-ffmpeg",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffmpeg",
+        "-ffprobe",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffprobe",
+        "-restartexitcode",
+        "3",
+        "-updatepackage",
+        "emby-server-deb_{version}_amd64.deb"
+      ],
+      "exe": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "invocationId": "aa59e192c1c846459bc3f218bd923364",
+      "networkNamespace": "net:[4026532602]",
+      "pid": 332054,
+      "startTicks": "357218",
+      "uid": 0
+    },
+    "responseBytesRead": 67879,
+    "selectedActualIds": {
+      "albums": {
+        "DifferentArtistAlbum": "81",
+        "MixedAlbum": "78",
+        "SameArtistAlbum": "82",
+        "SeedAlbum": "80"
+      },
+      "artists": {
+        "ArtistA": "77",
+        "ArtistB": "79"
+      },
+      "hierarchy": {
+        "Episode01": "63",
+        "Episode02": "64",
+        "Season01": "60",
+        "Season02": "61",
+        "Series": "59"
+      },
+      "movieParent": null,
+      "movies": {
+        "Actor": "49",
+        "AllMatches": "44",
+        "Director": "47",
+        "GenreBoth": "37",
+        "GenreOne": "40",
+        "NoShared": "38",
+        "Seed": "35",
+        "Studio": "34",
+        "TagBoth": "41",
+        "TagOne": "42",
+        "YearFar": "43",
+        "YearNear": "48"
+      },
+      "tracks": {
+        "DifferentArtistAlbum/1": "75",
+        "MixedAlbum/1": "73",
+        "MixedAlbum/2": "72",
+        "SameArtistAlbum/1": "76",
+        "SeedAlbum/1": "74"
+      }
+    },
+    "sourceSha256": "e5311bea5bd368f0b1d308f65edb6214557a528dfb8fab5b52a37e19119524ac"
+  },
+  "source_files": {
+    "catalog-after.json": "f7d0c7f086829189eff77b8a11ac7ef3dbbd8e12f6b291aaf75a88b11119af88",
+    "catalog-before.json": "90a35a2d0660034c6fa0c3cea0a4806cc0de8aeb3423fd0ccce90c2af7a0b56f",
+    "differentalbum-b-baseline.json": "ff782de1ef4272bfeb27beee3d85436b9669eec97229e4901f95dd511ab4b9d3",
+    "differentaudio-b-artist-type-albumartist.json": "a8ddcd4258afc5470a82b39cabe4dce8fa705814072bb0efe9da9041a63775bb",
+    "differentaudio-b-artist-type-artist.json": "f771ad80a770e8e030a283519f571c3d5179916ce769fbf63a1817e59d53af84",
+    "mixedalbum-artist-type-albumartist.json": "feefb56b6655f51643a3d69aff60664d8c7dee5fcdf09a7e65127d8872449d07",
+    "mixedalbum-artist-type-artist.json": "bd67111a4c1ffc45910bc5bff54d118ae49e9fcaa14ea7326eeaee75384ee38c",
+    "mixedaudio-track1-a-baseline.json": "4e8a3f90263c8a5d322f5362042a6df96f90589510ce87d03256bc2007a73d4d",
+    "mixedaudio-track2-b-baseline.json": "82a24d45290995936c85d22f3e033cad3453a6041fd3b32928da4b85350b2640",
+    "recorder-login.json": "cf42b6fe1fd74144c3d8850e479d2d183545871551bfe5dbc6ed029b360633dc",
+    "recorder-logout.json": "94d5194e6bb95870f7a9521cf94a5886c48518b5621d5e9e44461f6275ebbcda",
+    "recorder-token-invalid.json": "e6e210249e7425cd43d60c07d863e0df4c0af8c65b0de6fe297e9fe96d6c0728",
+    "report.json": "2d4be71f387f5727b471d7ce97a80c4d1eb86e2a533c5258c0d22b458fe65003",
+    "seedalbum-a-artist-type-albumartist.json": "e828248c64deab85e52b38e1f3e535aeb6a1f026b3b0b346ed48ef7488dbfe29",
+    "seedalbum-a-artist-type-artist.json": "d51083e5ab936e08afc83480f14f4f45efe5cefb8c7389f4ef3bbde4400684de",
+    "seedalbum-limit0.json": "756273c1c4911fd7e42312f144059d3d036d50e307de0f0bef99620769358504",
+    "seedaudio-a-artist-type-albumartist.json": "8d03c310f10a4fbda485d87981cc91457e163f192691908549ff9d5367f03c9a",
+    "seedaudio-a-artist-type-artist.json": "d7a74c314fc1e937bdb695e015e9affb32e5be2e08ec77e925e564c46d942c66",
+    "seedaudio-limit0.json": "b701f43ff03ac35a4cd05ecec61ab7343408605b1ad0e877e01d29aad4e504cc",
+    "viewer-after.json": "75ebe13510b0781153c3e8e99dc847d4d9e83611043d953038d916a4b47787f3",
+    "viewer-before.json": "37857337295ae7980f83fbb56a499097c7bde7497f97769e023a1a5bd736bdca"
+  }
+}

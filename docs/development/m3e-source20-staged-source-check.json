@@ -1,0 +1,59 @@
+{
+  "archive_sha256": "2fff65fdd9d6d055c330c639b118ed2e831140d958aaaefddc34f32c664e61b6",
+  "browser_differences": [],
+  "browser_files": 17,
+  "credential_projection_audit": {
+    "files": 25,
+    "findings": []
+  },
+  "git_tree": "0497817b05a26376a4b40fc8703e5189ac5c6b9e",
+  "initial_byte_check": {
+    "path": "/opt/goby-test/exec-work-m3e/source20-index-check-01/report.json",
+    "sha256": "aa17fa9034336650984bb0e6da837f5e223f14f1c2fa97511d9272d994866c1a",
+    "status": "failed"
+  },
+  "live_processes": [
+    {
+      "pid": 581075,
+      "sha256": "a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9",
+      "start_ticks": 3900536
+    },
+    {
+      "pid": 539535,
+      "sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+      "start_ticks": 3115871
+    }
+  ],
+  "normalization_review": {
+    "byte_identical_files": 3186,
+    "consumer": "internal/server/playback_input_test.go:208; JSON decoding at line231, no raw-byte/SHA/line-count expectation",
+    "crlf_sequences_removed": 86,
+    "crlf_to_lf_only": true,
+    "file": "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json",
+    "parsed_json_equal": true,
+    "production_ancestor_embed_files": [],
+    "production_literal_reference_files": [],
+    "reference_provenance_rewritten": false,
+    "scope": "All production source is byte-identical. One JSON test fixture follows the repository LF policy; no complete byte-equality claim is made for that fixture.",
+    "staged_bytes": 2533,
+    "staged_sha256": "fffebfb769295596b6994498bf980f71cedd1fbf343225a8e6f335ebd558c24e",
+    "test_fixture_normalization_exceptions": 1,
+    "tested_bytes": 2619,
+    "tested_sha256": "5ec0e48ef4182e58cfed2951c46ef93db29726aa92eea75b4f12b48f084f8c53"
+  },
+  "operator_differences": [],
+  "operator_files": 8,
+  "product": {
+    "changed": [
+      "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json"
+    ],
+    "extra": [],
+    "files": 3187,
+    "missing": []
+  },
+  "schema": "goby-m3e-source20-staged-source-check",
+  "source_manifest_sha256": "456f90464a0c18d8f1a31e268a67a5c65dcf1264a7ee69fc45be4d085d94e945",
+  "status": "passed_with_documented_test_fixture_normalization",
+  "version": 1,
+  "workspace_only_theme_drafts_excluded": true
+}

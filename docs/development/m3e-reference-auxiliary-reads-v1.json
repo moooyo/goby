@@ -1,0 +1,3593 @@
+{
+  "records": {
+    "anonymous-similar": {
+      "case": "anonymous-similar",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": false,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/Similar?Limit=12&UserId=46c1e1006a2c47ada1b482a96e89c549&EnableTotalRecordCount=false&ImageTypeLimit=1&Fields=PrimaryImageAspectRatio%2CDateCreated"
+      },
+      "response": {
+        "body": "Access token is invalid or expired.",
+        "bodyKind": "text",
+        "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+        "bodyStructure": "string",
+        "bytesRead": 35,
+        "complete": true,
+        "contentType": "text/plain",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "35",
+          "Content-Type": "text/plain",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 401,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "anonymous-theme": {
+      "case": "anonymous-theme",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": false,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": "Access token is invalid or expired.",
+        "bodyKind": "text",
+        "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+        "bodyStructure": "string",
+        "bytesRead": 35,
+        "complete": true,
+        "contentType": "text/plain",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "35",
+          "Content-Type": "text/plain",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 401,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "catalog-after": {
+      "case": "catalog-after",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items?Recursive=true&IncludeItemTypes=Movie%2CSeries%2CSeason%2CEpisode%2CMusicAlbum%2CAudio&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId&Limit=100"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "9",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "M3e Client Movie",
+              "ParentId": "4",
+              "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+              "People": [],
+              "ProductionYear": 2026,
+              "RunTimeTicks": 6000000000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Movie",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 1228562570,
+                "Played": false,
+                "PlayedPercentage": 20.476042833333334
+              }
+            },
+            {
+              "AirDays": [],
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "14",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Client Series",
+              "ParentId": "6",
+              "Path": "[fixture media]/TV/M3e Client Series",
+              "People": [],
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Series",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 3
+              }
+            },
+            {
+              "Album": "M3e Synthetic Album",
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "AlbumId": "13",
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "10",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e FLAC",
+              "ParentId": "8",
+              "Path": "[fixture media]/Music/M3e Client Audio.flac",
+              "RunTimeTicks": 1800000000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Synthetic Album",
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "AlbumId": "13",
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "11",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e MP3",
+              "ParentId": "8",
+              "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+              "RunTimeTicks": 1800240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "13",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Synthetic Album",
+              "RunTimeTicks": 3600240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "15",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": true,
+              "Name": "Season 1",
+              "ParentId": "14",
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01",
+              "People": [],
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Season",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 2
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "16",
+              "ImageTags": {},
+              "IndexNumber": 2,
+              "IsFolder": true,
+              "Name": "Season 2",
+              "ParentId": "14",
+              "Path": "[fixture media]/TV/M3e Client Series/Season 02",
+              "People": [],
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Season",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 1
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "18",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 1-1",
+              "ParentId": "15",
+              "ParentIndexNumber": 1,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "15",
+              "SeasonName": "Season 1",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "17",
+              "ImageTags": {},
+              "IndexNumber": 2,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 1-2",
+              "ParentId": "15",
+              "ParentIndexNumber": 1,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "15",
+              "SeasonName": "Season 1",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "19",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 2-1",
+              "ParentId": "16",
+              "ParentIndexNumber": 2,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "16",
+              "SeasonName": "Season 2",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 10
+        },
+        "bodyKind": "json",
+        "bodySha256": "ef6bc896d8df485d5932eb530a9b78e1e32d237175ae00984cacb8fdcfb96a7d",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "ProductionYear": "integer",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "PlayedPercentage": "number"
+                }
+              },
+              {
+                "AirDays": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "UnplayedItemCount": "integer"
+                }
+              },
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "SeriesId": "string",
+                "SeriesName": "string",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "UnplayedItemCount": "integer"
+                }
+              },
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "ParentIndexNumber": "integer",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "RunTimeTicks": "integer",
+                "SeasonId": "string",
+                "SeasonName": "string",
+                "SeriesId": "string",
+                "SeriesName": "string",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 10,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 5503,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "5503",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "catalog-before": {
+      "case": "catalog-before",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items?Recursive=true&IncludeItemTypes=Movie%2CSeries%2CSeason%2CEpisode%2CMusicAlbum%2CAudio&Fields=Path%2CGenres%2CPeople%2CStudios%2CTags%2CProductionYear%2CParentId&Limit=100"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "9",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "M3e Client Movie",
+              "ParentId": "4",
+              "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+              "People": [],
+              "ProductionYear": 2026,
+              "RunTimeTicks": 6000000000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Movie",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 1228562570,
+                "Played": false,
+                "PlayedPercentage": 20.476042833333334
+              }
+            },
+            {
+              "AirDays": [],
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "14",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Client Series",
+              "ParentId": "6",
+              "Path": "[fixture media]/TV/M3e Client Series",
+              "People": [],
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Series",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 3
+              }
+            },
+            {
+              "Album": "M3e Synthetic Album",
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "AlbumId": "13",
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "10",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e FLAC",
+              "ParentId": "8",
+              "Path": "[fixture media]/Music/M3e Client Audio.flac",
+              "RunTimeTicks": 1800000000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "Album": "M3e Synthetic Album",
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "AlbumId": "13",
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "11",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e MP3",
+              "ParentId": "8",
+              "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+              "RunTimeTicks": 1800240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "13",
+              "ImageTags": {},
+              "IsFolder": true,
+              "Name": "M3e Synthetic Album",
+              "RunTimeTicks": 3600240000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "TagItems": [],
+              "Type": "MusicAlbum",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "15",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": true,
+              "Name": "Season 1",
+              "ParentId": "14",
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01",
+              "People": [],
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Season",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 2
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "16",
+              "ImageTags": {},
+              "IndexNumber": 2,
+              "IsFolder": true,
+              "Name": "Season 2",
+              "ParentId": "14",
+              "Path": "[fixture media]/TV/M3e Client Series/Season 02",
+              "People": [],
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Season",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false,
+                "UnplayedItemCount": 1
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "18",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 1-1",
+              "ParentId": "15",
+              "ParentIndexNumber": 1,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "15",
+              "SeasonName": "Season 1",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "17",
+              "ImageTags": {},
+              "IndexNumber": 2,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 1-2",
+              "ParentId": "15",
+              "ParentIndexNumber": 1,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "15",
+              "SeasonName": "Season 1",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            },
+            {
+              "BackdropImageTags": [],
+              "GenreItems": [],
+              "Genres": [],
+              "Id": "19",
+              "ImageTags": {},
+              "IndexNumber": 1,
+              "IsFolder": false,
+              "MediaType": "Video",
+              "Name": "Episode 2-1",
+              "ParentId": "16",
+              "ParentIndexNumber": 2,
+              "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+              "People": [],
+              "RunTimeTicks": 6000000000,
+              "SeasonId": "16",
+              "SeasonName": "Season 2",
+              "SeriesId": "14",
+              "SeriesName": "M3e Client Series",
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Studios": [],
+              "TagItems": [],
+              "Type": "Episode",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 10
+        },
+        "bodyKind": "json",
+        "bodySha256": "ef6bc896d8df485d5932eb530a9b78e1e32d237175ae00984cacb8fdcfb96a7d",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "ProductionYear": "integer",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "PlayedPercentage": "number"
+                }
+              },
+              {
+                "AirDays": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "UnplayedItemCount": "integer"
+                }
+              },
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "Name": "string",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              },
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "Name": "string",
+                "ParentId": "string",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "SeriesId": "string",
+                "SeriesName": "string",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean",
+                  "UnplayedItemCount": "integer"
+                }
+              },
+              {
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Genres": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Id": "string",
+                "ImageTags": {},
+                "IndexNumber": "integer",
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "ParentId": "string",
+                "ParentIndexNumber": "integer",
+                "Path": "string",
+                "People": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "RunTimeTicks": "integer",
+                "SeasonId": "string",
+                "SeasonName": "string",
+                "SeriesId": "string",
+                "SeriesName": "string",
+                "ServerId": "string",
+                "Studios": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 10,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 5503,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "5503",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "missing-theme": {
+      "case": "missing-theme",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/999999999/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 2,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 2,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "a59e832277e748cc647bb1b7d6874f29ec256bb46b4f9f921c62943194b57908",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "recorder-login": {
+      "case": "recorder-login",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": false,
+        "authenticationBodyRetained": false,
+        "contentType": "application/x-www-form-urlencoded",
+        "method": "POST",
+        "path": "/emby/Users/AuthenticateByName"
+      },
+      "response": {
+        "body": {
+          "AccessToken": "[redacted]",
+          "ServerId": "f56dec8ff7414847873064c4be9fba74",
+          "SessionInfo": {
+            "AdditionalUsers": [],
+            "ApplicationVersion": "1.0",
+            "Client": "Goby Auxiliary Read Contract Recorder",
+            "DeviceId": "goby-m3e-auxiliary-reads-recorder-v1",
+            "DeviceName": "Linux Contract Research",
+            "Id": "b2fba3790b196f34d86e2a95399e463e",
+            "InternalDeviceId": 52,
+            "LastActivityDate": "2026-09-11T06:46:39.1045444Z",
+            "PlayState": {
+              "CanSeek": false,
+              "IsMuted": false,
+              "IsPaused": false,
+              "PlaybackRate": 1,
+              "RepeatMode": "RepeatNone",
+              "Shuffle": false,
+              "SleepTimerMode": "None",
+              "SubtitleOffset": 0
+            },
+            "PlayableMediaTypes": [],
+            "PlaylistIndex": 0,
+            "PlaylistLength": 0,
+            "Protocol": "HTTP/1.1",
+            "RemoteEndPoint": "127.0.0.1",
+            "ServerId": "f56dec8ff7414847873064c4be9fba74",
+            "SupportedCommands": [],
+            "SupportsRemoteControl": false,
+            "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+            "UserName": "m3e-reference-viewer"
+          },
+          "User": {
+            "Configuration": {
+              "DisplayMissingEpisodes": false,
+              "EnableLocalPassword": false,
+              "EnableNextEpisodeAutoPlay": true,
+              "HidePlayedInLatest": true,
+              "HidePlayedInMoreLikeThis": false,
+              "HidePlayedInSuggestions": false,
+              "IntroSkipMode": "ShowButton",
+              "LatestItemsExcludes": [],
+              "MyMediaExcludes": [],
+              "OrderedViews": [],
+              "PlayDefaultAudioTrack": true,
+              "RememberAudioSelections": true,
+              "RememberSubtitleSelections": true,
+              "ResumeRewindSeconds": 0,
+              "SubtitleMode": "Smart"
+            },
+            "DateCreated": "2026-09-10T22:51:48.9545572Z",
+            "HasConfiguredPassword": true,
+            "HasPassword": true,
+            "Id": "46c1e1006a2c47ada1b482a96e89c549",
+            "LastActivityDate": "2026-09-11T06:46:39.1045444Z",
+            "LastLoginDate": "2026-09-11T06:46:39.1034970Z",
+            "Name": "m3e-reference-viewer",
+            "Policy": {
+              "AccessSchedules": [],
+              "AllowCameraUpload": true,
+              "AllowSharingPersonalItems": false,
+              "AllowTagOrRating": false,
+              "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+              "AutoRemoteQuality": 0,
+              "BlockUnratedItems": [],
+              "BlockedTags": [],
+              "EnableAllChannels": true,
+              "EnableAllDevices": true,
+              "EnableAllFolders": true,
+              "EnableAudioPlaybackTranscoding": true,
+              "EnableContentDeletion": false,
+              "EnableContentDeletionFromFolders": [],
+              "EnableContentDownloading": false,
+              "EnableLiveTvAccess": true,
+              "EnableLiveTvManagement": true,
+              "EnableMediaConversion": true,
+              "EnableMediaPlayback": true,
+              "EnablePlaybackRemuxing": true,
+              "EnablePublicSharing": true,
+              "EnableRemoteAccess": true,
+              "EnableRemoteControlOfOtherUsers": false,
+              "EnableSharedDeviceControl": true,
+              "EnableSubtitleDownloading": true,
+              "EnableSubtitleManagement": false,
+              "EnableSyncTranscoding": true,
+              "EnableUserPreferenceAccess": true,
+              "EnableVideoPlaybackTranscoding": true,
+              "EnabledChannels": [],
+              "EnabledDevices": [],
+              "EnabledFolders": [],
+              "ExcludedSubFolders": [],
+              "IncludeTags": [],
+              "InvalidLoginAttemptCount": 0,
+              "IsAdministrator": false,
+              "IsDisabled": false,
+              "IsHidden": false,
+              "IsHiddenFromUnusedDevices": false,
+              "IsHiddenRemotely": true,
+              "IsTagBlockingModeInclusive": false,
+              "LockedOutDate": 0,
+              "RemoteClientBitrateLimit": 0,
+              "RestrictedFeatures": [],
+              "SimultaneousStreamLimit": 0
+            },
+            "Prefix": "M",
+            "ServerId": "f56dec8ff7414847873064c4be9fba74"
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "da7214ae1c35624ac9bb4cc34a178fc93f48e0866e5a5f64f1cef4b2cb45d38c",
+        "bodyStructure": {
+          "AccessToken": "[redacted]",
+          "ServerId": "string",
+          "SessionInfo": {
+            "AdditionalUsers": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "ApplicationVersion": "string",
+            "Client": "string",
+            "DeviceId": "string",
+            "DeviceName": "string",
+            "Id": "string",
+            "InternalDeviceId": "integer",
+            "LastActivityDate": "string",
+            "PlayState": {
+              "CanSeek": "boolean",
+              "IsMuted": "boolean",
+              "IsPaused": "boolean",
+              "PlaybackRate": "integer",
+              "RepeatMode": "string",
+              "Shuffle": "boolean",
+              "SleepTimerMode": "string",
+              "SubtitleOffset": "integer"
+            },
+            "PlayableMediaTypes": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "PlaylistIndex": "integer",
+            "PlaylistLength": "integer",
+            "Protocol": "string",
+            "RemoteEndPoint": "string",
+            "ServerId": "string",
+            "SupportedCommands": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "SupportsRemoteControl": "boolean",
+            "UserId": "string",
+            "UserName": "string"
+          },
+          "User": {
+            "Configuration": {
+              "DisplayMissingEpisodes": "boolean",
+              "EnableLocalPassword": "boolean",
+              "EnableNextEpisodeAutoPlay": "boolean",
+              "HidePlayedInLatest": "boolean",
+              "HidePlayedInMoreLikeThis": "boolean",
+              "HidePlayedInSuggestions": "boolean",
+              "IntroSkipMode": "string",
+              "LatestItemsExcludes": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "MyMediaExcludes": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "OrderedViews": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "PlayDefaultAudioTrack": "boolean",
+              "RememberAudioSelections": "boolean",
+              "RememberSubtitleSelections": "boolean",
+              "ResumeRewindSeconds": "integer",
+              "SubtitleMode": "string"
+            },
+            "DateCreated": "string",
+            "HasConfiguredPassword": "boolean",
+            "HasPassword": "boolean",
+            "Id": "string",
+            "LastActivityDate": "string",
+            "LastLoginDate": "string",
+            "Name": "string",
+            "Policy": {
+              "AccessSchedules": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "AllowCameraUpload": "boolean",
+              "AllowSharingPersonalItems": "boolean",
+              "AllowTagOrRating": "boolean",
+              "AuthenticationProviderId": "string",
+              "AutoRemoteQuality": "integer",
+              "BlockUnratedItems": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "BlockedTags": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "EnableAllChannels": "boolean",
+              "EnableAllDevices": "boolean",
+              "EnableAllFolders": "boolean",
+              "EnableAudioPlaybackTranscoding": "boolean",
+              "EnableContentDeletion": "boolean",
+              "EnableContentDeletionFromFolders": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "EnableContentDownloading": "boolean",
+              "EnableLiveTvAccess": "boolean",
+              "EnableLiveTvManagement": "boolean",
+              "EnableMediaConversion": "boolean",
+              "EnableMediaPlayback": "boolean",
+              "EnablePlaybackRemuxing": "boolean",
+              "EnablePublicSharing": "boolean",
+              "EnableRemoteAccess": "boolean",
+              "EnableRemoteControlOfOtherUsers": "boolean",
+              "EnableSharedDeviceControl": "boolean",
+              "EnableSubtitleDownloading": "boolean",
+              "EnableSubtitleManagement": "boolean",
+              "EnableSyncTranscoding": "boolean",
+              "EnableUserPreferenceAccess": "boolean",
+              "EnableVideoPlaybackTranscoding": "boolean",
+              "EnabledChannels": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "EnabledDevices": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "EnabledFolders": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "ExcludedSubFolders": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "IncludeTags": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "InvalidLoginAttemptCount": "integer",
+              "IsAdministrator": "boolean",
+              "IsDisabled": "boolean",
+              "IsHidden": "boolean",
+              "IsHiddenFromUnusedDevices": "boolean",
+              "IsHiddenRemotely": "boolean",
+              "IsTagBlockingModeInclusive": "boolean",
+              "LockedOutDate": "integer",
+              "RemoteClientBitrateLimit": "integer",
+              "RestrictedFeatures": {
+                "itemShapes": [],
+                "length": 0,
+                "type": "array"
+              },
+              "SimultaneousStreamLimit": "integer"
+            },
+            "Prefix": "string",
+            "ServerId": "string"
+          }
+        },
+        "bytesRead": 2930,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2930",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "recorder-logout": {
+      "case": "recorder-logout",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "POST",
+        "path": "/emby/Sessions/Logout"
+      },
+      "response": {
+        "body": null,
+        "bodyKind": "empty",
+        "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bodyStructure": "binary",
+        "bytesRead": 0,
+        "complete": true,
+        "contentType": "",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 204,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "recorder-token-invalid": {
+      "case": "recorder-token-invalid",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Sessions"
+      },
+      "response": {
+        "body": "Access token is invalid or expired.",
+        "bodyKind": "text",
+        "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+        "bodyStructure": "string",
+        "bytesRead": 35,
+        "complete": true,
+        "contentType": "text/plain",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "35",
+          "Content-Type": "text/plain",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 401,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "similar-album": {
+      "case": "similar-album",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/13/Similar?Limit=12&UserId=46c1e1006a2c47ada1b482a96e89c549&EnableTotalRecordCount=false&ImageTypeLimit=1&Fields=PrimaryImageAspectRatio%2CDateCreated"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "similar-album-exclude-artist": {
+      "case": "similar-album-exclude-artist",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/13/Similar?Limit=12&UserId=46c1e1006a2c47ada1b482a96e89c549&EnableTotalRecordCount=false&ImageTypeLimit=1&Fields=PrimaryImageAspectRatio%2CDateCreated&ExcludeArtistIds=12"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "similar-movie": {
+      "case": "similar-movie",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/Similar?Limit=12&UserId=46c1e1006a2c47ada1b482a96e89c549&EnableTotalRecordCount=false&ImageTypeLimit=1&Fields=PrimaryImageAspectRatio%2CDateCreated"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "similar-mp3": {
+      "case": "similar-mp3",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/11/Similar?Limit=12&UserId=46c1e1006a2c47ada1b482a96e89c549&EnableTotalRecordCount=false&ImageTypeLimit=1&Fields=PrimaryImageAspectRatio%2CDateCreated"
+      },
+      "response": {
+        "body": {
+          "Items": [
+            {
+              "Album": "M3e Synthetic Album",
+              "AlbumArtist": "M3e Synthetic Artist",
+              "AlbumArtists": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "AlbumId": "13",
+              "ArtistItems": [
+                {
+                  "Id": "12",
+                  "Name": "M3e Synthetic Artist"
+                }
+              ],
+              "Artists": [
+                "M3e Synthetic Artist"
+              ],
+              "BackdropImageTags": [],
+              "Composers": [],
+              "DateCreated": "2026-09-10T22:39:36.0000000Z",
+              "Id": "10",
+              "ImageTags": {},
+              "IsFolder": false,
+              "MediaType": "Audio",
+              "Name": "M3e FLAC",
+              "RunTimeTicks": 1800000000,
+              "ServerId": "f56dec8ff7414847873064c4be9fba74",
+              "Type": "Audio",
+              "UserData": {
+                "IsFavorite": false,
+                "PlayCount": 0,
+                "PlaybackPositionTicks": 0,
+                "Played": false
+              }
+            }
+          ],
+          "TotalRecordCount": 1
+        },
+        "bodyKind": "json",
+        "bodySha256": "c29950a8aae82bc1cd9ac53baedcc7fe407a2c98bc7fceb9607dc39b1a623b93",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [
+              {
+                "Album": "string",
+                "AlbumArtist": "string",
+                "AlbumArtists": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "AlbumId": "string",
+                "ArtistItems": {
+                  "itemShapes": [
+                    {
+                      "Id": "string",
+                      "Name": "string"
+                    }
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "Artists": {
+                  "itemShapes": [
+                    "string"
+                  ],
+                  "length": 1,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "Composers": {
+                  "itemShapes": [],
+                  "length": 0,
+                  "type": "array"
+                },
+                "DateCreated": "string",
+                "Id": "string",
+                "ImageTags": {},
+                "IsFolder": "boolean",
+                "MediaType": "string",
+                "Name": "string",
+                "RunTimeTicks": "integer",
+                "ServerId": "string",
+                "Type": "string",
+                "UserData": {
+                  "IsFavorite": "boolean",
+                  "PlayCount": "integer",
+                  "PlaybackPositionTicks": "integer",
+                  "Played": "boolean"
+                }
+              }
+            ],
+            "length": 1,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 605,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "605",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-album-default": {
+      "case": "theme-album-default",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/13/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 13,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 13,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "cce8f9cff68ac13a4ba46a79cd298919bc74b06f99cc5528b79dcd02d52fcc0a",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 204,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "204",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-movie-default": {
+      "case": "theme-movie-default",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "f2ebea9c798fbac05a09cadc08aebf0bc7b2085f18a239ca559ea2957fdedbd8",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-movie-inherit-false": {
+      "case": "theme-movie-inherit-false",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&InheritFromParent=false"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "f2ebea9c798fbac05a09cadc08aebf0bc7b2085f18a239ca559ea2957fdedbd8",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-movie-songs-false": {
+      "case": "theme-movie-songs-false",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&EnableThemeSongs=false"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "ccb58dd2ca5079261a48e2f9515a4dc5af912c7a3c1c048d34395c90eda30a1a",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-movie-videos-false": {
+      "case": "theme-movie-videos-false",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&EnableThemeVideos=false"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "29bc2ec6ba8d57a6a64c2a7b8cb803a449529b9d50bea52481aa9bb2d6c3a083",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-mp3-default": {
+      "case": "theme-mp3-default",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/11/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 11,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 11,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "d18cdb1a8b7cdd2558ede8993d474fb2d404aa7f66adff3a6570252ad11689f7",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 204,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "204",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "viewer-after": {
+      "case": "viewer-after",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "Configuration": {
+            "DisplayMissingEpisodes": false,
+            "EnableLocalPassword": false,
+            "EnableNextEpisodeAutoPlay": true,
+            "HidePlayedInLatest": true,
+            "HidePlayedInMoreLikeThis": false,
+            "HidePlayedInSuggestions": false,
+            "IntroSkipMode": "ShowButton",
+            "LatestItemsExcludes": [],
+            "MyMediaExcludes": [],
+            "OrderedViews": [],
+            "PlayDefaultAudioTrack": true,
+            "RememberAudioSelections": true,
+            "RememberSubtitleSelections": true,
+            "ResumeRewindSeconds": 0,
+            "SubtitleMode": "Smart"
+          },
+          "DateCreated": "2026-09-10T22:51:48.9545572Z",
+          "HasConfiguredPassword": true,
+          "HasPassword": true,
+          "Id": "46c1e1006a2c47ada1b482a96e89c549",
+          "LastActivityDate": "2026-09-11T06:46:39.4275049Z",
+          "LastLoginDate": "2026-09-11T06:46:39.1034970Z",
+          "Name": "m3e-reference-viewer",
+          "Policy": {
+            "AccessSchedules": [],
+            "AllowCameraUpload": true,
+            "AllowSharingPersonalItems": false,
+            "AllowTagOrRating": false,
+            "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+            "AutoRemoteQuality": 0,
+            "BlockUnratedItems": [],
+            "BlockedTags": [],
+            "EnableAllChannels": true,
+            "EnableAllDevices": true,
+            "EnableAllFolders": true,
+            "EnableAudioPlaybackTranscoding": true,
+            "EnableContentDeletion": false,
+            "EnableContentDeletionFromFolders": [],
+            "EnableContentDownloading": false,
+            "EnableLiveTvAccess": true,
+            "EnableLiveTvManagement": true,
+            "EnableMediaConversion": true,
+            "EnableMediaPlayback": true,
+            "EnablePlaybackRemuxing": true,
+            "EnablePublicSharing": true,
+            "EnableRemoteAccess": true,
+            "EnableRemoteControlOfOtherUsers": false,
+            "EnableSharedDeviceControl": true,
+            "EnableSubtitleDownloading": true,
+            "EnableSubtitleManagement": false,
+            "EnableSyncTranscoding": true,
+            "EnableUserPreferenceAccess": true,
+            "EnableVideoPlaybackTranscoding": true,
+            "EnabledChannels": [],
+            "EnabledDevices": [],
+            "EnabledFolders": [],
+            "ExcludedSubFolders": [],
+            "IncludeTags": [],
+            "InvalidLoginAttemptCount": 0,
+            "IsAdministrator": false,
+            "IsDisabled": false,
+            "IsHidden": false,
+            "IsHiddenFromUnusedDevices": false,
+            "IsHiddenRemotely": true,
+            "IsTagBlockingModeInclusive": false,
+            "LockedOutDate": 0,
+            "RemoteClientBitrateLimit": 0,
+            "RestrictedFeatures": [],
+            "SimultaneousStreamLimit": 0
+          },
+          "Prefix": "M",
+          "ServerId": "f56dec8ff7414847873064c4be9fba74"
+        },
+        "bodyKind": "json",
+        "bodySha256": "28d2e303b05e766e3850b45e09c9538621c85bdeb2056deaddcb370df9d8dbb0",
+        "bodyStructure": {
+          "Configuration": {
+            "DisplayMissingEpisodes": "boolean",
+            "EnableLocalPassword": "boolean",
+            "EnableNextEpisodeAutoPlay": "boolean",
+            "HidePlayedInLatest": "boolean",
+            "HidePlayedInMoreLikeThis": "boolean",
+            "HidePlayedInSuggestions": "boolean",
+            "IntroSkipMode": "string",
+            "LatestItemsExcludes": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "MyMediaExcludes": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OrderedViews": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "PlayDefaultAudioTrack": "boolean",
+            "RememberAudioSelections": "boolean",
+            "RememberSubtitleSelections": "boolean",
+            "ResumeRewindSeconds": "integer",
+            "SubtitleMode": "string"
+          },
+          "DateCreated": "string",
+          "HasConfiguredPassword": "boolean",
+          "HasPassword": "boolean",
+          "Id": "string",
+          "LastActivityDate": "string",
+          "LastLoginDate": "string",
+          "Name": "string",
+          "Policy": {
+            "AccessSchedules": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "AllowCameraUpload": "boolean",
+            "AllowSharingPersonalItems": "boolean",
+            "AllowTagOrRating": "boolean",
+            "AuthenticationProviderId": "string",
+            "AutoRemoteQuality": "integer",
+            "BlockUnratedItems": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "BlockedTags": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnableAllChannels": "boolean",
+            "EnableAllDevices": "boolean",
+            "EnableAllFolders": "boolean",
+            "EnableAudioPlaybackTranscoding": "boolean",
+            "EnableContentDeletion": "boolean",
+            "EnableContentDeletionFromFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnableContentDownloading": "boolean",
+            "EnableLiveTvAccess": "boolean",
+            "EnableLiveTvManagement": "boolean",
+            "EnableMediaConversion": "boolean",
+            "EnableMediaPlayback": "boolean",
+            "EnablePlaybackRemuxing": "boolean",
+            "EnablePublicSharing": "boolean",
+            "EnableRemoteAccess": "boolean",
+            "EnableRemoteControlOfOtherUsers": "boolean",
+            "EnableSharedDeviceControl": "boolean",
+            "EnableSubtitleDownloading": "boolean",
+            "EnableSubtitleManagement": "boolean",
+            "EnableSyncTranscoding": "boolean",
+            "EnableUserPreferenceAccess": "boolean",
+            "EnableVideoPlaybackTranscoding": "boolean",
+            "EnabledChannels": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnabledDevices": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnabledFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "ExcludedSubFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "IncludeTags": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "InvalidLoginAttemptCount": "integer",
+            "IsAdministrator": "boolean",
+            "IsDisabled": "boolean",
+            "IsHidden": "boolean",
+            "IsHiddenFromUnusedDevices": "boolean",
+            "IsHiddenRemotely": "boolean",
+            "IsTagBlockingModeInclusive": "boolean",
+            "LockedOutDate": "integer",
+            "RemoteClientBitrateLimit": "integer",
+            "RestrictedFeatures": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "SimultaneousStreamLimit": "integer"
+          },
+          "Prefix": "string",
+          "ServerId": "string"
+        },
+        "bytesRead": 2058,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2058",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:39 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "viewer-before": {
+      "case": "viewer-before",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549"
+      },
+      "response": {
+        "body": {
+          "Configuration": {
+            "DisplayMissingEpisodes": false,
+            "EnableLocalPassword": false,
+            "EnableNextEpisodeAutoPlay": true,
+            "HidePlayedInLatest": true,
+            "HidePlayedInMoreLikeThis": false,
+            "HidePlayedInSuggestions": false,
+            "IntroSkipMode": "ShowButton",
+            "LatestItemsExcludes": [],
+            "MyMediaExcludes": [],
+            "OrderedViews": [],
+            "PlayDefaultAudioTrack": true,
+            "RememberAudioSelections": true,
+            "RememberSubtitleSelections": true,
+            "ResumeRewindSeconds": 0,
+            "SubtitleMode": "Smart"
+          },
+          "DateCreated": "2026-09-10T22:51:48.9545572Z",
+          "HasConfiguredPassword": true,
+          "HasPassword": true,
+          "Id": "46c1e1006a2c47ada1b482a96e89c549",
+          "LastActivityDate": "2026-09-11T06:46:39.1289145Z",
+          "LastLoginDate": "2026-09-11T06:46:39.1034970Z",
+          "Name": "m3e-reference-viewer",
+          "Policy": {
+            "AccessSchedules": [],
+            "AllowCameraUpload": true,
+            "AllowSharingPersonalItems": false,
+            "AllowTagOrRating": false,
+            "AuthenticationProviderId": "Emby.Server.Implementations.Library.DefaultAuthenticationProvider",
+            "AutoRemoteQuality": 0,
+            "BlockUnratedItems": [],
+            "BlockedTags": [],
+            "EnableAllChannels": true,
+            "EnableAllDevices": true,
+            "EnableAllFolders": true,
+            "EnableAudioPlaybackTranscoding": true,
+            "EnableContentDeletion": false,
+            "EnableContentDeletionFromFolders": [],
+            "EnableContentDownloading": false,
+            "EnableLiveTvAccess": true,
+            "EnableLiveTvManagement": true,
+            "EnableMediaConversion": true,
+            "EnableMediaPlayback": true,
+            "EnablePlaybackRemuxing": true,
+            "EnablePublicSharing": true,
+            "EnableRemoteAccess": true,
+            "EnableRemoteControlOfOtherUsers": false,
+            "EnableSharedDeviceControl": true,
+            "EnableSubtitleDownloading": true,
+            "EnableSubtitleManagement": false,
+            "EnableSyncTranscoding": true,
+            "EnableUserPreferenceAccess": true,
+            "EnableVideoPlaybackTranscoding": true,
+            "EnabledChannels": [],
+            "EnabledDevices": [],
+            "EnabledFolders": [],
+            "ExcludedSubFolders": [],
+            "IncludeTags": [],
+            "InvalidLoginAttemptCount": 0,
+            "IsAdministrator": false,
+            "IsDisabled": false,
+            "IsHidden": false,
+            "IsHiddenFromUnusedDevices": false,
+            "IsHiddenRemotely": true,
+            "IsTagBlockingModeInclusive": false,
+            "LockedOutDate": 0,
+            "RemoteClientBitrateLimit": 0,
+            "RestrictedFeatures": [],
+            "SimultaneousStreamLimit": 0
+          },
+          "Prefix": "M",
+          "ServerId": "f56dec8ff7414847873064c4be9fba74"
+        },
+        "bodyKind": "json",
+        "bodySha256": "99195af47fb9a5602e4e0173bbdd8082d1b8e700c996fc3ad3833738f70d1d7c",
+        "bodyStructure": {
+          "Configuration": {
+            "DisplayMissingEpisodes": "boolean",
+            "EnableLocalPassword": "boolean",
+            "EnableNextEpisodeAutoPlay": "boolean",
+            "HidePlayedInLatest": "boolean",
+            "HidePlayedInMoreLikeThis": "boolean",
+            "HidePlayedInSuggestions": "boolean",
+            "IntroSkipMode": "string",
+            "LatestItemsExcludes": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "MyMediaExcludes": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OrderedViews": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "PlayDefaultAudioTrack": "boolean",
+            "RememberAudioSelections": "boolean",
+            "RememberSubtitleSelections": "boolean",
+            "ResumeRewindSeconds": "integer",
+            "SubtitleMode": "string"
+          },
+          "DateCreated": "string",
+          "HasConfiguredPassword": "boolean",
+          "HasPassword": "boolean",
+          "Id": "string",
+          "LastActivityDate": "string",
+          "LastLoginDate": "string",
+          "Name": "string",
+          "Policy": {
+            "AccessSchedules": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "AllowCameraUpload": "boolean",
+            "AllowSharingPersonalItems": "boolean",
+            "AllowTagOrRating": "boolean",
+            "AuthenticationProviderId": "string",
+            "AutoRemoteQuality": "integer",
+            "BlockUnratedItems": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "BlockedTags": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnableAllChannels": "boolean",
+            "EnableAllDevices": "boolean",
+            "EnableAllFolders": "boolean",
+            "EnableAudioPlaybackTranscoding": "boolean",
+            "EnableContentDeletion": "boolean",
+            "EnableContentDeletionFromFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnableContentDownloading": "boolean",
+            "EnableLiveTvAccess": "boolean",
+            "EnableLiveTvManagement": "boolean",
+            "EnableMediaConversion": "boolean",
+            "EnableMediaPlayback": "boolean",
+            "EnablePlaybackRemuxing": "boolean",
+            "EnablePublicSharing": "boolean",
+            "EnableRemoteAccess": "boolean",
+            "EnableRemoteControlOfOtherUsers": "boolean",
+            "EnableSharedDeviceControl": "boolean",
+            "EnableSubtitleDownloading": "boolean",
+            "EnableSubtitleManagement": "boolean",
+            "EnableSyncTranscoding": "boolean",
+            "EnableUserPreferenceAccess": "boolean",
+            "EnableVideoPlaybackTranscoding": "boolean",
+            "EnabledChannels": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnabledDevices": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "EnabledFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "ExcludedSubFolders": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "IncludeTags": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "InvalidLoginAttemptCount": "integer",
+            "IsAdministrator": "boolean",
+            "IsDisabled": "boolean",
+            "IsHidden": "boolean",
+            "IsHiddenFromUnusedDevices": "boolean",
+            "IsHiddenRemotely": "boolean",
+            "IsTagBlockingModeInclusive": "boolean",
+            "LockedOutDate": "integer",
+            "RemoteClientBitrateLimit": "integer",
+            "RestrictedFeatures": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "SimultaneousStreamLimit": "integer"
+          },
+          "Prefix": "string",
+          "ServerId": "string"
+        },
+        "bytesRead": 2058,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2058",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 06:46:38 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    }
+  },
+  "report": {
+    "approvedFixtureCatalog": [
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "9",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "M3e Client Movie",
+        "ParentId": "4",
+        "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+        "People": [],
+        "ProductionYear": 2026,
+        "RunTimeTicks": 6000000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Movie",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 1228562570,
+          "Played": false,
+          "PlayedPercentage": 20.476042833333334
+        }
+      },
+      {
+        "AirDays": [],
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "14",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Client Series",
+        "ParentId": "6",
+        "Path": "[fixture media]/TV/M3e Client Series",
+        "People": [],
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Series",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 3
+        }
+      },
+      {
+        "Album": "M3e Synthetic Album",
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "AlbumId": "13",
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "10",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e FLAC",
+        "ParentId": "8",
+        "Path": "[fixture media]/Music/M3e Client Audio.flac",
+        "RunTimeTicks": 1800000000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "Album": "M3e Synthetic Album",
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "AlbumId": "13",
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "11",
+        "ImageTags": {},
+        "IsFolder": false,
+        "MediaType": "Audio",
+        "Name": "M3e MP3",
+        "ParentId": "8",
+        "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+        "RunTimeTicks": 1800240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "TagItems": [],
+        "Type": "Audio",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "AlbumArtist": "M3e Synthetic Artist",
+        "AlbumArtists": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "ArtistItems": [
+          {
+            "Id": "12",
+            "Name": "M3e Synthetic Artist"
+          }
+        ],
+        "Artists": [
+          "M3e Synthetic Artist"
+        ],
+        "BackdropImageTags": [],
+        "Composers": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "13",
+        "ImageTags": {},
+        "IsFolder": true,
+        "Name": "M3e Synthetic Album",
+        "RunTimeTicks": 3600240000,
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "TagItems": [],
+        "Type": "MusicAlbum",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "15",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": true,
+        "Name": "Season 1",
+        "ParentId": "14",
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01",
+        "People": [],
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "16",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": true,
+        "Name": "Season 2",
+        "ParentId": "14",
+        "Path": "[fixture media]/TV/M3e Client Series/Season 02",
+        "People": [],
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Season",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "18",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 1-1",
+        "ParentId": "15",
+        "ParentIndexNumber": 1,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+        "People": [],
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "15",
+        "SeasonName": "Season 1",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "17",
+        "ImageTags": {},
+        "IndexNumber": 2,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 1-2",
+        "ParentId": "15",
+        "ParentIndexNumber": 1,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+        "People": [],
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "15",
+        "SeasonName": "Season 1",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      },
+      {
+        "BackdropImageTags": [],
+        "GenreItems": [],
+        "Genres": [],
+        "Id": "19",
+        "ImageTags": {},
+        "IndexNumber": 1,
+        "IsFolder": false,
+        "MediaType": "Video",
+        "Name": "Episode 2-1",
+        "ParentId": "16",
+        "ParentIndexNumber": 2,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+        "People": [],
+        "RunTimeTicks": 6000000000,
+        "SeasonId": "16",
+        "SeasonName": "Season 2",
+        "SeriesId": "14",
+        "SeriesName": "M3e Client Series",
+        "ServerId": "f56dec8ff7414847873064c4be9fba74",
+        "Studios": [],
+        "TagItems": [],
+        "Type": "Episode",
+        "UserData": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    ],
+    "baseRecorderCount": 20,
+    "browserSessionUsedOrRevoked": false,
+    "businessRequestsReserved": 17,
+    "caseStatuses": {
+      "anonymous-similar": 401,
+      "anonymous-theme": 401,
+      "catalog-after": 200,
+      "catalog-before": 200,
+      "missing-theme": 200,
+      "recorder-login": 200,
+      "recorder-logout": 204,
+      "recorder-token-invalid": 401,
+      "similar-album": 200,
+      "similar-album-exclude-artist": 200,
+      "similar-movie": 200,
+      "similar-mp3": 200,
+      "theme-album-default": 200,
+      "theme-movie-default": 200,
+      "theme-movie-inherit-false": 200,
+      "theme-movie-songs-false": 200,
+      "theme-movie-videos-false": 200,
+      "theme-mp3-default": 200,
+      "viewer-after": 200,
+      "viewer-before": 200
+    },
+    "catalogMetadataAndUserDataPreserved": true,
+    "classification": "protocol research; not client acceptance",
+    "configurationAndPolicyPreserved": true,
+    "excludedArtistIds": [
+      "12"
+    ],
+    "failureType": null,
+    "httpAttemptsReserved": 20,
+    "itemIds": {
+      "album": "13",
+      "movie": "9",
+      "mp3": "11"
+    },
+    "marker": "goby-m3e-reference-auxiliary-reads-v1",
+    "maximumBusinessRequests": 17,
+    "maximumHttpAttempts": 20,
+    "mediaManifestPreserved": true,
+    "missingIdControl": {
+      "absenceScope": "Not present in the complete bounded owned-media catalog or its observed album artist references.",
+      "globalAbsenceClaimed": false,
+      "id": "999999999",
+      "malformedIdRequested": false,
+      "syntax": "bounded positive decimal"
+    },
+    "newRecorderTokenRevoked": true,
+    "oldReferenceRequests": 0,
+    "playbackPreferenceMetadataOrLibraryWrites": 0,
+    "recorderDeviceId": "goby-m3e-auxiliary-reads-recorder-v1",
+    "recoveryOnly": false,
+    "referenceExecutableSha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+    "referencePID": 332054,
+    "referenceStartTicks": "357218",
+    "responsesRecorded": 20,
+    "scope": "Empty results only describe this fixture. Missing decimal-ID behavior does not establish malformed-ID behavior. Complete non-200 auxiliary responses are retained and do not stop later cases. Incomplete transport responses stop capture; their intent and failure type remain private, without claiming a complete body.",
+    "sourceSha256": "4e06ff3ea848f1e3bece6d73f0969de9480ba5a62aed23c6a322bebd92f587f9"
+  },
+  "source_files": {
+    "anonymous-similar.json": "0b68ad5ebbbce3928d9a44e860b5481252f058c242706780d0b2e1426ea3c14e",
+    "anonymous-theme.json": "f53b3d421d9287945e2469fab34d938cb8d7eb371f49cda413e78726b09752a2",
+    "catalog-after.json": "8901e91384ba3d5f9f200be7a37ac76e66d58a837682d209cdc2964bb6c0a0d3",
+    "catalog-before.json": "6bb3b9b9ade601ce926db8bc3cd3dbc98ce15635a9b3ae1c88e58aa99223407c",
+    "missing-theme.json": "6cfc0cfec47fb4fe602206799f141b7a77ebbdbe02597095b9078666141f3fdd",
+    "recorder-login.json": "023d981979c15866931260f98b333b8cd2075c0f64495ecdcb7b75f370cbf6f5",
+    "recorder-logout.json": "959f4acebfaccaa1f4d4f61998cfb847cb6891dc85c851452843d8c6e19d9b4e",
+    "recorder-token-invalid.json": "f81a721658edbe5bb4afb16942ef8423d62454ac244dbf6987fbcbb6306cf58a",
+    "report.json": "fa5306c8cee53699b90c3ea290c46914b23141995b5f30f39b673aa45f613203",
+    "similar-album-exclude-artist.json": "be78fd233b387bceae0a5dc7477459e6a5a2d19c0b165054bf5f1e5fdcbc42ff",
+    "similar-album.json": "473e043c4d2b3a1c64e786fe36cc8c60d8800363f8c3c951e70370c2e9c4091c",
+    "similar-movie.json": "18904f16da05312bbe3e73fec1f53fc0537036f541d7165c78330a5f899461f6",
+    "similar-mp3.json": "4712cd50808eff5d98a4c49e7db92ad587a24c5ea7867abc00ba86925c745353",
+    "theme-album-default.json": "b3ab1fbadc0e26cd5c555573a84c210f1fb4cb7c7cf79c13772346db531a1117",
+    "theme-movie-default.json": "995f3440b84e27d40f3f9cbfde0c1ddee68b486326d2f18050d74daf33f621ed",
+    "theme-movie-inherit-false.json": "27451ebf9b46ec9099c5070622564055a3434424bac197109fbe7b4e1852629a",
+    "theme-movie-songs-false.json": "425e79ed183070a03225440a91f547b3f42c8523d1874a0340f283637e61f8f7",
+    "theme-movie-videos-false.json": "214b68adeabb35bf6f6683822dc71b29b9dda33ab1c9e24165ba32df75a6ff9d",
+    "theme-mp3-default.json": "72ae73d5ef6194a5fffc6a59eaec15edcd5d84c3328c5ab6027806b4f4ee3ba2",
+    "viewer-after.json": "9a5d1fed484f2646be470032b8ac4fbc4ed2b58a6c86f15d258835b9717cf32c",
+    "viewer-before.json": "66a5b4add5afde70dd8608a7561c89832858ea0f5a6da0ec4b6a44a542e75233"
+  }
+}

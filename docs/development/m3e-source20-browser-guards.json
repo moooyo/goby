@@ -1,0 +1,48 @@
+{
+  "browser_started": false,
+  "checks": {
+    "checks": [
+      {
+        "exit_code": 0,
+        "file": "client-browser-auxiliary-album.mjs",
+        "output": "",
+        "sha256": "7fc5d6618f3e3f180cf3bba8c4d756cc8b2434c60b73ace759e4243a0c3b3fad"
+      },
+      {
+        "exit_code": 0,
+        "file": "client-browser-av-runtime.mjs",
+        "output": "",
+        "sha256": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0"
+      },
+      {
+        "exit_code": 0,
+        "file": "client-browser-av.mjs",
+        "output": "",
+        "sha256": "854b4878263216b4d0cb30f5953eeb27d54b3538b76522a95c1d9127e77b3fa9"
+      },
+      {
+        "exit_code": 0,
+        "file": "test-client-browser-auxiliary-album.mjs",
+        "output": "",
+        "sha256": "384e436e0996a7bbf6ddd566fbd02a0da02651d70dd9e756020a226a4ffd6401"
+      }
+    ],
+    "guards_exit": 0,
+    "guards_sha256": "5b8a8107f997cc47522d59c68bb06afe4265b95d218e3e15277a9ecfd2826b6c",
+    "input": "/opt/goby-test/exec-work-m3e/source20-browser-input-03",
+    "input_mode": "0700",
+    "node": "/usr/bin/node"
+  },
+  "checks_sha256": "a1286e9f14e842856da29e627a7cda0f7cc24ede95d03a050acf066bddc18d51",
+  "guard_tests": {
+    "failures": 0,
+    "memory_scenarios": 17,
+    "passes": 9,
+    "skips": 0
+  },
+  "production_state_changed": false,
+  "schema": "goby-m3e-source20-browser-guards",
+  "scope": "Remote syntax checks and pure mock navigation/response guards only. Real browser logout, final state preservation and candidate acceptance remain separate.",
+  "status": "passed",
+  "version": 1
+}

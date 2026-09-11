@@ -1,0 +1,53 @@
+{
+  "attestation_path": "/opt/goby-test/postgres-workspace-v1/client-backup-disposal-20260911_075321_2bae7b2afb21.json",
+  "attestation_sha256": "40fe17debd0d364a68f025903fc75dca5a460e43aa49269590ec1eacbd77f593",
+  "concurrency_boundary": "The existing workspace operator lock serializes cooperating administrative operations; no protection against an unrelated privileged administrator bypassing that lock is claimed.",
+  "failed_log_sha256": "a1cae0248fa6a2e8004b4012d1ad0ee4a35a068795ca97b35407822088ee46b6",
+  "failed_report_sha256": "3fd116765f17978e70a1bb53202281ae0d1df5d608b555dc28962ca476793199",
+  "force_or_backend_termination_used": false,
+  "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "operator_sha256": "534d4ff3dd455a1863334d84f4d3cf32f89874d3af8851d50a85e45f1ef6424a",
+  "original_failure_evidence_preserved": true,
+  "pairs": [
+    {
+      "before": {
+        "casts_unchanged": true,
+        "catalog_objects": [],
+        "connections_prepared_slots": 0,
+        "external_role_dependencies": 0,
+        "table_row_counts": {}
+      },
+      "database_oid": 4252377,
+      "name": "goby_backup_m3e_source",
+      "role_oid": 4252376,
+      "status": "removed"
+    },
+    {
+      "before": {
+        "casts_unchanged": true,
+        "catalog_objects": [],
+        "connections_prepared_slots": 0,
+        "external_role_dependencies": 0,
+        "table_row_counts": {}
+      },
+      "database_oid": 4252379,
+      "name": "goby_backup_m3e_target",
+      "role_oid": 4252378,
+      "status": "removed"
+    }
+  ],
+  "preexisting_catalog_unchanged": true,
+  "private_report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_075321_2bae7b2afb21/disposal-report.json",
+  "private_report_sha256": "96103a082a42d966cd19d76eeb3a0e06429e264b4e3e0ee7880d77276c407e4d",
+  "retained_failure_receipt_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_075321_2bae7b2afb21/receipt-072496f3bc8d6935.json",
+  "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_075321_2bae7b2afb21",
+  "run_id": "20260911_075321_2bae7b2afb21",
+  "schema": "goby-m3e-source19-similar-disposal",
+  "scope": "Only the independently reviewed empty source19 Similar-test databases and their exact ordinary roles were removed. Original failed report, log, receipt snapshots, credentials and output directory were retained; no HBA change, main database action, or reference database action was performed.",
+  "source_manifest_sha256": "cdf8775d7ffd0973046d83fef48d8ab3a813105164f807755ae9783a18545708",
+  "source_receipt_sha256": "d7ad543a3438298ba63993deed7a23b0cb68c26adb83b09032e50ef324550e0f",
+  "status": "disposed",
+  "system_identifier": "7684040109719526738",
+  "tag": "goby-client-backup-pair-m3e-v1:20260911_075321_2bae7b2afb21",
+  "version": 1
+}

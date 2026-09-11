@@ -1,0 +1,71 @@
+{
+  "allMediaPreserved": true,
+  "automaticFieldAllowlist": [
+    "DateLastRefreshed",
+    "DateLastSaved",
+    "ETag",
+    "Etag"
+  ],
+  "bytesRead": 385041,
+  "cases": [],
+  "classification": "Reference-only metadata protocol research; not client acceptance or a scoring specification.",
+  "cleanup": {
+    "exactTokenStatus": 401,
+    "logoutStatus": 204,
+    "result": "logout204-exact-token401"
+  },
+  "elapsedSeconds": 1.131659499995294,
+  "failure": {
+    "phase": "case-40",
+    "type": "Failure"
+  },
+  "helperSha256": "9af752745a5e9d9a9047491c03b9f32da2e9a70d01d78d17e1504ad760204d75",
+  "indexReportSha256": "457a4d88f86617c448b980f31b7dd5b7d8bbeb31e3cfe807103371859f2d7998",
+  "logoutSeconds": 20,
+  "manifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+  "marker": "goby-reference-similarity-combinations-m3e-v1",
+  "maximumRequestAttempts": 45,
+  "newRecorderTokenRevoked": true,
+  "normalRequestPlan": 37,
+  "normalSeconds": 120,
+  "operatorSha256": "29f159a2580e178dce65b6c23ef14ad9875971240e534546eb5e8a14ce88c160",
+  "originalSixItemsAndAllFiveUsersPreserved": true,
+  "ownerSha256": "3bdbeee28406f9809624f3619b38915ab4445fa1a7c8aca30cbe445d3d1ddb40",
+  "rawDetailEqualityClaimedForModifiedItems": false,
+  "readOnlySeedFullDetailPreserved": true,
+  "recovery": {
+    "automaticChanges": {
+      "Etag": {
+        "after": {
+          "present": true,
+          "value": "59f9c665061bbe374c946ddf1b3ad474"
+        },
+        "before": {
+          "present": true,
+          "value": "3c2ff32f104bcbe763438b64ad3910df"
+        }
+      }
+    },
+    "itemId": "40",
+    "restoreAlreadySent": false,
+    "result": "original-observed-no-write-needed"
+  },
+  "recoverySeconds": 45,
+  "referenceBinarySha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requestAttempts": 27,
+  "restoredBusinessMetadata": {
+    "40": true
+  },
+  "result": "retained_for_review",
+  "retryPermitted": false,
+  "scriptSha256": "ca772dc46dc9a8a4b3237bee8b6f5f3f7a10b07580b21843d6ca155e9fa481b0",
+  "sentMutationIntents": [
+    "login",
+    "logout",
+    "modify-40"
+  ],
+  "unreturnedUserDataFieldsClaimed": false,
+  "userDataScope": "Exact equality of every returned UserData field for all five users visible subsets of the original six playables and the two target movies, using the accepted bounded Items projection."
+}

@@ -24,6 +24,7 @@ func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/Root", s.requireEmby(s.embyRoot))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items", s.requireEmby(s.embyItems))
 	mux.HandleFunc("GET /emby/Items", s.requireEmby(s.embyItems))
+	mux.HandleFunc("GET /emby/Items/{Id}/Similar", s.requireEmby(s.embySimilar))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/Latest", s.requireEmby(s.embyLatest))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/{Id}", s.requireEmby(s.embyItem))
 	mux.HandleFunc("GET /emby/Shows/{Id}/Seasons", s.requireEmby(s.embySeasons))

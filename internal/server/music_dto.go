@@ -17,10 +17,11 @@ func addMusicCatalogFields(dto map[string]any, item library.Item) {
 	albumArtists := item.Entities.AlbumArtists
 	if item.Type == "Audio" && item.Album != nil {
 		dto["AlbumId"], dto["Album"] = item.Album.ID, item.Album.Name
-		// Raw album_artist tags are not extracted in this increment. A track
-		// inherits the accepted relationship of its physical album, so a track
-		// artist in a mixed album cannot become a fabricated album artist.
-		albumArtists = item.Album.AlbumArtists
+		// A track's persisted album-artist credits take precedence. Only an
+		// absent relationship inherits credits from its physical album.
+		if len(albumArtists) == 0 {
+			albumArtists = item.Album.AlbumArtists
+		}
 	}
 	albumArtistNames, albumArtistItems := musicEntityDTOs(albumArtists)
 	dto["AlbumArtists"] = albumArtistItems

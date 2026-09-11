@@ -1,0 +1,48 @@
+{
+  "browser_started": false,
+  "checks": {
+    "checks": [
+      {
+        "exit_code": 0,
+        "file": "client-browser-auxiliary-album.mjs",
+        "output": "",
+        "sha256": "7fc5d6618f3e3f180cf3bba8c4d756cc8b2434c60b73ace759e4243a0c3b3fad"
+      },
+      {
+        "exit_code": 0,
+        "file": "client-browser-av-runtime.mjs",
+        "output": "",
+        "sha256": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0"
+      },
+      {
+        "exit_code": 0,
+        "file": "client-browser-av.mjs",
+        "output": "",
+        "sha256": "854b4878263216b4d0cb30f5953eeb27d54b3538b76522a95c1d9127e77b3fa9"
+      },
+      {
+        "exit_code": 0,
+        "file": "test-client-browser-auxiliary-album.mjs",
+        "output": "",
+        "sha256": "6830b478efed5586ff8e2101f1ea1ac4b216b60888dbdcae9f61914e57387f0b"
+      }
+    ],
+    "guards_exit": 1,
+    "guards_sha256": "963ba3b828ccd1fc1239a58302ff210664eacb72993926d2a2a70421fea711f8",
+    "node": "/usr/bin/node"
+  },
+  "checks_sha256": "77b4d835ad29475d9f9c2238976dc92f0b8153731382e68a4bcd15191b377a44",
+  "directory_mode": "0o705",
+  "guard_tests": {
+    "failures": 1,
+    "passes": 7,
+    "reason": "The guard expected a positive wait count even though a known failed transfer now terminates immediately. The rejection itself occurred as required.",
+    "skips": 0
+  },
+  "input": "/opt/goby-test/exec-work-m3e/source20-browser-input-02",
+  "input_preparation_issue": "The SSH directory-creation call was rejected by the agent; the subsequent SCP created a directory with mode 0705. Only public harness files and pure mock test outputs were placed here. This input must not be used for real browser execution.",
+  "production_state_changed": false,
+  "schema": "goby-m3e-source20-browser-guards",
+  "status": "failed",
+  "version": 1
+}

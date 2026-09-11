@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
@@ -24,16 +26,33 @@ func (state *scanState) queueMusicParent(id string) {
 }
 
 func musicSourceFromProbe(probe *media.Info) (musicMetadataSource, bool) {
-	if probe == nil || probe.EmbeddedMusic == nil || probe.EmbeddedMusic.Version != media.CurrentMusicMetadataVersion {
+	if probe == nil || probe.EmbeddedMusic == nil || !validTrackMusic(*probe.EmbeddedMusic) {
 		return musicMetadataSource{}, false
 	}
 	facts := probe.EmbeddedMusic
-	source := musicMetadataSource{Version: media.CurrentMusicMetadataVersion, Name: facts.Title, Album: facts.Album,
+	source := musicMetadataSource{Version: musicSourceVersion, Name: facts.Title, Album: facts.Album,
 		Artists: []string{}, AlbumArtists: []string{}}
 	if strings.TrimSpace(facts.Artist) != "" {
 		source.Artists = append(source.Artists, facts.Artist)
 	}
+	if strings.TrimSpace(facts.AlbumArtist) != "" {
+		source.AlbumArtists = append(source.AlbumArtists, facts.AlbumArtist)
+	}
 	return source, true
+}
+
+func validTrackMusic(facts media.MusicMetadata) bool {
+	if facts.Version != media.CurrentMusicMetadataVersion {
+		return false
+	}
+	total := 0
+	for _, value := range []string{facts.Title, facts.Album, facts.Artist, facts.AlbumArtist} {
+		if !utf8.ValidString(value) || len(value) > metadataValueMaxName || strings.IndexFunc(value, unicode.IsControl) >= 0 {
+			return false
+		}
+		total += len(value)
+	}
+	return total <= 4*metadataValueMaxName
 }
 
 func encodeAcceptedMusicSource(source musicMetadataSource) ([]byte, error) {
@@ -56,7 +75,7 @@ func acceptedTrackMusic(raw []byte) (media.MusicMetadata, bool) {
 		return media.MusicMetadata{}, false
 	}
 	for field := range object {
-		if field != "Version" && field != "Title" && field != "Album" && field != "Artist" {
+		if field != "Version" && field != "Title" && field != "Album" && field != "Artist" && field != "AlbumArtist" {
 			return media.MusicMetadata{}, false
 		}
 	}
@@ -71,17 +90,17 @@ func acceptedTrackMusic(raw []byte) (media.MusicMetadata, bool) {
 		{name: "Title", value: &facts.Title},
 		{name: "Album", value: &facts.Album},
 		{name: "Artist", value: &facts.Artist},
+		{name: "AlbumArtist", value: &facts.AlbumArtist},
 	} {
 		if value, exists := object[field.name]; exists {
-			var text *string
-			if json.Unmarshal(value, &text) != nil || text == nil {
+			text, err := acceptedMusicText(value)
+			if err != nil {
 				return media.MusicMetadata{}, false
 			}
-			*field.value = *text
+			*field.value = text
 		}
 	}
-	if _, err := encodeAcceptedMusicSource(musicMetadataSource{Version: facts.Version, Name: facts.Title, Album: facts.Album,
-		Artists: []string{facts.Artist}, AlbumArtists: []string{}}); err != nil {
+	if !validTrackMusic(facts) {
 		return media.MusicMetadata{}, false
 	}
 	return facts, true
@@ -221,10 +240,11 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 		return false, fmt.Errorf("read accepted album members: %w", err)
 	}
 	defer rows.Close()
-	source := musicMetadataSource{Version: media.CurrentMusicMetadataVersion, Artists: []string{}, AlbumArtists: []string{}}
+	source := musicMetadataSource{Version: musicSourceVersion, Artists: []string{}, AlbumArtists: []string{}}
 	seenArtists := make(map[string]bool)
-	var uniformAlbum, uniformArtist string
+	var uniformAlbum, uniformArtist, uniformAlbumArtist string
 	allAlbums, allArtists, readAll, withinBounds := true, true, true, true
+	allAlbumArtists, noAlbumArtists := true, true
 	memberCount := 0
 	for rows.Next() {
 		var raw []byte
@@ -237,11 +257,14 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 			continue
 		}
 		if memberCount == 0 {
-			uniformAlbum, uniformArtist = facts.Album, facts.Artist
+			uniformAlbum, uniformArtist, uniformAlbumArtist = facts.Album, facts.Artist, facts.AlbumArtist
 		}
 		memberCount++
 		allAlbums = allAlbums && strings.TrimSpace(facts.Album) != "" && facts.Album == uniformAlbum
 		allArtists = allArtists && strings.TrimSpace(facts.Artist) != "" && facts.Artist == uniformArtist
+		albumArtistPresent := strings.TrimSpace(facts.AlbumArtist) != ""
+		allAlbumArtists = allAlbumArtists && albumArtistPresent && facts.AlbumArtist == uniformAlbumArtist
+		noAlbumArtists = noAlbumArtists && !albumArtistPresent
 		if strings.TrimSpace(facts.Artist) != "" && !seenArtists[facts.Artist] {
 			if len(source.Artists) == musicSourceMaxEntries {
 				withinBounds = false
@@ -261,10 +284,15 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 	if memberCount > 0 && allAlbums {
 		source.Name, source.Album = uniformAlbum, uniformAlbum
 	}
-	// AlbumArtists is a Goby policy derived only when every accepted member has
-	// the same real Artist tag. Audio rows never claim an unobserved album artist.
-	if memberCount > 0 && allArtists {
-		source.AlbumArtists = []string{uniformArtist}
+	// Explicit album artists win only with complete agreement. The historical
+	// track-artist fallback applies only when no member supplies album_artist;
+	// partial or conflicting explicit facts must not be hidden by that fallback.
+	if memberCount > 0 {
+		if allAlbumArtists {
+			source.AlbumArtists = []string{uniformAlbumArtist}
+		} else if noAlbumArtists && allArtists {
+			source.AlbumArtists = []string{uniformArtist}
+		}
 	}
 	encoded, err := encodeAcceptedMusicSource(source)
 	if err != nil {

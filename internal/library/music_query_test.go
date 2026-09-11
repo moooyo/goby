@@ -117,3 +117,96 @@ func TestMusicQueryFiltersUsePersistedRolesAndPhysicalAlbumMembership(t *testing
 		t.Fatal("a music relationship bypassed current library revocation")
 	}
 }
+
+func TestMusicQueryAlbumArtistFiltersSelectOwnGroupBeforePhysicalFallback(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, store.pool)
+	if _, err := store.pool.Exec(ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,is_folder) VALUES
+		('album-artist-parent','library-b','library-b','Parent Album','parent album','MusicAlbum',true),
+		('album-artist-disc','library-b','album-artist-parent','Disc','disc','Folder',true),
+		('album-artist-own','library-b','album-artist-disc','Own Track','own track','Audio',false),
+		('album-artist-fallback','library-b','album-artist-disc','Fallback Track','fallback track','Audio',false),
+		('album-artist-multiple','library-b','album-artist-parent','Multiple Credits','multiple credits','Audio',false),
+		('album-artist-standalone-own','library-b','library-b','Standalone Own','standalone own','Audio',false),
+		('album-artist-standalone-empty','library-b','library-b','Standalone Empty','standalone empty','Audio',false),
+		('album-artist-foreign-own','library-c','album-artist-parent','Foreign Own','foreign own','Audio',false),
+		('album-artist-foreign-empty','library-c','album-artist-parent','Foreign Empty','foreign empty','Audio',false),
+		('album-artist-video-own','library-b','album-artist-parent','Music Video Own','music video own','MusicVideo',false),
+		('album-artist-video-empty','library-b','album-artist-parent','Music Video Empty','music video empty','MusicVideo',false),
+		('album-artist-invalid-credits','library-b','album-artist-parent','Invalid Credits','invalid credits','Audio',false),
+		('album-artist-movie','library-b','album-artist-parent','Movie With Stray Credits','movie with stray credits','Movie',false);
+		SELECT sync_catalog_item_entities('album-artist-parent','{"Artists":["Query Album A"],"AlbumArtists":["Query Album A"]}'::jsonb);
+		SELECT sync_catalog_item_entities('album-artist-multiple','{"Artists":["Query Album A"],"AlbumArtists":["Query Album B","Query Album C"]}'::jsonb);
+		INSERT INTO catalog_entities(kind,name) VALUES('Person','Query Album B')`); err != nil {
+		t.Fatalf("seed independent own and physical album artist groups: %v", err)
+	}
+	for _, id := range []string{"album-artist-own", "album-artist-standalone-own", "album-artist-foreign-own", "album-artist-video-own", "album-artist-movie"} {
+		if _, err := store.pool.Exec(ctx, `SELECT sync_catalog_item_entities($1,
+			'{"Artists":["Query Album A"],"AlbumArtists":["Query Album B"]}'::jsonb)`, id); err != nil {
+			t.Fatalf("persist a separate own album artist credit: %v", err)
+		}
+	}
+	var artistA, artistB, artistC int64
+	if err := store.pool.QueryRow(ctx, `SELECT
+		(SELECT id FROM catalog_entities WHERE kind='MusicArtist' AND name='Query Album A'),
+		(SELECT id FROM catalog_entities WHERE kind='MusicArtist' AND name='Query Album B'),
+		(SELECT id FROM catalog_entities WHERE kind='MusicArtist' AND name='Query Album C')`).Scan(&artistA, &artistB, &artistC); err != nil {
+		t.Fatalf("read actual album artist filter identities: %v", err)
+	}
+	if _, err := store.pool.Exec(ctx, `INSERT INTO item_entities(item_id,entity_id,position,display_name,credit_group,credit_type) VALUES
+		('album-artist-invalid-credits',$1,1,'Wrong group',0,'AlbumArtist'),
+		('album-artist-invalid-credits',$1,1,'Wrong credit type',2,'Artist'),
+		('album-artist-invalid-credits',(SELECT id FROM catalog_entities WHERE kind='Person' AND name='Query Album B'),
+		1,'Person is not a music identity',2,'AlbumArtist')`, artistB); err != nil {
+		t.Fatalf("seed invalid role and generic-person associations: %v", err)
+	}
+	for _, test := range []struct {
+		name, item, user string
+		artists          []int64
+		want             bool
+	}{
+		{name: "own_artist_matches", item: "album-artist-own", artists: []int64{artistB}, want: true},
+		{name: "parent_artist_cannot_override_own", item: "album-artist-own", artists: []int64{artistA}},
+		{name: "any_requested_id_matches_selected_own_group", item: "album-artist-own", artists: []int64{artistA, artistB}, want: true},
+		{name: "multiple_own_first", item: "album-artist-multiple", artists: []int64{artistB}, want: true},
+		{name: "multiple_own_second", item: "album-artist-multiple", artists: []int64{artistC}, want: true},
+		{name: "multiple_own_never_per_artist_parent_fallback", item: "album-artist-multiple", artists: []int64{artistA}},
+		{name: "absent_own_inherits_nearest_album", item: "album-artist-fallback", artists: []int64{artistA}, want: true},
+		{name: "physical_album_uses_own", item: "album-artist-parent", artists: []int64{artistA}, want: true},
+		{name: "standalone_own_matches", item: "album-artist-standalone-own", artists: []int64{artistB}, want: true},
+		{name: "standalone_empty_has_no_invented_parent", item: "album-artist-standalone-empty", artists: []int64{artistA}},
+		{name: "music_video_own_matches", item: "album-artist-video-own", artists: []int64{artistB}, want: true},
+		{name: "music_video_own_blocks_parent", item: "album-artist-video-own", artists: []int64{artistA}},
+		{name: "music_video_absent_inherits", item: "album-artist-video-empty", artists: []int64{artistA}, want: true},
+		{name: "invalid_own_roles_do_not_block_real_parent", item: "album-artist-invalid-credits", artists: []int64{artistA}, want: true},
+		{name: "invalid_own_roles_do_not_match", item: "album-artist-invalid-credits", artists: []int64{artistB}},
+		{name: "movie_stray_music_credit_is_not_membership", item: "album-artist-movie", artists: []int64{artistB}},
+		{name: "movie_stray_parent_is_not_membership", item: "album-artist-movie", artists: []int64{artistA}},
+		{name: "cross_library_parent_is_never_inherited", item: "album-artist-foreign-empty", user: "admin", artists: []int64{artistA}},
+		{name: "cross_library_own_still_matches_for_authorized_admin", item: "album-artist-foreign-own", user: "admin", artists: []int64{artistB}, want: true},
+		{name: "cross_library_own_does_not_grant_viewer_access", item: "album-artist-foreign-own", artists: []int64{artistB}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			user := test.user
+			if user == "" {
+				user = "restricted"
+			}
+			result, err := store.QueryItems(ctx, Query{UserID: user, Ids: []string{test.item}, AlbumArtistIds: test.artists})
+			want := []string{}
+			if test.want {
+				want = append(want, test.item)
+			}
+			if err != nil || result.TotalRecordCount != len(want) || !reflect.DeepEqual(queryItemIDs(result.Items), want) {
+				t.Fatalf("album artist filtering did not select the complete effective group: result=%+v want=%v error=%v", result, want, err)
+			}
+		})
+	}
+	artistResult, err := store.QueryItems(ctx, Query{UserID: "restricted", Ids: []string{"album-artist-own"}, ArtistIds: []int64{artistA}})
+	if err != nil || !reflect.DeepEqual(queryItemIDs(artistResult.Items), []string{"album-artist-own"}) {
+		t.Fatalf("album artist precedence changed the independent group-one ArtistIds filter: %+v error=%v", artistResult, err)
+	}
+	physicalResult, err := store.QueryItems(ctx, Query{UserID: "restricted", Ids: []string{"album-artist-own"}, AlbumIds: []string{"album-artist-parent"}})
+	if err != nil || !reflect.DeepEqual(queryItemIDs(physicalResult.Items), []string{"album-artist-own"}) {
+		t.Fatalf("own album artist credits changed physical AlbumIds membership: %+v error=%v", physicalResult, err)
+	}
+}

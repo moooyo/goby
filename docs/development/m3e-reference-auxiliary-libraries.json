@@ -1,0 +1,2418 @@
+{
+  "allMediaPreserved": true,
+  "bytesRead": 648821,
+  "catalog": {
+    "Movies": {
+      "actualTypeCounts": {
+        "Folder": 13,
+        "Movie": 12
+      },
+      "items": [
+        {
+          "Genres": [],
+          "Id": "49",
+          "MediaType": "Video",
+          "Name": "Actor",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Actor/movie.mp4",
+          "People": [
+            {
+              "Id": "51",
+              "Name": "CommonActor",
+              "Type": "Actor"
+            }
+          ],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "Actor",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "33",
+          "Name": "Actor",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Actor",
+          "ProviderIds": {},
+          "SortName": "Actor",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [
+            "Drama",
+            "Adventure"
+          ],
+          "Id": "44",
+          "MediaType": "Video",
+          "Name": "AllMatches",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/AllMatches/movie.mp4",
+          "People": [
+            {
+              "Id": "51",
+              "Name": "CommonActor",
+              "Type": "Actor"
+            },
+            {
+              "Id": "52",
+              "Name": "CommonDirector",
+              "Type": "Director"
+            }
+          ],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "AllMatches",
+          "Studios": [
+            {
+              "Id": 50,
+              "Name": "SharedStudio"
+            }
+          ],
+          "Type": "Movie"
+        },
+        {
+          "Id": "30",
+          "Name": "AllMatches",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/AllMatches",
+          "ProviderIds": {},
+          "SortName": "AllMatches",
+          "Type": "Folder"
+        },
+        {
+          "Id": "31",
+          "Name": "Director",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Director",
+          "ProviderIds": {},
+          "SortName": "Director",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [],
+          "Id": "47",
+          "MediaType": "Video",
+          "Name": "Director",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Director/movie.mp4",
+          "People": [
+            {
+              "Id": "52",
+              "Name": "CommonDirector",
+              "Type": "Director"
+            }
+          ],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "Director",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Genres": [
+            "Drama",
+            "Adventure"
+          ],
+          "Id": "37",
+          "MediaType": "Video",
+          "Name": "GenreBoth",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreBoth/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "GenreBoth",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "24",
+          "Name": "GenreBoth",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreBoth",
+          "ProviderIds": {},
+          "SortName": "GenreBoth",
+          "Type": "Folder"
+        },
+        {
+          "Id": "26",
+          "Name": "GenreOne",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreOne",
+          "ProviderIds": {},
+          "SortName": "GenreOne",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [
+            "Drama"
+          ],
+          "Id": "40",
+          "MediaType": "Video",
+          "Name": "GenreOne",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreOne/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "GenreOne",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "21",
+          "Name": "Movies",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies",
+          "ProviderIds": {},
+          "SortName": "Movies",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [],
+          "Id": "38",
+          "MediaType": "Video",
+          "Name": "NoShared",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/NoShared/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "NoShared",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "25",
+          "Name": "NoShared",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/NoShared",
+          "ProviderIds": {},
+          "SortName": "NoShared",
+          "Type": "Folder"
+        },
+        {
+          "Id": "23",
+          "Name": "Seed",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Seed",
+          "ProviderIds": {},
+          "SortName": "Seed",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [
+            "Drama",
+            "Adventure"
+          ],
+          "Id": "35",
+          "MediaType": "Video",
+          "Name": "Seed",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Seed/movie.mp4",
+          "People": [
+            {
+              "Id": "51",
+              "Name": "CommonActor",
+              "Type": "Actor"
+            },
+            {
+              "Id": "52",
+              "Name": "CommonDirector",
+              "Type": "Director"
+            }
+          ],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "Seed",
+          "Studios": [
+            {
+              "Id": 50,
+              "Name": "SharedStudio"
+            }
+          ],
+          "Type": "Movie"
+        },
+        {
+          "Genres": [],
+          "Id": "34",
+          "MediaType": "Video",
+          "Name": "Studio",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Studio/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "Studio",
+          "Studios": [
+            {
+              "Id": 50,
+              "Name": "SharedStudio"
+            }
+          ],
+          "Type": "Movie"
+        },
+        {
+          "Id": "22",
+          "Name": "Studio",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Studio",
+          "ProviderIds": {},
+          "SortName": "Studio",
+          "Type": "Folder"
+        },
+        {
+          "Id": "27",
+          "Name": "TagBoth",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagBoth",
+          "ProviderIds": {},
+          "SortName": "TagBoth",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [],
+          "Id": "41",
+          "MediaType": "Video",
+          "Name": "TagBoth",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagBoth/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "TagBoth",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Genres": [],
+          "Id": "42",
+          "MediaType": "Video",
+          "Name": "TagOne",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagOne/movie.mp4",
+          "People": [],
+          "ProductionYear": 2000,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "TagOne",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "28",
+          "Name": "TagOne",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagOne",
+          "ProviderIds": {},
+          "SortName": "TagOne",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [],
+          "Id": "43",
+          "MediaType": "Video",
+          "Name": "YearFar",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearFar/movie.mp4",
+          "People": [],
+          "ProductionYear": 2025,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "YearFar",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "29",
+          "Name": "YearFar",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearFar",
+          "ProviderIds": {},
+          "SortName": "YearFar",
+          "Type": "Folder"
+        },
+        {
+          "Genres": [],
+          "Id": "48",
+          "MediaType": "Video",
+          "Name": "YearNear",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearNear/movie.mp4",
+          "People": [],
+          "ProductionYear": 2001,
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "YearNear",
+          "Studios": [],
+          "Type": "Movie"
+        },
+        {
+          "Id": "32",
+          "Name": "YearNear",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearNear",
+          "ProviderIds": {},
+          "SortName": "YearNear",
+          "Type": "Folder"
+        }
+      ],
+      "libraryId": "20",
+      "nonprimaryMediaInScopedRecursiveCatalog": {
+        "Movies/AllMatches/theme-music/one.mp3": [],
+        "Movies/AllMatches/theme-music/two.flac": [],
+        "Movies/NoShared/backdrops/video.mp4": [],
+        "Movies/Seed/theme.mp3": []
+      },
+      "primaryEvidence": {
+        "Movies/Actor/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_49",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Actor/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "49",
+            "MediaType": "Video",
+            "Name": "Actor",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Actor/movie.mp4",
+            "People": [
+              {
+                "Id": "51",
+                "Name": "CommonActor",
+                "Type": "Actor"
+              }
+            ],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "Actor",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "49",
+          "manifestExpected": {
+            "actors": [
+              "CommonActor"
+            ],
+            "directors": [],
+            "genres": [],
+            "key": "Actor",
+            "kind": "Movie",
+            "media": "Movies/Actor/movie.mp4",
+            "nfo": "Movies/Actor/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary Actor",
+            "year": 2000
+          }
+        },
+        "Movies/AllMatches/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_44",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/AllMatches/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "Id": "44",
+            "MediaType": "Video",
+            "Name": "AllMatches",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/AllMatches/movie.mp4",
+            "People": [
+              {
+                "Id": "51",
+                "Name": "CommonActor",
+                "Type": "Actor"
+              },
+              {
+                "Id": "52",
+                "Name": "CommonDirector",
+                "Type": "Director"
+              }
+            ],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "AllMatches",
+            "Studios": [
+              {
+                "Id": 50,
+                "Name": "SharedStudio"
+              }
+            ],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "44",
+          "manifestExpected": {
+            "actors": [
+              "CommonActor"
+            ],
+            "directors": [
+              "CommonDirector"
+            ],
+            "genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "key": "AllMatches",
+            "kind": "Movie",
+            "media": "Movies/AllMatches/movie.mp4",
+            "nfo": "Movies/AllMatches/movie.nfo",
+            "studios": [
+              "SharedStudio"
+            ],
+            "tags": [
+              "SharedOne",
+              "SharedTwo"
+            ],
+            "title": "M3e Auxiliary AllMatches",
+            "year": 2000
+          }
+        },
+        "Movies/Director/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_47",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Director/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "47",
+            "MediaType": "Video",
+            "Name": "Director",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Director/movie.mp4",
+            "People": [
+              {
+                "Id": "52",
+                "Name": "CommonDirector",
+                "Type": "Director"
+              }
+            ],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "Director",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "47",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [
+              "CommonDirector"
+            ],
+            "genres": [],
+            "key": "Director",
+            "kind": "Movie",
+            "media": "Movies/Director/movie.mp4",
+            "nfo": "Movies/Director/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary Director",
+            "year": 2000
+          }
+        },
+        "Movies/GenreBoth/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_37",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreBoth/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "Id": "37",
+            "MediaType": "Video",
+            "Name": "GenreBoth",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreBoth/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "GenreBoth",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "37",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "key": "GenreBoth",
+            "kind": "Movie",
+            "media": "Movies/GenreBoth/movie.mp4",
+            "nfo": "Movies/GenreBoth/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary GenreBoth",
+            "year": 2000
+          }
+        },
+        "Movies/GenreOne/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_40",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreOne/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [
+              "Drama"
+            ],
+            "Id": "40",
+            "MediaType": "Video",
+            "Name": "GenreOne",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/GenreOne/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "GenreOne",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "40",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [
+              "Drama"
+            ],
+            "key": "GenreOne",
+            "kind": "Movie",
+            "media": "Movies/GenreOne/movie.mp4",
+            "nfo": "Movies/GenreOne/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary GenreOne",
+            "year": 2000
+          }
+        },
+        "Movies/NoShared/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_38",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/NoShared/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "38",
+            "MediaType": "Video",
+            "Name": "NoShared",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/NoShared/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "NoShared",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "38",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "NoShared",
+            "kind": "Movie",
+            "media": "Movies/NoShared/movie.mp4",
+            "nfo": "Movies/NoShared/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary NoShared",
+            "year": 2000
+          }
+        },
+        "Movies/Seed/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_35",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Seed/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "Id": "35",
+            "MediaType": "Video",
+            "Name": "Seed",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Seed/movie.mp4",
+            "People": [
+              {
+                "Id": "51",
+                "Name": "CommonActor",
+                "Type": "Actor"
+              },
+              {
+                "Id": "52",
+                "Name": "CommonDirector",
+                "Type": "Director"
+              }
+            ],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "Seed",
+            "Studios": [
+              {
+                "Id": 50,
+                "Name": "SharedStudio"
+              }
+            ],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "35",
+          "manifestExpected": {
+            "actors": [
+              "CommonActor"
+            ],
+            "directors": [
+              "CommonDirector"
+            ],
+            "genres": [
+              "Drama",
+              "Adventure"
+            ],
+            "key": "Seed",
+            "kind": "Movie",
+            "media": "Movies/Seed/movie.mp4",
+            "nfo": "Movies/Seed/movie.nfo",
+            "studios": [
+              "SharedStudio"
+            ],
+            "tags": [
+              "SharedOne",
+              "SharedTwo"
+            ],
+            "title": "M3e Auxiliary Seed",
+            "year": 2000
+          }
+        },
+        "Movies/Studio/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_34",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Studio/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "34",
+            "MediaType": "Video",
+            "Name": "Studio",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/Studio/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "Studio",
+            "Studios": [
+              {
+                "Id": 50,
+                "Name": "SharedStudio"
+              }
+            ],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "34",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "Studio",
+            "kind": "Movie",
+            "media": "Movies/Studio/movie.mp4",
+            "nfo": "Movies/Studio/movie.nfo",
+            "studios": [
+              "SharedStudio"
+            ],
+            "tags": [],
+            "title": "M3e Auxiliary Studio",
+            "year": 2000
+          }
+        },
+        "Movies/TagBoth/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_41",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagBoth/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "41",
+            "MediaType": "Video",
+            "Name": "TagBoth",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagBoth/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "TagBoth",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "41",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "TagBoth",
+            "kind": "Movie",
+            "media": "Movies/TagBoth/movie.mp4",
+            "nfo": "Movies/TagBoth/movie.nfo",
+            "studios": [],
+            "tags": [
+              "SharedOne",
+              "SharedTwo"
+            ],
+            "title": "M3e Auxiliary TagBoth",
+            "year": 2000
+          }
+        },
+        "Movies/TagOne/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_42",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagOne/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "42",
+            "MediaType": "Video",
+            "Name": "TagOne",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/TagOne/movie.mp4",
+            "People": [],
+            "ProductionYear": 2000,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "TagOne",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "42",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "TagOne",
+            "kind": "Movie",
+            "media": "Movies/TagOne/movie.mp4",
+            "nfo": "Movies/TagOne/movie.nfo",
+            "studios": [],
+            "tags": [
+              "SharedOne"
+            ],
+            "title": "M3e Auxiliary TagOne",
+            "year": 2000
+          }
+        },
+        "Movies/YearFar/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_43",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearFar/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "43",
+            "MediaType": "Video",
+            "Name": "YearFar",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearFar/movie.mp4",
+            "People": [],
+            "ProductionYear": 2025,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "YearFar",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "43",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "YearFar",
+            "kind": "Movie",
+            "media": "Movies/YearFar/movie.mp4",
+            "nfo": "Movies/YearFar/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary YearFar",
+            "year": 2025
+          }
+        },
+        "Movies/YearNear/movie.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_48",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearNear/movie.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "48",
+            "MediaType": "Video",
+            "Name": "YearNear",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Movies/YearNear/movie.mp4",
+            "People": [],
+            "ProductionYear": 2001,
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "YearNear",
+            "Studios": [],
+            "Type": "Movie"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "48",
+          "manifestExpected": {
+            "actors": [],
+            "directors": [],
+            "genres": [],
+            "key": "YearNear",
+            "kind": "Movie",
+            "media": "Movies/YearNear/movie.mp4",
+            "nfo": "Movies/YearNear/movie.nfo",
+            "studios": [],
+            "tags": [],
+            "title": "M3e Auxiliary YearNear",
+            "year": 2001
+          }
+        }
+      },
+      "primaryIdsByManifestPath": {
+        "Movies/Actor/movie.mp4": "49",
+        "Movies/AllMatches/movie.mp4": "44",
+        "Movies/Director/movie.mp4": "47",
+        "Movies/GenreBoth/movie.mp4": "37",
+        "Movies/GenreOne/movie.mp4": "40",
+        "Movies/NoShared/movie.mp4": "38",
+        "Movies/Seed/movie.mp4": "35",
+        "Movies/Studio/movie.mp4": "34",
+        "Movies/TagBoth/movie.mp4": "41",
+        "Movies/TagOne/movie.mp4": "42",
+        "Movies/YearFar/movie.mp4": "43",
+        "Movies/YearNear/movie.mp4": "48"
+      },
+      "refreshShape": {}
+    },
+    "Music": {
+      "actualTypeCounts": {
+        "Audio": 5,
+        "Folder": 5
+      },
+      "items": [
+        {
+          "Id": "70",
+          "Name": "DifferentArtistAlbum",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/DifferentArtistAlbum",
+          "ProviderIds": {},
+          "SortName": "DifferentArtistAlbum",
+          "Type": "Folder"
+        },
+        {
+          "Album": "M3e Auxiliary DifferentArtistAlbum",
+          "AlbumArtist": "ArtistB",
+          "AlbumArtists": [
+            {
+              "Id": "79",
+              "Name": "ArtistB"
+            }
+          ],
+          "AlbumId": "81",
+          "ArtistItems": [
+            {
+              "Id": "79",
+              "Name": "ArtistB"
+            }
+          ],
+          "Artists": [
+            "ArtistB"
+          ],
+          "Genres": [],
+          "Id": "75",
+          "IndexNumber": 1,
+          "MediaType": "Audio",
+          "Name": "M3e Auxiliary DifferentArtistAlbum Track 1",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/DifferentArtistAlbum/01.mp3",
+          "ProviderIds": {},
+          "RunTimeTicks": 120240000,
+          "SortName": "M3e Auxiliary DifferentArtistAlbum Track 1",
+          "Type": "Audio"
+        },
+        {
+          "Album": "M3e Auxiliary MixedAlbum",
+          "AlbumArtist": "ArtistA",
+          "AlbumArtists": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "AlbumId": "78",
+          "ArtistItems": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "Artists": [
+            "ArtistA"
+          ],
+          "Genres": [],
+          "Id": "73",
+          "IndexNumber": 1,
+          "MediaType": "Audio",
+          "Name": "M3e Auxiliary MixedAlbum Track 1",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/01.mp3",
+          "ProviderIds": {},
+          "RunTimeTicks": 120240000,
+          "SortName": "M3e Auxiliary MixedAlbum Track 1",
+          "Type": "Audio"
+        },
+        {
+          "Album": "M3e Auxiliary MixedAlbum",
+          "AlbumArtist": "ArtistA",
+          "AlbumArtists": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "AlbumId": "78",
+          "ArtistItems": [
+            {
+              "Id": "79",
+              "Name": "ArtistB"
+            }
+          ],
+          "Artists": [
+            "ArtistB"
+          ],
+          "Genres": [],
+          "Id": "72",
+          "IndexNumber": 2,
+          "MediaType": "Audio",
+          "Name": "M3e Auxiliary MixedAlbum Track 2",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/02.mp3",
+          "ProviderIds": {},
+          "RunTimeTicks": 120240000,
+          "SortName": "M3e Auxiliary MixedAlbum Track 2",
+          "Type": "Audio"
+        },
+        {
+          "Album": "M3e Auxiliary SameArtistAlbum",
+          "AlbumArtist": "ArtistA",
+          "AlbumArtists": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "AlbumId": "82",
+          "ArtistItems": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "Artists": [
+            "ArtistA"
+          ],
+          "Genres": [],
+          "Id": "76",
+          "IndexNumber": 1,
+          "MediaType": "Audio",
+          "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SameArtistAlbum/01.mp3",
+          "ProviderIds": {},
+          "RunTimeTicks": 120240000,
+          "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+          "Type": "Audio"
+        },
+        {
+          "Album": "M3e Auxiliary SeedAlbum",
+          "AlbumArtist": "ArtistA",
+          "AlbumArtists": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "AlbumId": "80",
+          "ArtistItems": [
+            {
+              "Id": "77",
+              "Name": "ArtistA"
+            }
+          ],
+          "Artists": [
+            "ArtistA"
+          ],
+          "Genres": [],
+          "Id": "74",
+          "IndexNumber": 1,
+          "MediaType": "Audio",
+          "Name": "M3e Auxiliary SeedAlbum Track 1",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SeedAlbum/01.mp3",
+          "ProviderIds": {},
+          "RunTimeTicks": 120240000,
+          "SortName": "M3e Auxiliary SeedAlbum Track 1",
+          "Type": "Audio"
+        },
+        {
+          "Id": "68",
+          "Name": "MixedAlbum",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum",
+          "ProviderIds": {},
+          "SortName": "MixedAlbum",
+          "Type": "Folder"
+        },
+        {
+          "Id": "67",
+          "Name": "Music",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music",
+          "ProviderIds": {},
+          "SortName": "Music",
+          "Type": "Folder"
+        },
+        {
+          "Id": "71",
+          "Name": "SameArtistAlbum",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SameArtistAlbum",
+          "ProviderIds": {},
+          "SortName": "SameArtistAlbum",
+          "Type": "Folder"
+        },
+        {
+          "Id": "69",
+          "Name": "SeedAlbum",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SeedAlbum",
+          "ProviderIds": {},
+          "SortName": "SeedAlbum",
+          "Type": "Folder"
+        }
+      ],
+      "libraryId": "66",
+      "nonprimaryMediaInScopedRecursiveCatalog": {},
+      "primaryEvidence": {
+        "Music/DifferentArtistAlbum/01.mp3": {
+          "actualMediaSources": [
+            {
+              "Container": "mp3",
+              "Id": "mediasource_75",
+              "MediaStreams": [
+                {
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "Codec": "mp3",
+                  "Index": 0,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/DifferentArtistAlbum/01.mp3",
+              "RunTimeTicks": 120240000,
+              "Size": 192771
+            }
+          ],
+          "actualMetadata": {
+            "Album": "M3e Auxiliary DifferentArtistAlbum",
+            "AlbumArtist": "ArtistB",
+            "AlbumArtists": [
+              {
+                "Id": "79",
+                "Name": "ArtistB"
+              }
+            ],
+            "AlbumId": "81",
+            "ArtistItems": [
+              {
+                "Id": "79",
+                "Name": "ArtistB"
+              }
+            ],
+            "Artists": [
+              "ArtistB"
+            ],
+            "Genres": [],
+            "Id": "75",
+            "IndexNumber": 1,
+            "MediaType": "Audio",
+            "Name": "M3e Auxiliary DifferentArtistAlbum Track 1",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/DifferentArtistAlbum/01.mp3",
+            "ProviderIds": {},
+            "RunTimeTicks": 120240000,
+            "SortName": "M3e Auxiliary DifferentArtistAlbum Track 1",
+            "Type": "Audio"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "mp3",
+            "durationSeconds": 12.0,
+            "fps": null,
+            "height": null,
+            "probeSha256": "a0fcf4a510d026004531c64630bda3494baa8c716bc18cf7605720e13681d1b4",
+            "sampleRate": 48000,
+            "tags": {
+              "album": "M3e Auxiliary DifferentArtistAlbum",
+              "album_artist": "ArtistB",
+              "artist": "ArtistB",
+              "title": "M3e Auxiliary DifferentArtistAlbum Track 1",
+              "track": "1"
+            },
+            "videoCodec": null,
+            "width": null
+          },
+          "itemId": "75",
+          "manifestExpected": {
+            "album": "M3e Auxiliary DifferentArtistAlbum",
+            "albumArtist": "ArtistB",
+            "albumKey": "DifferentArtistAlbum",
+            "artist": "ArtistB",
+            "kind": "Audio",
+            "media": "Music/DifferentArtistAlbum/01.mp3",
+            "number": 1,
+            "title": "M3e Auxiliary DifferentArtistAlbum Track 1"
+          }
+        },
+        "Music/MixedAlbum/01.mp3": {
+          "actualMediaSources": [
+            {
+              "Container": "mp3",
+              "Id": "mediasource_73",
+              "MediaStreams": [
+                {
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "Codec": "mp3",
+                  "Index": 0,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/01.mp3",
+              "RunTimeTicks": 120240000,
+              "Size": 192751
+            }
+          ],
+          "actualMetadata": {
+            "Album": "M3e Auxiliary MixedAlbum",
+            "AlbumArtist": "ArtistA",
+            "AlbumArtists": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "AlbumId": "78",
+            "ArtistItems": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "Artists": [
+              "ArtistA"
+            ],
+            "Genres": [],
+            "Id": "73",
+            "IndexNumber": 1,
+            "MediaType": "Audio",
+            "Name": "M3e Auxiliary MixedAlbum Track 1",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/01.mp3",
+            "ProviderIds": {},
+            "RunTimeTicks": 120240000,
+            "SortName": "M3e Auxiliary MixedAlbum Track 1",
+            "Type": "Audio"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "mp3",
+            "durationSeconds": 12.0,
+            "fps": null,
+            "height": null,
+            "probeSha256": "99ddeaf4eb99c760e80422700ebe2809e3dfeba5b72a7ff70806ba7ea28a6663",
+            "sampleRate": 48000,
+            "tags": {
+              "album": "M3e Auxiliary MixedAlbum",
+              "album_artist": "ArtistA",
+              "artist": "ArtistA",
+              "title": "M3e Auxiliary MixedAlbum Track 1",
+              "track": "1"
+            },
+            "videoCodec": null,
+            "width": null
+          },
+          "itemId": "73",
+          "manifestExpected": {
+            "album": "M3e Auxiliary MixedAlbum",
+            "albumArtist": "ArtistA",
+            "albumKey": "MixedAlbum",
+            "artist": "ArtistA",
+            "kind": "Audio",
+            "media": "Music/MixedAlbum/01.mp3",
+            "number": 1,
+            "title": "M3e Auxiliary MixedAlbum Track 1"
+          }
+        },
+        "Music/MixedAlbum/02.mp3": {
+          "actualMediaSources": [
+            {
+              "Container": "mp3",
+              "Id": "mediasource_72",
+              "MediaStreams": [
+                {
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "Codec": "mp3",
+                  "Index": 0,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/02.mp3",
+              "RunTimeTicks": 120240000,
+              "Size": 192751
+            }
+          ],
+          "actualMetadata": {
+            "Album": "M3e Auxiliary MixedAlbum",
+            "AlbumArtist": "ArtistA",
+            "AlbumArtists": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "AlbumId": "78",
+            "ArtistItems": [
+              {
+                "Id": "79",
+                "Name": "ArtistB"
+              }
+            ],
+            "Artists": [
+              "ArtistB"
+            ],
+            "Genres": [],
+            "Id": "72",
+            "IndexNumber": 2,
+            "MediaType": "Audio",
+            "Name": "M3e Auxiliary MixedAlbum Track 2",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/MixedAlbum/02.mp3",
+            "ProviderIds": {},
+            "RunTimeTicks": 120240000,
+            "SortName": "M3e Auxiliary MixedAlbum Track 2",
+            "Type": "Audio"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "mp3",
+            "durationSeconds": 12.0,
+            "fps": null,
+            "height": null,
+            "probeSha256": "acf9e23389cbdea4d042308b2d840f24e4f2ba2e978d9d3a205fdf61b9a0382d",
+            "sampleRate": 48000,
+            "tags": {
+              "album": "M3e Auxiliary MixedAlbum",
+              "album_artist": "ArtistA",
+              "artist": "ArtistB",
+              "title": "M3e Auxiliary MixedAlbum Track 2",
+              "track": "2"
+            },
+            "videoCodec": null,
+            "width": null
+          },
+          "itemId": "72",
+          "manifestExpected": {
+            "album": "M3e Auxiliary MixedAlbum",
+            "albumArtist": "ArtistA",
+            "albumKey": "MixedAlbum",
+            "artist": "ArtistB",
+            "kind": "Audio",
+            "media": "Music/MixedAlbum/02.mp3",
+            "number": 2,
+            "title": "M3e Auxiliary MixedAlbum Track 2"
+          }
+        },
+        "Music/SameArtistAlbum/01.mp3": {
+          "actualMediaSources": [
+            {
+              "Container": "mp3",
+              "Id": "mediasource_76",
+              "MediaStreams": [
+                {
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "Codec": "mp3",
+                  "Index": 0,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SameArtistAlbum/01.mp3",
+              "RunTimeTicks": 120240000,
+              "Size": 192761
+            }
+          ],
+          "actualMetadata": {
+            "Album": "M3e Auxiliary SameArtistAlbum",
+            "AlbumArtist": "ArtistA",
+            "AlbumArtists": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "AlbumId": "82",
+            "ArtistItems": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "Artists": [
+              "ArtistA"
+            ],
+            "Genres": [],
+            "Id": "76",
+            "IndexNumber": 1,
+            "MediaType": "Audio",
+            "Name": "M3e Auxiliary SameArtistAlbum Track 1",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SameArtistAlbum/01.mp3",
+            "ProviderIds": {},
+            "RunTimeTicks": 120240000,
+            "SortName": "M3e Auxiliary SameArtistAlbum Track 1",
+            "Type": "Audio"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "mp3",
+            "durationSeconds": 12.0,
+            "fps": null,
+            "height": null,
+            "probeSha256": "423346315652f910ddb5235d23207d767a041aff313a6e34d8fea49cbb1440ed",
+            "sampleRate": 48000,
+            "tags": {
+              "album": "M3e Auxiliary SameArtistAlbum",
+              "album_artist": "ArtistA",
+              "artist": "ArtistA",
+              "title": "M3e Auxiliary SameArtistAlbum Track 1",
+              "track": "1"
+            },
+            "videoCodec": null,
+            "width": null
+          },
+          "itemId": "76",
+          "manifestExpected": {
+            "album": "M3e Auxiliary SameArtistAlbum",
+            "albumArtist": "ArtistA",
+            "albumKey": "SameArtistAlbum",
+            "artist": "ArtistA",
+            "kind": "Audio",
+            "media": "Music/SameArtistAlbum/01.mp3",
+            "number": 1,
+            "title": "M3e Auxiliary SameArtistAlbum Track 1"
+          }
+        },
+        "Music/SeedAlbum/01.mp3": {
+          "actualMediaSources": [
+            {
+              "Container": "mp3",
+              "Id": "mediasource_74",
+              "MediaStreams": [
+                {
+                  "BitRate": 128000,
+                  "Channels": 2,
+                  "Codec": "mp3",
+                  "Index": 0,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SeedAlbum/01.mp3",
+              "RunTimeTicks": 120240000,
+              "Size": 192749
+            }
+          ],
+          "actualMetadata": {
+            "Album": "M3e Auxiliary SeedAlbum",
+            "AlbumArtist": "ArtistA",
+            "AlbumArtists": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "AlbumId": "80",
+            "ArtistItems": [
+              {
+                "Id": "77",
+                "Name": "ArtistA"
+              }
+            ],
+            "Artists": [
+              "ArtistA"
+            ],
+            "Genres": [],
+            "Id": "74",
+            "IndexNumber": 1,
+            "MediaType": "Audio",
+            "Name": "M3e Auxiliary SeedAlbum Track 1",
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/Music/SeedAlbum/01.mp3",
+            "ProviderIds": {},
+            "RunTimeTicks": 120240000,
+            "SortName": "M3e Auxiliary SeedAlbum Track 1",
+            "Type": "Audio"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "mp3",
+            "durationSeconds": 12.0,
+            "fps": null,
+            "height": null,
+            "probeSha256": "ca44fee5cb52619788ba5bd299b847f81e68c512a5397c694387795a631928e2",
+            "sampleRate": 48000,
+            "tags": {
+              "album": "M3e Auxiliary SeedAlbum",
+              "album_artist": "ArtistA",
+              "artist": "ArtistA",
+              "title": "M3e Auxiliary SeedAlbum Track 1",
+              "track": "1"
+            },
+            "videoCodec": null,
+            "width": null
+          },
+          "itemId": "74",
+          "manifestExpected": {
+            "album": "M3e Auxiliary SeedAlbum",
+            "albumArtist": "ArtistA",
+            "albumKey": "SeedAlbum",
+            "artist": "ArtistA",
+            "kind": "Audio",
+            "media": "Music/SeedAlbum/01.mp3",
+            "number": 1,
+            "title": "M3e Auxiliary SeedAlbum Track 1"
+          }
+        }
+      },
+      "primaryIdsByManifestPath": {
+        "Music/DifferentArtistAlbum/01.mp3": "75",
+        "Music/MixedAlbum/01.mp3": "73",
+        "Music/MixedAlbum/02.mp3": "72",
+        "Music/SameArtistAlbum/01.mp3": "76",
+        "Music/SeedAlbum/01.mp3": "74"
+      },
+      "refreshShape": {}
+    },
+    "TV": {
+      "actualTypeCounts": {
+        "Episode": 2,
+        "Folder": 1,
+        "Season": 2,
+        "Series": 1
+      },
+      "items": [
+        {
+          "Genres": [],
+          "Id": "59",
+          "Name": "M3e Auxiliary Series",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series",
+          "People": [],
+          "ProviderIds": {},
+          "SortName": "M3e Auxiliary Series",
+          "Studios": [],
+          "Type": "Series"
+        },
+        {
+          "Genres": [],
+          "Id": "63",
+          "IndexNumber": 1,
+          "MediaType": "Video",
+          "Name": "M3e Auxiliary Series S01E01",
+          "ParentIndexNumber": 1,
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+          "People": [],
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "M3e Auxiliary Series S01E01",
+          "Studios": [],
+          "Type": "Episode"
+        },
+        {
+          "Genres": [],
+          "Id": "64",
+          "IndexNumber": 1,
+          "MediaType": "Video",
+          "Name": "M3e Auxiliary Series S02E01",
+          "ParentIndexNumber": 2,
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+          "People": [],
+          "ProviderIds": {},
+          "RunTimeTicks": 120000000,
+          "SortName": "M3e Auxiliary Series S02E01",
+          "Studios": [],
+          "Type": "Episode"
+        },
+        {
+          "Genres": [],
+          "Id": "60",
+          "IndexNumber": 1,
+          "Name": "Season 1",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 01",
+          "People": [],
+          "ProviderIds": {},
+          "SortName": "Season 1",
+          "Studios": [],
+          "Type": "Season"
+        },
+        {
+          "Genres": [],
+          "Id": "61",
+          "IndexNumber": 2,
+          "Name": "Season 2",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 02",
+          "People": [],
+          "ProviderIds": {},
+          "SortName": "Season 2",
+          "Studios": [],
+          "Type": "Season"
+        },
+        {
+          "Id": "58",
+          "Name": "TV",
+          "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV",
+          "ProviderIds": {},
+          "SortName": "TV",
+          "Type": "Folder"
+        }
+      ],
+      "libraryId": "57",
+      "nonprimaryMediaInScopedRecursiveCatalog": {
+        "TV/M3e Auxiliary Series/Season 02/theme-music/season.mp3": [],
+        "TV/M3e Auxiliary Series/theme.mp3": []
+      },
+      "primaryEvidence": {
+        "TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_63",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "63",
+            "IndexNumber": 1,
+            "MediaType": "Video",
+            "Name": "M3e Auxiliary Series S01E01",
+            "ParentIndexNumber": 1,
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+            "People": [],
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "M3e Auxiliary Series S01E01",
+            "Studios": [],
+            "Type": "Episode"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "63",
+          "manifestExpected": {
+            "episode": 1,
+            "kind": "Episode",
+            "media": "TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+            "season": 1,
+            "series": "M3e Auxiliary Series"
+          }
+        },
+        "TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4": {
+          "actualMediaSources": [
+            {
+              "Container": "mp4",
+              "Id": "mediasource_64",
+              "MediaStreams": [
+                {
+                  "AverageFrameRate": 30,
+                  "BitDepth": 8,
+                  "BitRate": 546925,
+                  "Codec": "h264",
+                  "Height": 180,
+                  "Index": 0,
+                  "RealFrameRate": 30,
+                  "Type": "Video",
+                  "Width": 320
+                },
+                {
+                  "BitRate": 96201,
+                  "Channels": 2,
+                  "Codec": "aac",
+                  "Index": 1,
+                  "SampleRate": 48000,
+                  "Type": "Audio"
+                }
+              ],
+              "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+              "RunTimeTicks": 120000000,
+              "Size": 976738
+            }
+          ],
+          "actualMetadata": {
+            "Genres": [],
+            "Id": "64",
+            "IndexNumber": 1,
+            "MediaType": "Video",
+            "Name": "M3e Auxiliary Series S02E01",
+            "ParentIndexNumber": 2,
+            "Path": "/opt/goby-fixtures/client-aux-m3e-v1/TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+            "People": [],
+            "ProviderIds": {},
+            "RunTimeTicks": 120000000,
+            "SortName": "M3e Auxiliary Series S02E01",
+            "Studios": [],
+            "Type": "Episode"
+          },
+          "generatedProfile": {
+            "audioChannels": 2,
+            "audioCodec": "aac",
+            "durationSeconds": 12.0,
+            "fps": "30/1",
+            "height": 180,
+            "probeSha256": "8f9dfed7d3b229219cb4efd1ce66e18d4e31b4501df98d90f26d9a51dbc3e1e1",
+            "sampleRate": 48000,
+            "tags": {},
+            "videoCodec": "h264",
+            "width": 320
+          },
+          "itemId": "64",
+          "manifestExpected": {
+            "episode": 1,
+            "kind": "Episode",
+            "media": "TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+            "season": 2,
+            "series": "M3e Auxiliary Series"
+          }
+        }
+      },
+      "primaryIdsByManifestPath": {
+        "TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4": "63",
+        "TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4": "64"
+      },
+      "refreshShape": {}
+    }
+  },
+  "existingUserIds": [
+    "38431ababffb4705b447fe23833d36b8",
+    "46c1e1006a2c47ada1b482a96e89c549",
+    "7d777e79b35541889f738bb5f5a8da23",
+    "bd655b2117fc468aa37780b1e8bbf532",
+    "efe2137dc3394ed4a23f9c337598f105"
+  ],
+  "failure": null,
+  "manifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+  "marker": "goby-reference-auxiliary-libraries-m3e-v1",
+  "mutatingIntentsReserved": [
+    "create-Movies",
+    "create-Music",
+    "create-TV",
+    "login",
+    "logout",
+    "refresh-Movies",
+    "refresh-Music",
+    "refresh-TV"
+  ],
+  "newLibraryIds": {
+    "Movies": "20",
+    "Music": "66",
+    "TV": "57"
+  },
+  "newRecorderDeviceId": "goby-m3e-auxiliary-library-413daa3b3629980b6b3eb0b10ce8017e",
+  "newRecorderTokenRevoked": true,
+  "operatorSha256": "29f159a2580e178dce65b6c23ef14ad9875971240e534546eb5e8a14ce88c160",
+  "originalLibrariesMetadataUserDataConfigurationPolicyPreserved": true,
+  "originalVisibleItemIdsByUser": {
+    "38431ababffb4705b447fe23833d36b8": [
+      "10",
+      "11",
+      "17",
+      "18",
+      "19",
+      "9"
+    ],
+    "46c1e1006a2c47ada1b482a96e89c549": [
+      "10",
+      "11",
+      "17",
+      "18",
+      "19",
+      "9"
+    ],
+    "7d777e79b35541889f738bb5f5a8da23": [
+      "10",
+      "11",
+      "17",
+      "18",
+      "19",
+      "9"
+    ],
+    "bd655b2117fc468aa37780b1e8bbf532": [
+      "10",
+      "11",
+      "17",
+      "18",
+      "19",
+      "9"
+    ],
+    "efe2137dc3394ed4a23f9c337598f105": [
+      "10",
+      "11",
+      "17",
+      "18",
+      "19",
+      "9"
+    ]
+  },
+  "ownerSha256": "3bdbeee28406f9809624f3619b38915ab4445fa1a7c8aca30cbe445d3d1ddb40",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requests": 55,
+  "result": "complete",
+  "scanEvidence": "Refresh acceptance plus complete expected primary paths and two unchanged observations matching the observed original-library refresh shape.",
+  "scriptSha256": "9af752745a5e9d9a9047491c03b9f32da2e9a70d01d78d17e1504ad760204d75",
+  "serverId": "f56dec8ff7414847873064c4be9fba74",
+  "themeBoundary": "Theme membership, owner IDs, and main-catalog presence are observations; no theme exclusion or inheritance behavior is assumed.",
+  "themeObservations": {
+    "AllMatches": {
+      "groups": {
+        "SoundtrackSongsResult": {
+          "ownerId": 0,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeSongsResult": {
+          "ownerId": 44,
+          "returnedItems": [
+            {
+              "AlbumArtists": [],
+              "ArtistItems": [],
+              "Artists": [],
+              "Id": "46",
+              "MediaType": "Audio",
+              "Name": "one",
+              "RunTimeTicks": 120240000,
+              "Type": "Audio"
+            },
+            {
+              "AlbumArtists": [],
+              "ArtistItems": [],
+              "Artists": [],
+              "Id": "45",
+              "MediaType": "Audio",
+              "Name": "two",
+              "RunTimeTicks": 120000000,
+              "Type": "Audio"
+            }
+          ],
+          "totalRecordCount": 2
+        },
+        "ThemeVideosResult": {
+          "ownerId": 44,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        }
+      },
+      "itemId": "44"
+    },
+    "NoShared": {
+      "groups": {
+        "SoundtrackSongsResult": {
+          "ownerId": 0,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeSongsResult": {
+          "ownerId": 38,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeVideosResult": {
+          "ownerId": 38,
+          "returnedItems": [
+            {
+              "Id": "39",
+              "MediaType": "Video",
+              "Name": "video",
+              "RunTimeTicks": 120000000,
+              "Type": "Video"
+            }
+          ],
+          "totalRecordCount": 1
+        }
+      },
+      "itemId": "38"
+    },
+    "Season02": {
+      "groups": {
+        "SoundtrackSongsResult": {
+          "ownerId": 0,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeSongsResult": {
+          "ownerId": 61,
+          "returnedItems": [
+            {
+              "AlbumArtists": [],
+              "ArtistItems": [],
+              "Artists": [],
+              "Id": "65",
+              "MediaType": "Audio",
+              "Name": "season",
+              "RunTimeTicks": 120240000,
+              "Type": "Audio"
+            }
+          ],
+          "totalRecordCount": 1
+        },
+        "ThemeVideosResult": {
+          "ownerId": 61,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        }
+      },
+      "itemId": "61"
+    },
+    "Seed": {
+      "groups": {
+        "SoundtrackSongsResult": {
+          "ownerId": 0,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeSongsResult": {
+          "ownerId": 35,
+          "returnedItems": [
+            {
+              "AlbumArtists": [],
+              "ArtistItems": [],
+              "Artists": [],
+              "Id": "36",
+              "MediaType": "Audio",
+              "Name": "theme",
+              "RunTimeTicks": 120240000,
+              "Type": "Audio"
+            }
+          ],
+          "totalRecordCount": 1
+        },
+        "ThemeVideosResult": {
+          "ownerId": 35,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        }
+      },
+      "itemId": "35"
+    },
+    "Series": {
+      "groups": {
+        "SoundtrackSongsResult": {
+          "ownerId": 0,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        },
+        "ThemeSongsResult": {
+          "ownerId": 59,
+          "returnedItems": [
+            {
+              "AlbumArtists": [],
+              "ArtistItems": [],
+              "Artists": [],
+              "Id": "62",
+              "MediaType": "Audio",
+              "Name": "theme",
+              "RunTimeTicks": 120240000,
+              "Type": "Audio"
+            }
+          ],
+          "totalRecordCount": 1
+        },
+        "ThemeVideosResult": {
+          "ownerId": 59,
+          "returnedItems": [],
+          "totalRecordCount": 0
+        }
+      },
+      "itemId": "59"
+    }
+  },
+  "userDataScope": "The administrator witnesses all six original playables; every other current user keeps its entire visible subset of those six, without changing permissions."
+}

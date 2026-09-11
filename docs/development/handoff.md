@@ -5,8 +5,111 @@ is [M3e real-client acceptance](client-acceptance-m3e.md), following the priorit
 below. The previous round closed after M5j native backup/recovery, deployment,
 documentation and publication to `origin/main` at commit `4a840fb`.
 The partial [source18 M3e checkpoint](verification-m3e-source18-checkpoint.md) is
-records the deployed product and its verification evidence together. The complete planned server and full
-Emby compatibility remain unfinished.
+deployed and published to `origin/main` at `f339b69`. The complete planned server
+and full Emby compatibility remain unfinished. The next active work is the
+[Similar and ThemeMedia contract capture](client-auxiliary-reads-plan.md), using
+separate synthetic comparison fixtures while retaining the source18 deployment.
+
+The initial [20-request auxiliary reference capture](m3e-reference-auxiliary-reads-v1.json)
+passed, preserving the old catalog, user state and media and revoking its new
+recorder token. Similar on the original MP3 returned the real FLAC peer; theme
+defaults and independent enable flags were recorded. The
+[new auxiliary media](m3e-auxiliary-media.json) also passed generation and remote
+profile verification at `/opt/goby-fixtures/client-aux-m3e-v1`, manifest SHA-256
+`dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7`.
+The [three-library reference attachment](m3e-reference-auxiliary-libraries.json)
+passed: new Movies/TV/Music IDs are 20/57/66. All five existing accounts and their
+old visible media data were preserved. The reference now has six libraries;
+historical three-library bootstrap/capture inputs must not be rerun.
+Positive movies/music/themes/music-roles/artist-exclusion captures passed with
+separate recorder tokens and immutable evidence roots. Two controlled metadata
+combinations were restored after capture: one genre plus one tag qualifies,
+but two shared People do not. The preliminary equal-weight Person score is
+therefore contradicted. The subsequent eligibility/ranking variants passed:
+one genre plus studio qualifies, one genre plus actor does not, two genres plus
+studio outranks the two-feature peers, and two genres plus actor exchanges order
+with those peers. Every temporary metadata change was restored; only explicitly
+recorded ETag differences remained. The working scorer removes Person credit.
+Neither generator nor any completed reader may be rerun or adopt an existing path.
+
+Source19 is a preliminary frozen development snapshot at
+`/opt/goby-test/exec-work-m3e/source-attempt-19`, manifest SHA-256
+`cdf8775d7ffd0973046d83fef48d8ab3a813105164f807755ae9783a18545708`.
+Its [30 targeted music tests](m3e-source19-music-targeted.json) passed remotely
+with both disposable pairs removed and the original HBA/catalog preserved.
+Music metadata probe version 2 accepts explicit album_artist, while technical
+probe version 6 and stored music_source version 1 remain compatible. This is
+not a Similar scoring pass, complete regression, new binary or deployment.
+The deployed main and isolated candidate remain source18/schema25.
+The [separate source19 Similar regression](m3e-source19-similar-targeted-failed.json)
+finished with 11 top-level passes and one timeout failure. The 1,050-candidate
+whole-catalog test reached its existing 90-second deadline. The complete workload
+remains required while the SQL is optimized. Its unit is terminal and HBA was
+restored. The independently reviewed empty pair was subsequently
+[removed by its exact owned disposal operator](m3e-source19-similar-disposal.json),
+preserving the original failed report, log, receipt snapshots, credentials and
+output directory. The preexisting cluster catalog and original HBA remain intact.
+Do not restart the completed run or reduce its dataset/timeout to obtain a pass.
+
+[Source20](m3e-source20-snapshot.json) is frozen at
+`/opt/goby-test/exec-work-m3e/source-attempt-20`, manifest SHA-256
+`456f90464a0c18d8f1a31e268a67a5c65dcf1264a7ee69fc45be4d085d94e945`.
+It changes the Similar implementation and its reference-constrained expectations;
+the music metadata increment is identical to the source19 targeted pass.
+Source20 passed [43 targeted remote race tests](m3e-source20-targeted.json), with
+zero failures/skips and complete owned cleanup. The unchanged 1,050-candidate
+fixture was seeded in 377.86 ms and queried in 85.96 ms. The [complete-source run](m3e-source20-full.json)
+`client-backup-run-20260911_081348_169f35f30b8a` passed 1,763 race tests across
+all 24 packages, with zero failures/skips and complete owned cleanup. Its
+26,866,941-byte executable SHA-256 is
+`a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9`.
+The [same-schema candidate upgrade](m3e-source20-candidate-upgrade.json) passed,
+preserving every existing row/sequence across 30 tables and all old runtime,
+recovery and credential files. The current candidate is PID 581075/start ticks
+3900536, schema25. The main service remains source18/PID 539535/ticks 3115871.
+The source15-to16-to18-to20 Music chain is
+`client-music-upgrade-chain-source20.json`, SHA-256
+`996117c1df9e6a609905e6f1ed539829b5a61bb94eae4c6a02560ed52e0f0497`.
+
+The [source20 client checkpoint](verification-m3e-source20-similar.md) is partial.
+Final browser input07 passed [11 pure mock guards and six lineage guards](m3e-source20-browser-guards-final.json).
+The complete current 17-file harness closure is independent of the older frozen
+source20 operator copies. [Three initial UI attempts](m3e-source20-auxiliary-album-failed-01-03.json)
+stopped before auxiliary requests while correcting synthetic-album Path
+omission and the original client's absent card data attributes. All logged out
+and proved exact-token rejection; none was relabeled or reset.
+The [fourth original-client observation](m3e-source20-auxiliary-album.json) binds
+the actual album URL, two track rows and Request objects. Similar returned 200
+and completed transfer. Four item UserData projections and preferences remained
+unchanged; there was no playback and logout returned 204 followed by exact-token
+401. ThemeMedia returned 404 without an observed transfer completion, and one
+page error remains. The original workflow stayed failed in album-wait and did
+not return Home. This is scoped Similar evidence, not a complete auxiliary or
+M3 acceptance pass. All four browsers are closed.
+The [publication comparison](m3e-source20-staged-source-check.json) establishes
+3,186 byte-identical product/test files plus one explicitly reviewed test-only
+CRLF-to-LF JSON normalization. All production source, 17 browser files and eight
+executed reference/operator files matched. The original reference provenance
+inside that fixture was retained; no additional runtime change was made.
+The [input02 failure](m3e-source20-browser-guards-failed-02.json) remains preserved;
+its mock wait assertion and nonprivate input-directory mode are not accepted
+browser preparation. Do not run a browser from that directory.
+
+Workspace-only, uncommitted Theme work is outside source20: `0026_theme_owners.sql` and its
+migration tests establish a separate positive numeric owner namespace, with
+an independent newly created identity sequence. They do not create Item aliases
+or touch the old entity sequence. The unpublished migration still needs theme
+attachment storage, restore completeness checks, the new schema catalog and
+full integration. Do not include this WIP in a schema25 source20 deployment.
+`internal/library/theme_paths.go` and its seven unrun test functions are also
+outside source20. They classify reserved theme directories separately from
+direct resource candidates, with no scanner or catalog integration yet.
+The ordinary-catalog exclusion must cover counts, entity visibility, album
+aggregation, NextUp and folder UserData as well as primary lists; direct active
+theme item/media authorization requires a separate path. A draft
+`upgrade-main-schema25.py` contains only unverified preflight/comparison
+primitives; its mutating entry point is deliberately unavailable and must not
+be used as deployment evidence.
 
 The first resumed observation found a rebooted `test-env`: the persistent primary
 PostgreSQL cluster was active, but Goby was stopped and the transient reference
@@ -15,7 +118,7 @@ still matched the accepted M5j SHA-256. Historical process IDs below are no long
 live identities. M3e records the new isolated verification environment; never
 reuse a historical PID or recreate missing scratch data from an old owner record.
 
-The isolated M3e candidate is source18/schema25, executable SHA-256
+The previous isolated M3e candidate was source18/schema25, executable SHA-256
 `665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b`,
 PID 506532/start ticks 2681316. Its [19 targeted regressions, build and protected
 schema25 replacement](m3e-source18-targeted-upgrade.json) passed. Source is
@@ -40,12 +143,13 @@ are closed. [Full source18 regression](m3e-source18-full.json) passed 1,741 top-
 tests across all 24 packages with no failures or skips in
 `client-backup-run-20260911_052641_fbc90d022811`. The final build matched the
 candidate, both disposable pairs were removed and the original HBA/catalog
-were preserved. The isolated candidate remains frozen.
+were preserved. That source snapshot remains immutable; its process was later
+replaced by the source20 candidate above.
 
 The [main source18 deployment](m3e-source18-main-deployment.json) passed and now
 runs schema25 with that same executable SHA-256, PID 539535/start ticks 3115871.
-This main process is separate from the isolated candidate PID 506532/start ticks
-2681316. All old business columns and sequences were preserved through the
+This main process is separate from the current isolated candidate PID 581075/start
+ticks 3900536. All old business columns and sequences were preserved through the
 29-to-30-table schema25 migration, together with the old archives.
 Health, readiness, administration, login and seven reads passed, then logout
 returned 204 and the exact token was rejected with 401. The empty transcode cache

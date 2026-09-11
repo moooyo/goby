@@ -282,6 +282,10 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	if kind == "audio" && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion {
+		if !validTrackMusic(*probe.EmbeddedMusic) {
+			state.warnings++
+			return state.store.persistProgress(state.task)
+		}
 		rawMusic, err := json.Marshal(probe.EmbeddedMusic)
 		if _, accepted := acceptedTrackMusic(rawMusic); err != nil || !accepted {
 			state.warnings++

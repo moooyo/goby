@@ -6,7 +6,16 @@ client milestone. The full delivery
 plan, including remaining M3, M4, M5 and M6 requirements, remains active. M7 remains
 deferred. All builds and verification execute through `ssh test-env`.
 
-Current isolated candidate checkpoint: source18, schema 25, executable SHA-256
+Current isolated candidate: [source20/schema25](verification-m3e-source20-similar.md),
+binary SHA-256 `a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9`,
+PID 581075/start ticks 3900536. Its complete 1,763-test race suite and 30-table
+same-schema preservation passed. The original client verified its owned Similar
+200 response and completed transfer with unchanged item state and exact-token
+logout proof. The full auxiliary flow remains failed at ThemeMedia 404 and did
+not return Home. The primary service remains source18. This is a partial
+candidate checkpoint, not completed M3 acceptance or a new primary deployment.
+
+Previous isolated candidate checkpoint: source18, schema 25, executable SHA-256
 `665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b`,
 PID 506532/start ticks 2681316. [19 targeted regressions, build and protected
 schema25 replacement](m3e-source18-targeted-upgrade.json) passed, preserving all
@@ -23,7 +32,7 @@ passed 1,741 top-level race tests across 24 packages with no failures or skips.
 
 The [main source18 deployment](m3e-source18-main-deployment.json) passed. The main
 service now runs schema25 and the same source18 binary, PID 539535/start ticks
-3115871; the isolated candidate remains PID 506532/start ticks 2681316. The
+3115871; the current isolated candidate is PID 581075/start ticks 3900536. The
 deployment preserved all old business columns and sequences through the
 29-to-30-table schema25 migration and retained old archives.
 Health, readiness, administration, login and seven reads passed, followed by

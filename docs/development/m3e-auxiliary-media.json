@@ -1,0 +1,308 @@
+{
+  "completed_sha256": "edd0080ea5856a92279300adebea4894d7c8f2f2be3f7733ccc67c4236d6d789",
+  "counts": {
+    "albums": 4,
+    "files": 43,
+    "main_items": 19,
+    "media_profiles": 25,
+    "movies": 12
+  },
+  "creator_sha256": "20b807307b785fa01e9356e87d89f4c4783a1cf86c1e8b937bb0ce2e80796a43",
+  "expected_items": [
+    {
+      "actors": [
+        "CommonActor"
+      ],
+      "directors": [
+        "CommonDirector"
+      ],
+      "genres": [
+        "Drama",
+        "Adventure"
+      ],
+      "key": "Seed",
+      "kind": "Movie",
+      "media": "Movies/Seed/movie.mp4",
+      "nfo": "Movies/Seed/movie.nfo",
+      "studios": [
+        "SharedStudio"
+      ],
+      "tags": [
+        "SharedOne",
+        "SharedTwo"
+      ],
+      "title": "M3e Auxiliary Seed",
+      "year": 2000
+    },
+    {
+      "actors": [
+        "CommonActor"
+      ],
+      "directors": [
+        "CommonDirector"
+      ],
+      "genres": [
+        "Drama",
+        "Adventure"
+      ],
+      "key": "AllMatches",
+      "kind": "Movie",
+      "media": "Movies/AllMatches/movie.mp4",
+      "nfo": "Movies/AllMatches/movie.nfo",
+      "studios": [
+        "SharedStudio"
+      ],
+      "tags": [
+        "SharedOne",
+        "SharedTwo"
+      ],
+      "title": "M3e Auxiliary AllMatches",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [
+        "Drama",
+        "Adventure"
+      ],
+      "key": "GenreBoth",
+      "kind": "Movie",
+      "media": "Movies/GenreBoth/movie.mp4",
+      "nfo": "Movies/GenreBoth/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary GenreBoth",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [
+        "Drama"
+      ],
+      "key": "GenreOne",
+      "kind": "Movie",
+      "media": "Movies/GenreOne/movie.mp4",
+      "nfo": "Movies/GenreOne/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary GenreOne",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "TagBoth",
+      "kind": "Movie",
+      "media": "Movies/TagBoth/movie.mp4",
+      "nfo": "Movies/TagBoth/movie.nfo",
+      "studios": [],
+      "tags": [
+        "SharedOne",
+        "SharedTwo"
+      ],
+      "title": "M3e Auxiliary TagBoth",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "TagOne",
+      "kind": "Movie",
+      "media": "Movies/TagOne/movie.mp4",
+      "nfo": "Movies/TagOne/movie.nfo",
+      "studios": [],
+      "tags": [
+        "SharedOne"
+      ],
+      "title": "M3e Auxiliary TagOne",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "Studio",
+      "kind": "Movie",
+      "media": "Movies/Studio/movie.mp4",
+      "nfo": "Movies/Studio/movie.nfo",
+      "studios": [
+        "SharedStudio"
+      ],
+      "tags": [],
+      "title": "M3e Auxiliary Studio",
+      "year": 2000
+    },
+    {
+      "actors": [
+        "CommonActor"
+      ],
+      "directors": [],
+      "genres": [],
+      "key": "Actor",
+      "kind": "Movie",
+      "media": "Movies/Actor/movie.mp4",
+      "nfo": "Movies/Actor/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary Actor",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [
+        "CommonDirector"
+      ],
+      "genres": [],
+      "key": "Director",
+      "kind": "Movie",
+      "media": "Movies/Director/movie.mp4",
+      "nfo": "Movies/Director/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary Director",
+      "year": 2000
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "YearNear",
+      "kind": "Movie",
+      "media": "Movies/YearNear/movie.mp4",
+      "nfo": "Movies/YearNear/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary YearNear",
+      "year": 2001
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "YearFar",
+      "kind": "Movie",
+      "media": "Movies/YearFar/movie.mp4",
+      "nfo": "Movies/YearFar/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary YearFar",
+      "year": 2025
+    },
+    {
+      "actors": [],
+      "directors": [],
+      "genres": [],
+      "key": "NoShared",
+      "kind": "Movie",
+      "media": "Movies/NoShared/movie.mp4",
+      "nfo": "Movies/NoShared/movie.nfo",
+      "studios": [],
+      "tags": [],
+      "title": "M3e Auxiliary NoShared",
+      "year": 2000
+    },
+    {
+      "episode": 1,
+      "kind": "Episode",
+      "media": "TV/M3e Auxiliary Series/Season 01/M3e Auxiliary Series S01E01.mp4",
+      "season": 1,
+      "series": "M3e Auxiliary Series"
+    },
+    {
+      "episode": 1,
+      "kind": "Episode",
+      "media": "TV/M3e Auxiliary Series/Season 02/M3e Auxiliary Series S02E01.mp4",
+      "season": 2,
+      "series": "M3e Auxiliary Series"
+    },
+    {
+      "album": "M3e Auxiliary SeedAlbum",
+      "albumArtist": "ArtistA",
+      "albumKey": "SeedAlbum",
+      "artist": "ArtistA",
+      "kind": "Audio",
+      "media": "Music/SeedAlbum/01.mp3",
+      "number": 1,
+      "title": "M3e Auxiliary SeedAlbum Track 1"
+    },
+    {
+      "album": "M3e Auxiliary SameArtistAlbum",
+      "albumArtist": "ArtistA",
+      "albumKey": "SameArtistAlbum",
+      "artist": "ArtistA",
+      "kind": "Audio",
+      "media": "Music/SameArtistAlbum/01.mp3",
+      "number": 1,
+      "title": "M3e Auxiliary SameArtistAlbum Track 1"
+    },
+    {
+      "album": "M3e Auxiliary DifferentArtistAlbum",
+      "albumArtist": "ArtistB",
+      "albumKey": "DifferentArtistAlbum",
+      "artist": "ArtistB",
+      "kind": "Audio",
+      "media": "Music/DifferentArtistAlbum/01.mp3",
+      "number": 1,
+      "title": "M3e Auxiliary DifferentArtistAlbum Track 1"
+    },
+    {
+      "album": "M3e Auxiliary MixedAlbum",
+      "albumArtist": "ArtistA",
+      "albumKey": "MixedAlbum",
+      "artist": "ArtistA",
+      "kind": "Audio",
+      "media": "Music/MixedAlbum/01.mp3",
+      "number": 1,
+      "title": "M3e Auxiliary MixedAlbum Track 1"
+    },
+    {
+      "album": "M3e Auxiliary MixedAlbum",
+      "albumArtist": "ArtistA",
+      "albumKey": "MixedAlbum",
+      "artist": "ArtistB",
+      "kind": "Audio",
+      "media": "Music/MixedAlbum/02.mp3",
+      "number": 2,
+      "title": "M3e Auxiliary MixedAlbum Track 2"
+    }
+  ],
+  "manifest_path": "/opt/goby-fixtures/client-aux-m3e-v1/manifest.json",
+  "manifest_sha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+  "receipt": {
+    "fileCountExcludingManifest": 43,
+    "generatedBytesExcludingManifest": 16603617,
+    "libraryScanExecuted": false,
+    "manifest": "/opt/goby-fixtures/client-aux-m3e-v1/manifest.json",
+    "manifestSha256": "dad99c4883fde8bba00c9061179341b1a5869dd20212de55b92e0a53353703a7",
+    "marker": "goby-client-auxiliary-media-m3e-v1",
+    "oldBytesInodesAndLinksPreserved": true,
+    "oldSnapshotSha256": "71ff1c948ac826168ab8e91c583cda04f76722f3a58acd6cb2f2233138c347d8",
+    "phase": "completed"
+  },
+  "schema": "goby-m3e-auxiliary-media",
+  "scope": "Synthetic generation and remote media verification only; reference indexing and API behavior are not yet established.",
+  "status": "created",
+  "theme_layouts": {
+    "AllMatches": [
+      "theme-music/one.mp3",
+      "theme-music/two.flac"
+    ],
+    "NoShared": [
+      "backdrops/video.mp4"
+    ],
+    "Season02": [
+      "theme-music/season.mp3"
+    ],
+    "Seed": [
+      "theme.mp3"
+    ],
+    "Series": [
+      "theme.mp3"
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,55 @@
+{
+  "checks": {
+    "all_source_hashes": {
+      "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+      "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+      "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232",
+      "client-browser-auxiliary-album.mjs": "b53bf58a6cb403c725b2bd0ce8eec96e4258dd74367d7a2d91b3886d8212c39c",
+      "client-browser-av-runtime.mjs": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0",
+      "client-browser-av.mjs": "b49239c48897ed52d88ca76e82633b1e273dc18a02ffa63b69aeff7385b2fba3",
+      "client-browser-goby-fixture.mjs": "e559cc83079b7dc10faec3bc75f49a7684996ba0c523ad42197fe959ce271a16",
+      "client-browser-observe.mjs": "86e4049dc0ad53bf3003c0c35c176ae93d5ff7a4cd413139e3b3aeaf65965af9",
+      "client-browser-playback.mjs": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac",
+      "client-browser-preferences.mjs": "677c68fb2349bdba5412189dbcf890d0097c1ee49be035d4eefeb6d232d6c8bd",
+      "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+      "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+      "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+      "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+      "test-client-browser-auxiliary-album.mjs": "14e253d17496cc0ff9fa58b9b124feb89f8be43e17e60216b4fa18f3dfcbdc28",
+      "test-client-browser-music-lineage.mjs": "53eb126541f1583ff4e655bc36099f641e3c9f2bc24c088c43cfe0541e3d6304",
+      "test-client-browser-session-proof.mjs": "36b6c03b51c44d76a1c12852e1c160df20c89ffd1d9f7bb44037cd23e1b66736"
+    },
+    "archive_sha256": "a319f217b3454a9eba0c58dcdbd783c564649185cafa30cf94f13bbef6c99198",
+    "changed_from_input06": [
+      "client-browser-auxiliary-album.mjs",
+      "test-client-browser-auxiliary-album.mjs"
+    ],
+    "guards_exit": 0,
+    "guards_sha256": "42518046f628d7cfb43e4628d1bcb8dc08416544ba4c47aeff17c42de261578f",
+    "input": "/opt/goby-test/exec-work-m3e/source20-browser-input-07",
+    "prior_checks_sha256": "92419011b6aee29e89d2438a38e878b8e413735ff3a1c6608ae38bc93dd499ca"
+  },
+  "checks_sha256": "b70686e28271377783e1ae9398109ec242c26a316aee0c9991198c95ed657c72",
+  "input": "/opt/goby-test/exec-work-m3e/source20-browser-input-07",
+  "lineage": {
+    "counts": {
+      "executed": 6,
+      "failed": 0,
+      "passed": 6
+    },
+    "path": "/opt/goby-test/exec-work-m3e/source20-music-lineage-guards-02.json",
+    "sha256": "e6e7711e2481e9f04772f7367f590bd37b91b5893fcf84add1fd2fe8c2440039"
+  },
+  "prior_dependency_gap": {
+    "input": "/opt/goby-test/exec-work-m3e/source20-browser-input-03",
+    "invocation_exit": 1,
+    "lineage_module_absent": true,
+    "old_frozen_loader_sha256": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+    "output_artifact_absent": true,
+    "resolution": "Input04 recopied the complete 17-file current harness closure; inputs05-07 preserve every unchanged dependency.",
+    "stderr_bytes": 522,
+    "stderr_retained": false
+  },
+  "scope": "Remote syntax and 11 pure mock tests plus the six unchanged-loader source20 lineage guards; real UI outcomes remain separate.",
+  "status": "passed"
+}
