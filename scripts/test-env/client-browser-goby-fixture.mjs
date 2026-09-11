@@ -28,10 +28,23 @@ const MUSIC_SCAN_OWNER_SHA = '40c7d2b27eaa6b1e0cc1c9fdb4668fb8fcb1d6edd93ebe3a3b
 const MUSIC_SCAN_JOB = '5bbac57fc1bd21a5aebef85a2537624e';
 const FIXTURE_OPERATOR = `${ROOT}/prepare-client-fixture.py`;
 const FIXTURE_OPERATOR_SHA = '85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de';
+const LEGACY_FIXTURE_OPERATOR = `${ROOT}/source-attempt-20/scripts/test-env/prepare-client-fixture.py`;
+// The schema26 fixture operator was independently frozen before this binding.
+const SCHEMA_26_OPERATOR_SHA = 'df9f0d33b9ff3136a6958a91d855faf47d703e7f5368a953cb0d182aa12bbd3b';
 const INPUTS = new Set([STATE, ALIAS, RECEIPT, PROXY, MUSIC_SCAN_RECEIPT, MUSIC_SCAN_REPORT, MUSIC_SCAN_OWNER]);
 const JSON_LIMIT = 2 * 1024 * 1024;
 const CATALOG_25_SHA = 'e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b';
 const MIGRATION_25_SHA = '3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf';
+const CATALOG_26_SHA = 'e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de';
+const MIGRATION_26_SHA = 'c4b7485174fe655524fe5de6973f9d75a6ce7917f4ebd82476ac1c13be5817e8';
+const MIGRATION_24_SHA = '2a9c159f111073a1c01bbbda158cfe3d98d25f417d70c7eda14b70a7798a3972';
+const SCHEMA_25_TABLES = Object.freeze(['activity_entries', 'application_key_clients', 'application_key_devices',
+  'application_keys', 'catalog_entities', 'client_playback_references', 'devices', 'encoding_jobs', 'item_entities',
+  'item_images', 'item_metadata_state', 'item_subtitles', 'items', 'libraries', 'library_roots', 'managed_settings',
+  'play_sessions', 'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions',
+  'task_occurrences', 'task_run_children', 'task_run_requests', 'task_runs', 'task_triggers', 'user_item_data',
+  'user_settings', 'users']);
+const THEME_TABLES = Object.freeze(['item_theme_resources', 'theme_owner_ids', 'theme_reserved_paths']);
 const REFERENCE = Object.freeze({ pid: 332054, start_ticks: 357218,
   executable: '/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer',
   sha256: 'c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2' });
@@ -50,9 +63,47 @@ function stable(value) {
   return value;
 }
 const same = (left, right) => JSON.stringify(stable(left)) === JSON.stringify(stable(right));
+function sourceBinding(binding, schema) {
+  const migrationKey = schema === 25 ? 'migration_25_sha256' : 'migration_26_sha256';
+  requireThat(record(binding) && same(Object.keys(binding).sort(),
+    ['marker', 'schema', 'source', 'source_manifest_sha256', 'catalog_sha256', migrationKey].sort()) &&
+    binding.marker === `goby-client-schema${schema}-source-m3e-v1` && binding.schema === schema &&
+    binding.catalog_sha256 === (schema === 25 ? CATALOG_25_SHA : CATALOG_26_SHA) &&
+    binding[migrationKey] === (schema === 25 ? MIGRATION_25_SHA : MIGRATION_26_SHA) &&
+    typeof binding.source === 'string' && /^\/opt\/goby-test\/exec-work-m3e\/source-attempt-[1-9]\d*$/.test(binding.source) &&
+    digest(binding.source_manifest_sha256));
+  if (schema === 26) {
+    // Source21 is the catalog bootstrap and source22 contains database gates
+    // only. The schema26 operator accepts a later complete product snapshot.
+    const number = Number(binding.source.slice(binding.source.lastIndexOf('-') + 1));
+    requireThat(Number.isSafeInteger(number) && number > 22);
+  }
+  return binding;
+}
 function schemaBinding(state, expectedSHA256) {
   if (state.schema === 24) return { schema: 24, binding: 'existing_receipted_fixture' };
-  requireThat(state.schema === 25 && record(state.upgrade));
+  requireThat([25, 26].includes(state.schema) && record(state.upgrade));
+  if (state.schema === 26) {
+    const upgrade = state.upgrade, artifacts = upgrade.schema_artifacts;
+    requireThat(upgrade.phase === 'complete' && [25, 26].includes(upgrade.from_schema) && upgrade.to_schema === 26 &&
+      upgrade.to_sha256 === expectedSHA256 && same(upgrade.new_process, state.process) && record(artifacts) &&
+      same(Object.keys(artifacts).sort(), ['source', 'catalog_sha256', 'source_manifest_sha256', 'migration_count',
+        'migration_24_sha256', 'migration_25_sha256', 'schema26_binding', 'operator', 'product_verification'].sort()) &&
+      artifacts.migration_count === 26 && artifacts.catalog_sha256 === CATALOG_26_SHA &&
+      artifacts.migration_24_sha256 === MIGRATION_24_SHA && artifacts.migration_25_sha256 === MIGRATION_25_SHA);
+    const binding = sourceBinding(artifacts.schema26_binding, 26);
+    requireThat(same(binding, state.schema26_source) && binding.source === artifacts.source &&
+      binding.source_manifest_sha256 === artifacts.source_manifest_sha256);
+    sourceBinding(state.schema25_source, 25);
+    upgradeOperatorBinding(upgrade);
+    const product = artifacts.product_verification;
+    requireThat(record(product) && same(Object.keys(product).sort(), ['report_path', 'report_sha256']) &&
+      digest(product.report_sha256) && typeof product.report_path === 'string' &&
+      new RegExp(`^${ROOT}/client-backup-run-[0-9]{8}_[0-9]{6}_[0-9a-f]{12}/report\\.json$`).test(product.report_path));
+    return { schema: 26, binding: 'completed_upgrade_and_pinned_schema26_artifacts',
+      catalog_sha256: CATALOG_26_SHA, migration_sha256: MIGRATION_26_SHA,
+      source: binding.source, source_manifest_sha256: binding.source_manifest_sha256 };
+  }
   const upgrade = state.upgrade, artifacts = upgrade.schema_artifacts, binding = artifacts?.schema25_binding;
   requireThat(upgrade.phase === 'complete' && [24, 25].includes(upgrade.from_schema) && upgrade.to_schema === 25 &&
     upgrade.to_sha256 === expectedSHA256 && same(upgrade.new_process, state.process) && record(artifacts) &&
@@ -65,6 +116,65 @@ function schemaBinding(state, expectedSHA256) {
   return { schema: 25, binding: 'completed_upgrade_and_pinned_schema25_artifacts',
     catalog_sha256: CATALOG_25_SHA, migration_sha256: MIGRATION_25_SHA,
     source: binding.source, source_manifest_sha256: binding.source_manifest_sha256 };
+}
+
+function upgradeOperatorBinding(completed) {
+  requireThat(record(completed) && record(completed.schema_artifacts));
+  if (completed.from_schema === 25 && completed.to_schema === 25) {
+    requireThat(!Object.hasOwn(completed.schema_artifacts, 'operator'));
+    return { path: LEGACY_FIXTURE_OPERATOR, sha256: FIXTURE_OPERATOR_SHA };
+  }
+  requireThat([25, 26].includes(completed.from_schema) && completed.to_schema === 26 && digest(SCHEMA_26_OPERATOR_SHA));
+  const operator = completed.schema_artifacts.operator;
+  requireThat(record(operator) && same(Object.keys(operator).sort(), ['path', 'sha256']) &&
+    operator.path === FIXTURE_OPERATOR && operator.sha256 === SCHEMA_26_OPERATOR_SHA);
+  return { ...operator };
+}
+
+function musicPreservationBinding(before, state, completed) {
+  const from = before.schema, to = state.schema, preserved = completed.preservation, after = completed.after_preservation;
+  requireThat((from === 25 && [25, 26].includes(to) || from === 26 && to === 26) &&
+    completed.from_schema === from && completed.to_schema === to && record(preserved) && record(after));
+  for (const [summary, schema] of [[preserved, from], [after, to]]) {
+    const tables = schema === 25 ? [...SCHEMA_25_TABLES] : [...SCHEMA_25_TABLES, ...THEME_TABLES];
+    requireThat(summary.schema === schema && digest(summary.database_sha256) && record(summary.row_counts) &&
+      summary.table_count === tables.length && same(Object.keys(summary.row_counts).sort(), tables.sort()) &&
+      Object.values(summary.row_counts).every(value => Number.isSafeInteger(value) && value >= 0) &&
+      Number.isSafeInteger(summary.item_count) && summary.item_count > 0 && summary.item_count === summary.row_counts.items &&
+      Number.isSafeInteger(summary.library_count) && summary.library_count > 0 && summary.library_count === summary.row_counts.libraries &&
+      summary.row_counts.schema_migrations === schema);
+    for (const key of ['recovery_sha256', 'runtime_sha256', 'browser_sha256']) requireThat(digest(summary[key]));
+    if (schema === 25) requireThat(!Object.hasOwn(summary, 'theme'));
+    else {
+      const theme = summary.theme;
+      requireThat(record(theme) && same(Object.keys(theme).sort(), ['owner_count', 'virtual_root_count', 'mapped_item_count',
+        'reserved_path_count', 'resource_count', 'active_resource_count', 'owner_rows_sha256',
+        'reserved_paths_sha256', 'resource_rows_sha256'].sort()) &&
+        ['owner_count', 'virtual_root_count', 'mapped_item_count', 'reserved_path_count', 'resource_count', 'active_resource_count']
+          .every(key => Number.isSafeInteger(theme[key]) && theme[key] >= 0) &&
+        ['owner_rows_sha256', 'reserved_paths_sha256', 'resource_rows_sha256'].every(key => digest(theme[key])) &&
+        theme.virtual_root_count === 1 && theme.mapped_item_count === summary.item_count &&
+        theme.owner_count === summary.item_count + 1 && theme.owner_count === summary.row_counts.theme_owner_ids &&
+        theme.reserved_path_count === summary.row_counts.theme_reserved_paths &&
+        theme.resource_count === summary.row_counts.item_theme_resources && theme.resource_count <= summary.item_count &&
+        theme.active_resource_count <= theme.resource_count);
+    }
+  }
+  for (const key of ['recovery_sha256', 'runtime_sha256', 'browser_sha256', 'item_count', 'library_count', 'added_viewer_credentials']) {
+    requireThat(Object.hasOwn(preserved, key) && Object.hasOwn(after, key) && same(preserved[key], after[key]));
+  }
+  requireThat(preserved.runtime_sha256 === state.runtime_sha256 && preserved.browser_sha256 === state.browser_sha256);
+  if (to === 26) requireThat(Object.hasOwn(before, 'schema25_source') && same(before.schema25_source, state.schema25_source));
+  if (from === to) {
+    requireThat(same(preserved.row_counts, after.row_counts));
+    if (to === 26) requireThat(same(preserved.theme, after.theme));
+  } else {
+    for (const name of SCHEMA_25_TABLES) {
+      requireThat(after.row_counts[name] === preserved.row_counts[name] + (name === 'schema_migrations' ? 1 : 0));
+    }
+    requireThat(after.theme.resource_count === 0 && after.theme.active_resource_count === 0);
+  }
+  return true;
 }
 const safeErrors = new WeakSet();
 function safeError(phase) {
@@ -155,12 +265,17 @@ async function privateDocument(filename, extraInputs = [], allowArray = false) {
   } finally { bytes.fill(0); await handle.close(); }
 }
 
-async function operatorDigest() {
-  requireThat(await fs.realpath(FIXTURE_OPERATOR) === FIXTURE_OPERATOR);
-  const before = await fs.lstat(FIXTURE_OPERATOR, { bigint: true });
+async function operatorDigest(binding) {
+  requireThat(record(binding) && same(Object.keys(binding).sort(), ['path', 'sha256']) &&
+    (binding.path === LEGACY_FIXTURE_OPERATOR && binding.sha256 === FIXTURE_OPERATOR_SHA ||
+      binding.path === FIXTURE_OPERATOR && digest(SCHEMA_26_OPERATOR_SHA) && binding.sha256 === SCHEMA_26_OPERATOR_SHA));
+  const filename = binding.path;
+  requireThat(await fs.realpath(filename) === filename);
+  const before = await fs.lstat(filename, { bigint: true });
+  const modes = filename === LEGACY_FIXTURE_OPERATOR ? [0o600n, 0o644n] : [0o600n, 0o644n, 0o700n, 0o755n];
   requireThat(before.isFile() && !before.isSymbolicLink() && before.uid === 0n && before.gid === 0n &&
-    [0o600n, 0o644n].includes(before.mode & 0o777n) && before.nlink === 1n && before.size > 0n && before.size <= BigInt(JSON_LIMIT));
-  const handle = await fs.open(FIXTURE_OPERATOR, constants.O_RDONLY | constants.O_NOFOLLOW);
+    modes.includes(before.mode & 0o777n) && before.nlink === 1n && before.size > 0n && before.size <= BigInt(JSON_LIMIT));
+  const handle = await fs.open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
   const bytes = Buffer.alloc(65536), hash = createHash('sha256');
   try {
     requireThat(unchanged(before, await handle.stat({ bigint: true })));
@@ -171,8 +286,8 @@ async function operatorDigest() {
       size += read.bytesRead; requireThat(size <= JSON_LIMIT); hash.update(bytes.subarray(0, read.bytesRead));
     }
     requireThat(size === Number(before.size) && unchanged(before, await handle.stat({ bigint: true })) &&
-      unchanged(before, await fs.lstat(FIXTURE_OPERATOR, { bigint: true })));
-    const actual = hash.digest('hex'); requireThat(actual === FIXTURE_OPERATOR_SHA); return actual;
+      unchanged(before, await fs.lstat(filename, { bigint: true })));
+    const actual = hash.digest('hex'); requireThat(actual === binding.sha256); return actual;
   } finally { bytes.fill(0); await handle.close(); }
 }
 
@@ -183,10 +298,10 @@ async function musicUpgradeBinding(state, selection) {
     typeof selection.directory === 'string' && new RegExp(`^${ROOT}/client-upgrade-[0-9a-f]{32}$`).test(selection.directory) &&
     typeof selection.reportPath === 'string' && new RegExp(`^${ROOT}/client-fixture-report-[0-9a-f]{24}\\.json$`).test(selection.reportPath));
   const upgrade = state.upgrade;
-  requireThat(state.schema === 25 && record(upgrade) && upgrade.phase === 'complete' &&
+  requireThat([25, 26].includes(state.schema) && record(upgrade) && upgrade.phase === 'complete' &&
     typeof upgrade.id === 'string' && /^[0-9a-f]{32}$/.test(upgrade.id) &&
     selection.directory === `${ROOT}/client-upgrade-${upgrade.id}` && upgrade.evidence_directory === selection.directory &&
-    upgrade.from_schema === 25 && upgrade.to_schema === 25);
+    [25, 26].includes(upgrade.from_schema) && upgrade.to_schema === state.schema);
   const identity = await directory(selection.directory, upgrade.evidence_identity);
   const beforePath = `${selection.directory}/before-state.json`, completedPath = `${selection.directory}/completed.json`;
   const inputs = [beforePath, completedPath, selection.reportPath];
@@ -195,32 +310,26 @@ async function musicUpgradeBinding(state, selection) {
   requireThat(completedFile.sha256 === selection.completedSHA256 && reportFile.sha256 === selection.reportSHA256);
   const before = beforeFile.value, completed = completedFile.value, report = reportFile.value;
   requireThat(same(completed, upgrade) && before.marker === MARKER && before.phase === 'ready' && before.stage === 'complete' &&
-    before.schema === 25 && processIdentity(before.process) && digest(before.binary_sha256) &&
+    [25, 26].includes(before.schema) && processIdentity(before.process) && digest(before.binary_sha256) &&
     completed.from_sha256 === before.binary_sha256 && completed.to_sha256 === state.binary_sha256 &&
     completed.from_sha256 !== completed.to_sha256 && same(completed.old_process, before.process) &&
     same(completed.new_process, state.process) && !same(completed.old_process, completed.new_process) &&
     completed.installed_binary_sha256 === state.binary_sha256);
   schemaBinding(before, before.binary_sha256);
+  schemaBinding(state, state.binary_sha256);
   for (const key of ['marker', 'work', 'work_identity', 'tag', 'server_id', 'admin_id', 'viewer_id', 'cluster',
     'database_oid', 'role_oid', 'media', 'libraries', 'added_viewer', 'runtime_sha256', 'browser_sha256']) {
     requireThat(Object.hasOwn(before, key) && Object.hasOwn(state, key) && same(before[key], state[key]));
   }
-  const preserved = completed.preservation, after = completed.after_preservation;
-  requireThat(record(preserved) && record(after) && preserved.schema === 25 && after.schema === 25 &&
-    digest(preserved.database_sha256) && digest(after.database_sha256));
   // The fixed operator compares full rows, sequences, and catalog before it
   // publishes completed.json. Its database digests include captured_at, so
   // comparing those digests or row counts alone is not a preservation proof.
-  for (const key of ['schema', 'recovery_sha256', 'runtime_sha256', 'browser_sha256', 'table_count', 'row_counts',
-    'item_count', 'library_count', 'added_viewer_credentials']) {
-    requireThat(Object.hasOwn(preserved, key) && Object.hasOwn(after, key) && same(preserved[key], after[key]));
-  }
-  requireThat(preserved.runtime_sha256 === state.runtime_sha256 && preserved.browser_sha256 === state.browser_sha256);
+  musicPreservationBinding(before, state, completed);
   const reportedUpgradeKeys = ['id', 'phase', 'from_sha256', 'to_sha256', 'old_process', 'new_process', 'rollback_binary',
     'evidence_directory', 'protocol_version', 'product_version', 'preservation', 'after_preservation',
     'from_schema', 'to_schema', 'schema_artifacts'];
   requireThat(report.marker === MARKER && report.result === 'ready' && report.phase === 'ready' && report.stage === 'complete' &&
-    report.schema === 25 && report.binary_sha256 === state.binary_sha256 && same(report.process, state.process) &&
+    report.schema === state.schema && report.binary_sha256 === state.binary_sha256 && same(report.process, state.process) &&
     same(report.cluster, state.cluster) && report.server_id === state.server_id &&
     report.database?.oid === state.database_oid && report.database?.role_oid === state.role_oid &&
     report.accounts?.admin === state.admin_id && report.accounts?.viewer === state.viewer_id &&
@@ -228,13 +337,15 @@ async function musicUpgradeBinding(state, selection) {
   for (const key of ['movies', 'music', 'tv']) requireThat(report.libraries?.[key]?.id === state.libraries[key].id);
   const addedKeys = ['phase', 'username', 'user_id', 'receipt_path', 'receipt_sha256', 'browser_alias', 'browser_sha256', 'admin_session_revoked'];
   requireThat(same(report.added_viewer, Object.fromEntries(addedKeys.map(key => [key, state.added_viewer[key]]))));
-  const operatorSHA = await operatorDigest();
+  const operator = upgradeOperatorBinding(completed), operatorSHA = await operatorDigest(operator);
   return { beforeState: before, beforeSHA256: beforeFile.sha256, identity, directory: selection.directory, inputs,
+    operators: [operator],
     files: [[beforePath, beforeFile.sha256], [completedPath, completedFile.sha256], [selection.reportPath, reportFile.sha256]],
-    evidence: { method: 'Explicit single completed schema25 binary upgrade', directory: selection.directory,
+    evidence: { method: state.schema === 25 ? 'Explicit single completed schema25 binary upgrade' : 'Explicit completed schema26 fixture upgrade',
+      directory: selection.directory,
       before_state_sha256: beforeFile.sha256, completed_sha256: completedFile.sha256,
-      report_path: selection.reportPath, report_sha256: reportFile.sha256, operator_sha256: operatorSHA,
-      from_schema: 25, to_schema: 25, from_sha256: completed.from_sha256, to_sha256: completed.to_sha256,
+      report_path: selection.reportPath, report_sha256: reportFile.sha256, operator_sha256: operatorSHA, operator_path: operator.path,
+      from_schema: completed.from_schema, to_schema: completed.to_schema, from_sha256: completed.from_sha256, to_sha256: completed.to_sha256,
       old_process: { ...completed.old_process }, new_process: { ...completed.new_process },
       preservation_authority: 'Explicitly approved completed/report hashes and the pinned operator full preservation comparison',
       full_snapshot_read: false, automatic_history_discovery: false, scan_repeated: false } };
@@ -269,18 +380,23 @@ async function musicUpgradeChainBinding(state, selection) {
   for (let index = 0; index < hops.length; index += 1) {
     const hop = hops[index], processKey = JSON.stringify(stable(hop.new_process));
     requireThat(!binaries.has(hop.to_sha256) && !processes.has(processKey));
-    if (index) requireThat(hops[index - 1].to_sha256 === hop.from_sha256 && same(hops[index - 1].new_process, hop.old_process));
+    if (index) requireThat(hops[index - 1].to_sha256 === hop.from_sha256 && hops[index - 1].to_schema === hop.from_schema &&
+      same(hops[index - 1].new_process, hop.old_process));
     binaries.add(hop.to_sha256); processes.add(processKey);
   }
-  return { beforeState: steps[0].beforeState, beforeSHA256: steps[0].beforeSHA256,
+  const operators = [...new Map(steps.flatMap(step => step.operators).map(operator => [operator.path, operator])).values()];
+  const operatorSHAs = [...new Set(hops.map(hop => hop.operator_sha256))];
+  return { beforeState: steps[0].beforeState, beforeSHA256: steps[0].beforeSHA256, operators,
     directories: steps.map(step => ({ path: step.directory, identity: step.identity })),
     inputs: [selection.path, ...steps.flatMap(step => step.inputs)], arrayInputs: [selection.path],
     files: [[selection.path, chainFile.sha256], ...steps.flatMap(step => step.files)],
-    evidence: { method: 'Explicit bounded completed schema25 upgrade chain', chain_path: selection.path,
+    evidence: { method: last.to_schema === 25 ? 'Explicit bounded completed schema25 upgrade chain'
+      : 'Explicit bounded completed schema25/schema26 upgrade chain', chain_path: selection.path,
       chain_sha256: chainFile.sha256, hop_count: hops.length, hops,
-      before_state_sha256: first.before_state_sha256, from_schema: 25, to_schema: 25,
+      before_state_sha256: first.before_state_sha256, from_schema: first.from_schema, to_schema: last.to_schema,
       from_sha256: first.from_sha256, to_sha256: last.to_sha256,
-      old_process: { ...first.old_process }, new_process: { ...last.new_process }, operator_sha256: FIXTURE_OPERATOR_SHA,
+      old_process: { ...first.old_process }, new_process: { ...last.new_process },
+      operator_sha256: operatorSHAs.length === 1 ? operatorSHAs[0] : null, operator_sha256s: operatorSHAs,
       full_snapshot_read: false, automatic_history_discovery: false, scan_repeated: false } };
 }
 
@@ -289,10 +405,11 @@ async function musicUpgradeChainBinding(state, selection) {
 async function musicScanBinding(state, stateSHA, expectedReceiptSHA, upgradeSelection, chainSelection) {
   requireThat(upgradeSelection === undefined || chainSelection === undefined);
   if (expectedReceiptSHA === undefined) { requireThat(upgradeSelection === undefined && chainSelection === undefined); return null; }
-  requireThat(expectedReceiptSHA === MUSIC_SCAN_RECEIPT_SHA && state.schema === 25);
+  requireThat(expectedReceiptSHA === MUSIC_SCAN_RECEIPT_SHA && [25, 26].includes(state.schema));
   const lineage = chainSelection === undefined ? await musicUpgradeBinding(state, upgradeSelection)
     : await musicUpgradeChainBinding(state, chainSelection);
   const scannedState = lineage?.beforeState ?? state, scannedStateSHA = lineage?.beforeSHA256 ?? stateSHA;
+  requireThat(scannedState.schema === 25);
   const identity = await directory(MUSIC_SCAN_ROOT);
   const receiptFile = await privateDocument(MUSIC_SCAN_RECEIPT), reportFile = await privateDocument(MUSIC_SCAN_REPORT),
     ownerFile = await privateDocument(MUSIC_SCAN_OWNER);
@@ -442,7 +559,7 @@ export async function loadGobyAVFixture({ expectedSHA256, expectedMusicScanRecei
     phase = 'fixture_binding';
     requireThat(state.marker === MARKER && state.work === ROOT && typeof state.tag === 'string' &&
       new RegExp(`^${MARKER}:[0-9a-f]{32}$`).test(state.tag) && state.phase === 'ready' && state.stage === 'complete' &&
-      [24, 25].includes(state.schema) && identifier(state.server_id) && identifier(state.admin_id) && identifier(state.viewer_id) &&
+      [24, 25, 26].includes(state.schema) && identifier(state.server_id) && identifier(state.admin_id) && identifier(state.viewer_id) &&
       state.admin_id !== state.viewer_id && state.binary_sha256 === expectedSHA256 && processIdentity(state.process));
     const schemaEvidence = schemaBinding(state, expectedSHA256);
     requireThat(record(state.work_identity) && ['database_oid', 'role_oid'].every(key => Number.isSafeInteger(state[key]) && state[key] > 0) &&
@@ -493,6 +610,7 @@ export async function loadGobyAVFixture({ expectedSHA256, expectedMusicScanRecei
       music_scan_directory_identity: musicScan?.identity ?? null,
       music_upgrade_directories: musicScan?.lineage ? musicScan.lineage.directories ??
         [{ path: musicScan.lineage.directory, identity: musicScan.lineage.identity }] : [],
+      music_upgrade_operators: musicScan?.lineage?.operators ?? [],
       extra_inputs: musicScan?.lineage?.inputs ?? [],
       array_inputs: musicScan?.lineage?.arrayInputs ?? [],
       files: [[STATE, stateFile.sha256], [ALIAS, aliasFile.sha256], [RECEIPT, receiptFile.sha256], [PROXY, proxyFile.sha256], ...(musicScan?.files ?? [])] });
@@ -512,7 +630,7 @@ export async function loadGobyAVFixture({ expectedSHA256, expectedMusicScanRecei
         await directory(ROOT, pinned.work_identity); await directory(ACCOUNT_ROOT, pinned.account_directory_identity);
         if (pinned.music_scan_directory_identity) await directory(MUSIC_SCAN_ROOT, pinned.music_scan_directory_identity);
         for (const selected of pinned.music_upgrade_directories) await directory(selected.path, selected.identity);
-        if (pinned.music_upgrade_directories.length) await operatorDigest();
+        for (const operator of pinned.music_upgrade_operators) await operatorDigest(operator);
         for (const [filename, expected] of pinned.files) {
           requireThat((await privateDocument(filename, pinned.extra_inputs, pinned.array_inputs.includes(filename))).sha256 === expected);
         }
@@ -540,7 +658,7 @@ export async function loadGobyAVFixture({ expectedSHA256, expectedMusicScanRecei
           requireThat((await privateDocument(filename, pinned.extra_inputs, pinned.array_inputs.includes(filename))).sha256 === expected);
         }
         for (const selected of pinned.music_upgrade_directories) await directory(selected.path, selected.identity);
-        if (pinned.music_upgrade_directories.length) await operatorDigest();
+        for (const operator of pinned.music_upgrade_operators) await operatorDigest(operator);
         checks += 1;
         return { phase: 'pinned', check: checks, fixture_state_sha256: pinned.files[0][1] };
       } catch { throw safeError(pinPhase); }

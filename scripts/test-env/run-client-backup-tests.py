@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run backup verification or schema25 catalog generation in the owned workspace.
+"""Run backup verification or explicit catalog generation in the owned workspace.
 
 The outer SSH operator owns the lock, temporary HBA rules, fixed disposable
 pair, and bounded systemd unit. Failed runs retain their database evidence.
@@ -45,9 +45,13 @@ MIGRATION_DIRECTORY = "internal/database/migrations/"
 HISTORICAL_CATALOG_SHA256 = {
     23: "de85f4917dd7409e7e7bed20c7cbe63f0d7afe68f6ed72faff6b5bbb598ed00b",
     24: "6ba8a30d7648f3fdd73f977cc5d2aafac39232704542f28f20f0898d93ef575c",
+    25: "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
 }
 MIGRATION_24_NAME = "0024_user_settings.sql"
 MIGRATION_25_NAME = "0025_music_artists.sql"
+MIGRATION_26_NAME = "0026_theme_owners.sql"
+CATALOG_TABLE_COUNTS = {23: 29, 24: 30, 25: 30, 26: 33}
+BOOTSTRAP_MIGRATIONS = {25: MIGRATION_25_NAME, 26: MIGRATION_26_NAME}
 CATALOG_GENERATOR = "scripts/test-env/generate-backuppg-catalog.go"
 CATALOG_OBJECT_FIELDS = {
     "column": {"name", "type", "not_null", "identity", "generated", "dropped", "storage", "compression", "collation", "default"},
@@ -181,18 +185,18 @@ def validate_arguments(args):
             re.fullmatch(r"source-attempt-(?:0[1-9]|[1-9][0-9]+)", args.source.name),
             "The source must be a directly contained source-attempt-NN snapshot with a canonical positive number.")
     require(re.fullmatch(r"[0-9a-f]{64}", args.manifest_sha256), "The manifest digest is invalid.")
-    require(type(args.schema) is int and args.schema in (24, 25), "The verification schema must be explicitly supported.")
+    require(type(args.schema) is int and args.schema in (24, 25, 26), "The verification schema must be explicitly supported.")
     require(args.mode in ("full", "targeted", "catalog"), "The verification mode is invalid.")
     require(not args.run or (args.mode == "targeted" and len(args.run) <= 512 and
             all(32 <= ord(character) < 127 for character in args.run)), "The targeted test expression is invalid.")
     require(args.mode == "targeted" or not args.package, "Full verification and catalog generation cannot narrow their package list.")
-    require(args.mode != "catalog" or args.schema == 25, "Catalog generation requires explicit schema25.")
+    require(args.mode != "catalog" or args.schema in BOOTSTRAP_MIGRATIONS, "Catalog generation requires an explicit supported schema.")
     for package in args.package:
         require(re.fullmatch(r"\./internal/[a-z][a-z0-9_]*", package), "A targeted package is outside the source module.")
 
 
 def catalog_name(version):
-    require(type(version) is int and version in (23, 24, 25), "The catalog version is outside the reviewed schemas.")
+    require(type(version) is int and version in CATALOG_TABLE_COUNTS, "The catalog version is outside the reviewed schemas.")
     return CATALOG_DIRECTORY + f"schema-{version}-postgresql-17.json"
 
 
@@ -210,7 +214,7 @@ def identifiers(values, *, allow_empty=False):
 
 
 def validate_catalog(baseline, version):
-    require(type(version) is int and version in (23, 24, 25), "The catalog version is outside the reviewed schemas.")
+    require(type(version) is int and version in CATALOG_TABLE_COUNTS, "The catalog version is outside the reviewed schemas.")
     exact_fields(baseline, {"version", "postgresql_major", "migrations", "catalog", "objects"},
                  "A trusted catalog contains missing or unowned fields.")
     require(type(baseline["version"]) is int and baseline["version"] == version and
@@ -226,13 +230,15 @@ def validate_catalog(baseline, version):
                 "A trusted migration record is malformed or out of order.")
     if version >= 24:
         require(history[23]["name"] == MIGRATION_24_NAME, "The historical preference migration name changed.")
-    if version == 25:
+    if version >= 25:
         require(history[24]["name"] == MIGRATION_25_NAME, "The schema25 migration name differs from the reviewed input.")
+    if version >= 26:
+        require(history[25]["name"] == MIGRATION_26_NAME, "The schema26 migration name differs from the reviewed input.")
     catalog = baseline["catalog"]
     exact_fields(catalog, {"Schema", "Tables", "Sequences", "SHA256", "Constraints"},
                  "A catalog descriptor contains missing or unowned fields.")
     require(catalog["Schema"] == "" and isinstance(catalog["Tables"], list) and
-            len(catalog["Tables"]) == (29 if version == 23 else 30) and
+            len(catalog["Tables"]) == CATALOG_TABLE_COUNTS[version] and
             isinstance(catalog["SHA256"], str) and re.fullmatch(r"[0-9a-f]{64}", catalog["SHA256"]),
             "The trusted table catalog has an unexpected identity.")
     table_names = []
@@ -275,10 +281,10 @@ def validate_catalog(baseline, version):
 
 def read_source_catalog(source, files, schema, *, catalog_bootstrap=False):
     """Verify exact source catalogs and migrations; bootstrap has no current catalog."""
-    require(type(schema) is int and schema in (24, 25), "The source schema must be explicitly supported.")
-    require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema == 25),
-            "Catalog bootstrap is only permitted for explicit schema25.")
-    versions = (23, 24) if schema == 24 or catalog_bootstrap else (23, 24, 25)
+    require(type(schema) is int and schema in (24, 25, 26), "The source schema must be explicitly supported.")
+    require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema in BOOTSTRAP_MIGRATIONS),
+            "Catalog bootstrap is only permitted for an explicit supported schema.")
+    versions = range(23, schema if catalog_bootstrap else schema + 1)
     require({name for name in files if name.startswith(CATALOG_DIRECTORY)} == {catalog_name(version) for version in versions},
             "The source catalog membership differs from the explicit verification schema.")
     baselines = {}
@@ -296,13 +302,13 @@ def read_source_catalog(source, files, schema, *, catalog_bootstrap=False):
                     "A source catalog rewrites immutable migration history.")
         baselines[version] = baseline
     baseline = baselines.get(schema)
-    history = baselines[24]["migrations"] if catalog_bootstrap else baseline["migrations"]
+    history = baselines[schema - 1]["migrations"] if catalog_bootstrap else baseline["migrations"]
     migrations = {MIGRATION_DIRECTORY + row["name"]: row["sha256"] for row in history}
     if catalog_bootstrap:
-        name = MIGRATION_DIRECTORY + MIGRATION_25_NAME
+        name = MIGRATION_DIRECTORY + BOOTSTRAP_MIGRATIONS[schema]
         expected = files.get(name)
         require(isinstance(expected, str) and re.fullmatch(r"[0-9a-f]{64}", expected),
-                "The catalog bootstrap manifest omits the reviewed schema25 migration digest.")
+                "The catalog bootstrap manifest omits the reviewed current migration digest.")
         migrations[name] = expected
     require({name: digest for name, digest in files.items() if name.startswith(MIGRATION_DIRECTORY)} == migrations,
             "The source migration membership or hashes differ from the explicit verification schema.")
@@ -313,9 +319,9 @@ def read_source_catalog(source, files, schema, *, catalog_bootstrap=False):
 
 
 def verify_source(source, expected_digest, schema=24, *, catalog_bootstrap=False):
-    require(type(schema) is int and schema in (24, 25), "The source schema must be explicitly supported.")
-    require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema == 25),
-            "Catalog bootstrap is only permitted for explicit schema25.")
+    require(type(schema) is int and schema in (24, 25, 26), "The source schema must be explicitly supported.")
+    require(type(catalog_bootstrap) is bool and (not catalog_bootstrap or schema in BOOTSTRAP_MIGRATIONS),
+            "Catalog bootstrap is only permitted for an explicit supported schema.")
     identity = directory(source)
     # The nonsecret hash inventory may retain ordinary source-file mode. Its
     # root-owned 0700 parent and the caller-supplied digest still bind its bytes.
@@ -341,17 +347,22 @@ def verify_source(source, expected_digest, schema=24, *, catalog_bootstrap=False
     required = {"go.mod", "go.sum", "scripts/test-env/prepare-postgres-workspace.py",
                 "scripts/test-env/run-backup-full-tests.sh", "internal/backuppg/catalog.go",
                 catalog_name(23), catalog_name(24), MIGRATION_DIRECTORY + MIGRATION_24_NAME}
-    if schema == 25:
+    if schema >= 25:
         required.add(MIGRATION_DIRECTORY + MIGRATION_25_NAME)
-        required.add(CATALOG_GENERATOR if catalog_bootstrap else catalog_name(25))
+    if schema >= 26:
+        required.add(MIGRATION_DIRECTORY + MIGRATION_26_NAME)
+        required.add(catalog_name(25))
+    if schema >= 25:
+        required.add(CATALOG_GENERATOR if catalog_bootstrap else catalog_name(schema))
     require(required <= actual.keys(), "The source omits a required current or historical backup input.")
     read_source_catalog(source, actual, schema, catalog_bootstrap=catalog_bootstrap)
     return identity, actual
 
 
-def generated_catalog(raw, source_files):
+def generated_catalog(raw, source_files, schema=25):
+    require(type(schema) is int and schema in BOOTSTRAP_MIGRATIONS, "The generated catalog schema is outside the reviewed schemas.")
     baseline = decode(raw)
-    validate_catalog(baseline, 25)
+    validate_catalog(baseline, schema)
     migrations = {MIGRATION_DIRECTORY + row["name"]: row["sha256"] for row in baseline["migrations"]}
     require(migrations == {name: digest for name, digest in source_files.items() if name.startswith(MIGRATION_DIRECTORY)},
             "The generated catalog migration history differs from the frozen bootstrap manifest.")
@@ -536,7 +547,7 @@ class Runner:
         self.tag = MARKER + ":" + self.run
         self.unit = "goby-client-backup-" + self.run.replace("_", "-") + ".service"
         self.output = WORK / ("client-backup-run-" + self.run)
-        self.catalog_output = self.output / "schema-25-postgresql-17.json"
+        self.catalog_output = self.output / f"schema-{args.schema}-postgresql-17.json"
         self.catalog_artifact = None
         self.module = None
         self.lock = None
@@ -811,11 +822,11 @@ class Runner:
                 "Verification changed frozen source bytes or membership.")
 
     def check_catalog_launch(self):
-        require(self.args.mode == "catalog" and self.args.schema == 25 and self.catalog_artifact is None,
-                "Catalog launch requires a new explicit schema25 generation attempt.")
+        require(self.args.mode == "catalog" and type(self.args.schema) is int and self.args.schema in BOOTSTRAP_MIGRATIONS and self.catalog_artifact is None,
+                "Catalog launch requires a new explicit supported schema generation attempt.")
         require(directory(self.output) == self.output_identity and private_read(RECEIPT) == self.receipt_bytes,
                 "The owned catalog output directory or current pair receipt changed before launch.")
-        require(self.catalog_output == self.output / "schema-25-postgresql-17.json" and not present(self.catalog_output),
+        require(self.catalog_output == self.output / f"schema-{self.args.schema}-postgresql-17.json" and not present(self.catalog_output),
                 "The catalog output is not an unused path in the owned run directory.")
         self.inspect_catalog_pairs([], [])
 
@@ -830,16 +841,16 @@ class Runner:
             require(self.inspect_objects(pair) == expected, "A catalog database differs from its exact expected object inventory.")
 
     def inspect_catalog_result(self, log):
-        require(self.args.mode == "catalog" and self.args.schema == 25 and self.catalog_artifact is None,
+        require(self.args.mode == "catalog" and type(self.args.schema) is int and self.args.schema in BOOTSTRAP_MIGRATIONS and self.catalog_artifact is None,
                 "A generated catalog cannot be adopted or replaced by a later attempt.")
-        require(log.count(b"Generated trusted schema 25 catalog.\n") == 1,
-                "The catalog generator did not report exactly one schema25 completion.")
-        require(directory(self.output) == self.output_identity and self.catalog_output == self.output / "schema-25-postgresql-17.json",
+        require(log.count(f"Generated trusted schema {self.args.schema} catalog.\n".encode()) == 1,
+                "The catalog generator did not report exactly one requested-schema completion.")
+        require(directory(self.output) == self.output_identity and self.catalog_output == self.output / f"schema-{self.args.schema}-postgresql-17.json",
                 "The catalog output directory or fixed artifact path changed.")
         raw = private_read(self.catalog_output)
-        baseline = generated_catalog(raw, self.source_files)
+        baseline = generated_catalog(raw, self.source_files, self.args.schema)
         self.inspect_catalog_pairs(baseline["objects"], [])
-        artifact = {"path": str(self.catalog_output), "sha256": sha(raw), "schema": 25,
+        artifact = {"path": str(self.catalog_output), "sha256": sha(raw), "schema": self.args.schema,
                     "source_manifest_sha256": self.args.manifest_sha256}
         self.receipt["catalog_artifact"] = artifact
         self.receipt["catalog_sha256"] = artifact["sha256"]
@@ -850,13 +861,13 @@ class Runner:
         self.report["catalog_objects_sha256"] = baseline["catalog"]["SHA256"]
 
     def read_generated_catalog(self):
-        require(self.args.mode == "catalog" and self.args.schema == 25 and self.catalog_artifact is not None,
+        require(self.args.mode == "catalog" and type(self.args.schema) is int and self.args.schema in BOOTSTRAP_MIGRATIONS and self.catalog_artifact is not None,
                 "This run has no completed and receipted catalog artifact; pair evidence must be retained.")
         exact_fields(self.catalog_artifact, {"path", "sha256", "schema", "source_manifest_sha256"},
                      "The generated catalog receipt contains missing or unowned fields.")
-        require(self.catalog_output == self.output / "schema-25-postgresql-17.json" and
+        require(self.catalog_output == self.output / f"schema-{self.args.schema}-postgresql-17.json" and
                 self.catalog_artifact["path"] == str(self.catalog_output) and type(self.catalog_artifact["schema"]) is int and
-                self.catalog_artifact["schema"] == 25 and isinstance(self.catalog_artifact["sha256"], str) and
+                self.catalog_artifact["schema"] == self.args.schema and isinstance(self.catalog_artifact["sha256"], str) and
                 re.fullmatch(r"[0-9a-f]{64}", self.catalog_artifact["sha256"]) and
                 self.catalog_artifact["source_manifest_sha256"] == self.args.manifest_sha256 and
                 self.receipt.get("catalog_artifact") == self.catalog_artifact and
@@ -864,7 +875,7 @@ class Runner:
                 "The exact generated catalog receipt, artifact path, or owned output directory changed.")
         raw = private_read(self.catalog_output)
         require(sha(raw) == self.catalog_artifact["sha256"], "The completed catalog artifact changed; pair evidence must be retained.")
-        return generated_catalog(raw, self.source_files)
+        return generated_catalog(raw, self.source_files, self.args.schema)
 
     def inspect_results(self):
         log = private_read(self.output / "go.log", limit=128 << 20)
@@ -1043,8 +1054,8 @@ def main(arguments=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--manifest-sha256", required=True)
-    parser.add_argument("--schema", type=int, choices=(24, 25), default=24,
-                        help="Explicit source schema; schema25 requires this option and no schema is inferred.")
+    parser.add_argument("--schema", type=int, choices=(24, 25, 26), default=24,
+                        help="Explicit source schema; schema25/26 require this option and no schema is inferred.")
     parser.add_argument("--mode", choices=("full", "targeted", "catalog"), required=True)
     parser.add_argument("--package", action="append", default=[])
     parser.add_argument("--run", default="")
