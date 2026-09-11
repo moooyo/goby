@@ -18,6 +18,7 @@ from pathlib import Path
 import re
 import stat
 import sys
+import types
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
 MARKER = 'goby-client-prepare-scope-observation-v1'
@@ -33,6 +34,8 @@ PAGE_ERROR_EXPIRED_SHAS = {
     'be39a4afd1ce9e19c6d7ff1cf0666031839dd4d9f082733947a463d9e163d134',
     'c0ec1dbf6701d6a42c06f5843353d875e07f75613ca0f92a4d6905fc5818ed09',
 }
+SCHEMA27_SCOPE = 'schema27-original-movie-01'
+SCHEMA27_OBSERVER_SHA = 'bb210cc4cf7d319413cb0f4ea9dbf87db51cef6687cf2abff8becc4f1d999cba'
 REFERENCE_FIELDS = {'user_id', 'auth_session_id', 'device_id', 'client_nonce', 'play_session_id',
                     'created_at', 'application_client_id'}
 HASH = re.compile(r'[0-9a-f]{64}')
@@ -91,7 +94,7 @@ def unique_object(pairs):
     return result
 
 
-def read_pinned(path, expected):
+def read_pinned(path, expected, *, modes=(0o600,), decode_json=True):
     require(isinstance(expected, str) and HASH.fullmatch(expected) and path.is_absolute() and
             WORK in path.parents and '..' not in path.parts, 'invalid_input_pin')
     for parent in reversed(path.parents):
@@ -100,7 +103,7 @@ def read_pinned(path, expected):
                 'untrusted_input_directory')
     before = path.lstat()
     require(stat.S_ISREG(before.st_mode) and before.st_uid == before.st_gid == 0 and before.st_nlink == 1 and
-            stat.S_IMODE(before.st_mode) == 0o600 and 0 < before.st_size <= 16 << 20, 'untrusted_input_file')
+            stat.S_IMODE(before.st_mode) in modes and 0 < before.st_size <= 16 << 20, 'untrusted_input_file')
     with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), 'rb') as stream:
         opened = os.fstat(stream.fileno())
         require((opened.st_dev, opened.st_ino) == (before.st_dev, before.st_ino), 'input_changed_during_open')
@@ -109,6 +112,8 @@ def read_pinned(path, expected):
     require((before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) ==
             (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns) and
             len(raw) == before.st_size and digest(raw) == expected, 'input_digest_or_identity_changed')
+    if not decode_json:
+        return raw
     return json.loads(raw, object_pairs_hook=unique_object, parse_float=Decimal,
                       parse_constant=lambda _: (_ for _ in ()).throw(ScopeError('invalid_json_number')))
 
@@ -149,9 +154,15 @@ def reference_digest(row):
     return digest(json.dumps(values, ensure_ascii=False, separators=(', ', ': ')).encode())
 
 
-def observe_shape(value, phase):
+def observe_shape(value, phase, authority=None):
+    identity = EXPECTED_IDENTITY
+    if authority is not None:
+        identity = dict(EXPECTED_IDENTITY, schema=27, database_oid=authority['database_oid'],
+                        role_oid=authority['role_oid'], database_owner_oid=authority['role_oid'])
+        require(value.get('preparation_scope') == SCHEMA27_SCOPE and same(value.get('authority'), authority),
+                'schema27_observation_authority_mismatch')
     require(value.get('marker') == MARKER and type(value.get('version')) is int and value['version'] == 1 and
-            value.get('phase') == phase and value.get('complete') is True and same(value.get('identity'), EXPECTED_IDENTITY),
+            value.get('phase') == phase and value.get('complete') is True and same(value.get('identity'), identity),
             'observation_identity_or_completeness_mismatch')
     require(value.get('foreign_dependents') == {'references': 0, 'encodings': 0}, 'foreign_dependents_present')
     actors = keyed(value.get('actors'), ('label',))
@@ -164,6 +175,8 @@ def observe_shape(value, phase):
     require(movie.get('id') == MOVIE and movie.get('exists') is True and movie.get('type') == 'Movie' and
             movie.get('folder') is False and movie.get('has_media') is True and
             movie.get('has_theme_association') is False and movie.get('reserved') is False, 'observation_movie_mismatch')
+    if authority is not None:
+        require(movie.get('has_extra_association') is False and movie.get('extra_reserved') is False, 'movie_is_schema27_extra')
     tables = {name: keyed(value.get(name), fields) for name, fields in TABLE_KEYS.items()}
     require(set(value.get('counts', {})) == set(TABLE_KEYS) and all(type(value['counts'][name]) is int and
             value['counts'][name] == len(rows) for name, rows in tables.items()), 'observation_row_count_mismatch')
@@ -171,18 +184,27 @@ def observe_shape(value, phase):
     return tables
 
 
-def compare(before, after, report, scope='original', baseline_after=None):
-    require(scope in ('original', PAGE_ERROR_SCOPE), 'unsupported_preparation_scope')
+def compare(before, after, report, scope='original', baseline_after=None, authority=None):
+    require(scope in ('original', PAGE_ERROR_SCOPE, SCHEMA27_SCOPE), 'unsupported_preparation_scope')
     page_error_scope = scope == PAGE_ERROR_SCOPE
-    old, new = observe_shape(before, 'before'), observe_shape(after, 'after')
+    schema27_scope = scope == SCHEMA27_SCOPE
+    require((authority is not None) == schema27_scope, 'unexpected_schema27_authority')
+    old, new = observe_shape(before, 'before', authority), observe_shape(after, 'after', authority)
     lower, upper = instant(before['observed_at']), instant(after['observed_at'])
     require(lower <= upper and same(before['actors'], after['actors']) and same(before['movie'], after['movie']),
             'actor_movie_or_window_changed')
-    expected_counts = {'play_sessions': 20 if page_error_scope else 18,
-                       'client_playback_references': 0 if page_error_scope else 1,
-                       'user_item_data': 5, 'sessions': 49 if page_error_scope else 47, 'encoding_jobs': 0}
+    expected_counts = {'play_sessions': 22 if schema27_scope else 20 if page_error_scope else 18,
+                       'client_playback_references': 0 if page_error_scope or schema27_scope else 1,
+                       'user_item_data': 5, 'sessions': 51 if schema27_scope else 49 if page_error_scope else 47, 'encoding_jobs': 0}
     require(before['counts'] == expected_counts, 'unreviewed_before_population')
-    if page_error_scope:
+    if schema27_scope:
+        require(isinstance(baseline_after, dict), 'schema27_origin_after_required')
+        observe_shape(baseline_after, 'after')
+        require(instant(baseline_after['observed_at']) <= lower and all(same(before[name], baseline_after[name]) for name in TABLE_KEYS) and
+                same(before['actors'], baseline_after['actors']) and
+                all(same(before['movie'].get(key), value) for key, value in baseline_after['movie'].items()),
+                'schema27_origin_rows_changed')
+    elif page_error_scope:
         require(isinstance(baseline_after, dict), 'reviewed_baseline_after_required')
         observe_shape(baseline_after, 'after')
         require(instant(baseline_after['observed_at']) <= lower and
@@ -195,7 +217,14 @@ def compare(before, after, report, scope='original', baseline_after=None):
             type(report.get('client_acceptance')) is bool and
             lower <= instant(report['started_at']) <= instant(report['finished_at']) <= upper,
             'ui_report_identity_or_window_mismatch')
-    require(report.get('preparation_scope') == (PAGE_ERROR_SCOPE if page_error_scope else None), 'ui_preparation_scope_mismatch')
+    require(report.get('preparation_scope') == (scope if page_error_scope or schema27_scope else None), 'ui_preparation_scope_mismatch')
+    if schema27_scope:
+        fixture = report.get('fixture', {})
+        binding = fixture.get('schema_binding', {})
+        require(fixture.get('schema') == 27 and fixture.get('binary_sha256') == authority['binary_sha256'] and
+                fixture.get('process') == authority['process'] and fixture.get('fixture_state_sha256') == authority['fixture_state_sha256'] and
+                binding.get('schema') == 27 and binding.get('source') == authority['source'] and
+                binding.get('source_manifest_sha256') == authority['source_manifest_sha256'], 'ui_schema27_fixture_mismatch')
     movie_rows = [row for row in report.get('owned_items', []) if row.get('key') == 'movie']
     require(len(movie_rows) == 1 and movie_rows[0].get('id') == MOVIE and movie_rows[0].get('type') == 'Movie', 'ui_movie_mismatch')
     accounts = keyed(report.get('accounts'), ('slot',))
@@ -248,16 +277,16 @@ def compare(before, after, report, scope='original', baseline_after=None):
         else:
             require(actor.get('proxy', {}).get('preparation', 0) == 0, 'unacknowledged_preparation')
     require(len({row['token_fingerprint_sha256'] for row in auth_by_actor.values()}) == 2, 'shared_ui_authentication')
-    if page_error_scope:
+    if page_error_scope or schema27_scope:
         require(len(accepted_plays) == 2, 'page_error_scope_requires_two_preparations')
     changed_old = []
-    expired_shas = PAGE_ERROR_EXPIRED_SHAS if page_error_scope else {EXPIRED_PLAY_SHA}
+    expired_shas = set(authority['approved_expiry_id_sha256'].values()) if schema27_scope else PAGE_ERROR_EXPIRED_SHAS if page_error_scope else {EXPIRED_PLAY_SHA}
     approved = [row for row in old['play_sessions'].values() if id_digest(row['id']) in expired_shas]
-    expected_owners = set(ACTORS.values()) if page_error_scope else {ACTORS['B']}
+    expected_owners = set(ACTORS.values()) if page_error_scope or schema27_scope else {ACTORS['B']}
     require(len(approved) == len(expired_shas) and {id_digest(row['id']) for row in approved} == expired_shas and
             {row['user_id'] for row in approved} == expected_owners and
             all(row['state'] == 'Prepared' and row['item_id'] == MOVIE and row['media_source_id'] == SOURCE and
-                (page_error_scope or instant(row['expires_at']) <= lower) and
+                (page_error_scope or schema27_scope or instant(row['expires_at']) <= lower) and
                 old['sessions'][(row['auth_session_id'],)]['user_id'] == row['user_id'] and
                 old['sessions'][(row['auth_session_id'],)]['revoked_at'] is not None and
                 instant(old['sessions'][(row['auth_session_id'],)]['revoked_at']) <= lower for row in approved),
@@ -322,9 +351,11 @@ def main():
     for name in ('before', 'after', 'report'):
         parser.add_argument('--' + name, type=Path, required=True)
         parser.add_argument('--' + name + '-sha256', required=True)
-    parser.add_argument('--preparation-scope', choices=('original', PAGE_ERROR_SCOPE), default='original')
+    parser.add_argument('--preparation-scope', choices=('original', PAGE_ERROR_SCOPE, SCHEMA27_SCOPE), default='original')
     parser.add_argument('--baseline-after', type=Path)
     parser.add_argument('--baseline-after-sha256')
+    parser.add_argument('--expected-ledger', type=Path)
+    parser.add_argument('--expected-ledger-sha256')
     args = parser.parse_args()
     summary = {'marker': 'goby-client-prepare-scope-comparison-v1', 'database_scope_result': 'failed',
                'preparation_scope': args.preparation_scope,
@@ -339,8 +370,19 @@ def main():
         before = read_pinned(args.before, args.before_sha256)
         after = read_pinned(args.after, args.after_sha256)
         report = read_pinned(args.report, args.report_sha256)
-        baseline_after = None
-        if args.preparation_scope == PAGE_ERROR_SCOPE:
+        baseline_after, authority = None, None
+        if args.preparation_scope == SCHEMA27_SCOPE:
+            require(args.expected_ledger is not None and HASH.fullmatch(args.expected_ledger_sha256 or '') and
+                    args.baseline_after is None and args.baseline_after_sha256 is None, 'schema27_expected_ledger_required')
+            source = Path(__file__).with_name('inspect-client-prepare-scope.py')
+            raw = read_pinned(source, SCHEMA27_OBSERVER_SHA, modes=(0o600, 0o644), decode_json=False)
+            observer = types.ModuleType('schema27_offline_observation_contract')
+            observer.__file__ = str(source)
+            exec(compile(raw, str(source), 'exec'), observer.__dict__)
+            authority, baseline_after = observer.schema27_authority(
+                {'path': str(args.expected_ledger), 'sha256': args.expected_ledger_sha256}, live=False)
+            summary['input_sha256']['expected_ledger'] = args.expected_ledger_sha256
+        elif args.preparation_scope == PAGE_ERROR_SCOPE:
             require(args.baseline_after is not None and args.baseline_after.name == 'after.json' and
                     args.baseline_after not in (args.before, args.after) and args.baseline_after_sha256 == PAGE_ERROR_BASELINE_SHA,
                     'reviewed_baseline_after_pin_required')
@@ -348,6 +390,8 @@ def main():
             summary['input_sha256']['baseline_after'] = PAGE_ERROR_BASELINE_SHA
         else:
             require(args.baseline_after is None and args.baseline_after_sha256 is None, 'unexpected_baseline_after')
+        if args.preparation_scope != SCHEMA27_SCOPE:
+            require(args.expected_ledger is None and args.expected_ledger_sha256 is None, 'unexpected_schema27_expected_ledger')
         require(report.get('marker') == 'goby-client-cross-user-m3e-v1' and report.get('result') in ('passed', 'failed') and
                 type(report.get('client_acceptance')) is bool, 'invalid_ui_report_header')
         failure = report.get('failure')
@@ -355,7 +399,7 @@ def main():
                        ui_failure_sha256=digest(exact(failure).encode()))
         if failure is None or isinstance(failure, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,160}', failure):
             summary['ui_report_failure'] = failure
-        summary['counts_and_hashes'] = compare(before, after, report, args.preparation_scope, baseline_after)
+        summary['counts_and_hashes'] = compare(before, after, report, args.preparation_scope, baseline_after, authority)
         summary['database_scope_result'] = 'passed'
     except ScopeError as error:
         summary['reason_codes'] = [str(error)]

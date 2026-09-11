@@ -18,7 +18,7 @@ const A_TOKEN = 'synthetic-a-token', B_TOKEN = 'synthetic-b-token';
 const A_PASSWORD = '1'.repeat(48), B_PASSWORD = '2'.repeat(48);
 const ASSET_PAYLOAD = 'synthetic-private-asset-payload';
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
-const PREPARATION_SCOPE = 'source28-page-error-01';
+const PREPARATION_SCOPE = 'schema27-original-movie-01';
 const MOVIE_PATH = '/opt/goby-fixtures/client-m3e/Movies/M3e Client Movie.mp4';
 const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'classifyBrowserRequest', 'observedAuthority',
   'validateReadPrincipal', 'itemState', 'compareCrossUserState', 'foreignAccessDenied', 'readBoundedJSON', 'crossUserResult',
@@ -28,7 +28,9 @@ const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'clas
   'websocketFrameState', 'inspectWebSocketFrames', 'forwardBrowserWebSocket', 'administratorAccessDenied',
   'websocketConnectPlan', 'websocketConnectInner', 'forwardWebSocketConnect', 'bindOwnedMovieSource',
   'preparationRequestEvidence', 'preparationResponseEvidence', 'homeNavigationLocation', 'selectHomeControl', 'confirmedHomeNavigation',
-  'sanitizeBrowserMessage', 'browserEventDiagnostic', 'recordBrowserPageError', 'resanitizeBrowserDiagnostics'];
+  'sanitizeBrowserMessage', 'browserEventDiagnostic', 'recordBrowserPageError', 'resanitizeBrowserDiagnostics',
+  'requirePreparationFixture', 'ownSpecialFeaturesRequest', 'specialFeaturesResponseEvidence',
+  'captureSpecialFeaturesResponse', 'specialFeaturesEvidence'];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const syntheticHash = label => hash(`synthetic-cross-user:${label}`);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -150,6 +152,51 @@ function completedReport() {
         handshake_delivered: true, upstream_status: 101, token_fingerprint: tokenFingerprint, server_control_attempted: false, closed: true }] },
       network: { forbidden_mutations: 0, playback_attempts: 0, observer_errors: 0, overflow: 0, guard_errors: 0 } };
   }) };
+}
+
+function schema27FixtureEvidence() {
+  return { schema: 27, schema_binding: { schema: 27 }, music_scan: { schema: 25, upgrade_lineage: { to_schema: 27 } } };
+}
+
+function specialFeaturesEntry(slot = 'A', index = 0) {
+  return { index, phase: 'ui_movie', own_special_features: true, frame_owned: true, method: 'GET',
+    special_features_user_id: actor(slot).id, special_features_item_id: PREPARATION_ITEM,
+    status: 200, finished: true, failed: false, token_matches_session: true,
+    token_fingerprint: hash(slot === 'A' ? A_TOKEN : B_TOKEN),
+    special_features_response: { status: 200, response_bytes: 2, json_array: true, item_count: 0, validated: true, reason: null } };
+}
+
+function completedPreparationReport(api) {
+  const report = completedReport(); report.mode = 'acceptance-preparation'; report.preparation_scope = PREPARATION_SCOPE;
+  report.fixture = schema27FixtureEvidence();
+  for (const [index, account] of report.accounts.entries()) {
+    account.proxy.mode = report.mode; account.proxy.preparation = 1;
+    account.proxy.seen += 1; account.proxy.admitted += 1; account.proxy.completed += 1;
+    const source = ownedMovieSource(), body = JSON.parse(preparationBody().toString('utf8')); body.UserId = account.id;
+    const bytes = Buffer.from(JSON.stringify(body));
+    account.preparation_source = source;
+    account.preparation = { request_validated: true, completed: true, ...source, user_id: account.id,
+      token_fingerprint: account.token_fingerprint, request_bytes: bytes.length, request_sha256: hash(bytes),
+      existing_play_or_live_session_requested: false, ui_status: 200, ui_finished: true,
+      response: { status: 200, validated: true, play_session_id: 'play_' + String(index + 1).repeat(32), reason: null } };
+    account.requests = [specialFeaturesEntry(account.slot)];
+    account.special_features = api.specialFeaturesEvidence(account.requests, account.id, account.token_fingerprint);
+  }
+  return report;
+}
+
+function specialFeaturesResponseMock(options = {}) {
+  const state = { finished_calls: 0, body_calls: 0, bytes: null };
+  const request = { url: () => options.url ?? ORIGIN + '/emby/Users/' + A_ID + '/Items/' + PREPARATION_ITEM + '/SpecialFeatures',
+    method: () => options.method ?? 'GET', serviceWorker: () => options.worker ?? null };
+  return { state, request: () => request, status: () => options.status ?? 200,
+    headers: () => options.headers ?? { 'content-type': 'application/json; charset=utf-8', 'content-length': '2' },
+    async finished() { state.finished_calls += 1; return options.finish ? options.finish() : null; },
+    async body() {
+      state.body_calls += 1;
+      if (options.readBody) return options.readBody();
+      state.bytes = Buffer.from(options.body ?? '[]'); return state.bytes;
+    } };
 }
 
 function bootstrapDOM() {
@@ -1751,23 +1798,9 @@ export async function runCrossUserGuards(source) {
     }
   });
   test('preparation_acceptance_requires_each_validated_physical_post_and_real_ui_completion', () => {
-    const preparedReport = () => {
-      const report = completedReport(); report.mode = 'acceptance-preparation'; report.preparation_scope = PREPARATION_SCOPE;
-      for (const [index, account] of report.accounts.entries()) {
-        account.proxy.mode = report.mode; account.proxy.preparation = 1;
-        account.proxy.seen += 1; account.proxy.admitted += 1; account.proxy.completed += 1;
-        const source = ownedMovieSource(), body = JSON.parse(preparationBody().toString('utf8')); body.UserId = account.id;
-        const bytes = Buffer.from(JSON.stringify(body));
-        account.preparation_source = source;
-        account.preparation = { request_validated: true, completed: true, ...source, user_id: account.id,
-          token_fingerprint: account.token_fingerprint, request_bytes: bytes.length, request_sha256: hash(bytes),
-          existing_play_or_live_session_requested: false, ui_status: 200, ui_finished: true,
-          response: { status: 200, validated: true, play_session_id: 'play_' + String(index + 1).repeat(32), reason: null } };
-      }
-      return report;
-    };
+    const preparedReport = () => completedPreparationReport(api);
     check(api.crossUserResult(preparedReport()) === true);
-    for (const scope of [undefined, null, '', 'source28-page-error-00', false]) {
+    for (const scope of [undefined, null, '', 'source28-page-error-01', false]) {
       const report = preparedReport(); report.preparation_scope = scope; check(api.crossUserResult(report) === false);
     }
     for (const slot of [0, 1]) for (const mutate of [value => { value.proxy.preparation = 0; }, value => { value.proxy.preparation = 2; },
@@ -1904,7 +1937,7 @@ export async function runCrossUserGuards(source) {
       [...validArguments(), '--mode', 'acceptance', '--preparation-scope', PREPARATION_SCOPE]]) {
       rejected(() => api.parseCrossUserArguments(invalid));
     }
-    for (const value of ['', 'source28-page-error-00', PREPARATION_SCOPE + '/..', 'SOURCE28-PAGE-ERROR-01']) {
+    for (const value of ['', 'source28-page-error-01', PREPARATION_SCOPE + '/..', 'SCHEMA27-ORIGINAL-MOVIE-01']) {
       const invalid = [...args]; invalid[17] = value; rejected(() => api.parseCrossUserArguments(invalid));
     }
     const duplicate = [...args]; duplicate[14] = '--preparation-scope'; duplicate[15] = PREPARATION_SCOPE;
@@ -1912,7 +1945,7 @@ export async function runCrossUserGuards(source) {
     for (const mode of ['acceptance', 'prelogin']) for (const scope of [PREPARATION_SCOPE, '', null]) {
       rejected(() => api.requireProxyExecutionMode(mode, scope));
     }
-    for (const scope of [undefined, null, '', 'source28-page-error-00']) {
+    for (const scope of [undefined, null, '', 'source28-page-error-01']) {
       rejected(() => api.requireProxyExecutionMode('acceptance-preparation', scope));
       const options = { ...parsed, 'preparation-scope': scope };
       let refused = false;
@@ -1923,6 +1956,106 @@ export async function runCrossUserGuards(source) {
       const report = completedReport(); report.preparation_scope = scope; check(api.crossUserResult(report) === false);
     }
     const report = completedReport(); report.preparation_scope = null; check(api.crossUserResult(report) === true);
+  });
+  test('schema27_preparation_requires_current_fixture_and_historical_music_lineage', () => {
+    check(api.requirePreparationFixture({ evidence: schema27FixtureEvidence() }, 'acceptance-preparation') === undefined);
+    for (const mutate of [value => { value.schema = 26; }, value => { value.schema = '27'; },
+      value => { value.schema_binding.schema = 26; }, value => { value.music_scan.schema = 27; },
+      value => { value.music_scan.upgrade_lineage.to_schema = 26; }, value => { delete value.music_scan.upgrade_lineage; }]) {
+      const evidence = schema27FixtureEvidence(); mutate(evidence);
+      rejected(() => api.requirePreparationFixture({ evidence }, 'acceptance-preparation'));
+    }
+    rejected(() => api.requirePreparationFixture({}, 'acceptance-preparation'));
+    for (const scope of ['original', 'source28-page-error-01', 'schema26-original-movie-01']) {
+      rejected(() => api.requireProxyExecutionMode('acceptance-preparation', scope));
+    }
+  });
+  test('special_features_request_binds_exact_origin_user_movie_and_get', () => {
+    const route = ORIGIN + '/emby/Users/' + A_ID + '/Items/' + PREPARATION_ITEM + '/SpecialFeatures';
+    for (const raw of [route, route + '/', route + '?UserId=' + A_ID, route.replace('/emby/', '/')]) {
+      check(api.ownSpecialFeaturesRequest(raw, 'GET', A_ID, PREPARATION_ITEM) === true);
+    }
+    for (const raw of [route.replace(A_ID, B_ID), route.replace(PREPARATION_ITEM, '1'.repeat(32)),
+      route.replace(ORIGIN, 'http://example.invalid'), route + '#fragment', route + '?UserId=' + B_ID,
+      route + '?UserId=' + A_ID + '&userid=' + A_ID,
+      ORIGIN + '/emby/Users/AuthenticateByName', ORIGIN + '/emby/Items/' + PREPARATION_ITEM + '/SpecialFeatures']) {
+      check(api.ownSpecialFeaturesRequest(raw, 'GET', A_ID, PREPARATION_ITEM) === false);
+    }
+    for (const method of ['POST', 'HEAD', 'OPTIONS', 'PUT']) check(api.ownSpecialFeaturesRequest(route, method, A_ID, PREPARATION_ITEM) === false);
+    check(api.ownSpecialFeaturesRequest(route, 'GET', A_ID, '1'.repeat(32)) === false);
+    check(api.browserRequestDiagnostic(route, 'fetch', 'GET').category === 'special_features');
+  });
+  test('special_features_response_requires_actual_complete_empty_json_array', () => {
+    const bytes = Buffer.from(' \n[]\t'), original = Buffer.from(bytes);
+    const evidence = api.specialFeaturesResponseEvidence(200, bytes);
+    check(evidence.validated === true && evidence.json_array === true && evidence.item_count === 0 && bytes.equals(original));
+    for (const status of [201, 204, 304, 401, 403, 404, 500]) check(api.specialFeaturesResponseEvidence(status, Buffer.from('[]')).validated === false);
+    for (const body of [Buffer.from(''), Buffer.from('{}'), Buffer.from('{"Items":[]}'), Buffer.from('null'),
+      Buffer.from('[1]'), Buffer.from('[{"Id":"private-value"}]'), Buffer.from('[ ] trailing'),
+      Buffer.from([0xc3, 0x28]), Buffer.alloc(2 * 1024 * 1024 + 1), '[]', null]) {
+      const value = api.specialFeaturesResponseEvidence(200, body);
+      check(value.validated === false && !JSON.stringify(value).includes('private-value'));
+    }
+  });
+  test('special_features_capture_never_reads_authentication_foreign_or_worker_bodies', async () => {
+    for (const options of [{ url: ORIGIN + '/emby/Users/AuthenticateByName', method: 'POST' },
+      { url: ORIGIN + '/emby/Users/' + B_ID + '/Items/' + PREPARATION_ITEM + '/SpecialFeatures' },
+      { worker: {} }, { method: 'POST' }, { headers: { 'content-type': 'text/html', 'content-length': '2' } },
+      { headers: { 'content-type': 'application/json', 'content-length': String(2 * 1024 * 1024 + 1) } }]) {
+      const response = specialFeaturesResponseMock(options); let refused = false;
+      try { await api.captureSpecialFeaturesResponse(response, A_ID, PREPARATION_ITEM); } catch { refused = true; }
+      check(refused && response.state.body_calls === 0 && response.state.finished_calls === 0);
+    }
+    const missing = specialFeaturesResponseMock({ status: 404 });
+    check((await api.captureSpecialFeaturesResponse(missing, A_ID, PREPARATION_ITEM)).validated === false);
+    check(missing.state.body_calls === 0 && missing.state.finished_calls === 0);
+  });
+  test('special_features_capture_waits_for_finish_bounds_wait_and_clears_private_buffer', async () => {
+    const response = specialFeaturesResponseMock(), result = await api.captureSpecialFeaturesResponse(response, A_ID, PREPARATION_ITEM);
+    check(result.validated === true && response.state.finished_calls === 1 && response.state.body_calls === 1);
+    check(response.state.bytes.every(value => value === 0));
+    const unfinished = specialFeaturesResponseMock({ finish: async () => new Error('incomplete') }); let refused = false;
+    try { await api.captureSpecialFeaturesResponse(unfinished, A_ID, PREPARATION_ITEM); } catch { refused = true; }
+    check(refused && unfinished.state.body_calls === 0);
+    const hanging = specialFeaturesResponseMock({ finish: () => new Promise(() => {}) });
+    const pending = api.captureSpecialFeaturesResponse(hanging, A_ID, PREPARATION_ITEM);
+    check(loaded.timers.size === 1); loaded.fireTimers(5000); refused = false;
+    try { await pending; } catch (error) { refused = error?.message === 'cross_user_operation_timeout'; }
+    check(refused && hanging.state.body_calls === 0 && loaded.timers.size === 0);
+  });
+  test('special_features_evidence_rejects_absence_partial_foreign_and_duplicate_requests', () => {
+    const fingerprint = hash(A_TOKEN), entry = specialFeaturesEntry();
+    check(api.specialFeaturesEvidence([entry], A_ID, fingerprint).validated === true);
+    check(api.specialFeaturesEvidence([], A_ID, fingerprint).validated === false);
+    check(api.specialFeaturesEvidence([{ ...entry, own_special_features: false }], A_ID, fingerprint).validated === false);
+    for (const mutate of [value => { value.status = 404; }, value => { value.finished = false; }, value => { value.failed = true; },
+      value => { value.phase = 'ui_home'; }, value => { value.frame_owned = false; }, value => { value.method = 'POST'; },
+      value => { value.special_features_user_id = B_ID; }, value => { value.special_features_item_id = '1'.repeat(32); },
+      value => { value.token_matches_session = false; }, value => { value.token_fingerprint = hash(B_TOKEN); },
+      value => { delete value.special_features_response; }, value => { value.special_features_response.json_array = false; },
+      value => { value.special_features_response.item_count = 1; }, value => { value.special_features_response.validated = false; },
+      value => { value.special_features_response.response_bytes = 0; }, value => { value.special_features_response.response_bytes = 2097153; },
+      value => { value.special_features_response.reason = 'invalid_json_array'; }]) {
+      const bad = clone(entry); mutate(bad);
+      check(api.specialFeaturesEvidence([bad], A_ID, fingerprint).validated === false);
+      check(api.specialFeaturesEvidence([entry, { ...bad, index: 1 }], A_ID, fingerprint).validated === false);
+    }
+    check(api.specialFeaturesEvidence([entry, entry], A_ID, fingerprint).validated === false);
+    check(api.specialFeaturesEvidence(Array.from({ length: 5 }, (_, index) => ({ ...entry, index })), A_ID, fingerprint).validated === false);
+    check(api.specialFeaturesEvidence([entry], A_ID, null).validated === false);
+  });
+  test('schema27_full_acceptance_requires_each_real_special_features_receipt_and_zero_page_errors', () => {
+    check(api.crossUserResult(completedPreparationReport(api)) === true);
+    for (const slot of [0, 1]) for (const mutate of [value => { delete value.special_features; }, value => { value.special_features.validated = false; },
+      value => { value.requests = []; }, value => { value.requests[0].finished = false; }, value => { value.requests[0].status = 404; },
+      value => { value.special_features.original_ui_request_indexes = [99]; }, value => { value.page_error_count = 1; }]) {
+      const report = completedPreparationReport(api); mutate(report.accounts[slot]); check(api.crossUserResult(report) === false);
+    }
+    for (const mutate of [value => { value.fixture.schema = 26; }, value => { value.fixture.schema_binding.schema = 26; },
+      value => { value.fixture.music_scan.upgrade_lineage.to_schema = 26; },
+      value => { value.preparation_scope = 'source28-page-error-01'; }]) {
+      const report = completedPreparationReport(api); mutate(report); check(api.crossUserResult(report) === false);
+    }
   });
   const report = { format: 1, mode: 'pure', result: 'blocked', harness_guards_only: true, client_acceptance: false,
     source_sha256: hash(source), planned_test_count: cases.length, tests: [] };

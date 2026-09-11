@@ -22,7 +22,7 @@ const STATE = `${ROOT}/client-fixture.json`;
 const A_CREDENTIALS = `${ROOT}/goby-av-browser.json`;
 const B_CREDENTIALS = `${ROOT}/browser.json`;
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
-const PREPARATION_SCOPE = 'source28-page-error-01';
+const PREPARATION_SCOPE = 'schema27-original-movie-01';
 const LIMIT = 2 * 1024 * 1024;
 const INPUT_NAMES = ['client-browser-cross-user.mjs', 'client-browser-goby-fixture.mjs', 'client-browser-session-proof.mjs'];
 const ID = /^[0-9a-f]{32}$/;
@@ -71,6 +71,12 @@ export function parseCrossUserArguments(argv) {
 export function requireProxyExecutionMode(mode, preparationScope = undefined) {
   requireThat(['prelogin', 'acceptance', 'acceptance-preparation'].includes(mode));
   requireThat(mode === 'acceptance-preparation' ? preparationScope === PREPARATION_SCOPE : preparationScope === undefined);
+}
+
+export function requirePreparationFixture(fixture, mode) {
+  if (mode !== 'acceptance-preparation') return;
+  requireThat(fixture?.evidence?.schema === 27 && fixture.evidence.schema_binding?.schema === 27 &&
+    fixture.evidence.music_scan?.schema === 25 && fixture.evidence.music_scan.upgrade_lineage?.to_schema === 27);
 }
 
 export function bindCrossUserCredentials(stateFile, aFile, bFile, fixture) {
@@ -136,6 +142,7 @@ export function browserRequestDiagnostic(raw, resourceType = '', method = '') {
     const route = url.pathname.replace(/^\/emby(?=\/)/i, '').toLowerCase();
     if (result.origin === 'external' && method === 'POST') result.category = 'external_post';
     else if (/^\/items\/[^/]+\/playbackinfo\/?$/.test(route)) result.category = 'playback_preparation';
+    else if (/^\/users\/[^/]+\/items\/[^/]+\/specialfeatures\/?$/.test(route)) result.category = 'special_features';
     else if (route === '/web/index.html' || route === '/web/' || route === '/') result.category = 'web_document';
     else if (/\/service[-_]?worker(?:\.[a-z0-9_-]+)?\.js$/.test(route)) result.category = 'service_worker_script';
     else if (route.startsWith('/web/')) result.category = /\.js$/.test(route) ? 'web_script' : /\.css$/.test(route) ? 'web_stylesheet'
@@ -1096,6 +1103,71 @@ export function preparationResponseEvidence(status, bytes, source) {
   return result;
 }
 
+export function ownSpecialFeaturesRequest(raw, method, userId, itemId) {
+  try {
+    if (method !== 'GET' || !ID.test(userId) || itemId !== PREPARATION_ITEM) return false;
+    const url = new URL(raw), route = url.pathname.replace(/^\/emby(?=\/)/i, '');
+    const users = [...url.searchParams].filter(([name]) => name.toLowerCase() === 'userid').map(([, value]) => value);
+    return url.origin === ORIGIN && !url.username && !url.password && !url.hash &&
+      (route === '/Users/' + userId + '/Items/' + itemId + '/SpecialFeatures' ||
+        route === '/Users/' + userId + '/Items/' + itemId + '/SpecialFeatures/') &&
+      (users.length === 0 || users.length === 1 && users[0] === userId);
+  } catch { return false; }
+}
+
+export function specialFeaturesResponseEvidence(status, bytes) {
+  const result = { status, response_bytes: Buffer.isBuffer(bytes) ? bytes.length : null,
+    json_array: false, item_count: null, validated: false, reason: 'unexpected_response' };
+  if (status !== 200 || !Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > LIMIT) return result;
+  try {
+    const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    result.json_array = Array.isArray(value);
+    if (result.json_array) result.item_count = value.length;
+    result.validated = result.json_array && value.length === 0;
+    result.reason = result.validated ? null : result.json_array ? 'expected_empty_movie' : 'expected_json_array';
+  } catch { result.reason = 'invalid_json_array'; }
+  return result;
+}
+
+/** Read only the exact frame-owned SpecialFeatures response, never authentication or other response bodies. */
+export async function captureSpecialFeaturesResponse(response, userId, itemId) {
+  const request = response.request();
+  requireThat(request.serviceWorker() === null && ownSpecialFeaturesRequest(request.url(), request.method(), userId, itemId));
+  const status = response.status();
+  if (status !== 200) return specialFeaturesResponseEvidence(status, null);
+  const headers = response.headers(), length = headers['content-length'];
+  requireThat(length === undefined || /^(?:0|[1-9][0-9]{0,9})$/.test(length) && Number(length) <= LIMIT);
+  requireThat(responseContentType(headers['content-type']) === 'application/json');
+  return bounded((async () => {
+    requireThat(await response.finished() === null);
+    let bytes;
+    try {
+      bytes = await response.body();
+      return specialFeaturesResponseEvidence(status, bytes);
+    } finally { if (Buffer.isBuffer(bytes)) bytes.fill(0); }
+  })(), 5000);
+}
+
+export function specialFeaturesEvidence(requests, userId, tokenFingerprint) {
+  const selected = Array.isArray(requests) ? requests.filter(entry => entry.own_special_features === true) : [];
+  const bound = typeof userId === 'string' && ID.test(userId) && typeof tokenFingerprint === 'string' && SHA.test(tokenFingerprint);
+  const valid = entry => bound && entry.method === 'GET' && entry.phase === 'ui_movie' && entry.frame_owned === true &&
+    entry.special_features_user_id === userId && entry.special_features_item_id === PREPARATION_ITEM &&
+    Number.isSafeInteger(entry.index) && entry.index >= 0 && entry.index < 2000 && entry.status === 200 &&
+    entry.finished === true && entry.failed === false && entry.token_matches_session === true &&
+    entry.token_fingerprint === tokenFingerprint && entry.special_features_response?.status === 200 &&
+    entry.special_features_response.validated === true && entry.special_features_response.json_array === true &&
+    entry.special_features_response.item_count === 0 && entry.special_features_response.reason === null &&
+    Number.isSafeInteger(entry.special_features_response.response_bytes) && entry.special_features_response.response_bytes > 0 &&
+    entry.special_features_response.response_bytes <= LIMIT;
+  const completed = selected.filter(valid);
+  return { source: 'original_client_response', user_id: bound ? userId : null, item_id: PREPARATION_ITEM,
+    token_fingerprint: bound ? tokenFingerprint : null, observed_requests: selected.length, completed_requests: completed.length,
+    original_ui_request_indexes: selected.slice(0, 4).map(entry => Number.isSafeInteger(entry.index) ? entry.index : null),
+    validated: bound && selected.length >= 1 && selected.length <= 4 && completed.length === selected.length &&
+      new Set(selected.map(entry => entry.index)).size === selected.length };
+}
+
 export function homeNavigationLocation(raw, previous) {
   try {
     const url = new URL(raw), route = url.hash.split('?')[0];
@@ -1204,7 +1276,9 @@ function stateEvidence(value) {
 
 export function crossUserResult(report) {
   return acceptanceMode(report.mode) &&
-    (report.mode === 'acceptance-preparation' ? report.preparation_scope === PREPARATION_SCOPE : report.preparation_scope == null) &&
+    (report.mode === 'acceptance-preparation' ? report.preparation_scope === PREPARATION_SCOPE &&
+      report.fixture?.schema === 27 && report.fixture.schema_binding?.schema === 27 &&
+      report.fixture.music_scan?.schema === 25 && report.fixture.music_scan.upgrade_lineage?.to_schema === 27 : report.preparation_scope == null) &&
     report.failure === null && report.accounts?.length === 2 && report.accounts[0].id !== report.accounts[1].id &&
     report.accounts.every((actor, index) => ID.test(actor.id) && SHA.test(actor.token_fingerprint) &&
       actor.login?.status === 200 && actor.login?.request_count === 1 && actor.principal_confirmed === true && actor.ui?.outcome === 'passed' &&
@@ -1226,7 +1300,8 @@ export function crossUserResult(report) {
       (report.mode === 'acceptance-preparation' ? actor.proxy.preparation === 1 && actor.preparation?.request_validated === true &&
         actor.preparation.item_id === PREPARATION_ITEM && actor.preparation.token_fingerprint === actor.token_fingerprint &&
         actor.preparation.completed === true && actor.preparation.response?.status === 200 && actor.preparation.response.validated === true &&
-        actor.preparation.ui_status === 200 && actor.preparation.ui_finished === true
+        actor.preparation.ui_status === 200 && actor.preparation.ui_finished === true && actor.special_features?.validated === true &&
+        same(actor.special_features, specialFeaturesEvidence(actor.requests, actor.id, actor.token_fingerprint))
         : (actor.proxy.preparation ?? 0) === 0) &&
       actor.websocket?.opened >= 1 && actor.websocket.opened <= WS_LIMITS.handshakes && actor.websocket.closed === actor.websocket.opened &&
       actor.websocket.seen === actor.websocket.admitted && actor.websocket.admitted === actor.websocket.opened &&
@@ -1448,11 +1523,15 @@ class BrowserActor {
     try {
       const classification = classifyBrowserRequest(request.url(), request.method(), request.resourceType(), this.mode);
       if (this.report.requests.length >= 2000) { this.report.network.overflow += 1; return; }
+      const specialFeatures = Boolean(this.movie && ownSpecialFeaturesRequest(request.url(), request.method(), this.account.id, this.movie.id) &&
+        request.serviceWorker() === null);
       const entry = { index: this.report.requests.length, phase: this.phase, kind: classification.kind,
         method: ['GET', 'HEAD', 'OPTIONS', 'POST'].includes(request.method()) ? request.method() : 'OTHER',
         status: null, finished: false, failed: false, elapsed_ms: Date.now() - this.started,
         ...browserRequestDiagnostic(request.url(), request.resourceType(), request.method()),
         owned_preparation: Boolean(this.movie?.id === PREPARATION_ITEM && request.method() === 'POST' && classification.kind === 'preparation'),
+        own_special_features: specialFeatures,
+        ...(specialFeatures ? { frame_owned: true, special_features_user_id: this.account.id, special_features_item_id: this.movie.id } : {}),
         own_movie: Boolean(this.movie && request.method() === 'GET' && ownRequest(request.url(), this.account.id, this.movie.id)) };
       this.report.requests.push(entry); this.entries.set(request, entry);
       if (!entry.owned_preparation && (request.method() !== 'GET' || classification.kind !== 'read' || !this.loginIntent)) return;
@@ -1470,6 +1549,7 @@ class BrowserActor {
         requireThat(this.token === null || this.token === authority.token);
         this.token = authority.token; this.report.token_fingerprint = authority.fingerprint;
         this.report.token_sources = authority.sources; entry.token_matches_session = true;
+        if (entry.own_special_features) entry.token_fingerprint = authority.fingerprint;
       })().catch(() => { this.report.network.observer_errors += 1; });
       this.pending.add(capture); capture.finally(() => this.pending.delete(capture));
     } catch { this.report.network.observer_errors += 1; }
@@ -1527,6 +1607,17 @@ class BrowserActor {
         const entry = this.entries.get(response.request());
         if (entry) Object.assign(entry, { status: response.status(), response_content_type: responseContentType(response.headers()['content-type']),
           from_service_worker: response.fromServiceWorker(), response_elapsed_ms: Date.now() - this.started });
+        if (entry?.own_special_features) {
+          requireThat(this.proven && this.report.ordinary_authority_confirmed === true && this.movie?.id === PREPARATION_ITEM &&
+            this.report.requests.filter(value => value.own_special_features).length <= 4 && this.pending.size < 16);
+          const capture = captureSpecialFeaturesResponse(response, this.account.id, this.movie.id)
+            .then(evidence => { entry.special_features_response = evidence; })
+            .catch(() => {
+              entry.special_features_response = { validated: false, reason: 'response_observation_failed' };
+              this.report.network.observer_errors += 1;
+            });
+          this.pending.add(capture); capture.finally(() => this.pending.delete(capture));
+        }
       } catch { this.report.network.observer_errors += 1; }
     });
     this.context.on('requestfinished', request => {
@@ -1694,12 +1785,16 @@ class BrowserActor {
         await this.settled();
         prepared = this.report.requests.find(entry => entry.owned_preparation && entry.phase === 'ui_movie' && entry.status === 200 &&
           entry.finished && !entry.failed && entry.token_matches_session);
-        if (prepared && this.report.preparation?.completed && this.report.preparation.response?.validated) break;
+        this.report.special_features = specialFeaturesEvidence(this.report.requests, this.account.id, this.report.token_fingerprint);
+        if (prepared && this.report.preparation?.completed && this.report.preparation.response?.validated && this.report.special_features.validated) break;
         await this.page.waitForTimeout(100);
       } while (Date.now() < deadline);
       requireThat(prepared && this.report.preparation?.completed && this.report.preparation.response?.status === 200 &&
-        this.report.preparation.response.validated && this.report.proxy.preparation === 1);
+        this.report.preparation.response.validated && this.report.proxy.preparation === 1 && this.report.special_features?.validated === true);
       Object.assign(this.report.preparation, { ui_status: prepared.status, ui_finished: true, ui_request_index: prepared.index });
+      this.report.ui.observations.push({ label: 'owned_movie_special_features', original_ui: true,
+        user_id: this.account.id, item_id: this.movie.id, json_array_empty: true, original_ui_finished: true,
+        original_ui_request_indexes: [...this.report.special_features.original_ui_request_indexes] });
       await this.inactiveMedia('movie_preparation_completed');
     }
     this.phase = 'ui_return_home'; await this.returnHome(movie, libraryId);
@@ -1773,6 +1868,8 @@ export async function runCrossUserAcceptance(input) {
       database_wide_preservation_claimed: false, library_policy_restriction_milestone: 'not_exercised',
       token_storage: 'Observed request authority and opaque relay buffers stay in memory; no storageState, HAR, trace, authentication-response decoding or token extraction from authentication responses' },
     limits: { work_ms: 240000, api_requests: 40, api_timeout_ms: 10000, api_response_bytes: LIMIT, browser_requests_per_user: 2000, proxy: PROXY_LIMITS, websocket: WS_LIMITS,
+      special_features: { observed_reads_per_actor: 4, response_bytes: LIMIT, observation_timeout_ms: 5000,
+        scope: 'The existing ordinary Movie must return an empty JSON array through the original client request' },
       browser_diagnostics: { events_per_kind_per_actor: DIAGNOSTIC_ENTRY_LIMIT, input_characters: DIAGNOSTIC_INPUT_LIMIT,
         output_characters: DIAGNOSTIC_OUTPUT_LIMIT, success_requires_page_error_count: 0,
         privacy: 'Only error name and message; no stacks or browser internals; bounded messages are redacted at capture and again before writing' },
@@ -1788,12 +1885,13 @@ export async function runCrossUserAcceptance(input) {
     preparation: { id: PREPARATION_SCOPE, item_id: PREPARATION_ITEM, physical_posts_per_actor: 1,
       source_binding: 'Unique MediaSources entry from the existing authenticated before-snapshot Movie read',
       acknowledged_effects: ['Prepare or refresh a Prepared row under each new UI authentication session',
-        'Expire only the two input05 Prepared rows whose authentication sessions have been revoked; preserve the other 18 prior play rows exactly',
+        'Expire only the revoked-authentication Prepared rows explicitly authorized by the fresh schema27 ledger; preserve every other retained play row',
         'A negotiated HLS descriptor may be registered in memory without starting an encoder'],
-      existing_database_baseline: { play_sessions: 20, auth_sessions: 49, playback_references: 0, user_data: 5, encoding_jobs: 0 },
-      existing_rows: 'No old play or reference deletion; all 49 prior authentication rows, all five UserData rows and zero encoding jobs remain unchanged',
+      existing_database_baseline: 'A fresh schema27 ledger bound to the completed candidate upgrade and the separately pinned retained after-ledger; no prior scope counts are reused',
+      existing_rows: 'No old play or reference deletion; previous authentication, UserData, reference and encoding rows remain unchanged',
       existing_movie_userdata_rows: 'Confirmed present by the root-owned database ledger preflight',
-      database_proof: 'A fresh root-owned before ledger must match the input05 after ledger; use the source28-page-error-01 comparison authority, never the original 18-play/47-auth authority; no whole-database equality claim' },
+      special_features: 'Each actor must actually receive an empty JSON array from its original frame-owned SpecialFeatures GET for the owned Movie; status 200, completed transfer and matching ordinary-session authority are required',
+      database_proof: 'Only the new schema27-original-movie-01 before/after ledger authority applies; no whole-database equality claim' },
   });
   let terminalReport = report;
   let phase = 'input_closure', fixture, accounts = [], pins = [], observedBefore = new Map(), items, reads = 0, trustLost = false;
@@ -1868,6 +1966,7 @@ export async function runCrossUserAcceptance(input) {
       musicUpgradeChain: { path: options['music-upgrade-chain'], sha256: options['music-upgrade-chain-sha256'] } });
     requireThat(fixture.origin === ORIGIN && fixture.music && fixture.evidence.schema_binding.source === options.source &&
       fixture.evidence.schema_binding.source_manifest_sha256 === options['source-manifest-sha256']);
+    requirePreparationFixture(fixture, options.mode);
     await privateDirectory(options.source);
     const manifestPath = `${options.source}/backup-source-inputs.json`, manifest = await readOwnedFile(manifestPath, [0o600, 0o644]);
     requireThat(manifest.sha256 === options['source-manifest-sha256']); pins.push([manifestPath, manifest.sha256, [0o600, 0o644], true]);
@@ -1960,6 +2059,9 @@ export async function runCrossUserAcceptance(input) {
       catch { fail(`cleanup_${session.account.slot}`); session.report.closed = false; }
     }
     if (fixture) try { await pin(); } catch { fail('final_fixture_pin'); }
+    for (const actor of report.accounts) if (options.mode === 'acceptance-preparation') {
+      actor.special_features = specialFeaturesEvidence(actor.requests, actor.id, actor.token_fingerprint);
+    }
     resanitizeBrowserDiagnostics(report, secrets);
     report.finished_at = new Date().toISOString();
     const observedRequests = report.accounts.flatMap(actor => actor.requests ?? []);
@@ -1975,7 +2077,8 @@ export async function runCrossUserAcceptance(input) {
     if (report.result === 'failed') report.failure ??= options.mode === 'prelogin' ? 'prelogin_diagnostic_incomplete'
       : report.accounts.some(actor => actor.page_error_count !== 0) ? 'page_errors_observed'
         : report.client_interventions.playback_preparations_blocked > 0 ? 'needs_preparation_scope'
-        : options.mode === 'acceptance-preparation' && report.accounts.some(actor => !actor.preparation?.completed) ? 'preparation_incomplete' : 'acceptance_incomplete';
+        : options.mode === 'acceptance-preparation' && report.accounts.some(actor => !actor.preparation?.completed) ? 'preparation_incomplete'
+          : options.mode === 'acceptance-preparation' && report.accounts.some(actor => actor.special_features?.validated !== true) ? 'special_features_incomplete' : 'acceptance_incomplete';
     let encoded = JSON.stringify(report, null, 2) + '\n';
     let secretPresent = true;
     try {
