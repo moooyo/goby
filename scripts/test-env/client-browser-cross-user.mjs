@@ -405,6 +405,9 @@ export function forwardBrowserHTTP(request, response, policy, transport = http) 
       try { policy.onEvent({ ...diagnostic, method: ['GET', 'HEAD', 'OPTIONS', 'POST'].includes(request.method) ? request.method : 'OTHER',
         kind: classification.kind, outcome, reason, status, request_bytes: requestBytes, response_bytes: responseBytes }); }
       catch { state.failed += 1; }
+      // Optional observers receive a terminal copy, never the forwarding buffers.
+      try { policy.onTransferFinished?.(request, Object.freeze({ outcome, reason, status,
+        request_bytes: requestBytes, response_bytes: responseBytes })); } catch { /* Passive observation cannot change transport. */ }
       resolve();
     };
     const fail = (reason, rejected = false) => {
@@ -960,7 +963,7 @@ export function observedAuthority(raw, headers, userId, expectedToken = undefine
   return authorityForURL(url, headers, expectedToken);
 }
 
-function authorityForURL(url, headers, expectedToken = undefined) {
+export function authorityForURL(url, headers, expectedToken = undefined) {
   requireThat(record(headers) && Object.keys(headers).length <= 128);
   const seen = new Set(), tokens = [], sources = [];
   let bytes = 0;
@@ -1352,6 +1355,39 @@ class BrowserActor {
         overflow: 0, guard_errors: 0 }, page_error_count: 0, page_errors: [], console_diagnostics: [], console_warning_error_count: 0,
       bootstrap_diagnostics: [], bootstrap_capture_errors: [] });
   }
+  notifyHome(name, value, bytes = undefined) {
+    if (!this.homeObserver) return;
+    let copied;
+    try {
+      requireThat(typeof this.homeObserver[name] === 'function' && this.pending.size < 32);
+      if (bytes !== undefined) {
+        requireThat(Buffer.isBuffer(bytes) && bytes.length <= 512 * 1024);
+        copied = Buffer.from(bytes);
+      }
+      const result = this.homeObserver[name](Object.freeze(value), copied);
+      if (result && typeof result.then === 'function') {
+        const pending = Promise.resolve(result).catch(() => { this.report.network.observer_errors += 1; })
+          .finally(() => { copied?.fill(0); this.pending.delete(pending); });
+        this.pending.add(pending);
+      } else copied?.fill(0);
+    } catch { copied?.fill(0); this.report.network.observer_errors += 1; }
+  }
+  observeHomePhysicalRequest(request, plan, body) {
+    if (!this.homeObserver) return;
+    const route = new URL(request.url).pathname.replace(/^\/emby(?=\/)/i, '');
+    const kind = plan.kind === 'login' ? 'login' : plan.kind === 'capabilities' ? 'capabilities'
+      : plan.method === 'GET' && route === `/Users/${this.account.id}/Views` ? 'views' : null;
+    if (!kind) return;
+    // This explicit admission gate protects existing device rows before login.
+    // All response and terminal hooks below remain passive copies.
+    if (kind === 'login') requireThat(this.homeObserver.admitLogin(Object.freeze({ url: request.url,
+      headers: Object.freeze([...request.rawHeaders]) })) === true);
+    const id = ++this.homePhysicalCount;
+    this.homePhysicalEntries.set(request, { id, kind });
+    this.notifyHome('physicalRequest', { id, kind, method: plan.method, url: request.url,
+      headers: Object.freeze([...request.rawHeaders]), phase: this.phase, elapsed_ms: Date.now() - this.started },
+    kind === 'capabilities' ? body : undefined);
+  }
   async bootstrapDiagnostic(label) {
     if (!this.page || this.report.bootstrap_diagnostics.length >= 8) return;
     requireThat(['after_navigation', 'login_entry_ready', 'login_form_ready', 'before_credentials', 'open_failure'].includes(label));
@@ -1421,6 +1457,7 @@ class BrowserActor {
     const policy = { state: this.report.proxy,
       intents: () => ({ login: this.loginIntent, logout: this.logoutIntent, ownershipLost: this.ownershipLost, preparation: this.preparationAllowed() }),
       onRequest: (request, plan, body) => {
+        this.observeHomePhysicalRequest(request, plan, body);
         if (plan.kind === 'preparation') {
           requireThat(this.preparationAllowed() && !this.report.preparation);
           this.report.preparation = { request_validated: false, completed: false, response: null, ui_status: null, ui_finished: false };
@@ -1438,9 +1475,17 @@ class BrowserActor {
         authority.token = null;
       },
       onResponse: (_request, plan, status, body) => {
+        const selected = this.homePhysicalEntries?.get(_request);
+        if (selected) this.notifyHome('physicalResponse', { ...selected, status, phase: this.phase,
+          elapsed_ms: Date.now() - this.started }, body);
         if (plan.kind === 'preparation' && this.report.preparation) {
           this.report.preparation.response = preparationResponseEvidence(status, body, this.preparationSource);
         }
+      },
+      onTransferFinished: (request, event) => {
+        const selected = this.homePhysicalEntries?.get(request);
+        if (selected) this.notifyHome('physicalFinished', { ...selected, ...event, phase: this.phase,
+          elapsed_ms: Date.now() - this.started });
       },
       onEvent: event => {
         this.report.login.request_count = this.report.proxy.login;
@@ -1534,6 +1579,8 @@ class BrowserActor {
         ...(specialFeatures ? { frame_owned: true, special_features_user_id: this.account.id, special_features_item_id: this.movie.id } : {}),
         own_movie: Boolean(this.movie && request.method() === 'GET' && ownRequest(request.url(), this.account.id, this.movie.id)) };
       this.report.requests.push(entry); this.entries.set(request, entry);
+      if (this.homeObserver) this.notifyHome('frameRequest', { request, index: entry.index,
+        phase: this.phase, elapsed_ms: entry.elapsed_ms });
       if (!entry.owned_preparation && (request.method() !== 'GET' || classification.kind !== 'read' || !this.loginIntent)) return;
       const url = new URL(request.url()), route = url.pathname.replace(/^\/emby(?=\/)/i, '');
       const explicitUser = route === `/Users/${this.account.id}` || route.startsWith(`/Users/${this.account.id}/`) || route === `/UserSettings/${this.account.id}`;
@@ -1607,6 +1654,7 @@ class BrowserActor {
         const entry = this.entries.get(response.request());
         if (entry) Object.assign(entry, { status: response.status(), response_content_type: responseContentType(response.headers()['content-type']),
           from_service_worker: response.fromServiceWorker(), response_elapsed_ms: Date.now() - this.started });
+        if (this.homeObserver) this.notifyHome('frameResponse', { response, phase: this.phase, elapsed_ms: Date.now() - this.started });
         if (entry?.own_special_features) {
           requireThat(this.proven && this.report.ordinary_authority_confirmed === true && this.movie?.id === PREPARATION_ITEM &&
             this.report.requests.filter(value => value.own_special_features).length <= 4 && this.pending.size < 16);
@@ -1623,6 +1671,7 @@ class BrowserActor {
     this.context.on('requestfinished', request => {
       try { const entry = this.entries.get(request); if (entry) Object.assign(entry, { finished: true, finished_elapsed_ms: Date.now() - this.started }); }
       catch { this.report.network.observer_errors += 1; }
+      if (this.homeObserver) this.notifyHome('frameFinished', { request, failed: false, phase: this.phase, elapsed_ms: Date.now() - this.started });
     });
     this.context.on('requestfailed', request => {
       try {
@@ -1630,6 +1679,7 @@ class BrowserActor {
         if (entry) Object.assign(entry, { failed: true, failure_elapsed_ms: Date.now() - this.started,
           failure_class: safeBrowserFailure({ message: request.failure()?.errorText ?? '' }, this.phase).category });
       } catch { this.report.network.observer_errors += 1; }
+      if (this.homeObserver) this.notifyHome('frameFinished', { request, failed: true, phase: this.phase, elapsed_ms: Date.now() - this.started });
     });
     this.phase = 'new_page';
     this.page = await this.context.newPage();
@@ -1840,9 +1890,24 @@ class BrowserActor {
     try { await this.settled(); } catch { failures.push('observer_drain'); }
     this.token = null; this.account.password = null;
     this.report.closed = contextClosed && browserClosed && guardClosed;
+    if (this.homeObserver) this.report.home_closure = { context_closed: contextClosed, browser_closed: browserClosed,
+      proxy_closed: guardClosed, http_pending: this.proxyPending?.size ?? 0, websocket_pending: this.websocketPending?.size ?? 0,
+      websocket_active: this.report.websocket?.active ?? 0, websocket_opened: this.report.websocket?.opened ?? 0,
+      websocket_closed: this.report.websocket?.closed ?? 0, sockets_remaining: this.sockets.size, cleanup_failures: [...failures] };
     this.report.cleanup_failures = failures;
     return failures.length === 0;
   }
+}
+
+/** A fresh Home-only actor with the existing acceptance guard; no preparation mode is exposed. */
+export function createHomeOnlyBrowserActor({ account, pin, report, observer }) {
+  requireThat(account?.slot === 'B' && ID.test(account.id) && typeof pin === 'function' && record(report) && record(observer));
+  for (const name of ['admitLogin', 'physicalRequest', 'physicalResponse', 'physicalFinished', 'frameRequest', 'frameResponse', 'frameFinished']) {
+    requireThat(typeof observer[name] === 'function');
+  }
+  const actor = new BrowserActor(account, pin, report, 'acceptance');
+  actor.homeObserver = Object.freeze({ ...observer }); actor.homePhysicalCount = 0; actor.homePhysicalEntries = new WeakMap();
+  return actor;
 }
 
 /** Fresh browsers and explicit read-only API checks; never save browser storage. */

@@ -1,0 +1,152 @@
+{
+  "actual_check_only_runs": 0,
+  "actual_controller_runs": 0,
+  "artifacts": {
+    "guards.json": {
+      "bytes": 469,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/guards.json",
+      "sha256": "999028f94c8fd1b5f0acfdb4928b2a450acf33ee46df586abcae9f6f43594560"
+    },
+    "guards.stderr": {
+      "bytes": 3623,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/guards.stderr",
+      "sha256": "cc09e378b8dbd59a9c998d78d4796f7716090dcd4e27d1114a15a2724fdb2b1c"
+    },
+    "guards.stdout": {
+      "bytes": 494,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/guards.stdout",
+      "sha256": "efba50607500f150c556784dc7cdf498158eb67feb87aed929d0c30087bb8b6d"
+    },
+    "input-after.json": {
+      "bytes": 1170,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/input-after.json",
+      "sha256": "18b1c2001ffb8f65ce3cdc0efd67e7b0c57046711d0f5cba545e9dc47f89e6b5"
+    },
+    "input-before.json": {
+      "bytes": 1170,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/input-before.json",
+      "sha256": "18b1c2001ffb8f65ce3cdc0efd67e7b0c57046711d0f5cba545e9dc47f89e6b5"
+    },
+    "launch.json": {
+      "bytes": 980,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/launch.json",
+      "sha256": "69cffa6826c742b3c8e4a7e834ceaa4b296fc991a5c22816bf84a863ab1c893d"
+    },
+    "live-properties.json": {
+      "bytes": 853,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/live-properties.json",
+      "sha256": "bb315fa50e1cce3c6452d4b22a2c7dbeb7130f90c8e22bacd338e0da4b2b3741"
+    },
+    "manifest.json": {
+      "bytes": 764,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/manifest.json",
+      "sha256": "952037e98461904a3c7f2300324bc88361a6205310b46526d60403e74cf0cd1f"
+    },
+    "terminal-properties.json": {
+      "bytes": 355,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/terminal-properties.json",
+      "sha256": "1311fad8f2c700ea1bee473bb410c2d760c03ced50a6ea02280373912a72a68f"
+    },
+    "verification.json": {
+      "bytes": 1652,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/verification.json",
+      "sha256": "bfda4a42732c61fa3e056e4f0381c800131b39e79a39c7b8c0bafddefb5f826a"
+    },
+    "worker.py": {
+      "bytes": 4609,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01/worker.py",
+      "sha256": "7fcbf882e87aaf8a72bbcbaabbe040ebb03a004400364ce24399a746ccbca737"
+    }
+  },
+  "browser_runs": 0,
+  "client_acceptance": false,
+  "database_connections": 0,
+  "existing_readonly_inputs": {
+    "/opt/goby-test/exec-work-m3e/client-library-restriction-inspection-01/current-full.json": "1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3",
+    "/opt/goby-test/exec-work-m3e/client-library-restriction-tool-01/verify-client-library-restriction.py": "99cb5b89f0da94940bed34a86607a545278da914750ae09ac7b52d458810004e"
+  },
+  "guard_process": {
+    "elapsed_seconds": 2.335,
+    "exit_code": 0,
+    "stderr_sha256": "cc09e378b8dbd59a9c998d78d4796f7716090dcd4e27d1114a15a2724fdb2b1c",
+    "stdout_sha256": "efba50607500f150c556784dc7cdf498158eb67feb87aed929d0c30087bb8b6d"
+  },
+  "guards": {
+    "baseline_sha256": "1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3",
+    "browser_started": false,
+    "business_http_requests": 0,
+    "database_commands": 0,
+    "errors": 0,
+    "failures": 0,
+    "marker": "goby-client-library-home-guards-v1",
+    "operator_sha256": "c8fcc3d5fa6a2cdea7092952d77de2c18d26d67821d4247eb88e54e77c1cda3f",
+    "restriction_sha256": "99cb5b89f0da94940bed34a86607a545278da914750ae09ac7b52d458810004e",
+    "result": "passed",
+    "service_commands": 0,
+    "skipped": 0,
+    "tests_run": 26
+  },
+  "http_requests": 0,
+  "inputs_immutable": true,
+  "marker": "goby-client-library-ui-py-pure-verification-v1",
+  "node_runs": 0,
+  "python": {
+    "path": "/usr/bin/python3.13",
+    "sha256": "7890299302c21138c7677b606fe427c8740f55c1549e5edc689bd70b0f9195d7",
+    "version": "3.13.5"
+  },
+  "result": "passed",
+  "scope": "Two frozen Python sources; syntax and 26 pure guards only. The retained inspection snapshot is immutable data. No actual controller/check-only, Node, browser, HTTP, database or business service invocation.",
+  "source_files": {
+    "observe-client-library-home.py": {
+      "bytes": 62237,
+      "sha256": "c8fcc3d5fa6a2cdea7092952d77de2c18d26d67821d4247eb88e54e77c1cda3f"
+    },
+    "test-observe-client-library-home.py": {
+      "bytes": 26713,
+      "sha256": "070294fdf72ea6dcfe3a2c8f75d4a7289073f0a424dbfaee9fd05a62436853f6"
+    }
+  },
+  "source_root": "/opt/goby-test/exec-work-m3e/client-library-ui-py-tool-01",
+  "syntax_checks": 2,
+  "unit": {
+    "live_properties": {
+      "ActiveState": "active",
+      "CPUQuotaPerSecUSec": "1s",
+      "InaccessiblePaths": "-/usr/bin/node -/var/lib/postgresql -/var/lib/goby-test -/opt/goby-fixtures -/opt/goby-dev -/opt/goby-test/inactive-dependencies-m5h -/opt/goby-test/runtime.env -/opt/goby-test/browser.env",
+      "KillMode": "control-group",
+      "MainPID": "766636",
+      "MemoryMax": "536870912",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateDevices": "yes",
+      "PrivateNetwork": "yes",
+      "PrivateTmp": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": "/opt/goby-test/exec-work-m3e/client-library-ui-py-guards-01",
+      "RemainAfterExit": "yes",
+      "Restart": "no",
+      "RestrictAddressFamilies": "AF_UNIX",
+      "RuntimeMaxUSec": "3min",
+      "SubState": "running",
+      "TasksMax": "64",
+      "TimeoutStartUSec": "3min",
+      "TimeoutStopUSec": "10s",
+      "WorkingDirectory": "/opt/goby-test/exec-work-m3e/client-library-ui-py-tool-01"
+    },
+    "name": "goby-client-library-ui-py-guards-01.service",
+    "terminal_properties": {
+      "ActiveState": "active",
+      "CPUUsageNSec": "2389307000",
+      "ExecMainCode": "1",
+      "ExecMainExitTimestamp": "Sat 2026-09-12 04:47:48 CST",
+      "ExecMainStartTimestamp": "Sat 2026-09-12 04:47:46 CST",
+      "ExecMainStatus": "0",
+      "MainPID": "0",
+      "MemoryCurrent": "[not set]",
+      "Result": "success",
+      "SubState": "exited",
+      "TasksCurrent": "[not set]"
+    }
+  }
+}

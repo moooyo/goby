@@ -1,6 +1,62 @@
 # Development handoff
 
-Latest state: **the M3 library-restriction/restore API matrix passed in one
+Latest state: **the preparatory original-client Home observation failed in
+the observer; separate exact-session recovery has passed. The failed browser
+worker is terminal, and both new owned credentials are now revoked.**
+The [native recovery report](m3e-library-home-session-recovery.json), SHA-256
+`09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb`,
+is retained under
+`/opt/goby-test/exec-work-m3e/client-library-ui-session-recovery-01`.
+Its four complete exchanges were one new administrator login200, exact failed
+B session revocation200, administrator logout204 and that administrator's
+exact-token401. The lost B token was not available for a new401 check; its
+native acknowledgement and persisted `revoked_at` prove the exact revocation.
+Only that field changed on the target; all other old rows were preserved.
+Recovery added one administrator session and three native audit entries, with
+no new device, Policy, play, UserData, reference or encoding changes. Media and
+the entire original failed evidence tree retained identical before/after
+identities and hashes. Two remote syntax checks, 12 pure recovery guards and
+a zero-HTTP preflight preceded this single actual recovery.
+
+Current authority is the recovery's private `after-full.json`, SHA-256
+`5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`:
+69 global sessions, 59 devices, 153 audits, 26 play rows, seven UserData rows,
+four libraries, 22 items and B revision3. Candidate source32/schema27,
+PID748513/start ticks6996875 and the primary deployment remain unchanged.
+This recovery does not promote the failed Home flow to passed.
+
+The [controller failure](m3e-library-home-failed.json), SHA-256
+`ba5c314aeb8d408e61ebaac10c69ed743c376a89ab542f326acc9ade8b8cdea8`,
+and [browser failure](m3e-library-home-browser-failed.json), SHA-256
+`447297492853d3c69e8fc0ae042f6386177a112f4e3eda817c93678e433c37df`,
+remain under `/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v1`.
+The actual lower-case login route was missed by the new observer's
+case-sensitive selector. Login200 and a complete Views200 containing all four
+libraries were observed, but no complete login proof, Home DOM acceptance or
+reload was established. The tool's proof gate blocked UI logout with502;
+the following token check returned200. No Policy or playback action occurred.
+
+An uncancelled login-wait timer kept Node alive until its six-minute service
+limit. The controller collected terminal MainPID0, signal15 and an empty
+cgroup, then retained the final complete database/media snapshots. The failed
+scope added one B session, one device and one login audit: its failed-after counts were
+68 global sessions, 59 devices and 150 audits, with 26 play rows, seven UserData
+rows and B revision3 unchanged. The private after snapshot is
+`client-library-ui-baseline-v1/after-full.json`, SHA-256
+`6d00f9cd99313762702c212ffdcc612cf88a426da67cfbcb0d1b403e8ef2d4d8`.
+The original API inspection snapshot below is now historical.
+
+The login selector and finite, cancellable wait have been fixed. The
+[new frozen JavaScript verification](m3e-library-home-js02-verification.json)
+passed seven syntax checks, 31 Home guards and 114 shared-core guards on
+test-env, with no browser or business execution. These fixes have not been
+rerun against the candidate. Preserve the failed tree and original tool01;
+any later UI scope needs a new output root and the post-recovery authority.
+Original-client permission changes and full M3/M4/M5/M6 remain open. See the
+[Home verification](verification-m3e-library-home.md) and
+[permission UI plan](m3e-library-permission-ui-plan.md).
+
+Established API state: **the M3 library-restriction/restore API matrix passed in one
 attempt, with no failure or retry. This is API evidence, not original-client
 UI permission-change acceptance or complete M3 acceptance.**
 The [actual API report](m3e-library-restriction-api.json) is retained at
@@ -50,7 +106,9 @@ The inspection confirms 67 auth rows, 58 devices, 149 audits, 26 play rows,
 seven UserData rows, four libraries, 22 items, four Extra resources/three markers,
 zero references and zero encoding jobs.
 
-Future authority must continue from this API after snapshot and inspection.
+At API gate completion, authority continued from this API after snapshot and
+inspection. The later Home failure and its separate recovery now advance that
+authority; use the latest state described at the top of this handoff.
 The prior positive-client after snapshot `74640ff8ce353ad61b41364fbeedaff4fa2c14e55075ce55869e8be85963a10b` belongs to a
 consumed historical scope: do not require current B raw policy `{}` or 64
 global auth rows. Original-client UI permission changes and the remaining

@@ -1,6 +1,16 @@
 # Implementation progress
 
-Latest state: **the M3 library-restriction/restore API matrix passed in one
+Latest state: **the preparatory Home observer failed after one successful B
+login; separate exact-session recovery passed.** The target B session and the
+recovery administrator session are revoked; current totals are 69 sessions,
+59 devices and 153 audits. Its path selector and uncancelled
+wait were fixed and passed remote pure guards. The failed worker is terminal,
+and the full failed scope is preserved. Use the [current handoff](handoff.md)
+and [Home verification](verification-m3e-library-home.md) for current state;
+the API inspection below is historical. No permission-change UI acceptance or
+complete M3/M4/M5/M6 acceptance is claimed.
+
+Established API state: **the M3 library-restriction/restore API matrix passed in one
 attempt, with no failure or retry. This is API evidence, not original-client
 UI permission-change acceptance or complete M3 acceptance.**
 The [actual API report](m3e-library-restriction-api.json) is retained at
@@ -50,7 +60,8 @@ The inspection confirms 67 auth rows, 58 devices, 149 audits, 26 play rows,
 seven UserData rows, four libraries, 22 items, four Extra resources/three markers,
 zero references and zero encoding jobs.
 
-Future authority must continue from this API after snapshot and inspection.
+This API after snapshot and inspection describe the completed API gate.
+For subsequent authority, follow the newer Home/recovery state in the handoff.
 The prior positive-client after snapshot `74640ff8ce353ad61b41364fbeedaff4fa2c14e55075ce55869e8be85963a10b` belongs to a
 consumed historical scope: do not require current B raw policy `{}` or 64
 global auth rows. Original-client UI permission changes and the remaining

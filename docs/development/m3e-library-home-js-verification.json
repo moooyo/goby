@@ -1,0 +1,185 @@
+{
+  "actual_entry_runs": 0,
+  "artifacts": {
+    "cross-guards.json": {
+      "bytes": 137,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/cross-guards.json",
+      "sha256": "c98c8eba1a2f2f20162944fbcd844c70404b5604e7db1c05e763f0c2ac1e67e9"
+    },
+    "cross-guards.stderr": {
+      "bytes": 0,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/cross-guards.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cross-guards.stdout": {
+      "bytes": 123,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/cross-guards.stdout",
+      "sha256": "3cad773d323f1ed9f6b869bbbe462dec36e3528b51bc6d6dc95b6c21e074e2ee"
+    },
+    "home-guards.json": {
+      "bytes": 3502,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/home-guards.json",
+      "sha256": "b20e2367113b01a5fc31223faff892eebfb82c2faefe3719b2c3976f4664d2df"
+    },
+    "home-guards.stderr": {
+      "bytes": 0,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/home-guards.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "home-guards.stdout": {
+      "bytes": 36,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/home-guards.stdout",
+      "sha256": "d3e2c44bb483fae75b80c49f3541bae8e42134b15b973fb415e742ae71f246f5"
+    },
+    "launch.json": {
+      "bytes": 1076,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/launch.json",
+      "sha256": "9ae7f30eba78bafe1e6c8efa0f81931b94e0e8d2bc6d6d0832627a32da86281f"
+    },
+    "live-properties.json": {
+      "bytes": 944,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/live-properties.json",
+      "sha256": "2dff8f3e6d6b90cb54f2a1a941ddc092ed66bbd6150a6cc1608134cfe8922844"
+    },
+    "manifest.json": {
+      "bytes": 1076,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/manifest.json",
+      "sha256": "1d21f9b0f14d57a117f9ae404c231619171c211aa42f80a360a3c32dd4d7064b"
+    },
+    "source-after.json": {
+      "bytes": 1639,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/source-after.json",
+      "sha256": "98164ee4ee77e1f99e4c4639e6b257c32c1895ea09fad4e0da98f9130cd1c119"
+    },
+    "source-before.json": {
+      "bytes": 1639,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/source-before.json",
+      "sha256": "98164ee4ee77e1f99e4c4639e6b257c32c1895ea09fad4e0da98f9130cd1c119"
+    },
+    "terminal-properties.json": {
+      "bytes": 354,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/terminal-properties.json",
+      "sha256": "70019958ee9fb186fa516526284aced7564edf36a68d5dd16d0b9e7afbe8ddb7"
+    },
+    "verification.json": {
+      "bytes": 3393,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/verification.json",
+      "sha256": "984a0f2b49ba60f5df3961ca7415a3f242f4e89f21e0caa5ba00b0cfc9944480"
+    },
+    "worker.py": {
+      "bytes": 4953,
+      "path": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01/worker.py",
+      "sha256": "9f98fc1d8c45dbc421472f005bb268a52603f806cd02effc90e721d8af988171"
+    }
+  },
+  "browser_runs": 0,
+  "client_acceptance": false,
+  "controller_runs": 0,
+  "cross_guards": {
+    "counts": {
+      "executed": 114,
+      "failed": 0,
+      "passed": 114
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "database_connections": 0,
+  "home_guards": {
+    "browser_runs": 0,
+    "database_connections": 0,
+    "failed": 0,
+    "http_requests": 0,
+    "marker": "goby-client-library-home-pure-guards-v1",
+    "passed": 27,
+    "report_sha256": "b20e2367113b01a5fc31223faff892eebfb82c2faefe3719b2c3976f4664d2df",
+    "tests": 27
+  },
+  "http_requests": 0,
+  "marker": "goby-client-library-ui-js-pure-verification-v1",
+  "node": {
+    "path": "/usr/bin/node",
+    "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e",
+    "version": "v20.19.2"
+  },
+  "result": "passed",
+  "scope": "Seven frozen JS sources; syntax and pure mock guards only. No browser, HTTP, database, controller check-only, or actual entry execution.",
+  "source_files": {
+    "client-browser-cross-user.mjs": {
+      "bytes": 146190,
+      "sha256": "f64aec08bbe665322ceb7ccfa811f9003e925e2629fb8c175888dc0fc05d4fdd"
+    },
+    "client-browser-goby-fixture.mjs": {
+      "bytes": 52042,
+      "sha256": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3"
+    },
+    "client-browser-library-home.mjs": {
+      "bytes": 46269,
+      "sha256": "d9de87e276014106abd4d421c6dcca5b2717ffa288952668bd4815efbb9a9357"
+    },
+    "client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "client-browser-special-features-fixture.mjs": {
+      "bytes": 50409,
+      "sha256": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7"
+    },
+    "test-client-browser-cross-user.mjs": {
+      "bytes": 160245,
+      "sha256": "ad107b1e3d141238829e7f20a499e70a4e1c898e4818cfae45edbafd9a26e9bf"
+    },
+    "test-client-browser-library-home.mjs": {
+      "bytes": 27052,
+      "sha256": "07ea3b350e9288faf14625e839706cd7a8ec8adac519f80248ad2dd43de834fe"
+    }
+  },
+  "source_immutable": true,
+  "source_root": "/opt/goby-test/exec-work-m3e/client-library-ui-js-tool-01",
+  "ssh_connection_fields": 4,
+  "syntax_checks": 7,
+  "unit": {
+    "live_properties": {
+      "ActiveState": "active",
+      "CPUQuotaPerSecUSec": "1s",
+      "ControlGroup": "/system.slice/goby-client-library-ui-js-guards-01.service",
+      "InaccessiblePaths": "-/var/lib/postgresql -/var/lib/goby-test -/opt/goby-fixtures -/opt/goby-dev -/opt/goby-test/inactive-dependencies-m5h -/opt/goby-test/runtime.env -/opt/goby-test/browser.env",
+      "KillMode": "control-group",
+      "MainPID": "766458",
+      "MemoryMax": "536870912",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateDevices": "yes",
+      "PrivateNetwork": "yes",
+      "PrivateTmp": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": "/opt/goby-test/exec-work-m3e/client-library-ui-js-guards-01",
+      "RemainAfterExit": "yes",
+      "Restart": "no",
+      "RestrictAddressFamilies": "AF_UNIX",
+      "RestrictNamespaces": "yes",
+      "RuntimeMaxUSec": "2min",
+      "SubState": "running",
+      "TasksMax": "64",
+      "TimeoutStartUSec": "2min",
+      "TimeoutStopUSec": "10s",
+      "WorkingDirectory": "/opt/goby-test/exec-work-m3e/client-library-ui-js-tool-01"
+    },
+    "name": "goby-client-library-ui-js-guards-01.service",
+    "terminal_properties": {
+      "ActiveState": "active",
+      "CPUUsageNSec": "832838000",
+      "ExecMainCode": "1",
+      "ExecMainExitTimestamp": "Sat 2026-09-12 04:44:29 CST",
+      "ExecMainStartTimestamp": "Sat 2026-09-12 04:44:28 CST",
+      "ExecMainStatus": "0",
+      "MainPID": "0",
+      "MemoryCurrent": "[not set]",
+      "Result": "success",
+      "SubState": "exited",
+      "TasksCurrent": "[not set]"
+    }
+  }
+}
