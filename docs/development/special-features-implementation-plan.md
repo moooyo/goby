@@ -1,6 +1,37 @@
 # Movie SpecialFeatures implementation plan
 
-Status: **source32 published; remote regression, build, candidate upgrade, original-Movie dual-user flow and precise media-root extension passed**.
+Latest execution: **setup01 created the positive library with create201, then
+failed at its private phase checkpoint before any scan.** The [12 pure guards](m3e-positive-fixture-tool01-guards.json),
+two syntax checks and preflight passed. The [retained failure](m3e-positive-fixture-create-failed.json)
+and [diagnosis](m3e-positive-fixture-phase-diagnosis.json) show that saved stage
+`library_acknowledged` was followed by rejection of
+`phase-library_acknowledged.json` under `[a-z0-9-]+`. Neither root SELECT nor
+scan POST ran. This is an operator filename defect, not a product scan failure.
+The original administrator logged out 204/exact401; the viewer never logged in.
+
+Library `57a85c1ca5b6c7ae602c587755250b2f` and root
+`604d2c0f5c78919a6ee360cda2048066` now exist at the exact permitted Movies
+path with relative path `.`. The v1 profile is paused at phase
+`preparing_special_features_fixture`, stage `library_acknowledged`, state
+SHA-256 `513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`.
+Current PID748513/start ticks6996875, runtime and binary are unchanged; current
+counts are 35 tables, 14 items, 4 libraries/roots, 14 metadata rows, 15 Theme
+owner rows, 59 global auth rows and 129 activity entries. All old rows/media
+were preserved; both Extra tables remain empty.
+
+Continue only through the authorized independent continuation/inspection
+scopes recorded in [extras verification](verification-m3e-extras.md), binding
+the original failure, create201 acknowledgment and old evidence trees. Do not
+recreate/delete the library, replay setup01 or write success into its old v1
+tree. Use a new administrator for the existing-library scan, then a viewer
+for protocol and complete/range delivery. The three-stage profile and UI,
+ledger and main consumers must separate creation, continued scan and viewer
+actors. Expected totals of three sessions/nine audits are not observed results.
+No continuation scan has run. Verified main27 tool02 remains undeployed and
+requires the new consumer revision; primary remains source28/schema26.
+
+Established checkpoint: **source32 published; remote regression, build,
+candidate upgrade, original-Movie dual-user flow and precise media-root extension passed**.
 The candidate now runs source32/schema27; the primary remains source28/schema26.
 The schema27 catalog was generated on
 PostgreSQL17. After two retained source30 fixture failures, the corrected
@@ -32,15 +63,16 @@ whole-database preservation claim.
 The [precise extension](m3e-source32-extra-root-extension.json) subsequently
 added only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`, preserving
 all 35 table rows/sequences, credentials, recovery state and media, with zero
-HTTP calls, library creation or scans. Current PID748513/start ticks6996875
-still has 13 items, three libraries, 35 tables and two empty Extra tables.
+HTTP calls, library creation or scans. That extension recorded 13 items, three
+libraries, 35 tables and two empty Extra tables at PID748513/start ticks6996875,
+before the later setup01 creation above.
 The original upgrade's PID746709 receipt remains unchanged. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
 is retained: tool01 and its mock used `encoding_states` instead of actual
 `encoding_jobs`; no output directory or state/environment/service change
 occurred. Tool02 corrected the name, added an actual catalog regression and
 passed two syntax checks, 11 pure guards, preflight and execution.
 
-Next, independently prepare the nonempty positive candidate fixture and its
+Next, independently continue the existing positive candidate fixture and its
 original-client flow. Completed media/reference phases must not be replayed.
 Positive-extra acceptance, primary schema27, library restriction and the full
 M3/M4/M5/M6 scope remain open; earlier failures remain retained.

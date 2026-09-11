@@ -1,5 +1,18 @@
 # Main schema27 deployment tooling verification
 
+Current consumer revision: [tool03](m3e-main-schema27-tool03-verification.json)
+passed two remote syntax checks, 26 pure guards and the helper build. Its
+manifest SHA-256 is
+`b58163bd0fedace1ea2d2339cc6813ef369f619fb5e3b3493c3ecaf2c3486cb4`.
+It requires the independent continuation inspection and explicitly binds the
+original failed creation, its 201 acknowledgment and the later completion.
+The migration helper source and binary are unchanged from tool02. Actual
+runtime limits were captured while the tool03 unit was live. No primary
+preflight, candidate action or database command ran in this verification.
+Positive continuation and client evidence remain required before deployment.
+
+The earlier tool02 result remains preserved below.
+
 The independent schema26-to27 deployment tools passed remote syntax checks,
 24 pure guard groups and the migration-helper build in
 `/opt/goby-test/exec-work-m3e/main-schema27-build-02`.

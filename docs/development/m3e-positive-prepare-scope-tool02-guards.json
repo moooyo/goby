@@ -1,0 +1,16 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "scope": "schema27-positive-special-features-01",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-positive-prepare-tool-02",
+  "observer_sha256": "a7a0fc8ba39ceaa6572709f7523c34d4472db5cf45f8bb0abae5b786909115d8",
+  "comparator_sha256": "d22c4f1d3798fde35b7a12addba4117682396d189e29dfd837e4867f1cd2e5dc",
+  "guard_sha256": "e33b429218041a7c32f128a854ac6f0a1abf9cace7d9337229e61bda5e3895c7",
+  "syntax_checks": 3,
+  "pure_guards": 25,
+  "failures": 0,
+  "guards_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "guards_stderr_sha256": "95be076f493e724b551336e40ea46e99bdcaffc0f384c3ee5caaadb841d3204a",
+  "changes": "Adds explicit continuation paths, version and immutable original-failure evidence. Distinguishes creation and continued-scan authentication. Matches the actual setup ledger's sorted actor list. The comparator and original 21 guard cases remain unchanged; four cases were added.",
+  "boundary": "Actual expected ledger and before/after observations await successful continuation and inspection. Tool01 was never used for an actual positive-client observation and remains retained."
+}

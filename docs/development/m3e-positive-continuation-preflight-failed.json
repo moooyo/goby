@@ -1,0 +1,19 @@
+{
+  "begin_called": false,
+  "failure_reason": "The audit set is not the exact owned committed actions.",
+  "failure_type": "ContinuationError",
+  "input_sha256": "5bbb308c9651d93f198d9d227e4920cd73f7106f1beec0eb01efb17b0477fe4a",
+  "inspection_exists": false,
+  "marker": "goby-client-special-features-continuation-preflight-diagnosis-v1",
+  "operator_sha256": "3999e3ffdd2e77cd1adb7fa8d3a9f48c3a03073c0deb4313d244263a09ae6420",
+  "output_exists": false,
+  "owned_actor_count": 0,
+  "phase": "preflight",
+  "request_count": 0,
+  "result": "retained_for_review",
+  "run_called": false,
+  "state_after_sha256": "513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1",
+  "state_before_sha256": "513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1",
+  "trace_path": "/opt/goby-test/exec-work-m3e/client-special-features-continuation-preflight-diagnosis-01/trace.txt",
+  "trace_sha256": "3e45c4ab7d9bccfaa6cfd70212e54e449d405ab6cfe5ec46c0b4e80eed4af2ae"
+}

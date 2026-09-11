@@ -1,0 +1,16 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-special-features-continuation-profile-tool-01",
+  "profile_sha256": "955fc81d08b1a50e3397a824b3e246ff92efc141dc72073dd45e5e50a3608da2",
+  "guard_sha256": "48bcb470e712bdfcfd1dfeb26deb5ed87e44c99f566ba7a94f0939984ee8aa96",
+  "origin_profile_sha256": "6bbc0bfd17b1c7eef44028fe34481436d39a3e6645442340189e2da35c382252",
+  "origin_guards_sha256": "0ef61fdebacb5a140442e2f5f30df10dd7b894a4a27693e181673c1fb492e91b",
+  "catalog_sha256": "1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d",
+  "syntax_checks": 2,
+  "guard_groups": 7,
+  "failures": 0,
+  "guards_stdout_sha256": "b8feb9b0f51b3a1f64ff862baa3a85526f0ae56f541f8d129bce6d6e3a356fb6",
+  "guards_stderr_sha256": "cc035dcc4a9ca0f60d3c23c1048754dec521416f7212cfcc5d88af2321a97253",
+  "boundary": "Pure verification of original-before to create-only failure, failure to continued scan, and aggregate final profile. Distinct creation/scan administrators, exact new-library last_scan_at exception and real checkpoint filenames are covered. Actual continuation has not run."
+}

@@ -331,6 +331,99 @@ class MainSchema27GuardTests(unittest.TestCase):
         self.assertIsInstance(comparisons[0].comparators[0], ast.Constant)
         self.assertEqual(comparisons[0].comparators[0].value, expected)
 
+    def continuation_fixture(self):
+        original_sha = OPERATOR.sha
+        documents, fixed_hashes = {}, {}
+        chain = {'marker': OPERATOR.CONTINUATION_MARKER, 'library_id': '57a85c1ca5b6c7ae602c587755250b2f',
+            'root_id': '604d2c0f5c78919a6ee360cda2048066', 'creation_admin_session_id': 'a' * 32,
+            'new_scan_admin_session_id': 'b' * 32, 'new_viewer_session_id': 'c' * 32, 'scan_job_id': 'd' * 32,
+            'creation_requests': 5, 'continuation_library_creates': 0, 'continuation_scan_dispatches': 1,
+            'original_failure_preserved': True, 'creation_admin_revoked': True, 'continuation_sessions_revoked': True}
+        for key, (fixed, digest) in OPERATOR.CONTINUATION_ORIGIN_PINS.items():
+            path = fixed or WORK / 'frozen-original' / (key + '.py')
+            raw = ('Synthetic retained artifact: ' + key).encode()
+            documents[path], fixed_hashes[raw] = raw, digest
+            chain[key] = {'path': str(path), 'sha256': digest}
+        evidence_path = OPERATOR.CONTINUATION_ROOT / 'origin-evidence.json'
+        documents[evidence_path] = b'{"synthetic":"complete-origin-inventory"}'
+        chain['origin_evidence'] = {'path': str(evidence_path), 'sha256': original_sha(documents[evidence_path])}
+        self.replace(OPERATOR, 'sha', lambda raw: fixed_hashes.get(raw, original_sha(raw)))
+        completed_path = OPERATOR.CONTINUATION_ROOT / 'completed.json'
+        current = {'continuation': copy.deepcopy(chain), 'binary_sha256': OPERATOR.TARGET_BINARY_SHA,
+            'process': {'pid': 900001, 'start_ticks': 7000000, 'boot_id': BOOT_ID}, 'runtime_sha256': '1' * 64,
+            'state_sha256': '2' * 64, 'source': {'owned': 'source32'}, 'upgrade': {'owned': 'historical-upgrade'},
+            'extension': {'owned': 'actual-extension'}, 'receipt_path': str(completed_path),
+            'profile': {'receipt_path': str(completed_path), 'library_id': chain['library_id'], 'root_id': chain['root_id'],
+                        'item_ids': {'positive': 'e' * 32}}}
+        for key in ('setup_source', 'profile_source'):
+            path = WORK / 'continued-tools' / (key + '.py')
+            documents[path] = ('Synthetic continued source: ' + key).encode()
+            current[key] = {'path': str(path), 'sha256': original_sha(documents[path])}
+        proof = {'creation_admin_session_id': chain['creation_admin_session_id'], 'native_session_id': chain['new_scan_admin_session_id'],
+            'viewer_session_id': chain['new_viewer_session_id'], 'item_ids': current['profile']['item_ids'],
+            'creation_admin_revoked': True, 'old_rows_preserved': True, 'expected_increment_preserved': True,
+            'creation_audit_count': 3, 'continuation_audit_count': 6, 'aggregate_session_count': 3, 'aggregate_audit_count': 9}
+        completed = {'marker': 'goby-client-special-features-fixture-v1', 'phase': 'complete', 'schema': 27,
+            'profile_version': 2, 'continuation': copy.deepcopy(chain), 'library_id': chain['library_id'], 'root_id': chain['root_id'],
+            'job_id': chain['scan_job_id'], 'proof': copy.deepcopy(proof),
+            'candidate': {key: current[key] for key in ('binary_sha256', 'process', 'runtime_sha256')},
+            **{key: copy.deepcopy(current[key]) for key in ('source', 'upgrade', 'extension', 'setup_source', 'profile_source')}}
+        report = {'marker': 'goby-client-special-features-setup-report-v1', 'result': 'passed', 'phase': 'complete',
+            'receipt_path': str(completed_path), 'state_sha256': current['state_sha256'], 'candidate': copy.deepcopy(completed['candidate']),
+            'continuation': copy.deepcopy(chain), 'proof': copy.deepcopy(proof)}
+        def refresh():
+            documents[completed_path] = OPERATOR.canonical(completed)
+            digest = original_sha(documents[completed_path])
+            current['receipt_sha256'] = current['profile']['receipt_sha256'] = report['receipt_sha256'] = digest
+            documents[OPERATOR.CONTINUATION_ROOT / 'report.json'] = OPERATOR.canonical(report)
+        refresh()
+        dependency = types.SimpleNamespace(read_file=lambda path, **_kwargs: documents[path])
+        return current, completed, report, documents, dependency, refresh
+
+    def test_continuation_preserves_actual_origin_pins_and_requires_three_artifacts(self):
+        self.assertEqual(OPERATOR.CONTINUATION_INSPECTION, WORK / 'client-special-features-continuation-inspection-v1/report.json')
+        self.assertEqual(OPERATOR.CONTINUATION_ORIGIN_PINS['origin_failure'][1],
+            '9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0')
+        self.assertEqual(OPERATOR.CONTINUATION_ORIGIN_PINS['origin_library_ack'][1],
+            '998dffd8122cc7921df1a21092a357881e676950c6b858cd0f7332a3b8ecb94d')
+        self.assertEqual(OPERATOR.CONTINUATION_ORIGIN_PINS['origin_state'][1],
+            '513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1')
+        current, completed, report, documents, dependency, refresh = self.continuation_fixture()
+        accepted = OPERATOR.verify_candidate_continuation(dependency, current)
+        self.assertEqual(set(accepted), {str(OPERATOR.CONTINUATION_ROOT / name) for name in
+            ('completed.json', 'report.json', 'origin-evidence.json')} | {str(OPERATOR.ORIGIN_FIXTURE / 'failure.json')})
+        saved = copy.deepcopy((current, completed, report, documents))
+        for key, value in (('continuation_library_creates', 1), ('continuation_scan_dispatches', 2), ('creation_requests', True),
+                ('original_failure_preserved', False), ('creation_admin_revoked', False), ('continuation_sessions_revoked', False),
+                ('new_scan_admin_session_id', 'a' * 32), ('library_id', 'f' * 32), ('scan_job_id', '')):
+            changed = copy.deepcopy(current)
+            changed['continuation'][key] = value
+            with self.subTest(boundary=key):
+                self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, changed))
+        for path in list(documents):
+            raw = documents[path]
+            documents[path] = raw + b' unreviewed change'
+            with self.subTest(artifact=str(path)), self.assertRaises((OPERATOR.Failure, ValueError)):
+                OPERATOR.verify_candidate_continuation(dependency, current)
+            documents[path] = raw
+        self.assertEqual((current, completed, report, documents), saved)
+        completed['continuation']['origin_evidence']['sha256'] = '0' * 64
+        refresh()
+        self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, current))
+
+    def test_continuation_rejects_old_profile_and_unproven_audit_or_session_reuse(self):
+        for defect in ('old-path', 'old-version', 'report-failed', 'seven-audits', 'two-sessions', 'wrong-scan-actor'):
+            with self.subTest(defect=defect), contextlib.ExitStack():
+                current, completed, report, documents, dependency, refresh = self.continuation_fixture()
+                if defect == 'old-path': current['profile']['receipt_path'] = str(OPERATOR.ORIGIN_FIXTURE / 'completed.json')
+                elif defect == 'old-version': completed['profile_version'] = 1
+                elif defect == 'report-failed': report['result'] = 'failed'
+                elif defect == 'seven-audits': completed['proof']['aggregate_audit_count'] = report['proof']['aggregate_audit_count'] = 7
+                elif defect == 'two-sessions': completed['proof']['aggregate_session_count'] = report['proof']['aggregate_session_count'] = 2
+                elif defect == 'wrong-scan-actor': completed['proof']['native_session_id'] = report['proof']['native_session_id'] = 'a' * 32
+                refresh()
+                self.reject(lambda: OPERATOR.verify_candidate_continuation(dependency, current))
+
     def test_private_json_rejects_duplicate_keys_and_nonfinite_numbers(self):
         self.assertEqual(OPERATOR.decode(b'{"owner":{"id":16385},"flags":[true,false,null]}'),
                          {"owner": {"id": 16385}, "flags": [True, False, None]})

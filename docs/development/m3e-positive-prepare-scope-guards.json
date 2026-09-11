@@ -1,0 +1,18 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "scope": "schema27-positive-special-features-01",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-positive-prepare-tool-01",
+  "files": {
+    "inspect-client-positive-prepare-scope.py": "4b415699af34a5f256d8ba0fdbd8f714d1ec38aac04dd5bbccb7f4671d4c8b3c",
+    "compare-client-positive-prepare-scope.py": "d22c4f1d3798fde35b7a12addba4117682396d189e29dfd837e4867f1cd2e5dc",
+    "test-client-positive-prepare-scope.py": "946ad1d2ab9efe7daa7aadb66f26f6eaee7898e3cf8c5706946f5ea57be86c70"
+  },
+  "syntax_checks": 3,
+  "pure_guards": 21,
+  "failures": 0,
+  "guards_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "guards_stderr_sha256": "981bdcecf9f41be1386e54f3a027656f37dcfa6b65b8fc657a774f9f45a0f202",
+  "coverage": "Dynamic actual setup baseline; old authentication, playback, UserData, preferences and policy preservation; exact eligible expiration; two new owned authentication/Prepared rows; explicit default UserData insertion only when the target row was absent; no new references/encoding; separate UI and database outcomes.",
+  "boundary": "No actual expected ledger, observation or browser run was created by these pure guards. Future IDs and counts must come from the real setup completion and inspection."
+}

@@ -2,7 +2,40 @@
 
 The goal remains the complete planned Linux backend and administrator dashboard. A completed engineering increment does not establish full Emby compatibility.
 
-Persistent Movie extras are implemented in the worktree. The schema27
+Latest execution: **positive-fixture setup01 failed after creating the new
+library; no scan was dispatched.** Its [12 pure guards](m3e-positive-fixture-tool01-guards.json),
+two syntax checks and preflight passed. One create201 produced library
+`57a85c1ca5b6c7ae602c587755250b2f` and root
+`604d2c0f5c78919a6ee360cda2048066`, using only the permitted Movies root with
+relative path `.`. The [failed attempt](m3e-positive-fixture-create-failed.json)
+saved `library_acknowledged` state, then rejected its own underscore-bearing
+private phase filename. The [diagnosis](m3e-positive-fixture-phase-diagnosis.json)
+confirms the root SELECT and scan POST were never reached. This is a checkpoint
+tool defect, not a product scanning failure. Administrator logout204/exact401
+passed; the viewer never logged in.
+
+The candidate remains source32/schema27, PID748513/start ticks6996875, with
+unchanged runtime configuration/binary. Current counts are 35 tables, 14 items,
+4 libraries, 4 roots, 14 metadata rows, 15 Theme owner rows, 59 whole-database
+auth rows and 129 activity entries. All old rows and media were preserved;
+the added auth session is revoked and both Extra tables remain empty. State
+SHA-256 is `513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`,
+phase `preparing_special_features_fixture`, stage `library_acknowledged`.
+The original v1 profile is paused at that point.
+
+The authorized next action is an independent continuation and inspection of
+this existing library, binding the failed attempt, create201 acknowledgment
+and all old trees. It must not recreate/delete the library, replay setup01 or
+write success into the failed v1 tree. A new administrator will scan, then a
+viewer will check protocol and complete/range delivery. The three-stage profile
+and UI/ledger/main consumers must distinguish creation, continued scan and
+viewer actors. Three new sessions/nine audit entries from the original baseline
+are expected only, with no completed continuation result. Main27 tool02 is
+verified but undeployed and needs the new consumer revision. Primary remains
+source28/schema26. See [extras verification](verification-m3e-extras.md) for
+the explicit continuation directories and immutable evidence pins.
+
+Persistent Movie extras are published in the source32 product checkpoint. The schema27
 PostgreSQL17 catalog was generated and the corrected source31 targeted run
 passed 105 race tests with no failures/skips and complete cleanup. Its full
 run was subsequently stopped after fixture failures; additional native Trailer
@@ -18,8 +51,8 @@ passed with ready/complete status as PID746709/start ticks6930051, retained
 in that upgrade's original receipt. All preexisting rows, columns, relation OIDs, ACLs and sequences in
 the old 33 tables were preserved, as were credentials, media and recovery state.
 Only the expected schema27 migration row was appended to an old table; the
-two new tables are empty. The candidate has 35 tables, 13 items and three
-libraries; that upgrade preserved runtime configuration. The [source32 product](source32-product-publication.json)
+two new tables were empty. That upgrade left 35 tables, 13 items and three
+libraries and preserved runtime configuration. The [source32 product](source32-product-publication.json)
 is published at `b9bb7b1`. The [input07 original-Movie dual-user flow](m3e-source32-cross-user-original-movie.json)
 subsequently passed: both Home-to-Movie-to-Home flows, genuine PlaybackInfo200
 and finished transfer, SpecialFeatures200 `[]`, zero page errors, own200/
@@ -35,14 +68,15 @@ The [precise media-root extension](m3e-source32-extra-root-extension.json) also
 passed, adding only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`.
 It preserved all 35 table rows/sequences, credentials, recovery state and media,
 with zero HTTP calls, library creation or scans. The current candidate process
-is PID748513/start ticks6996875, still 13 items/three libraries/35 tables and
-two empty Extra tables. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
+is PID748513/start ticks6996875; extension completion recorded 13 items/three
+libraries/35 tables and two empty Extra tables, before the setup01 creation
+above. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
 remains retained: tool01 and its mock used `encoding_states` instead of
 `encoding_jobs`; the failure preceded output-directory creation and changed
 no state/environment/service. Tool02 corrected the name and passed two syntax
 checks, 11 pure guards including the actual catalog regression, preflight and
-execution. The primary remains source28/schema26. Next are independently
-prepared nonempty positive fixtures and their original-client flow. See
+execution. The primary remains source28/schema26. Next is the independent
+continuation of the already-created fixture and its original-client flow. See
 [current extras verification](verification-m3e-extras.md) for retained failures,
 the completed reference projections and remaining deployment/client gates.
 

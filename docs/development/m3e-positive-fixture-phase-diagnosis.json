@@ -1,0 +1,84 @@
+{
+  "cases": [
+    {
+      "filename": "phase-prepared.json",
+      "memory_create_calls": 1,
+      "phase": "prepared",
+      "result": "accepted"
+    },
+    {
+      "filename": "phase-library_acknowledged.json",
+      "memory_create_calls": 0,
+      "phase": "library_acknowledged",
+      "result": "A private evidence name escaped this scope."
+    },
+    {
+      "filename": "phase-scan_acknowledged.json",
+      "memory_create_calls": 0,
+      "phase": "scan_acknowledged",
+      "result": "A private evidence name escaped this scope."
+    },
+    {
+      "filename": "phase-scan_complete.json",
+      "memory_create_calls": 0,
+      "phase": "scan_complete",
+      "result": "A private evidence name escaped this scope."
+    },
+    {
+      "filename": "phase-protocol_complete.json",
+      "memory_create_calls": 0,
+      "phase": "protocol_complete",
+      "result": "A private evidence name escaped this scope."
+    }
+  ],
+  "count_deltas": {
+    "activity_entries": [
+      126,
+      129
+    ],
+    "item_metadata_state": [
+      13,
+      14
+    ],
+    "items": [
+      13,
+      14
+    ],
+    "libraries": [
+      3,
+      4
+    ],
+    "library_roots": [
+      3,
+      4
+    ],
+    "sessions": [
+      58,
+      59
+    ],
+    "theme_owner_ids": [
+      14,
+      15
+    ]
+  },
+  "database_mutations": 0,
+  "exact_new_library_id": "57a85c1ca5b6c7ae602c587755250b2f",
+  "failed_snapshot_sha256": "86cbffbc1b3c0d623ea894aab12843273adcce5c7b097f3b9878dfc276ee8275",
+  "failure_sha256": "9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0",
+  "http_requests": 0,
+  "marker": "goby-special-features-phase-filename-diagnosis-v1",
+  "mode": "readonly_and_memory_only",
+  "root_facts": [
+    {
+      "allowed_path": "/opt/goby-fixtures/client-special-features-m3e-v1/Movies",
+      "id": "604d2c0f5c78919a6ee360cda2048066",
+      "library_id": "57a85c1ca5b6c7ae602c587755250b2f",
+      "path": "/opt/goby-fixtures/client-special-features-m3e-v1/Movies",
+      "relative_path": "."
+    }
+  ],
+  "scan_dispatch_intent_exists": false,
+  "service_actions": 0,
+  "state_sha256": "513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1",
+  "tool_sha256": "84af95f1d34227dc9c465b73545c6de6939963d44fb3fc2d2df50e7f0f759465"
+}

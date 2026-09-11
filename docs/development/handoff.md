@@ -1,5 +1,53 @@
 # Development handoff
 
+Latest state: **positive-fixture setup01 failed after its single create201;
+the library exists, but no root SELECT or scan POST ran.** Continuation read-only preflight has since
+exposed two separate guard-model defects, recorded in the
+[current verification](verification-m3e-extras.md): login audit Count must be
+one, and the already-created fixture requires its actual 14-item/four-library
+quiescence check. No continuation business request has run.
+
+The created library ID is
+`57a85c1ca5b6c7ae602c587755250b2f`, root ID
+`604d2c0f5c78919a6ee360cda2048066`, with the exact permitted Movies path and
+relative path `.`. The [12 pure guards](m3e-positive-fixture-tool01-guards.json),
+two syntax checks and preflight had passed. The [failure](m3e-positive-fixture-create-failed.json)
+occurred after `checkpoint('library_acknowledged')` saved state: the private
+filename rule `[a-z0-9-]+` then rejected `phase-library_acknowledged.json`.
+The [diagnosis](m3e-positive-fixture-phase-diagnosis.json) confirms every phase
+containing an underscore is rejected. This is an operator checkpoint failure,
+not a product scan failure. The original administrator logged out 204 with
+exact-token401; no viewer login or new scan occurred.
+
+The v1 profile is paused at phase `preparing_special_features_fixture`, stage
+`library_acknowledged`, state SHA-256
+`513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`.
+PID748513/start ticks6996875, runtime configuration and binary remain unchanged.
+Current counts are 35 tables, 14 items, 4 libraries, 4 roots, 14 metadata rows,
+15 Theme owner rows, 59 whole-database auth rows and 129 activity entries.
+The new rows are one CollectionFolder/library/root/metadata/owner, one revoked
+administrator session and three audit entries. All old rows and media were
+preserved; both Extra tables are empty. The earlier root-extension 13-item/
+three-library result and original-Movie UI success remain valid history.
+
+Next, use the authorized independent continuation scopes
+`/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1`
+and `/opt/goby-test/exec-work-m3e/client-special-features-continuation-inspection-v1`.
+The [continuation profile](m3e-positive-continuation-profile-guards.json) passed
+two remote syntax checks and seven pure guard groups. The [revised positive
+ledger](m3e-positive-prepare-scope-tool02-guards.json) passed three syntax checks
+and 25 pure guards. Neither result is an actual continuation or client run.
+Bind the failed attempt, create201 acknowledgment and all old trees; do not
+recreate/delete the library, replay setup01 or mark its old v1 tree successful.
+Only a new administrator may scan the existing library, followed by a viewer's
+protocol and complete/range checks. The new profile separates creation, scan
+and viewer actors; actual session/audit evidence is required. The anticipated
+three-session/nine-audit final delta is not a result. UI, ledger and main27
+consumers must use the new chain; verified main27 tool02 still needs a consumer
+revision and has not deployed. No continuation scan has run; primary remains
+source28/schema26. Exact failure/tool/diagnosis pins are in
+[extras verification](verification-m3e-extras.md); frozen tool01 stays unchanged.
+
 Current implementation increment: persistent Movie SpecialFeatures and
 LocalTrailers are published at schema27 in the source32 product checkpoint. The corrected
 [source31 targeted run](m3e-source31-extras-targeted.json) passed 105 race
@@ -57,8 +105,8 @@ The [exact media-root extension](m3e-source32-extra-root-extension.json) then
 passed, appending only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`.
 It preserved all 35 table rows/sequences, credentials, recovery state and media,
 with zero HTTP calls, library creation or scans. The candidate now runs as
-PID748513/start ticks6996875; it still has 13 items, three libraries and two
-empty Extra tables. Its fixture-state SHA-256 is
+PID748513/start ticks6996875. At extension completion it had 13 items, three
+libraries and two empty Extra tables. That historical fixture-state SHA-256 is
 `6d719ab6f3cd6c13ebf9fe3d6a927abaf5040e6e87e84be5d81a57318440cefe` and runtime
 configuration SHA-256 is
 `d8689a4e0b36816ed462816856dfa73af6fba5f31f044632ed173db99c8842df`.
@@ -68,14 +116,16 @@ of `encoding_jobs`; it stopped before output-directory creation and left
 state/environment/service unchanged. Tool02 fixed that name, added an actual
 catalog regression, and passed two syntax checks, 11 pure guards and execution.
 See the [verification record](verification-m3e-extras.md) for exact report/tool
-and completion-receipt hashes. Next, independently prepare the nonempty
-positive candidate fixture and its original-client flow. The primary remains
+and completion-receipt hashes. Continue the already-created positive-fixture
+library only through the independent scope above, then verify its client flow. The primary remains
 source28/schema26; completed media/reference phases must not be replayed.
 The independent [nonempty-profile guards](m3e-schema27-positive-profile-guards.json)
 and [actual read-only baseline check](m3e-schema27-positive-profile-baseline.json)
-passed; the new library has not been created. The [main27 deployment tools](verification-m3e-main-schema27-tools.md)
+passed before setup01 created the new library and failed at its checkpoint.
+The [main27 deployment tools](verification-m3e-main-schema27-tools.md)
 passed two syntax checks, 24 pure guards and the helper build. Their real
-preflight/deployment still awaits the positive candidate/client evidence.
+preflight/deployment still awaits positive candidate/client evidence and the
+new continuation-consumer revision.
 The additional [20-case reference capture](m3e-reference-special-features-projections-v2.json)
 completed with state/media preservation and token revocation. It proves known-ID
 extra retrieval, positive LocalTrailerCount, field switches and sampled error
