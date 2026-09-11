@@ -1,0 +1,69 @@
+{
+  "completed_receipt": {
+    "path": "/opt/goby-test/exec-work-m3e/special-features-media-v1/mains/completed.json",
+    "sha256": "b753494e27902d62bfc6021f232c38c5e69fd4374f8e4a3a92b92fe5622a1f97"
+  },
+  "database_mutations": 0,
+  "extras_created": false,
+  "file_count": 6,
+  "generator_sha256": "5fb72eaca167b087fc68a599cd82db0010468f98c00b6cb7be15be11ec901887",
+  "http_requests": 0,
+  "items": [
+    {
+      "fixture_id": "positive",
+      "intended_type": "Movie",
+      "media": "Movies/M3e Special Features Positive (2026)/M3e Special Features Positive (2026).mp4",
+      "nfo": "Movies/M3e Special Features Positive (2026)/movie.nfo",
+      "title": "M3e Special Features Positive",
+      "year": 2026
+    },
+    {
+      "fixture_id": "empty",
+      "intended_type": "Movie",
+      "media": "Movies/M3e Special Features Empty (2026)/M3e Special Features Empty (2026).mp4",
+      "nfo": "Movies/M3e Special Features Empty (2026)/movie.nfo",
+      "title": "M3e Special Features Empty",
+      "year": 2026
+    }
+  ],
+  "library_scan_executed": false,
+  "manifest": {
+    "path": "/opt/goby-fixtures/client-special-features-m3e-v1/mains-manifest.json",
+    "sha256": "d53dde28a3c5ed5a67c310e0520639bd8f54233f93b368cf2539b88091ae426a"
+  },
+  "phase": "mains",
+  "profiles": {
+    "Movies/M3e Special Features Empty (2026)/M3e Special Features Empty (2026).mp4": {
+      "audio_codec": "aac",
+      "channels": 2,
+      "duration_seconds": 12.0,
+      "embedded_title_absent": true,
+      "fps": "30/1",
+      "height": 180,
+      "probe_sha256": "d50f4f91c4f86ed1040c0720da99000d36cdfc56189498c9885d526065841dfa",
+      "sample_rate": 48000,
+      "video_codec": "h264",
+      "width": 320
+    },
+    "Movies/M3e Special Features Positive (2026)/M3e Special Features Positive (2026).mp4": {
+      "audio_codec": "aac",
+      "channels": 2,
+      "duration_seconds": 12.0,
+      "embedded_title_absent": true,
+      "fps": "30/1",
+      "height": 180,
+      "probe_sha256": "bc2ff0c8c95e03e23233f93ff5fb29fcb3b764fa5306a1c1fd67c718a1034e7c",
+      "sample_rate": 48000,
+      "video_codec": "h264",
+      "width": 320
+    }
+  },
+  "protected_after_sha256": "396d8f1f3d479cc61e301db6f4d3d642f10912fc57e4e16161b3ff0e2d7452be",
+  "protected_before_sha256": "396d8f1f3d479cc61e301db6f4d3d642f10912fc57e4e16161b3ff0e2d7452be",
+  "protected_media_preserved": true,
+  "reference_contract_verified": false,
+  "root": "/opt/goby-fixtures/client-special-features-m3e-v1",
+  "scope": "Two short synthetic H264/AAC main movies were generated and probed. The positive and empty controls have not been indexed in the reference; extras require the separately verified mains-indexed receipt.",
+  "source_dependency_sha256": "20b807307b785fa01e9356e87d89f4c4783a1cf86c1e8b937bb0ce2e80796a43",
+  "status": "media_mains_completed"
+}

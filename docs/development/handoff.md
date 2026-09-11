@@ -74,6 +74,17 @@ hashes identify `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures` returning
 The next work is the [positive reference capture](m3e-special-features-reference-plan.md)
 and [persistent SpecialFeatures implementation](special-features-implementation-plan.md).
 Library restriction has not executed.
+
+The two synthetic SpecialFeatures main movies were
+[generated and probed](m3e-special-features-media-mains.json) in the new root
+`/opt/goby-fixtures/client-special-features-m3e-v1`. Their mains manifest SHA-256
+is `d53dde28a3c5ed5a67c310e0520639bd8f54233f93b368cf2539b88091ae426a`;
+the completed media receipt SHA-256 is
+`b753494e27902d62bfc6021f232c38c5e69fd4374f8e4a3a92b92fe5622a1f97`.
+Both files are 12-second H264/AAC clips at 320x180/30fps. The six-file mains
+stage preserved the original and auxiliary media and performed no HTTP or
+library scan. The new reference-library operator is being prepared. Do not
+rerun mains or create extras before its actual mains-indexed receipt.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
 read-only retention rejection, and its later stopped-service baseline failure
 are separate evidence. One real PostgreSQL17 read-only ACL regression passed.

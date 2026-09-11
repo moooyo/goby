@@ -1,5 +1,9 @@
 # M3e SpecialFeatures reference capture plan
 
+The [mains-only media stage](m3e-special-features-media-mains.json) has completed
+on test-env. Reference library attachment, main indexing and all positive
+extras captures remain unexecuted. The mains stage must not be rerun.
+
 Status: **planned; not executed**. This document authorizes no HTTP request,
 fixture mutation, scan or deployment by itself. The next operator must select
 an explicit scope and execute only through `ssh test-env`. Use the reference
