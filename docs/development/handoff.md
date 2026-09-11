@@ -1,7 +1,65 @@
 # Development handoff
 
-Latest state: **the primary schema26-to27 upgrade completed successfully in one
-attempt, with no new failure. Both primary and candidate run source32/schema27.**
+Latest state: **the M3 library-restriction/restore API matrix passed in one
+attempt, with no failure or retry. This is API evidence, not original-client
+UI permission-change acceptance or complete M3 acceptance.**
+The [actual API report](m3e-library-restriction-api.json) is retained at
+`/opt/goby-test/exec-work-m3e/client-library-restriction-v1/report.json`,
+SHA-256 `193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb`.
+It completed 61 HTTP exchanges with 14 cases in each of the baseline, restricted
+and restored phases, keeping the same A/B tokens throughout all three phases.
+Only B's original Movies library was restricted: detail, ParentId,
+SpecialFeatures, LocalTrailers, Similar and Theme reads returned404; explicit
+Ids returned200 with an empty list; Views omitted original Movies while
+retaining Extras, Music and TV. A's owned reads stayed200 and cross-user reads
+stayed403. The positive Movie, three SpecialFeatures and one Trailer remained
+readable with200 throughout. The restored phase recovered the supported
+effective policy.
+
+The two PUTs advanced B's revision from 1 to 3. Native normalization materialized
+six supported policy keys and two role flags from the original raw `{}`;
+effective supported-policy restoration does not mean raw-JSON equality.
+All old rows except B's explicitly declared account-field changes were
+preserved, including all 26 existing play rows, seven UserData rows, 64 auth rows
+and 56 device rows. Exactly three new auth rows, two devices and eight audit
+entries were added, producing 67 auth rows, 58 devices and 149 audit entries.
+There was no new PlaybackInfo preparation, UserData write, reference or
+encoding work. All three owned sessions completed logout204/exact-token401.
+
+The [tool verification](m3e-library-restriction-tool01-verification.json)
+passed two remote syntax checks and 22 pure guards; the preflight also passed
+with zero HTTP. Those checks are separate from the actual 61-exchange matrix.
+The retained private before/authenticated/after snapshots are respectively
+`b265e59aaad795bd688756e5642aa6b87eea50ba3e570726e188cff54f8175fa`,
+`646fa69fb00fc577607d025c5510a7241f1e38d22d17321df82b2939ef27637c` and
+`a09e42a404b9aa0251e2341e7ffa85c93528b7b141d81e11df6791802d6e92fd`.
+Candidate PID748513/start ticks6996875, source32/schema27 and fixture-state
+SHA-256 `5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`
+are unchanged; the primary independently remains source32/schema27.
+
+The [independent persisted-state/media inspection](m3e-library-restriction-inspection.json)
+passed with zero HTTP calls, report SHA-256
+`e3dcbc0c21edbc484baab89762e11857a7cbc46889b78701af8dd309f12c3441`,
+retained at `/opt/goby-test/exec-work-m3e/client-library-restriction-inspection-01/report.json`.
+Its current private snapshot SHA-256 is
+`1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3`.
+Persisted state matches the API after snapshot exactly; only capture time is
+new. B is revision 3 with the exact materialized policy merge, all three new
+owned auth rows are revoked, and media/source/process/fixture state are unchanged.
+The inspection confirms 67 auth rows, 58 devices, 149 audits, 26 play rows,
+seven UserData rows, four libraries, 22 items, four Extra resources/three markers,
+zero references and zero encoding jobs.
+
+Future authority must continue from this API after snapshot and inspection.
+The prior positive-client after snapshot `74640ff8ce353ad61b41364fbeedaff4fa2c14e55075ce55869e8be85963a10b` belongs to a
+consumed historical scope: do not require current B raw policy `{}` or 64
+global auth rows. Original-client UI permission changes and the remaining
+compatibility/M3/M4/M5/M6 requirements stay open. See
+[library-restriction verification](verification-m3e-library-restriction.md).
+Do not replay previous UI, scan, upgrade or inspection operations.
+
+Established deployment: **the primary schema26-to27 upgrade completed successfully
+in one attempt. Both primary and candidate run source32/schema27.**
 The [primary completion](m3e-main-schema27-completed.json) records active/running
 PID762090/start ticks7637121; an independent systemctl read matched that state.
 The installed executable SHA-256 is
@@ -67,11 +125,11 @@ References/encoding stayed zero and the other declared scope checks passed.
 This is a bounded preparation comparison, not whole-database preservation.
 
 Main consumer04's two remote syntax checks, 27 guards and build preceded the
-separate successful primary execution above. Next, return to the remaining M3
-[library-restriction/restore matrix](m3e-library-restriction-plan.md) and other compatibility cases. That matrix
-has not executed. The complete M3/M4/M5/M6 milestones remain open; this deployed
-increment does not complete the active project goal. Completed operations and
-failed trees must not be replayed or relabeled.
+separate successful primary execution above. The subsequent
+[library-restriction/restore API matrix](m3e-library-restriction-api.json)
+also passed. Its original-client UI counterpart and other compatibility cases
+remain open. The complete M3/M4/M5/M6 milestones are unfinished; completed
+operations and failed trees must not be replayed or relabeled.
 
 Historical tool03 state: **it scanned the existing library successfully
 (`Completed`, 6/6/0), then failed an incorrect parent-count assertion.** Job
@@ -323,7 +381,8 @@ has now completed. The [persistent SpecialFeatures implementation](special-featu
 has passed source32 remote regression/build verification and candidate deployment;
 the original empty-extra and positive-extra Movie flows also passed. Broader
 projection/access coverage remains open.
-Library restriction has not executed.
+The later library-restriction/restore API matrix and independent persisted-state
+inspection passed; original-client UI permission-change acceptance remains open.
 
 The two synthetic SpecialFeatures main movies were
 [generated and probed](m3e-special-features-media-mains.json) in the new root
@@ -950,7 +1009,8 @@ encoding jobs remain zero. That historical input06 result had 22 plays and
 53 selected A/B auth rows; input05/input06 before images and scopes must not
 be reused for a new run.
 This result does not authorize replaying either earlier preparation scope.
-No error-free acceptance is claimed, and library restriction remains planned.
+That input06 result does not claim error-free acceptance; library restriction
+was then only planned. The later API matrix and inspection passed separately.
 The harness uses existing AV viewer A and initial
 viewer B. It is designed to prove own-user reads and cross-user denial, compare four media
 UserData projections and preferences after UI login and before logout, and
@@ -959,8 +1019,9 @@ may change; the report does not claim whole-database equality. Required CLI
 inputs are candidate SHA, source path and manifest SHA, original Music receipt
 SHA, complete Music chain path/SHA and a new direct WORK child output directory.
 No policy mutation or playback was admitted in these attempts. Temporary library
-policy restriction/restore remains a separate [planned, unexecuted gate](m3e-library-restriction-plan.md),
-including the distinct hidden-library404 and cross-user403 matrix.
+policy restriction/restore was a separate [planned gate](m3e-library-restriction-plan.md)
+at that checkpoint. Its later API matrix proved hidden-library404 and cross-user403;
+the original-client UI permission-change gate remains open.
 
 The first resumed observation found a rebooted `test-env`: the persistent primary
 PostgreSQL cluster was active, but Goby was stopped and the transient reference

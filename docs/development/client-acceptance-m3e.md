@@ -1,7 +1,65 @@
 # M3e real-client acceptance
 
-Latest state: **the primary schema26-to27 upgrade completed successfully in one
-attempt, with no new failure. Both primary and candidate run source32/schema27.**
+Latest state: **the M3 library-restriction/restore API matrix passed in one
+attempt, with no failure or retry. This is API evidence, not original-client
+UI permission-change acceptance or complete M3 acceptance.**
+The [actual API report](m3e-library-restriction-api.json) is retained at
+`/opt/goby-test/exec-work-m3e/client-library-restriction-v1/report.json`,
+SHA-256 `193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb`.
+It completed 61 HTTP exchanges with 14 cases in each of the baseline, restricted
+and restored phases, keeping the same A/B tokens throughout all three phases.
+Only B's original Movies library was restricted: detail, ParentId,
+SpecialFeatures, LocalTrailers, Similar and Theme reads returned404; explicit
+Ids returned200 with an empty list; Views omitted original Movies while
+retaining Extras, Music and TV. A's owned reads stayed200 and cross-user reads
+stayed403. The positive Movie, three SpecialFeatures and one Trailer remained
+readable with200 throughout. The restored phase recovered the supported
+effective policy.
+
+The two PUTs advanced B's revision from 1 to 3. Native normalization materialized
+six supported policy keys and two role flags from the original raw `{}`;
+effective supported-policy restoration does not mean raw-JSON equality.
+All old rows except B's explicitly declared account-field changes were
+preserved, including all 26 existing play rows, seven UserData rows, 64 auth rows
+and 56 device rows. Exactly three new auth rows, two devices and eight audit
+entries were added, producing 67 auth rows, 58 devices and 149 audit entries.
+There was no new PlaybackInfo preparation, UserData write, reference or
+encoding work. All three owned sessions completed logout204/exact-token401.
+
+The [tool verification](m3e-library-restriction-tool01-verification.json)
+passed two remote syntax checks and 22 pure guards; the preflight also passed
+with zero HTTP. Those checks are separate from the actual 61-exchange matrix.
+The retained private before/authenticated/after snapshots are respectively
+`b265e59aaad795bd688756e5642aa6b87eea50ba3e570726e188cff54f8175fa`,
+`646fa69fb00fc577607d025c5510a7241f1e38d22d17321df82b2939ef27637c` and
+`a09e42a404b9aa0251e2341e7ffa85c93528b7b141d81e11df6791802d6e92fd`.
+Candidate PID748513/start ticks6996875, source32/schema27 and fixture-state
+SHA-256 `5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`
+are unchanged; the primary independently remains source32/schema27.
+
+The [independent persisted-state/media inspection](m3e-library-restriction-inspection.json)
+passed with zero HTTP calls, report SHA-256
+`e3dcbc0c21edbc484baab89762e11857a7cbc46889b78701af8dd309f12c3441`,
+retained at `/opt/goby-test/exec-work-m3e/client-library-restriction-inspection-01/report.json`.
+Its current private snapshot SHA-256 is
+`1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3`.
+Persisted state matches the API after snapshot exactly; only capture time is
+new. B is revision 3 with the exact materialized policy merge, all three new
+owned auth rows are revoked, and media/source/process/fixture state are unchanged.
+The inspection confirms 67 auth rows, 58 devices, 149 audits, 26 play rows,
+seven UserData rows, four libraries, 22 items, four Extra resources/three markers,
+zero references and zero encoding jobs.
+
+Future authority must continue from this API after snapshot and inspection.
+The prior positive-client after snapshot `74640ff8ce353ad61b41364fbeedaff4fa2c14e55075ce55869e8be85963a10b` belongs to a
+consumed historical scope: do not require current B raw policy `{}` or 64
+global auth rows. Original-client UI permission changes and the remaining
+compatibility/M3/M4/M5/M6 requirements stay open. See
+[library-restriction verification](verification-m3e-library-restriction.md).
+Do not replay previous UI, scan, upgrade or inspection operations.
+
+Established deployment: **the primary schema26-to27 upgrade completed successfully
+in one attempt. Both primary and candidate run source32/schema27.**
 The [primary completion](m3e-main-schema27-completed.json) records active/running
 PID762090/start ticks7637121; an independent systemctl read matched that state.
 The installed executable SHA-256 is
@@ -67,11 +125,11 @@ References/encoding stayed zero and the other declared scope checks passed.
 This is a bounded preparation comparison, not whole-database preservation.
 
 Main consumer04's two remote syntax checks, 27 guards and build preceded the
-separate successful primary execution above. Next, return to the remaining M3
-[library-restriction/restore matrix](m3e-library-restriction-plan.md) and other compatibility cases. That matrix
-has not executed. The complete M3/M4/M5/M6 milestones remain open; this deployed
-increment does not complete the active project goal. Completed operations and
-failed trees must not be replayed or relabeled.
+separate successful primary execution above. The subsequent
+[library-restriction/restore API matrix](m3e-library-restriction-api.json)
+also passed. Its original-client UI counterpart and other compatibility cases
+remain open. The complete M3/M4/M5/M6 milestones are unfinished; completed
+operations and failed trees must not be replayed or relabeled.
 
 Historical tool03 state: **it completed the scan (`Completed`, 6/6/0),
 then failed an incorrect count assertion after 15 valid protocol responses.**
@@ -185,12 +243,14 @@ completion-receipt, current fixture-state and runtime hashes.
 
 Full/range finalization, independent inspection and the positive original-client
 flow now passed under their bound scopes. Primary backup/rehearsal/migration
-and native smoke subsequently passed in one attempt. Next is the still
-unexecuted library-restriction/restore matrix and other compatibility cases.
+and native smoke subsequently passed in one attempt. The later library-restriction/
+restore API matrix and inspection also passed. Its original-client UI permission
+counterpart and other compatibility cases remain open.
 The empty-array Movie pass and added root permission
 do not by themselves establish indexed extra delivery; the later positive
-protocol/media proof supplies that sampled evidence. Library restriction
-and complete compatibility remain open. Main consumer04's tooling verification
+protocol/media proof supplies that sampled evidence. Original-client UI permission
+changes and complete compatibility remain open after the API matrix pass.
+Main consumer04's tooling verification
 is separate from the successful primary deployment above. Completed media/reference phases must
 not be replayed.
 
@@ -230,8 +290,9 @@ reached 22 plays/51 auth rows; input07 subsequently consumed 22/51 and reached
 24 plays/53 selected A/B auth rows under its separate scope. The 18/47, 20/49
 and 22/51 scopes and before images are historical and **must not be reused**
 as new authority. A future run requires a fresh private snapshot and comparator
-scope. The [library restriction matrix](m3e-library-restriction-plan.md) has
-not executed. Raw reports and all historical successes/failures remain preserved.
+scope. The later [library-restriction API matrix](m3e-library-restriction-api.json)
+and inspection passed; original-client UI permission changes remain open.
+Raw reports and all historical successes/failures remain preserved.
 
 Historical isolated candidate: [source20/schema25](verification-m3e-source20-similar.md),
 binary SHA-256 `a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9`,
@@ -496,9 +557,9 @@ stop and resume must be driven through the real client UI.
 | Seek, stop and resume | UI pause, forward/backward seek, stop, persisted position, reload/login and UI resume at the observed position | Scoped movie lifecycle passed; source18 audio controls, stop and history passed |
 | Direct audio | Real supported MP3/FLAC flows with method and media capability recorded separately | Source18 MP3 core passed with original Home harness failure preserved; FLAC full workflow passed |
 | External subtitles | UI track selection, actual subtitle delivery and timing through seek for the supported SRT/WebVTT paths | Source15 SRT/VTT and ordinary TV checks passed within their fixture scope |
-| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Original-Movie and positive-Movie A/B flows passed: complete SpecialFeatures200 (empty and three-resource scopes), zero page errors, own200/foreign403, unchanged state projections and logout204/exact401. Positive cards matched unique titles without DOM IDs; one console warning/error per user remains. The repaired scoped database comparison passed. Library restriction and broader isolation remain open; old scopes are historical |
+| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Original-Movie and positive-Movie A/B flows passed: complete SpecialFeatures200 (empty and three-resource scopes), zero page errors, own200/foreign403, unchanged state projections and logout204/exact401. Positive cards matched unique titles without DOM IDs; one console warning/error per user remains. The repaired scoped database comparison passed. The restriction/restore API matrix and independent persisted-state inspection passed; original-client UI permission changes and broader isolation remain open; old scopes are historical |
 | Reference comparison | The same client/profile flows against the pinned reference, with exact supported differences and unresolved failures retained | Scoped reference/client journeys recorded; full matrix and auxiliary differences remain open |
-| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source32 full 1,873-test race suite/build, candidate schema27 upgrade, exact root extension, protocol/media finalization, independent inspection and scoped positive A/B UI/comparison passed; product b9bb7b1 is published. Main consumer04 passed two syntax checks/27 guards/build, followed by the independent successful primary schema27 backup/rehearsal/migration/native-smoke deployment. Library restriction and complete milestones remain open |
+| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source32 full 1,873-test race suite/build, candidate schema27 upgrade, exact root extension, protocol/media finalization, independent inspection and scoped positive A/B UI/comparison passed; product b9bb7b1 is published. Main consumer04 passed two syntax checks/27 guards/build, followed by the independent successful primary schema27 backup/rehearsal/migration/native-smoke deployment. The restriction API/inspection passed; original-client UI permission changes and complete milestones remain open |
 
 Existing CORS support already handles implemented compatibility paths; do not
 broaden the administrator origin policy based on a missing-route symptom.

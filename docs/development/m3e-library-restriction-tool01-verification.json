@@ -1,0 +1,64 @@
+{
+  "baseline_snapshot": {
+    "bytes": 808116,
+    "device": 2049,
+    "gid": 0,
+    "inode": 3196743,
+    "mode": 384,
+    "nlink": 1,
+    "path": "/opt/goby-test/exec-work-m3e/client-library-restriction-baseline-review-02/current-full.json",
+    "sha256": "3320e35d1ad9ce4a3583ac264954dd097e03a8c8a2fa28a772eb0a57524f5f7b",
+    "uid": 0
+  },
+  "baseline_unchanged": true,
+  "business_http_requests": 0,
+  "business_service_actions": 0,
+  "database_commands": 0,
+  "files": {
+    "test-verify-client-library-restriction.py": "c92056da224e145dc1039b03496e8df3e768638fde1d343e91ec0fdda65253b5",
+    "verify-client-library-restriction.py": "99cb5b89f0da94940bed34a86607a545278da914750ae09ac7b52d458810004e"
+  },
+  "guard_errors": 0,
+  "guard_failures": 0,
+  "guard_tests": 22,
+  "guards": {
+    "returncode": 0,
+    "stderr_sha256": "372508fe04ea849ad24ded5edbe005f411e8d0f8e4000667ab96cf166f690946",
+    "stdout_sha256": "6a8894ab312c3bfbfa488ab7a4c720ee28514c17e135020277b4d5a673254964",
+    "timed_out": false
+  },
+  "operator_check_only_executed": false,
+  "operator_main_executed": false,
+  "runtime_properties": {
+    "CPUQuotaPerSecUSec": "1.500000s",
+    "KillMode": "control-group",
+    "MainPID": "763366",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "NoNewPrivileges": "yes",
+    "PrivateNetwork": "yes",
+    "ProtectSystem": "strict",
+    "RuntimeMaxUSec": "3min",
+    "TasksMax": "64"
+  },
+  "schema": "goby-client-library-restriction-tool-verification",
+  "source": "/opt/goby-test/exec-work-m3e/client-library-restriction-tool-01",
+  "source_unchanged": true,
+  "status": "passed",
+  "syntax": [
+    {
+      "returncode": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "returncode": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    }
+  ],
+  "tool_manifest_sha256": "8f8f1613688250bc4871dd29723321465696d262d0777be51185a9098078ad1a",
+  "version": 1
+}

@@ -1,13 +1,23 @@
 # M3e temporary Movies restriction and restoration
 
-Status: **planned; not executed**. This is a static implementation plan, not
-acceptance evidence. The source32/schema27 primary deployment, candidate
+Status: **the candidate API matrix and independent persisted-state inspection
+passed**. The [61-request execution](m3e-library-restriction-api.json) completed
+all three 14-case matrices, restored B's supported policy and revoked all three
+new sessions with logout204/exact401. The [independent inspection](m3e-library-restriction-inspection.json)
+confirmed the stored result and unchanged media with zero HTTP calls.
+This is API evidence; original-client UI behavior during a policy change remains
+outside this gate. The workflow below records the consumed execution contract
+and must not be replayed. Future work needs a fresh scope bound to this run's
+after-snapshot and inspection, including B revision `3` and its materialized
+Policy. The earlier baseline counts and raw Policy `{}` below are historical.
+
+The source32/schema27 primary deployment, candidate
 positive Extras UI and its scoped comparison have passed; their completed
-operations must not be replayed. Execute this new gate only through
-`ssh test-env`. It temporarily removes access to the **original Movies library**
-from ordinary viewer B, proves that the same token observes the change, and
-restores B's complete supported account and policy values. The separate positive
-Extras Movies library remains accessible to B throughout. This does not
+operations must not be replayed. This gate ran through `ssh test-env`. It
+temporarily removed access to the **original Movies library** from ordinary
+viewer B, proved that the same token observed the change, and restored B's
+complete supported account and policy values. The separate positive Extras
+Movies library remained accessible to B throughout. This does not
 establish full M3 compatibility or whole-database equality.
 
 ## Candidate and scope
@@ -212,10 +222,14 @@ original movie is essential to that distinction. Do not demand a fabricated
 
 ## Reusable implementation and the next bounded increment
 
-No dedicated restriction operator currently implements this plan. The next
-increment is one new candidate-only API operator with a new evidence root,
-pure guards and a read-only preflight before execution within the existing
-authorized candidate-validation scope.
+The dedicated [candidate API operator](../../scripts/test-env/verify-client-library-restriction.py)
+and [pure guards](../../scripts/test-env/test-verify-client-library-restriction.py)
+implement this plan. Static review covers the complete request, restoration and
+database-difference paths. Two remote syntax checks, 22 pure guards, a fresh
+read-only preflight, the actual matrix and independent inspection passed.
+The operator uses a new
+evidence root and requires a read-only preflight before execution within the
+existing authorized candidate-validation scope.
 Use one administrator login and one fresh login per ordinary actor; permit
 only the listed GETs, one restriction PUT, one restoration PUT and exact owned
 logout/401 cleanup. Keep restoration and cleanup request/time budgets reserved.
@@ -238,7 +252,8 @@ removal of the Extras library, stale-revision 409, a lost write acknowledgement,
 foreign drift before restoration, reuse of the same B token, and bounded
 owned-session cleanup after evidence I/O failure. Freeze the new input closure
 and pass remote guards/preflight before any policy write. This document update
-does not implement or execute that operator.
+does not establish a passed execution. See the [verification record](verification-m3e-library-restriction.md)
+for the current evidence and remaining gates.
 
 ## Preservation and permitted differences
 
