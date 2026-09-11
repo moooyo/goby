@@ -57,7 +57,8 @@ no credentials were submitted. The latest
 users' UI login/detail reads, own/foreign authority checks, state preservation,
 WebSocket transport closure and exact UI logout proofs, but the overall run
 still failed at `browse_A` before return Home. Automatic PlaybackInfo was
-blocked; its database preparation effects remain under scope review. Full
+blocked; the next explicitly selected preparation mode has a bounded database
+change scope recorded below and has not yet run. Full
 dual-user acceptance and the [planned library restriction matrix](m3e-library-restriction-plan.md)
 remain open; that policy gate has not executed.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
@@ -569,8 +570,35 @@ It remains failed at `browse_A`: return Home was not completed. Each original
 client also attempted automatic PlaybackInfo on the detail page, which the
 observer blocked. That endpoint performs database preparation writes and must
 not be classified as read-only. No causal explanation for the missing Home
-step is asserted. Input05 Home diagnostics and preparation-impact review are
-ongoing; no additional preparation permission or full dual-user pass is inferred.
+step is asserted. Input05 adds Home diagnostics and an explicit
+`acceptance-preparation` mode; it has not yet run. Default acceptance retains
+the prior read-only restriction. Full dual-user acceptance remains open.
+
+The reviewed next run permits one physical PlaybackInfo POST per actor only
+for the receipted Movie, during its detail-page phase, using that browser's
+freshly proven ordinary-user token. It must complete a real200 response without
+rewriting the request or fabricating a response. Media delivery, Playing,
+remote control and unrelated writes remain blocked. Both users had no live
+playback, and their Movie UserData rows already existed in the read-only
+candidate observations. The known old changes are B's expired Prepared row
+becoming Expired and deletion of A's reference to a revoked authentication
+session. No old play-session deletion or encoding job is eligible. New rows
+must belong to the fresh browser authentication and the bound Movie/source;
+all four UserData projections, preferences, configuration and policy must
+remain unchanged. This is preparation acceptance, not a read-only or whole-DB
+preservation claim.
+
+Before and after that run, use the frozen read-only
+`inspect-client-prepare-scope.py`, SHA-256
+`2533c8804843eb5bff542f88829bd85196f0ad297586d9f8e8e5cdb6fb241ef8`,
+at `/opt/goby-test/exec-work-m3e/prepare-scope-tool-01`. Its remote syntax and
+complete PostgreSQL query check passed, observing 18 plays, one reference,
+five UserData rows, 47 authentication sessions and zero encoding jobs. That
+check created no before/after ledger. Create a fresh
+`prepare-scope-observation-*` directory immediately before actual acceptance,
+recheck the exact eligible old rows, then compare the retained private before
+and after rows against the permitted changes and observed token fingerprints.
+Do not reuse an old observation as fresh authority.
 The harness uses existing AV viewer A and initial
 viewer B. It is designed to prove own-user reads and cross-user denial, compare four media
 UserData projections and preferences after UI login and before logout, and
