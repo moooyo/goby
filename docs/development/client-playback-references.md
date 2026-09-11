@@ -33,6 +33,27 @@ caller inside the server. HLS revisions, generated child URLs, encoding jobs and
 cleanup use those canonical IDs. ActiveEncodings resolves an owned reference
 before cancelling; unknown or foreign identifiers remain inert.
 
+The original Web audio client can use the Audio item ID itself as
+`MediaSourceId` in Playing, Progress, and Stopped reports after Universal binds
+its client nonce. Goby accepts that exact bare source alias only after resolving
+an existing owned correlated play and locking its currently authorized Audio
+item. The report is then normalized to the play's stored canonical source,
+which must still match `media.SourceID(itemID)`. This also works when the caller
+uses the correlated play's canonical ID. It never creates or rebinds a play.
+Different items, sources, credentials, and devices remain rejected. Video,
+default preparations, and legacy reports without a play reference retain their
+strict source rules. Current policy and library authorization still precede any
+state write; terminal reports remain idempotent.
+
+The [source16 original-Web diagnostic](verification-m3e-source16-audio-report-diagnostic.md)
+established equal nonce, token, and device between the successful Universal
+range response and the subsequent report, with
+the report's source equal to the item ID instead of the canonical source. Its
+three error-body reads were unavailable, so it does not establish the response
+error code. This narrow compatibility rule is supported by those identifier
+comparisons and Goby's source-validation path; regression tests and subsequent
+real-client acceptance are separate verification steps.
+
 Default preparation and legacy reports without an explicit ID continue using
 their existing default active-source session. They do not accidentally select a
 correlated play. `client_correlated=false` retains the original partial unique

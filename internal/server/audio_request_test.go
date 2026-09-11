@@ -10,6 +10,9 @@ import (
 	"github.com/moooyo/goby/internal/playback"
 )
 
+// Captured from the original Web client's owned FLAC Universal request.
+const audioWebContainerCapabilities = "opus,mp3|mp3,mp2,mp3|mp2,aac|aac,m4a|aac,mp4|aac,flac,webma,webm,wav|PCM_S16LE,wav|PCM_S24LE,ogg"
+
 func audioRequestTestSource(container, codec string) playback.Source {
 	depth := 0
 	if codec == "flac" || codec == "alac" {
@@ -103,6 +106,102 @@ func TestAudioUniversalPrioritizesOriginalContainersWithoutInventingCodecRestric
 	unknown := audioRequestTestResult(t, audioRequestTestSource("flac", "flac"), map[string]string{"Container": "unknown-format"}, "", true)
 	if unknown.Original || unknown.Progressive == nil || unknown.Progressive.Plan.Container != "mp3" || unknown.Progressive.Plan.AudioCodec != "mp3" {
 		t.Error("unknown container capability invented original support or bypassed Goby's explicit fallback")
+	}
+}
+
+func TestAudioUniversalQualifiedContainerCapabilitiesPreserveCodecConstraints(t *testing.T) {
+	for _, test := range []struct {
+		name, container, codec, capability string
+		original                           bool
+	}{
+		{"captured MP3", "mp3", "mp3", audioWebContainerCapabilities, true},
+		{"captured FLAC", "flac", "flac", audioWebContainerCapabilities, true},
+		{"captured M4A AAC", "m4a", "aac", audioWebContainerCapabilities, true},
+		{"captured M4A excludes ALAC", "m4a", "alac", audioWebContainerCapabilities, false},
+		{"MP3 family explicit MP2", "mp3", "mp2", "mp3|mp2", true},
+		{"MP2 qualifier excludes MP3", "mp3", "mp3", "mp3|mp2", false},
+		{"bare MP3 still excludes MP2", "mp3", "mp2", "mp3", false},
+		{"captured WAV s16", "wav", "pcm_s16le", audioWebContainerCapabilities, true},
+		{"captured WAV s24", "wav", "pcm_s24le", audioWebContainerCapabilities, true},
+		{"captured WAV excludes float", "wav", "pcm_f32le", audioWebContainerCapabilities, false},
+		{"bare MP4 retains ALAC", "m4a", "alac", "mp4", true},
+		{"MP4 alias preserves AAC restriction", "m4a", "alac", "mp4|aac", false},
+		{"qualified input is not encoder support", "ogg", "speex", "ogg|speex", true},
+		{"unknown qualifier is not a wildcard", "mp3", "mp3", "mp3|unknown-codec", false},
+		{"unknown container is not a wildcard", "mp3", "mp3", "unknown-container|mp3", false},
+		{"copy is not an input codec wildcard", "mp3", "mp3", "mp3|copy", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			values := map[string]string{"Container": test.capability, "AudioCodec": "aac", "TranscodingContainer": "ts",
+				"TranscodingProtocol": "hls", "MaxStreamingBitrate": "200000000", "StartTimeTicks": "0",
+				"EnableRedirection": "true", "EnableRemoteMedia": "false"}
+			result, err := audioRequestDecision(audioRequestTestSource(test.container, test.codec), values, "", true, playback.ConversionLimits{})
+			if test.original {
+				if err != nil || !result.Original || result.Progressive != nil || result.HLS != nil {
+					t.Error("a compatible original required conversion permission or was replaced by unused fallback settings")
+				}
+			} else if !errors.Is(err, errAudioRequestUnsupported) || result.Original {
+				t.Error("an unmatched codec-qualified capability bypassed conversion permissions or claimed original support")
+			}
+		})
+	}
+	capabilities, err := audioContainers(map[string]string{"container": "WAV|PCM_S16LE,wav|pcm_s24le,wav|PCM_S16LE"}, "", true)
+	if err != nil || !reflect.DeepEqual(capabilities, []string{"wav|pcm_s16le", "wav|pcm_s24le"}) {
+		t.Error("normalization collapsed distinct codec-qualified capabilities or retained exact duplicates")
+	}
+}
+
+func TestAudioUniversalQualifiedContainersKeepCeilingsAndConversionPermissions(t *testing.T) {
+	source := audioRequestTestSource("flac", "flac")
+	for _, ceiling := range []map[string]string{
+		{"MaxStreamingBitrate": "64000"}, {"MaxSampleRate": "22050"}, {"MaxAudioChannels": "1"},
+	} {
+		values := map[string]string{"Container": audioWebContainerCapabilities}
+		for key, value := range ceiling {
+			values[key] = value
+		}
+		result, err := audioRequestDecision(source, values, "", true, playback.ConversionLimits{})
+		if !errors.Is(err, errAudioRequestUnsupported) || result.Original {
+			t.Error("a parsed capability list bypassed an original-file ceiling or conversion permission")
+		}
+	}
+	values := map[string]string{"Container": "mp4|aac", "TranscodingContainer": "mp3", "AudioCodec": "mp3"}
+	alac := audioRequestTestSource("m4a", "alac")
+	allowed := audioRequestTestResult(t, alac, values, "", true)
+	if allowed.Original || allowed.Progressive == nil || allowed.Progressive.Plan == nil || allowed.Progressive.Plan.AudioCodec != "mp3" {
+		t.Error("a qualified input mismatch failed to use an independently permitted output conversion")
+	}
+	denied, err := audioRequestDecision(alac, values, "", true, playback.ConversionLimits{})
+	if !errors.Is(err, errAudioRequestUnsupported) || denied.Original || denied.Progressive != nil && denied.Progressive.Plan != nil {
+		t.Error("the same requested output conversion bypassed missing server permissions")
+	}
+}
+
+func TestAudioUniversalQualifiedContainerSyntaxRemainsBoundedAndScoped(t *testing.T) {
+	source := audioRequestTestSource("mp3", "mp3")
+	for _, capability := range []string{"|aac", "mp4|", "mp4||aac", "mp4|aac|alac", "mp3|*", "mp3|a/ac", "mp3|mp3,,flac",
+		strings.Repeat("x", 33) + "|aac", "mp4|" + strings.Repeat("x", 33), strings.Repeat("mp3|mp3,", 32) + "mp3|mp3",
+		strings.Repeat("x", 1025)} {
+		result, err := audioRequestDecision(source, map[string]string{"Container": capability}, "", true, audioRequestTestLimits())
+		if !errors.Is(err, errAudioRequestInvalid) || result.Original {
+			t.Error("a malformed or oversized codec-qualified capability was accepted")
+		}
+	}
+	for _, test := range []struct {
+		values    map[string]string
+		suffix    string
+		universal bool
+	}{
+		{map[string]string{"Container": "mp3|mp3"}, "", false},
+		{map[string]string{"Container": "mp3", "AudioCodec": "mp3|aac"}, "", true},
+		{map[string]string{"Container": "flac", "TranscodingContainer": "mp3|mp3"}, "", true},
+		{map[string]string{"Container": "m4a|aac"}, "m4a", true},
+		{map[string]string{}, "mp3|mp3", true},
+	} {
+		result, err := audioRequestDecision(source, test.values, test.suffix, test.universal, audioRequestTestLimits())
+		if !errors.Is(err, errAudioRequestInvalid) || result.Original {
+			t.Error("Universal capability syntax escaped into an output selector or erased a conflicting suffix constraint")
+		}
 	}
 }
 
@@ -312,7 +411,7 @@ func TestAudioRequestBoundsConflictsAndPureOwnership(t *testing.T) {
 		want   error
 	}{
 		{map[string]string{"AudioChannels": "1", "audiochannels": "2"}, "", errAudioRequestInvalid},
-		{map[string]string{"Container": "m4a|aac"}, "", errAudioRequestInvalid},
+		{map[string]string{"Container": "m4a||aac"}, "", errAudioRequestInvalid},
 		{map[string]string{"Container": "flac"}, "mp3", errAudioRequestInvalid},
 		{map[string]string{"Container": "mp3,,flac"}, "", errAudioRequestInvalid},
 		{map[string]string{"Container": "flac", "TranscodingContainer": "unknown-format"}, "", errAudioRequestUnsupported},

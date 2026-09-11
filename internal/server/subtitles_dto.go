@@ -40,27 +40,67 @@ func externalSubtitleURL(itemID string, index int, format, token string) string 
 	return path
 }
 
+func externalSubtitleDisplayLanguage(language string) string {
+	if strings.TrimSpace(language) == "" {
+		return ""
+	}
+	switch strings.ToLower(language) {
+	case "en", "eng":
+		return "English"
+	default:
+		// Keep unrecognized identifiers instead of guessing a language name.
+		return language
+	}
+}
+
+func externalSubtitleDisplayTitle(source library.Subtitle, language string) string {
+	base := source.Title
+	if strings.TrimSpace(base) == "" || base == source.Language {
+		// Existing scans store the language identifier as a synthetic Title.
+		// Handle those rows here without rewriting metadata or requiring a scan.
+		base = language
+	}
+	qualifiers := make([]string, 0, 3)
+	if source.IsForced {
+		qualifiers = append(qualifiers, "Forced")
+	}
+	// Custom titles remain the base, and SDH remains visible when recorded.
+	// Their combination is Goby's display policy, not a claimed reference rule.
+	if source.IsHearingImpaired {
+		qualifiers = append(qualifiers, "SDH")
+	}
+	if source.Codec != "" {
+		qualifiers = append(qualifiers, strings.ToUpper(source.Codec))
+	}
+	if len(qualifiers) == 0 {
+		return base
+	}
+	suffix := "(" + strings.Join(qualifiers, " ") + ")"
+	if base == "" {
+		return suffix
+	}
+	return base + " " + suffix
+}
+
 func itemMediaStreamsDTO(item library.Item) []map[string]any {
 	if item.Media == nil {
 		return []map[string]any{}
 	}
 	streams := mediaStreamsDTO(item.Media.Streams)
 	for _, source := range item.Subtitles {
-		label := source.Title
-		if label == "" {
-			label = strings.ToUpper(source.Codec)
-			if source.Language != "" {
-				label = strings.ToUpper(source.Language) + " / " + label
-			}
-		}
-		streams = append(streams, map[string]any{
+		language := externalSubtitleDisplayLanguage(source.Language)
+		stream := map[string]any{
 			"Index": source.Index, "Type": "Subtitle", "Codec": source.Codec,
-			"Language": source.Language, "Title": source.Title, "DisplayTitle": label,
+			"Language": source.Language, "Title": source.Title, "DisplayTitle": externalSubtitleDisplayTitle(source, language),
 			"IsDefault": source.IsDefault, "IsForced": source.IsForced, "IsHearingImpaired": source.IsHearingImpaired,
 			"IsExternal": true, "IsTextSubtitleStream": true, "SupportsExternalStream": true,
 			"Protocol": "File", "Path": filepath.Join(filepath.Dir(item.Path), source.Filename),
 			"DeliveryMethod": "External", "DeliveryUrl": externalSubtitleURL(item.ID, source.Index, source.Codec, ""),
-		})
+		}
+		if language != "" {
+			stream["DisplayLanguage"] = language
+		}
+		streams = append(streams, stream)
 	}
 	return streams
 }

@@ -58,6 +58,8 @@ func libraryErrorInfo(err error) (int, string, string) {
 		return 403, "access_denied", "The resource or directory is not permitted."
 	case errors.Is(err, library.ErrInvalidInput):
 		return 400, "invalid_input", "Check the library name, media type, configured directories, and query parameters."
+	case errors.Is(err, library.ErrUnsupportedFilter):
+		return http.StatusNotImplemented, "unsupported_filter", "List membership cannot be evaluated for this result set."
 	case errors.Is(err, library.ErrBusy):
 		return 409, "scan_busy", "A scan is already active or the scan queue is full."
 	case errors.Is(err, library.ErrUnavailable):

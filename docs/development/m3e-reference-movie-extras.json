@@ -1,0 +1,89 @@
+{
+  "approvedFixtureCatalog": [
+    {
+      "Id": "9",
+      "MediaType": "Video",
+      "Name": "M3e Client Movie",
+      "ParentId": null,
+      "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+      "Type": "Movie"
+    },
+    {
+      "Id": "10",
+      "MediaType": "Audio",
+      "Name": "M3e FLAC",
+      "ParentId": null,
+      "Path": "[fixture media]/Music/M3e Client Audio.flac",
+      "Type": "Audio"
+    },
+    {
+      "Id": "11",
+      "MediaType": "Audio",
+      "Name": "M3e MP3",
+      "ParentId": null,
+      "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+      "Type": "Audio"
+    },
+    {
+      "Id": "18",
+      "MediaType": "Video",
+      "Name": "Episode 1-1",
+      "ParentId": null,
+      "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+      "Type": "Episode"
+    },
+    {
+      "Id": "17",
+      "MediaType": "Video",
+      "Name": "Episode 1-2",
+      "ParentId": null,
+      "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+      "Type": "Episode"
+    },
+    {
+      "Id": "19",
+      "MediaType": "Video",
+      "Name": "Episode 2-1",
+      "ParentId": null,
+      "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+      "Type": "Episode"
+    }
+  ],
+  "browserSessionUsedOrRevoked": false,
+  "businessRequests": 11,
+  "caseStatuses": {
+    "catalog": 200,
+    "intros": 200,
+    "movie-after": 200,
+    "movie-before": 200,
+    "recorder-login": 200,
+    "recorder-logout": 204,
+    "recorder-token-invalid": 401,
+    "special-features": 200,
+    "special-features-fields": 200,
+    "theme-direct": 200,
+    "theme-disabled": 200,
+    "theme-inherit": 200,
+    "viewer-after": 200,
+    "viewer-before": 200
+  },
+  "classification": "protocol research; not client acceptance",
+  "configurationAndPolicyPreserved": true,
+  "failureType": null,
+  "marker": "goby-m3e-reference-movie-extras-v1",
+  "maximumBusinessRequests": 12,
+  "mediaManifestPreserved": true,
+  "movieId": "9",
+  "movieMetadataPreserved": true,
+  "newRecorderTokenRevoked": true,
+  "oldReferenceRequests": 0,
+  "playbackPreferenceMetadataOrLibraryWrites": 0,
+  "recorderDeviceId": "goby-m3e-movie-extras-recorder-v1",
+  "recoveryOnly": false,
+  "referenceExecutableSha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requests": 14,
+  "scope": "Only the existing synthetic movie and six approved catalog media items were read. Empty results do not establish behavior for configured intros, special features, or theme media.",
+  "sourceSha256": "80d7481a332bef03dc6b8763e64f8e28df4a512f9e9b8785214f512194816558"
+}

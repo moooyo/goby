@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/moooyo/goby/internal/identity"
 )
@@ -105,6 +106,26 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func parseEmbyCredentials(r *http.Request) (string, identity.Client, error) {
+	parsedQuery, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		// ParseQuery can return a partial result together with an error. Never
+		// authenticate from that partial result after discarding a conflicting
+		// or malformed credential carrier. Error text must not retain the URL.
+		return "", identity.Client{}, fmt.Errorf("invalid authorization query")
+	}
+	query := make(url.Values)
+	for name, entries := range parsedQuery {
+		name = strings.ToLower(name)
+		switch name {
+		case "x-emby-client", "x-emby-client-version", "x-emby-device-id", "x-emby-device-name", "x-emby-token", "api_key":
+			for _, value := range entries {
+				if !utf8.ValidString(value) || strings.ContainsRune(value, '\x00') {
+					return "", identity.Client{}, fmt.Errorf("invalid authorization query value")
+				}
+				query[name] = append(query[name], value)
+			}
+		}
+	}
 	values := map[string]string{}
 	for _, header := range []string{"Authorization", "X-Emby-Authorization"} {
 		for _, value := range r.Header.Values(header) {
@@ -154,7 +175,12 @@ func parseEmbyCredentials(r *http.Request) (string, identity.Client, error) {
 		{header: "X-Emby-Device-Id", attribute: "deviceid"},
 		{header: "X-Emby-Device-Name", attribute: "device"},
 	} {
-		for _, value := range r.Header.Values(field.header) {
+		// The original Web Client moves only these four metadata fields into
+		// the query for simple requests. Query values never become arbitrary
+		// headers, body credentials, or an authenticated user identity.
+		entries := append([]string(nil), r.Header.Values(field.header)...)
+		entries = append(entries, query[strings.ToLower(field.header)]...)
+		for _, value := range entries {
 			if value == "" {
 				continue
 			}
@@ -169,7 +195,8 @@ func parseEmbyCredentials(r *http.Request) (string, identity.Client, error) {
 	for _, header := range []string{"X-Emby-Token", "X-MediaBrowser-Token"} {
 		candidates = append(candidates, r.Header.Values(header)...)
 	}
-	candidates = append(candidates, r.URL.Query()["api_key"]...)
+	candidates = append(candidates, query["x-emby-token"]...)
+	candidates = append(candidates, query["api_key"]...)
 	for _, candidate := range candidates {
 		if candidate == "" {
 			continue

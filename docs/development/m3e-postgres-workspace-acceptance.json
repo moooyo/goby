@@ -1,0 +1,25 @@
+{
+  "credential_file": "/opt/goby-test/postgres-workspace-v1/test.env",
+  "credentials_preserved": true,
+  "host_reboot_tested": false,
+  "memory_guard_tests": 44,
+  "persistence_probe_survived_restart": true,
+  "ready_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 327173,
+    "start_ticks": 289359
+  },
+  "real_operator_lock_contention_rejected": true,
+  "result": "passed",
+  "shared_state_unchanged": [
+    "/etc/postgresql/17/main/pg_hba.conf",
+    "/etc/postgresql/17/main/postgresql.conf",
+    "/opt/goby-test",
+    "/opt/goby-test/m4c-postgres.owner",
+    "/opt/goby-test/m4c-test.env",
+    "/opt/goby-test/test.env",
+    "/var/lib/postgresql",
+    "/var/lib/postgresql/17/main/postmaster.pid"
+  ],
+  "system_identifier": "7684040109719526738"
+}

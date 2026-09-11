@@ -1,0 +1,13 @@
+{
+  "anonymousStatus": 401,
+  "authenticatedEvidenceReused": true,
+  "forwardedHeaderRequests": 0,
+  "marker": "goby-m3e-movie-extras-endpoint-annex-v1",
+  "maximumBusinessRequests": 12,
+  "newRecorderInvalidTokenStatus": 401,
+  "newRecorderLogoutStatus": 204,
+  "overallBusinessRequests": 12,
+  "overallNewResearchTokens": 1,
+  "parentMarker": "goby-m3e-reference-movie-extras-v1",
+  "scope": "Direct loopback inside the fixed fresh reference namespace. The ordinary authenticated response is a prior saved contract from the same attested process. No forwarded-header or external-network matrix was performed."
+}

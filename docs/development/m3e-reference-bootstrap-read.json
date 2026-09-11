@@ -1,0 +1,71 @@
+{
+  "kind": "reference-only-anonymous-read",
+  "capturedAt": "2026-09-10T22:37:54Z",
+  "version": "4.9.5.0",
+  "pid": 325210,
+  "startTicks": "252540",
+  "binarySha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+  "records": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/emby/Branding/Configuration"
+      },
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 2,
+      "bodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "body": {}
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/emby/Branding/Css"
+      },
+      "status": 200,
+      "contentType": "text/css",
+      "bytes": 0,
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "text": ""
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/emby/System/Info/Public"
+      },
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 137,
+      "bodySha256": "accc61c1b1c476313fa13e2a7a40bd5914980df2e45f1037cca1c2954f634874",
+      "body": {
+        "LocalAddresses": [],
+        "RemoteAddresses": [],
+        "ServerName": "Goby Emby Reference",
+        "Version": "4.9.5.0",
+        "Id": "ec69ef1cf84140e88489c30326529308"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/emby/System/Endpoint"
+      },
+      "status": 401,
+      "contentType": "text/plain",
+      "bytes": 35,
+      "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+      "text": "Access token is invalid or expired."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/emby/Playback/BitrateTest?Size=1024"
+      },
+      "status": 401,
+      "contentType": "text/plain",
+      "bytes": 35,
+      "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+      "text": "Access token is invalid or expired."
+    }
+  ]
+}

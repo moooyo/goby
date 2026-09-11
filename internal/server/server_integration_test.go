@@ -248,6 +248,25 @@ func (f *serverFixture) embyLogin(t *testing.T, name, password string) map[strin
 	return jsonObject(t, response)
 }
 
+func TestHTTPCompatibilityVersionPreservesProductIdentity(t *testing.T) {
+	f := newServerFixture(t)
+	for _, path := range []string{"/emby/System/Info/Public", "/System/Info/Public", "/emby/system/info/public"} {
+		response := f.request(t, http.MethodGet, path, nil, nil)
+		expectStatus(t, response, http.StatusOK)
+		info := jsonObject(t, response)
+		if info["Version"] != "4.9.5.0" || info["ProductName"] != "Goby" || info["GobyVersion"] != "integration-version" {
+			t.Fatalf("compatibility information lost its protocol baseline or product identity: %#v", info)
+		}
+	}
+	f.bootstrap(t)
+	cookie, _ := f.adminLogin(t)
+	response := f.request(t, http.MethodGet, "/admin/v1/overview", nil, nil, cookie)
+	expectStatus(t, response, http.StatusOK)
+	if objectValue(t, jsonObject(t, response), "Server")["Version"] != "integration-version" {
+		t.Fatal("native administration must retain the actual Goby product version")
+	}
+}
+
 func TestHTTPBootstrapRequiresSetupTokenAndOnlyRunsOnce(t *testing.T) {
 	f := newServerFixture(t)
 	status := f.request(t, http.MethodGet, "/admin/v1/bootstrap", nil, nil)
@@ -387,7 +406,7 @@ func TestHTTPEmbyAuthenticationShapeTokenSourcesAndRevocation(t *testing.T) {
 	}, http.Header{"Authorization": {`Emby Client="Integration", DeviceId="device"`}})
 	expectEmbyTextError(t, wrongPassword, http.StatusUnauthorized, "Invalid username or password. Please try again.")
 	logout := f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, http.Header{"X-Emby-Token": {token}})
-	expectStatus(t, logout, http.StatusOK)
+	expectStatus(t, logout, http.StatusNoContent)
 	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Users/"+userID, nil, http.Header{"X-Emby-Token": {token}}), http.StatusUnauthorized, "invalid_credentials", true)
 }
 

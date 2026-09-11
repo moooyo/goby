@@ -1,0 +1,1846 @@
+{
+  "format": 1,
+  "status": "source16_audio_report_equalities_observed_error_readbacks_incomplete",
+  "diagnostic_only": true,
+  "ui_acceptance": false,
+  "run": "/opt/goby-test/exec-work-m3e/goby-av-source16-audio-report-diagnostic-01",
+  "report_sha256": "4c4930ddc3e1c6f098dda0dc01d0d2269f1d7682bddc99e74a5950805f163eec",
+  "started_at": "2026-09-11T04:59:43.393Z",
+  "finished_at": "2026-09-11T04:59:58.486Z",
+  "browser_version": "153.0.8010.12",
+  "playwright_version": "1.63.0",
+  "candidate": {
+    "schema": 25,
+    "binary_sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6",
+    "process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 472843,
+      "start_ticks": 2393606
+    }
+  },
+  "input_archive": "/opt/goby-test/exec-work-m3e/av-source16-audio-report-input-01",
+  "input_manifest_sha256": "f42618039e43845f8dc64a9d2e18cdf5c769b56ce6f0739e73912a617c4a308b",
+  "driver_source_sha256": {
+    "client-browser-av.mjs": "8154520d5d2fbeac4c75a79e6e5d855207d7342dfdf6b8d8694fb6809307d485",
+    "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+    "client-browser-audio-flow.mjs": "abfae1eccc775c06d96a971176720e46609e310da0dd4edf89b42446ba557e25",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-goby-fixture.mjs": "97db9bae9406c4422566160ba09d19fff9dde779331e1a909252e7944be84e9b",
+    "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+    "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+    "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232"
+  },
+  "diagnostic": {
+    "diagnostic_only": true,
+    "ui_acceptance": false,
+    "outcome": "diagnostic_observations_incomplete",
+    "records": [
+      {
+        "index": 0,
+        "route_kind": "universal",
+        "method": "GET",
+        "request_order": 1,
+        "request_elapsed_ms": 380,
+        "http_status": 206,
+        "request_content_type": "not_inspected",
+        "response_content_type": "audio/mpeg",
+        "reference_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "MediaSourceId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          },
+          "api_key": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 43
+          },
+          "DeviceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 36
+          }
+        },
+        "response_elapsed_ms": 399,
+        "response_order": 2,
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 1,
+        "route_kind": "playing",
+        "method": "POST",
+        "request_order": 3,
+        "request_elapsed_ms": 417,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 771,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 426,
+        "response_order": 4,
+        "response_metadata_state": "recorded",
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "unavailable_or_timed_out",
+          "declared_bytes": 93
+        }
+      },
+      {
+        "index": 2,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 5,
+        "request_elapsed_ms": 664,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 632,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 675,
+        "response_order": 6,
+        "response_metadata_state": "recorded",
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "unavailable_or_timed_out",
+          "declared_bytes": 93
+        }
+      },
+      {
+        "index": 3,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 7,
+        "request_elapsed_ms": 3609,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 627,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 3617,
+        "response_order": 8,
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "first_failure_for_route_already_selected"
+        },
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 4,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 9,
+        "request_elapsed_ms": 4793,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 634,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 4799,
+        "response_order": 10,
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "first_failure_for_route_already_selected"
+        },
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 5,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 11,
+        "request_elapsed_ms": 5242,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 633,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 5249,
+        "response_order": 12,
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "first_failure_for_route_already_selected"
+        },
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 6,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 13,
+        "request_elapsed_ms": 5592,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 631,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 5599,
+        "response_order": 14,
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "first_failure_for_route_already_selected"
+        },
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 7,
+        "route_kind": "progress",
+        "method": "POST",
+        "request_order": 15,
+        "request_elapsed_ms": 5835,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 634,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 5843,
+        "response_order": 16,
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "first_failure_for_route_already_selected"
+        },
+        "response_metadata_state": "recorded"
+      },
+      {
+        "index": 8,
+        "route_kind": "stopped",
+        "method": "POST",
+        "request_order": 17,
+        "request_elapsed_ms": 8669,
+        "http_status": 404,
+        "request_content_type": "text/plain",
+        "response_content_type": "application/json",
+        "body_state": "necessary_fields_observed",
+        "universal_reference": {
+          "preceding_request_count": 1,
+          "ambiguous": false,
+          "http_206_observed": true,
+          "http_206_received_before_report_request": true,
+          "fields": {
+            "PlaySessionId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 13
+            },
+            "MediaSourceId": {
+              "state": "missing",
+              "present": false,
+              "type": "missing"
+            },
+            "api_key": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 43
+            },
+            "DeviceId": {
+              "state": "present",
+              "present": true,
+              "type": "string",
+              "length": 36
+            }
+          },
+          "event_timing": [
+            {
+              "request_order": 1,
+              "request_elapsed_ms": 380,
+              "response_order": 2,
+              "response_elapsed_ms": 399,
+              "http_status": 206,
+              "response_received_before_report_request": true
+            }
+          ]
+        },
+        "body_fields": {
+          "PlaySessionId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 13
+          },
+          "ItemId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "MediaSourceId": {
+            "state": "present",
+            "present": true,
+            "type": "string",
+            "length": 32
+          },
+          "SessionId": {
+            "state": "missing",
+            "present": false,
+            "type": "missing"
+          }
+        },
+        "comparisons": {
+          "PlaySessionId": {
+            "state": "comparable",
+            "equal": true
+          },
+          "ItemId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_owned": {
+            "state": "comparable",
+            "equal": true
+          },
+          "MediaSourceId_prefixed_owned": {
+            "state": "comparable",
+            "equal": false
+          },
+          "MediaSourceId_universal": {
+            "state": "reference_missing",
+            "unavailable_side": "reference"
+          },
+          "SessionId": {
+            "state": "reference_unavailable",
+            "reference_acquisition": "No login or successful authentication body is read"
+          },
+          "token_sources": {
+            "query_x_emby_token": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 43
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_token": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          },
+          "device_sources": {
+            "query_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "query_x_emby_device_id": {
+              "presence": {
+                "state": "present",
+                "present": true,
+                "type": "string",
+                "length": 36
+              },
+              "comparison": {
+                "state": "comparable",
+                "equal": true
+              }
+            },
+            "header_x_emby_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            },
+            "authorization_device_id": {
+              "presence": {
+                "state": "missing",
+                "present": false,
+                "type": "missing"
+              },
+              "comparison": {
+                "state": "missing",
+                "unavailable_side": "observed"
+              }
+            }
+          }
+        },
+        "optional_request_metadata_state": "recorded",
+        "request_metadata_state": "recorded",
+        "request_body_bytes": 595,
+        "body_top_level_type": "object",
+        "response_elapsed_ms": 8677,
+        "response_order": 18,
+        "response_metadata_state": "recorded",
+        "error_body": {
+          "diagnostic_only": true,
+          "state": "unavailable_or_timed_out",
+          "declared_bytes": 93
+        }
+      }
+    ],
+    "record_overflow": 0,
+    "observer_errors": 3,
+    "optional_metadata_errors": 0,
+    "request_body_bytes": 5157,
+    "request_bodies_over_limit": 0,
+    "limits": {
+      "records": 64,
+      "request_body_bytes": 32768,
+      "total_request_body_bytes": 1048576,
+      "request_header_wait_ms": 1500,
+      "error_bodies": 4,
+      "error_body_bytes": 8192,
+      "total_error_body_bytes": 32768,
+      "error_wait_ms": 2000
+    },
+    "error_diagnostics": {
+      "diagnostic_only": true,
+      "reads": 3,
+      "reserved_bytes": 24576,
+      "parsed_bytes": 0,
+      "stopped_after_over_limit": false,
+      "selection": "First HTTP 400 or 404 response for each Playing, Progress, and Stopped route"
+    },
+    "successful_response_bodies_read": false,
+    "comparison_policy": "Raw values exist only in memory. Missing, duplicate, invalid, or ambiguous sources never become false equality.",
+    "universal_reference": {
+      "request_count": 1,
+      "purpose": "Inventory only; report comparisons use only preceding universal request events",
+      "http_206_observed": true,
+      "response_statuses": [
+        206
+      ],
+      "ambiguous": false,
+      "fields": {
+        "PlaySessionId": {
+          "state": "present",
+          "present": true,
+          "type": "string",
+          "length": 13
+        },
+        "MediaSourceId": {
+          "state": "missing",
+          "present": false,
+          "type": "missing"
+        },
+        "api_key": {
+          "state": "present",
+          "present": true,
+          "type": "string",
+          "length": 43
+        },
+        "DeviceId": {
+          "state": "present",
+          "present": true,
+          "type": "string",
+          "length": 36
+        }
+      }
+    },
+    "pending_tasks_drained": true,
+    "pending_error_body_reads": 3,
+    "coverage": {
+      "owned_universal_206_observed": true,
+      "first_playing_observed": true,
+      "first_playing_body_fields_observed": true,
+      "first_playing_failure_observed": true,
+      "first_playing_error_code_observed": false,
+      "optional_progress_observed": true,
+      "optional_stopped_observed": true,
+      "optional_metadata_errors": 0
+    },
+    "primary_observation_complete": false,
+    "raw_comparison_values_cleared": true,
+    "listeners_removed": true
+  },
+  "audio_outcome": "blocked_at_observed_ui_step",
+  "audio_failure_phase": "stop",
+  "audio_failure_reason": "stopped_report_rejected",
+  "playback_evidence": {
+    "media_tag": "audio",
+    "current_time_delta_seconds": 2.044318,
+    "ready_state": 4,
+    "duration_seconds": 180,
+    "audible_output_verified": false
+  },
+  "source_identity_evidence": {
+    "recognized_route": true,
+    "route_kind": "universal",
+    "target_origin_matches": true,
+    "matches_selected_item": true
+  },
+  "logout": {
+    "attempted": true,
+    "http_status": 204,
+    "result": "ui_logout_http_accepted_and_login_view_visible"
+  },
+  "session_proof": {
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 14535,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 14547
+        },
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 14548,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 14555
+        },
+        "result": "logout_token_rejected"
+      }
+    ]
+  },
+  "target_assertions": {
+    "enabled": true,
+    "checks": [
+      {
+        "phase": "target_pin_before_browser",
+        "elapsed_ms": 2,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_login_submit",
+        "elapsed_ms": 1326,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_workflow",
+        "elapsed_ms": 1621,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_logout",
+        "elapsed_ms": 14230,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_after_shutdown",
+        "elapsed_ms": 15020,
+        "result": "passed"
+      }
+    ],
+    "failed": false
+  },
+  "preferences": {
+    "configuration_unchanged": true,
+    "policy_unchanged": true,
+    "user_settings_unchanged": true
+  },
+  "all_av_user_data_unchanged": true,
+  "completed_evidence": {
+    "format": 1,
+    "scope": "Read-only frozen input, original report, and signed-out retained-state inspection; no new HTTP",
+    "all_input_hashes_match": true,
+    "driver_input_count": 10,
+    "input_archive_file_count": 11,
+    "input_manifest_sha256": "f42618039e43845f8dc64a9d2e18cdf5c769b56ce6f0739e73912a617c4a308b",
+    "original_source16_reports_unchanged": true,
+    "private_state_retained": true,
+    "private_state_sha256": "d52c2efcb0c0e0ff8c6cc1a423b30e3f436d33064a54f67863be1d611b5e6f40",
+    "stored_user_credential_count": 0,
+    "actual_ui_logout_status": 204,
+    "exact_token_verification_status": 401,
+    "remaining_effective_session": false
+  },
+  "remaining_unrevoked_sessions": [],
+  "limitations": [
+    "The necessary identifier equality facts were observed independently of the error-response readback failures.",
+    "No ErrorCode was obtained; none is inferred or copied from a different request. Three declared 93-byte bodies did not complete in the collector, with zero parsed bytes and an incomplete diagnostic result.",
+    "MediaSourceId in the universal query was missing and was not silently defaulted to the owned item.",
+    "The only preceding universal request had already returned 206 before the first Playing request; future requests are not used as a comparison reference.",
+    "Token, device, and session comparison values and their hashes are not in this summary; it retains only presence/type/length and equality metadata.",
+    "No successful authentication or media response body was read. No extra run was used to recover the missing ErrorCode.",
+    "The original audio workflow still failed on the rejected Stopped report; successful comparisons are not client acceptance."
+  ]
+}

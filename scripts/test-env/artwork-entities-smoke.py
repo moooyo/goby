@@ -300,7 +300,7 @@ def main() -> int:
                 summary["owned_directory_removed"] = True
             except Exception:
                 summary["cleanup_errors"].append("Owned fixture cleanup refused or failed")
-        for mode, method, path, expected in (("emby", "POST", "/emby/Sessions/Logout", (200,)), ("admin", "DELETE", "/admin/v1/session", (204,))):
+        for mode, method, path, expected in (("emby", "POST", "/emby/Sessions/Logout", (204,)), ("admin", "DELETE", "/admin/v1/session", (204,))):
             if (mode == "emby" and api.token) or (mode == "admin" and api.cookie):
                 try:
                     api.request(method, path, **{mode: True}, expected=expected, parse=False)

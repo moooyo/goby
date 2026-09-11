@@ -1,0 +1,79 @@
+{
+  "acknowledgedBaseline": {
+    "genreLimitOnDetails": "1"
+  },
+  "attempt": 5,
+  "caseStatuses": {
+    "acknowledged-ui-settings-baseline": 200,
+    "nested-key-delete": 204,
+    "nested-key-delete-after": 200,
+    "nested-visitor-matrix": 204,
+    "nested-visitor-matrix-after": 200,
+    "viewer2-dto-final": 200,
+    "viewer2-login": 200,
+    "viewer2-logout": 204,
+    "viewer2-token-invalid": 401
+  },
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "cleanupPassed": true,
+  "failureType": null,
+  "marker": "goby-m3e-reference-client-settings-v5",
+  "newRecorderAccountsRevoked": [
+    "viewer2"
+  ],
+  "newRecorderRevoked": true,
+  "nullDeletionProven": true,
+  "observations": [
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_nested": "{nullValue:null,emptyString:,emptyObject:{},emptyArray:[],object:{dup:first,dup:second,Case:upper,case:lower,:empty-key,key with space:space,key,comma:comma,key:colon:colon,key\"quote:quote,key\\slash:slash,\u96ea:unicode-key},array:[null,,{},[],{innerNull:null,innerEmpty:},[,null,{},[]]],tail:end}"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "nested-visitor-matrix",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "rawJSON": "{\"m3e_nested\":{\"nullValue\":null,\"emptyString\":\"\",\"emptyObject\":{},\"emptyArray\":[],\"object\":{\"dup\":\"first\",\"dup\":\"second\",\"Case\":\"upper\",\"case\":\"lower\",\"\":\"empty-key\",\"key with space\":\"space\",\"key,comma\":\"comma\",\"key:colon\":\"colon\",\"key\\\"quote\":\"quote\",\"key\\\\slash\":\"slash\",\"\\u96ea\":\"unicode-key\"},\"array\":[null,\"\",{},[],{\"innerNull\":null,\"innerEmpty\":\"\"},[\"\",null,{},[]]],\"tail\":\"end\"}}",
+      "reqformat": "json",
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_nested": "{nullValue:null,emptyString:,emptyObject:{},emptyArray:[],object:{dup:first,dup:second,Case:upper,case:lower,:empty-key,key with space:space,key,comma:comma,key:colon:colon,key\"quote:quote,key\\slash:slash,\u96ea:unicode-key},array:[null,,{},[],{innerNull:null,innerEmpty:},[,null,{},[]]],tail:end}"
+      },
+      "case": "nested-key-delete",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_nested": null
+      },
+      "responseBody": null,
+      "status": 204
+    }
+  ],
+  "primaryConfigurationAndPolicyPreserved": null,
+  "primaryPlaybackHistoryPreserved": null,
+  "primaryViewerAuthenticatedForReadIsolation": false,
+  "primaryViewerAuthenticatedOrWritten": false,
+  "primaryViewerReadIsolationOnly": true,
+  "primaryViewerSettingsWriteAttempts": 0,
+  "priorRequests": 111,
+  "requestsThisAttempt": 9,
+  "schemaVersion": 1,
+  "settingsAfter": {
+    "genreLimitOnDetails": "1"
+  },
+  "sourceMediaPreserved": true,
+  "totalStudyRequests": 120,
+  "userSelection": null,
+  "viewer2ConfigurationAndPolicyPreserved": true
+}

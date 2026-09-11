@@ -21,7 +21,10 @@ The target is broad API compatibility; staging prevents claiming full compatibil
 
 ## Verification environment policy
 
-The current task explicitly authorizes **local builds only to detect compilation/build errors**. This includes Go compilation and the administrator frontend production build. It does not authorize local unit/integration tests, validators, smoke tests, server execution, HTTP probes, or FFmpeg/media capability probes.
+The resumed task on 2026-09-11 requires **all verification on the remote host**.
+Local builds, unit/integration tests, validators, smoke tests, server execution,
+HTTP probes, browser checks and FFmpeg/media probes are not authorized. Earlier
+reports that record permitted local compilation describe their historical tasks.
 
 Run all tests, acceptance checks, and runtime/media verification through **`ssh test-env`** on the remote Linux environment. The user authorizes installing and removing packages/software in that environment as needed for this task. If that host is unavailable, record the affected verification as blocked and do not fall back to local execution. Use the [toolchain policy](../development/toolchain.md) for pinned releases and hardware evidence requirements.
 

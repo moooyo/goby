@@ -1,0 +1,498 @@
+{
+  "status": "blocked",
+  "scope": "source07 real original-client home initialization diagnostic, not playback acceptance",
+  "source": "source-attempt-07",
+  "binarySha256": "7eaf440655c877542fd0bcf745045d4b33cb3339bc53d5e5c9fe8d1a1fd8b875",
+  "observation": "/opt/goby-test/exec-work-m3e/goby-movie-ui-05/observation.json",
+  "observationSha256": "46745bb81af18daeae410273a942bb291da68f1c9780d3ed4bf6eb6bd810bdf4",
+  "browserVersion": "153.0.8010.12",
+  "login": {
+    "attempted": true,
+    "request_observed": true,
+    "http_status": 200,
+    "form_closed": true,
+    "result": "http_accepted_and_login_form_closed"
+  },
+  "diagnostics": {
+    "enabled": true,
+    "diagnostic_only": true,
+    "count": 11,
+    "limit": 256,
+    "errors": [
+      {
+        "name": "RangeError",
+        "message": "Invalid language tag: i",
+        "elapsed_ms": 351
+      },
+      {
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "elapsed_ms": 663
+      },
+      {
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "elapsed_ms": 1036
+      },
+      {
+        "name": "TypeError",
+        "message": "Failed to fetch",
+        "elapsed_ms": 1240
+      },
+      {
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "elapsed_ms": 1256
+      },
+      {
+        "name": "TypeError",
+        "message": "Cannot read properties of undefined (reading 'includes')",
+        "elapsed_ms": 1273
+      },
+      {
+        "name": "TypeError",
+        "message": "Invalid URL",
+        "elapsed_ms": 22114
+      }
+    ],
+    "control_errors": 0,
+    "boundary": "Immediately resume each exception; retain only sanitized error first lines. No source, stack, scope, object properties, or runtime values are inspected. Debugger timing is not playback acceptance."
+  },
+  "requests": [
+    {
+      "index": 156,
+      "elapsed_ms": 511,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Branding/Css.css",
+      "query_field_names": [
+        "v"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "stylesheet",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 161,
+      "elapsed_ms": 520,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/system/info/public",
+      "query_field_names": [],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 170,
+      "elapsed_ms": 579,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/users/public",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 199,
+      "elapsed_ms": 662,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Branding/Configuration",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 200,
+      "elapsed_ms": 668,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/users/public",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 207,
+      "elapsed_ms": 1036,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Branding/Configuration",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 208,
+      "elapsed_ms": 1159,
+      "method": "POST",
+      "origin": "target",
+      "route": "/emby/Users/authenticatebyname",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "status": 200,
+      "header_names": [
+        "accept",
+        "accept-language",
+        "content-type",
+        "origin",
+        "referer",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "user-agent"
+      ],
+      "authorization_shape": [],
+      "form_field_names": [
+        "Username",
+        "Pw"
+      ]
+    },
+    {
+      "index": 209,
+      "elapsed_ms": 1215,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/System/Info/Public",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 210,
+      "elapsed_ms": 1215,
+      "method": "POST",
+      "origin": "target",
+      "route": "/emby/Sessions/Capabilities/Full",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language",
+        "reqformat"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": "text/plain",
+      "status": 204,
+      "json_field_names": [
+        "PlayableMediaTypes",
+        "SupportedCommands",
+        "SupportsMediaControl",
+        "DeviceProfile",
+        "IconUrl"
+      ]
+    },
+    {
+      "index": 211,
+      "elapsed_ms": 1222,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/usersettings/{value}",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 212,
+      "elapsed_ms": 1232,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/System/Info",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 213,
+      "elapsed_ms": 1234,
+      "method": "POST",
+      "origin": "external",
+      "route": "/{value}/{value}/{value}/{value}",
+      "query_field_names": [
+        "serverId",
+        "deviceId",
+        "deviceName",
+        "appName",
+        "appVersion",
+        "viewOnly"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": true,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": null,
+      "failure": "browser_request_failed"
+    },
+    {
+      "index": 218,
+      "elapsed_ms": 1263,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Users/{value}/Views",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 221,
+      "elapsed_ms": 1280,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Users/{value}/Items",
+      "query_field_names": [
+        "Fields",
+        "Recursive",
+        "IncludeItemTypes",
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [
+        {
+          "name": "Fields",
+          "value": "PrimaryImageAspectRatio"
+        },
+        {
+          "name": "Recursive",
+          "value": "true"
+        },
+        {
+          "name": "IncludeItemTypes",
+          "value": "Playlist"
+        }
+      ],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 222,
+      "elapsed_ms": 1281,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Users/{value}/Items",
+      "query_field_names": [
+        "Fields",
+        "Recursive",
+        "IncludeItemTypes",
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [
+        {
+          "name": "Fields",
+          "value": "PrimaryImageAspectRatio"
+        },
+        {
+          "name": "Recursive",
+          "value": "true"
+        },
+        {
+          "name": "IncludeItemTypes",
+          "value": "BoxSet"
+        }
+      ],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 224,
+      "elapsed_ms": 22091,
+      "method": "POST",
+      "origin": "target",
+      "route": "/emby/Sessions/Logout",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200,
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "index": 225,
+      "elapsed_ms": 22104,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/users/public",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 226,
+      "elapsed_ms": 22114,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/Branding/Configuration",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    },
+    {
+      "index": 227,
+      "elapsed_ms": 22117,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/users/public",
+      "query_field_names": [
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 200
+    }
+  ],
+  "visibleHome": [
+    {
+      "name": "after-login",
+      "text": "menu\nsearch\n\ue88a\nHome\nMy Media\nexpand_more\n\ue02c\nM3e Client Movies\n\ue310\nM3e Client Music\n\ue333\nM3e Client Television\nHomeFavorites\nGet Emby Premiere\n\ue307\n\ue7fd\n\ue8b8\nThere was an error processing the request. Please try again later.\n\ue5d5\nRetry"
+    },
+    {
+      "name": "movie-blocked-home",
+      "text": "menu\nsearch\n\ue88a\nHome\nMy Media\nexpand_more\n\ue02c\nM3e Client Movies\n\ue310\nM3e Client Music\n\ue333\nM3e Client Television\nHomeFavorites\nGet Emby Premiere\n\ue307\n\ue7fd\n\ue8b8\nThere was an error processing the request. Please try again later.\n\ue5d5\nRetry"
+    }
+  ],
+  "logout": {
+    "attempted": true,
+    "result": "ui_logout_http_accepted_and_login_view_visible",
+    "http_status": 200,
+    "owned_session": "ui_logout_observed"
+  },
+  "limitation": "The caught includes error supports a missing-array hypothesis. The exact configuration member is not identified by this diagnostic; a corrected server and debugger-free UI rerun are required."
+}

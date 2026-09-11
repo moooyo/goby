@@ -130,7 +130,11 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 	for _, flag := range []struct {
 		name   string
 		target **bool
-	}{{"IsPlayed", &query.IsPlayed}, {"IsFavorite", &query.IsFavorite}} {
+	}{
+		{"IsPlayed", &query.IsPlayed}, {"IsFavorite", &query.IsFavorite},
+		{"IsFolder", &query.IsFolder}, {"IsSpecialSeason", &query.IsSpecialSeason},
+		{"IsSpecialEpisode", &query.IsSpecialEpisode},
+	} {
 		if raw := values.Get(flag.name); raw != "" {
 			value, err := strconv.ParseBool(raw)
 			if err != nil {
@@ -164,6 +168,9 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 		*target = &value
 	}
 	if !readEntityFilters(w, r, &query) {
+		return query, false
+	}
+	if !readMusicFilters(w, r, &query) {
 		return query, false
 	}
 	return query, true
@@ -440,6 +447,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		dto["Overview"] = item.Overview
 	}
 	addLocalMetadata(dto, item.Metadata, item.Entities, fields, detail)
+	addMusicCatalogFields(dto, item)
 	if item.UserData != nil {
 		dto["UserData"] = userDataDTO(*item.UserData, false)
 	}

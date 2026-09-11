@@ -1,0 +1,20 @@
+{
+  "exitCode": 0,
+  "logSha256": "5b6b99f1e3bebc68e4695253dcd60bc74fd5d33747574cefcfd18c3fdffb0727",
+  "command": [
+    "python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/source-attempt-09/scripts/test-env/test-run-client-backup-tests.py",
+    "/opt/goby-test/exec-work-m3e/source-attempt-09/scripts/test-env/run-client-backup-tests.py"
+  ],
+  "runnerSha256": "3c0b8a4907b47bbbf9e85f6a66abc880a228c3538f4479eacd7acd2d99f54203",
+  "testSha256": "ceb586678dfd534cf08ad82c1d77366b2aae9ad7a492258aa73d2ad1e4dd314e",
+  "summary": [
+    "test_unknown_object_inventory_includes_hidden_grants_and_hooks (__main__.RunnerGuardTests.test_unknown_object_inventory_includes_hidden_grants_and_hooks) ... ok",
+    "",
+    "----------------------------------------------------------------------",
+    "Ran 45 tests in 0.045s",
+    "",
+    "OK"
+  ]
+}

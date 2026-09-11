@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,13 @@ import (
 // non-superuser roles. They create and remove only their freshly named schema.
 // The outside test operator owns database and role provisioning and removal.
 func recoveryFixture(t *testing.T) (context.Context, *pgxpool.Pool, *pgxpool.Pool, Options) {
+	t.Helper()
+	return recoveryFixtureAtVersion(t, 0)
+}
+
+// A historical source starts from its exact compiled migration prefix. Never
+// emulate an older archive by deleting history from a current schema.
+func recoveryFixtureAtVersion(t *testing.T, version int64) (context.Context, *pgxpool.Pool, *pgxpool.Pool, Options) {
 	t.Helper()
 	sourceURL, targetURL := os.Getenv("GOBY_TEST_BACKUP_SOURCE_DATABASE_URL"), os.Getenv("GOBY_TEST_BACKUP_TARGET_DATABASE_URL")
 	if sourceURL == "" || targetURL == "" {
@@ -77,8 +85,22 @@ func recoveryFixture(t *testing.T) (context.Context, *pgxpool.Pool, *pgxpool.Poo
 			}
 		})
 	}
-	if err := database.Migrate(ctx, source); err != nil {
-		t.Fatalf("apply compiled source migrations: %v", err)
+	if version == 0 {
+		if err := database.Migrate(ctx, source); err != nil {
+			t.Fatalf("apply compiled source migrations: %v", err)
+		}
+	} else {
+		tx, err := source.Begin(ctx)
+		if err != nil {
+			t.Fatal("begin historical source migration")
+		}
+		defer rollback(tx)
+		if err := database.RecoveryMigrateTo(ctx, tx, version); err != nil {
+			t.Fatalf("apply historical source migrations through schema %d: %v", version, err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal("commit historical source migrations")
+		}
 	}
 	if _, err := source.Exec(ctx, `INSERT INTO server_settings(key,value,created_at,updated_at) VALUES('server_id','backup-test-server','2020-01-01T00:00:00Z','2020-01-02T00:00:00Z');
 		INSERT INTO users(id,name,normalized_name,password_hash,is_administrator,created_at,updated_at) VALUES('backup-admin','Before snapshot','before snapshot','test-only-password-hash',true,'2020-01-01T00:00:00Z','2020-01-02T00:00:00Z');
@@ -123,6 +145,19 @@ func sourceArchive(t *testing.T, ctx context.Context, source *pgxpool.Pool, opti
 
 func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 	ctx, source, target, options := recoveryFixture(t)
+	const preferences = `{"MaxStreamingBitrate":"4000000","SubtitleMode":"Smart","Theme":"dark","Custom":"{Keep:[1,true,same]}"}`
+	const viewerPreferences = `{"MaxStreamingBitrate":"900000","SubtitleMode":"Always","Theme":"light","ViewerOnly":"retained"}`
+	if _, err := source.Exec(ctx, `INSERT INTO users(id,name,normalized_name,password_hash,configuration,created_at,updated_at)
+		VALUES('backup-viewer','Snapshot viewer','snapshot viewer','test-only-viewer-password-hash',
+		'{"AudioLanguagePreference":"fra"}'::jsonb,'2020-01-01T00:00:00Z','2020-01-02T00:00:00Z')`); err != nil {
+		t.Fatal("seed an independent preference owner before snapshot")
+	}
+	if _, err := source.Exec(ctx, `INSERT INTO user_settings(user_id,settings,updated_at)
+		VALUES('backup-admin',$1::jsonb,'2020-01-03T00:00:00Z'),
+		('backup-viewer',$2::jsonb,'2020-01-04T00:00:00Z')`, preferences, viewerPreferences); err != nil {
+		t.Fatal("seed separate user preference maps before snapshot")
+	}
+	musicBefore := seedMusicSnapshotWitness(t, ctx, source)
 	snapshot, err := OpenSnapshot(ctx, source, options)
 	if err != nil {
 		logFixtureCatalogDifference(t, ctx, source, options)
@@ -133,8 +168,26 @@ func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal("read snapshot fingerprints")
 	}
-	if _, err := source.Exec(ctx, `UPDATE users SET name='After snapshot' WHERE id='backup-admin'; UPDATE managed_settings SET revision=revision+1; INSERT INTO devices(reported_device_id) VALUES('later-device');`); err != nil {
+	if facts.SchemaVersion != 25 || len(facts.MigrationChecksums) != 25 {
+		t.Fatal("the current music archive fixture did not describe schema25")
+	}
+	if _, err := source.Exec(ctx, `UPDATE users SET name='After snapshot' WHERE id='backup-admin';
+		UPDATE managed_settings SET revision=revision+1;
+		UPDATE user_settings SET settings=jsonb_set(settings,'{Theme}','"after-snapshot"'::jsonb),
+		updated_at='2020-01-05T00:00:00Z';
+		UPDATE item_metadata_state SET music_source=jsonb_set(music_source,'{Name}','"Later accepted title"'::jsonb),
+		automatic=jsonb_set(automatic,'{Name}','"Later accepted title"'::jsonb),
+		effective=jsonb_set(effective,'{Name}','"Later accepted title"'::jsonb),revision=revision+1,
+		updated_at='2020-01-05T00:00:00Z' WHERE item_id='music-snapshot-track';
+		UPDATE item_metadata_state SET source_key=source_key || jsonb_build_object('MusicSourceHash',encode(sha256(convert_to(music_source::text,'UTF8')),'hex'))
+		WHERE item_id='music-snapshot-track';
+		UPDATE items SET name='Later accepted title',sort_name='later accepted title' WHERE id='music-snapshot-track';
+		INSERT INTO devices(reported_device_id) VALUES('later-device');`); err != nil {
 		t.Fatal("commit independent newer state")
+	}
+	musicAfter := musicSnapshotState(t, ctx, source)
+	if musicAfter == musicBefore {
+		t.Fatal("the concurrent source commit did not change its accepted music witness")
 	}
 	file, err := os.OpenFile(filepath.Join(t.TempDir(), "database.dump"), os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
 	if err != nil {
@@ -155,9 +208,13 @@ func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 		logFixtureCatalogDifference(t, ctx, target, options)
 		t.Fatalf("restore decoded archive: %v", err)
 	}
-	if result.SourceVersion != facts.SchemaVersion || !equalJSON(result.Tables, facts.Tables) {
+	if result.SourceVersion != facts.SchemaVersion || result.CurrentVersion != 25 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatal("restore result differs from original snapshot")
 	}
+	if musicSnapshotState(t, ctx, target) != musicBefore || musicSnapshotState(t, ctx, source) != musicAfter {
+		t.Fatal("restore changed the exported music facts, relation IDs, role keys, or later source state")
+	}
+	assertMusicSnapshotIdentity(t, ctx, target)
 	var sourceName, targetName string
 	var revision int64
 	var count int
@@ -166,6 +223,24 @@ func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 	}
 	if target.QueryRow(ctx, `SELECT name FROM users WHERE id='backup-admin'`).Scan(&targetName) != nil || targetName != "Before snapshot" {
 		t.Fatal("restore did not preserve the exported snapshot")
+	}
+	if err := target.QueryRow(ctx, "SELECT count(*) FROM user_settings").Scan(&count); err != nil || count != 2 {
+		t.Fatal("restore changed the number of independent preference owners")
+	}
+	for _, expected := range []struct{ userID, settings, updatedAt string }{
+		{"backup-admin", preferences, "2020-01-03T00:00:00Z"},
+		{"backup-viewer", viewerPreferences, "2020-01-04T00:00:00Z"},
+	} {
+		var preferencesPreserved, sourcePreserved bool
+		if err := target.QueryRow(ctx, `SELECT settings=$2::jsonb AND updated_at=$3::timestamptz
+			FROM user_settings WHERE user_id=$1`, expected.userID, expected.settings, expected.updatedAt).Scan(&preferencesPreserved); err != nil || !preferencesPreserved {
+			t.Fatalf("restore mixed the preference map or exact update time for %s", expected.userID)
+		}
+		if err := source.QueryRow(ctx, `SELECT settings=jsonb_set($2::jsonb,'{Theme}','"after-snapshot"'::jsonb)
+			AND updated_at='2020-01-05T00:00:00Z'::timestamptz FROM user_settings WHERE user_id=$1`,
+			expected.userID, expected.settings).Scan(&sourcePreserved); err != nil || !sourcePreserved {
+			t.Fatalf("restore changed the later source preferences for %s", expected.userID)
+		}
 	}
 	if target.QueryRow(ctx, `SELECT revision FROM managed_settings`).Scan(&revision) != nil || revision != 9007199254740993 {
 		t.Fatal("restore lost exact bigint precision")
@@ -298,17 +373,16 @@ func TestPostgreSQLSnapshotCancellationAndSettingsIsolation(t *testing.T) {
 // migrations, never table data, passwords, URLs, or runtime configuration.
 func logFixtureCatalogDifference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, options Options) {
 	t.Helper()
-	migrations, err := database.EmbeddedMigrations()
-	if err != nil || len(migrations) == 0 {
+	version, err := database.SchemaVersion(ctx, pool)
+	if err != nil || version < 1 {
 		return
 	}
-	version := migrations[len(migrations)-1].Version
 	actualBytes, err := ExportCatalog(ctx, pool, options.Schema, version)
 	if err != nil {
 		t.Logf("Catalog diagnostic unavailable: %v", err)
 		return
 	}
-	expectedBytes, err := catalogFiles.ReadFile("catalogs/schema-23-postgresql-17.json")
+	expectedBytes, err := catalogFiles.ReadFile(fmt.Sprintf("catalogs/schema-%d-postgresql-17.json", version))
 	if err != nil {
 		return
 	}

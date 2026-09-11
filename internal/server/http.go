@@ -46,9 +46,24 @@ func apiError(w http.ResponseWriter, r *http.Request, status int, code, message 
 }
 
 func decodeBody(w http.ResponseWriter, r *http.Request, dst any) bool {
+	return decodeJSONBodyTypes(w, r, dst, false)
+}
+
+// decodeEmbyJSONBody accepts the JSON payload media types sent by the reference
+// Web Client. Native administrator callers continue to use decodeBody.
+func decodeEmbyJSONBody(w http.ResponseWriter, r *http.Request, dst any) bool {
+	return decodeJSONBodyTypes(w, r, dst, true)
+}
+
+func decodeJSONBodyTypes(w http.ResponseWriter, r *http.Request, dst any, allowPlainText bool) bool {
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if err != nil || mediaType != "application/json" {
-		apiError(w, r, 415, "unsupported_media_type", "Use application/json for this request.")
+	if err != nil || (allowPlainText && len(r.Header.Values("Content-Type")) != 1) ||
+		(mediaType != "application/json" && (!allowPlainText || mediaType != "text/plain")) {
+		message := "Use application/json for this request."
+		if allowPlainText {
+			message = "Use application/json or text/plain with a JSON body for this request."
+		}
+		apiError(w, r, 415, "unsupported_media_type", message)
 		return false
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)

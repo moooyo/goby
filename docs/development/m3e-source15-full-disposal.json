@@ -1,0 +1,60 @@
+{
+  "concurrencyBoundary": "The workspace operator lock serializes cooperating administrative DDL; no resistance to an unrelated privileged administrator bypassing that lock is claimed.",
+  "failedLogSha256": "01889de68ca3efb27dc9b36d77dafb081fc7ba377cb2649c2e426c32c79fa4af",
+  "failedReportSha256": "69083c84aeb8aa01c4fc927745f7cc326c8924d1cbc4da59073fd80b5fad1fcb",
+  "hbaSha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "operatorSha256": "954833f60e94987f6f27f580ec9dfa442144c568aa403b44b8b5a435ea7d38a6",
+  "pairs": [
+    {
+      "conditions": {
+        "backends": 0,
+        "external_dependencies": 0,
+        "memberships": 0,
+        "prepared": 0,
+        "settings": 0,
+        "slots": 0
+      },
+      "databaseOid": 1823034,
+      "name": "goby_backup_m3e_source",
+      "roleOid": 1823033,
+      "schemaObjects": [],
+      "tableRowCounts": {}
+    },
+    {
+      "conditions": {
+        "backends": 0,
+        "external_dependencies": 0,
+        "memberships": 0,
+        "prepared": 0,
+        "settings": 0,
+        "slots": 0
+      },
+      "databaseOid": 1823036,
+      "name": "goby_backup_m3e_target",
+      "roleOid": 1823035,
+      "schemaObjects": [],
+      "tableRowCounts": {}
+    }
+  ],
+  "preexistingCatalogUnchanged": true,
+  "privateReportSha256": "14daefd3458221933156094ca5a4d88156cc396e9ee766f4b74c28e347fcaade",
+  "removed": [
+    {
+      "database_oid": 1823036,
+      "name": "goby_backup_m3e_target",
+      "phase": "removed",
+      "role_oid": 1823035
+    },
+    {
+      "database_oid": 1823034,
+      "name": "goby_backup_m3e_source",
+      "phase": "removed",
+      "role_oid": 1823033
+    }
+  ],
+  "runId": "20260911_034930_0b4570e66109",
+  "scope": "Only the independently reviewed empty source15 disposable databases and roles were removed without FORCE or backend termination",
+  "sourceReceiptSha256": "80e4b13e032a696bcca67742c947eeed068826708e7ba9f1a46fb3d2b6aa09e2",
+  "status": "disposed",
+  "systemIdentifier": "7684040109719526738"
+}

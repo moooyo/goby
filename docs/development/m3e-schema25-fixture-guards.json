@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "scope": "All candidate fixture operator guards using the actual generated catalog25; no candidate service or database mutation",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-14",
+  "source_manifest_sha256": "abbb5dee98e3546a4b70b333bd91874a0f730d02a698f19b744d65e425313785",
+  "catalog25_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+  "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+  "guard_sha256": "d171e9d4743667cdf3a2a2cb57907fe04c5ed904f01849b6bb2ad2d97d3384c4",
+  "tests": 37,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "exit_code": 0,
+  "database_mutations": 0,
+  "service_actions": 0,
+  "execution": "python3 -B source-attempt-14/scripts/test-env/test-prepare-client-fixture.py with explicit schema25 source, manifest and actual catalog digests, through root SSH on test-env",
+  "recording": "This record retains the machine-readable result returned by the remote invocation; detailed unittest output remains in the task tool transcript. The new operator is not yet installed as the active candidate operator."
+}

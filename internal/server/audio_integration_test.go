@@ -37,6 +37,11 @@ type audioHTTPFixture struct {
 // wrappers belong exclusively to temporary directories owned by this test.
 func newAudioHTTPFixture(t *testing.T, slow bool) *audioHTTPFixture {
 	t.Helper()
+	return newAudioHTTPFixtureWithConversion(t, slow, true)
+}
+
+func newAudioHTTPFixtureWithConversion(t *testing.T, slow, conversion bool) *audioHTTPFixture {
+	t.Helper()
 	ffmpeg, ffprobe := os.Getenv("GOBY_FFMPEG"), os.Getenv("GOBY_FFPROBE")
 	if ffmpeg == "" || ffprobe == "" {
 		t.Skip("GOBY_FFMPEG and GOBY_FFPROBE are required for real audio HTTP verification")
@@ -86,25 +91,29 @@ func newAudioHTTPFixture(t *testing.T, slow bool) *audioHTTPFixture {
 	f.app.cfg.FFmpegPath, f.app.cfg.FFprobePath = wrapper, ffprobe
 	f.app.cfg.MediaRoots = []string{root}
 	f.app.cfg.Transcoding = config.TranscodingConfig{
-		Enabled: true, CacheDirectory: t.TempDir(), Threads: 1,
+		Enabled: conversion, CacheDirectory: t.TempDir(), Threads: 1,
 		MaxJobs: 2, MaxUserJobs: 2, MaxSessionJobs: 2, MaxQueueJobs: 8, MaxRetainedJobs: 32,
 		MaxCacheBytes: 64 << 20, MaxJobBytes: 16 << 20, MinFreeBytes: 1 << 20,
 		MaxBitrate: 2_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 2,
 	}
 	f.cfg = f.app.cfg
 	initializeFixtureSettings(t, f)
-	runtime, err := newHLSRuntime(f.ctx, f.app)
-	if err != nil {
-		t.Fatalf("create real audio runtime (%T)", err)
-	}
-	f.app.hls = runtime
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := runtime.Close(ctx); err != nil {
-			t.Errorf("close real audio runtime (%T)", err)
+	if conversion {
+		runtime, err := newHLSRuntime(f.ctx, f.app)
+		if err != nil {
+			t.Fatalf("create real audio runtime (%T)", err)
 		}
-	})
+		f.app.hls = runtime
+		t.Cleanup(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := runtime.Close(ctx); err != nil {
+				t.Errorf("close real audio runtime (%T)", err)
+			}
+		})
+	} else if f.app.hls != nil {
+		t.Fatal("the disabled-conversion audio fixture inherited a conversion runtime")
+	}
 	collection, err := catalog.CreateLibrary(f.ctx, "Real HTTP Audio", "music", []string{root})
 	if err != nil {
 		t.Fatalf("create audio library (%T)", err)
@@ -264,6 +273,178 @@ func TestHTTPAudioUniversalOriginalBytesRangeHeadAndConditional(t *testing.T) {
 	}
 	if len(a.encoderPIDs(t)) != 0 || a.history(t) != before {
 		t.Fatal("original audio GETs started an encoder or changed playback history")
+	}
+}
+
+func TestHTTPAudioUniversalWebCapabilitiesServeOriginalRangesWithoutConversion(t *testing.T) {
+	a := newAudioHTTPFixtureWithConversion(t, false, false)
+	before := a.history(t)
+	for _, source := range []struct{ key, contentType string }{{"mp3", "audio/mpeg"}, {"flac", "audio/flac"}} {
+		t.Run(source.key, func(t *testing.T) {
+			original, err := os.ReadFile(a.sources[source.key].Path)
+			if err != nil {
+				t.Fatal("read owned original audio")
+			}
+			reference := "web-capabilities-" + source.key
+			values := url.Values{"Container": {audioWebContainerCapabilities}, "AudioCodec": {"aac"}, "TranscodingContainer": {"ts"},
+				"TranscodingProtocol": {"hls"}, "MaxStreamingBitrate": {"200000000"}, "StartTimeTicks": {"0"},
+				"EnableRedirection": {"true"}, "EnableRemoteMedia": {"false"}, "PlaySessionId": {reference},
+				"UserId": {a.accounts.viewer.userID}, "DeviceId": {a.accounts.viewer.deviceID}}
+			headers := a.accounts.viewer.headers.Clone()
+			headers.Set("Range", "bytes=0-")
+			response := a.request(t, http.MethodGet, a.universal(source.key, values), nil, headers)
+			expectHLSHTTPStatus(t, response, http.StatusPartialContent)
+			if !bytes.Equal(response.body, original) || response.header.Get("Content-Type") != source.contentType ||
+				response.header.Get("Content-Range") != fmt.Sprintf("bytes 0-%d/%d", len(original)-1, len(original)) ||
+				response.header.Get("Content-Length") != strconv.Itoa(len(original)) {
+				t.Fatal("the observed Web capability query did not deliver the complete original range representation")
+			}
+			playID := a.canonical(t, a.accounts.viewer, reference, source.key)
+			if a.jobs(t, a.accounts.viewer, playID, false) != 0 {
+				t.Error("a compatible original allocated a conversion job")
+			}
+			invalid := headers.Clone()
+			invalid.Set("X-Emby-Token", "invalid-audio-token")
+			expectHLSHTTPStatus(t, a.request(t, http.MethodGet, a.universal(source.key, values), nil, invalid), http.StatusUnauthorized)
+			values.Set("UserId", a.accounts.admin.userID)
+			expectHLSHTTPStatus(t, a.request(t, http.MethodGet, a.universal(source.key, values), nil, headers), http.StatusForbidden)
+		})
+	}
+	if len(a.encoderPIDs(t)) != 0 || a.history(t) != before {
+		t.Fatal("qualified original reads started an encoder or changed playback history")
+	}
+	// A valid capability grammar cannot grant an unconfigured conversion path.
+	expectHLSHTTPStatus(t, a.request(t, http.MethodGet, a.universal("flac", url.Values{
+		"Container": {"flac|aac"}, "TranscodingContainer": {"mp3"}, "AudioCodec": {"mp3"},
+	}), nil, a.accounts.viewer.headers), http.StatusUnsupportedMediaType)
+	a.policy(t, false)
+	expectHLSHTTPStatus(t, a.request(t, http.MethodGet, a.universal("mp3", url.Values{
+		"Container": {audioWebContainerCapabilities},
+	}), nil, a.accounts.viewer.headers), http.StatusForbidden)
+}
+
+func TestHTTPAudioUniversalCorrelatedBareSourceReports(t *testing.T) {
+	a := newAudioHTTPFixtureWithConversion(t, false, false)
+	report := func(t *testing.T, route string, login clientSessionHTTPLogin, body map[string]any) int {
+		t.Helper()
+		encoded, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal("encode audio playback report")
+		}
+		query := url.Values{"X-Emby-Token": {login.headers.Get("X-Emby-Token")}, "X-Emby-Device-Id": {login.deviceID}}
+		ctx, cancel := context.WithTimeout(a.f.ctx, 10*time.Second)
+		defer cancel()
+		request, err := http.NewRequestWithContext(ctx, http.MethodPost, a.server.URL+route+"?"+query.Encode(), bytes.NewReader(encoded))
+		if err != nil {
+			t.Fatal("construct audio playback report")
+		}
+		request.Header.Set("Content-Type", "text/plain")
+		response, err := a.server.Client().Do(request)
+		if err != nil {
+			// Transport errors can contain the query credential.
+			t.Fatalf("send audio playback report (%T)", err)
+		}
+		defer response.Body.Close()
+		if body, err := io.ReadAll(io.LimitReader(response.Body, 8<<10)); err != nil || len(body) >= 8<<10 {
+			t.Fatal("audio playback response exceeded the bounded read")
+		}
+		return response.StatusCode
+	}
+	for _, source := range []struct{ key, contentType string }{{"mp3", "audio/mpeg"}, {"flac", "audio/flac"}} {
+		t.Run(source.key, func(t *testing.T) {
+			itemID := a.sources[source.key].ID
+			reference := "web-audio-" + source.key
+			values := url.Values{"Container": {audioWebContainerCapabilities}, "AudioCodec": {"aac"},
+				"TranscodingContainer": {"ts"}, "TranscodingProtocol": {"hls"}, "MaxStreamingBitrate": {"200000000"},
+				"StartTimeTicks": {"0"}, "EnableRedirection": {"true"}, "EnableRemoteMedia": {"false"},
+				"PlaySessionId": {reference}, "UserId": {a.accounts.viewer.userID}, "DeviceId": {a.accounts.viewer.deviceID},
+				"api_key": {a.accounts.viewer.headers.Get("X-Emby-Token")}}
+			before := a.history(t)
+			response := a.request(t, http.MethodGet, a.universal(source.key, values), nil, http.Header{"Range": {"bytes=0-"}})
+			expectHLSHTTPStatus(t, response, http.StatusPartialContent)
+			if response.header.Get("Content-Type") != source.contentType || len(response.body) == 0 {
+				t.Fatal("Universal did not deliver the requested original audio")
+			}
+			canonical := a.canonical(t, a.accounts.viewer, reference, source.key)
+			for _, rejected := range []struct {
+				name, reference, sourceID string
+				login                     clientSessionHTTPLogin
+			}{
+				{"unknown nonce", "unprepared-audio-reference", itemID, a.accounts.viewer},
+				{"another source", reference, a.sources["adts"].ID, a.accounts.viewer},
+				{"another token", reference, itemID, a.accounts.second},
+			} {
+				status := report(t, "/emby/Sessions/Playing", rejected.login, map[string]any{
+					"PlaySessionId": rejected.reference, "ItemId": itemID, "MediaSourceId": rejected.sourceID, "PositionTicks": 0,
+				})
+				if status != http.StatusNotFound {
+					t.Fatalf("%s report status = %d, want 404", rejected.name, status)
+				}
+			}
+			a.policy(t, false)
+			denied := report(t, "/emby/Sessions/Playing", a.accounts.viewer, map[string]any{
+				"PlaySessionId": reference, "ItemId": itemID, "MediaSourceId": itemID, "PositionTicks": 0,
+			})
+			a.policy(t, true)
+			if denied != http.StatusForbidden || a.history(t) != before || a.canonical(t, a.accounts.viewer, reference, source.key) != canonical {
+				t.Fatal("rejected audio reports changed preparation or user history")
+			}
+			for _, event := range []struct {
+				route, state string
+				seconds      int64
+				paused       bool
+			}{
+				{"/emby/Sessions/Playing", "Playing", 0, false},
+				{"/emby/Sessions/Playing/Progress", "Paused", 4, true},
+				{"/emby/Sessions/Playing/Progress", "Playing", 3, false},
+				{"/emby/Sessions/Playing/Stopped", "Stopped", 3, false},
+			} {
+				position := event.seconds * media.TicksPerSecond
+				status := report(t, event.route, a.accounts.viewer, map[string]any{
+					"PlaySessionId": reference, "ItemId": itemID, "MediaSourceId": itemID,
+					"PositionTicks": position, "IsPaused": event.paused, "CanSeek": true, "PlayMethod": "DirectStream",
+				})
+				if status != http.StatusNoContent {
+					t.Fatalf("audio lifecycle report status = %d, want 204", status)
+				}
+				var storedSource, state string
+				var storedPosition, dataPosition int64
+				var count int
+				var dated bool
+				if err := a.f.pool.QueryRow(a.f.ctx, `SELECT p.media_source_id, p.state, p.position_ticks,
+					d.playback_position_ticks, d.play_count, d.last_played_at IS NOT NULL
+					FROM play_sessions p JOIN user_item_data d ON d.user_id = p.user_id AND d.item_id = p.item_id
+					WHERE p.id = $1 AND p.auth_session_id = $2 AND p.item_id = $3`,
+					canonical, a.accounts.viewer.id, itemID).Scan(&storedSource, &state, &storedPosition, &dataPosition, &count, &dated); err != nil {
+					t.Fatal("read durable audio playback report state")
+				}
+				wantDataPosition := position
+				if event.state == "Stopped" {
+					// These six-second fixtures use the existing short-item stop policy.
+					wantDataPosition = 0
+				}
+				if storedSource != media.SourceID(itemID) || state != event.state || storedPosition != position ||
+					dataPosition != wantDataPosition || count != 1 || !dated {
+					t.Fatal("audio reports lost canonical source, position, pause state, or single-count history")
+				}
+			}
+			if a.jobs(t, a.accounts.viewer, canonical, false) != 0 {
+				t.Fatal("original audio reports allocated a conversion job")
+			}
+		})
+	}
+	for key, item := range a.sources {
+		data, err := a.f.app.library.GetUserData(a.f.ctx, a.accounts.viewer.userID, item.ID)
+		wantCount := 0
+		if key == "mp3" || key == "flac" {
+			wantCount = 1
+		}
+		if err != nil || data.PlayCount != wantCount || data.PlaybackPositionTicks != 0 || data.Played || (data.LastPlayedDate != nil) != (wantCount == 1) {
+			t.Fatal("audio reports changed a non-target item or counted a target more than once")
+		}
+	}
+	if len(a.encoderPIDs(t)) != 0 {
+		t.Fatal("original audio playback reports started an encoder")
 	}
 }
 

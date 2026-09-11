@@ -2,14 +2,20 @@
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
-The routes below exist in source. Authentication, permission and ingestion workflows have previously passed Goby's own PostgreSQL-backed HTTP tests on Linux. Selected behavior has also been corrected using [real Emby 4.9.5.0 captures](../research/reference-server.md). Per-increment verification evidence is recorded in the [implementation progress](../development/progress.md) and its linked reports. This is not yet a complete differential compatibility run or a real third-party-player pass.
+The routes below exist in source. Authentication, permission and ingestion workflows have passed Goby's PostgreSQL-backed HTTP tests on Linux. Selected behavior has also been corrected using [real Emby 4.9.5.0 captures](../research/reference-server.md). The [M3e record](../development/client-acceptance-m3e.md) now includes scoped original-client movie, TV, subtitle and audio evidence. Per-increment results and remaining limits are recorded in the [implementation progress](../development/progress.md). These results do not establish complete differential compatibility or every client/media profile.
 
-The M5j native backup/recovery routes are accepted and deployed at schema
-23/probe 6, PID 3750313. The final 1605-test race suite, UI a6, complete
+The M5j native backup/recovery routes were accepted and deployed at schema
+23/probe 6, with historical PID 3750313. The final 1605-test race suite, UI a6, complete
 browser/process/offline-CLI journey, protected deployment and main-service
 backup/download workflow passed. See the
 [backup/recovery engineering record](../development/backup-recovery.md).
 These native routes do not implement the Emby BackupRestore plugin contract.
+After the test-host reboot, the M3e source18 checkpoint completed a fresh backup,
+restore rehearsal and protected schema23-to25 main upgrade. Its
+[deployment](../development/m3e-source18-main-deployment.json) passed readiness,
+native login/read/logout and historical-archive checks as PID 539535. The
+isolated acceptance candidate remains a separate service and database. See the
+[current handoff](../development/handoff.md) before operating either.
 
 The official reference inventory contains 2462 sanitized JSON records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one initial connection-refused readiness record, and one audit; all 76 capture HTTP exchanges are complete. Its [report](../development/m5i-observability-reference.json) is reference evidence, not product acceptance. The earlier [4K encoding-width study](../research/encoding-width-reference.md) added 61 records to the preceding 2305. The [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 records after the [read study](../research/configuration-reference.md) brought the corpus to 2051. The [fresh ScheduledTasks mutation study](../research/scheduled-tasks-mutation-reference.md) reached the earlier 1965 checkpoint with 171 records. The earlier [task read study](../research/scheduled-tasks-reference.md), [key-device](../research/key-devices-reference.md), [ordinary user-device](../research/devices-reference.md), [key playback](../research/api-key-playback-reference.md), [client-context](../research/api-key-context-reference.md), and [target-scope](../research/api-key-scope-reference.md) evidence remain intact. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
@@ -86,9 +92,9 @@ That earlier M5i deployment used schema 22/probe 6 and PID 3668655. See the
 | `POST /admin/v1/jobs/{id}/cancel` | Cookie and CSRF | `202 {Job}`; cancel remaining scan work, retain already indexed items |
 | `GET /admin/v1/storage/roots` | Administrator cookie | `{Items: [{Path, Available}], Configured}`; `Available` includes directory read permission |
 
-### Native backup/recovery candidate
+### Native backup/recovery
 
-These M5j routes exist in source but are not yet deployed. They require a live
+These M5j routes are part of the accepted deployment. They require a live
 native administrator cookie; mutations additionally require same-origin and
 CSRF checks. Emby login tokens and application keys do not authorize them.
 The [backup API contract](backups.md) defines the complete DTO, strict input,
@@ -154,8 +160,10 @@ The [configuration contract](configuration.md) defines the five closed projectio
 
 | Method and path | Current behavior / limits |
 | --- | --- |
-| `GET /emby/System/Info/Public` | Stable server identity and setup state; Goby product/version is reported truthfully |
+| `GET /emby/System/Info/Public` | Stable server identity and setup state; `Version` identifies the pinned 4.9.5.0 API baseline, while `ProductName: Goby` and `GobyVersion` retain the actual product identity/release. Native administration retains the product version; the API baseline does not claim complete compatibility |
+| `GET /emby/Branding/Configuration`; `GET`, `HEAD /emby/Branding/Css` and `/Css.css` | Anonymous reads of Goby's current empty branding defaults, including root/case aliases and compatibility CORS. No custom disclaimer/stylesheet or branding write interface is provided |
 | `GET /emby/System/Info` | Requires an Emby login or application key; currently the minimal public identity projection, not the complete upstream SystemInfo DTO |
+| `GET /emby/System/Endpoint` | Requires an Emby login or application key; `{IsLocal, IsInNetwork}` from the resolved client connection, with trusted-proxy handling and no-store caching. Only authenticated loopback reference parity is observed; Goby's private/link-local classification grants no permissions |
 | `GET`, `HEAD`, `POST /emby/System/Ping` | Confirmed reference behavior: `text/plain`, length 11, GET/POST body `Emby Server`, HEAD body empty |
 | `GET /emby/System/Configuration` | Administrator/key: only read-only `IsStartupWizardCompleted` and a configured `ServerName`; ordinary viewer: exact `200 {}`; never the full upstream object |
 | `GET /emby/System/Configuration/{key}` | Administrator/key, `encoding` only: `200 {TranscodingMaxWidth}`; viewer `403`; authorized `devices`/`dlna` return `501`, unknown sections `404` |
@@ -168,10 +176,13 @@ The [configuration contract](configuration.md) defines the five closed projectio
 | `GET /emby/System/Logs/{Name}` | Administrator/key, optional `Sanitize=true/false`; every mode remains sanitized, with fixed attachment snapshot and bounded rechecks; all four compatibility observability HEAD routes return fixed 404 |
 | `GET /emby/Users/Public` | Enabled ordinary accounts; administrators are hidden from this initial public list |
 | `GET /emby/Users` | Bare user DTO array; administrator or application-key credential required |
-| `POST /emby/Users/AuthenticateByName` | `{Username, Pw}` and Emby client/device metadata; returns `User`, `SessionInfo`, `AccessToken`, `ServerId` |
-| `POST /emby/Users/{Id}/Authenticate` | `{Pw}` and client/device metadata; selected-user authentication |
-| `GET /emby/Users/{Id}` | Current account, administrator, or application key; another ordinary user's account is denied |
+| `POST /emby/Users/AuthenticateByName` | JSON or URL-encoded form `{Username, Pw}` and Emby client/device metadata; credentials stay in the request body; returns `User`, `SessionInfo`, `AccessToken`, `ServerId` |
+| `POST /emby/Users/{Id}/Authenticate` | JSON or URL-encoded form `{Pw}` and client/device metadata; selected-user authentication |
+| `GET /emby/Users/{Id}` | Current account, administrator, or application key; another ordinary user's account is denied. User DTOs project 15 observed configuration fields from persisted `users.configuration`, with validated defaults and non-null view/exclusion arrays; no configuration write API is added |
 | `GET /emby/Users/Query` | Administrator or application key; supports `StartIndex`/`Limit` and query-result envelope; other upstream filters remain to be implemented |
+| `GET /emby/UserSettings/{Id}` | Persisted string dictionary, separate from User.Configuration. Ordinary callers read their own dictionary even when the path names another user, matching the sampled reference; administrator/key targeting follows explicit Goby authority |
+| `POST /emby/UserSettings/{Id}/Partial` | Authorized merge of bounded JSON objects, including observed text/plain and octet-stream JSON; case-insensitive keys, observed scalar/nested conversion, null/empty-string deletion, transactional revalidation, and empty 204. Ordinary cross-user writes are denied |
+| `POST /emby/UserSettings/{Id}` | Sampled dictionary replacement remains unsupported: 400 `Expected configuration type is UserSettings`, without mutation. See [the observed preference contract](../development/client-preferences-plan.md) for exact scope and limits |
 | `GET /emby/Auth/Keys` | Administrator or application key; active rows expose full `AccessToken`, numeric IDs, `UserId: 0`, optional `DateLastActivity`, and actual total count; default limit 200 |
 | `POST /emby/Auth/Keys?App={label}` | Administrator or application key; `204`, empty body; duplicate labels issue independent credentials |
 | `DELETE /emby/Auth/Keys/{Key}`, `POST .../{Key}/Delete` | Administrator or application key; token-path revocation returns `204`, including unknown or previously revoked targets |
@@ -187,7 +198,7 @@ The [configuration contract](configuration.md) defines the five closed projectio
 | `POST /emby/ScheduledTasks/Running/{id}` | Administrator or application key; `204` durable start/coalescing by definition ID |
 | `DELETE /emby/ScheduledTasks/Running/{id}` | Administrator or application key; `204` cancellation of the atomically selected pending/running execution; idle/already-stopping returns `500` under the documented stop contract |
 | `POST /emby/ScheduledTasks/Running/{id}/Delete` | Same compatibility stop contract |
-| `POST /emby/Sessions/Logout` | Normal login: `200`, revoke caller and disconnect its WebSockets. Application key: `204`, revoke the parent and retire every client context |
+| `POST /emby/Sessions/Logout` | Empty `204`; normal login revokes the caller and disconnects its WebSockets; an application key revokes the parent and retires every client context |
 | `GET /emby/Sessions` | Bare array; ordinary users see their own active sessions, privileged credentials also see other allowed login and key contexts; real context IDs, Id/DeviceId/presence filtering and current controllability rules |
 | `POST /emby/Sessions/Capabilities`, `.../Capabilities/Full` | Validated query/JSON declarations replace the authenticated client context's capabilities; stale Id hints cannot target another context; `204` |
 | `GET /embywebsocket` with RFC 6455 Upgrade | Authenticated UserDataChanged and command events; aliases `/`, `/emby`, `/emby/`, `/emby/socket`; [event guide](../development/websocket-events.md) |
@@ -287,7 +298,13 @@ Indexed item image contents are public, as observed in the pinned reference, whi
 
 Library authorization currently implements administrator access plus `EnableAllFolders` and `EnabledFolders`. Counts and grouping occur after authorization filtering. Default ordinary users can access all libraries unless restricted. Subfolder exclusions, parental restrictions and the full policy editor remain work; this increment does not claim those policies are enforced.
 
-The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. User-state filters include `IsPlayed`, `IsFavorite`, and the documented initial `Filters` subset in the playback guide. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
+The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Optional `IsFolder`, `IsSpecialSeason`, and `IsSpecialEpisode` filters use actual typed catalog facts before counting or paging; season-zero classification and the unmodeled `IsStandaloneSpecial` boundary are documented in [TV query filters](../development/client-tv-query-filters.md). User-state filters include `IsPlayed`, `IsFavorite`, and the documented initial `Filters` subset in the playback guide. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
+
+MusicAlbum and Audio DTOs expose non-null music arrays. The schema25 music implementation derives `Artists`, `ArtistItems`, and `AlbumArtists` from actual accepted format tags and authorized MusicArtist relationships; composer extraction remains absent. Technical probe version 6 remains unchanged, with independent music metadata version 1 refreshed by music scans. MusicAlbum `ChildCount` counts actual same-library direct children; Audio album references use the physical authorized album. See [music metadata](../development/music-metadata.md) for source precedence, stable IDs, per-album commits and scope. The isolated source18 candidate preserved the controlled source15 scan and passed all 1,741 full-suite tests. Both original-client audio core journeys passed; FLAC completed Home, while MP3 retains its original Home harness failure. Similar/ThemeMedia responses and broader music compatibility remain open.
+
+Music browsing supports the observed three-key `ProductionYear,PremiereDate,SortName` order and corresponding directions, plus current-user played-date/play-count ordering. Artist/album filters use actual authorized associations. `ListItemIds` has no membership model: ordinary item browsing can return a proven empty candidate set, but a nonempty candidate universe returns `501 unsupported_filter`; other related query paths reject it explicitly. This does not claim playlist or collection membership support.
+
+External subtitle labels distinguish the indexed native SRT and VTT formats, even when an SRT track is delivered as VTT. Observed English language identifiers display as `English`; unknown identifiers and custom titles retain their source text, and recorded forced/SDH flags remain visible. Raw language, title, codec and stream index are unchanged.
 
 ## Delivery and health
 

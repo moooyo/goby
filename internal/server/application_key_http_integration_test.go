@@ -266,7 +266,7 @@ func TestHTTPApplicationKeyCompatibilityLifecycleAndIndependentDuplicates(t *tes
 	}
 	expectAPIError(t, a.request(t, http.MethodGet, "/emby/Auth/Keys", nil, keyHeaders), http.StatusUnauthorized, "invalid_credentials", true)
 	applicationKeyHTTPItems(t, a.request(t, http.MethodGet, "/emby/Auth/Keys", nil, headers), 0, 0)
-	expectStatus(t, a.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, headers), http.StatusOK)
+	expectStatus(t, a.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, headers), http.StatusNoContent)
 	expectAPIError(t, a.request(t, http.MethodGet, "/emby/System/Info", nil, headers), http.StatusUnauthorized, "invalid_credentials", true)
 	for _, token := range append(keys, adminToken) {
 		if strings.Contains(a.logs.String(), token) {

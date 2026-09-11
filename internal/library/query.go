@@ -13,10 +13,38 @@ import (
 	"github.com/moooyo/goby/internal/media"
 )
 
+const itemMetadataColumn = `COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)`
+
 const itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
 	i.parent_index_number, i.created_at, i.media,
-	COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata), ` + itemEntitiesColumn
+	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
+	CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
+		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id)
+	END, ` + itemAlbumColumn
+
+const itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
+		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
+			ARRAY[i.id, parent.id] AS visited, 1 AS depth
+		FROM items parent WHERE parent.id = i.parent_id AND parent.library_id = i.library_id AND parent.id <> i.id
+		UNION ALL
+		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
+			ancestor.visited || parent.id, ancestor.depth + 1
+		FROM album_ancestors ancestor JOIN items parent ON parent.id = ancestor.parent_id
+		WHERE parent.library_id = i.library_id AND NOT (ancestor.type = 'MusicAlbum' AND ancestor.is_folder)
+			AND NOT parent.id = ANY(ancestor.visited)
+	) `
+
+const itemAlbumColumn = `CASE WHEN i.type IN ('Audio', 'MusicVideo') THEN (` + itemAlbumAncestorsSQL + `
+	SELECT jsonb_build_object('ID', id, 'Name', name, 'AlbumArtists', (
+		SELECT COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+			ORDER BY association.position, entity.id), '[]'::jsonb)
+		FROM item_entities association JOIN catalog_entities entity ON entity.id = association.entity_id
+		WHERE association.item_id = album_ancestors.id AND entity.kind = 'MusicArtist'
+			AND association.credit_group = 2 AND association.credit_type = 'AlbumArtist'
+	)) FROM album_ancestors
+	WHERE type = 'MusicAlbum' AND is_folder ORDER BY depth LIMIT 1
+) END`
 
 const itemEntitiesColumn = `(SELECT jsonb_build_object(
 	'Genres', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
@@ -25,6 +53,10 @@ const itemEntitiesColumn = `(SELECT jsonb_build_object(
 		ORDER BY lower(association.display_name), entity.id, association.position) FILTER (WHERE entity.kind = 'Tag'), '[]'::jsonb),
 	'Studios', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
 		ORDER BY association.position, entity.id) FILTER (WHERE entity.kind = 'Studio'), '[]'::jsonb),
+	'Artists', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+		ORDER BY association.position, entity.id) FILTER (WHERE entity.kind = 'MusicArtist' AND association.credit_group = 1 AND association.credit_type = 'Artist'), '[]'::jsonb),
+	'AlbumArtists', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id, 'Name', association.display_name)
+		ORDER BY association.position, entity.id) FILTER (WHERE entity.kind = 'MusicArtist' AND association.credit_group = 2 AND association.credit_type = 'AlbumArtist'), '[]'::jsonb),
 	'People', COALESCE(jsonb_agg(jsonb_build_object('ID', entity.id::text, 'Name', association.display_name,
 		'Role', association.role, 'Type', association.credit_type, 'SortOrder', association.sort_order)
 		ORDER BY association.sort_order ASC NULLS LAST, association.position, entity.id) FILTER (WHERE entity.kind = 'Person'), '[]'::jsonb)
@@ -68,7 +100,18 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 		args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count library items: %w", err)
 	}
-	order := itemOrderSQL(query)
+	// Membership is not indexed yet. An empty authorized candidate set proves
+	// that its intersection is empty; any nonempty set remains undetermined.
+	// Count before pagination so Limit=0 or a distant page cannot bypass this.
+	if len(query.ListItemIds) != 0 && result.TotalRecordCount != 0 {
+		return ItemResult{}, ErrUnsupportedFilter
+	}
+	userOrderParameter := 0
+	if itemSortUsesUserData(query.SortBy) {
+		args = append(args, query.UserID)
+		userOrderParameter = len(args)
+	}
+	order := itemOrderSQL(query, userOrderParameter)
 	if resumeOrder {
 		args = append(args, query.UserID)
 		order = fmt.Sprintf(`(SELECT user_data.last_played_at FROM user_item_data user_data
@@ -282,30 +325,18 @@ func normalizeItemQuery(query Query) (Query, error) {
 	if query.Limit == 0 {
 		query.Limit = 100
 	}
-	switch strings.ToLower(strings.TrimSpace(query.SortBy)) {
-	case "", "sortname":
-		query.SortBy = "SortName"
-	case "name":
-		query.SortBy = "Name"
-	case "datecreated":
-		query.SortBy = "DateCreated"
-	case "indexnumber":
-		query.SortBy = "IndexNumber"
-	default:
-		return Query{}, ErrInvalidInput
+	var err error
+	query, err = normalizeItemSort(query)
+	if err != nil {
+		return Query{}, err
 	}
-	switch strings.ToLower(strings.TrimSpace(query.SortOrder)) {
-	case "", "ascending", "asc":
-		query.SortOrder = "ASC"
-	case "descending", "desc":
-		query.SortOrder = "DESC"
-	default:
-		return Query{}, ErrInvalidInput
-	}
+	// Recognizing a catalog kind for filtering does not add its creation or
+	// management workflow. Absent kinds still run the same authorized SQL query.
 	types, err := normalizeQueryValues(query.IncludeItemTypes, map[string]string{
 		"collectionfolder": "CollectionFolder", "folder": "Folder", "movie": "Movie",
 		"series": "Series", "season": "Season", "episode": "Episode", "video": "Video",
 		"audio": "Audio", "musicalbum": "MusicAlbum", "musicartist": "MusicArtist",
+		"playlist": "Playlist", "boxset": "BoxSet", "musicvideo": "MusicVideo",
 	})
 	if err != nil {
 		return Query{}, err
@@ -327,7 +358,7 @@ func normalizeItemQuery(query Query) (Query, error) {
 	if err != nil {
 		return Query{}, err
 	}
-	return query, nil
+	return normalizeMusicFilters(query)
 }
 
 func normalizeEntityFilters(query Query) (Query, error) {
@@ -427,6 +458,22 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 		args = append(args, query.IncludeItemTypes)
 		conditions = append(conditions, fmt.Sprintf("i.type = ANY($%d::text[])", len(args)))
 	}
+	// Classify numbered seasons and episodes, not every item with a default
+	// zero index. Comparing the entire predicate preserves other item types
+	// when a caller explicitly excludes specials from a mixed item query.
+	for _, flag := range []struct {
+		value     *bool
+		predicate string
+	}{
+		{query.IsFolder, "i.is_folder"},
+		{query.IsSpecialSeason, "(i.type = 'Season' AND i.index_number = 0)"},
+		{query.IsSpecialEpisode, "(i.type = 'Episode' AND i.parent_index_number = 0)"},
+	} {
+		if flag.value != nil {
+			args = append(args, *flag.value)
+			conditions = append(conditions, fmt.Sprintf("%s = $%d::boolean", flag.predicate, len(args)))
+		}
+	}
 	if query.ParentIndexNumber != nil {
 		args = append(args, *query.ParentIndexNumber)
 		conditions = append(conditions, fmt.Sprintf("i.parent_index_number = $%d::integer", len(args)))
@@ -445,13 +492,15 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 		conditions = append(conditions, fmt.Sprintf("i.name ILIKE $%d ESCAPE E'\\\\'", len(args)))
 	}
 	conditions, args = addEntityConditions(query, conditions, args)
+	conditions, args = addMusicConditions(query, conditions, args)
 	conditions, args = addUserDataConditions(query, conditions, args)
 	return prefix, strings.Join(conditions, " AND "), args
 }
 
 func hasEntityFilters(query Query) bool {
 	return len(query.GenreIds)+len(query.TagIds)+len(query.StudioIds)+len(query.PersonIds)+
-		len(query.Genres)+len(query.Tags)+len(query.Studios)+len(query.PersonTypes) != 0 || query.Person != ""
+		len(query.Genres)+len(query.Tags)+len(query.Studios)+len(query.PersonTypes)+
+		len(query.ArtistIds)+len(query.AlbumArtistIds)+len(query.AlbumIds) != 0 || query.Person != ""
 }
 
 func addEntityConditions(query Query, conditions []string, args []any) ([]string, []any) {
@@ -510,25 +559,12 @@ func escapeLikeLiteral(value string) string {
 	return strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`).Replace(value)
 }
 
-func itemOrderSQL(query Query) string {
-	column := "lower(i.sort_name)"
-	switch query.SortBy {
-	case "Name":
-		column = "lower(i.name)"
-	case "DateCreated":
-		column = "i.created_at"
-	case "IndexNumber":
-		return "i.parent_index_number " + query.SortOrder + ", i.index_number " + query.SortOrder + ", i.id " + query.SortOrder
-	}
-	return column + " " + query.SortOrder + ", i.id " + query.SortOrder
-}
-
 func scanItem(row rowScanner, additional ...any) (Item, error) {
 	var item Item
-	var encoded, encodedMetadata, encodedEntities []byte
+	var encoded, encodedMetadata, encodedEntities, encodedAlbum []byte
 	destinations := []any{&item.ID, &item.LibraryID, &item.ParentID, &item.Name, &item.SortName,
 		&item.Type, &item.Path, &item.Overview, &item.IsFolder, &item.IndexNumber,
-		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities}
+		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities, &item.ChildCount, &encodedAlbum}
 	err := row.Scan(append(destinations, additional...)...)
 	if err != nil {
 		return Item{}, err
@@ -546,6 +582,11 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 	}
 	if err := json.Unmarshal(encodedEntities, &item.Entities); err != nil {
 		return Item{}, fmt.Errorf("decode item entities: %w", err)
+	}
+	if len(encodedAlbum) != 0 {
+		if err := json.Unmarshal(encodedAlbum, &item.Album); err != nil {
+			return Item{}, fmt.Errorf("decode item album: %w", err)
+		}
 	}
 	return item, nil
 }

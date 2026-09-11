@@ -1,0 +1,12 @@
+{
+  "cgo_enabled": false,
+  "go_version": "go1.27.1",
+  "goarch": "amd64",
+  "goos": "linux",
+  "helper_sha256": "a5f8afb49ee610c31d5f70260c5fcf306ebdd74103e11344acb5a20a469bfd60",
+  "product_source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b",
+  "schema": "goby-client-schema25-helper-build",
+  "status": "passed",
+  "tool_manifest_sha256": "8f6c37edaae54c8359a11a76b869cc4fdd191278f48841ee808998143f14e7f8",
+  "version": 1
+}

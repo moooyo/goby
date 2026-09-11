@@ -1,0 +1,27 @@
+{
+  "ffmpegSha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e",
+  "ffmpegVersion": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "files": {
+    ".goby-managed": "82e6421f62a15c53c5756f4d08b10c89158d79daab7f04c397b784d465e6c585",
+    "Movies/M3e Client Movie.en.srt": "aff96165b6479ebc0710e56faa52df525b13ea7dbc8f44c6fbb6d91e75f9838d",
+    "Movies/M3e Client Movie.en.vtt": "efbce0e543ce0acef4a0ab9f979f2a4b5386658d4a96222ec95bdf917139dd6b",
+    "Movies/M3e Client Movie.mp4": "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088",
+    "Movies/M3e Client Movie.nfo": "af216bbe0582eef14ed88e1f41a927499413abc79917f088397f43edf09dd534",
+    "Music/M3e Client Audio.flac": "b4c791e310105a785172d668d0be67d6834436cab2adb0a566d29df4d82daa9b",
+    "Music/M3e Client Audio.mp3": "92cb857d16b92c1673ad6bfb299fa3986b3aa1771b5120d9e82490b61f0d89b0",
+    "TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4": "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088",
+    "TV/M3e Client Series/Season 01/M3e Client Series S01E01.nfo": "6cc72f6dd1fcb62b1b962aed50d2cdf9aa0da6b788f31aaf892148b17c319eeb",
+    "TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4": "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088",
+    "TV/M3e Client Series/Season 01/M3e Client Series S01E02.nfo": "500b190b44c8a8cf51b570a3c9c1273f579b574958853888f1059a78665f0db5",
+    "TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4": "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088",
+    "TV/M3e Client Series/Season 02/M3e Client Series S02E01.nfo": "386cabb6a34036f9346bf4b412fc17f9e3e7b53d940b9f735044abbce94749e7",
+    "TV/M3e Client Series/tvshow.nfo": "60ddaac74f6de23ba93d59d3adb0d2cd966d26591bd5ca486b0ae4378e245afc"
+  },
+  "marker": "goby-client-media-m3e-v1",
+  "movieProfile": {
+    "audio": "aac",
+    "durationSeconds": 600,
+    "fps": 30,
+    "video": "h264"
+  }
+}

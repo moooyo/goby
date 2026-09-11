@@ -1,0 +1,84 @@
+{
+  "candidate_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+  "evidence": {
+    "backup-complete.json": {
+      "bytes": 322,
+      "sha256": "94a16baf5e0dca767f2e5ecc15f8af8cd705296c10159c658bcdd0223d102251"
+    },
+    "baseline.json": {
+      "bytes": 109883,
+      "sha256": "0a49971cfb520479cd834aadc35c06253fce917cbceb78b71edec0ee31ab549d"
+    },
+    "database-schema23.dump": {
+      "bytes": 284599,
+      "sha256": "ac2816e315c5e1617efc8a182d586f1c0dcb8c909f93eedc2ff9aa07208c6c54"
+    },
+    "main-after-rehearsal.json": {
+      "bytes": 109883,
+      "sha256": "0a49971cfb520479cd834aadc35c06253fce917cbceb78b71edec0ee31ab549d"
+    },
+    "materials.json": {
+      "bytes": 47692,
+      "sha256": "0cbb6d3d40e7eb60e0014a211b231a7e9b1c7d2ddd550707056c6c2bb486b5eb"
+    },
+    "prepared.json": {
+      "bytes": 56865,
+      "sha256": "b1d686b1c8aed83aa545dd02618c22793cc8b371f6659a0adc1f40710ddfd0ce"
+    },
+    "protected-before.json": {
+      "bytes": 270517,
+      "sha256": "a1b257194ec1a9f90df41e16bb37a9db448c48a4b8fccbfbd4fbb3901d6bde17"
+    },
+    "rehearsal-disposed.json": {
+      "bytes": 670,
+      "sha256": "f0a846bee2d8e3cebb03c93fa04b6e834518a411499a326d46ac730ae848b7c2"
+    },
+    "rehearsal-migrated.json": {
+      "bytes": 112070,
+      "sha256": "ee4fed62bbc9aff3ef375bd0b14087b48f625099640c3518b9ea1cb827e13078"
+    }
+  },
+  "guard_sha256": "79fce86738b7d7e9b6c52b163b5b6d32a1e1fae6e946be80b0a81db11d427740",
+  "guards": {
+    "errors": 0,
+    "failures": 0,
+    "passed": 47,
+    "report_sha256": "0070d86a90edb2338409860d0d36b52c90b25b84eae2a1f5be0b11242a3ff954",
+    "skips": 0
+  },
+  "helper": {
+    "build_report_sha256": "c241358778bd30fbe84ce5e4949c00c4d1ae75c44a8c28c5ed84080d0c08a6f8",
+    "invocation_sha256": "d122fe55acdbf3ec526c7d69fd9ead8b29a70a4488ea7aaeec3a16c19003635c",
+    "sha256": "a5f8afb49ee610c31d5f70260c5fcf306ebdd74103e11344acb5a20a469bfd60"
+  },
+  "operator_sha256": "6622a3b8d38d3956cbf7104ca88dd4f4227d67788c3b350be692d8f19df443ad",
+  "preparation": {
+    "main_database_restored": false,
+    "main_migrated": false,
+    "main_service_started": false,
+    "main_state_preserved": true,
+    "main_state_sha256": "2926c887032cd7bf4f991815ad95bf921b3430d87fb68c436e140a1d2b1f8e8d",
+    "materials_files": 444,
+    "old_state_preserved_in_rehearsal": true,
+    "rehearsal_removed": true,
+    "rehearsal_target": {
+      "database": "goby_upgrade_m3e_980fad28307073f43600d498",
+      "database_oid": 994951,
+      "role": "goby_upgrade_m3e_980fad28307073f43600d498",
+      "role_oid": 994950
+    },
+    "rehearsal_target_schema": 25,
+    "source_schema": 23
+  },
+  "retained_failed_runs": [
+    "run-20260911T055638Z-faaef85597c3199884385e56",
+    "run-20260911T060659Z-0be75d4dec74a36a6eea2073"
+  ],
+  "run": "/opt/goby-test/backups/client-schema25-v1/run-20260911T062405Z-975ef4c2e0c2b3078d517dc5",
+  "schema": "goby-m3e-schema25-source18-preparation",
+  "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b",
+  "status": "prepared",
+  "tool_manifest_sha256": "df8c051a7e887731f13ee490e3e866072e359373d1fab1ed52843b39db8b4259",
+  "tool_revision": 3,
+  "version": 1
+}

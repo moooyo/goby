@@ -1,0 +1,276 @@
+{
+  "status": "passed",
+  "scope": "Original client nondefault preference across a protected schema24 candidate process replacement, then UI restoration; not OS host reboot",
+  "before": {
+    "phase": "before_process_restart",
+    "source": "source-attempt-09",
+    "binarySha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+    "process": {
+      "pid": 355352,
+      "startTicks": 1044542
+    },
+    "preference": {
+      "phase": "complete",
+      "outcome": "nondefault_preference_retained_for_restart",
+      "mode": "retain-for-restart",
+      "choice": {
+        "kind": "genre_display_limit",
+        "original": "1",
+        "expected": "1",
+        "desired": "2",
+        "baseline": "1"
+      },
+      "writes": [
+        {
+          "phase": "retain_display_preference",
+          "route": "/emby/usersettings/{account-or-preference-id}/Partial",
+          "content_type": "text/plain",
+          "header_names": [
+            "accept",
+            "accept-language",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent"
+          ],
+          "query_field_names": [
+            "X-Emby-Client",
+            "X-Emby-Device-Name",
+            "X-Emby-Device-Id",
+            "X-Emby-Client-Version",
+            "X-Emby-Token",
+            "X-Emby-Language",
+            "reqformat"
+          ],
+          "status": 204,
+          "body_encoding": "json",
+          "json_top_level_type": "object",
+          "json_encoding_layers": 1,
+          "safe_body": {
+            "genreLimitOnDetails": "2"
+          }
+        }
+      ],
+      "restored": false,
+      "retained_for_restart": true,
+      "starting_value_verified": true
+    },
+    "logout": {
+      "format": 1,
+      "outcome": "all_observed_logout_tokens_rejected",
+      "entries": [
+        {
+          "index": 0,
+          "ui_request": {
+            "method": "POST",
+            "route": "/emby/Sessions/Logout",
+            "elapsed_ms": 3911,
+            "response_status": 204,
+            "client_request_finished": true,
+            "client_request_failed": false,
+            "response_elapsed_ms": 3923
+          },
+          "token_fingerprint": "934f81294d9c9d139769ffb18b40c55553bb63a2996e98c2242aa64a8ab0d43d",
+          "token_sources": [
+            "query:x-emby-token"
+          ],
+          "verification": {
+            "source": "independent-node-http-post-logout-verification",
+            "is_ui_request": false,
+            "method": "GET",
+            "route": "/emby/System/Info",
+            "status": 401,
+            "eligible_at_request_start": true,
+            "result": "token_rejected",
+            "trigger": "ui_logout_response",
+            "started_elapsed_ms": 3923,
+            "response_bytes": 35,
+            "finished_elapsed_ms": 3935
+          },
+          "result": "logout_token_rejected"
+        }
+      ],
+      "logout_overflow": 0,
+      "observer_errors": 0,
+      "policy": {
+        "source": "original-client-request-events",
+        "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+        "token_fingerprint": "SHA-256 of the decoded observed token",
+        "token_response_body_read": false,
+        "client_internal_state_read": false,
+        "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+        "browser_network_requirement": "Caller-enforced selected loopback origin only",
+        "verification_source": "independent-node-http-post-logout-verification",
+        "verification_is_ui_request": false,
+        "verification_method": "GET",
+        "verification_route": "/emby/System/Info",
+        "verification_expected_status": 401,
+        "redirects": "Rejected without following",
+        "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+        "payload_logging": false,
+        "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+        "max_request_bytes": 16384,
+        "max_logout_requests": 16,
+        "limits": {
+          "captureTimeoutMs": 1500,
+          "logoutWaitMs": 12000,
+          "httpTimeoutMs": 8000,
+          "httpIdleTimeoutMs": 3000,
+          "responseByteLimit": 65536,
+          "responseHeaderByteLimit": 16384
+        }
+      },
+      "expected_ui_logout_count": 1
+    },
+    "observationSha256": "bca4f8e0d9669400e3cb6b74c17a61d4520e184842a4359c89d88be3a8f596fd",
+    "nextStep": "After the protected candidate upgrade changes the process, run the original client with preference-mode verify-restart-restore in a fresh browser. It must read 2 before restoring 1. No restart success is claimed here."
+  },
+  "after": {
+    "phase": "complete",
+    "outcome": "nondefault_preference_loaded_in_fresh_browser_and_restored",
+    "mode": "verify-restart-restore",
+    "choice": {
+      "kind": "genre_display_limit",
+      "original": "2",
+      "expected": "2",
+      "desired": "1",
+      "baseline": "1"
+    },
+    "writes": [
+      {
+        "phase": "restore_after_restart",
+        "route": "/emby/usersettings/{account-or-preference-id}/Partial",
+        "content_type": "text/plain",
+        "header_names": [
+          "accept",
+          "accept-language",
+          "content-type",
+          "origin",
+          "referer",
+          "sec-ch-ua",
+          "sec-ch-ua-mobile",
+          "sec-ch-ua-platform",
+          "user-agent"
+        ],
+        "query_field_names": [
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language",
+          "reqformat"
+        ],
+        "status": 204,
+        "body_encoding": "json",
+        "json_top_level_type": "object",
+        "json_encoding_layers": 1,
+        "safe_body": {
+          "genreLimitOnDetails": "1"
+        }
+      }
+    ],
+    "restored": true,
+    "retained_for_restart": false,
+    "starting_value_verified": true
+  },
+  "afterLogout": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 3938,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 3948
+        },
+        "token_fingerprint": "ac60c10cd188de73ed903790c13427b0512d2c00886c1661485dd4e227ed70f0",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 3949,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 3960
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    },
+    "expected_ui_logout_count": 1
+  },
+  "candidateUpgrade": {
+    "id": "4fd2ce70d62509d0fcae77740ac5c889",
+    "old_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 355352,
+      "start_ticks": 1044542
+    },
+    "new_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 365638,
+      "start_ticks": 1203391
+    },
+    "from_sha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+    "to_sha256": "67b846016ebd89baae07f052bc6b2a23220c82e5f9be5df84a32763f74d5ab3b",
+    "from_schema": 24,
+    "to_schema": 24,
+    "phase": "complete",
+    "evidence_directory": "/opt/goby-test/exec-work-m3e/client-upgrade-4fd2ce70d62509d0fcae77740ac5c889",
+    "schema_artifacts": {
+      "catalog_sha256": "6ba8a30d7648f3fdd73f977cc5d2aafac39232704542f28f20f0898d93ef575c",
+      "migration_24_sha256": "2a9c159f111073a1c01bbbda158cfe3d98d25f417d70c7eda14b70a7798a3972",
+      "migration_count": 24,
+      "source": "/opt/goby-test/exec-work-m3e/source-attempt-11",
+      "source_manifest_sha256": "4ece37db24cad46cd50f82056a6b6a2531e7d630a00cf91ab4dc3a25b206491a"
+    }
+  },
+  "afterObservationSha256": "7ca1dd70d5040381d10ffc746fa5d565fbcbb07c36f1e72a19ccc589e9954197",
+  "finalOwnedPreference": "genreLimitOnDetails=1",
+  "limitation": "Optional user-menu discovery requests still return 404. No host reboot is claimed."
+}

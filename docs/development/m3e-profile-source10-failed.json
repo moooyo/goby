@@ -1,0 +1,26 @@
+{
+  "status": "failed",
+  "scope": "source10 complete playback package and targeted original-profile/text JSON server regression; candidate was not built or deployed",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-10",
+  "sourceManifestSha256": "dc0fe5dd073dfb39dff25bc16e07d6d24ed1086c686ceb56da19f3df8b3ae9b8",
+  "logSha256": "b4094fe987bb0a325597047c3004ff40331c2997cfacf1f1fb20256a7a56ab1e",
+  "topLevelPassed": 174,
+  "testFailures": [
+    {
+      "Time": "2026-09-11T09:02:26.796609341+08:00",
+      "Action": "fail",
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Test": "TestPlaybackInfoDecodesOriginalWebProfileWithoutChangingNativeJSON",
+      "Elapsed": 0.01
+    }
+  ],
+  "skips": 0,
+  "failureOutput": [
+    "=== RUN   TestPlaybackInfoDecodesOriginalWebProfileWithoutChangingNativeJSON\n",
+    "    playback_input_test.go:75: already typed numeric and boolean JSON changed meaning\n",
+    "--- FAIL: TestPlaybackInfoDecodesOriginalWebProfileWithoutChangingNativeJSON (0.01s)\n"
+  ],
+  "binaryCreated": false,
+  "raceEnabled": true,
+  "note": "The collected transient unit no longer carries a trustworthy exit result. The retained go test JSON failure and absent build output establish this failed gate."
+}

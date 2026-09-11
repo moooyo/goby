@@ -1,0 +1,81 @@
+{
+  "allFiveAcknowledgedBaselinesRestored": true,
+  "allSevenNewRecorderTokensRevokedAnd401Verified": true,
+  "attempts": [
+    {
+      "attempt": 1,
+      "contractReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v1/export/report.json",
+      "cumulativeRequests": 18,
+      "newRecorderCount": 2,
+      "requests": 18,
+      "restoredSettings": {},
+      "safetyReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v1/export/attempt-safety.json"
+    },
+    {
+      "attempt": 2,
+      "contractReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v2/export/report.json",
+      "cumulativeRequests": 64,
+      "newRecorderCount": 1,
+      "requests": 46,
+      "restoredSettings": {
+        "genreLimitOnDetails": "1"
+      },
+      "safetyReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v2/export/attempt-safety.json"
+    },
+    {
+      "attempt": 3,
+      "contractReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v3/export/report.json",
+      "cumulativeRequests": 90,
+      "newRecorderCount": 1,
+      "requests": 26,
+      "restoredSettings": {
+        "genreLimitOnDetails": "1"
+      },
+      "safetyReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v3/export/attempt-safety.json"
+    },
+    {
+      "attempt": 4,
+      "contractReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v4/export/report.json",
+      "cumulativeRequests": 111,
+      "newRecorderCount": 2,
+      "requests": 21,
+      "restoredSettings": {
+        "genreLimitOnDetails": "1"
+      },
+      "safetyReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v4/export/attempt-safety.json"
+    },
+    {
+      "attempt": 5,
+      "contractReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v5/export/report.json",
+      "cumulativeRequests": 120,
+      "newRecorderCount": 1,
+      "requests": 9,
+      "restoredSettings": {
+        "genreLimitOnDetails": "1"
+      },
+      "safetyReport": "/opt/goby-test/exec-work-m3e/reference-client-settings-v5/export/attempt-safety.json"
+    }
+  ],
+  "authorizedCumulativeRequestLimit": 128,
+  "classification": "protocol research; not client acceptance",
+  "currentAcknowledgedViewer2Settings": {
+    "genreLimitOnDetails": "1"
+  },
+  "currentRecorderSHA256": "8aa48ffb57bc2d90de0d6d16821cbfdf5960eeed46698f057ab3c6d970340f09",
+  "limitations": [
+    "Full POST direct dictionary payloads were rejected with 400; replacement semantics are not established.",
+    "Cross-user Partial writes were not attempted against the protected primary user.",
+    "Client query variants were compared only on an empty settings state in the initialization study."
+  ],
+  "nestedExactWireRecord": "/opt/goby-test/exec-work-m3e/reference-client-settings-v5/export/nested-visitor-matrix.json",
+  "oldReferenceHTTPRequests": 0,
+  "primaryPlaybackHistoryVerifiedUnchangedInAttempt4": true,
+  "primarySettingsWriteAttempts": 0,
+  "publicOpenAPIDocumentGETs": 1,
+  "sanitizedEvidenceSecretScanPassed": true,
+  "schemaVersion": 1,
+  "settingsStudyRequests": 120,
+  "sourceMediaAndReferenceProcessUnchanged": true,
+  "state": "research closed; no live HTTP or recorder worker remains",
+  "totalReferenceRequestsIncludingOpenAPI": 121
+}

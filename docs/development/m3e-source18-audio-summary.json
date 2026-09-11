@@ -1,0 +1,2830 @@
+{
+  "format": 1,
+  "status": "source18_mp3_core_and_flac_complete_ui_passed",
+  "scope": "Original Emby Web MP3 and FLAC playback, controls, accepted reports, persisted owned history, and exact UI logout proof",
+  "profiles": [
+    {
+      "check": "mp3",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source18-mp3-01",
+      "report_sha256": "da4a6e1fcb3c5c4a37df9c11530ccda196ff9858bf55a3670accd3e202078034",
+      "core_audio_journey": "passed",
+      "original_harness_outcome": "blocked_at_observed_ui_step",
+      "original_harness_failure": "workflow",
+      "original_audio_phase": "return_home",
+      "original_failure_reason": "album_card_title_control_ambiguous",
+      "started_at": "2026-09-11T05:22:05.320Z",
+      "finished_at": "2026-09-11T05:22:19.870Z",
+      "browser_version": "153.0.8010.12",
+      "playwright_version": "1.63.0",
+      "fixture": {
+        "fixture_marker": "goby-m3e-client-acceptance-v1",
+        "fixture_tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+        "schema": 25,
+        "schema_binding": {
+          "schema": 25,
+          "binding": "completed_upgrade_and_pinned_schema25_artifacts",
+          "catalog_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+          "migration_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+          "source": "/opt/goby-test/exec-work-m3e/source-attempt-18",
+          "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b"
+        },
+        "server_id": "c7cfd76b1dee728b2bad523793a37ccb",
+        "account_marker": "goby-m3e-goby-av-user-v1",
+        "account_id": "34b4c24f6568659af7ce17938fae7f81",
+        "process": {
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+          "pid": 506532,
+          "start_ticks": 2681316
+        },
+        "binary_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+        "fixture_state_sha256": "d9cf6cf415fac1a46af2c99f7c46a9b416175df2f68d626c9c8acc3c6b549c32",
+        "browser_alias_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b",
+        "creation_response_sha256": "aa5534882ebc2cfc9c452c9d400e02681c8e9d9c1900b98c7d69256e919ebae1",
+        "proxy_status_sha256": "769684e6c84eb4ea83c01f86c671d94d488626581c8dde664fa6f7ab7c05310f",
+        "libraries": {
+          "movies": "a9993591e72f0f2e7babcbf8b9c50790",
+          "music": "6383d20008836e137559698c29b10395",
+          "tv": "a34ce665fb75421ef7551570f353d705"
+        },
+        "reference": {
+          "pid": 332054,
+          "start_ticks": 357218,
+          "executable": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+          "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+        },
+        "proxy_process": {
+          "pid": 334022,
+          "start_ticks": 378464,
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+        },
+        "music_scan": {
+          "marker": "goby-client-music-scan-m3e-v1",
+          "job_id": "5bbac57fc1bd21a5aebef85a2537624e",
+          "receipt_sha256": "e0b9ba686afb1950d4ab43c3ad5bc39d67090374704379103a29759c70aab93b",
+          "report_sha256": "11d6f781476093f14b0f1942037add52d00b08bd7d3f78fb8cec8acbbea9b0a4",
+          "owner_sha256": "40c7d2b27eaa6b1e0cc1c9fdb4668fb8fcb1d6edd93ebe3a3bb77b6e2405342e",
+          "directory": "/opt/goby-test/exec-work-m3e/client-music-scan-v1",
+          "candidate_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+          "process": {
+            "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+            "pid": 438666,
+            "start_ticks": 2005412
+          },
+          "schema": 25,
+          "fixture_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+          "upgrade_lineage": {
+            "method": "Explicit bounded completed schema25 upgrade chain",
+            "chain_path": "/opt/goby-test/exec-work-m3e/client-music-upgrade-chain-source18.json",
+            "chain_sha256": "68571d8ca7f418f5dbab4f41d233f00ed8a3e462829ea8ac93e8ec29c2b8283f",
+            "hop_count": 2,
+            "hops": [
+              {
+                "method": "Explicit single completed schema25 binary upgrade",
+                "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-b7bc1d14528135c429ec86de66a62d65",
+                "before_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+                "completed_sha256": "cffa700f67bccfa917077813cd34646cba686cb063d9996fc8721f8fd054c9b0",
+                "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-ce8225800770de91fd8b5f6b.json",
+                "report_sha256": "ad0bdc1358aeab57621a6bb9bdfc3ebec253c65bcc9eaf3c652bc0928ecd5ea3",
+                "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+                "from_schema": 25,
+                "to_schema": 25,
+                "from_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+                "to_sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6",
+                "old_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 438666,
+                  "start_ticks": 2005412
+                },
+                "new_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 472843,
+                  "start_ticks": 2393606
+                },
+                "preservation_authority": "Explicitly approved completed/report hashes and the pinned operator full preservation comparison",
+                "full_snapshot_read": false,
+                "automatic_history_discovery": false,
+                "scan_repeated": false
+              },
+              {
+                "method": "Explicit single completed schema25 binary upgrade",
+                "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-5a92efe5fed8ad546613b3c993d31fe7",
+                "before_state_sha256": "984a987c21acdc8a66db9827dc19a1599697e1ae64b5181cf05924df6531b3ff",
+                "completed_sha256": "13bd7ebbf0e3c5557dfb24cc410e3dcf7cebc44f291452abe9c1aececd1f0ae7",
+                "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-31f65371c64f267eb443da31.json",
+                "report_sha256": "871004e970db405ae64e215473bfeff53e77e925923a39a16271fcb688992a6a",
+                "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+                "from_schema": 25,
+                "to_schema": 25,
+                "from_sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6",
+                "to_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+                "old_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 472843,
+                  "start_ticks": 2393606
+                },
+                "new_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 506532,
+                  "start_ticks": 2681316
+                },
+                "preservation_authority": "Explicitly approved completed/report hashes and the pinned operator full preservation comparison",
+                "full_snapshot_read": false,
+                "automatic_history_discovery": false,
+                "scan_repeated": false
+              }
+            ],
+            "before_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+            "from_schema": 25,
+            "to_schema": 25,
+            "from_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+            "to_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+            "old_process": {
+              "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+              "pid": 438666,
+              "start_ticks": 2005412
+            },
+            "new_process": {
+              "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+              "pid": 506532,
+              "start_ticks": 2681316
+            },
+            "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+            "full_snapshot_read": false,
+            "automatic_history_discovery": false,
+            "scan_repeated": false
+          },
+          "album": {
+            "id": "002c2ea2c77769ae9b0b84b6e788998b",
+            "name": "M3e Synthetic Album",
+            "path": "/opt/goby-fixtures/client-m3e/Music"
+          },
+          "tracks": {
+            "mp3": {
+              "id": "e2da060a0addfafde7f92c291c413f6d",
+              "name": "M3e MP3",
+              "container": "mp3",
+              "path": "/opt/goby-fixtures/client-m3e/Music/M3e Client Audio.mp3",
+              "parentId": "002c2ea2c77769ae9b0b84b6e788998b"
+            },
+            "flac": {
+              "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+              "name": "M3e FLAC",
+              "container": "flac",
+              "path": "/opt/goby-fixtures/client-m3e/Music/M3e Client Audio.flac",
+              "parentId": "002c2ea2c77769ae9b0b84b6e788998b"
+            }
+          },
+          "source": "Exact completed native Music scan receipt and approved fixture mapping",
+          "is_ui_acceptance": false
+        },
+        "boundary": "Read-only private receipt and Linux process pins; no HTTP, database, or client acceptance claim"
+      },
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "59a65d216892bfe1ebc7ec7dd22aa9220a35d95f3284584c137d99062c3d9260",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "abfae1eccc775c06d96a971176720e46609e310da0dd4edf89b42446ba557e25",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "e559cc83079b7dc10faec3bc75f49a7684996ba0c523ad42197fe959ce271a16",
+        "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+        "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+        "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232"
+      },
+      "input_archive": "/opt/goby-test/exec-work-m3e/av-source17-chain-input-01",
+      "input_manifest_sha256": "a493b296c427ad3df8c211e57548e4cafb0c19d726d4785437349d2a3e927411",
+      "track_identity": "observed_row_data_id_and_current_source_path_with_retained_audio_element",
+      "requested_item_identity": {
+        "id": "e2da060a0addfafde7f92c291c413f6d",
+        "name": "M3e MP3",
+        "container": "mp3"
+      },
+      "source_identity_evidence": {
+        "recognized_route": true,
+        "route_kind": "universal",
+        "target_origin_matches": true,
+        "matches_selected_item": true
+      },
+      "playback_evidence": {
+        "media_tag": "audio",
+        "current_time_delta_seconds": 2.037096,
+        "ready_state": 4,
+        "duration_seconds": 180,
+        "audible_output_verified": false
+      },
+      "media_observations": [
+        {
+          "label": "audio-home-media-before",
+          "observed_at": "2026-09-11T05:22:08.028Z",
+          "media": []
+        },
+        {
+          "label": "audio-playing-start",
+          "observed_at": "2026-09-11T05:22:09.475Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": false,
+              "tag": "audio",
+              "current_time": 0.966127,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-retained-playing-start",
+          "observed_at": "2026-09-11T05:22:09.484Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 0.975346,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-playing-advanced",
+          "observed_at": "2026-09-11T05:22:11.522Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.012442,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-pause-before",
+          "observed_at": "2026-09-11T05:22:11.590Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.080298,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-paused",
+          "observed_at": "2026-09-11T05:22:11.642Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.130174,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-paused-held",
+          "observed_at": "2026-09-11T05:22:12.647Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.130174,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_forward-media-before",
+          "observed_at": "2026-09-11T05:22:12.755Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.130174,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_forward-media-after",
+          "observed_at": "2026-09-11T05:22:13.045Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 117.093,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_backward-media-before",
+          "observed_at": "2026-09-11T05:22:13.155Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 117.093,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_backward-media-after",
+          "observed_at": "2026-09-11T05:22:13.449Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.042,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resume-before",
+          "observed_at": "2026-09-11T05:22:13.506Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.042,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resumed",
+          "observed_at": "2026-09-11T05:22:13.560Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.042,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resumed-advanced",
+          "observed_at": "2026-09-11T05:22:15.841Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 55.252682,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-stop-before",
+          "observed_at": "2026-09-11T05:22:15.904Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 55.31684,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-stop-after",
+          "observed_at": "2026-09-11T05:22:17.759Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 0,
+              "duration": null,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 0,
+              "network_state": 0,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-blocked-return_home-media",
+          "observed_at": "2026-09-11T05:22:18.133Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 0,
+              "duration": null,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 0,
+              "network_state": 0,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        }
+      ],
+      "media_network": {
+        "outcome": "owned_audio_http_response_observed",
+        "responses": [
+          {
+            "phase": "track_open",
+            "request_method": "GET",
+            "http_status": 206,
+            "route_kind": "universal",
+            "target_origin_matches": true,
+            "matches_owned_item": true,
+            "metadata_result": "recorded",
+            "response_content_type": "audio/mpeg",
+            "range_state": "recorded",
+            "request_query": {
+              "field_names": [
+                "UserId",
+                "DeviceId",
+                "MaxStreamingBitrate",
+                "Container",
+                "TranscodingContainer",
+                "TranscodingProtocol",
+                "AudioCodec",
+                "api_key",
+                "PlaySessionId",
+                "StartTimeTicks",
+                "EnableRedirection",
+                "EnableRemoteMedia"
+              ],
+              "omitted_field_count": 0,
+              "values": {
+                "Container": {
+                  "state": "valid",
+                  "tokens": [
+                    "opus",
+                    "mp3",
+                    "mp3",
+                    "mp2",
+                    "mp3",
+                    "mp2",
+                    "aac",
+                    "aac",
+                    "m4a",
+                    "aac",
+                    "mp4",
+                    "aac",
+                    "flac",
+                    "webma",
+                    "webm",
+                    "wav",
+                    "PCM_S16LE",
+                    "wav",
+                    "PCM_S24LE",
+                    "ogg"
+                  ],
+                  "separators": [
+                    ",",
+                    "|",
+                    ",",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    ",",
+                    ",",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ","
+                  ]
+                },
+                "AudioCodec": {
+                  "state": "valid",
+                  "tokens": [
+                    "aac"
+                  ],
+                  "separators": []
+                },
+                "TranscodingContainer": {
+                  "state": "valid",
+                  "tokens": [
+                    "ts"
+                  ],
+                  "separators": []
+                },
+                "TranscodingProtocol": {
+                  "state": "valid",
+                  "tokens": [
+                    "hls"
+                  ],
+                  "separators": []
+                },
+                "MaxStreamingBitrate": {
+                  "state": "valid",
+                  "value": 200000000
+                },
+                "StartTimeTicks": {
+                  "state": "valid",
+                  "value": 0
+                },
+                "EnableRedirection": {
+                  "state": "valid",
+                  "value": true
+                },
+                "EnableRemoteMedia": {
+                  "state": "valid",
+                  "value": false
+                }
+              },
+              "other_values": [
+                {
+                  "field": "UserId",
+                  "state": "unknown"
+                },
+                {
+                  "field": "DeviceId",
+                  "state": "unknown"
+                },
+                {
+                  "field": "api_key",
+                  "state": "unknown"
+                },
+                {
+                  "field": "PlaySessionId",
+                  "state": "unknown"
+                }
+              ]
+            },
+            "range": "bytes=0-"
+          }
+        ],
+        "response_limit": 64,
+        "response_overflow": 0,
+        "observer_errors": 0,
+        "expected_content_types": [
+          "audio/mpeg"
+        ],
+        "response_bodies_read": false,
+        "successful_response_bodies_read": false,
+        "browser_output_codec_verified": false,
+        "audible_output_verified": false,
+        "error_diagnostics": {
+          "diagnostic_only": true,
+          "read_limit": 4,
+          "per_body_limit": 8192,
+          "total_budget": 32768,
+          "reads": 0,
+          "reserved_bytes": 0,
+          "parsed_bytes": 0,
+          "stopped_after_over_limit": false,
+          "pending_body_reads_at_return": 0
+        },
+        "mime_evidence": "HTTP Content-Type declaration only; no decoded codec or audible-output claim",
+        "source_binding": "The caller supplies the receipted ID/path/container mapping; this module observes UI, currentSrc, and HTTP metadata",
+        "listener_removed": true,
+        "pending_metadata_drained": true,
+        "accepted_response_count": 1
+      },
+      "playback_reports": [
+        {
+          "index": 261,
+          "elapsed_ms": 3151,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "PlaylistIndex",
+            "PlaylistLength",
+            "NowPlayingQueue"
+          ]
+        },
+        {
+          "index": 267,
+          "elapsed_ms": 3394,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 268,
+          "elapsed_ms": 6332,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 269,
+          "elapsed_ms": 7483,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 270,
+          "elapsed_ms": 7882,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 271,
+          "elapsed_ms": 8248,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 272,
+          "elapsed_ms": 8500,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 273,
+          "elapsed_ms": 11276,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Stopped",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "PlaylistIndex",
+            "PlaylistLength",
+            "NextMediaType",
+            "NowPlayingQueue"
+          ]
+        }
+      ],
+      "stop_evidence": {
+        "all_media_paused_or_removed": true,
+        "remaining_audio_elements": 1,
+        "observed_stopped_report_statuses": [
+          204
+        ]
+      },
+      "album_selection_evidence": [
+        {
+          "label": "audio-album-selected-card",
+          "selection": "exact_album_title_link_action_in_card",
+          "controls": [
+            {
+              "index": 0,
+              "tag": "button",
+              "role": null,
+              "type": "button",
+              "data_action": "link",
+              "label": "",
+              "title": "M3e Synthetic Album",
+              "class": "cardMediaInfoItem itemAction textActionButton cardTextActionButton emby-button button-link",
+              "text": "M3e Synthetic Album",
+              "icon_text": "",
+              "disabled": false,
+              "minimum": null,
+              "maximum": null,
+              "step": null,
+              "player_context": false,
+              "player_text": null,
+              "ancestors": [
+                {
+                  "tag": "div",
+                  "class": "cardText cardText-first cardText-first-padded",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "cardBox cardBox-touchzoom",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "virtualScrollItem card squareCard card-horiz squareCard-horiz card-hoverable card-autoactive",
+                  "role": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "audio-selected-item-row",
+          "phase": "album_tracks",
+          "observed_item_id": "e2da060a0addfafde7f92c291c413f6d",
+          "actual_display_title": "M3e MP3",
+          "controls": [
+            {
+              "index": 0,
+              "tag": "div",
+              "role": null,
+              "type": null,
+              "data_action": "playallfromhere",
+              "label": "",
+              "title": "",
+              "class": "listItem listItem-autoactive itemAction listItemCursor listItem-hoverable",
+              "text": "M3e MP3\n3:00\n\ue87d\n\ue5d3",
+              "icon_text": "\ue037 \ue037 \ue87d \ue5d3",
+              "disabled": false,
+              "minimum": null,
+              "maximum": null,
+              "step": null,
+              "player_context": false,
+              "player_text": null,
+              "ancestors": [
+                {
+                  "tag": "div",
+                  "class": "trackList vertical-list padded-bottom focuscontainer-x verticalSection itemsContainer generalItemsContainer trackList-marginleftcards",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "trackListSection padded-left padded-left-page padded-right padded-left-withlist-autocollapse",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "detailMainContainerParent verticalSections verticalSections-condensed",
+                  "role": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "return_home": null,
+      "home_evidence": {
+        "source": "Retained original DOM snapshot after the actual Home click",
+        "snapshot": "audio-blocked-return_home",
+        "screenshot": "014-audio-blocked-return_home.png",
+        "title": "Goby Client Reference M3e",
+        "home_text": "menu\nclose\nsearch\n\ue88a\nHome\nMy Media\nexpand_more\n\ue02c\nM3e Client Movies\n\ue310\nM3e Client Music\n\ue333\nM3e Client Television\nHomeFavorites\nGet Emby Premiere\n\ue307\n\ue7fd\n\ue8b8\nMy Media\n\ue02c\n\ue5d3\nM3e Client Movies\n\ue310\n\ue5d3\nM3e Client Music\n\ue333\n\ue5d3\nM3e Client Television\nContinue Watching\n\ue5e1\n\ue02c\n\ue037\n\ue86c\n\ue87d\n\ue5d3\nM3e Client Movie\n2026\nContinue Listening\n\ue5e1\n\ue019\n\ue037\n\ue87d\n\ue5d3\nM3e Synthetic Album\nM3e MP3\nM3e Synthetic Artist\nLatest M3e Client Movies\n\ue5e1\n\ue02c\n\ue037\n\ue86c\n\ue87d\n\ue5d3\nM3e Client Movie\n2026\nLatest M3e Client Music\n\ue5e1\n\ue019\n\ue037\n\ue87d\n\ue5d3\nM3e Synthetic Album\nM3e Synthetic Artist\nLatest M3e Client Television\n\ue5e1\n3\n\ue333\n\ue037\n\ue86c\n\ue87d\n\ue5d3\nM3e Client Series\n\u00a0",
+        "visible_same_album_title_controls": 2,
+        "spa_hash_route": "not_recorded_unknown",
+        "cause": "Continue Listening legitimately duplicates the album-name link also present in Latest Music",
+        "original_harness_failure_preserved": true,
+        "mp3_replayed": false
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e MP3",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e FLAC",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e MP3",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T05:22:08.477343Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 553559930,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e FLAC",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 13966,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 13975
+            },
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 13976,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 13982
+            },
+            "result": "logout_token_rejected"
+          }
+        ]
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 1,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1326,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1638,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 13684,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 14470,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "auxiliary_http_failures": [
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/Similar",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        }
+      ],
+      "page_errors": [
+        {
+          "elapsed_ms": 2834,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2836,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "blocked_external_count": 1,
+      "request_overflow": 0,
+      "completed_evidence": {
+        "format": 1,
+        "scope": "Read-only source, state-history, and logout evidence verification; no new HTTP",
+        "core_audio_journey_passed": true,
+        "original_harness_outcome": "blocked_at_observed_ui_step",
+        "original_failure": "workflow",
+        "source_report_sha256": "da4a6e1fcb3c5c4a37df9c11530ccda196ff9858bf55a3670accd3e202078034",
+        "input_archive": "/opt/goby-test/exec-work-m3e/av-source17-chain-input-01",
+        "input_manifest_sha256": "a493b296c427ad3df8c211e57548e4cafb0c19d726d4785437349d2a3e927411",
+        "all_driver_hashes_match": true,
+        "driver_input_count": 10,
+        "archive_input_count": 11,
+        "history_change_matches_selected_item_and_observed_stop": true,
+        "non_target_av_user_data_unchanged": true,
+        "preferences_unchanged": true,
+        "actual_ui_logout_status": 204,
+        "exact_logout_token_verification_status": 401,
+        "private_state": {
+          "retained": true,
+          "stored_user_credentials": 0,
+          "state": "signed_out_server_with_no_user_credentials",
+          "sha256": "c6f620afd13c1ec60edeb3b93f063bf8faa197d6cbd1756d8dcf60b60f6a86ad"
+        },
+        "remaining_effective_session": false
+      }
+    },
+    {
+      "check": "flac",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source18-flac-01",
+      "report_sha256": "6ea0de751a92c252d7a844583e5ffeb5d111ebe66826fa231c6baef6a157fd7a",
+      "core_audio_journey": "passed",
+      "original_harness_outcome": "audio_ui_flow_completed",
+      "original_harness_failure": null,
+      "original_audio_phase": "complete",
+      "original_failure_reason": null,
+      "started_at": "2026-09-11T05:32:48.340Z",
+      "finished_at": "2026-09-11T05:33:02.740Z",
+      "browser_version": "153.0.8010.12",
+      "playwright_version": "1.63.0",
+      "fixture": {
+        "fixture_marker": "goby-m3e-client-acceptance-v1",
+        "fixture_tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+        "schema": 25,
+        "schema_binding": {
+          "schema": 25,
+          "binding": "completed_upgrade_and_pinned_schema25_artifacts",
+          "catalog_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+          "migration_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+          "source": "/opt/goby-test/exec-work-m3e/source-attempt-18",
+          "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b"
+        },
+        "server_id": "c7cfd76b1dee728b2bad523793a37ccb",
+        "account_marker": "goby-m3e-goby-av-user-v1",
+        "account_id": "34b4c24f6568659af7ce17938fae7f81",
+        "process": {
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+          "pid": 506532,
+          "start_ticks": 2681316
+        },
+        "binary_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+        "fixture_state_sha256": "d9cf6cf415fac1a46af2c99f7c46a9b416175df2f68d626c9c8acc3c6b549c32",
+        "browser_alias_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b",
+        "creation_response_sha256": "aa5534882ebc2cfc9c452c9d400e02681c8e9d9c1900b98c7d69256e919ebae1",
+        "proxy_status_sha256": "769684e6c84eb4ea83c01f86c671d94d488626581c8dde664fa6f7ab7c05310f",
+        "libraries": {
+          "movies": "a9993591e72f0f2e7babcbf8b9c50790",
+          "music": "6383d20008836e137559698c29b10395",
+          "tv": "a34ce665fb75421ef7551570f353d705"
+        },
+        "reference": {
+          "pid": 332054,
+          "start_ticks": 357218,
+          "executable": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+          "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+        },
+        "proxy_process": {
+          "pid": 334022,
+          "start_ticks": 378464,
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+        },
+        "music_scan": {
+          "marker": "goby-client-music-scan-m3e-v1",
+          "job_id": "5bbac57fc1bd21a5aebef85a2537624e",
+          "receipt_sha256": "e0b9ba686afb1950d4ab43c3ad5bc39d67090374704379103a29759c70aab93b",
+          "report_sha256": "11d6f781476093f14b0f1942037add52d00b08bd7d3f78fb8cec8acbbea9b0a4",
+          "owner_sha256": "40c7d2b27eaa6b1e0cc1c9fdb4668fb8fcb1d6edd93ebe3a3bb77b6e2405342e",
+          "directory": "/opt/goby-test/exec-work-m3e/client-music-scan-v1",
+          "candidate_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+          "process": {
+            "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+            "pid": 438666,
+            "start_ticks": 2005412
+          },
+          "schema": 25,
+          "fixture_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+          "upgrade_lineage": {
+            "method": "Explicit bounded completed schema25 upgrade chain",
+            "chain_path": "/opt/goby-test/exec-work-m3e/client-music-upgrade-chain-source18.json",
+            "chain_sha256": "68571d8ca7f418f5dbab4f41d233f00ed8a3e462829ea8ac93e8ec29c2b8283f",
+            "hop_count": 2,
+            "hops": [
+              {
+                "method": "Explicit single completed schema25 binary upgrade",
+                "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-b7bc1d14528135c429ec86de66a62d65",
+                "before_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+                "completed_sha256": "cffa700f67bccfa917077813cd34646cba686cb063d9996fc8721f8fd054c9b0",
+                "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-ce8225800770de91fd8b5f6b.json",
+                "report_sha256": "ad0bdc1358aeab57621a6bb9bdfc3ebec253c65bcc9eaf3c652bc0928ecd5ea3",
+                "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+                "from_schema": 25,
+                "to_schema": 25,
+                "from_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+                "to_sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6",
+                "old_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 438666,
+                  "start_ticks": 2005412
+                },
+                "new_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 472843,
+                  "start_ticks": 2393606
+                },
+                "preservation_authority": "Explicitly approved completed/report hashes and the pinned operator full preservation comparison",
+                "full_snapshot_read": false,
+                "automatic_history_discovery": false,
+                "scan_repeated": false
+              },
+              {
+                "method": "Explicit single completed schema25 binary upgrade",
+                "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-5a92efe5fed8ad546613b3c993d31fe7",
+                "before_state_sha256": "984a987c21acdc8a66db9827dc19a1599697e1ae64b5181cf05924df6531b3ff",
+                "completed_sha256": "13bd7ebbf0e3c5557dfb24cc410e3dcf7cebc44f291452abe9c1aececd1f0ae7",
+                "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-31f65371c64f267eb443da31.json",
+                "report_sha256": "871004e970db405ae64e215473bfeff53e77e925923a39a16271fcb688992a6a",
+                "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+                "from_schema": 25,
+                "to_schema": 25,
+                "from_sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6",
+                "to_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+                "old_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 472843,
+                  "start_ticks": 2393606
+                },
+                "new_process": {
+                  "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+                  "pid": 506532,
+                  "start_ticks": 2681316
+                },
+                "preservation_authority": "Explicitly approved completed/report hashes and the pinned operator full preservation comparison",
+                "full_snapshot_read": false,
+                "automatic_history_discovery": false,
+                "scan_repeated": false
+              }
+            ],
+            "before_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+            "from_schema": 25,
+            "to_schema": 25,
+            "from_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+            "to_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+            "old_process": {
+              "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+              "pid": 438666,
+              "start_ticks": 2005412
+            },
+            "new_process": {
+              "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+              "pid": 506532,
+              "start_ticks": 2681316
+            },
+            "operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+            "full_snapshot_read": false,
+            "automatic_history_discovery": false,
+            "scan_repeated": false
+          },
+          "album": {
+            "id": "002c2ea2c77769ae9b0b84b6e788998b",
+            "name": "M3e Synthetic Album",
+            "path": "/opt/goby-fixtures/client-m3e/Music"
+          },
+          "tracks": {
+            "mp3": {
+              "id": "e2da060a0addfafde7f92c291c413f6d",
+              "name": "M3e MP3",
+              "container": "mp3",
+              "path": "/opt/goby-fixtures/client-m3e/Music/M3e Client Audio.mp3",
+              "parentId": "002c2ea2c77769ae9b0b84b6e788998b"
+            },
+            "flac": {
+              "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+              "name": "M3e FLAC",
+              "container": "flac",
+              "path": "/opt/goby-fixtures/client-m3e/Music/M3e Client Audio.flac",
+              "parentId": "002c2ea2c77769ae9b0b84b6e788998b"
+            }
+          },
+          "source": "Exact completed native Music scan receipt and approved fixture mapping",
+          "is_ui_acceptance": false
+        },
+        "boundary": "Read-only private receipt and Linux process pins; no HTTP, database, or client acceptance claim"
+      },
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "84fddbc83fe905ef20ad806aabbfbcc2d943c19f3585745eb08c9cf2b6ded886",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "e559cc83079b7dc10faec3bc75f49a7684996ba0c523ad42197fe959ce271a16",
+        "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+        "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+        "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232"
+      },
+      "input_archive": "/opt/goby-test/exec-work-m3e/av-source18-home-input-01",
+      "input_manifest_sha256": "8282c964d849b4443f0582f88bdb4a84f5fbe37229b573d03c6574f8eee37dff",
+      "track_identity": "observed_row_data_id_and_current_source_path_with_retained_audio_element",
+      "requested_item_identity": {
+        "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+        "name": "M3e FLAC",
+        "container": "flac"
+      },
+      "source_identity_evidence": {
+        "recognized_route": true,
+        "route_kind": "universal",
+        "target_origin_matches": true,
+        "matches_selected_item": true
+      },
+      "playback_evidence": {
+        "media_tag": "audio",
+        "current_time_delta_seconds": 2.026551,
+        "ready_state": 4,
+        "duration_seconds": 180,
+        "audible_output_verified": false
+      },
+      "media_observations": [
+        {
+          "label": "audio-home-media-before",
+          "observed_at": "2026-09-11T05:32:51.163Z",
+          "media": []
+        },
+        {
+          "label": "audio-playing-start",
+          "observed_at": "2026-09-11T05:32:52.581Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": false,
+              "tag": "audio",
+              "current_time": 0.955545,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-retained-playing-start",
+          "observed_at": "2026-09-11T05:32:52.589Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 0.963995,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-playing-advanced",
+          "observed_at": "2026-09-11T05:32:54.616Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 2.990546,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-pause-before",
+          "observed_at": "2026-09-11T05:32:54.680Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.054442,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-paused",
+          "observed_at": "2026-09-11T05:32:54.733Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.105283,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-paused-held",
+          "observed_at": "2026-09-11T05:32:55.737Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.105283,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_forward-media-before",
+          "observed_at": "2026-09-11T05:32:55.862Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 3.105283,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_forward-media-after",
+          "observed_at": "2026-09-11T05:32:56.155Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 117.093,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_backward-media-before",
+          "observed_at": "2026-09-11T05:32:56.280Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 117.093,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-seek_backward-media-after",
+          "observed_at": "2026-09-11T05:32:56.569Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.042,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resume-before",
+          "observed_at": "2026-09-11T05:32:56.630Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.042,
+              "duration": 180,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resumed",
+          "observed_at": "2026-09-11T05:32:56.685Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 53.045471,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-resumed-advanced",
+          "observed_at": "2026-09-11T05:32:58.969Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 55.265149,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-stop-before",
+          "observed_at": "2026-09-11T05:32:59.029Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 55.325393,
+              "duration": 180,
+              "paused": false,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 4,
+              "network_state": 1,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        },
+        {
+          "label": "audio-stop-after",
+          "observed_at": "2026-09-11T05:33:00.895Z",
+          "media": [
+            {
+              "index": 0,
+              "selected": true,
+              "tag": "audio",
+              "current_time": 0,
+              "duration": null,
+              "paused": true,
+              "ended": false,
+              "seeking": false,
+              "ready_state": 0,
+              "network_state": 0,
+              "visible": false,
+              "video_width": null,
+              "video_height": null,
+              "source_identity": {
+                "recognized_route": true,
+                "route_kind": "universal",
+                "target_origin_matches": true,
+                "matches_selected_item": true
+              }
+            }
+          ]
+        }
+      ],
+      "media_network": {
+        "outcome": "owned_audio_http_response_observed",
+        "responses": [
+          {
+            "phase": "track_open",
+            "request_method": "GET",
+            "http_status": 206,
+            "route_kind": "universal",
+            "target_origin_matches": true,
+            "matches_owned_item": true,
+            "metadata_result": "recorded",
+            "response_content_type": "audio/flac",
+            "range_state": "recorded",
+            "request_query": {
+              "field_names": [
+                "UserId",
+                "DeviceId",
+                "MaxStreamingBitrate",
+                "Container",
+                "TranscodingContainer",
+                "TranscodingProtocol",
+                "AudioCodec",
+                "api_key",
+                "PlaySessionId",
+                "StartTimeTicks",
+                "EnableRedirection",
+                "EnableRemoteMedia"
+              ],
+              "omitted_field_count": 0,
+              "values": {
+                "Container": {
+                  "state": "valid",
+                  "tokens": [
+                    "opus",
+                    "mp3",
+                    "mp3",
+                    "mp2",
+                    "mp3",
+                    "mp2",
+                    "aac",
+                    "aac",
+                    "m4a",
+                    "aac",
+                    "mp4",
+                    "aac",
+                    "flac",
+                    "webma",
+                    "webm",
+                    "wav",
+                    "PCM_S16LE",
+                    "wav",
+                    "PCM_S24LE",
+                    "ogg"
+                  ],
+                  "separators": [
+                    ",",
+                    "|",
+                    ",",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ",",
+                    ",",
+                    ",",
+                    ",",
+                    "|",
+                    ",",
+                    "|",
+                    ","
+                  ]
+                },
+                "AudioCodec": {
+                  "state": "valid",
+                  "tokens": [
+                    "aac"
+                  ],
+                  "separators": []
+                },
+                "TranscodingContainer": {
+                  "state": "valid",
+                  "tokens": [
+                    "ts"
+                  ],
+                  "separators": []
+                },
+                "TranscodingProtocol": {
+                  "state": "valid",
+                  "tokens": [
+                    "hls"
+                  ],
+                  "separators": []
+                },
+                "MaxStreamingBitrate": {
+                  "state": "valid",
+                  "value": 200000000
+                },
+                "StartTimeTicks": {
+                  "state": "valid",
+                  "value": 0
+                },
+                "EnableRedirection": {
+                  "state": "valid",
+                  "value": true
+                },
+                "EnableRemoteMedia": {
+                  "state": "valid",
+                  "value": false
+                }
+              },
+              "other_values": [
+                {
+                  "field": "UserId",
+                  "state": "unknown"
+                },
+                {
+                  "field": "DeviceId",
+                  "state": "unknown"
+                },
+                {
+                  "field": "api_key",
+                  "state": "unknown"
+                },
+                {
+                  "field": "PlaySessionId",
+                  "state": "unknown"
+                }
+              ]
+            },
+            "range": "bytes=0-"
+          }
+        ],
+        "response_limit": 64,
+        "response_overflow": 0,
+        "observer_errors": 0,
+        "expected_content_types": [
+          "audio/flac",
+          "audio/x-flac"
+        ],
+        "response_bodies_read": false,
+        "successful_response_bodies_read": false,
+        "browser_output_codec_verified": false,
+        "audible_output_verified": false,
+        "error_diagnostics": {
+          "diagnostic_only": true,
+          "read_limit": 4,
+          "per_body_limit": 8192,
+          "total_budget": 32768,
+          "reads": 0,
+          "reserved_bytes": 0,
+          "parsed_bytes": 0,
+          "stopped_after_over_limit": false,
+          "pending_body_reads_at_return": 0
+        },
+        "mime_evidence": "HTTP Content-Type declaration only; no decoded codec or audible-output claim",
+        "source_binding": "The caller supplies the receipted ID/path/container mapping; this module observes UI, currentSrc, and HTTP metadata",
+        "listener_removed": true,
+        "pending_metadata_drained": true,
+        "accepted_response_count": 1
+      },
+      "playback_reports": [
+        {
+          "index": 261,
+          "elapsed_ms": 3246,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "PlaylistIndex",
+            "PlaylistLength",
+            "NowPlayingQueue"
+          ]
+        },
+        {
+          "index": 267,
+          "elapsed_ms": 3497,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 268,
+          "elapsed_ms": 6403,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 269,
+          "elapsed_ms": 7570,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 270,
+          "elapsed_ms": 7987,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 271,
+          "elapsed_ms": 8353,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 272,
+          "elapsed_ms": 8604,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Progress",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "EventName",
+            "PlaylistIndex",
+            "PlaylistLength"
+          ]
+        },
+        {
+          "index": 273,
+          "elapsed_ms": 11393,
+          "method": "POST",
+          "route": "/emby/Sessions/Playing/Stopped",
+          "content_type": "text/plain",
+          "response_content_type": null,
+          "status": 204,
+          "json_field_names": [
+            "VolumeLevel",
+            "IsMuted",
+            "IsBackgroundPlayback",
+            "IsPaused",
+            "RepeatMode",
+            "SleepTimerMode",
+            "Shuffle",
+            "SubtitleOffset",
+            "PlaybackRate",
+            "MaxStreamingBitrate",
+            "PositionTicks",
+            "PlaybackStartTimeTicks",
+            "SubtitleStreamIndex",
+            "BufferedRanges",
+            "SeekableRanges",
+            "PlayMethod",
+            "PlaySessionId",
+            "MediaSourceId",
+            "CanSeek",
+            "ItemId",
+            "PlaylistIndex",
+            "PlaylistLength",
+            "NextMediaType",
+            "NowPlayingQueue"
+          ]
+        }
+      ],
+      "stop_evidence": {
+        "all_media_paused_or_removed": true,
+        "remaining_audio_elements": 1,
+        "observed_stopped_report_statuses": [
+          204
+        ]
+      },
+      "album_selection_evidence": [
+        {
+          "label": "audio-latest-music-section",
+          "heading": "Latest M3e Client Music",
+          "selection": "observed_latest_music_section"
+        },
+        {
+          "label": "audio-album-selected-card",
+          "selection": "exact_album_title_in_observed_latest_music_section",
+          "card_identity": {
+            "card_present": true,
+            "id_present": false,
+            "id": null,
+            "id_format_supported": true,
+            "type": null,
+            "matches_receipted_id": null
+          },
+          "controls": [
+            {
+              "index": 0,
+              "tag": "button",
+              "role": null,
+              "type": "button",
+              "data_action": "link",
+              "label": "",
+              "title": "M3e Synthetic Album",
+              "class": "cardMediaInfoItem itemAction textActionButton cardTextActionButton emby-button button-link",
+              "text": "M3e Synthetic Album",
+              "icon_text": "",
+              "disabled": false,
+              "minimum": null,
+              "maximum": null,
+              "step": null,
+              "player_context": false,
+              "player_text": null,
+              "ancestors": [
+                {
+                  "tag": "div",
+                  "class": "cardText cardText-first cardText-first-padded",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "cardBox cardBox-touchzoom",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "virtualScrollItem card squareCard card-horiz squareCard-horiz card-hoverable card-autoactive",
+                  "role": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "audio-selected-item-row",
+          "phase": "album_tracks",
+          "observed_item_id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+          "actual_display_title": "M3e FLAC",
+          "controls": [
+            {
+              "index": 0,
+              "tag": "div",
+              "role": null,
+              "type": null,
+              "data_action": "playallfromhere",
+              "label": "",
+              "title": "",
+              "class": "listItem listItem-autoactive itemAction listItemCursor listItem-hoverable",
+              "text": "M3e FLAC\n3:00\n\ue87d\n\ue5d3",
+              "icon_text": "\ue037 \ue037 \ue87d \ue5d3",
+              "disabled": false,
+              "minimum": null,
+              "maximum": null,
+              "step": null,
+              "player_context": false,
+              "player_text": null,
+              "ancestors": [
+                {
+                  "tag": "div",
+                  "class": "trackList vertical-list padded-bottom focuscontainer-x verticalSection itemsContainer generalItemsContainer trackList-marginleftcards",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "trackListSection padded-left padded-left-page padded-right padded-left-withlist-autocollapse",
+                  "role": null
+                },
+                {
+                  "tag": "div",
+                  "class": "detailMainContainerParent verticalSections verticalSections-condensed",
+                  "role": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "return_home": "home_control_clicked_navigation_observed_and_receipted_music_library_card_visible",
+      "home_evidence": {
+        "label": "audio-return-home-library-evidence",
+        "library_name": "M3e Client Music",
+        "library_card": {
+          "card_present": true,
+          "id_present": true,
+          "id": "6383d20008836e137559698c29b10395",
+          "id_format_supported": true,
+          "type": null,
+          "matches_receipted_id": true
+        },
+        "library_card_count": 1,
+        "album_detail_heading_absent": true,
+        "navigation_observed": true,
+        "location": {
+          "pathname": "/web/index.html",
+          "hash_route": "#!/home"
+        },
+        "visible_album_title_link_count": 2
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e MP3",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T05:22:08.477343Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 553559930,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e FLAC",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e MP3",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T05:22:08.477343Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 553559930,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e FLAC",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T05:32:51.591226Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 553650090,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 13826,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 13837
+            },
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 13838,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 13845
+            },
+            "result": "logout_token_rejected"
+          }
+        ]
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 2,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1354,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1669,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 13543,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 14323,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "auxiliary_http_failures": [
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/Similar",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        }
+      ],
+      "page_errors": [
+        {
+          "elapsed_ms": 2942,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2942,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "blocked_external_count": 1,
+      "request_overflow": 0,
+      "completed_evidence": {
+        "format": 1,
+        "scope": "Read-only source, state-history, and logout evidence verification; no new HTTP",
+        "core_audio_journey_passed": true,
+        "original_harness_outcome": "audio_ui_flow_completed",
+        "original_failure": null,
+        "source_report_sha256": "6ea0de751a92c252d7a844583e5ffeb5d111ebe66826fa231c6baef6a157fd7a",
+        "input_archive": "/opt/goby-test/exec-work-m3e/av-source18-home-input-01",
+        "input_manifest_sha256": "8282c964d849b4443f0582f88bdb4a84f5fbe37229b573d03c6574f8eee37dff",
+        "all_driver_hashes_match": true,
+        "driver_input_count": 10,
+        "archive_input_count": 11,
+        "history_change_matches_selected_item_and_observed_stop": true,
+        "non_target_av_user_data_unchanged": true,
+        "preferences_unchanged": true,
+        "actual_ui_logout_status": 204,
+        "exact_logout_token_verification_status": 401,
+        "private_state": {
+          "retained": false,
+          "stored_user_credentials": 0,
+          "state": "removed_after_successful_ui_logout"
+        },
+        "remaining_effective_session": false
+      }
+    }
+  ],
+  "lineage_guards": {
+    "report": "/opt/goby-test/exec-work-m3e/goby-av-source18-lineage-guards-01/music-lineage-guards.json",
+    "sha256": "df7db01cdf043bec94dc4a750aae2e0acb7b4b7969637d78d39acd26284983b0",
+    "result": "passed",
+    "counts": {
+      "executed": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "harness_guards_only": true
+  },
+  "source17_installed": false,
+  "actual_upgrade_chain": "source15 -> source16 -> source18",
+  "music_scan_repeated": false,
+  "mp3_replayed": false,
+  "remaining_unrevoked_sessions": [],
+  "limitations": [
+    "MP3 retains its original overall harness failure at return_home. Its core audio journey and UI logout passed; the retained Home DOM establishes that the final global album-title uniqueness assumption was wrong.",
+    "The old MP3 SPA hash route was not recorded and remains unknown. Only the later FLAC run records the actual #!/home route.",
+    "FLAC selects the unique album title within the observed Latest Music section. Its album card did not expose data-id; this is not represented as an observed album DOM ID. The track row/currentSrc and the Home Music library card have their recorded identity evidence.",
+    "Both runs retain Similar/ThemeMedia HTTP404 and two page errors each. These auxiliary compatibility gaps are separate from the passed audio journey.",
+    "HTTP MIME and real HTMLMediaElement state do not measure physical audible output or the decoder output codec. No successful media response body was read.",
+    "The proxy transport does not establish HTTP keepalive compatibility. Instance pins surround explicitly frozen targets; the independent logout check is not atomically cancellable across unexpected instance replacement.",
+    "The root task runs the independent full product suite and owns the main deployment decision; this report makes no full-suite or production-deployment claim."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "scope": "source09 System/Endpoint connection classification and authenticated HTTP regression, not complete repository regression",
+  "tests": [
+    "TestHTTPSystemEndpointUsesCurrentTokenAndObservedLoopbackShape",
+    "TestSystemEndpointClassifiesResolvedConnectionWithoutGrantingTrust"
+  ],
+  "skips": 0,
+  "failures": 0,
+  "raceEnabled": true,
+  "binarySha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-09",
+  "sourceManifestSha256": "da83e8797ae3cf9f96f28e9b5e27e9bfa542f4f50f933a7e2222fcb07fbaa25e",
+  "logSha256": "00b0c4706ca0ed051e537cef341bb477eea674a8622b3c48e6af105c59eb3628",
+  "topLevelPassed": 2
+}

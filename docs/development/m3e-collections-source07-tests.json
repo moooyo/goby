@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "scope": "source07 Playlist and BoxSet query and authorized HTTP regressions; not complete repository regression",
+  "topLevelPassed": 22,
+  "tests": [
+    "TestQueryLatestRejectsInvalidInputBeforeDatabaseAccess",
+    "TestQueryLatestGroupsBeforePagination",
+    "TestQueryLatestFiltersSourceMediaBeforeGrouping",
+    "TestQueryLatestRawReturnsIndividualMedia",
+    "TestQueryLatestReturnsMetadataFromTheSelectedItem",
+    "TestQueryLatestProjectsSourceAndRepresentativeEntities",
+    "TestQueryLatestFiltersEntitiesBeforeGroupingCountingAndPaging",
+    "TestQueryLatestParentScopeUsesSameLibraryDescendants",
+    "TestQueryLatestEnforcesActiveUserPolicy",
+    "TestQueryLatestFallsBackWhenAncestorsContainACycle",
+    "TestQueryCollectionTypesNormalizeKnownKindsAndRejectUnknown",
+    "TestQueryCollectionTypesUseRealCatalogFilteringAndPermissions",
+    "TestQueryItemsRejectsInvalidInputBeforeDatabaseAccess",
+    "TestQueryItemsValidatesEntityFiltersBeforeDatabaseAccess",
+    "TestQueryItemsFiltersParentIndexAndOrdersAcrossSeasons",
+    "TestQueryItemsAppliesLibraryPolicyBeforePagination",
+    "TestQueryItemsFiltersAndSortsVisibleItems",
+    "TestQueryItemsRecursionStaysWithinAuthorizedParentLibrary",
+    "TestQueryItemsCombinesEntityFiltersWithinVisibleItems",
+    "TestQueryItemsAppliesEntityACLBeforeCountsAndPagination",
+    "TestQueryResumeUsesCurrentUserStateAndStableLastPlayedOrder",
+    "TestHTTPItemsObservedPlaylistAndBoxSetFiltersUseAuthorizedCatalog"
+  ],
+  "raceEnabled": true,
+  "skips": 0,
+  "failures": 0,
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "elapsed": 3.194
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "elapsed": 2.682
+    }
+  ],
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-07",
+  "sourceManifestSha256": "64306bfe923fa020ff3a5a79db99abc39e6ef7cca8378460148fdda6bd070236",
+  "logSha256": "1610d9b77a15c127784a77decbc2929d4b6ba40d9f311d1fd1395ded799dc7f0",
+  "binarySha256": "7eaf440655c877542fd0bcf745045d4b33cb3339bc53d5e5c9fe8d1a1fd8b875"
+}

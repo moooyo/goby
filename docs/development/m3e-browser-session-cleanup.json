@@ -1,0 +1,227 @@
+{
+  "format": 1,
+  "scope": "Owned fixture session cleanup only; not UI or client acceptance",
+  "started_at": "2026-09-10T23:59:53.085Z",
+  "pins": {
+    "reference": {
+      "pid": 332054,
+      "ticks": "357218",
+      "exe": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+    },
+    "goby": {
+      "pid": 342622,
+      "ticks": "558288",
+      "exe": "/opt/goby-client-m3e/goby",
+      "sha256": "dda315423197945bd0a5a6096e823a9e143f6fe71230a33f613aae271af7e05e"
+    }
+  },
+  "reference_state_cleanup": [
+    {
+      "run": "reference-movie-ui-01",
+      "source_state_sha256": "5673e89f20c8a987a79008cb94afbe27e923dce28ee9d4e2cdd74c80937402ea",
+      "token_fingerprint": "40bc1df43943f478b5d3ba9f1c6ef1e2a66decda8f118f61fdaced1b65963d83",
+      "user_id": "46c1e1006a2c47ada1b482a96e89c549",
+      "device_id": "5f724a2a-3185-4422-aa52-2ed3b9001d02",
+      "before_status": 200,
+      "ui": {
+        "logout_statuses": [
+          204
+        ],
+        "login_view_visible": true,
+        "result": "sign_out_observed"
+      },
+      "token_status_after_ui": 401,
+      "result": "owned_token_revoked"
+    },
+    {
+      "run": "reference-movie-ui-02",
+      "source_state_sha256": "98538c3ae6feccb8c31a95eae2296dff4617eecc3dc004e3e47d8098b6ddce05",
+      "token_fingerprint": "677d11a8b6089f4cb26c9b1bbfe32d90f27ae2256e97e950067b7173194931e8",
+      "user_id": "46c1e1006a2c47ada1b482a96e89c549",
+      "device_id": "9f0bd11c-3e28-4059-b710-ed58330d6468",
+      "before_status": 200,
+      "ui": {
+        "logout_statuses": [
+          204
+        ],
+        "login_view_visible": true,
+        "result": "sign_out_observed"
+      },
+      "token_status_after_ui": 401,
+      "result": "owned_token_revoked"
+    },
+    {
+      "run": "reference-movie-ui-03",
+      "source_state_sha256": "15a145bff1e249a21897984d8e7c455c609ceb813ff819e8fd6b16b857007973",
+      "token_fingerprint": "7f8a5cece3b7f965a41acea9a2084386f4580b254495d0b13715d83cdc6bef15",
+      "user_id": "46c1e1006a2c47ada1b482a96e89c549",
+      "device_id": "b5a563ac-a72a-480c-aa4b-e1f6228c341a",
+      "before_status": 200,
+      "ui": {
+        "logout_statuses": [
+          204
+        ],
+        "login_view_visible": true,
+        "result": "sign_out_observed"
+      },
+      "token_status_after_ui": 401,
+      "result": "owned_token_revoked"
+    }
+  ],
+  "remaining_unattributed": [
+    {
+      "target": "fresh-reference",
+      "run": "reference-ui-login-01",
+      "reason": "No saved token or directly recorded browser DeviceId; time-window candidates are retained without registry deletion",
+      "window_start": "2026-09-10T22:55:20.907Z",
+      "window_end": "2026-09-10T22:55:27.354Z",
+      "candidates": [
+        {
+          "Id": "4890be622dd7be01ae32c9a7636e5b9c",
+          "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+          "Client": "Emby Web",
+          "DeviceId": "22c923e8-1c9b-4430-9000-15da9547839a",
+          "DeviceName": "HeadlessChrome Linux",
+          "ApplicationVersion": "4.9.5.0",
+          "LastActivityDate": "2026-09-10T22:55:22.1869013Z"
+        }
+      ]
+    },
+    {
+      "target": "fresh-reference",
+      "run": "reference-ui-login-network-boundary-02",
+      "reason": "No saved token or directly recorded browser DeviceId; time-window candidates are retained without registry deletion",
+      "window_start": "2026-09-10T23:00:33.829Z",
+      "window_end": "2026-09-10T23:00:45.251Z",
+      "candidates": [
+        {
+          "Id": "df13a86f45689da67bfdee44061339d4",
+          "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+          "Client": "Emby Web",
+          "DeviceId": "ecae9ec5-f688-489d-a141-01856aa759ab",
+          "DeviceName": "HeadlessChrome Linux",
+          "ApplicationVersion": "4.9.5.0",
+          "LastActivityDate": "2026-09-10T23:00:35.0821558Z"
+        }
+      ]
+    }
+  ],
+  "native_cleanup": {
+    "run": "goby-ui-login-05",
+    "before": [
+      {
+        "Id": "40e5463ca5e0a5a3062ef94de0de8a3b",
+        "UserId": "ecbbe4cb82403879bc4b4f78894c5738",
+        "Kind": "emby",
+        "Client": "Emby Web",
+        "DeviceId": "fc02a67b-873b-451b-b343-daa472e94513",
+        "DeviceName": "HeadlessChrome Linux",
+        "ApplicationVersion": "4.9.5.0",
+        "CreatedAt": "2026-09-10T23:25:21.11698Z",
+        "LastSeenAt": "2026-09-10T23:25:21.11698Z",
+        "Status": "active",
+        "RevokedAt": null
+      }
+    ],
+    "candidates": [
+      {
+        "Id": "40e5463ca5e0a5a3062ef94de0de8a3b",
+        "UserId": "ecbbe4cb82403879bc4b4f78894c5738",
+        "Kind": "emby",
+        "Client": "Emby Web",
+        "DeviceId": "fc02a67b-873b-451b-b343-daa472e94513",
+        "DeviceName": "HeadlessChrome Linux",
+        "ApplicationVersion": "4.9.5.0",
+        "CreatedAt": "2026-09-10T23:25:21.11698Z",
+        "LastSeenAt": "2026-09-10T23:25:21.11698Z",
+        "Status": "active",
+        "RevokedAt": null,
+        "ownership_evidence": {
+          "source_run": "goby-ui-login-05",
+          "exact_owned_user": true,
+          "exact_client_build": "Emby Web 4.9.5.0",
+          "unique_successful_browser_login_window": true,
+          "window_start": "2026-09-10T23:25:19.891Z",
+          "window_end": "2026-09-10T23:25:31.214Z",
+          "native_session_device_bound": true,
+          "scope_excludes_non_browser_recorder_clients": true
+        }
+      }
+    ],
+    "retired": [
+      {
+        "Id": "40e5463ca5e0a5a3062ef94de0de8a3b",
+        "UserId": "ecbbe4cb82403879bc4b4f78894c5738",
+        "Kind": "emby",
+        "Client": "Emby Web",
+        "DeviceId": "fc02a67b-873b-451b-b343-daa472e94513",
+        "DeviceName": "HeadlessChrome Linux",
+        "ApplicationVersion": "4.9.5.0",
+        "CreatedAt": "2026-09-10T23:25:21.11698Z",
+        "LastSeenAt": "2026-09-10T23:25:21.11698Z",
+        "Status": "revoked",
+        "RevokedAt": "2026-09-10T23:59:58.55331Z",
+        "method": "native_admin_exact_session_revocation",
+        "token_401_probe": "unavailable_no_owned_token_was_retained",
+        "history_preserved": true
+      }
+    ],
+    "remaining": [],
+    "control_session_cleanup": {
+      "logout_status": 204,
+      "subsequent_status": 401,
+      "revoked": true
+    }
+  },
+  "external_requests_blocked": 3,
+  "errors": [],
+  "reference_before": [
+    {
+      "Id": "30de26cbb8f7691fcebd04f51489b985",
+      "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+      "Client": "Emby Web",
+      "DeviceId": "5f724a2a-3185-4422-aa52-2ed3b9001d02",
+      "DeviceName": "HeadlessChrome Linux",
+      "ApplicationVersion": "4.9.5.0",
+      "LastActivityDate": "2026-09-10T23:59:53.3360480Z"
+    },
+    {
+      "Id": "fce91c08d3fe652e5f250c9e78b98ccd",
+      "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+      "Client": "Emby Web",
+      "DeviceId": "b5a563ac-a72a-480c-aa4b-e1f6228c341a",
+      "DeviceName": "HeadlessChrome Linux",
+      "ApplicationVersion": "4.9.5.0",
+      "LastActivityDate": "2026-09-10T23:59:53.3326969Z"
+    },
+    {
+      "Id": "4e37b29b0c48e2e37427107cc27193bd",
+      "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+      "Client": "Emby Web",
+      "DeviceId": "9f0bd11c-3e28-4059-b710-ed58330d6468",
+      "DeviceName": "HeadlessChrome Linux",
+      "ApplicationVersion": "4.9.5.0",
+      "LastActivityDate": "2026-09-10T23:59:53.3263037Z"
+    },
+    {
+      "Id": "df13a86f45689da67bfdee44061339d4",
+      "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+      "Client": "Emby Web",
+      "DeviceId": "ecae9ec5-f688-489d-a141-01856aa759ab",
+      "DeviceName": "HeadlessChrome Linux",
+      "ApplicationVersion": "4.9.5.0",
+      "LastActivityDate": "2026-09-10T23:00:35.0821558Z"
+    },
+    {
+      "Id": "4890be622dd7be01ae32c9a7636e5b9c",
+      "UserId": "46c1e1006a2c47ada1b482a96e89c549",
+      "Client": "Emby Web",
+      "DeviceId": "22c923e8-1c9b-4430-9000-15da9547839a",
+      "DeviceName": "HeadlessChrome Linux",
+      "ApplicationVersion": "4.9.5.0",
+      "LastActivityDate": "2026-09-10T22:55:22.1869013Z"
+    }
+  ],
+  "finished_at": "2026-09-10T23:59:58.626Z"
+}

@@ -274,6 +274,7 @@ func audioOutputRequest(request Request, container, codec string) Request {
 	output := request
 	device := *request.DeviceProfile
 	device.DirectPlayProfiles = []DirectPlayProfile{{Type: DlnaProfileTypeAudio, Container: container, AudioCodec: codec}}
+	device.MaxStaticBitrate = nil
 	device.MaxStaticMusicBitrate = nil
 	output.DeviceProfile = &device
 	zero, noSubtitle, enabled := 0, -1, true

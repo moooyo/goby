@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "scope": "source05 targeted schema24 UserSettings migration/domain/parser/HTTP tests and Linux build; complete repository and cross-version backup acceptance still pending",
+  "topLevelPassed": 18,
+  "tests": [
+    "TestMigrateUserSettingsPreservesSchema23DataAndLeavesPreferencesEmpty",
+    "TestUserSettingsMigrationEnforcesStorageBoundsAndUserOwnership",
+    "TestUserSettingsPersistAcrossClientsAndPreserveAccountConfiguration",
+    "TestUserSettingsRevalidateIdentityAndCurrentAdministratorRole",
+    "TestUserSettingsConcurrentFirstWritesMergeWithoutLostKeys",
+    "TestUserSettingsLimitsApplyToMergedStateAndRejectCorruption",
+    "TestUserSettingsExpiryWhileWaitingForBusinessRowRollsBack",
+    "TestDecodeUserSettingsPatchPreservesOrderedCaseInsensitiveScalars",
+    "TestDecodeUserSettingsStructuredValuesRetainObservedOrderAndText",
+    "TestDecodeUserSettingsStructuredValuesHaveIndependentDepthAndNodeLimits",
+    "TestDecodeUserSettingsNestedMatrixPreservesNullsEmptyValuesAndDuplicateKeys",
+    "TestDecodeUserSettingsPatchRejectsLossyEncodingAndMalformedDocuments",
+    "TestHTTPUserSettingsPersistAcrossDevicesAndObservedRequestVariants",
+    "TestHTTPUserSettingsPartialPreservesObservedScalarAndDuplicateSemantics",
+    "TestHTTPUserSettingsRequireCurrentIdentityAndWriteAuthority",
+    "TestHTTPUserSettingsApplicationKeyUsesExplicitUserAndRevocation",
+    "TestHTTPUserSettingsFullWritePreservesExactRejectionWithoutMutation",
+    "TestHTTPUserSettingsInvalidInputAndLimitsLeaveNoPreferenceChanges"
+  ],
+  "raceEnabled": true,
+  "skips": 0,
+  "failures": 0,
+  "goModuleSQLInputs": 594,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-05",
+  "sourceManifestSha256": "6ce9b133940253fe15a1049233bc86020f9bd0d4c406883ab0e6199d50628543",
+  "logSha256": "d9bb89e31eb4f5aa9b5bc629293773254006905d2fe72514f6998e21ed8bb485",
+  "binary": {
+    "path": "/opt/goby-test/exec-work-m3e/source05-targeted/goby-linux-amd64",
+    "sha256": "cdc781375d375e0c6442c2d84980fdc69877103e3d99172614504bd06e4f5cf0",
+    "bytes": 26233357,
+    "cgoEnabled": false
+  }
+}

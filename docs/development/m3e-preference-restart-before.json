@@ -1,0 +1,127 @@
+{
+  "phase": "before_process_restart",
+  "source": "source-attempt-09",
+  "binarySha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+  "process": {
+    "pid": 355352,
+    "startTicks": 1044542
+  },
+  "preference": {
+    "phase": "complete",
+    "outcome": "nondefault_preference_retained_for_restart",
+    "mode": "retain-for-restart",
+    "choice": {
+      "kind": "genre_display_limit",
+      "original": "1",
+      "expected": "1",
+      "desired": "2",
+      "baseline": "1"
+    },
+    "writes": [
+      {
+        "phase": "retain_display_preference",
+        "route": "/emby/usersettings/{account-or-preference-id}/Partial",
+        "content_type": "text/plain",
+        "header_names": [
+          "accept",
+          "accept-language",
+          "content-type",
+          "origin",
+          "referer",
+          "sec-ch-ua",
+          "sec-ch-ua-mobile",
+          "sec-ch-ua-platform",
+          "user-agent"
+        ],
+        "query_field_names": [
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language",
+          "reqformat"
+        ],
+        "status": 204,
+        "body_encoding": "json",
+        "json_top_level_type": "object",
+        "json_encoding_layers": 1,
+        "safe_body": {
+          "genreLimitOnDetails": "2"
+        }
+      }
+    ],
+    "restored": false,
+    "retained_for_restart": true,
+    "starting_value_verified": true
+  },
+  "logout": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 3911,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 3923
+        },
+        "token_fingerprint": "934f81294d9c9d139769ffb18b40c55553bb63a2996e98c2242aa64a8ab0d43d",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 3923,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 3935
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    },
+    "expected_ui_logout_count": 1
+  },
+  "observationSha256": "bca4f8e0d9669400e3cb6b74c17a61d4520e184842a4359c89d88be3a8f596fd",
+  "nextStep": "After the protected candidate upgrade changes the process, run the original client with preference-mode verify-restart-restore in a fresh browser. It must read 2 before restoring 1. No restart success is claimed here."
+}

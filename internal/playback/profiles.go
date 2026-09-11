@@ -124,6 +124,7 @@ func Evaluate(source Source, request Request) (Decision, error) {
 			decline("bitrate_limit", "MaxStreamingBitrate", "The original file exceeds the streaming bitrate limit.")
 		}
 	}
+	originalBitrateBlocked := false
 	if profile := request.DeviceProfile; profile != nil && kind != "" {
 		profileDecline := func(code, property, message string) {
 			decision.Reasons = append(decision.Reasons, Reason{Code: code, Property: property, Message: message, ProfileOnly: true})
@@ -134,16 +135,25 @@ func Evaluate(source Source, request Request) (Decision, error) {
 				decision.Reasons = append(decision.Reasons, reason)
 			}
 		}
-		bitrateLimit := profile.MaxStreamingBitrate
+		// Static limits describe delivery of the original file. Goby intersects
+		// them with streaming limits; they are not an output transcoding budget.
+		bitrateLimit, bitrateProperty := profile.MaxStreamingBitrate, "DeviceProfile.MaxStreamingBitrate"
+		if profile.MaxStaticBitrate != nil && (bitrateLimit == nil || *profile.MaxStaticBitrate < *bitrateLimit) {
+			bitrateLimit, bitrateProperty = profile.MaxStaticBitrate, "DeviceProfile.MaxStaticBitrate"
+		}
 		if kind == DlnaProfileTypeAudio && profile.MaxStaticMusicBitrate != nil {
 			limit := int64(*profile.MaxStaticMusicBitrate)
-			bitrateLimit = lowerLimit(bitrateLimit, &limit)
+			if bitrateLimit == nil || limit < *bitrateLimit {
+				bitrateLimit, bitrateProperty = &limit, "DeviceProfile.MaxStaticMusicBitrate"
+			}
 		}
 		if bitrateLimit != nil {
 			if source.Info.Bitrate <= 0 {
-				profileDecline("unknown_source_bitrate", "DeviceProfile.MaxStreamingBitrate", "Source bitrate is required to verify the device bitrate limit.")
+				originalBitrateBlocked = true
+				profileDecline("unknown_source_bitrate", bitrateProperty, "Source bitrate is required to verify the device bitrate limit.")
 			} else if source.Info.Bitrate > *bitrateLimit {
-				profileDecline("device_bitrate_limit", "DeviceProfile.MaxStreamingBitrate", "The original file exceeds the device profile bitrate limit.")
+				originalBitrateBlocked = true
+				profileDecline("device_bitrate_limit", bitrateProperty, "The original file exceeds the device profile bitrate limit.")
 			}
 		}
 		container := media.CanonicalContainer(source.Info, source.Path)
@@ -209,9 +219,9 @@ func Evaluate(source Source, request Request) (Decision, error) {
 	allowed := compatible
 	// Controlled reference samples establish that explicitly disabling
 	// transcoding requests the original file despite a codec profile mismatch.
-	// Preserve the mismatch as a fact, while never bypassing request limits,
-	// invalid stream selection, or unsupported subtitle/audio delivery needs.
-	if !allowed && !hardFailure && profileMismatch && request.EnableTranscoding != nil && !*request.EnableTranscoding {
+	// Preserve the mismatch as a fact, while never bypassing request or device
+	// bitrate limits, stream selection, or subtitle/audio delivery requirements.
+	if !allowed && !hardFailure && !originalBitrateBlocked && profileMismatch && request.EnableTranscoding != nil && !*request.EnableTranscoding {
 		allowed = true
 		decision.ClientMustValidate = true
 		decision.Reasons = append(decision.Reasons, Reason{
@@ -354,6 +364,29 @@ func selectSubtitleDelivery(source Source, profile *DeviceProfile, stream *media
 	return "", ""
 }
 
+// ExternalSubtitleCandidateFormats projects an explicit profile onto indexed
+// external text tracks of an original source already validated by Evaluate.
+// It does not select a track, change playback compatibility, or prove file
+// availability. The caller still authorizes and validates actual downloads.
+// An absent profile yields no overrides of the native catalog descriptions.
+func ExternalSubtitleCandidateFormats(source Source, profile *DeviceProfile) map[int]string {
+	formats := make(map[int]string)
+	if profile == nil {
+		return formats
+	}
+	for index := range source.Info.Streams {
+		stream := &source.Info.Streams[index]
+		if !stream.IsExternal || !strings.EqualFold(stream.CodecType, "subtitle") {
+			continue
+		}
+		method, format := selectExternalSubtitle(source, profile, stream)
+		if method == SubtitleDeliveryMethodExternal && format != "" {
+			formats[stream.Index] = format
+		}
+	}
+	return formats
+}
+
 func selectExternalSubtitle(source Source, profile *DeviceProfile, stream *media.Stream) (SubtitleDeliveryMethod, string) {
 	if !stream.IsTextSubtitleStream {
 		return "", ""
@@ -422,6 +455,7 @@ func validateProfile(profile *DeviceProfile) error {
 		return fmt.Errorf("%w: device profile exceeds limits or contains invalid constraints", ErrInvalidRequest)
 	}
 	if profile.MaxStreamingBitrate != nil && *profile.MaxStreamingBitrate <= 0 ||
+		profile.MaxStaticBitrate != nil && *profile.MaxStaticBitrate <= 0 ||
 		profile.MaxStaticMusicBitrate != nil && *profile.MaxStaticMusicBitrate <= 0 {
 		return invalid()
 	}

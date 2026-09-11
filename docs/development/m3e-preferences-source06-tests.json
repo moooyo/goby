@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "scope": "source06 UserSettings parser/HTTP regression including the complete original Web Client query, not complete repository regression",
+  "topLevelPassed": 12,
+  "tests": [
+    "TestDecodeUserSettingsPatchPreservesOrderedCaseInsensitiveScalars",
+    "TestDecodeUserSettingsStructuredValuesRetainObservedOrderAndText",
+    "TestDecodeUserSettingsStructuredValuesHaveIndependentDepthAndNodeLimits",
+    "TestDecodeUserSettingsNestedMatrixPreservesNullsEmptyValuesAndDuplicateKeys",
+    "TestDecodeUserSettingsPatchRejectsLossyEncodingAndMalformedDocuments",
+    "TestHTTPUserSettingsAcceptsCompleteWebClientQuery",
+    "TestHTTPUserSettingsPersistAcrossDevicesAndObservedRequestVariants",
+    "TestHTTPUserSettingsPartialPreservesObservedScalarAndDuplicateSemantics",
+    "TestHTTPUserSettingsRequireCurrentIdentityAndWriteAuthority",
+    "TestHTTPUserSettingsApplicationKeyUsesExplicitUserAndRevocation",
+    "TestHTTPUserSettingsFullWritePreservesExactRejectionWithoutMutation",
+    "TestHTTPUserSettingsInvalidInputAndLimitsLeaveNoPreferenceChanges"
+  ],
+  "raceEnabled": true,
+  "skips": 0,
+  "failures": 0,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-06",
+  "sourceManifestSha256": "677c0416708e92b419951c876167be8dca85fa2f6de1c26c7726c4d5de6f4e04",
+  "logSha256": "5f71ec9ca90b89633ce09ca82e2c65cfd358af0db1d13c19a32933a431e65d16",
+  "binarySha256": "f0372915073976258d39ecc28a3f892d17bf65c463fd356ce6f27574fff517cb"
+}

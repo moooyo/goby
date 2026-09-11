@@ -1,0 +1,18 @@
+{
+  "all_prior_migrations_and_catalogs_unchanged": true,
+  "base_manifest_sha256": "3a2230500be92a8ce4becab733b6c79e774432431aeac78ec6a120e70ee5c398",
+  "base_source": "/opt/goby-test/exec-work-m3e/source-attempt-15",
+  "changed_inputs": {
+    "docs/development/audio-playback.md": "0d70f2cf04f900c5db3cfaf4c47625c95d070604e5816202ce6970af2959cb22",
+    "internal/library/latest_test.go": "f87458679e397e08ee377258d3874e7f04eb545444d529314c6227acdf6d606f",
+    "internal/library/query_test.go": "35aa682ca66bec697d60d073b2dd46e27e2a34ca0806b6be28a71053d54a1aeb",
+    "internal/server/audio_integration_test.go": "ddc1a813f61e2751b602679d08229db11e69d4f68ae32af6d31c65a331e40842",
+    "internal/server/audio_request.go": "238000394308f48c95e9c3ac15a957813ae8a8c092ff3705cfd9cf660b33211c",
+    "internal/server/audio_request_test.go": "4c32e61dcc55948f60c57901e94bae4844bc16ec699e3234d3239c9aa97e1c97",
+    "scripts/test-env/run-client-backup-tests.py": "eb3e12e6a6a3dec71db95fdb29c642232728e96c6d6dcd0c903adf6b507a793d"
+  },
+  "file_count": 3796,
+  "gofmt_completed_remotely": true,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-16",
+  "source_manifest_sha256": "066aad0a220342e01428dedd359a65d5822c790b9f7dd0d3facc4d7799f38a72"
+}

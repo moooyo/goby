@@ -53,7 +53,12 @@ type engineRecoveryFixture struct {
 	encodingID    string
 	scanID        string
 	runID         string
+	musicItemID   string
+	musicArtistID int64
+	musicPersonID int64
 }
+
+const recoveryEngineMusicSource = `{"Version":1,"Name":"Retained recovery track","Album":"Embedded recovery album","Artists":["Retained Recovery Artist"],"AlbumArtists":["Retained Recovery Artist"]}`
 
 // The external operator owns these two disposable databases and their roles.
 // Tests create and remove only an independently owned random schema in each.
@@ -190,6 +195,16 @@ func (f *engineRecoveryFixture) seed(t *testing.T) {
 	if err != nil {
 		t.Fatal("issue source player login")
 	}
+	viewer, err := f.identities.CreateUser(ctx, "Recovery preference viewer", "recovery-preference-viewer-password", false)
+	if err != nil {
+		t.Fatal("create a second retained preference owner")
+	}
+	if _, err := f.source.Exec(ctx, `INSERT INTO user_settings(user_id,settings,updated_at)
+		VALUES($1,'{"Theme":"dark","MaxStreamingBitrate":"4000000"}'::jsonb,'2020-01-03T00:00:00Z'),
+		($2,'{"Theme":"light","MaxStreamingBitrate":"900000","ViewerOnly":"retained"}'::jsonb,'2020-01-04T00:00:00Z')`,
+		admin.ID, viewer.ID); err != nil {
+		t.Fatal("seed distinct user preferences before recovery capture")
+	}
 	serverID, err := f.identities.ServerID(ctx)
 	if err != nil {
 		t.Fatal("create persistent source server identity")
@@ -280,6 +295,69 @@ func (f *engineRecoveryFixture) seed(t *testing.T) {
 		server_name='Retained managed server name',server_name_mode='custom'`); err != nil {
 		t.Fatal("seed exact managed settings fixture")
 	}
+	f.seedMusic(t)
+}
+
+func (f *engineRecoveryFixture) seedMusic(t *testing.T) {
+	t.Helper()
+	f.musicItemID = recoveryEngineTestID(t)
+	if _, err := f.source.Exec(f.ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,overview,local_metadata)
+		VALUES($1,$2,$2,'Retained recovery track','retained recovery track','Audio','Retained recovery overview',
+			jsonb_build_object('People',jsonb_build_array(jsonb_build_object(
+				'Name','Retained Recovery Artist','Role','Retained composer',
+				'Type',repeat('Retained credit type ',256),'SortOrder',7))))`, f.musicItemID, f.libraryID); err != nil {
+		t.Fatal("seed retained music item and distinct legacy person credit")
+	}
+	if _, err := f.source.Exec(f.ctx, `WITH saved AS (
+		UPDATE item_metadata_state SET music_source=$2::jsonb,
+			automatic=automatic || ($2::jsonb - 'Version'), overrides='{"Overview":"Retained recovery overview"}'::jsonb,
+			effective=(SELECT local_metadata FROM items WHERE id=$1) || ($2::jsonb - 'Version') || '{"Overview":"Retained recovery overview"}'::jsonb
+		WHERE item_id=$1 RETURNING item_id,effective)
+		SELECT sync_catalog_item_entities(item_id,effective) FROM saved`, f.musicItemID, recoveryEngineMusicSource); err != nil {
+		t.Fatal("seed retained music provenance and both durable artist credit groups")
+	}
+	if err := f.source.QueryRow(f.ctx, `SELECT
+		(SELECT id FROM catalog_entities WHERE kind='MusicArtist' AND normalized_name='retained recovery artist'),
+		(SELECT id FROM catalog_entities WHERE kind='Person' AND normalized_name='retained recovery artist')`).
+		Scan(&f.musicArtistID, &f.musicPersonID); err != nil {
+		t.Fatal("capture distinct persistent music artist and person identities")
+	}
+	f.assertMusicState(t, f.source)
+}
+
+func (f *engineRecoveryFixture) assertMusicState(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+	if f.musicArtistID <= 0 || f.musicPersonID <= 0 || f.musicArtistID == f.musicPersonID {
+		t.Fatal("music artist and same-name person did not retain distinct persistent identities")
+	}
+	var metadataCount, associationCount, retainedCreditCount, foreignKeyCount int
+	if err := pool.QueryRow(f.ctx, `SELECT
+		(SELECT count(*) FROM item_metadata_state state JOIN items item ON item.id=state.item_id
+			WHERE state.item_id=$1 AND item.type='Audio' AND state.music_source=$2::jsonb
+			AND item.overview='Retained recovery overview' AND state.overrides='{"Overview":"Retained recovery overview"}'::jsonb
+			AND state.effective=($2::jsonb - 'Version') || jsonb_build_object('Overview','Retained recovery overview',
+				'People',jsonb_build_array(jsonb_build_object('Name','Retained Recovery Artist',
+					'Role','Retained composer','Type',repeat('Retained credit type ',256),'SortOrder',7)))),
+		(SELECT count(*) FROM item_entities WHERE item_id=$1),
+		(SELECT count(*) FROM item_entities credit JOIN catalog_entities entity ON entity.id=credit.entity_id
+			WHERE credit.item_id=$1 AND credit.position=1 AND credit.display_name='Retained Recovery Artist'
+			AND entity.name='Retained Recovery Artist' AND (
+				(entity.id=$3 AND entity.kind='MusicArtist' AND credit.role='' AND credit.sort_order IS NULL
+					AND ((credit.credit_group=1 AND credit.credit_type='Artist') OR
+						(credit.credit_group=2 AND credit.credit_type='AlbumArtist')))
+				OR (entity.id=$4 AND entity.kind='Person' AND credit.credit_group=0
+					AND credit.role='Retained composer' AND credit.credit_type=repeat('Retained credit type ',256)
+					AND credit.sort_order=7))),
+		(SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='item_entities'::regclass
+			AND contype='f' AND convalidated AND confrelid IN ('items'::regclass,'catalog_entities'::regclass))`,
+		f.musicItemID, recoveryEngineMusicSource, f.musicArtistID, f.musicPersonID).
+		Scan(&metadataCount, &associationCount, &retainedCreditCount, &foreignKeyCount); err != nil {
+		t.Fatalf("read retained music provenance, identities, and credit constraints: %v", err)
+	}
+	if metadataCount != 1 || associationCount != 3 || retainedCreditCount != 3 || foreignKeyCount != 2 {
+		t.Fatalf("recovery changed music provenance or durable credit roles: metadata=%d associations=%d credits=%d foreign_keys=%d",
+			metadataCount, associationCount, retainedCreditCount, foreignKeyCount)
+	}
 }
 
 func TestEngineBackupRestoreRoundTrip(t *testing.T) {
@@ -355,6 +433,7 @@ func TestEngineBackupRestoreRoundTrip(t *testing.T) {
 			if after := recoveryEngineRetainedState(t, f.ctx, f.target); after != preserved {
 				t.Fatal("restore changed retained users, policies, device, key, catalog, or schedule history")
 			}
+			f.assertMusicState(t, f.target)
 			f.assertRecoveredState(t, archive)
 			if _, err := databaseFile.Seek(0, io.SeekStart); err != nil {
 				t.Fatal("restore closed the caller-owned decrypted archive")
@@ -539,6 +618,7 @@ func recoveryEngineRetainedState(t *testing.T, ctx context.Context, pool *pgxpoo
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'users',(SELECT jsonb_agg(to_jsonb(u) ORDER BY id) FROM users u),
+		'user_settings',(SELECT jsonb_agg(to_jsonb(p) ORDER BY user_id) FROM user_settings p),
 		'sessions',(SELECT jsonb_agg(to_jsonb(s)-'revoked_at' ORDER BY id) FROM sessions s),
 		'keys',(SELECT jsonb_agg(to_jsonb(k) ORDER BY id) FROM application_keys k),
 		'clients',(SELECT jsonb_agg(to_jsonb(c) ORDER BY id) FROM application_key_clients c),
@@ -547,10 +627,23 @@ func recoveryEngineRetainedState(t *testing.T, ctx context.Context, pool *pgxpoo
 		'libraries',(SELECT jsonb_agg(to_jsonb(l) ORDER BY id) FROM libraries l),
 		'roots',(SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM library_roots r),
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
+		'catalog_entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
+		'item_entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_id,entity_id,credit_group,position) FROM item_entities e),
+		'item_metadata_state',(SELECT jsonb_agg(to_jsonb(m) ORDER BY item_id) FROM item_metadata_state m),
 		'definitions',(SELECT jsonb_agg(to_jsonb(d) ORDER BY id) FROM task_definitions d),
 		'triggers',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM task_triggers t),
 		'settings',(SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM managed_settings s))::text`).Scan(&state); err != nil {
 		t.Fatal("read retained identity and catalog history")
+	}
+	return state
+}
+
+func recoveryEnginePreferenceState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
+	t.Helper()
+	var state string
+	if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(to_jsonb(p) ORDER BY user_id), '[]'::jsonb)::text
+		FROM user_settings p`).Scan(&state); err != nil {
+		t.Fatal("read retained user preference maps and timestamps")
 	}
 	return state
 }

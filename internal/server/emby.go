@@ -10,6 +10,11 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 )
 
+// embyAPIVersion identifies the pinned wire-contract baseline. Consumer clients
+// use SystemInfo.Version for protocol feature gates, independently of Goby's
+// product release. It does not assert that every operation has been implemented.
+const embyAPIVersion = "4.9.5.0"
+
 func (s *Server) userDTO(user identity.User) map[string]any {
 	policy := embyUserPolicy(user)
 	if s.hls != nil {
@@ -23,7 +28,7 @@ func (s *Server) userDTO(user identity.User) map[string]any {
 		"Id": user.ID, "Name": user.Name, "ServerId": s.serverID,
 		"HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword,
 		"Policy":        policy,
-		"Configuration": map[string]any{},
+		"Configuration": projectUserConfiguration(user.Configuration),
 	}
 }
 
@@ -91,7 +96,11 @@ func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, map[string]any{"Id": s.serverID, "ServerName": snapshot.Effective.ServerName, "Version": s.version, "ProductName": "Goby", "LocalAddress": s.cfg.PublicURL, "StartupWizardCompleted": initialized})
+	jsonResponse(w, 200, map[string]any{
+		"Id": s.serverID, "ServerName": snapshot.Effective.ServerName,
+		"Version": embyAPIVersion, "ProductName": "Goby", "GobyVersion": s.version,
+		"LocalAddress": s.cfg.PublicURL, "StartupWizardCompleted": initialized,
+	})
 }
 
 func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) { s.publicSystemInfo(w, r) }
@@ -126,8 +135,8 @@ func (s *Server) embyLogin(w http.ResponseWriter, r *http.Request) {
 	if !s.allowLogin(w, r) {
 		return
 	}
-	var body struct{ Username, Pw string }
-	if !decodeBody(w, r, &body) {
+	body, ok := decodeEmbyLogin(w, r, true)
+	if !ok {
 		return
 	}
 	s.authenticateEmby(w, r, body.Username, body.Pw)
@@ -137,8 +146,8 @@ func (s *Server) embyLoginByID(w http.ResponseWriter, r *http.Request) {
 	if !s.allowLogin(w, r) {
 		return
 	}
-	var body struct{ Pw string }
-	if !decodeBody(w, r, &body) {
+	body, ok := decodeEmbyLogin(w, r, false)
+	if !ok {
 		return
 	}
 	user, err := s.identity.GetUser(r.Context(), r.PathValue("Id"))
@@ -259,7 +268,7 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		s.eventHub.DisconnectSession(principal.SessionID)
 	}
 	s.hls.cancelMatching(principal.SessionID, "")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) embyUsersBare(w http.ResponseWriter, r *http.Request) {

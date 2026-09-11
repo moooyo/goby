@@ -1,0 +1,59 @@
+{
+  "status": "disposed",
+  "scope": "Only the reviewed empty source11 disposable databases and roles were removed without FORCE or backend termination",
+  "runId": "20260911_011404_181de067c98a",
+  "systemIdentifier": "7684040109719526738",
+  "hbaSha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "sourceReceiptSha256": "73ddc2eb495d84edb02ecc7084b02f6157f9e7ed24014bb73ff37a5639e09d12",
+  "failedReportSha256": "42eb1aed59dce81c210ef438d851e8cdbbf880604ae806921e68ac459b72afa0",
+  "failedLogSha256": "5baaaef51db2a09ffe817856b2ee119ff35a3129867b9400dd6e3c4411fa2ab2",
+  "preexistingCatalogUnchanged": true,
+  "pairs": [
+    {
+      "name": "goby_backup_m3e_source",
+      "roleOid": 261076,
+      "databaseOid": 261077,
+      "conditions": {
+        "backends": 0,
+        "external_dependencies": 0,
+        "memberships": 0,
+        "prepared": 0,
+        "settings": 0,
+        "slots": 0
+      },
+      "schemaObjects": [],
+      "tableRowCounts": {}
+    },
+    {
+      "name": "goby_backup_m3e_target",
+      "roleOid": 261078,
+      "databaseOid": 261079,
+      "conditions": {
+        "backends": 0,
+        "external_dependencies": 0,
+        "memberships": 0,
+        "prepared": 0,
+        "settings": 0,
+        "slots": 0
+      },
+      "schemaObjects": [],
+      "tableRowCounts": {}
+    }
+  ],
+  "removed": [
+    {
+      "database_oid": 261079,
+      "name": "goby_backup_m3e_target",
+      "phase": "removed",
+      "role_oid": 261078
+    },
+    {
+      "database_oid": 261077,
+      "name": "goby_backup_m3e_source",
+      "phase": "removed",
+      "role_oid": 261076
+    }
+  ],
+  "privateReportSha256": "ef114bd42cab32c3fd95125fa383c0bb4d186125cfa03ff69a92c9f65583369e",
+  "operatorSha256": "bc4faaa0dd8d99e11f69c9aae41d2b3bf108315bd2ecfda15c041b291fcd44cb"
+}

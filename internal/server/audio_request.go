@@ -53,6 +53,26 @@ func audioSelector(value string) (string, error) {
 }
 
 func audioSelectors(raw string) ([]string, error) {
+	return audioSelectorList(raw, audioSelector)
+}
+
+func audioContainerSelector(raw string) (string, error) {
+	container, codec, qualified := strings.Cut(raw, "|")
+	container, err := audioSelector(container)
+	if err != nil {
+		return "", err
+	}
+	if !qualified {
+		return container, nil
+	}
+	codec, err = audioSelector(codec)
+	if err != nil {
+		return "", err
+	}
+	return container + "|" + codec, nil
+}
+
+func audioSelectorList(raw string, selector func(string) (string, error)) ([]string, error) {
 	if len(raw) > 1024 {
 		return nil, errAudioRequestInvalid
 	}
@@ -63,7 +83,7 @@ func audioSelectors(raw string) ([]string, error) {
 	var result []string
 	seen := map[string]bool{}
 	for _, part := range parts {
-		value, err := audioSelector(part)
+		value, err := selector(part)
 		if err != nil {
 			return nil, err
 		}
@@ -76,8 +96,16 @@ func audioSelectors(raw string) ([]string, error) {
 }
 
 // Container capabilities describe original bytes independently of the encoder
-// matrix. Codec-specific labels such as opus and mp3 retain that restriction.
+// matrix. Bare codec-specific labels such as opus and mp3 retain that restriction.
 func audioCapability(value string) audioContainerCapability {
+	if container, codec, qualified := strings.Cut(value, "|"); qualified {
+		// Universal's explicit container|codec capability names the codec inside
+		// that container family. It refines the label instead of requesting an
+		// encoder; repeated containers with different codecs remain distinct.
+		capability := audioCapability(container)
+		capability.codec = codec
+		return capability
+	}
 	switch value {
 	case "m4a", "mp4", "m4b":
 		return audioContainerCapability{container: "m4a"}
@@ -121,7 +149,11 @@ func audioContainers(values map[string]string, suffix string, universal bool) ([
 	var containers []string
 	if raw, exists := values["container"]; exists && raw != "" {
 		var err error
-		containers, err = audioSelectors(raw)
+		selector := audioSelector
+		if universal {
+			selector = audioContainerSelector
+		}
+		containers, err = audioSelectorList(raw, selector)
 		if err != nil || !universal && len(containers) != 1 {
 			return nil, errAudioRequestInvalid
 		}

@@ -37,13 +37,14 @@ const (
 	embyLifetime              = 30 * 24 * time.Hour
 	passwordCost              = bcrypt.DefaultCost
 	maxClientFieldBytes       = 256
-	userColumns               = "id, name, is_administrator, is_disabled, has_password, created_at, policy"
+	userColumns               = "id, name, is_administrator, is_disabled, has_password, created_at, policy, configuration"
 	// The fixed cost matches stored hashes so unknown users still perform bcrypt.
 	fakePasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
 
-// User carries account metadata and an internal-only persisted policy snapshot.
-// Password hashes never leave Store, and policy is excluded from JSON encoding.
+// User carries account metadata and internal-only persisted policy and
+// configuration snapshots. Password hashes never leave Store, and the snapshots
+// are excluded from JSON encoding.
 type User struct {
 	ID              string
 	Name            string
@@ -52,6 +53,7 @@ type User struct {
 	HasPassword     bool
 	CreatedAt       time.Time
 	Policy          json.RawMessage `json:"-"`
+	Configuration   json.RawMessage `json:"-"`
 }
 
 // Client describes the application and device that requested a session.
@@ -108,7 +110,7 @@ func NewWithApplicationKeyVault(pool *pgxpool.Pool, vault *ApplicationKeyVault) 
 func (p Principal) IsApplicationKey() bool {
 	return p.Kind == ApplicationKeyKind && p.ApplicationKeyID > 0 && p.SessionID != "" && p.ClientSessionID != "" &&
 		p.User.ID == "" && p.User.Name == "" && !p.User.IsAdministrator && !p.User.IsDisabled &&
-		!p.User.HasPassword && p.User.CreatedAt.IsZero() && len(p.User.Policy) == 0
+		!p.User.HasPassword && p.User.CreatedAt.IsZero() && len(p.User.Policy) == 0 && len(p.User.Configuration) == 0
 }
 
 // CanManageServer describes the authenticated snapshot. Mutations must still
@@ -255,7 +257,7 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 	}
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
+		u.has_password, u.created_at, u.policy, u.configuration, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
 		s.client_version, s.kind, s.expires_at, s.last_seen_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		LEFT JOIN devices d ON d.id = s.device_registry_id AND d.deleted_at IS NULL
@@ -264,6 +266,7 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 		AND ($2 <> 'admin' OR u.is_administrator)`, digest[:], kind).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt, &principal.User.Policy,
+			&principal.User.Configuration,
 			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
 			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -410,7 +413,7 @@ type rowScanner interface {
 
 func scanUser(row rowScanner, extra ...any) (User, error) {
 	var user User
-	columns := []any{&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &user.Policy}
+	columns := []any{&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &user.Policy, &user.Configuration}
 	err := row.Scan(append(columns, extra...)...)
 	return user, err
 }

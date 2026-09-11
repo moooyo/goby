@@ -1,0 +1,17 @@
+{
+  "database_mutations": 0,
+  "errors": 0,
+  "failures": 0,
+  "first_review": "Review01 and its preflight rejection remain preserved separately; no acknowledged scan was retried.",
+  "fixture_operator_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+  "guard_sha256": "6260f3ca0011d35b7939cc5be63a71c33b05b859336909eb7feec4be8886b605",
+  "http_requests": 0,
+  "log_sha256": "d0083445c5ef0b9e6cdeca9701ee6283a69e5312ca77fac4f32197d2975af9be",
+  "run": "/opt/goby-test/exec-work-m3e/music-scan-review-02",
+  "scan_operator_sha256": "dca0a057c82b0ac29734c320cdfe6aab57a31abae9469ef8dc10c3749a13658e",
+  "scope": "Memory-only revised one-shot music scan guards",
+  "service_actions": 0,
+  "skipped": 0,
+  "status": "passed",
+  "tests": 42
+}

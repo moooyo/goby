@@ -1,0 +1,12 @@
+{
+  "base_manifest_sha256": "f9e0e61abd94c85a4d1d3fddcef407c00d168737527af82ba40c85e1a2f531d2",
+  "base_source": "/opt/goby-test/exec-work-m3e/source-attempt-17",
+  "changed_inputs": {
+    "internal/library/play_sessions_references_integration_test.go": "bafae638f25c47ce1a9b0fd51d85b8ea436144b53a3dd50e258e1a0a414aa86d"
+  },
+  "file_count": 3796,
+  "gofmt_completed_remotely": true,
+  "production_migrations_and_catalogs_unchanged_from_source17": true,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-18",
+  "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b"
+}

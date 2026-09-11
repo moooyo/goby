@@ -1,0 +1,15 @@
+{
+  "all_prior_migrations_and_catalogs_unchanged": true,
+  "base_manifest_sha256": "066aad0a220342e01428dedd359a65d5822c790b9f7dd0d3facc4d7799f38a72",
+  "base_source": "/opt/goby-test/exec-work-m3e/source-attempt-16",
+  "changed_inputs": {
+    "docs/development/client-playback-references.md": "c2e88e0cfe9653b9e7d7b70391373a358ae94a08dcfec776ef0ec9a563c9bf6b",
+    "internal/library/play_sessions.go": "5e0de785915e96537e2dd22e88971515a8158da6db541415433f1ceabd91dc99",
+    "internal/library/play_sessions_references_integration_test.go": "eceb75ebfc0a519f4ef5d5eb401bf72adad2091bb81bf09d9b61b0a99ffbd79b",
+    "internal/server/audio_integration_test.go": "1b3276dd0d7c102bddaee9a9e0ab453e5bfc286aa81a7356acde46d8c56122be"
+  },
+  "file_count": 3796,
+  "gofmt_completed_remotely": true,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-17",
+  "source_manifest_sha256": "f9e0e61abd94c85a4d1d3fddcef407c00d168737527af82ba40c85e1a2f531d2"
+}

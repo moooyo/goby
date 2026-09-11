@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "marker": "goby-m3e-schema24-catalog-v1",
+  "schema": 24,
+  "tables": 30,
+  "databaseIdentity": "142781|postgres|goby-m3e-schema24-catalog-v1",
+  "databaseDroppedAfterIdentityAndIdleCheck": true,
+  "catalogSha256": "6ba8a30d7648f3fdd73f977cc5d2aafac39232704542f28f20f0898d93ef575c",
+  "migration24Sha256": "2a9c159f111073a1c01bbbda158cfe3d98d25f417d70c7eda14b70a7798a3972",
+  "source": "/opt/goby-test/exec-work-m3e/catalog-24-source-01",
+  "generatorSha256": "39d81f93604601a8d0fffd2437cfb320f4e84b3fcb115c29e5c02fe471b9d7de",
+  "scope": "Trusted catalog generated from actual migration in one new owned port-15432 PostgreSQL17 database; schema23 catalog preserved; no product acceptance claim"
+}

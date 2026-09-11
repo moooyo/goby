@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "scope": "The final full-run report now includes its explicit source manifest digest; historical reports and frozen sources are unchanged",
+  "remoteDirectory": "/opt/goby-test/exec-work-m3e/backup-runner-manifest-review-01",
+  "runnerSha256": "eb3e12e6a6a3dec71db95fdb29c642232728e96c6d6dcd0c903adf6b507a793d",
+  "testSha256": "6ff9df245972b25f3b59b19d6449de1008f4a52d7487628f7b5f0b262d2ec2e4",
+  "logSha256": "bb8d836ccb07eedde2c3d9bba0b2eb5b5fa57f5ce628c25cd07c93ba138fd610",
+  "tests": 73,
+  "failures": 0,
+  "skips": 0,
+  "exitCode": 0,
+  "boundary": "Existing memory-only runner guards executed through ssh test-env; no PostgreSQL command, database mutation, service action or network connection occurred inside the guard suite"
+}

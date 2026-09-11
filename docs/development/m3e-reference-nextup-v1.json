@@ -1,0 +1,514 @@
+{
+  "GobyRequests": 0,
+  "allOwnedPlaybackSessionsStopped": true,
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "configurationAndPolicyPreserved": true,
+  "episodeIdsInOrder": [
+    "18",
+    "17",
+    "19"
+  ],
+  "exactFamilyUserDataRestored": false,
+  "failureType": null,
+  "finalNextUpQueriesEqualBaseline": true,
+  "fullDetailCleanupReport": "/opt/goby-test/exec-work-m3e/reference-nextup-detail-cleanup-v3/export/report.json",
+  "fullDetailCleanupSubsequentlyCompleted": true,
+  "initialItemsListProjectionMatchedBaseline": true,
+  "libraryConfigurationPolicyOrMediaMutations": 0,
+  "libraryId": "5",
+  "marker": "goby-m3e-fresh-nextup-v1",
+  "maximumRequests": 80,
+  "mediaAndNfoPreserved": true,
+  "newRecorderRevoked": true,
+  "observations": [
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "baseline",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 3
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    },
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [
+            "17",
+            "19"
+          ],
+          "total": 2,
+          "types": [
+            "Episode",
+            "Episode"
+          ]
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "manual-first",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": true
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    },
+    {
+      "countAndDateWereNotMeasuredInItemDetailAtThisStage": true,
+      "itemId": "18",
+      "listProjectionShowsPositiveCountAndDate": false,
+      "observedUserData": {
+        "IsFavorite": false,
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 1200000000,
+        "Played": false,
+        "PlayedPercentage": 20
+      },
+      "reportedPositionTicks": 1200000000,
+      "requestedCompletionEstablished": false,
+      "requestedPartialStateEstablished": true,
+      "stage": "partial-first-120s-playback-state-proof"
+    },
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [
+            "18",
+            "17",
+            "19"
+          ],
+          "total": 3,
+          "types": [
+            "Episode",
+            "Episode",
+            "Episode"
+          ]
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "partial-first-120s",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 3
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 1200000000,
+          "Played": false,
+          "PlayedPercentage": 20
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    },
+    {
+      "countAndDateWereNotMeasuredInItemDetailAtThisStage": true,
+      "itemId": "18",
+      "listProjectionShowsPositiveCountAndDate": false,
+      "observedUserData": {
+        "IsFavorite": false,
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 0,
+        "Played": true
+      },
+      "reportedPositionTicks": 6000000000,
+      "requestedCompletionEstablished": true,
+      "requestedPartialStateEstablished": false,
+      "stage": "complete-first-600s-playback-state-proof"
+    },
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [
+            "17",
+            "19"
+          ],
+          "total": 2,
+          "types": [
+            "Episode",
+            "Episode"
+          ]
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "complete-first-600s",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": true
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    },
+    {
+      "countAndDateWereNotMeasuredInItemDetailAtThisStage": true,
+      "itemId": "17",
+      "listProjectionShowsPositiveCountAndDate": false,
+      "observedUserData": {
+        "IsFavorite": false,
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 1200000000,
+        "Played": false,
+        "PlayedPercentage": 20
+      },
+      "reportedPositionTicks": 1200000000,
+      "requestedCompletionEstablished": false,
+      "requestedPartialStateEstablished": true,
+      "stage": "partial-second-after-first-complete-playback-state-proof"
+    },
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [
+            "17",
+            "19"
+          ],
+          "total": 2,
+          "types": [
+            "Episode",
+            "Episode"
+          ]
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "partial-second-after-first-complete",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 1200000000,
+          "Played": false,
+          "PlayedPercentage": 20
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": true
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    },
+    {
+      "queries": {
+        "global": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "series-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        },
+        "tv-parent": {
+          "ids": [],
+          "total": 0,
+          "types": []
+        }
+      },
+      "stage": "restored",
+      "userData": {
+        "14": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 3
+        },
+        "15": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 2
+        },
+        "16": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false,
+          "UnplayedItemCount": 1
+        },
+        "17": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "18": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        },
+        "19": {
+          "IsFavorite": false,
+          "PlayCount": 0,
+          "PlaybackPositionTicks": 0,
+          "Played": false
+        }
+      }
+    }
+  ],
+  "oldReferenceRequests": 0,
+  "playbackEvidenceBoundary": "Started/Progress/Stopped are client-reported protocol controls, not real-time playback or client acceptance.",
+  "prefsPreserved": true,
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requests": 65,
+  "restorationMode": "userdata-baseline",
+  "restorationProven": true,
+  "restorationScope": "Initial Items-list projection only; this did not prove full LastPlayedDate restoration.",
+  "retainedOwnedHistory": [
+    "New recorder login/logout and device history",
+    "Owned playback negotiation/report history",
+    "Owned UserData and played-state audit history"
+  ],
+  "schemaVersion": 1,
+  "seriesDateControlSkippedReason": "The list projection did not expose an episode LastPlayedDate; its absence there did not prove absent underlying history.",
+  "seriesId": "14"
+}

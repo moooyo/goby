@@ -496,6 +496,7 @@ func TestItemQueriesProjectEntityDisplayNamesAndCreditOrder(t *testing.T) {
 	otherPersonID := strconv.FormatInt(entityID("Person", "Other Person"), 10)
 	eight, zero, one := 8, 0, 1
 	want := ItemEntities{
+		Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 		Genres: []EntityRef{
 			{ID: entityID("Genre", "Zeta"), Name: "Zeta"},
 			{ID: entityID("Genre", "Drama"), Name: "dRAMA"},

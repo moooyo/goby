@@ -1,0 +1,37 @@
+{
+  "status": "rejected_before_operation",
+  "scope": "First music-scan operator preflight; no administrator login or scan intent was reached",
+  "review_directory": "/opt/goby-test/exec-work-m3e/music-scan-review-01",
+  "scan_operator_sha256": "c5dd37af45eba940534bff477612b7880b2201824cebe48836627c9b35f4175f",
+  "guard_sha256": "c4a003487a8ca6cf19127e77a253b488c5ee1b5ebff170cdfba9c693b0b221e9",
+  "guards": {"tests": 38, "failures": 0, "errors": 0, "skipped": 0},
+  "reason": "Playback must be quiescent before the controlled scan.",
+  "operation_directory_exists": false,
+  "job_id": null,
+  "request_boundary": "The code rejected in prepare_music_plan before creating the operation directory or native API client. This is not an unknown scan outcome or an acknowledged scan retry.",
+  "readonly_inspection_at": "2026-09-11T03:48:07.295957+00:00",
+  "prepared_history": [
+    {
+      "play_id": "play_61b9c9fed665fc6be67c9f26ac806b4d",
+      "item_id": "6c2f813c0d7d5b5e7a7b5868daae9a49",
+      "started_at": null,
+      "counted": false,
+      "application_client_id": null,
+      "matching_same_user_session": true,
+      "session_kind": "emby",
+      "session_revoked_at": "2026-09-11T03:32:42.308215+00:00"
+    },
+    {
+      "play_id": "play_d0f224da08edbde4720e344d20886d13",
+      "item_id": "268051d3ca734aefcf94e245fb25ad55",
+      "started_at": null,
+      "counted": false,
+      "application_client_id": null,
+      "matching_same_user_session": true,
+      "session_kind": "emby",
+      "session_revoked_at": "2026-09-11T01:13:37.058134+00:00"
+    }
+  ],
+  "encoding_jobs": 0,
+  "followup": "Narrowly permit unstarted, uncounted ordinary Prepared history whose exact same-user session is already revoked. Reject active or unbound records and retain every historical row unchanged; verify the revised operator separately before running it."
+}

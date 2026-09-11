@@ -1,0 +1,212 @@
+{
+  "browserSessionLogoutAttempted": false,
+  "caseStatuses": {
+    "bitrate-size-1024": 200,
+    "branding-configuration-public": 200,
+    "branding-css-public": 200,
+    "displaypreferences-emby": 200,
+    "displaypreferences-embyweb": 200,
+    "recorder-login": 200,
+    "recorder-logout": 204,
+    "recorder-token-invalid": 401,
+    "system-endpoint": 200,
+    "usersettings-default": 200,
+    "usersettings-emby": 200,
+    "usersettings-embyweb": 200,
+    "viewer-dto-after": 200,
+    "viewer-dto-before": 200
+  },
+  "classification": "protocol research; not client acceptance",
+  "displayPreferences": {
+    "emby": {
+      "body": {
+        "Client": "emby",
+        "CustomPrefs": {},
+        "Id": "3ce5b65de116d73165d1efc4a30ec35c",
+        "SortOrder": "Ascending"
+      },
+      "bodyKind": "json",
+      "bodySha256": "22f75b89637e3750641b75f1ce71f1aebd9d76d2a71b5d5af1dc271a782ec9a6",
+      "bodyStructure": {
+        "Client": "string",
+        "CustomPrefs": {},
+        "Id": "string",
+        "SortOrder": "string"
+      },
+      "bytesRead": 98,
+      "complete": true,
+      "contentType": "application/json; charset=utf-8",
+      "headers": {
+        "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Content-Length": "98",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+        "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+        "Private-Network-Access-Name": "Goby Client Reference M3e",
+        "Server": "UPnP/1.0 DLNADOC/1.50"
+      },
+      "readLimitBytes": 65536,
+      "status": 200,
+      "truncatedAtReadLimit": false
+    },
+    "embyweb": {
+      "body": {
+        "Client": "embyweb",
+        "CustomPrefs": {},
+        "Id": "usersettings",
+        "SortOrder": "Ascending"
+      },
+      "bodyKind": "json",
+      "bodySha256": "370aadecbeed9ef0512dbb347e90d0486abe98452fb80db0cc39664bb02f8d9a",
+      "bodyStructure": {
+        "Client": "string",
+        "CustomPrefs": {},
+        "Id": "string",
+        "SortOrder": "string"
+      },
+      "bytesRead": 81,
+      "complete": true,
+      "contentType": "application/json; charset=utf-8",
+      "headers": {
+        "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Content-Length": "81",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+        "Expires": "-1",
+        "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+        "Private-Network-Access-Name": "Goby Client Reference M3e",
+        "Server": "UPnP/1.0 DLNADOC/1.50"
+      },
+      "readLimitBytes": 65536,
+      "status": 200,
+      "truncatedAtReadLimit": false
+    }
+  },
+  "failureType": null,
+  "marker": "goby-m3e-reference-client-initialization-v1",
+  "maxSingleReadBytes": 65536,
+  "mediaManifestPreserved": true,
+  "newRecorderTokenRevoked": true,
+  "oldReferenceRequests": 0,
+  "preferencePolicyOrCapabilityWrites": 0,
+  "recorderDeviceId": "goby-m3e-client-initialization-recorder-v1",
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "requests": 14,
+  "schemaVersion": 1,
+  "serverId": "f56dec8ff7414847873064c4be9fba74",
+  "serverVersion": "4.9.5.0",
+  "totalBytesRead": 8332,
+  "userSettings": {
+    "default": {
+      "body": {},
+      "bodyKind": "json",
+      "bodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "bodyStructure": {},
+      "bytesRead": 2,
+      "complete": true,
+      "contentType": "application/json; charset=utf-8",
+      "headers": {
+        "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Content-Length": "2",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+        "Expires": "-1",
+        "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+        "Private-Network-Access-Name": "Goby Client Reference M3e",
+        "Server": "UPnP/1.0 DLNADOC/1.50"
+      },
+      "readLimitBytes": 65536,
+      "status": 200,
+      "truncatedAtReadLimit": false
+    },
+    "emby": {
+      "body": {},
+      "bodyKind": "json",
+      "bodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "bodyStructure": {},
+      "bytesRead": 2,
+      "complete": true,
+      "contentType": "application/json; charset=utf-8",
+      "headers": {
+        "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Content-Length": "2",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+        "Expires": "-1",
+        "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+        "Private-Network-Access-Name": "Goby Client Reference M3e",
+        "Server": "UPnP/1.0 DLNADOC/1.50"
+      },
+      "readLimitBytes": 65536,
+      "status": 200,
+      "truncatedAtReadLimit": false
+    },
+    "embyweb": {
+      "body": {},
+      "bodyKind": "json",
+      "bodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "bodyStructure": {},
+      "bytesRead": 2,
+      "complete": true,
+      "contentType": "application/json; charset=utf-8",
+      "headers": {
+        "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Content-Length": "2",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+        "Expires": "-1",
+        "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+        "Private-Network-Access-Name": "Goby Client Reference M3e",
+        "Server": "UPnP/1.0 DLNADOC/1.50"
+      },
+      "readLimitBytes": 65536,
+      "status": 200,
+      "truncatedAtReadLimit": false
+    }
+  },
+  "userSettingsComparisons": {
+    "defaultEqualsEmby": true,
+    "defaultEqualsEmbyweb": true,
+    "displayPreferencesEmbyEqualsEmbyweb": false,
+    "embyEqualsEmbyweb": true
+  },
+  "viewerConfiguration": {
+    "DisplayMissingEpisodes": false,
+    "EnableLocalPassword": false,
+    "EnableNextEpisodeAutoPlay": true,
+    "HidePlayedInLatest": true,
+    "HidePlayedInMoreLikeThis": false,
+    "HidePlayedInSuggestions": false,
+    "IntroSkipMode": "ShowButton",
+    "LatestItemsExcludes": [],
+    "MyMediaExcludes": [],
+    "OrderedViews": [],
+    "PlayDefaultAudioTrack": true,
+    "RememberAudioSelections": true,
+    "RememberSubtitleSelections": true,
+    "ResumeRewindSeconds": 0,
+    "SubtitleMode": "Smart"
+  },
+  "viewerConfigurationAndPolicyPreserved": true
+}

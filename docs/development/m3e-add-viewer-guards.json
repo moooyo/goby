@@ -1,0 +1,18 @@
+{
+  "exitCode": 0,
+  "operatorSha256": "c57554808087c819f4f4ad73404e7bafb1c26c9fb1a74c0809b913a59f1e1094",
+  "testSha256": "3c40d36ca933513c0edd848a1eb91964736c41804fed759265b48ff6446edeb8",
+  "logSha256": "d6ceed130dba426eae062a133df45991d539de042c8bc99676afa8f336f39026",
+  "stdout": "{\"tests\": 27, \"failures\": 0, \"errors\": 0, \"passed\": true, \"operator_sha256\": \"c57554808087c819f4f4ad73404e7bafb1c26c9fb1a74c0809b913a59f1e1094\", \"guard_sha256\": \"3c40d36ca933513c0edd848a1eb91964736c41804fed759265b48ff6446edeb8\", \"database_mutations\": 0, \"service_actions\": 0}\n",
+  "tail": [
+    "test_same_schema_upgrade_retains_preferences (__main__.ClientFixtureGuards.test_same_schema_upgrade_retains_preferences) ... ok",
+    "test_sessions_audit_tasks_and_application_credentials_cannot_be_removed (__main__.ClientFixtureGuards.test_sessions_audit_tasks_and_application_credentials_cannot_be_removed) ... ok",
+    "test_unknown_alias_is_rejected_before_login_or_credential_creation (__main__.ClientFixtureGuards.test_unknown_alias_is_rejected_before_login_or_credential_creation) ... ok",
+    "test_unknown_creation_and_failed_publications_never_resend_or_adopt (__main__.ClientFixtureGuards.test_unknown_creation_and_failed_publications_never_resend_or_adopt) ... ok",
+    "",
+    "----------------------------------------------------------------------",
+    "Ran 27 tests in 5.426s",
+    "",
+    "OK"
+  ]
+}

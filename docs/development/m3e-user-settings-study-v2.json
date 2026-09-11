@@ -1,0 +1,339 @@
+{
+  "acknowledgedBaseline": {
+    "genreLimitOnDetails": "1"
+  },
+  "attempt": 2,
+  "caseStatuses": {
+    "acknowledged-ui-settings-baseline": 200,
+    "final-inspect": 200,
+    "first-toggle-inspect": 200,
+    "first-toggle-restore-ui-default": 204,
+    "first-toggle-restore-ui-default-after": 200,
+    "full-json-reqformat": 400,
+    "full-json-reqformat-after": 200,
+    "full-json-reqformat-inspect": 200,
+    "full-text-reqformat": 400,
+    "full-text-reqformat-after": 200,
+    "full-text-reqformat-inspect": 200,
+    "merge-control-inspect": 200,
+    "merge-control-remove-probes": 204,
+    "merge-control-remove-probes-after": 200,
+    "no-selector-control-inspect": 200,
+    "no-selector-control-restore-ui-default": 204,
+    "no-selector-control-restore-ui-default-after": 200,
+    "null-control-inspect": 200,
+    "null-control-restore-ui-default": 204,
+    "null-control-restore-ui-default-after": 200,
+    "partial-json-reqformat": 204,
+    "partial-json-reqformat-after": 200,
+    "partial-json-reqformat-inspect": 200,
+    "partial-json-reqformat-restore-ui-default": 204,
+    "partial-json-reqformat-restore-ui-default-after": 200,
+    "partial-octet-reqformat": 204,
+    "partial-octet-reqformat-after": 200,
+    "partial-octet-reqformat-inspect": 200,
+    "partial-octet-reqformat-restore-ui-default": 204,
+    "partial-octet-reqformat-restore-ui-default-after": 200,
+    "partial-text-null-known-key": 204,
+    "partial-text-null-known-key-after": 200,
+    "partial-text-reqformat-set-2": 204,
+    "partial-text-reqformat-set-2-after": 200,
+    "partial-text-without-reqformat": 204,
+    "partial-text-without-reqformat-after": 200,
+    "partial-two-key-seed": 204,
+    "partial-two-key-seed-after": 200,
+    "partial-update-and-add": 204,
+    "partial-update-and-add-after": 200,
+    "viewer2-dto-baseline": 200,
+    "viewer2-dto-final": 200,
+    "viewer2-login": 200,
+    "viewer2-logout": 204,
+    "viewer2-read-primary-settings": 200,
+    "viewer2-token-invalid": 401
+  },
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "cleanupPassed": true,
+  "failureType": null,
+  "marker": "goby-m3e-reference-client-settings-v2",
+  "newRecorderRevoked": true,
+  "nullDeletionProven": true,
+  "observations": [
+    {
+      "after": {
+        "genreLimitOnDetails": "2"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-text-reqformat-set-2",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "2"
+      },
+      "case": "first-toggle-restore-ui-default",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {},
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-text-null-known-key",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": null
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {},
+      "case": "null-control-restore-ui-default",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "2"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-text-without-reqformat",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": null,
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "2"
+      },
+      "case": "no-selector-control-restore-ui-default",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "full-text-reqformat",
+      "contentType": "text/plain",
+      "method": "Full",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": "Expected configuration type is UserSettings",
+      "status": 400
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "full-json-reqformat",
+      "contentType": "application/json",
+      "method": "Full",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": "Expected configuration type is UserSettings",
+      "status": 400
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "2"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-json-reqformat",
+      "contentType": "application/json",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "2"
+      },
+      "case": "partial-json-reqformat-restore-ui-default",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "2"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-octet-reqformat",
+      "contentType": "application/octet-stream",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "2"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "2"
+      },
+      "case": "partial-octet-reqformat-restore-ui-default",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_edit": "b",
+        "m3e_keep": "a"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "partial-two-key-seed",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_edit": "b",
+        "m3e_keep": "a"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_edit": "c",
+        "m3e_keep": "a",
+        "m3e_new": "n"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_edit": "b",
+        "m3e_keep": "a"
+      },
+      "case": "partial-update-and-add",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_edit": "c",
+        "m3e_new": "n"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_edit": "c",
+        "m3e_keep": "a",
+        "m3e_new": "n"
+      },
+      "case": "merge-control-remove-probes",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_edit": null,
+        "m3e_keep": null,
+        "m3e_new": null
+      },
+      "responseBody": null,
+      "status": 204
+    }
+  ],
+  "primaryViewerAuthenticatedOrWritten": false,
+  "primaryViewerReadIsolationOnly": true,
+  "priorRequests": 18,
+  "requestsThisAttempt": 46,
+  "schemaVersion": 1,
+  "settingsAfter": {
+    "genreLimitOnDetails": "1"
+  },
+  "sourceMediaPreserved": true,
+  "totalStudyRequests": 64,
+  "viewer2ConfigurationAndPolicyPreserved": true
+}

@@ -251,6 +251,8 @@ func videoOutputRequest(request Request, hasAudio bool) Request {
 	output := request
 	device := *request.DeviceProfile
 	device.DirectPlayProfiles = []DirectPlayProfile{{Type: DlnaProfileTypeVideo, Container: "mp4", VideoCodec: "h264", AudioCodec: "aac"}}
+	device.MaxStaticBitrate = nil
+	device.MaxStaticMusicBitrate = nil
 	output.DeviceProfile = &device
 	noSubtitle, enabled := -1, true
 	output.AudioStreamIndex, output.SubtitleStreamIndex, output.StartTimeTicks = nil, &noSubtitle, nil

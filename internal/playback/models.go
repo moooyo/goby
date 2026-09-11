@@ -33,6 +33,7 @@ type DeviceProfile struct {
 	ID                               string               `json:"Id,omitempty"`
 	SupportedMediaTypes              string               `json:"SupportedMediaTypes,omitempty"`
 	MaxStreamingBitrate              *int64               `json:"MaxStreamingBitrate,omitempty"`
+	MaxStaticBitrate                 *int64               `json:"MaxStaticBitrate,omitempty"`
 	MusicStreamingTranscodingBitrate *int                 `json:"MusicStreamingTranscodingBitrate,omitempty"`
 	MaxStaticMusicBitrate            *int                 `json:"MaxStaticMusicBitrate,omitempty"`
 	DeclaredFeatures                 []string             `json:"DeclaredFeatures,omitempty"`

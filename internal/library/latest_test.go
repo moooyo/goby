@@ -339,6 +339,7 @@ func TestQueryLatestProjectsSourceAndRepresentativeEntities(t *testing.T) {
 	zero, one, two, three := 0, 1, 2, 3
 	wantEntities := map[string]ItemEntities{
 		"episode-b1": {
+			Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 			Genres:  []EntityRef{entityRef("Genre", "mystery", "Mystery"), entityRef("Genre", "drama", "dRaMa")},
 			Tags:    []EntityRef{entityRef("Tag", "alpha", "alpha"), entityRef("Tag", "zulu", "Zulu")},
 			Studios: []EntityRef{entityRef("Studio", "z studio", "Z Studio"), entityRef("Studio", "a studio", "A Studio")},
@@ -349,24 +350,28 @@ func TestQueryLatestProjectsSourceAndRepresentativeEntities(t *testing.T) {
 			},
 		},
 		"audio-b1": {
+			Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 			Genres:  []EntityRef{entityRef("Genre", "music", "Music")},
 			Tags:    []EntityRef{entityRef("Tag", "live", "Live")},
 			Studios: []EntityRef{entityRef("Studio", "audio studio", "Audio Studio")},
 			People:  []PersonRef{personRef("performer", "Performer", "Vocals", "Artist", &three)},
 		},
 		"series-b": {
+			Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 			Genres:  []EntityRef{entityRef("Genre", "series only", "Series Only")},
 			Tags:    []EntityRef{entityRef("Tag", "series tag", "Series Tag")},
 			Studios: []EntityRef{entityRef("Studio", "series studio", "Series Studio")},
 			People:  []PersonRef{personRef("series creator", "Series Creator", "Showrunner", "Writer", &one)},
 		},
 		"album-b": {
+			Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 			Genres:  []EntityRef{entityRef("Genre", "album only", "Album Only")},
 			Tags:    []EntityRef{entityRef("Tag", "album tag", "Album Tag")},
 			Studios: []EntityRef{entityRef("Studio", "album studio", "Album Studio")},
 			People:  []PersonRef{personRef("album creator", "Album Creator", "Composer", "Composer", nil)},
 		},
 		"movie-a": {
+			Artists: []EntityRef{}, AlbumArtists: []EntityRef{},
 			Genres:  []EntityRef{entityRef("Genre", "drama", "Drama")},
 			Tags:    []EntityRef{entityRef("Tag", "hidden tag", "Hidden Tag")},
 			Studios: []EntityRef{entityRef("Studio", "hidden studio", "Hidden Studio")},

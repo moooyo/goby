@@ -123,9 +123,13 @@ func TestHTTPDevicesSixRoutesRequireAdministratorEmbyAuthority(t *testing.T) {
 	if unknown := deviceHTTPCompatGet(t, a.serverFixture, admin.headers, "Options", "9223372036854775807"); len(unknown) != 0 {
 		t.Fatal("unknown positive numeric device options must be an empty object")
 	}
-	for _, query := range []string{"?Id=" + id + "&id=" + id, "?Id=%ff", "?Id=a%00b", "?Id=%zz", "?Id=" + strings.Repeat("x", 257)} {
+	for _, query := range []string{"?Id=" + id + "&id=" + id, "?Id=%ff", "?Id=a%00b", "?Id=" + strings.Repeat("x", 257)} {
 		expectAPIError(t, a.request(t, http.MethodGet, "/emby/Devices/Info"+query, nil, admin.headers), http.StatusBadRequest, "invalid_input", true)
 	}
+	// Invalid URL escaping prevents complete credential-query parsing before
+	// the device handler runs; a token header cannot rescue a partial query.
+	expectEmbyTextError(t, a.request(t, http.MethodGet, "/emby/Devices/Info?Id=%zz", nil, admin.headers),
+		http.StatusUnauthorized, embyInvalidTokenMessage)
 }
 
 func TestHTTPDevicesOptionsClearEmptyNullAndMissingImmediatelyRefreshSessions(t *testing.T) {

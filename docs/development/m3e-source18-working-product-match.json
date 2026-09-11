@@ -1,0 +1,25 @@
+{
+  "archive_sha256": "8e40dc86c8271e8d267041d55a8f9b9168f59c7d9ddb5b930d01a6a3d43a88a2",
+  "changed": [],
+  "documentation_and_independent_tools_excluded": true,
+  "extra": [],
+  "files": 3180,
+  "missing": [],
+  "schema": "goby-m3e-source18-working-product-match",
+  "scope": [
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "cmd",
+    "deploy",
+    "go.mod",
+    "go.sum",
+    "internal",
+    "tests",
+    "web"
+  ],
+  "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b",
+  "status": "passed",
+  "verification_environment": "ssh test-env",
+  "version": 1
+}

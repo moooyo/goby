@@ -1,0 +1,118 @@
+{
+  "builtByFullGate": false,
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "disposalEvidence": "The exact pair was independently inspected as empty and removed by its separately reviewed source15 operator. Original failure evidence and the preexisting cluster catalog were preserved; see m3e-source15-full-disposal.json.",
+  "failedTests": [
+    "TestQueryLatestProjectsSourceAndRepresentativeEntities",
+    "TestItemQueriesProjectEntityDisplayNamesAndCreditOrder"
+  ],
+  "failureMeaning": "Two legacy entity-projection expected structs omit the newly populated empty Artists and AlbumArtists slices. Every legacy entity ID, display name and ordering assertion is retained in the pending explicit empty-collection expectations. No production behavior was changed for these assertion fixes.",
+  "logSha256": "01889de68ca3efb27dc9b36d77dafb081fc7ba377cb2649c2e426c32c79fa4af",
+  "packagesWithTerminalEvent": [
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/cmd/goby"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/activity"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/artwork"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/backupformat"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/backuppg"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/backupstore"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/config"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/database"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/diagnostics"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/events"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/identity"
+    },
+    {
+      "action": "fail",
+      "package": "github.com/moooyo/goby/internal/library"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/lifecycle"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/media"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/metadata"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/playback"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/recovery"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/recoverycontrol"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/server"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/settings"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/subtitle"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/tasks"
+    },
+    {
+      "action": "pass",
+      "package": "github.com/moooyo/goby/internal/transcode"
+    }
+  ],
+  "pairRetainedByFailedRunner": true,
+  "recoverydbRun": false,
+  "reportSha256": "69083c84aeb8aa01c4fc927745f7cc326c8924d1cbc4da59073fd80b5fad1fcb",
+  "scope": "source15 full-repository attempt; the ordinary go test command failed and prevented the final recoverydb package and full build",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-15",
+  "sourceManifestSha256": "3a2230500be92a8ce4becab733b6c79e774432431aeac78ec6a120e70ee5c398",
+  "status": "failed",
+  "testSkips": 0,
+  "topLevelPassed": 1722
+}

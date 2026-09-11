@@ -130,6 +130,7 @@ func nextUpScopeSQL() string {
 			COALESCE(episode.parent_index_number, tree.season_number) AS season_number,
 			episode.index_number AS episode_number, episode.sort_name,
 			COALESCE(data.played, false) AS played,
+			(NOT COALESCE(data.played, false) AND COALESCE(data.playback_position_ticks, 0) > 0) AS has_partial,
 			(COALESCE(data.played, false) OR COALESCE(data.play_count, 0) > 0
 				OR COALESCE(data.playback_position_ticks, 0) > 0 OR data.last_played_at IS NOT NULL) AS has_history,
 			CASE WHEN COALESCE(data.played, false) OR COALESCE(data.play_count, 0) > 0
@@ -146,17 +147,22 @@ func nextUpScopeSQL() string {
 		FROM episode_state
 	), series_activity AS (
 		SELECT series_id, bool_or(has_history) AS has_history, max(activity_at) AS last_activity,
-			max(episode_order) FILTER (WHERE played) AS last_played_order
+			max(episode_order) FILTER (WHERE played) AS last_played_order,
+			(array_agg(episode_order ORDER BY activity_at DESC NULLS LAST, episode_order)
+				FILTER (WHERE has_partial))[1] AS partial_start_order
 		FROM ordered_episodes GROUP BY series_id
 	), `
 }
 
 // Candidate policy is deliberately isolated from ACL and tree traversal.
 // Captured series-scoped queries return all unwatched episodes after the watched
-// cursor, including episodes in later seasons, and return none without history.
-// Goby uses the highest watched ordinal for that cursor. Global selection is a
-// Goby policy: return one unwatched episode after that cursor per active series,
-// or the first unwatched episode when only incomplete playback history exists.
+// cursor, or start at the partially watched episode when no episode is watched.
+// Goby uses the highest watched ordinal, and otherwise the most recently active
+// partial episode with episode order as a stable tie-break. Multiple simultaneous
+// partial episodes remain a Goby policy, not a verified reference behavior.
+// Global selection remains a Goby policy: one unwatched episode after the watched
+// cursor per active series, or the first unwatched episode when only incomplete
+// playback history exists.
 // Positive global results have not been established by reference captures.
 func nextUpCandidateSQL() string {
 	return `next_up AS (
@@ -165,7 +171,9 @@ func nextUpCandidateSQL() string {
 				ORDER BY episode.episode_order) END AS candidate_rank
 		FROM ordered_episodes episode JOIN series_activity activity ON activity.series_id = episode.series_id
 		WHERE NOT episode.played AND episode.in_scope
-			AND (($4::text <> '' AND episode.episode_order > activity.last_played_order)
+			AND (($4::text <> '' AND (
+					(activity.last_played_order IS NOT NULL AND episode.episode_order > activity.last_played_order)
+					OR (activity.last_played_order IS NULL AND episode.episode_order >= activity.partial_start_order)))
 				OR ($4::text = '' AND activity.has_history
 					AND episode.episode_order > COALESCE(activity.last_played_order, 0)))
 	) `

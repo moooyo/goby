@@ -15,6 +15,10 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if len(query.ListItemIds) != 0 {
+		s.libraryError(w, r, library.ErrUnsupportedFilter)
+		return
+	}
 	zeroLimit := query.Limit == 0
 	if zeroLimit {
 		query.Limit = 1

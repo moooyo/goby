@@ -2,9 +2,12 @@
 
 The goal remains the complete planned Linux backend and administrator dashboard. A completed engineering increment does not establish full Emby compatibility.
 
-This round is complete: native backup/recovery, deployment and the
-[handoff](handoff.md) are recorded. Further development is paused at the user's
-request. Other milestone gaps below belong to a later round.
+The M5j round is complete: native backup/recovery, deployment and the
+[handoff](handoff.md) are recorded at `4a840fb`. Development resumed on 2026-09-11
+at the user's request. [M3e real-client acceptance](client-acceptance-m3e.md) is
+in progress. The partial [source18/schema25 checkpoint](verification-m3e-source18-checkpoint.md)
+is deployed on the primary service; M5j remains a preserved historical baseline.
+This source18 checkpoint records the deployed product and its verification evidence together.
 
 ## Decisions
 
@@ -12,13 +15,14 @@ request. Other milestone gaps below belong to a later round.
 - Use PostgreSQL exclusively; the earlier SQLite proposal is superseded.
 - Pin Go **1.27.1** and FFmpeg **9.0.1**, reconfirmed from official stable-release sources on 2026-09-10.
 - Include explicit hardware **decode** and **encode** selection and evidence; software-only success is not GPU verification.
-- Local compilation/build checks are authorized. Execute functional tests, runtime probes, media tests, and browser tests through `ssh test-env`.
+- The resumed task requires all builds, tests, validation and runtime/browser probes through `ssh test-env`; local verification is not authorized.
 
 ## Increment status
 
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
+| M3e real-client acceptance | In progress; partial checkpoint deployed | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Similar/ThemeMedia 404 responses and page errors remain unresolved. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence are historical checkpoints. Tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of all old business columns and sequences through the 30-table result, and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. [Source18 checkpoint](verification-m3e-source18-checkpoint.md) records the deployed product and its verification evidence together; broader compatibility and complete milestones remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
@@ -31,16 +35,18 @@ request. Other milestone gaps below belong to a later round.
 | M5f scheduled tasks | Initial library executor and scheduling increment complete | [Verification](verification-m5f-tasks.md): 1190 full-race tests, isolated browser acceptance with two restarts, schema-19 deployment, and a successful main-service run/replay/schedule workflow. Eight [native task routes](../api/tasks.md) and six compatibility operations use durable receipts, owned children, typed schedules and recovery. [Reference read](../research/scheduled-tasks-reference.md) and [mutation](../research/scheduled-tasks-mutation-reference.md) studies retain their narrower evidence; timer/reference parity, more executors, and complete client acceptance remain broader work |
 | M5g native settings | Native increment complete | [Verification](verification-m5g-settings.md): 1222 full-race tests across fourteen packages, browser with two exact 28-table restarts, protected schema-20 deployment, and first-pass settings/restore workflow on the main service. Its three native routes managed five nullable overrides with CAS and atomic publication. The later M5h increment adds the bounded adapter; the [read](../research/configuration-reference.md) and [fresh mutation](../research/configuration-mutation-reference.md) studies retain their historical scope |
 | M5h configuration compatibility | Bounded configuration increment complete | [Verification](verification-m5h-configuration.md): 1252 race tests across fourteen packages, 16 browser checks/two 28-table restarts, protected schema-21 deployment with actual 28-table isolated restore, and first-pass main-service writes/restoration/revocation barriers. Five [compatibility routes](../api/configuration.md) expose only name, read-only setup status and encoding width; native settings adds four name modes and six reset selectors. The [4K width study](../research/encoding-width-reference.md) proves the sampled software execution boundary; broader fields/sections, GPU execution and full client acceptance remain |
-| M5i activity and diagnostic logs | Increment complete and deployed | Four [native and four Emby GET routes](../api/observability.md), schema-22 transactional activity, private bounded Linux JSONL storage, and the React/MUI Activity and Server logs page passed acceptance. The [complete race suite](m5i-full-race-summary.json) passed 1380 tests across 17 packages without skips/races; [browser/restarts](m5i-observability-browser.json), [protected deployment](m5i-deployment-evidence.json), and [main workflow](m5i-deployed-observability.json) passed. Current service is M5i/schema 22/probe 6/PID 3668655 |
+| M5i activity and diagnostic logs | Increment complete and deployed | Four [native and four Emby GET routes](../api/observability.md), schema-22 transactional activity, private bounded Linux JSONL storage, and the React/MUI Activity and Server logs page passed acceptance. The [complete race suite](m5i-full-race-summary.json) passed 1380 tests across 17 packages without skips/races; [browser/restarts](m5i-observability-browser.json), [protected deployment](m5i-deployment-evidence.json), and [main workflow](m5i-deployed-observability.json) passed. Historical deployed checkpoint: M5i/schema 22/probe 6/PID 3668655 |
 | M6 compatibility release | Incomplete; acceptance pending | Client/reference comparisons, Linux distribution/architecture/GPU matrix, operations, representative large-catalog upgrade timing, and recovery evidence |
 | M5j native backup and recovery | Complete and deployed | [Implementation and evidence](backup-recovery.md): final source30 passed 1605 race tests across 24 packages, with zero skips/failures/races. UI a6 passed type checking, 27 mocked-API browser cases and its 57-asset build. Actual browser/process acceptance passed create/import/restore/rollback, six generation checks, three restarts and offline CLI with an unavailable primary. Protected schema-23 deployment and the main backup/download/logout workflow passed. The initial deployment parser failure and its 54-test read-only finalization are recorded separately |
 | M7 additional features | Deferred per scope | Explicit feature decisions and their own acceptance gates |
 
 ## M5j closeout
 
-M5j is accepted and deployed. The final Go source and executable are covered by
-one complete source30 run; earlier source25/source26 counts are historical and
-are not added to the final 1605-test result.
+M5j remains an accepted historical product baseline. The deployment and closeout
+in this section precede the current partial source18/schema25 checkpoint.
+The final Go source and executable are covered by one complete source30 run;
+earlier source25/source26 counts are historical and are not added to the final
+1605-test result.
 
 | Final closeout gate | Result |
 | --- | --- |
@@ -51,7 +57,7 @@ are not added to the final 1605-test result.
 | Main-service backup/download/logout | Passed in 2.373 seconds: [workflow](m5j-deployed-backup-workflow.json) |
 | Publication and handoff | Recorded on `origin/main`; [handoff](handoff.md) includes operating paths and the next-round scope |
 
-The main service runs at schema 23/probe 6, PID 3750313, UID 995, start ticks
+At M5j closeout, the main service ran at schema 23/probe 6, PID 3750313, UID 995, start ticks
 `28911319`, with 576 installed source inputs and 57 current assets. The real
 workflow retained a 177,366-byte encrypted backup, its separate passphrase,
 seven audit records and one revoked native session; all old table rows and
@@ -355,13 +361,43 @@ within their recorded scopes; they are not results of this reference study.
 
 `test-env` is a Debian 13 Linux host. The earlier root-capacity pressure has been resolved: after the user expanded its virtual disk to 97 GiB, online `growpart` and `resize2fs` grew the root partition and ext4 filesystem. At the [2026-09-10 observation](test-env-disk-growth.json), root reported roughly 96G total and 60G available. Root identity/start and boot partitions were preserved; the original Emby PID 3131777 and main Goby PID 3535438 were unchanged. Go caches now use persistent root-disk storage under `/opt/goby-test/go-caches-m5h` through their original `/dev/shm` path symlinks; media scratch remains separate. No GPU device was present in the recorded `/dev/dri` and `/dev/nvidia0` inspection, so actual GPU execution remains unverified.
 
-The current M5j service runs as unprivileged `goby` at
-`http://127.0.0.1:18096`, PID 3750313, UID 995, start ticks `28911319`, schema
-23/probe 6. [Deployment evidence](m5j-deployment-evidence.json) binds 576
-installed source inputs and 57 current assets. The complete pre-upgrade backup
-at `/opt/goby-test/backups/m5j-20260910` passed an actual isolated 29-table
-restore before the old service stopped. The subsequent native backup workflow
-and private operator copy are recorded in the [handoff](handoff.md).
+The current primary service has **source18/schema25 deployed**, PID 539535,
+start ticks `3115871`, executable SHA-256
+`665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b`.
+The isolated client candidate remains source18/schema25 with the same binary,
+PID 506532, start ticks `2681316`. The
+[deployment evidence](m3e-source18-main-deployment.json), SHA-256
+`02ed027b353488ab31cb9e4ac3e7cfc4547422bb1a57e7f9cfdfdd945aad0bf3`,
+records preservation of all old business columns and sequences through the
+29-to-30-table schema25 migration, health/readiness, administrator login
+and seven reads, logout 204, and rejection of the exact token with 401. Old
+archives were preserved; no primary restore or old-binary rollback occurred.
+This is the partial [M3e checkpoint](verification-m3e-source18-checkpoint.md),
+with its product and verification evidence recorded together. Similar/ThemeMedia 404 responses, page
+errors, broader compatibility, and complete milestones remain open.
+
+The two earlier prepare attempts failed safely before the Go helper, dump,
+restore rehearsal, or migration began and remain preserved as historical failures.
+
+Tool03's independent SQL and OS timestamp checks passed 47 remote guards and
+the build. The new [fresh preparation](m3e-schema25-preparation-source18.json)
+passed: a schema23 dump from the same snapshot, an independent schema23-to-25
+restore rehearsal, cleanup, and exact preservation of the primary's old state.
+Its prepared record is
+`/opt/goby-test/backups/client-schema25-v1/run-20260911T062405Z-975ef4c2e0c2b3078d517dc5/prepared.json`,
+SHA-256 `b1d686b1c8aed83aa545dd02618c22793cc8b371f6659a0adc1f40710ddfd0ce`.
+The empty transcode cache passed seven independent guards and actual creation
+before the successful deployment recorded above.
+
+At the historical M5j deployment checkpoint, the service ran as unprivileged
+`goby` at `http://127.0.0.1:18096`, PID 3750313, UID 995, start ticks `28911319`,
+schema 23/probe 6. [Deployment evidence](m5j-deployment-evidence.json) binds 576
+installed source inputs and 57 assets from that checkpoint. Its complete
+pre-upgrade backup at `/opt/goby-test/backups/m5j-20260910` passed an actual
+isolated 29-table restore before that deployment's old service stopped. The
+subsequent native backup workflow and private operator copy are recorded in the
+[handoff](handoff.md). These historical results remain separate from the fresh
+preparation recorded above.
 Neither this operational backup nor the older M5i backup may overwrite newer
 accepted business state. The original Emby reference PID remains 3131777.
 

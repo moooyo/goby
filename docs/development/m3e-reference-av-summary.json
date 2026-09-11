@@ -1,0 +1,892 @@
+{
+  "format": 1,
+  "status": "reference-only; Goby audio/subtitle client acceptance is not established",
+  "scope": "Original Emby Web 4.9.5.0 on the isolated Emby Server 4.9.5.0 reference, through remote Chromium",
+  "account": {
+    "marker": "goby-reference-av-client-v1",
+    "name": "m3e-reference-av-client",
+    "id": "7d777e79b35541889f738bb5f5a8da23",
+    "ordinary": true,
+    "history_policy": "Retained owned account and legitimate playback history; no original viewer or viewer2 progress writes"
+  },
+  "reference": {
+    "pid": 332054,
+    "start_ticks": "357218",
+    "executable_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+    "origin": "http://127.0.0.1:18197"
+  },
+  "source_sha256": {
+    "client-browser-av.mjs": "ad91b5bdee9350248447965a0a388b56693312c16a0638bf6e2449a6cd3d5633",
+    "client-browser-av-runtime.mjs": "a3ccc304a7c030b957a136fc26ee676b9fbdb70df3f60cfe3549cd4351df877e",
+    "client-browser-audio-flow.mjs": "c0a8fc0bc1e770206c7f60f76c960ce1a218c44e2bf7044443eeafe62da932e6",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "prepare-client-av-user.py": "a0cd391f84ec1e8827cb7f236ee51172468b9b67e7f6d370bf9e3b9143fbe8eb"
+  },
+  "media_manifest_sha256": "d071081ea17decbc07d3191ddddd4ab5415717ac907f7e86c5c8c302878bc064",
+  "setup_report_sha256": "beeda9f1698114ff80ce1fef29c45ef8ca5f8beb0a335bf9509f52f60d68a791",
+  "profiles": [
+    {
+      "check": "mp3",
+      "run": "reference-av-mp3-02",
+      "report_path": "/opt/goby-test/exec-work-m3e/reference-av-mp3-02/observation.json",
+      "report_sha256": "059a194202385dd5ebb0d13e6b18771412cc2ee7a11e453ed340eb8c8fac87dc",
+      "started_at": "2026-09-11T00:49:37.034Z",
+      "finished_at": "2026-09-11T00:49:49.200Z",
+      "runtime_failure": null,
+      "outcome": "audio_ui_flow_completed",
+      "playwright_version": "1.63.0",
+      "browser_version": "153.0.8010.12",
+      "requests": 287,
+      "local_http_errors": 0,
+      "page_errors": [],
+      "blocked_external_count": 1,
+      "preferences_comparison": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "media_state_before": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:47:47.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:46:39.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "media_state_after": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:47:47.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "ui_logout_status": 204,
+            "verification_is_ui_request": false,
+            "verification_status": 401,
+            "result": "logout_token_rejected",
+            "token_fingerprint": "6574846ff9e4d53070633623f6453275135f66586dc0fb9559762574c8f80f16"
+          }
+        ]
+      },
+      "private_state_retained": false,
+      "executed_command": "env PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright node /opt/goby-test/exec-work-m3e/client-browser-av.mjs --check mp3 --output /opt/goby-test/exec-work-m3e/reference-av-mp3-02",
+      "track": "M3e MP3",
+      "playback_evidence": {
+        "media_tag": "audio",
+        "current_time_delta_seconds": 2.0469809999999997,
+        "ready_state": 4,
+        "duration_seconds": 180,
+        "audible_output_verified": false
+      },
+      "samples": {
+        "audio-playing-start": {
+          "index": 0,
+          "selected": false,
+          "tag": "audio",
+          "current_time": 0.991763,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-playing-advanced": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.038744,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-paused": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.157564,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-paused-held": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.157564,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-seek_forward-media-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 116.898,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-seek_backward-media-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 53.953,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-resumed": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 53.953,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-resumed-advanced": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 56.179936,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-stop-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 0,
+          "duration": null,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 0,
+          "network_state": 0,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        }
+      },
+      "stop_evidence": {
+        "all_media_paused_or_removed": true,
+        "remaining_audio_elements": 1,
+        "observed_stopped_report_statuses": [
+          204
+        ]
+      }
+    },
+    {
+      "check": "flac",
+      "run": "reference-av-flac-01",
+      "report_path": "/opt/goby-test/exec-work-m3e/reference-av-flac-01/observation.json",
+      "report_sha256": "2352d5b9d3c9ee86c42568bbaa322a6966c5100bb1141feef9fff4ba98873d4d",
+      "started_at": "2026-09-11T00:51:06.555Z",
+      "finished_at": "2026-09-11T00:51:18.762Z",
+      "runtime_failure": null,
+      "outcome": "audio_ui_flow_completed",
+      "playwright_version": "1.63.0",
+      "browser_version": "153.0.8010.12",
+      "requests": 287,
+      "local_http_errors": 0,
+      "page_errors": [],
+      "blocked_external_count": 1,
+      "preferences_comparison": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "media_state_before": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:47:47.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": false,
+            "Played": false
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "media_state_after": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:47:47.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:51:08.0000000Z",
+            "Played": true
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "ui_logout_status": 204,
+            "verification_is_ui_request": false,
+            "verification_status": 401,
+            "result": "logout_token_rejected",
+            "token_fingerprint": "8ead8609aa0dd197eff0d96b77dd386626fa10738c59548e1115da27706b1ad3"
+          }
+        ]
+      },
+      "private_state_retained": false,
+      "executed_command": "env PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright node /opt/goby-test/exec-work-m3e/client-browser-av.mjs --check flac --output /opt/goby-test/exec-work-m3e/reference-av-flac-01",
+      "track": "M3e FLAC",
+      "playback_evidence": {
+        "media_tag": "audio",
+        "current_time_delta_seconds": 2.046772,
+        "ready_state": 4,
+        "duration_seconds": 180,
+        "audible_output_verified": false
+      },
+      "samples": {
+        "audio-playing-start": {
+          "index": 0,
+          "selected": false,
+          "tag": "audio",
+          "current_time": 0.988751,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-playing-advanced": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.035523,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-paused": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.159661,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-paused-held": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 3.159661,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-seek_forward-media-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 117.093,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-seek_backward-media-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 53.042,
+          "duration": 180,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-resumed": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 53.042,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-resumed-advanced": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 55.250609,
+          "duration": 180,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        },
+        "audio-stop-after": {
+          "index": 0,
+          "selected": true,
+          "tag": "audio",
+          "current_time": 0,
+          "duration": null,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 0,
+          "network_state": 0,
+          "visible": false,
+          "video_width": null,
+          "video_height": null
+        }
+      },
+      "stop_evidence": {
+        "all_media_paused_or_removed": true,
+        "remaining_audio_elements": 1,
+        "observed_stopped_report_statuses": [
+          204
+        ]
+      }
+    },
+    {
+      "check": "subtitles",
+      "run": "reference-av-subtitles-02",
+      "report_path": "/opt/goby-test/exec-work-m3e/reference-av-subtitles-02/observation.json",
+      "report_sha256": "8bece1066fab8030cc16876ab60d65e3f142a0b2c2dfe4d952e2351f45009507",
+      "started_at": "2026-09-11T00:52:24.568Z",
+      "finished_at": "2026-09-11T00:52:34.871Z",
+      "runtime_failure": null,
+      "outcome": "external_srt_vtt_ui_selection_and_seek_completed",
+      "playwright_version": "1.63.0",
+      "browser_version": "153.0.8010.12",
+      "requests": 309,
+      "local_http_errors": 0,
+      "page_errors": [
+        {
+          "elapsed_ms": 2282,
+          "name": "Error",
+          "message": "undefined"
+        },
+        {
+          "elapsed_ms": 2310,
+          "name": "Error",
+          "message": "undefined"
+        }
+      ],
+      "blocked_external_count": 3,
+      "preferences_comparison": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "media_state_before": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:47:47.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:51:08.0000000Z",
+            "Played": true
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "media_state_after": [
+        {
+          "id": "9",
+          "name": "M3e Client Movie",
+          "user_data": {
+            "PlayedPercentage": 20.207,
+            "PlaybackPositionTicks": 1212420000,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:52:26.0000000Z",
+            "Played": false
+          }
+        },
+        {
+          "id": "10",
+          "name": "M3e FLAC",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 1,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:51:08.0000000Z",
+            "Played": true
+          }
+        },
+        {
+          "id": "11",
+          "name": "M3e MP3",
+          "user_data": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 2,
+            "IsFavorite": false,
+            "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+            "Played": true
+          }
+        }
+      ],
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "ui_logout_status": 204,
+            "verification_is_ui_request": false,
+            "verification_status": 401,
+            "result": "logout_token_rejected",
+            "token_fingerprint": "7ee83af2afd3b07176761567ebce290e9ea96b33bf340d624d4891016fdf9b0f"
+          }
+        ]
+      },
+      "private_state_retained": false,
+      "executed_command": "env PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright node /opt/goby-test/exec-work-m3e/client-browser-av.mjs --check subtitles --output /opt/goby-test/exec-work-m3e/reference-av-subtitles-02",
+      "subtitle_responses": [
+        {
+          "request_method": "GET",
+          "status": 200,
+          "content_type": "text/vtt",
+          "item_matches_owned_movie": true,
+          "subtitle_index": 2,
+          "start_position_ticks_path": "0",
+          "format": "vtt",
+          "query_field_names": [
+            "api_key",
+            "AllowChunkedResponse"
+          ],
+          "body_result": "owned_subtitle_hashed",
+          "bytes": 187,
+          "sha256": "6639a605af385edeaac96cd2aab8a5ee744c60a041e7d4ecadb5f7a86980a67b",
+          "starts_with_webvtt": true,
+          "synthetic_cues_present": [
+            "Opening subtitle",
+            "Backward seek subtitle",
+            "Forward seek subtitle",
+            "Midpoint subtitle"
+          ]
+        },
+        {
+          "request_method": "GET",
+          "status": 200,
+          "content_type": "text/vtt",
+          "item_matches_owned_movie": true,
+          "subtitle_index": 3,
+          "start_position_ticks_path": "0",
+          "format": "vtt",
+          "query_field_names": [
+            "api_key",
+            "AllowChunkedResponse"
+          ],
+          "body_result": "owned_subtitle_hashed",
+          "bytes": 195,
+          "sha256": "a658c7564b07cac7e69750a61f7c9a71f83f660ec172adf85417cad5a18cf5ad",
+          "starts_with_webvtt": true,
+          "synthetic_cues_present": [
+            "Opening subtitle",
+            "Backward seek subtitle",
+            "Forward seek subtitle",
+            "Midpoint subtitle"
+          ]
+        }
+      ],
+      "restored_selection": true,
+      "samples": {
+        "subtitle-initial-paused": {
+          "current_time": 0.981916,
+          "duration": 600,
+          "paused": true,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 35,
+          "dropped_video_frames": 0,
+          "text_tracks": [
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            },
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            }
+          ]
+        },
+        "subtitle-srt-selected": {
+          "current_time": 0.981916,
+          "duration": 600,
+          "paused": true,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 35,
+          "dropped_video_frames": 0,
+          "text_tracks": [
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "hidden",
+              "active_cues": [
+                {
+                  "start": 0,
+                  "end": 5,
+                  "text": "Opening subtitle"
+                }
+              ]
+            },
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            }
+          ]
+        },
+        "subtitle-srt-after-seek": {
+          "current_time": 121.242,
+          "duration": 600,
+          "paused": true,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 76,
+          "dropped_video_frames": 0,
+          "text_tracks": [
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "hidden",
+              "active_cues": [
+                {
+                  "start": 118,
+                  "end": 128,
+                  "text": "Forward seek subtitle"
+                }
+              ]
+            },
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            }
+          ]
+        },
+        "subtitle-vtt-selected": {
+          "current_time": 121.242,
+          "duration": 600,
+          "paused": true,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 76,
+          "dropped_video_frames": 0,
+          "text_tracks": [
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            },
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "hidden",
+              "active_cues": [
+                {
+                  "start": 118,
+                  "end": 128,
+                  "text": "Forward seek subtitle"
+                }
+              ]
+            }
+          ]
+        },
+        "subtitle-off-verified": {
+          "current_time": 121.242,
+          "duration": 600,
+          "paused": true,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 76,
+          "dropped_video_frames": 0,
+          "text_tracks": [
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            },
+            {
+              "kind": "subtitles",
+              "label": "en",
+              "language": "en",
+              "mode": "disabled",
+              "active_cues": []
+            }
+          ]
+        },
+        "subtitle-after-stop": null
+      }
+    }
+  ],
+  "limitations": [
+    "Reference results are not Goby results or broad Emby compatibility claims.",
+    "Audio element progression is verified; physical audible output is not measured.",
+    "Software browser playback does not establish GPU decoding or encoding.",
+    "API fixture setup/state snapshots and post-logout 401 checks are separate from UI acceptance.",
+    "The new account can see exactly the isolated instance owned libraries; actual workflows whitelist the synthetic movie/MP3/FLAC paths.",
+    "Earlier failed observations are preserved and are not counted as passing profiles.",
+    "Historical movie06 evidence and frozen sources remain unchanged."
+  ]
+}

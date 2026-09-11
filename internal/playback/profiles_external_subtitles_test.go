@@ -146,6 +146,71 @@ func TestEvaluateExternalSubtitlesStayDisabledUntilSelected(t *testing.T) {
 	}
 }
 
+func TestExternalSubtitleCandidateFormatsPreserveOffAndSourceFacts(t *testing.T) {
+	const second = externalSubtitleTestIndex + 1
+	source := externalSubtitleTestSource("srt")
+	source.Info.Streams = append(source.Info.Streams,
+		media.Stream{Index: second, Codec: "webvtt", CodecType: "subtitle", Language: "eng", IsExternal: true, IsTextSubtitleStream: true},
+		media.Stream{Index: second + 1, Codec: "ass", CodecType: "subtitle", Language: "eng", IsExternal: true, IsTextSubtitleStream: true},
+		media.Stream{Index: second + 2, Codec: "pgs", CodecType: "subtitle", Language: "eng", IsExternal: true},
+		media.Stream{Index: second + 3, Codec: "srt", CodecType: "subtitle", Language: "eng", IsTextSubtitleStream: true},
+	)
+	original := source
+	original.Info.Streams = append([]media.Stream(nil), source.Info.Streams...)
+	profile := func(subtitles ...SubtitleProfile) *DeviceProfile {
+		request := profileTestRequest()
+		request.DeviceProfile.SubtitleProfiles = subtitles
+		return request.DeviceProfile
+	}
+	for _, test := range []struct {
+		name    string
+		profile *DeviceProfile
+		want    map[int]string
+	}{
+		{"VTT external candidates", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal}),
+			map[int]string{externalSubtitleTestIndex: "vtt", second: "vtt"}},
+		{"both formats prefer each native codec", profile(SubtitleProfile{Format: "vtt,srt", Method: SubtitleDeliveryMethodExternal}),
+			map[int]string{externalSubtitleTestIndex: "srt", second: "vtt"}},
+		{"SRT external candidates", profile(SubtitleProfile{Format: "srt", Method: SubtitleDeliveryMethodExternal}),
+			map[int]string{externalSubtitleTestIndex: "srt", second: "srt"}},
+		{"absent profile", nil, map[int]string{}},
+		{"no subtitle declarations", profile(), map[int]string{}},
+		{"HLS does not imply external", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodHls}), map[int]string{}},
+		{"unsupported ASS remains unsupported", profile(SubtitleProfile{Format: "ass", Method: SubtitleDeliveryMethodExternal}), map[int]string{}},
+		{"language restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Language: "fra"}), map[int]string{}},
+		{"container restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Container: "mkv"}), map[int]string{}},
+		{"protocol restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Protocol: "file"}), map[int]string{}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var copied *DeviceProfile
+			if test.profile != nil {
+				value := *test.profile
+				value.SubtitleProfiles = append([]SubtitleProfile(nil), test.profile.SubtitleProfiles...)
+				copied = &value
+			}
+			for _, selected := range []*int{nil, profileTestPtr(-1)} {
+				request := Request{DeviceProfile: test.profile, SubtitleStreamIndex: selected}
+				before, err := Evaluate(source, request)
+				if err != nil {
+					t.Fatalf("candidate test source or request is invalid: %v", err)
+				}
+				got := ExternalSubtitleCandidateFormats(source, test.profile)
+				if !reflect.DeepEqual(got, test.want) {
+					t.Errorf("candidate formats = %v, want %v", got, test.want)
+				}
+				after, err := Evaluate(source, request)
+				if err != nil || !reflect.DeepEqual(before, after) || after.DefaultSubtitleStreamIndex == nil ||
+					*after.DefaultSubtitleStreamIndex != -1 || after.SubtitleMethod != "" || after.SubtitleFormat != "" {
+					t.Error("candidate projection changed Off, selected delivery, or playback compatibility")
+				}
+				if !reflect.DeepEqual(source, original) || !reflect.DeepEqual(test.profile, copied) {
+					t.Error("candidate projection mutated source or profile facts")
+				}
+			}
+		})
+	}
+}
+
 func TestEvaluateExternalSubtitleSelectionUsesGlobalStreamIndices(t *testing.T) {
 	for _, index := range []int{-2, 4, 5, 40, 99} {
 		request := externalSubtitleTestRequest(SubtitleProfile{Format: "srt", Method: SubtitleDeliveryMethodExternal})

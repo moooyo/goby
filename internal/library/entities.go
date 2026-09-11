@@ -26,6 +26,7 @@ type PersonRef struct {
 
 type ItemEntities struct {
 	Genres, Tags, Studios []EntityRef
+	Artists, AlbumArtists []EntityRef
 	People                []PersonRef
 }
 
@@ -39,6 +40,12 @@ type EntityResult struct {
 	Items            []Entity
 	TotalRecordCount int
 }
+
+// Music roles use a bounded key component; legacy free-form credit text alone
+// must never be interpreted as a newly indexed music relationship.
+const validEntityAssociationSQL = `(entity.kind <> 'MusicArtist' OR
+	(association.credit_group = 1 AND association.credit_type = 'Artist') OR
+	(association.credit_group = 2 AND association.credit_type = 'AlbumArtist'))`
 
 // ListEntities counts distinct authorized source items before entity pagination.
 // SearchTerm searches entity names; other item filters scope the source catalog.
@@ -57,6 +64,9 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	if err != nil {
 		return EntityResult{}, err
 	}
+	if len(query.ListItemIds) != 0 {
+		return EntityResult{}, ErrUnsupportedFilter
+	}
 	if query.SortBy != "Name" && query.SortBy != "SortName" {
 		return EntityResult{}, ErrInvalidInput
 	}
@@ -71,7 +81,7 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	}
 	prefix, filter, args := itemQuerySQL(query, access, parentLibraryID)
 	args = append(args, kind)
-	filter += fmt.Sprintf(" AND entity.kind = $%d", len(args))
+	filter += fmt.Sprintf(" AND entity.kind = $%d", len(args)) + " AND " + validEntityAssociationSQL
 	if searchTerm != "" {
 		args = append(args, "%"+escapeLikeLiteral(searchTerm)+"%")
 		filter += fmt.Sprintf(" AND entity.name ILIKE $%d ESCAPE E'\\\\'", len(args))
@@ -157,7 +167,7 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, condition string
 		FROM catalog_entities entity JOIN item_entities association ON association.entity_id = entity.id
 		JOIN items i ON i.id = association.item_id
 		WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND i.type <> 'CollectionFolder'
-		AND `+condition+` GROUP BY entity.id, entity.name, entity.kind`, args...))
+		AND `+validEntityAssociationSQL+` AND `+condition+` GROUP BY entity.id, entity.name, entity.kind`, args...))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Entity{}, ErrNotFound
 	}

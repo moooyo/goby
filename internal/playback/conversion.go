@@ -520,6 +520,7 @@ func conversionOutputRequest(request Request, profile TranscodingProfile, kind D
 	output := request
 	device := *request.DeviceProfile
 	device.DirectPlayProfiles = []DirectPlayProfile{{Type: kind, Container: "ts", VideoCodec: profile.VideoCodec, AudioCodec: profile.AudioCodec}}
+	device.MaxStaticBitrate = nil
 	device.MaxStaticMusicBitrate = nil
 	output.DeviceProfile = &device
 	enabled := true

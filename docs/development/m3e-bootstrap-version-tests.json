@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "scope": "Targeted source-attempt-01 bootstrap/authentication/identity regression, not the final complete repository suite or client acceptance",
+  "tests": [
+    "TestHTTPCompatibilityVersionPreservesProductIdentity",
+    "TestHTTPBootstrapRequiresSetupTokenAndOnlyRunsOnce",
+    "TestHTTPAdministratorCookieCSRFAndLogout",
+    "TestHTTPEmbyAuthenticationShapeTokenSourcesAndRevocation",
+    "TestHTTPUserScopeAndSessionKindsCannotBeEscalated",
+    "TestHTTPPublicServerIDPersistsAndUnknownAdminAPIReturnsJSON"
+  ],
+  "topLevelPassed": 6,
+  "skips": 0,
+  "failures": 0,
+  "raceEnabled": true,
+  "formattingClean": true,
+  "goModuleSQLInputs": 576,
+  "sourceManifestSha256": "0ef8aed1536c452157c85d37532410286736ed130af97d9f0af1893d078bb15a",
+  "logSha256": "f41b681ab7a6b2f8613dd8f75edd2c14edff83c5dd29d02e6e340ebf8070d7ca",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-01",
+  "binary": {
+    "path": "/opt/goby-test/exec-work-m3e/source-attempt-01/verification/goby-linux-amd64",
+    "sha256": "6a273ecd4f4586231a074ddf6ec9fa216948f7c4a5b5d1ac5f590269fa9c3e7a",
+    "bytes": 25716485,
+    "buildInfo": [
+      "/opt/goby-test/exec-work-m3e/source-attempt-01/verification/goby-linux-amd64: go1.27.1",
+      "\tpath\tgithub.com/moooyo/goby/cmd/goby",
+      "\tmod\tgithub.com/moooyo/goby\t(devel)\t",
+      "\tdep\tfilippo.io/age\tv1.3.2\th1:r6RSZLFSMm6rzKepZ7ZAYkKCu14f3/Me8c7uKYh7C8c=",
+      "\tdep\tfilippo.io/hpke\tv0.4.0\th1:p575VVQ6ted4pL+it6M00V/f2qTZITO0zgmdKCkd5+A=",
+      "\tdep\tgithub.com/coder/websocket\tv1.8.15\th1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=",
+      "\tdep\tgithub.com/jackc/pgpassfile\tv1.0.0\th1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=",
+      "\tdep\tgithub.com/jackc/pgservicefile\tv0.0.0-20240606120523-5a60cdf6a761\th1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=",
+      "\tdep\tgithub.com/jackc/pgx/v5\tv5.11.0\th1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=",
+      "\tdep\tgithub.com/jackc/puddle/v2\tv2.2.2\th1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=",
+      "\tdep\tgolang.org/x/crypto\tv0.57.0\th1:3ZVCjf8Ggz7zneR/EHRVx68Ctf+2pmIMP2UFhh9cC6M=",
+      "\tdep\tgolang.org/x/sync\tv0.23.0\th1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=",
+      "\tdep\tgolang.org/x/sys\tv0.48.0\th1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=",
+      "\tdep\tgolang.org/x/text\tv0.42.0\th1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=",
+      "\tbuild\t-buildmode=exe",
+      "\tbuild\t-compiler=gc",
+      "\tbuild\t-trimpath=true",
+      "\tbuild\tCGO_ENABLED=0",
+      "\tbuild\tGOARCH=amd64",
+      "\tbuild\tGOOS=linux",
+      "\tbuild\tGOAMD64=v1"
+    ]
+  },
+  "unit": "goby-client-bootstrap-m3e-01.service"
+}

@@ -265,7 +265,7 @@ func TestHTTPWebSocketLogoutDisconnectsOnlyItsSessionAndShutdownIsIdempotent(t *
 	sibling := websocketHTTPDial(t, server, "/emby/", accounts.second.headers, http.StatusSwitchingProtocols)
 	other := websocketHTTPDial(t, server, "/embywebsocket", accounts.other.headers, http.StatusSwitchingProtocols)
 	websocketHTTPWaitCount(t, f, accounts.viewer.id, 2)
-	websocketHTTPPost(t, server, "/emby/Sessions/Logout", accounts.viewer.headers, http.StatusOK)
+	websocketHTTPPost(t, server, "/emby/Sessions/Logout", accounts.viewer.headers, http.StatusNoContent)
 	first.closed(t)
 	second.closed(t)
 	websocketHTTPWaitCount(t, f, accounts.viewer.id, 0)

@@ -425,6 +425,164 @@ func TestStoreNextUpExplicitSeriesExpandsUnwatchedEpisodesAfterTheWatchedCursor(
 	}
 }
 
+func TestStoreNextUpExplicitSeriesIncludesThePartialCursorWithoutWatchedEpisodes(t *testing.T) {
+	for _, scenario := range []struct {
+		name         string
+		partialIndex int
+	}{
+		{name: "OnlyFirstEpisodePartial", partialIndex: 0},
+		{name: "OnlyMiddleEpisodePartial", partialIndex: 1},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			ctx, pool, store, allowedRoot, otherUser := libraryIntegrationStore(t, &libraryFixtureProber{})
+			library := nextUpLibrary(t, ctx, store, allowedRoot, "next-up-explicit-partial")
+			hiddenLibrary := nextUpLibrary(t, ctx, store, allowedRoot, "next-up-hidden-partial")
+			series := nextUpSeries(t, ctx, pool, library, "Partial Series", []int{1}, 2)
+			secondSeason := series.ID + "-season-2"
+			lastEpisode := secondSeason + "-episode-1"
+			nextUpInsertItem(t, ctx, pool, library.ID, secondSeason, series.ID, "Partial Series Season 2", "Season", true, nextUpNumber(2), nextUpNumber(0), false)
+			nextUpInsertItem(t, ctx, pool, library.ID, lastEpisode, secondSeason, "Partial Series S02E01", "Episode", false, nextUpNumber(1), nextUpNumber(2), true)
+			episodes := []string{series.Episodes[1][0], series.Episodes[1][1], lastEpisode}
+			viewerID := "next-up-partial-viewer"
+			libraryIntegrationUser(t, ctx, pool, viewerID, false, false, []string{library.ID})
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: viewerID, SeriesID: series.ID}))
+			date := time.Date(2025, time.September, 10, 11, 12, 13, 0, time.UTC)
+			partial := UserData{ItemID: episodes[scenario.partialIndex], PlaybackPositionTicks: 120 * media.TicksPerSecond,
+				PlayCount: 1, LastPlayedDate: &date}
+			userDataSeed(t, ctx, pool, viewerID, partial)
+			hidden := nextUpSeries(t, ctx, pool, hiddenLibrary, "Hidden Partial", []int{1}, 2)
+			userDataSeed(t, ctx, pool, viewerID, UserData{ItemID: hidden.Episodes[1][0], PlaybackPositionTicks: 120 * media.TicksPerSecond})
+			if _, err := store.NextUp(ctx, NextUpQuery{UserID: viewerID, SeriesID: hidden.ID, Limit: 1}); !errors.Is(err, ErrNotFound) {
+				t.Errorf("hidden partial series remained addressable: got %v, want ErrNotFound", err)
+			}
+			assertUserData := func(item Item) {
+				t.Helper()
+				if item.UserData == nil {
+					t.Fatalf("partial next-up candidate %s has no caller user data", item.ID)
+				}
+				want := UserData{ItemID: item.ID}
+				if item.ID == partial.ItemID {
+					want = partial
+				}
+				userDataAssertValue(t, *item.UserData, want)
+			}
+			expected := episodes[scenario.partialIndex:]
+			for _, parentID := range []string{"", library.ID} {
+				query := NextUpQuery{UserID: viewerID, SeriesID: series.ID, ParentID: parentID}
+				result := nextUpQuery(t, ctx, store, query)
+				nextUpAssertIDs(t, result, expected...)
+				for index, item := range result.Items {
+					if item.ID != expected[index] {
+						t.Errorf("partial series expansion changed episode order at %d: got %s, want %s", index, item.ID, expected[index])
+					}
+					assertUserData(item)
+				}
+				for offset := 0; offset <= len(expected); offset++ {
+					query.StartIndex, query.Limit = offset, 1
+					page := nextUpQuery(t, ctx, store, query)
+					if page.TotalRecordCount != len(expected) {
+						t.Fatalf("partial series count was reduced to the requested page: %+v", page)
+					}
+					if offset == len(expected) {
+						if len(page.Items) != 0 {
+							t.Errorf("partial series returned episodes beyond the final page: %+v", page)
+						}
+						continue
+					}
+					if len(page.Items) != 1 || page.Items[0].ID != expected[offset] {
+						t.Fatalf("partial series pagination returned %+v, want %s", page, expected[offset])
+					}
+					assertUserData(page.Items[0])
+				}
+			}
+			laterSeason := nextUpQuery(t, ctx, store, NextUpQuery{UserID: viewerID, SeriesID: series.ID, ParentID: secondSeason, Limit: 1})
+			nextUpAssertIDs(t, laterSeason, lastEpisode)
+			assertUserData(laterSeason.Items[0])
+			for _, parentID := range []string{"", library.ID, series.ID} {
+				global := nextUpQuery(t, ctx, store, NextUpQuery{UserID: viewerID, ParentID: parentID})
+				nextUpAssertIDs(t, global, episodes[0])
+				assertUserData(global.Items[0])
+			}
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: otherUser, SeriesID: series.ID, Limit: 1}))
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: otherUser}))
+			for _, id := range episodes {
+				data, err := store.GetUserData(ctx, viewerID, id)
+				if err != nil {
+					t.Fatalf("read partial series user state after queries: %v", err)
+				}
+				want := UserData{ItemID: id}
+				if id == partial.ItemID {
+					want = partial
+				}
+				userDataAssertValue(t, data, want)
+			}
+			if _, err := pool.Exec(ctx, `UPDATE users SET policy = jsonb_set(policy, '{EnabledFolders}', '[]'::jsonb) WHERE id = $1`, viewerID); err != nil {
+				t.Fatalf("revoke partial series library scope: %v", err)
+			}
+			if _, err := store.NextUp(ctx, NextUpQuery{UserID: viewerID, SeriesID: series.ID, Limit: 1}); !errors.Is(err, ErrNotFound) {
+				t.Errorf("revoked partial series remained addressable: got %v, want ErrNotFound", err)
+			}
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: viewerID}))
+		})
+	}
+}
+
+func TestStoreNextUpExplicitSeriesGobyPartialCursorUsesActivityAndRetainsWatchedPriority(t *testing.T) {
+	ctx, pool, store, allowedRoot, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
+	library := nextUpLibrary(t, ctx, store, allowedRoot, "next-up-partial-policy")
+	series := nextUpSeries(t, ctx, pool, library, "Partial Policy", []int{1}, 2)
+	secondSeason := series.ID + "-season-2"
+	lastEpisode := secondSeason + "-episode-1"
+	nextUpInsertItem(t, ctx, pool, library.ID, secondSeason, series.ID, "Partial Policy Season 2", "Season", true, nextUpNumber(2), nextUpNumber(0), false)
+	nextUpInsertItem(t, ctx, pool, library.ID, lastEpisode, secondSeason, "Partial Policy S02E01", "Episode", false, nextUpNumber(1), nextUpNumber(2), true)
+	episodes := []string{series.Episodes[1][0], series.Episodes[1][1], lastEpisode}
+	older := time.Date(2025, time.October, 11, 12, 13, 14, 0, time.UTC)
+	newer := older.Add(time.Hour)
+	muchLater := newer.Add(48 * time.Hour)
+	// Multiple partial episodes are a Goby policy, not an established reference
+	// result: prefer the latest activity, then the earliest episode in a tie.
+	for _, scenario := range []struct {
+		name                        string
+		firstPlayed, secondPlayed   *time.Time
+		firstUpdated, secondUpdated time.Time
+		wantedIndex                 int
+	}{
+		{name: "LastPlayedDateWinsOverUpdatedAt", firstPlayed: &older, secondPlayed: &newer, firstUpdated: muchLater, secondUpdated: older, wantedIndex: 1},
+		{name: "UpdatedAtFallbackChoosesLatestPartial", firstPlayed: &older, firstUpdated: muchLater, secondUpdated: newer, wantedIndex: 1},
+		{name: "EqualActivityUsesEpisodeOrder", firstPlayed: &newer, firstUpdated: muchLater, secondUpdated: newer, wantedIndex: 0},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			for index, state := range []struct {
+				playedAt  *time.Time
+				updatedAt time.Time
+			}{
+				{playedAt: scenario.firstPlayed, updatedAt: scenario.firstUpdated},
+				{playedAt: scenario.secondPlayed, updatedAt: scenario.secondUpdated},
+			} {
+				userDataSeed(t, ctx, pool, userID, UserData{ItemID: episodes[index], PlaybackPositionTicks: 120 * media.TicksPerSecond, LastPlayedDate: state.playedAt})
+				if _, err := pool.Exec(ctx, "UPDATE user_item_data SET updated_at = $3 WHERE user_id = $1 AND item_id = $2", userID, episodes[index], state.updatedAt); err != nil {
+					t.Fatalf("set deterministic partial activity: %v", err)
+				}
+			}
+			result := nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID, SeriesID: series.ID})
+			expected := episodes[scenario.wantedIndex:]
+			nextUpAssertIDs(t, result, expected...)
+			for index, item := range result.Items {
+				if item.ID != expected[index] {
+					t.Errorf("Goby partial activity policy changed episode order at %d: got %s, want %s", index, item.ID, expected[index])
+				}
+			}
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID}), episodes[0])
+		})
+	}
+	// A newer partial in an earlier episode must not move an existing watched
+	// cursor backward. The highest watched ordinal remains authoritative.
+	nextUpPlayed(t, ctx, pool, userID, episodes[1], older)
+	nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID, SeriesID: series.ID}), lastEpisode)
+	nextUpPlayed(t, ctx, pool, userID, episodes[0], muchLater)
+	nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID, SeriesID: series.ID}), lastEpisode)
+}
+
 func TestStoreNextUpGlobalGobyPolicySeparatesWatchedPartialAndFavoriteState(t *testing.T) {
 	for _, scenario := range []struct {
 		name        string

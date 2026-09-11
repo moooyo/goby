@@ -35,7 +35,7 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			PositionTicks *int64
 			IsPaused      bool
 		}
-		if !decodeBody(w, r, &body) {
+		if !decodeEmbyJSONBody(w, r, &body) {
 			return
 		}
 		principal := r.Context().Value(principalKey).(identity.Principal)

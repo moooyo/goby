@@ -1,0 +1,37 @@
+{
+  "accountAndProtocolHistoryRetained": true,
+  "activeOwnedLibrariesMatchedFixtureBeforeNewUserAccessSetup": true,
+  "actualTotalRequests": 30,
+  "afterOnlySecondEpisodePartialNextUpIds": [
+    "17",
+    "19"
+  ],
+  "allEvidenceRootOwnedPrivate": true,
+  "allFourNewRecorderTokensRevokedWith401Proof": true,
+  "allThreeFinalDetailsPlayedFalse": true,
+  "approvedMaximumRequests": 30,
+  "baselineSeriesNextUpIds": [],
+  "classification": "protocol research; not client acceptance",
+  "continuationRequests": 19,
+  "existingUserStateMutationRequests": 0,
+  "exportKnownSecretsAbsent": true,
+  "firstAttemptRequests": 11,
+  "initialSafeStopReport": "/opt/goby-test/exec-work-m3e/reference-nextup-later-partial-v1/export/report.json",
+  "libraryMutationRequests": 0,
+  "limitations": [
+    "Only one newly owned user and one two-season, three-episode synthetic series.",
+    "Global, ParentId, and pagination queries were not repeated in this bounded continuation.",
+    "The baseline was the Episodes list projection; final state was verified with three full item details.",
+    "Playback reports were API controls; no real client playback or client acceptance is claimed."
+  ],
+  "newAccountConfigurationPolicyAfterPlayback": "not reread; policy was verified at new login, and no subsequent policy/configuration mutation route was used",
+  "newUserId": "38431ababffb4705b447fe23833d36b8",
+  "oldReferenceAndGobyRequests": 0,
+  "onlyEpisode17Has120SecondPosition": true,
+  "ownedMediaAndNfoPreserved": true,
+  "previousViewer2CleanupReport": "/opt/goby-test/exec-work-m3e/reference-nextup-detail-cleanup-v3/export/final-safety-report.json",
+  "report": "/opt/goby-test/exec-work-m3e/reference-nextup-later-partial-v2/export/report.json",
+  "schemaVersion": 1,
+  "sourceSha256": "64f7c1ec1dcfbfbf6e16fd2df887ae282881d311ebf3e59d0cbf32b4c079faa6",
+  "username": "m3e-nextup-later-partial"
+}

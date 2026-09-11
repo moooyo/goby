@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "scope": "Memory-only guards for the explicit schema24/schema25 runner and first catalog25 bootstrap mode; not a schema25 database or client acceptance result",
+  "run": "/opt/goby-test/exec-work-m3e/runner-schema25-review-01",
+  "runner_sha256": "ad8f0117aa49aedf68b65ee9e4305ffc5193cb75ab98123b9874b1d94747927c",
+  "tests_sha256": "6ff9df245972b25f3b59b19d6449de1008f4a52d7487628f7b5f0b262d2ec2e4",
+  "tests": 73,
+  "failures": 0,
+  "exit_code": 0,
+  "execution": "python3 -B test-run-client-backup-tests.py run-client-backup-tests.py, through root SSH on test-env",
+  "log": "guard.log",
+  "effect_boundary": "The guarded runner actions were exercised behind in-memory filesystem, subprocess, socket, PostgreSQL and signal fences. Loading the reviewed scripts and retaining this run's log are separate operator actions. No database, HTTP connection, service, cluster or HBA mutation was performed."
+}

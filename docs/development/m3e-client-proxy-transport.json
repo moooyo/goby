@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "scope": "Synthetic acceptance-harness transport only; no Emby/Goby client acceptance",
+  "test_count": 16,
+  "passed": 16,
+  "failed": 0,
+  "errors": 0,
+  "source_unchanged": true,
+  "proxy_source_sha256": "256017d62eb98b39a1e026516e6c29ced0a3f599fd961a3c9e0ee9b4d878d99b",
+  "test_source_sha256": "91b45b6b05b88c66e22c18f8142b6b0dbf02af71173e28b112ba794ee3e4207d",
+  "ports": "Automatically allocated ephemeral loopback ports; no reference namespace or application ports used",
+  "tests": [
+    {
+      "test": "__main__.TransportTests.test_01_http_status_headers_and_binary_body",
+      "outcome": "passed",
+      "duration_ms": 151.02
+    },
+    {
+      "test": "__main__.TransportTests.test_02_range_and_conditional_headers",
+      "outcome": "passed",
+      "duration_ms": 151.98
+    },
+    {
+      "test": "__main__.TransportTests.test_03_chunked_upload_and_response",
+      "outcome": "passed",
+      "duration_ms": 151.84
+    },
+    {
+      "test": "__main__.TransportTests.test_04_backend_selection_uses_raw_path",
+      "outcome": "passed",
+      "duration_ms": 221.77
+    },
+    {
+      "test": "__main__.TransportTests.test_05_websocket_bidirectional_frames",
+      "outcome": "passed",
+      "duration_ms": 257.14
+    },
+    {
+      "test": "__main__.TransportTests.test_06_request_half_close_preserves_response",
+      "outcome": "passed",
+      "duration_ms": 151.65
+    },
+    {
+      "test": "__main__.TransportTests.test_07_reset_cancels_active_upstream",
+      "outcome": "passed",
+      "duration_ms": 151.31
+    },
+    {
+      "test": "__main__.TransportTests.test_08_normal_close_cancels_active_upstream",
+      "outcome": "passed",
+      "duration_ms": 150.89
+    },
+    {
+      "test": "__main__.TransportTests.test_09_exact_header_limit_is_accepted",
+      "outcome": "passed",
+      "duration_ms": 151.2
+    },
+    {
+      "test": "__main__.TransportTests.test_10_oversize_header_is_rejected_before_connect",
+      "outcome": "passed",
+      "duration_ms": 152.16
+    },
+    {
+      "test": "__main__.TransportTests.test_11_conflicting_framing_is_rejected",
+      "outcome": "passed",
+      "duration_ms": 151.72
+    },
+    {
+      "test": "__main__.TransportTests.test_12_invalid_chunk_body_is_not_forwarded",
+      "outcome": "passed",
+      "duration_ms": 100.97
+    },
+    {
+      "test": "__main__.TransportTests.test_13_initial_pipelining_cannot_cross_backend",
+      "outcome": "passed",
+      "duration_ms": 100.84
+    },
+    {
+      "test": "__main__.TransportTests.test_14_late_pipelining_cannot_cross_backend",
+      "outcome": "passed",
+      "duration_ms": 136.46
+    },
+    {
+      "test": "__main__.TransportTests.test_15_slow_consumer_bounds_memory_and_recovers",
+      "outcome": "passed",
+      "duration_ms": 1209.66
+    },
+    {
+      "test": "__main__.TransportTests.test_16_cancellation_releases_admission_slots",
+      "outcome": "passed",
+      "duration_ms": 202.49
+    }
+  ],
+  "measurements": {
+    "reset_cancel_ms": 0.77,
+    "fin_cancel_ms": 0.39,
+    "slow_consumer": {
+      "body_bytes": 67108864,
+      "pause_ms": 1000,
+      "baseline_rss_bytes": 23248896,
+      "peak_rss_bytes": 25133056,
+      "rss_growth_limit_bytes": 12582912,
+      "producer_bytes_at_pause": 5373952,
+      "producer_plateau_observed": true,
+      "complete_entity_sha256": "281e519df3077b557c6b03f5da83c4e8d397219259615dd7c3308f89cae8f2a6",
+      "scope": "Measured process RSS envelope; not an assertion about kernel socket memory or an exact per-connection allocation"
+    },
+    "sequential_cancelled_connections": 72
+  },
+  "limits": [
+    "Ordinary HTTP Connection: close; keepalive is not covered",
+    "The reference process identity and setns integration are outside this synthetic suite"
+  ]
+}

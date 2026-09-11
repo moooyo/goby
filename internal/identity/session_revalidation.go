@@ -16,11 +16,11 @@ import (
 // never identifiers supplied by an unauthenticated client. This operation is
 // not an alternative login mechanism and does not require retaining the token.
 //
-// The session-owner pair is fixed; account state, role, policy, client metadata,
-// and timestamps come entirely from the database. Demotion removes elevated
-// permissions while retaining an otherwise valid Emby login. Revalidation does
-// not record activity or extend expiration; callers may use TouchClientSession
-// separately when the authenticated connection demonstrates activity.
+// The session-owner pair is fixed; account state, role, policy, configuration,
+// client metadata, and timestamps come entirely from the database. Demotion
+// removes elevated permissions while retaining an otherwise valid Emby login.
+// Revalidation does not record activity or extend expiration; callers may use
+// TouchClientSession separately when the authenticated connection demonstrates activity.
 func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated Principal) (Principal, error) {
 	if previouslyAuthenticated.IsApplicationKey() {
 		if !validRevalidationID(previouslyAuthenticated.SessionID) || !validRevalidationID(previouslyAuthenticated.ClientSessionID) {
@@ -41,7 +41,7 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 	}
 	var principal Principal
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, authentication.id,
+		u.has_password, u.created_at, u.policy, u.configuration, authentication.id,
 		authentication.client_name, authentication.device_id, COALESCE(d.custom_name, authentication.device_name),
 		authentication.client_version, authentication.kind, authentication.expires_at,
 		authentication.last_seen_at
@@ -53,7 +53,7 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 		previouslyAuthenticated.SessionID, previouslyAuthenticated.User.ID).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt,
-			&principal.User.Policy, &principal.SessionID, &principal.Client.Name,
+			&principal.User.Policy, &principal.User.Configuration, &principal.SessionID, &principal.Client.Name,
 			&principal.Client.DeviceID, &principal.Client.Device, &principal.Client.Version,
 			&principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt)
 	if errors.Is(err, pgx.ErrNoRows) {

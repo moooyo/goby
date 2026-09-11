@@ -1,0 +1,2703 @@
+{
+  "format": 1,
+  "scope": "Original Reference UI music navigation after the SRT diagnostic in the same owned session; read-only query and album response contracts",
+  "run": "/opt/goby-test/exec-work-m3e/reference-av-source12-subtitle-diagnostic-01",
+  "report_sha256": "5cd10df2a1e088ec36958ccd95c83adbbff551d84b712059602856df8d1cf739",
+  "driver_source_sha256": {
+    "client-browser-av.mjs": "703661d161ff2de4f13de5315868f1796c4495a3227f84d0dd0452f28edc67cf",
+    "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+    "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-goby-fixture.mjs": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+    "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+    "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49"
+  },
+  "contract": {
+    "diagnostic_only": true,
+    "acceptance_passed": false,
+    "album": "M3e Synthetic Album",
+    "phase": "complete",
+    "outcome": "diagnostic_dto_observed",
+    "responses": [
+      {
+        "route_kind": "owned_album_detail",
+        "method": "GET",
+        "http_status": 200,
+        "phase": "observe_album",
+        "request_phase": "open_album",
+        "response_phase": "observe_album",
+        "request_event_received_ms": 1280,
+        "request_started_ms": 1281.69287109375,
+        "request_start_time_available": true,
+        "request_start_time_read_at": "response_event",
+        "response_received_ms": 1287,
+        "click_called_ms": 1238,
+        "observed_after_click_attempt": true,
+        "query_field_names": [
+          "Fields",
+          "ExcludeFields",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [],
+            "unrecognized_field_count": 1,
+            "omitted_field_count": 0
+          },
+          {
+            "field": "ExcludeFields",
+            "field_names": [
+              "MediaStreams"
+            ],
+            "unrecognized_field_count": 2,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        },
+        "body_result": "safe_dto_recorded",
+        "content_type": "application/json",
+        "declared_bytes": 998,
+        "declared_length_present": true,
+        "encoding_type": "unspecified",
+        "body_read_started_ms": 1287,
+        "body_read_finished_ms": 1302,
+        "actual_bytes": 998,
+        "source_response_sha256": "6a08b3b6c16375a8bf5bab08adcec9e08f621634c579a148f5804a987ddfa635",
+        "hash_representation": "Browser-decoded response entity bytes",
+        "dto": {
+          "top_level_type": "object",
+          "top_level_key_count": 33,
+          "top_level_keys": [
+            {
+              "name": "Name",
+              "type": "string"
+            },
+            {
+              "name": "ServerId",
+              "type": "string"
+            },
+            {
+              "name": "Id",
+              "type": "string"
+            },
+            {
+              "name": "Etag",
+              "type": "string"
+            },
+            {
+              "name": "DateCreated",
+              "type": "string"
+            },
+            {
+              "name": "{unrecognized field}",
+              "type": "string"
+            },
+            {
+              "name": "{unrecognized field}",
+              "type": "boolean"
+            },
+            {
+              "name": "{unrecognized field}",
+              "type": "boolean"
+            },
+            {
+              "name": "PresentationUniqueKey",
+              "type": "string"
+            },
+            {
+              "name": "SortName",
+              "type": "string"
+            },
+            {
+              "name": "ForcedSortName",
+              "type": "string"
+            },
+            {
+              "name": "ExternalUrls",
+              "type": "array"
+            },
+            {
+              "name": "Taglines",
+              "type": "array"
+            },
+            {
+              "name": "Genres",
+              "type": "array"
+            },
+            {
+              "name": "RunTimeTicks",
+              "type": "number"
+            },
+            {
+              "name": "{unrecognized field}",
+              "type": "array"
+            },
+            {
+              "name": "ProviderIds",
+              "type": "object"
+            },
+            {
+              "name": "IsFolder",
+              "type": "boolean"
+            },
+            {
+              "name": "Type",
+              "type": "string"
+            },
+            {
+              "name": "GenreItems",
+              "type": "array"
+            },
+            {
+              "name": "TagItems",
+              "type": "array"
+            },
+            {
+              "name": "UserData",
+              "type": "object"
+            },
+            {
+              "name": "ChildCount",
+              "type": "number"
+            },
+            {
+              "name": "DisplayPreferencesId",
+              "type": "string"
+            },
+            {
+              "name": "Artists",
+              "type": "array"
+            },
+            {
+              "name": "ArtistItems",
+              "type": "array"
+            },
+            {
+              "name": "Composers",
+              "type": "array"
+            },
+            {
+              "name": "AlbumArtist",
+              "type": "string"
+            },
+            {
+              "name": "AlbumArtists",
+              "type": "array"
+            },
+            {
+              "name": "ImageTags",
+              "type": "object"
+            },
+            {
+              "name": "BackdropImageTags",
+              "type": "array"
+            },
+            {
+              "name": "LockedFields",
+              "type": "array"
+            },
+            {
+              "name": "LockData",
+              "type": "boolean"
+            }
+          ],
+          "omitted_top_level_key_count": 0,
+          "unrecognized_top_level_key_count": 4,
+          "fields": {
+            "Name": {
+              "present": true,
+              "type": "string"
+            },
+            "Type": {
+              "present": true,
+              "type": "string"
+            },
+            "IsFolder": {
+              "present": true,
+              "type": "boolean"
+            },
+            "MediaType": {
+              "present": false,
+              "type": "missing"
+            },
+            "Id": {
+              "present": true,
+              "type": "string"
+            },
+            "Path": {
+              "present": false,
+              "type": "missing"
+            },
+            "ParentId": {
+              "present": false,
+              "type": "missing"
+            },
+            "ChildCount": {
+              "present": true,
+              "type": "number"
+            },
+            "ArtistItems": {
+              "present": true,
+              "type": "array"
+            },
+            "AlbumArtists": {
+              "present": true,
+              "type": "array"
+            },
+            "Artists": {
+              "present": true,
+              "type": "array"
+            },
+            "Composers": {
+              "present": true,
+              "type": "array"
+            },
+            "Genres": {
+              "present": true,
+              "type": "array"
+            },
+            "GenreItems": {
+              "present": true,
+              "type": "array"
+            },
+            "TagItems": {
+              "present": true,
+              "type": "array"
+            },
+            "Studios": {
+              "present": false,
+              "type": "missing"
+            },
+            "People": {
+              "present": false,
+              "type": "missing"
+            },
+            "BackdropImageTags": {
+              "present": true,
+              "type": "array"
+            }
+          },
+          "safe_values": {
+            "Name": {
+              "matches_requested_album": true,
+              "value": "M3e Synthetic Album"
+            },
+            "Type": {
+              "value": "MusicAlbum"
+            },
+            "IsFolder": true,
+            "ChildCount": 2,
+            "ArtistItems": {
+              "length": 1,
+              "omitted_item_count": 0,
+              "items": [
+                {
+                  "type": "object",
+                  "name_matches_owned_artist": true,
+                  "Name": "M3e Synthetic Artist",
+                  "id_state": "valid",
+                  "Id": "12"
+                }
+              ]
+            },
+            "AlbumArtists": {
+              "length": 1,
+              "omitted_item_count": 0,
+              "items": [
+                {
+                  "type": "object",
+                  "name_matches_owned_artist": true,
+                  "Name": "M3e Synthetic Artist",
+                  "id_state": "valid",
+                  "Id": "12"
+                }
+              ]
+            },
+            "Artists": {
+              "length": 1,
+              "omitted_item_count": 0,
+              "items": [
+                {
+                  "type": "string",
+                  "matches_owned_artist": true,
+                  "value": "M3e Synthetic Artist"
+                }
+              ]
+            }
+          },
+          "owned_id_matches": true,
+          "owned_path_matches": false,
+          "shape": {
+            "type": "object",
+            "key_count": 33,
+            "omitted_key_count": 0,
+            "fields": [
+              {
+                "name": "Name",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "ServerId",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "Id",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "Etag",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "DateCreated",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "{unrecognized field}",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "{unrecognized field}",
+                "type": "boolean",
+                "shape": {
+                  "type": "boolean"
+                }
+              },
+              {
+                "name": "{unrecognized field}",
+                "type": "boolean",
+                "shape": {
+                  "type": "boolean"
+                }
+              },
+              {
+                "name": "PresentationUniqueKey",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "SortName",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "ForcedSortName",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "ExternalUrls",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "Taglines",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "Genres",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "RunTimeTicks",
+                "type": "number",
+                "shape": {
+                  "type": "number"
+                }
+              },
+              {
+                "name": "{unrecognized field}",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "ProviderIds",
+                "type": "object",
+                "shape": {
+                  "type": "object",
+                  "key_count": 0,
+                  "omitted_key_count": 0,
+                  "fields": [],
+                  "depth_limited": false
+                }
+              },
+              {
+                "name": "IsFolder",
+                "type": "boolean",
+                "shape": {
+                  "type": "boolean"
+                }
+              },
+              {
+                "name": "Type",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "GenreItems",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "TagItems",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "UserData",
+                "type": "object",
+                "shape": {
+                  "type": "object",
+                  "key_count": 4,
+                  "omitted_key_count": 0,
+                  "fields": [
+                    {
+                      "name": "PlaybackPositionTicks",
+                      "type": "number",
+                      "shape": {
+                        "type": "number"
+                      }
+                    },
+                    {
+                      "name": "PlayCount",
+                      "type": "number",
+                      "shape": {
+                        "type": "number"
+                      }
+                    },
+                    {
+                      "name": "IsFavorite",
+                      "type": "boolean",
+                      "shape": {
+                        "type": "boolean"
+                      }
+                    },
+                    {
+                      "name": "Played",
+                      "type": "boolean",
+                      "shape": {
+                        "type": "boolean"
+                      }
+                    }
+                  ],
+                  "depth_limited": false
+                }
+              },
+              {
+                "name": "ChildCount",
+                "type": "number",
+                "shape": {
+                  "type": "number"
+                }
+              },
+              {
+                "name": "DisplayPreferencesId",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "Artists",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 1,
+                  "sample": [
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "sample_count": 1,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "ArtistItems",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 1,
+                  "sample": [
+                    {
+                      "type": "object",
+                      "key_count": 2,
+                      "omitted_key_count": 0,
+                      "fields": [
+                        {
+                          "name": "Name",
+                          "type": "string",
+                          "shape": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "name": "Id",
+                          "type": "string",
+                          "shape": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "depth_limited": false
+                    }
+                  ],
+                  "sample_count": 1,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "Composers",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "AlbumArtist",
+                "type": "string",
+                "shape": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "AlbumArtists",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 1,
+                  "sample": [
+                    {
+                      "type": "object",
+                      "key_count": 2,
+                      "omitted_key_count": 0,
+                      "fields": [
+                        {
+                          "name": "Name",
+                          "type": "string",
+                          "shape": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "name": "Id",
+                          "type": "string",
+                          "shape": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "depth_limited": false
+                    }
+                  ],
+                  "sample_count": 1,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "ImageTags",
+                "type": "object",
+                "shape": {
+                  "type": "object",
+                  "key_count": 0,
+                  "omitted_key_count": 0,
+                  "fields": [],
+                  "depth_limited": false
+                }
+              },
+              {
+                "name": "BackdropImageTags",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "LockedFields",
+                "type": "array",
+                "shape": {
+                  "type": "array",
+                  "length": 0,
+                  "sample": [],
+                  "sample_count": 0,
+                  "omitted_element_count": 0
+                }
+              },
+              {
+                "name": "LockData",
+                "type": "boolean",
+                "shape": {
+                  "type": "boolean"
+                }
+              }
+            ],
+            "depth_limited": false
+          }
+        },
+        "owned_identity_confirmed": true,
+        "path_identity_check": "not_projected_by_client_request",
+        "body_observation_finished_ms": 1303
+      }
+    ],
+    "steps": [
+      {
+        "label": "reference-music-navigation-before",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "reference-music-home-before-control",
+        "phase": "reference_home_before_music",
+        "control": {
+          "tag": "a",
+          "role": null,
+          "text": null,
+          "label": "Home",
+          "semantic_classes": [
+            "emby-button"
+          ],
+          "is_link_action": false,
+          "selected": false,
+          "visible": true
+        }
+      },
+      {
+        "label": "reference-music-home-before-navigation",
+        "phase": "reference_home_before_music",
+        "url_changed": true,
+        "url_change_expected": true
+      },
+      {
+        "label": "reference-music-home-before",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "reference-music-library-control",
+        "phase": "reference_music_library",
+        "control": {
+          "tag": "button",
+          "role": null,
+          "text": "M3e Reference Music",
+          "label": null,
+          "semantic_classes": [
+            "cardTextActionButton",
+            "emby-button"
+          ],
+          "is_link_action": true,
+          "selected": false,
+          "visible": true
+        }
+      },
+      {
+        "label": "reference-music-library-navigation",
+        "phase": "reference_music_library",
+        "url_changed": true
+      },
+      {
+        "label": "reference-music-library-observed",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "reference-music-albums-tab-control",
+        "phase": "reference_music_albums_tab",
+        "control": {
+          "tag": "button",
+          "role": null,
+          "text": "Albums",
+          "label": null,
+          "semantic_classes": [
+            "emby-button",
+            "emby-tab-button"
+          ],
+          "is_link_action": false,
+          "selected": false,
+          "visible": true
+        }
+      },
+      {
+        "label": "reference-music-albums-tab-navigation",
+        "phase": "reference_music_albums_tab",
+        "url_changed": true
+      },
+      {
+        "label": "reference-music-albums-observed",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "album-diagnostics-before",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "album-diagnostics-selected-card",
+        "phase": "open_album",
+        "control": {
+          "tag": "button",
+          "role": null,
+          "text": "M3e Synthetic Album",
+          "label": null,
+          "semantic_classes": [
+            "cardTextActionButton",
+            "emby-button"
+          ],
+          "is_link_action": true,
+          "selected": false,
+          "visible": true
+        }
+      },
+      {
+        "label": "album-diagnostics-navigation",
+        "phase": "observe_album",
+        "url_changed": true
+      },
+      {
+        "label": "album-diagnostics-observed",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      },
+      {
+        "label": "reference-music-home-after-control",
+        "phase": "reference_home_after_music",
+        "control": {
+          "tag": "a",
+          "role": null,
+          "text": null,
+          "label": "Home",
+          "semantic_classes": [
+            "emby-button"
+          ],
+          "is_link_action": false,
+          "selected": false,
+          "visible": true
+        }
+      },
+      {
+        "label": "reference-music-home-after-navigation",
+        "phase": "reference_home_after_music",
+        "url_changed": true,
+        "url_change_expected": true
+      },
+      {
+        "label": "reference-music-home-after",
+        "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+      }
+    ],
+    "response_overflow": 0,
+    "reference_music_navigation": true,
+    "music_queries": [
+      {
+        "phase": "reference_home_before_music",
+        "method": "GET",
+        "route_kind": "current_user_items_resume",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Recursive",
+          "MediaTypes",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_home_before_music",
+        "method": "GET",
+        "route_kind": "current_user_items_resume",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Recursive",
+          "MediaTypes",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_home_before_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "3"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_home_before_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_home_before_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "5"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_item_detail",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Limit",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "GroupItems",
+          "UserId",
+          "ParentId",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Filters",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "IncludeItemTypes",
+          "Recursive",
+          "ParentId",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "Audio"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "DatePlayed"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Descending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Filters",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "IncludeItemTypes",
+          "Recursive",
+          "ParentId",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "Audio"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "PlayCount"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Descending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_artists",
+        "owned_current_user_scope": "query",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Filters",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Recursive",
+          "ParentId",
+          "Limit",
+          "UserId",
+          "ArtistType",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Filters",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "IncludeItemTypes",
+          "Recursive",
+          "ParentId",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "MusicAlbum"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_music_library",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Filters",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "IncludeItemTypes",
+          "Recursive",
+          "ParentId",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "Audio"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_music_albums_tab",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "IncludeItemTypes",
+          "Fields",
+          "StartIndex",
+          "SortBy",
+          "SortOrder",
+          "ParentId",
+          "EnableImageTypes",
+          "ImageTypeLimit",
+          "Recursive",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "MusicAlbum"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "open_album",
+        "method": "GET",
+        "route_kind": "current_user_item_detail",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Fields",
+          "ExcludeFields",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [],
+            "unrecognized_field_count": 1,
+            "omitted_field_count": 0
+          },
+          {
+            "field": "ExcludeFields",
+            "field_names": [
+              "MediaStreams"
+            ],
+            "unrecognized_field_count": 2,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "observe_album",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableTotalRecordCount",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "13"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "observe_album",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "IncludeItemTypes",
+          "Recursive",
+          "SortBy",
+          "SortOrder",
+          "Fields",
+          "Limit",
+          "AlbumArtistIds",
+          "ExcludeItemIds",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "valid",
+            "values": [
+              "12"
+            ]
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "valid",
+            "values": [
+              "13"
+            ]
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "MusicAlbum"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "ProductionYear",
+              "PremiereDate",
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Descending",
+              "Descending",
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "observe_album",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Fields",
+          "IncludeItemTypes",
+          "Recursive",
+          "SortBy",
+          "ListItemIds",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "valid",
+            "values": [
+              "13"
+            ]
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "Playlist",
+              "BoxSet"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "observe_album",
+        "method": "GET",
+        "route_kind": "current_user_items",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "SortBy",
+          "SortOrder",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "IncludeItemTypes",
+          "Recursive",
+          "AlbumIds",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio"
+            ],
+            "unrecognized_field_count": 3,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "valid",
+            "values": [
+              "13"
+            ]
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "valid",
+            "values": [
+              "MusicVideo"
+            ]
+          },
+          "SortBy": {
+            "state": "valid",
+            "values": [
+              "ProductionYear",
+              "PremiereDate",
+              "SortName"
+            ]
+          },
+          "SortOrder": {
+            "state": "valid",
+            "values": [
+              "Descending",
+              "Descending",
+              "Ascending"
+            ]
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_home_after_music",
+        "method": "GET",
+        "route_kind": "current_user_items_resume",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Recursive",
+          "MediaTypes",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_home_after_music",
+        "method": "GET",
+        "route_kind": "current_user_items_resume",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "Recursive",
+          "MediaTypes",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "missing"
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "valid",
+            "value": true
+          }
+        }
+      },
+      {
+        "phase": "reference_home_after_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "3"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_home_after_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "7"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      },
+      {
+        "phase": "reference_home_after_music",
+        "method": "GET",
+        "route_kind": "current_user_items_latest",
+        "owned_current_user_scope": "path",
+        "is_original_ui_request": true,
+        "query_field_names": [
+          "ParentId",
+          "Fields",
+          "ImageTypeLimit",
+          "EnableImageTypes",
+          "Limit",
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language"
+        ],
+        "field_projections": [
+          {
+            "field": "Fields",
+            "field_names": [
+              "PrimaryImageAspectRatio",
+              "ProductionYear",
+              "Status",
+              "EndDate"
+            ],
+            "unrecognized_field_count": 4,
+            "omitted_field_count": 0
+          }
+        ],
+        "omitted_query_field_count": 0,
+        "music_query_values": {
+          "ParentId": {
+            "state": "valid",
+            "values": [
+              "5"
+            ]
+          },
+          "ArtistIds": {
+            "state": "missing"
+          },
+          "AlbumArtistIds": {
+            "state": "missing"
+          },
+          "AlbumIds": {
+            "state": "missing"
+          },
+          "ExcludeItemIds": {
+            "state": "missing"
+          },
+          "ListItemIds": {
+            "state": "missing"
+          },
+          "IncludeItemTypes": {
+            "state": "missing"
+          },
+          "SortBy": {
+            "state": "missing"
+          },
+          "SortOrder": {
+            "state": "missing"
+          },
+          "Recursive": {
+            "state": "missing"
+          }
+        }
+      }
+    ],
+    "music_query_overflow": 0,
+    "limits": {
+      "response_count": 8,
+      "body_read_count": 1,
+      "parse_and_retention_bytes": 262144,
+      "shape_depth": 3,
+      "shape_nodes": 512,
+      "object_keys": 80,
+      "array_sample": 6,
+      "music_query_count": 128,
+      "resource_ids_per_query_field": 32,
+      "sort_parameter_ascii_bytes": 256,
+      "sort_tokens_per_field": 16
+    },
+    "body_boundary": "Playwright reads the browser-received entity. The size limit governs parsing and retention, not decompression allocation.",
+    "owned_identity_basis": "exact observed response after unique UI album click",
+    "owned_identity_confirmed": true,
+    "cleanup_owner": "caller",
+    "albums_tab_observation": {
+      "visible_count": 1,
+      "clicked": true
+    },
+    "card_identity": {
+      "card_with_data_id_present": false,
+      "owned_album_id_matches": false,
+      "link_action_observed": true
+    },
+    "click_called_ms": 1238,
+    "ui_observation": {
+      "album_heading_observed": true,
+      "fixture_track_row_count": 2,
+      "visible_heading_count": 5,
+      "reference_mp3_title_count": 1,
+      "reference_flac_title_count": 1,
+      "reference_fixture_tracks_observed": true,
+      "wait_limit_reached": false,
+      "album_content_observed": true
+    },
+    "returned_home_through_ui": true,
+    "listener_removed": true,
+    "pending_observer_tasks_drained": true,
+    "pending_body_reads_at_return": 0,
+    "pending_observations_drained": true,
+    "body_read_count": 1,
+    "music_query_capture_complete": true
+  },
+  "logout": {
+    "attempted": true,
+    "http_status": 204,
+    "result": "ui_logout_http_accepted_and_login_view_visible"
+  },
+  "session_proof": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 7500,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 7506
+        },
+        "token_fingerprint": "67a7557e3406449f29eacb7d1a73b8ac3e4fe34c5769f1e805983d36a5f5f0bc",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 7506,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 7511
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    }
+  },
+  "target_assertions": {
+    "enabled": true,
+    "checks": [
+      {
+        "phase": "target_pin_before_browser",
+        "elapsed_ms": 2,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_login_submit",
+        "elapsed_ms": 1342,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_workflow",
+        "elapsed_ms": 1571,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_logout",
+        "elapsed_ms": 7190,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_after_shutdown",
+        "elapsed_ms": 7911,
+        "result": "passed"
+      }
+    ],
+    "failed": false
+  },
+  "credentials_and_other_query_values_retained": false
+}

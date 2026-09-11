@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "scope": "source08 persisted User.Configuration projection and observed empty logout regression; not complete repository regression",
+  "topLevelPassed": 15,
+  "tests": [
+    "TestStoreReadsCurrentConfigurationAcrossUserAndSessionPaths",
+    "TestApplicationKeyPrincipalRejectsUserConfiguration",
+    "TestHTTPApplicationKeyCompatibilityLifecycleAndIndependentDuplicates",
+    "TestHTTPEmbyQueryCarriersFormLoginMediaAndLogout",
+    "TestHTTPHLSCancellationPolicySnapshotsStopAndLogoutInvalidateCachedChildren",
+    "TestHTTPPlaybackRevocationPreventsNewStateWrites",
+    "TestHTTPReferenceEmbyProtectedTokenTextErrors",
+    "TestHTTPReferenceMediaBrowserTokenAliasConsistency",
+    "TestHTTPAdministratorCookieCSRFAndLogout",
+    "TestHTTPEmbyAuthenticationShapeTokenSourcesAndRevocation",
+    "TestUserConfigurationProjectionMatchesObservedDefaultShape",
+    "TestUserConfigurationProjectionPreservesValidStoredPreferences",
+    "TestUserConfigurationProjectionFallsBackPerInvalidField",
+    "TestHTTPUserConfigurationReadsPersistedPreferencesWithoutChangingAuthority",
+    "TestHTTPWebSocketLogoutDisconnectsOnlyItsSessionAndShutdownIsIdempotent"
+  ],
+  "raceEnabled": true,
+  "skips": 0,
+  "failures": 0,
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "elapsed": 3.1310000000000002
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "elapsed": 32.019
+    }
+  ],
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-08",
+  "sourceManifestSha256": "5db7611a48c86e546664e45079dc716ec9c181b1cefa0bbc49634b5b017dcc3c",
+  "logSha256": "4871c95825cf7c36f5b876b32a1ccaa4c8e3abad6df24a3bb1a3d6ecf67cbf09",
+  "binarySha256": "13601cc87bb7df47b1431cd4b531ed10a6b69f20d67cf9c725b2a529ea4d1d37",
+  "unitState": [
+    "Result=success",
+    "ExecMainStatus=0",
+    "ActiveState=inactive",
+    "SubState=dead"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "allConfirmedBootstrapTokensRevoked": true,
+  "browserFile": "/opt/goby-test/exec-work-m3e/reference-browser.json",
+  "confirmedBootstrapTokenCount": 3,
+  "guardTests": 41,
+  "idempotentReuseWithoutRestartOrHTTP": true,
+  "itemTypes": {
+    "Audio": 2,
+    "Episode": 3,
+    "Folder": 3,
+    "Movie": 1,
+    "Season": 2,
+    "Series": 1
+  },
+  "libraries": 3,
+  "marker": "goby-emby-client-reference-m3e-v1",
+  "mediaManifestPreserved": true,
+  "operatorSha256": "29f159a2580e178dce65b6c23ef14ad9875971240e534546eb5e8a14ce88c160",
+  "privateNamespaceListenerVerified": true,
+  "protectedReferenceUnchanged": true,
+  "realLockContentionRejected": true,
+  "serverId": "f56dec8ff7414847873064c4be9fba74",
+  "serviceIdentity": {
+    "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "cgroup": "0::/system.slice/goby-emby-client-m3e.service\n",
+    "cmdline": [
+      "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "-programdata",
+      "/opt/goby-test/exec-work-m3e/reference-data",
+      "-ffdetect",
+      "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffdetect",
+      "-ffmpeg",
+      "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffmpeg",
+      "-ffprobe",
+      "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffprobe",
+      "-restartexitcode",
+      "3",
+      "-updatepackage",
+      "emby-server-deb_{version}_amd64.deb"
+    ],
+    "exe": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+    "invocationId": "aa59e192c1c846459bc3f218bd923364",
+    "networkNamespace": "net:[4026532602]",
+    "pid": 332054,
+    "startTicks": "357218",
+    "uid": 0
+  },
+  "state": "passed",
+  "unit": "goby-emby-client-m3e.service",
+  "viewerReadAccess": {
+    "viewer": {
+      "libraryCount": 3,
+      "playableCount": 6
+    },
+    "viewer2": {
+      "libraryCount": 3,
+      "playableCount": 6
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "acknowledgedBaseline": {
+    "genreLimitOnDetails": "1"
+  },
+  "attempt": 4,
+  "caseStatuses": {
+    "acknowledged-ui-settings-baseline": 200,
+    "complex-key-delete": 204,
+    "complex-key-delete-after": 200,
+    "complex-object-array-stringification": 204,
+    "complex-object-array-stringification-after": 200,
+    "existing-key-empty-restore-one": 204,
+    "existing-key-empty-restore-one-after": 200,
+    "existing-key-empty-string": 204,
+    "existing-key-empty-string-after": 200,
+    "primary-dto-final": 200,
+    "primary-history-after": 200,
+    "primary-history-before": 200,
+    "primary-own-settings": 200,
+    "primary-viewer2-path-settings": 200,
+    "viewer-login": 200,
+    "viewer-logout": 204,
+    "viewer-token-invalid": 401,
+    "viewer2-dto-final": 200,
+    "viewer2-login": 200,
+    "viewer2-logout": 204,
+    "viewer2-token-invalid": 401
+  },
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "cleanupPassed": true,
+  "failureType": null,
+  "marker": "goby-m3e-reference-client-settings-v4",
+  "newRecorderAccountsRevoked": [
+    "viewer",
+    "viewer2"
+  ],
+  "newRecorderRevoked": true,
+  "nullDeletionProven": true,
+  "observations": [
+    {
+      "after": {},
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "existing-key-empty-string",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": ""
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {},
+      "case": "existing-key-empty-restore-one",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "genreLimitOnDetails": "1"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_complex": "{object:{text:space value, \"quoted\" \\ backslash},array:[two words,with,comma,with\"quote,with\\backslash]}"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "complex-object-array-stringification",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_complex": {
+          "array": [
+            "two words",
+            "with,comma",
+            "with\"quote",
+            "with\\backslash"
+          ],
+          "object": {
+            "text": "space value, \"quoted\" \\ backslash"
+          }
+        }
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_complex": "{object:{text:space value, \"quoted\" \\ backslash},array:[two words,with,comma,with\"quote,with\\backslash]}"
+      },
+      "case": "complex-key-delete",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_complex": null
+      },
+      "responseBody": null,
+      "status": 204
+    }
+  ],
+  "primaryConfigurationAndPolicyPreserved": true,
+  "primaryPlaybackHistoryPreserved": true,
+  "primaryViewerAuthenticatedForReadIsolation": true,
+  "primaryViewerAuthenticatedOrWritten": true,
+  "primaryViewerReadIsolationOnly": true,
+  "primaryViewerSettingsWriteAttempts": 0,
+  "priorRequests": 90,
+  "requestsThisAttempt": 21,
+  "schemaVersion": 1,
+  "settingsAfter": {
+    "genreLimitOnDetails": "1"
+  },
+  "sourceMediaPreserved": true,
+  "totalStudyRequests": 111,
+  "userSelection": {
+    "authenticatedUserSelectionObserved": true,
+    "knownViewer2OwnSettings": {
+      "genreLimitOnDetails": "1"
+    },
+    "primaryOwnSettings": {},
+    "primaryOwnStatus": 200,
+    "primaryViewer2PathSettings": {},
+    "primaryViewer2PathStatus": 200
+  },
+  "viewer2ConfigurationAndPolicyPreserved": true
+}

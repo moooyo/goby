@@ -1,0 +1,44 @@
+{
+  "candidateRemained": "source16/schema25",
+  "disposal": {
+    "allReviewedObjectsEmpty": true,
+    "forceOrBackendTerminationUsed": false,
+    "hbaSha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+    "operatorSha256": "069685d95417e0b67148b711b5b5ff6cfe5accfe225e2b79e61257a40311a1b5",
+    "preexistingCatalogUnchanged": true,
+    "privateReportSha256": "e544d1206791ae73d43bc4f0ef612015bff1b27eaaa75f255d2416ef4b720a30",
+    "removed": [
+      {
+        "database_oid": 3401310,
+        "name": "goby_backup_m3e_target",
+        "phase": "removed",
+        "role_oid": 3401309
+      },
+      {
+        "database_oid": 3401308,
+        "name": "goby_backup_m3e_source",
+        "phase": "removed",
+        "role_oid": 3401307
+      }
+    ],
+    "sourceReceiptSha256": "5228b975a97b478957e08dd28ad7932f9bec2c5755f48824a6ae619f61de000a",
+    "status": "disposed"
+  },
+  "failedTest": "TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind/library_access",
+  "failureMeaning": "The new audio snapshot assertion crossed the following PrepareCorrelatedPlayback calls. All denied ReportPlayback error assertions passed. Existing preparation cleanup expires sessions that have lost item access. Source18 moves the strict unchanged assertion directly after the report phase and separately checks the established preparation expiry fields and unchanged user data; production code is unchanged from source17.",
+  "logSha256": "8cfac408b87d90ecbc07aa98e63502176b5adaf32e3d70809e820e145b37e587",
+  "reportSha256": "c2b2509c9a7c133d4f729ba012289ac651047beb6ca04e31399903d101feb665",
+  "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_051047_3d88f93b6974",
+  "runnerCleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "scope": "source17 targeted library/audio regression; source17 was not built or installed",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-17",
+  "sourceManifestSha256": "f9e0e61abd94c85a4d1d3fddcef407c00d168737527af82ba40c85e1a2f531d2",
+  "status": "failed",
+  "testSkips": 0,
+  "topLevelFailed": 1,
+  "topLevelPassed": 18
+}

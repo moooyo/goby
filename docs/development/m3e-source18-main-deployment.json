@@ -1,0 +1,178 @@
+{
+  "cache_creation": {
+    "guard_report_sha256": "a692591cb3bd8fd8baffb626c539eacbbd3b907860fa0c20ca4ce86301d53a7a",
+    "guard_sha256": "7161f83cbfff2d27c8214f075502da5e33e4b35f2e804e8b974d5eb3fdeb3bbe",
+    "guards_passed": 7,
+    "intent_sha256": "2b3b60776b8d128b5f79e0fbabde52edb6b353873a77a9017f2f0c50ab992508",
+    "receipt": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cache": "/dev/shm/goby-transcodes-test",
+      "database_mutated": false,
+      "empty": true,
+      "identity": {
+        "device": 26,
+        "gid": 986,
+        "inode": 2082,
+        "mode": 448,
+        "uid": 995
+      },
+      "inspection_sha256": "7b9efa80943217d715ae8a55d385dfc10b390101b72086706c322ad983391843",
+      "intent_sha256": "2b3b60776b8d128b5f79e0fbabde52edb6b353873a77a9017f2f0c50ab992508",
+      "legacy_owner_sha256": "d28cdc05d8a25c2f067e1507e30bc4a6b0f9dbd99526c0430855fbcd2470a2e7",
+      "marker": "goby-main-transcode-cache-create-v1",
+      "old_outputs_restored": false,
+      "phase": "created",
+      "service_started": false,
+      "version": 1
+    },
+    "receipt_sha256": "3fad0632272749e9736950344d28895c973d766736fcb09515b798de929b314f",
+    "script_sha256": "0a7b4dea0ec81eb1d857665b13b2e19310d2bf08dbe18ca89bd624d06e39fc7b"
+  },
+  "candidate_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+  "evidence": {
+    "deployment-intent.json": {
+      "bytes": 219,
+      "sha256": "9e9e3089b4e70ebb04153d8ebe2010435c6ca49ba27b5ebd9a340f7a1e013da3"
+    },
+    "main-before-deploy.json": {
+      "bytes": 109883,
+      "sha256": "0a49971cfb520479cd834aadc35c06253fce917cbceb78b71edec0ee31ab549d"
+    },
+    "main-migrated.json": {
+      "bytes": 111892,
+      "sha256": "a183520ed72c74023b20e60cc052dea7a28fb24b0859bda354b539dabf555c39"
+    },
+    "native-smoke.json": {
+      "bytes": 1013,
+      "sha256": "7a02d2531c081a1dbd17a06c19bcd33a79fafe36394285ed3c7b5909cf8aa063"
+    },
+    "start-intent.json": {
+      "bytes": 134,
+      "sha256": "409696c5bcbeafac71d48fbd08ad54aeb7e2f1885dadaccd6d31fd5d9ae38c4f"
+    },
+    "terminal.json": {
+      "bytes": 1205,
+      "sha256": "5dd971af11bc04b815759776d074ce7dad336edf374994400f09908a2a3721f4"
+    }
+  },
+  "helper_sha256": "a5f8afb49ee610c31d5f70260c5fcf306ebdd74103e11344acb5a20a469bfd60",
+  "main_database_restored": false,
+  "main_target": {
+    "database": "goby_test",
+    "database_oid": 16385,
+    "role": "goby_test",
+    "role_oid": 16384
+  },
+  "migration": {
+    "before_state_sha256": "2926c887032cd7bf4f991815ad95bf921b3430d87fb68c436e140a1d2b1f8e8d",
+    "old_state_preserved": true,
+    "preserved_state_sha256": "2926c887032cd7bf4f991815ad95bf921b3430d87fb68c436e140a1d2b1f8e8d",
+    "tables": 30,
+    "trusted_catalog_verified": true
+  },
+  "native_smoke": {
+    "archive_delete_requests": 0,
+    "calls": [
+      {
+        "bytes": 16,
+        "method": "GET",
+        "path": "/healthz",
+        "status": 200
+      },
+      {
+        "bytes": 19,
+        "method": "GET",
+        "path": "/readyz",
+        "status": 200
+      },
+      {
+        "bytes": 800,
+        "method": "GET",
+        "path": "/admin/",
+        "status": 200
+      },
+      {
+        "bytes": 262,
+        "method": "POST",
+        "path": "/admin/v1/session",
+        "status": 200
+      },
+      {
+        "bytes": 262,
+        "method": "GET",
+        "path": "/admin/v1/session",
+        "status": 200
+      },
+      {
+        "bytes": 462,
+        "method": "GET",
+        "path": "/admin/v1/overview",
+        "status": 200
+      },
+      {
+        "bytes": 364,
+        "method": "GET",
+        "path": "/admin/v1/capabilities",
+        "status": 200
+      },
+      {
+        "bytes": 1269,
+        "method": "GET",
+        "path": "/admin/v1/libraries",
+        "status": 200
+      },
+      {
+        "bytes": 989,
+        "method": "GET",
+        "path": "/admin/v1/tasks",
+        "status": 200
+      },
+      {
+        "bytes": 1620,
+        "method": "GET",
+        "path": "/admin/v1/backups",
+        "status": 200
+      },
+      {
+        "bytes": 460,
+        "method": "GET",
+        "path": "/admin/v1/backups/status",
+        "status": 200
+      },
+      {
+        "bytes": 0,
+        "method": "DELETE",
+        "path": "/admin/v1/session",
+        "status": 204
+      },
+      {
+        "bytes": 149,
+        "method": "GET",
+        "path": "/admin/v1/session",
+        "status": 401
+      }
+    ],
+    "create_requests": 0,
+    "login_acknowledged": true,
+    "logout_verified": true,
+    "restore_requests": 0
+  },
+  "old_archives_retained": true,
+  "old_binary_rollback": false,
+  "prepared_sha256": "b1d686b1c8aed83aa545dd02618c22793cc8b371f6659a0adc1f40710ddfd0ce",
+  "run": "/opt/goby-test/backups/client-schema25-v1/run-20260911T062405Z-975ef4c2e0c2b3078d517dc5",
+  "schema": "goby-m3e-source18-main-deployment",
+  "schema_version": 25,
+  "service": {
+    "ActiveState": "active",
+    "Group": "goby",
+    "MainPID": "539535",
+    "SubState": "running",
+    "User": "goby",
+    "start_ticks": "3115871"
+  },
+  "source_manifest_sha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b",
+  "status": "passed",
+  "tool_manifest_sha256": "df8c051a7e887731f13ee490e3e866072e359373d1fab1ed52843b39db8b4259",
+  "version": 1
+}

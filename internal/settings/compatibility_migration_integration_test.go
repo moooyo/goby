@@ -13,7 +13,7 @@ import (
 	"github.com/moooyo/goby/internal/database"
 )
 
-// Only the two new compatibility columns are excluded. Every schema-20 field,
+// Only columns added after schema 20 are excluded. Every schema-20 field,
 // including the raw name, revision, timestamps, and migration history, remains
 // part of the comparison. Snapshots never leave PostgreSQL as parsed JSON.
 func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool, table string) string {
@@ -21,6 +21,12 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	projection := "to_jsonb(original)"
 	if table == "managed_settings" {
 		projection += " - 'server_name_mode' - 'compatibility_max_width'"
+	}
+	if table == "item_metadata_state" {
+		projection += " - 'music_source'"
+	}
+	if table == "item_entities" {
+		projection += " - 'credit_group'"
 	}
 	statement := "SELECT COALESCE(jsonb_agg(" + projection + " ORDER BY (" + projection + ")::text), '[]'::jsonb)::text FROM " + pgx.Identifier{table}.Sanitize() + " original"
 	if table == "schema_migrations" {
@@ -49,8 +55,8 @@ func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxp
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 23 {
-		t.Fatalf("compatibility full migration history count = %d, want 23: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 25 {
+		t.Fatalf("compatibility full migration history count = %d, want 25: %v", count, err)
 	}
 	return snapshot
 }
@@ -96,26 +102,36 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			}
 			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width")
 			sort.Strings(wantColumns)
-			currentTables := append(append([]string(nil), tables...), "activity_entries")
+			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 23 {
-					t.Fatalf("compatibility full migration schema version = %d, want 23: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 25 {
+					t.Fatalf("compatibility full migration schema version = %d, want 25: %v", version, err)
 				}
 				var name string
 				if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 21").Scan(&name); err != nil || name != "0021_configuration_compatibility.sql" {
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
 				}
-				if after := settingsMigrationTables(t, ctx, pool); len(after) != 29 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
-					t.Errorf("current migration did not retain every historical table and add only activity entries: %v", after)
+				if after := settingsMigrationTables(t, ctx, pool); len(after) != 30 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
+					t.Errorf("current migration did not retain every historical table and add only activity entries and user settings: %v", after)
 				}
 				var activityCount int
 				if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {
 					t.Errorf("current migration backfilled historical state into activity entries: count=%d error=%v", activityCount, err)
+				}
+				var userSettingsCount int
+				if err := pool.QueryRow(ctx, "SELECT count(*) FROM user_settings").Scan(&userSettingsCount); err != nil || userSettingsCount != 0 {
+					t.Errorf("current migration populated user settings: count=%d error=%v", userSettingsCount, err)
+				}
+				var musicSourceCount, groupedCreditCount int
+				if err := pool.QueryRow(ctx, `SELECT
+					(SELECT count(*) FROM item_metadata_state WHERE music_source IS DISTINCT FROM '{}'::jsonb),
+					(SELECT count(*) FROM item_entities WHERE credit_group IS DISTINCT FROM 0)`).Scan(&musicSourceCount, &groupedCreditCount); err != nil || musicSourceCount != 0 || groupedCreditCount != 0 {
+					t.Errorf("current migration populated historical music sources or grouped credits: sources=%d credits=%d error=%v", musicSourceCount, groupedCreditCount, err)
 				}
 				if after := compatibilityMigrationManagedColumns(t, ctx, pool); strings.Join(after, " ") != strings.Join(wantColumns, " ") {
 					t.Errorf("compatibility migration did not add exactly its two columns: %v", after)

@@ -338,7 +338,7 @@ func TestHTTPClientCapabilitiesIgnoreTargetHintsAndRejectMalformedDeclarations(t
 		expectStatus(t, f.request(t, http.MethodPost, path, map[string]any{}, nil, accounts.cookie), http.StatusUnauthorized)
 		expectStatus(t, f.request(t, http.MethodPost, path, map[string]any{}, http.Header{"X-Emby-Token": {accounts.cookie.Value}}, accounts.cookie), http.StatusUnauthorized)
 	}
-	for _, contentType := range []string{"", "text/plain"} {
+	for _, contentType := range []string{"", "application/octet-stream"} {
 		request := httptest.NewRequest(http.MethodPost, "/emby/Sessions/Capabilities/Full", strings.NewReader("{}")).WithContext(f.ctx)
 		request.Header.Set("X-Emby-Token", accounts.viewer.headers.Get("X-Emby-Token"))
 		if contentType != "" {

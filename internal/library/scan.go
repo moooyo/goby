@@ -38,6 +38,7 @@ type scanState struct {
 	directoryIdentities map[string]os.FileInfo
 	imageDirectories    map[string]*imageDirectoryIndex
 	subtitleDirectories map[string]*subtitleDirectoryIndex
+	musicParents        map[string]bool
 }
 
 type storedFile struct {
@@ -74,6 +75,8 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		return "Library directories could not be read", err
 	}
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
+	musicParents := make(map[string]bool)
+	completeRoots := make(map[string]bool)
 	for _, root := range roots {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err
@@ -86,6 +89,10 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		state := &scanState{store: s, task: task, library: library, root: root, opened: opened}
 		err = state.walk(".", hierarchy{parentID: library.ID}, 0)
 		_ = opened.Close()
+		for parentID := range state.musicParents {
+			musicParents[parentID] = true
+		}
+		completeRoots[root.id] = err == nil && state.warnings == 0
 		warnings += state.warnings
 		numberingConflicts += state.numberingConflicts
 		if err != nil {
@@ -94,6 +101,13 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			}
 			failedRoots++
 		}
+	}
+	if _, musicEnabled := s.prober.(interface{ MusicMetadataVersion() int }); musicEnabled {
+		musicWarnings, err := s.refreshScannedMusicAlbums(task.ctx, library.ID, musicParents, completeRoots)
+		if err != nil {
+			return "Accepted music album metadata could not be refreshed", err
+		}
+		warnings += musicWarnings
 	}
 	numberingMessage := ""
 	if numberingConflicts > 0 {
@@ -242,6 +256,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&
 			probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs == media.FileChangeTime(info)
 	}
+	if musicVersioned, ok := state.store.prober.(interface{ MusicMetadataVersion() int }); kind == "audio" && ok {
+		unchanged = unchanged && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == musicVersioned.MusicMetadataVersion()
+	}
 	if !unchanged {
 		probed, probeErr := state.store.prober.ProbeFile(state.task.ctx, file)
 		if probeErr != nil {
@@ -264,6 +281,13 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
+	if kind == "audio" && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion {
+		rawMusic, err := json.Marshal(probe.EmbeddedMusic)
+		if _, accepted := acceptedTrackMusic(rawMusic); err != nil || !accepted {
+			state.warnings++
+			return state.store.persistProgress(state.task)
+		}
+	}
 	name := cleanName(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
 	itemType, parentID, indexNumber, parentIndex := "Movie", current.parentID, 0, 0
 	parentNumberDefined := false
@@ -275,6 +299,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if matches := trackPattern.FindStringSubmatch(name); len(matches) != 0 {
 			indexNumber, _ = strconv.Atoi(matches[1])
 			name = matches[2]
+		}
+		if probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion && probe.EmbeddedMusic.Title != "" {
+			name = probe.EmbeddedMusic.Title
 		}
 	} else {
 		matches := episodePattern.FindStringSubmatch(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
@@ -324,6 +351,10 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return state.store.persistProgress(state.task)
 	}
 	fullPath := filepath.Join(state.root.path, path)
+	if itemType == "Audio" || stored.itemType == "Audio" {
+		state.queueMusicParent(stored.parentID)
+		state.queueMusicParent(parentID)
+	}
 	previousName, previousSort, previousOverview := stored.name, stored.sortName, stored.overview
 	previousIndex, previousParentIndex := stored.indexNumber, stored.parentIndexNumber
 	if stored.automatic != nil {
@@ -391,7 +422,10 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err != nil {
 		return err
 	}
-	if err := syncScannedMetadata(state.task.ctx, tx, id); err != nil {
+	if err := writeScannedMusicSource(state.task.ctx, tx, id, itemType, probe); err != nil {
+		return err
+	}
+	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: stored.id == ""}); err != nil {
 		return err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
@@ -439,6 +473,7 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err != nil {
 		return "", err
 	}
+	insertID := id
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return "", err
@@ -460,11 +495,19 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err != nil {
 		return "", err
 	}
-	if err := syncScannedMetadata(state.task.ctx, tx, id); err != nil {
+	if itemType != "MusicAlbum" {
+		if err := writeScannedMusicSource(state.task.ctx, tx, id, itemType, nil); err != nil {
+			return "", err
+		}
+	}
+	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: id == insertID}); err != nil {
 		return "", err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return "", err
+	}
+	if itemType == "MusicAlbum" {
+		state.queueMusicParent(id)
 	}
 	if metadataPath != "" {
 		if err := state.scanImages(id, itemType, metadataPath, true); err != nil {

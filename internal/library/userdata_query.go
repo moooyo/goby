@@ -14,6 +14,9 @@ const userDataFolderTypesSQL = `'Movie', 'Series', 'Season', 'Episode', 'Video',
 
 // QueryResume returns playable resume positions ordered by the user's last play.
 func (s *Store) QueryResume(ctx context.Context, query Query) (ItemResult, error) {
+	if len(query.ListItemIds) != 0 {
+		return ItemResult{}, ErrUnsupportedFilter
+	}
 	query.Recursive = true
 	query.Resumable = true
 	// Resume ordering is fixed; ordinary item queries retain their explicit sort.

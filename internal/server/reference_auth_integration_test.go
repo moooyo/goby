@@ -208,7 +208,7 @@ func TestHTTPReferenceEmbyProtectedTokenTextErrors(t *testing.T) {
 		expectStatus(t, response, http.StatusOK)
 	}
 	logout := f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, http.Header{"X-Emby-Token": {token}})
-	expectStatus(t, logout, http.StatusOK)
+	expectStatus(t, logout, http.StatusNoContent)
 	revoked := f.request(t, http.MethodGet, "/emby/Users/"+adminID, nil, http.Header{"X-Emby-Token": {token}})
 	expectEmbyTextError(t, revoked, http.StatusUnauthorized, "Access token is invalid or expired.")
 }
@@ -324,7 +324,7 @@ func TestHTTPReferenceMediaBrowserTokenAliasConsistency(t *testing.T) {
 		})
 	}
 	logout := f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, http.Header{"X-MediaBrowser-Token": {token}})
-	expectStatus(t, logout, http.StatusOK)
+	expectStatus(t, logout, http.StatusNoContent)
 	revoked := f.request(t, http.MethodGet, "/emby/Users/"+adminID, nil, http.Header{"X-MediaBrowser-Token": {token}})
 	expectEmbyTextError(t, revoked, http.StatusUnauthorized, "Access token is invalid or expired.")
 }

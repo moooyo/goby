@@ -1,0 +1,62 @@
+{
+  "scope": "Read-only durable state after the actual Goby movie and preference restart workflows",
+  "at": "2026-09-11T01:18:12.850634+00:00",
+  "source": "source-attempt-11",
+  "binarySha256": "67b846016ebd89baae07f052bc6b2a23220c82e5f9be5df84a32763f74d5ab3b",
+  "database": "goby_client_m3e",
+  "port": 15432,
+  "result": {
+    "userData": [
+      {
+        "ItemId": "268051d3ca734aefcf94e245fb25ad55",
+        "ItemName": "M3e Client Movie",
+        "PositionTicks": 1228604550,
+        "PlayCount": 2,
+        "Played": false,
+        "Favorite": false,
+        "LastPlayedAt": "2026-09-11T01:13:32.301357+00:00"
+      }
+    ],
+    "playSessions": [
+      {
+        "State": "Stopped",
+        "PositionTicks": 1197457500,
+        "DurationTicks": 6000000000,
+        "Counted": true,
+        "StartedAt": "2026-09-11T01:13:18.7436+00:00",
+        "StoppedAt": "2026-09-11T01:13:28.596204+00:00",
+        "CredentialRevoked": true
+      },
+      {
+        "State": "Expired",
+        "PositionTicks": 1197457500,
+        "DurationTicks": 6000000000,
+        "Counted": false,
+        "StartedAt": null,
+        "StoppedAt": "2026-09-11T01:13:31.390698+00:00",
+        "CredentialRevoked": true
+      },
+      {
+        "State": "Stopped",
+        "PositionTicks": 1228604550,
+        "DurationTicks": 6000000000,
+        "Counted": true,
+        "StartedAt": "2026-09-11T01:13:32.300914+00:00",
+        "StoppedAt": "2026-09-11T01:13:35.541621+00:00",
+        "CredentialRevoked": true
+      },
+      {
+        "State": "Prepared",
+        "PositionTicks": 1228604550,
+        "DurationTicks": 6000000000,
+        "Counted": false,
+        "StartedAt": null,
+        "StoppedAt": null,
+        "CredentialRevoked": true
+      }
+    ],
+    "preferences": {
+      "genreLimitOnDetails": "1"
+    }
+  }
+}

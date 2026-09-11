@@ -1,0 +1,95 @@
+{
+  "build": {
+    "bytes": 26830296,
+    "exitCode": 0,
+    "path": "/opt/goby-test/exec-work-m3e/source18-build/goby-linux-amd64",
+    "sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b"
+  },
+  "mainServiceChanged": false,
+  "musicUpgradeChain": {
+    "actualVersions": [
+      "source15",
+      "source16",
+      "source18"
+    ],
+    "hops": 2,
+    "path": "/opt/goby-test/exec-work-m3e/client-music-upgrade-chain-source18.json",
+    "sha256": "68571d8ca7f418f5dbab4f41d233f00ed8a3e462829ea8ac93e8ec29c2b8283f"
+  },
+  "schema": 25,
+  "scope": "source18 targeted playback-reference/audio regression, Linux build and same-schema candidate replacement; real-client and final full-source gates remain separate",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-18",
+  "sourceManifestSha256": "fa46e1547416afcb65c15f97aa5a1b7d3c344579386a424478ec310f0e01660b",
+  "status": "passed",
+  "targeted": {
+    "cleanup": {
+      "goby_backup_m3e_source_removed": true,
+      "goby_backup_m3e_target_removed": true,
+      "hba_restored_exactly": true,
+      "preexisting_catalog_unchanged": true,
+      "receipt_saved": true,
+      "unit_terminal": true
+    },
+    "failures": 0,
+    "logSha256": "6412a5544016629ec7a4656978a1b51ff572084ea4d6712c76d192e2ff7901fc",
+    "passed": 19,
+    "reportSha256": "5de3267123a2be32968d315926e1a346b4cc3c725e30a510294c91f862a561c6",
+    "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_051722_a1623a3d7227",
+    "skips": 0
+  },
+  "upgrade": {
+    "allPriorBusinessRowsPreserved": true,
+    "beforeStateSha256": "984a987c21acdc8a66db9827dc19a1599697e1ae64b5181cf05924df6531b3ff",
+    "completedSha256": "13bd7ebbf0e3c5557dfb24cc410e3dcf7cebc44f291452abe9c1aececd1f0ae7",
+    "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-5a92efe5fed8ad546613b3c993d31fe7",
+    "fromSchema": 25,
+    "newProcess": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 506532,
+      "start_ticks": 2681316
+    },
+    "oldProcess": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 472843,
+      "start_ticks": 2393606
+    },
+    "operatorSha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+    "preservedTableCount": 30,
+    "report": "/opt/goby-test/exec-work-m3e/client-fixture-report-31f65371c64f267eb443da31.json",
+    "reportSha256": "871004e970db405ae64e215473bfeff53e77e925923a39a16271fcb688992a6a",
+    "rowCounts": {
+      "activity_entries": 96,
+      "application_key_clients": 0,
+      "application_key_devices": 0,
+      "application_keys": 0,
+      "catalog_entities": 1,
+      "client_playback_references": 1,
+      "devices": 37,
+      "encoding_jobs": 0,
+      "item_entities": 4,
+      "item_images": 0,
+      "item_metadata_state": 13,
+      "item_subtitles": 2,
+      "items": 13,
+      "libraries": 3,
+      "library_roots": 3,
+      "managed_settings": 1,
+      "play_sessions": 16,
+      "scan_jobs": 4,
+      "schema_migrations": 25,
+      "server_settings": 3,
+      "sessions": 43,
+      "task_definitions": 1,
+      "task_occurrences": 0,
+      "task_run_children": 0,
+      "task_run_requests": 0,
+      "task_runs": 0,
+      "task_triggers": 0,
+      "user_item_data": 5,
+      "user_settings": 1,
+      "users": 3
+    },
+    "runtimeAndRecoveryUnchanged": true,
+    "toSchema": 25
+  }
+}

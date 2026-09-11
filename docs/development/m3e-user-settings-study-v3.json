@@ -1,0 +1,271 @@
+{
+  "acknowledgedBaseline": {
+    "genreLimitOnDetails": "1"
+  },
+  "attempt": 3,
+  "caseStatuses": {
+    "absent-key-null": 204,
+    "absent-key-null-after": 200,
+    "acknowledged-ui-settings-baseline": 200,
+    "array-value": 204,
+    "array-value-after": 200,
+    "boolean-value": 204,
+    "boolean-value-after": 200,
+    "duplicate-json-key": 204,
+    "duplicate-json-key-after": 200,
+    "edge-cleanup-inspect": 200,
+    "edge-cleanup-remove-probes": 204,
+    "edge-cleanup-remove-probes-after": 200,
+    "empty-partial-object": 204,
+    "empty-partial-object-after": 200,
+    "empty-unicode-case-keys": 204,
+    "empty-unicode-case-keys-after": 200,
+    "final-inspect": 200,
+    "number-value": 204,
+    "number-value-after": 200,
+    "object-value": 204,
+    "object-value-after": 200,
+    "viewer2-dto-baseline": 200,
+    "viewer2-dto-final": 200,
+    "viewer2-login": 200,
+    "viewer2-logout": 204,
+    "viewer2-token-invalid": 401
+  },
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "cleanupPassed": true,
+  "failureType": null,
+  "marker": "goby-m3e-reference-client-settings-v3",
+  "newRecorderRevoked": true,
+  "nullDeletionProven": true,
+  "observations": [
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1"
+      },
+      "case": "empty-unicode-case-keys",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_Case": "upper",
+        "m3e_case": "lower",
+        "m3e_empty": "",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "duplicate-json-key",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "rawJSON": "{\"m3e_duplicate\":\"first\",\"m3e_duplicate\":\"second\"}",
+      "reqformat": "json",
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "123",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "number-value",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_type": 123
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "true",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "123",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "boolean-value",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_type": true
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "{nested:value}",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "true",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "object-value",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_type": {
+          "nested": "value"
+        }
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "{nested:value}",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "array-value",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_type": [
+          "value"
+        ]
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "empty-partial-object",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {},
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "absent-key-null",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_absent": null
+      },
+      "responseBody": null,
+      "status": 204
+    },
+    {
+      "after": {
+        "genreLimitOnDetails": "1"
+      },
+      "before": {
+        "genreLimitOnDetails": "1",
+        "m3e_case": "upper",
+        "m3e_duplicate": "second",
+        "m3e_type": "[value]",
+        "m3e_unicode": "caf\u00e9 \u96ea \ud83c\udfb5"
+      },
+      "case": "edge-cleanup-remove-probes",
+      "contentType": "text/plain",
+      "method": "Partial",
+      "reqformat": "json",
+      "requestBody": {
+        "m3e_case": null,
+        "m3e_duplicate": null,
+        "m3e_type": null,
+        "m3e_unicode": null
+      },
+      "responseBody": null,
+      "status": 204
+    }
+  ],
+  "primaryViewerAuthenticatedOrWritten": false,
+  "primaryViewerReadIsolationOnly": true,
+  "priorRequests": 64,
+  "requestsThisAttempt": 26,
+  "schemaVersion": 1,
+  "settingsAfter": {
+    "genreLimitOnDetails": "1"
+  },
+  "sourceMediaPreserved": true,
+  "totalStudyRequests": 90,
+  "viewer2ConfigurationAndPolicyPreserved": true
+}

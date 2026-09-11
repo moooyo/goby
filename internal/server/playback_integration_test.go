@@ -537,7 +537,7 @@ func TestHTTPPlaybackRevocationPreventsNewStateWrites(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "token revoked":
-				expectStatus(t, p.s.f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, p.headers), http.StatusOK)
+				expectStatus(t, p.s.f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, p.headers), http.StatusNoContent)
 			case "playback disabled":
 				p.s.setPolicy(t, p.s.viewerID, false, []string{p.s.video.libraryID})
 				status = http.StatusForbidden

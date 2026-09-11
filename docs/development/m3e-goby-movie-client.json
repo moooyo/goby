@@ -1,0 +1,525 @@
+{
+  "status": "core_movie_flow_completed_with_open_optional_errors",
+  "scope": "Unmodified Web Client movie play/pause/UI forward and backward seeks/stop/UI logout/login/resume with real server reports; not complete Emby compatibility",
+  "source": "source-attempt-11",
+  "sourceManifestSha256": "4ece37db24cad46cd50f82056a6b6a2531e7d630a00cf91ab4dc3a25b206491a",
+  "binarySha256": "67b846016ebd89baae07f052bc6b2a23220c82e5f9be5df84a32763f74d5ab3b",
+  "browserVersion": "153.0.8010.12",
+  "playback": {
+    "phase": "complete",
+    "outcome": "movie_ui_flow_completed",
+    "method": "Original client UI actions and read-only HTMLMediaElement observations"
+  },
+  "mediaObservations": [
+    {
+      "label": "playing-start",
+      "videos": [
+        {
+          "current_time": 1.007068,
+          "duration": 600,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 36,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:19.784Z"
+    },
+    {
+      "label": "playing-advanced",
+      "videos": [
+        {
+          "current_time": 3.51274,
+          "duration": 600,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 111,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:22.290Z"
+    },
+    {
+      "label": "paused",
+      "videos": [
+        {
+          "current_time": 4.276506,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 134,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:23.358Z"
+    },
+    {
+      "label": "movie-seek-forward-before",
+      "videos": [
+        {
+          "current_time": 4.276506,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 134,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:23.999Z"
+    },
+    {
+      "label": "movie-seek-forward-after",
+      "videos": [
+        {
+          "current_time": 178.355,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 148,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:25.028Z"
+    },
+    {
+      "label": "movie-seek-backward-before",
+      "videos": [
+        {
+          "current_time": 178.355,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 148,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:25.767Z"
+    },
+    {
+      "label": "movie-seek-backward-after",
+      "videos": [
+        {
+          "current_time": 118.236,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 159,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:26.793Z"
+    },
+    {
+      "label": "before-continue",
+      "videos": [
+        {
+          "current_time": 118.236,
+          "duration": 600,
+          "paused": true,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 159,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:26.894Z"
+    },
+    {
+      "label": "before-stop",
+      "videos": [
+        {
+          "current_time": 119.670528,
+          "duration": 600,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 203,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:28.447Z"
+    },
+    {
+      "label": "after-stop",
+      "videos": [],
+      "observed_at": "2026-09-11T01:13:29.871Z"
+    },
+    {
+      "label": "resumed",
+      "videos": [
+        {
+          "current_time": 119.748693,
+          "duration": 600,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 56,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:32.299Z"
+    },
+    {
+      "label": "resumed-advanced",
+      "videos": [
+        {
+          "current_time": 122.187281,
+          "duration": 600,
+          "paused": false,
+          "ended": false,
+          "seeking": false,
+          "ready_state": 4,
+          "network_state": 1,
+          "video_width": 320,
+          "video_height": 180,
+          "total_video_frames": 131,
+          "dropped_video_frames": 0,
+          "visible": true
+        }
+      ],
+      "observed_at": "2026-09-11T01:13:34.802Z"
+    }
+  ],
+  "playReports": [
+    {
+      "index": 280,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 282,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 283,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 286,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 289,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 290,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 291,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 292,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Stopped",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 333,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 336,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Progress",
+      "status": 204,
+      "content_type": "text/plain"
+    },
+    {
+      "index": 337,
+      "method": "POST",
+      "route": "/emby/Sessions/Playing/Stopped",
+      "status": 204,
+      "content_type": "text/plain"
+    }
+  ],
+  "targetFailures": [
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/{value}/SpecialFeatures",
+      "status": 404,
+      "failure": null,
+      "count": 2
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Items/{value}/{value}",
+      "status": 404,
+      "failure": null,
+      "count": 4
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Items/{value}/ThemeMedia",
+      "status": 404,
+      "failure": null,
+      "count": 3
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/{value}/Intros",
+      "status": 404,
+      "failure": "net::ERR_ABORTED",
+      "count": 1
+    },
+    {
+      "method": "GET",
+      "route": "/emby/videos/{value}/original.mp4",
+      "status": 206,
+      "failure": "net::ERR_ABORTED",
+      "count": 7
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Items/{value}/ThemeMedia",
+      "status": 404,
+      "failure": "net::ERR_ABORTED",
+      "count": 1
+    }
+  ],
+  "pageErrors": [
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 1573
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 1573
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 1574
+    },
+    {
+      "name": "Error",
+      "message": "undefined",
+      "elapsed_ms": 2411
+    },
+    {
+      "name": "Error",
+      "message": "undefined",
+      "elapsed_ms": 2441
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 12339
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 15115
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 15118
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 15119
+    },
+    {
+      "name": "Error",
+      "message": "undefined",
+      "elapsed_ms": 15964
+    },
+    {
+      "name": "Error",
+      "message": "undefined",
+      "elapsed_ms": 16000
+    },
+    {
+      "name": "Error",
+      "message": "Response",
+      "elapsed_ms": 19286
+    }
+  ],
+  "externalBlocked": 6,
+  "logoutProof": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 14305,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 14320
+        },
+        "token_fingerprint": "cde5ed83ef2fdbac659f623507e4ce94d13892e3f94e6ffda9331510f2908a96",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 14321,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 14341
+        },
+        "result": "logout_token_rejected"
+      },
+      {
+        "index": 1,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 20699,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 20710
+        },
+        "token_fingerprint": "86e6e41c4dba165b69888429a66177306018ccf95dd6f603d9439682f2492a91",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 20710,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 20716
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    },
+    "expected_ui_logout_count": 2
+  },
+  "observationSha256": "8c11afb816392987333767646c806068d2895d78ba06d7bdfe0317d248670f43",
+  "remaining": "SpecialFeatures, ThemeMedia, Intros and other recorded item auxiliary reads return 404. Eight Response and four undefined page errors remain visible. Successful 206 reads also include client cancellations during this seek/stop workflow."
+}

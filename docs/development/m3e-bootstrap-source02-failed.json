@@ -1,0 +1,12 @@
+{
+  "status": "failed",
+  "source": "source-attempt-02",
+  "scope": "Targeted bootstrap/authentication/identity/client-capabilities tests",
+  "passedTopLevel": 29,
+  "failedTopLevel": [
+    "TestHTTPClientCapabilitiesReferencePlainTextJSON"
+  ],
+  "skips": 0,
+  "cause": "The new MIME test used a JSON request helper that inserted application/json before the intended text/plain header. Its native-admin rejection assertion therefore received valid JSON. The test now constructs the actual raw content type. Production code did not change for this correction.",
+  "logSha256": "2dd1ef37eb5285d7b8bb671b03e28f4aacafa1f6e5accd630d740d4d1a4860de"
+}

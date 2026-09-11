@@ -1,0 +1,1858 @@
+{
+  "format": 1,
+  "status": "ordinary_tv_verified_audio_and_srt_blocked",
+  "candidate": {
+    "fixture_marker": "goby-m3e-client-acceptance-v1",
+    "fixture_tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+    "schema": 24,
+    "server_id": "c7cfd76b1dee728b2bad523793a37ccb",
+    "account_marker": "goby-m3e-goby-av-user-v1",
+    "account_id": "34b4c24f6568659af7ce17938fae7f81",
+    "process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 403472,
+      "start_ticks": 1597941
+    },
+    "binary_sha256": "eb9ac18e7adc7d9738c5bb9e37f01269b121027527cbe1a082efc082cf61cf81",
+    "fixture_state_sha256": "64056788b35262d89511fff2b9689a5eeaa0fe50b79ef7650b366ed7df9d86a7",
+    "browser_alias_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+    "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b",
+    "creation_response_sha256": "aa5534882ebc2cfc9c452c9d400e02681c8e9d9c1900b98c7d69256e919ebae1",
+    "proxy_status_sha256": "769684e6c84eb4ea83c01f86c671d94d488626581c8dde664fa6f7ab7c05310f",
+    "libraries": {
+      "movies": "a9993591e72f0f2e7babcbf8b9c50790",
+      "music": "6383d20008836e137559698c29b10395",
+      "tv": "a34ce665fb75421ef7551570f353d705"
+    },
+    "reference": {
+      "pid": 332054,
+      "start_ticks": 357218,
+      "executable": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+    },
+    "proxy_process": {
+      "pid": 334022,
+      "start_ticks": 378464,
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+    },
+    "boundary": "Read-only private receipt and Linux process pins; no HTTP, database, or client acceptance claim"
+  },
+  "profiles": [
+    {
+      "check": "mp3",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source12-mp3-01",
+      "report_sha256": "b1c8a74b9eeadd5b16119e998ec0d9609655b5fe79542f6ba4fec742fdfdf951",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "eb7da760fe2283af39c01dfe6b06301415ee0b959a2029c2b8b6608bb1c9ec11",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+        "client-browser-album-diagnostics.mjs": "c5828bf6024524f0bd4827957b35e6424b388752eb0bc28130fc87d41914345e"
+      },
+      "failure": "workflow",
+      "phase": "album_tracks",
+      "reason": "ui_action_or_observation_failed",
+      "outcome": "blocked_at_observed_ui_step",
+      "diagnostic_only": false,
+      "login": {
+        "attempted": true,
+        "request_observed": true,
+        "http_status": 200,
+        "result": "http_accepted_and_login_form_closed"
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 18533,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 18547
+            },
+            "token_fingerprint": "65a37e0951d81a07e4fcd93ab19c9a607f3659a19806e511b904a2599534ecef",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 18547,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 18555
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 2,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1346,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1670,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 18262,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 19042,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T01:39:25.607626Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 9787960,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T01:39:25.607626Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 9787960,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "page_errors": [],
+      "request_overflow": 0
+    },
+    {
+      "check": "subtitles",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source12-subtitles-01",
+      "report_sha256": "91bfffab476349fa9e3a69f20215a987869615674c90b9dcc80289e675309c27",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "eb7da760fe2283af39c01dfe6b06301415ee0b959a2029c2b8b6608bb1c9ec11",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+        "client-browser-album-diagnostics.mjs": "c5828bf6024524f0bd4827957b35e6424b388752eb0bc28130fc87d41914345e"
+      },
+      "failure": "workflow",
+      "phase": "select_external_srt",
+      "reason": "expected_synthetic_subtitle_cue_not_observed",
+      "outcome": "blocked_at_observed_ui_step",
+      "diagnostic_only": false,
+      "login": {
+        "attempted": true,
+        "request_observed": true,
+        "http_status": 200,
+        "result": "http_accepted_and_login_form_closed"
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 13151,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 13161
+            },
+            "token_fingerprint": "e9a962fea2f1c9906b6745ac94686fdcb56ad0b6cc0a5ed99af5349e2b152aeb",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 13162,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 13168
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 1,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1290,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1582,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 12613,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 13620,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T01:39:25.607626Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 9787960,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T02:23:26.981787Z",
+              "PlayCount": 2,
+              "PlaybackPositionTicks": 9799510,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "page_errors": [
+        {
+          "elapsed_ms": 2534,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2535,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2535,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3143,
+          "name": "Error",
+          "message": "undefined"
+        },
+        {
+          "elapsed_ms": 3176,
+          "name": "Error",
+          "message": "undefined"
+        },
+        {
+          "elapsed_ms": 12909,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "request_overflow": 0,
+      "network_subtitles": [
+        {
+          "request_method": "GET",
+          "status": 200,
+          "content_type": "text/plain",
+          "item_matches_owned_movie": true,
+          "subtitle_index": 2,
+          "start_position_ticks_path": "0",
+          "format": "srt",
+          "query_field_names": [
+            "api_key"
+          ],
+          "body_result": "owned_subtitle_hashed",
+          "bytes": 212,
+          "sha256": "aff96165b6479ebc0710e56faa52df525b13ea7dbc8f44c6fbb6d91e75f9838d",
+          "starts_with_webvtt": false,
+          "synthetic_cues_present": [
+            "Opening subtitle",
+            "Backward seek subtitle",
+            "Forward seek subtitle",
+            "Midpoint subtitle"
+          ]
+        }
+      ],
+      "media_observations": [
+        {
+          "label": "subtitle-initial-paused",
+          "at": "2026-09-11T02:23:28.052Z",
+          "media": [
+            {
+              "current_time": 0.979951,
+              "duration": 600,
+              "paused": true,
+              "ready_state": 4,
+              "network_state": 1,
+              "video_width": 320,
+              "video_height": 180,
+              "total_video_frames": 35,
+              "dropped_video_frames": 0,
+              "text_tracks": [
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "disabled",
+                  "active_cues": []
+                },
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "disabled",
+                  "active_cues": []
+                }
+              ]
+            }
+          ],
+          "visible_dom_cues": []
+        },
+        {
+          "label": "subtitle-srt-selected",
+          "at": "2026-09-11T02:23:29.171Z",
+          "media": [
+            {
+              "current_time": 0.979951,
+              "duration": 600,
+              "paused": true,
+              "ready_state": 4,
+              "network_state": 1,
+              "video_width": 320,
+              "video_height": 180,
+              "total_video_frames": 35,
+              "dropped_video_frames": 0,
+              "text_tracks": [
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "hidden",
+                  "active_cues": []
+                },
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "disabled",
+                  "active_cues": []
+                }
+              ]
+            }
+          ],
+          "visible_dom_cues": []
+        },
+        {
+          "label": "subtitle-blocked-select_external_srt",
+          "at": "2026-09-11T02:23:35.573Z",
+          "media": [
+            {
+              "current_time": 0.979951,
+              "duration": 600,
+              "paused": true,
+              "ready_state": 4,
+              "network_state": 1,
+              "video_width": 320,
+              "video_height": 180,
+              "total_video_frames": 35,
+              "dropped_video_frames": 0,
+              "text_tracks": [
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "hidden",
+                  "active_cues": []
+                },
+                {
+                  "kind": "subtitles",
+                  "label": "en",
+                  "language": "en",
+                  "mode": "disabled",
+                  "active_cues": []
+                }
+              ]
+            }
+          ],
+          "visible_dom_cues": []
+        }
+      ]
+    },
+    {
+      "check": "tv",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source12-tv-01",
+      "report_sha256": "5df69d16eef736a7cfc72bbcfef06b65c816321e92b04f6fe679188aa47878e8",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "eb7da760fe2283af39c01dfe6b06301415ee0b959a2029c2b8b6608bb1c9ec11",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+        "client-browser-album-diagnostics.mjs": "c5828bf6024524f0bd4827957b35e6424b388752eb0bc28130fc87d41914345e"
+      },
+      "failure": null,
+      "phase": "complete",
+      "reason": null,
+      "outcome": "tv_browse_ui_flow_completed_with_cross_season_list",
+      "diagnostic_only": false,
+      "login": {
+        "attempted": true,
+        "request_observed": true,
+        "http_status": 200,
+        "result": "http_accepted_and_login_form_closed"
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 8390,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 8401
+            },
+            "token_fingerprint": "f5128e378442045190e319fe711b122d7b135a5e01e0d43fb13782c007fb8a32",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 8402,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 8409
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 2,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1326,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1632,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 8116,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 8887,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T02:23:26.981787Z",
+              "PlayCount": 2,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "530c6f071507ccd1bd59f4dddce23f12",
+            "name": "M3e Client Series",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 3
+            }
+          },
+          {
+            "id": "a69435a10f55bbfd6d754add46b6c29e",
+            "name": "Season 01",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 2
+            }
+          },
+          {
+            "id": "839e9776ad24ab4a940b85e24522914c",
+            "name": "Season 02",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 1
+            }
+          },
+          {
+            "id": "c88a94ce41239b1151630d95a55835d8",
+            "name": "Episode 1-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6b5dd15a92e5d58fae5a4e10702a7787",
+            "name": "Episode 1-2",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6c2f813c0d7d5b5e7a7b5868daae9a49",
+            "name": "Episode 2-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T02:23:26.981787Z",
+              "PlayCount": 2,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "530c6f071507ccd1bd59f4dddce23f12",
+            "name": "M3e Client Series",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 3
+            }
+          },
+          {
+            "id": "a69435a10f55bbfd6d754add46b6c29e",
+            "name": "Season 01",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 2
+            }
+          },
+          {
+            "id": "839e9776ad24ab4a940b85e24522914c",
+            "name": "Season 02",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 1
+            }
+          },
+          {
+            "id": "c88a94ce41239b1151630d95a55835d8",
+            "name": "Episode 1-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6b5dd15a92e5d58fae5a4e10702a7787",
+            "name": "Episode 1-2",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6c2f813c0d7d5b5e7a7b5868daae9a49",
+            "name": "Episode 2-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "page_errors": [
+        {
+          "elapsed_ms": 3724,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3725,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3726,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 6414,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 6415,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "request_overflow": 0,
+      "read_only_proof": {
+        "all_observed_item_user_data_unchanged": true,
+        "observed_item_count": 9,
+        "observed_tv_item_count": 6,
+        "playback_request_count": 0,
+        "playback_metadata_request_count": 1,
+        "playback_metadata_is_start_evidence": false,
+        "observed_media_elements_inactive": true,
+        "independent_state_reads_are_ui_acceptance": false,
+        "event_scope": "Complete observed browser request set after browser shutdown",
+        "request_overflow": 0
+      }
+    },
+    {
+      "check": "album_diagnostic",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source12-album-diagnostic-01",
+      "report_sha256": "60854888aa4f909921d2dc0a325d5e030cce2739085a8d4e83b67aafa030ffd8",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "eb7da760fe2283af39c01dfe6b06301415ee0b959a2029c2b8b6608bb1c9ec11",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "441f7120cd801957912bea349527347b570af7ed3f090042a257e0d5e8728163",
+        "client-browser-album-diagnostics.mjs": "c5828bf6024524f0bd4827957b35e6424b388752eb0bc28130fc87d41914345e"
+      },
+      "failure": null,
+      "phase": "complete",
+      "reason": null,
+      "outcome": "diagnostic_dto_observed",
+      "diagnostic_only": true,
+      "login": {
+        "attempted": true,
+        "request_observed": true,
+        "http_status": 200,
+        "result": "http_accepted_and_login_form_closed"
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 18748,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 18758
+            },
+            "token_fingerprint": "51a491185a48f6fdf4d7b9f6d0f6ef97a79a05e1865a5862a1f83d4361180831",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 18758,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 18766
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 1,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1296,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1636,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 18437,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 19226,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T01:39:25.607626Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 9787960,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T01:39:25.607626Z",
+              "PlayCount": 1,
+              "PlaybackPositionTicks": 9787960,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "page_errors": [],
+      "request_overflow": 0,
+      "album": {
+        "diagnostic_only": true,
+        "acceptance_passed": false,
+        "album": "Music",
+        "phase": "complete",
+        "outcome": "diagnostic_dto_observed",
+        "responses": [
+          {
+            "route_kind": "owned_album_detail",
+            "method": "GET",
+            "http_status": 200,
+            "observed_after_click_attempt": true,
+            "query_field_names": [
+              "Fields",
+              "ExcludeFields",
+              "X-Emby-Client",
+              "X-Emby-Device-Name",
+              "X-Emby-Device-Id",
+              "X-Emby-Client-Version",
+              "X-Emby-Token",
+              "{unrecognized query field}"
+            ],
+            "field_projections": [
+              {
+                "field": "Fields",
+                "field_names": [],
+                "unrecognized_field_count": 1,
+                "omitted_field_count": 0
+              },
+              {
+                "field": "ExcludeFields",
+                "field_names": [
+                  "MediaStreams"
+                ],
+                "unrecognized_field_count": 2,
+                "omitted_field_count": 0
+              }
+            ],
+            "omitted_query_field_count": 0,
+            "body_result": "safe_dto_recorded",
+            "content_type": "application/json",
+            "declared_bytes": 575,
+            "declared_length_present": true,
+            "encoding_type": "unspecified",
+            "actual_bytes": 575,
+            "source_response_sha256": "981855feaa34ba57626604b0a0f2f925fb8a51cf617b36c59a8ad8c8d8459f64",
+            "hash_representation": "Browser-decoded response entity bytes",
+            "dto": {
+              "top_level_type": "object",
+              "top_level_key_count": 23,
+              "top_level_keys": [
+                {
+                  "name": "AlbumArtists",
+                  "type": "array"
+                },
+                {
+                  "name": "ArtistItems",
+                  "type": "array"
+                },
+                {
+                  "name": "Artists",
+                  "type": "array"
+                },
+                {
+                  "name": "BackdropImageTags",
+                  "type": "array"
+                },
+                {
+                  "name": "ChildCount",
+                  "type": "number"
+                },
+                {
+                  "name": "Composers",
+                  "type": "array"
+                },
+                {
+                  "name": "DateCreated",
+                  "type": "string"
+                },
+                {
+                  "name": "GenreItems",
+                  "type": "array"
+                },
+                {
+                  "name": "Genres",
+                  "type": "array"
+                },
+                {
+                  "name": "Id",
+                  "type": "string"
+                },
+                {
+                  "name": "ImageTags",
+                  "type": "object"
+                },
+                {
+                  "name": "IsFolder",
+                  "type": "boolean"
+                },
+                {
+                  "name": "Name",
+                  "type": "string"
+                },
+                {
+                  "name": "Overview",
+                  "type": "string"
+                },
+                {
+                  "name": "ParentId",
+                  "type": "string"
+                },
+                {
+                  "name": "People",
+                  "type": "array"
+                },
+                {
+                  "name": "ProviderIds",
+                  "type": "object"
+                },
+                {
+                  "name": "ServerId",
+                  "type": "string"
+                },
+                {
+                  "name": "SortName",
+                  "type": "string"
+                },
+                {
+                  "name": "Studios",
+                  "type": "array"
+                },
+                {
+                  "name": "TagItems",
+                  "type": "array"
+                },
+                {
+                  "name": "Type",
+                  "type": "string"
+                },
+                {
+                  "name": "UserData",
+                  "type": "object"
+                }
+              ],
+              "omitted_top_level_key_count": 0,
+              "unrecognized_top_level_key_count": 0,
+              "fields": {
+                "Name": {
+                  "present": true,
+                  "type": "string"
+                },
+                "Type": {
+                  "present": true,
+                  "type": "string"
+                },
+                "IsFolder": {
+                  "present": true,
+                  "type": "boolean"
+                },
+                "MediaType": {
+                  "present": false,
+                  "type": "missing"
+                },
+                "Id": {
+                  "present": true,
+                  "type": "string"
+                },
+                "Path": {
+                  "present": false,
+                  "type": "missing"
+                },
+                "ParentId": {
+                  "present": true,
+                  "type": "string"
+                },
+                "ChildCount": {
+                  "present": true,
+                  "type": "number"
+                },
+                "ArtistItems": {
+                  "present": true,
+                  "type": "array"
+                },
+                "AlbumArtists": {
+                  "present": true,
+                  "type": "array"
+                },
+                "Artists": {
+                  "present": true,
+                  "type": "array"
+                },
+                "Composers": {
+                  "present": true,
+                  "type": "array"
+                },
+                "Genres": {
+                  "present": true,
+                  "type": "array"
+                },
+                "GenreItems": {
+                  "present": true,
+                  "type": "array"
+                },
+                "TagItems": {
+                  "present": true,
+                  "type": "array"
+                },
+                "Studios": {
+                  "present": true,
+                  "type": "array"
+                },
+                "People": {
+                  "present": true,
+                  "type": "array"
+                },
+                "BackdropImageTags": {
+                  "present": true,
+                  "type": "array"
+                }
+              },
+              "safe_values": {
+                "Name": {
+                  "matches_requested_album": true,
+                  "value": "Music"
+                },
+                "Type": {
+                  "value": "MusicAlbum"
+                },
+                "IsFolder": true,
+                "ChildCount": 2
+              },
+              "owned_id_matches": true,
+              "owned_path_matches": false,
+              "shape": {
+                "type": "object",
+                "key_count": 23,
+                "omitted_key_count": 0,
+                "fields": [
+                  {
+                    "name": "AlbumArtists",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "ArtistItems",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "Artists",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "BackdropImageTags",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "ChildCount",
+                    "type": "number",
+                    "shape": {
+                      "type": "number"
+                    }
+                  },
+                  {
+                    "name": "Composers",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "DateCreated",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "GenreItems",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "Genres",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "Id",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "ImageTags",
+                    "type": "object",
+                    "shape": {
+                      "type": "object",
+                      "key_count": 0,
+                      "omitted_key_count": 0,
+                      "fields": [],
+                      "depth_limited": false
+                    }
+                  },
+                  {
+                    "name": "IsFolder",
+                    "type": "boolean",
+                    "shape": {
+                      "type": "boolean"
+                    }
+                  },
+                  {
+                    "name": "Name",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "Overview",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "ParentId",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "People",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "ProviderIds",
+                    "type": "object",
+                    "shape": {
+                      "type": "object",
+                      "key_count": 0,
+                      "omitted_key_count": 0,
+                      "fields": [],
+                      "depth_limited": false
+                    }
+                  },
+                  {
+                    "name": "ServerId",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "SortName",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "Studios",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "TagItems",
+                    "type": "array",
+                    "shape": {
+                      "type": "array",
+                      "length": 0,
+                      "sample": [],
+                      "sample_count": 0,
+                      "omitted_element_count": 0
+                    }
+                  },
+                  {
+                    "name": "Type",
+                    "type": "string",
+                    "shape": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "name": "UserData",
+                    "type": "object",
+                    "shape": {
+                      "type": "object",
+                      "key_count": 5,
+                      "omitted_key_count": 0,
+                      "fields": [
+                        {
+                          "name": "IsFavorite",
+                          "type": "boolean",
+                          "shape": {
+                            "type": "boolean"
+                          }
+                        },
+                        {
+                          "name": "PlayCount",
+                          "type": "number",
+                          "shape": {
+                            "type": "number"
+                          }
+                        },
+                        {
+                          "name": "PlaybackPositionTicks",
+                          "type": "number",
+                          "shape": {
+                            "type": "number"
+                          }
+                        },
+                        {
+                          "name": "Played",
+                          "type": "boolean",
+                          "shape": {
+                            "type": "boolean"
+                          }
+                        },
+                        {
+                          "name": "UnplayedItemCount",
+                          "type": "number",
+                          "shape": {
+                            "type": "number"
+                          }
+                        }
+                      ],
+                      "depth_limited": false
+                    }
+                  }
+                ],
+                "depth_limited": false
+              }
+            },
+            "owned_identity_confirmed": true,
+            "path_identity_check": "not_projected_by_client_request"
+          }
+        ],
+        "steps": [
+          {
+            "label": "album-diagnostics-before",
+            "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+          },
+          {
+            "label": "album-diagnostics-observed",
+            "evidence": "Caller-sanitized screenshot and visible DOM snapshot"
+          }
+        ],
+        "response_overflow": 0,
+        "limits": {
+          "response_count": 8,
+          "body_read_count": 1,
+          "parse_and_retention_bytes": 262144,
+          "shape_depth": 3,
+          "shape_nodes": 512,
+          "object_keys": 80,
+          "array_sample": 6
+        },
+        "body_boundary": "Playwright reads the browser-received entity. The size limit governs parsing and retention, not decompression allocation.",
+        "owned_identity_basis": "exact observed response after unique UI album click",
+        "owned_identity_confirmed": true,
+        "cleanup_owner": "caller",
+        "card_identity": {
+          "card_with_data_id_present": false,
+          "owned_album_id_matches": false,
+          "link_action_observed": true
+        },
+        "ui_observation": {
+          "album_heading_observed": false,
+          "fixture_track_row_count": 0,
+          "visible_heading_count": 2,
+          "wait_limit_reached": true,
+          "album_content_observed": false
+        },
+        "listener_removed": true,
+        "pending_observer_tasks_drained": true,
+        "pending_body_reads_at_return": 0,
+        "pending_observations_drained": true,
+        "body_read_count": 1
+      },
+      "exceptions": {
+        "enabled": true,
+        "diagnostic_only": true,
+        "timing_not_acceptance": true,
+        "count": 10,
+        "limit": 256,
+        "limit_reached": false,
+        "errors": [
+          {
+            "elapsed_ms": 586,
+            "name": "RangeError",
+            "message": "Invalid language tag: i"
+          },
+          {
+            "elapsed_ms": 921,
+            "name": "TypeError",
+            "message": "Invalid URL"
+          },
+          {
+            "elapsed_ms": 1231,
+            "name": "TypeError",
+            "message": "Invalid URL"
+          },
+          {
+            "elapsed_ms": 1475,
+            "name": "TypeError",
+            "message": "Failed to fetch"
+          },
+          {
+            "elapsed_ms": 1489,
+            "name": "TypeError",
+            "message": "Invalid URL"
+          },
+          {
+            "elapsed_ms": 2668,
+            "name": "TypeError",
+            "message": "Invalid URL"
+          },
+          {
+            "elapsed_ms": 2681,
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'Name')"
+          }
+        ],
+        "control_errors": 0,
+        "setup_complete": true,
+        "cleanup": "disabled_and_detached",
+        "boundary": "Immediately resume pauses; retain only sanitized exception-description first lines. No source, stack, scope, object properties, or runtime values are inspected. Debugger timing is not playback acceptance."
+      }
+    }
+  ],
+  "flac": {
+    "status": "not_repeated",
+    "reason": "The MP3 journey could not leave the shared blank album page; no FLAC decode or row-adapter success is claimed."
+  },
+  "subtitle_contract_summary": {
+    "path": "/opt/goby-test/exec-work-m3e/m3e-source12-subtitle-contracts.json",
+    "sha256": "4f6e5013c094dc2cc96c0d68bff49723956b5b607dddec1b382f84572ed134a8"
+  },
+  "reference_music_contract_summary": {
+    "path": "/opt/goby-test/exec-work-m3e/m3e-reference-music-navigation-contract.json",
+    "sha256": "63f6f2142a08bc520b052ca8b3a77882e8cb4bda29d980a9525722660cab9cbe"
+  },
+  "remaining_unrevoked_sessions_from_this_run_set": [],
+  "scope_limits": [
+    "Ordinary TV fixture only; standalone and positive specials remain unverified.",
+    "SRT label selection now succeeds but native SRT delivery does not render the first cue.",
+    "Audio identity and decoding remain untested beyond the blank album page.",
+    "Diagnostic Off evidence records the actual click and observed lack of displayed cues; no menu-selection state is inferred."
+  ]
+}

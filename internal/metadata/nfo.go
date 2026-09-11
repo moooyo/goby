@@ -34,6 +34,9 @@ type Metadata struct {
 	ProviderIDs                                                   map[string]string
 	Genres, Tags, Studios                                         []string
 	People                                                        []Person
+	Album                                                         string   `json:"Album,omitempty"`
+	Artists                                                       []string `json:"Artists,omitempty"`
+	AlbumArtists                                                  []string `json:"AlbumArtists,omitempty"`
 }
 
 // Person is a local credit. SortOrder preserves explicit zero-based ordering.

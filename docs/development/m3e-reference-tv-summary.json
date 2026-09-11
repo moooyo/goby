@@ -1,0 +1,722 @@
+{
+  "format": 1,
+  "status": "reference_only_completed_with_layout_difference",
+  "scope": "Original Emby Web TV browse-only using the new owned Reference AV account; not Goby acceptance",
+  "run": "/opt/goby-test/exec-work-m3e/reference-av-tv-09",
+  "report_sha256": "b282f3d27003be3bdb0ad0726fe705fff4c0e45163b723a305d8d31bbab154bf",
+  "source_sha256": {
+    "client-browser-av.mjs": "de8406c210c4d6679a9554ce2e4125aa1e8dc7510d4bb76903d7270fed38c99e",
+    "client-browser-av-runtime.mjs": "514e7cacb5211bede339e544ea85490f72efafd02ac0b126a31b148e8f08da32",
+    "client-browser-audio-flow.mjs": "bafe95c6c83f9f1e669d18224d0a88352fd736f6bb4740ea0df40a5dd09e7778",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "7d756361ff90d4af905a8d3bf817df4161df812ec343319c51890bd016edee7c",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-goby-fixture.mjs": "633048a35d1279e0523dcaf966692e47829a12059476c8fdb7e6d5ff0ce3a458"
+  },
+  "source_archive": "/opt/goby-test/exec-work-m3e/verified-reference-tv-source",
+  "reference": {
+    "pid": 332054,
+    "start_ticks": 357218,
+    "version": "4.9.5.0",
+    "executable_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+  },
+  "account": {
+    "marker": "goby-reference-av-client-v1",
+    "id": "7d777e79b35541889f738bb5f5a8da23",
+    "policy": "Retain the dedicated fixture account; no existing account or TV progress changed"
+  },
+  "browser_version": "153.0.8010.12",
+  "playwright_version": "1.63.0",
+  "started_at": "2026-09-11T01:30:12.717Z",
+  "finished_at": "2026-09-11T01:30:18.699Z",
+  "input_command": "env PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright node /opt/goby-test/exec-work-m3e/client-browser-av.mjs --backend reference --check tv --output /opt/goby-test/exec-work-m3e/reference-av-tv-09",
+  "outcome": "tv_browse_ui_flow_completed_with_cross_season_list",
+  "season_evidence": [
+    {
+      "season": 1,
+      "selected_label": "\ue313\nSeason 1",
+      "all_observed_labels": [
+        "S1:E1 - Episode 1-1",
+        "S1:E2 - Episode 1-2",
+        "S2:E1 - Episode 2-1"
+      ],
+      "selected_episode_labels": [
+        "S1:E1 - Episode 1-1",
+        "S1:E2 - Episode 1-2"
+      ],
+      "view_mode": "cross_season_series_list",
+      "other_season_titles_absent": false,
+      "strict_season_filtering_observed": false
+    },
+    {
+      "season": 2,
+      "selected_label": "\ue313\nSeason 2",
+      "all_observed_labels": [
+        "S1:E1 - Episode 1-1",
+        "S1:E2 - Episode 1-2",
+        "S2:E1 - Episode 2-1"
+      ],
+      "selected_episode_labels": [
+        "S2:E1 - Episode 2-1"
+      ],
+      "view_mode": "cross_season_series_list",
+      "other_season_titles_absent": false,
+      "strict_season_filtering_observed": false
+    }
+  ],
+  "episode_detail": {
+    "title": "Episode 2-1",
+    "season": 2,
+    "episode": 1,
+    "detail_title_observed": true,
+    "unique_detail_heading_observed": true,
+    "detail_heading_raw": "S2:E1 - Episode 2-1",
+    "parsed_heading_identity": {
+      "name": "Episode 2-1",
+      "season": 2,
+      "episode": 1,
+      "name_season": 2,
+      "name_episode": 1
+    },
+    "detail_heading_prefix_matches_fixture": true,
+    "page_navigation_observed": true,
+    "title_elements": [
+      {
+        "tag": "h3",
+        "role": null,
+        "class": "itemName-secondary",
+        "raw_label": "S2:E1 - Episode 2-1",
+        "parsed_identity": {
+          "name": "Episode 2-1",
+          "season": 2,
+          "episode": 1,
+          "name_season": 2,
+          "name_episode": 1
+        },
+        "detail_context": true,
+        "card_context": false,
+        "content_scope": {
+          "tag": "div",
+          "class": "flex-grow detailTextContainer verticalFieldItems details-largefont"
+        },
+        "metadata_lines": [
+          "S2:E1 - Episode 2-1"
+        ]
+      }
+    ],
+    "metadata_lines": [
+      "S2:E1 - Episode 2-1"
+    ],
+    "metadata_source": "unique_visible_non_card_detail_heading",
+    "season_and_episode_metadata_observed": true
+  },
+  "return_home": "home_link_clicked_navigation_observed_and_home_tv_library_card_visible",
+  "state_before": {
+    "user_id": "7d777e79b35541889f738bb5f5a8da23",
+    "items": [
+      {
+        "id": "9",
+        "name": "M3e Client Movie",
+        "scope": "av-media",
+        "user_data": {
+          "PlayedPercentage": 20.207,
+          "PlaybackPositionTicks": 1212420000,
+          "PlayCount": 2,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:52:26.0000000Z",
+          "Played": false
+        }
+      },
+      {
+        "id": "10",
+        "name": "M3e FLAC",
+        "scope": "av-media",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 1,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:51:08.0000000Z",
+          "Played": true
+        }
+      },
+      {
+        "id": "11",
+        "name": "M3e MP3",
+        "scope": "av-media",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 2,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+          "Played": true
+        }
+      },
+      {
+        "id": "14",
+        "name": "M3e Client Series",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 3,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "15",
+        "name": "Season 1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 2,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "16",
+        "name": "Season 2",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 1,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "18",
+        "name": "Episode 1-1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "17",
+        "name": "Episode 1-2",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "19",
+        "name": "Episode 2-1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      }
+    ],
+    "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+    "policy_sha256": "9bd56a01e853584a682e5ac301f7534c7d620d99752cb1094491f7159af6496d",
+    "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "state_after": {
+    "user_id": "7d777e79b35541889f738bb5f5a8da23",
+    "items": [
+      {
+        "id": "9",
+        "name": "M3e Client Movie",
+        "scope": "av-media",
+        "user_data": {
+          "PlayedPercentage": 20.207,
+          "PlaybackPositionTicks": 1212420000,
+          "PlayCount": 2,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:52:26.0000000Z",
+          "Played": false
+        }
+      },
+      {
+        "id": "10",
+        "name": "M3e FLAC",
+        "scope": "av-media",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 1,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:51:08.0000000Z",
+          "Played": true
+        }
+      },
+      {
+        "id": "11",
+        "name": "M3e MP3",
+        "scope": "av-media",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 2,
+          "IsFavorite": false,
+          "LastPlayedDate": "2026-09-11T00:49:38.0000000Z",
+          "Played": true
+        }
+      },
+      {
+        "id": "14",
+        "name": "M3e Client Series",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 3,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "15",
+        "name": "Season 1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 2,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "16",
+        "name": "Season 2",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "UnplayedItemCount": 1,
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "18",
+        "name": "Episode 1-1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "17",
+        "name": "Episode 1-2",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      },
+      {
+        "id": "19",
+        "name": "Episode 2-1",
+        "scope": "tv-browse-only",
+        "user_data": {
+          "PlaybackPositionTicks": 0,
+          "PlayCount": 0,
+          "IsFavorite": false,
+          "Played": false
+        }
+      }
+    ],
+    "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+    "policy_sha256": "9bd56a01e853584a682e5ac301f7534c7d620d99752cb1094491f7159af6496d",
+    "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  "state_proof": {
+    "all_observed_item_user_data_unchanged": true,
+    "observed_item_count": 9,
+    "observed_tv_item_count": 6,
+    "playback_request_count": 0,
+    "playback_metadata_request_count": 1,
+    "playback_metadata_is_start_evidence": false,
+    "observed_media_elements_inactive": true,
+    "independent_state_reads_are_ui_acceptance": false,
+    "event_scope": "Complete observed browser request set after browser shutdown",
+    "request_overflow": 0
+  },
+  "media_before": [],
+  "media_after": [],
+  "preferences": {
+    "configuration_unchanged": true,
+    "policy_unchanged": true,
+    "user_settings_unchanged": true
+  },
+  "logout": {
+    "attempted": true,
+    "http_status": 204,
+    "result": "ui_logout_http_accepted_and_login_view_visible"
+  },
+  "session_proof": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 5555,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 5565
+        },
+        "token_fingerprint": "5631633610be1f59fe9c20bfd6665905879310978c715f38db7e6d482740ec5e",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 5565,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 5573
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    }
+  },
+  "target_assertions": {
+    "enabled": true,
+    "checks": [
+      {
+        "phase": "target_pin_before_browser",
+        "elapsed_ms": 2,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_login_submit",
+        "elapsed_ms": 1238,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_workflow",
+        "elapsed_ms": 1445,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_before_logout",
+        "elapsed_ms": 5267,
+        "result": "passed"
+      },
+      {
+        "phase": "target_pin_after_shutdown",
+        "elapsed_ms": 5981,
+        "result": "passed"
+      }
+    ],
+    "failed": false
+  },
+  "finalization": {
+    "attempted": true,
+    "result": "completed"
+  },
+  "request_count": 292,
+  "local_http_failures": [],
+  "page_errors": [],
+  "blocked_external_count": 1,
+  "network_policy": {
+    "target_only": true,
+    "allowed_non_network_schemes": [
+      "data:",
+      "blob:"
+    ],
+    "websocket_mapping": "ws to http and wss to https, preserving host and port",
+    "service_workers": "allow",
+    "external_action": "Abort or deny with no upstream connection; no replacement success responses or frames"
+  },
+  "ui_browse_requests": [
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/{value}",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/{value}",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Seasons",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Resume",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Resume",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Seasons",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Seasons",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Episodes",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Seasons",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Episodes",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/{value}",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Shows/{value}/Episodes",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Resume",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Resume",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Latest",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Latest",
+      "origin": "target",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/emby/Users/{value}/Items/Latest",
+      "origin": "target",
+      "status": 200
+    }
+  ],
+  "failed_calibration_runs": [
+    {
+      "run": "reference-av-tv-01",
+      "report_sha256": "9305ab8b25173457d9d7cd29189ab8d505fb7ceabbe8a324e456d83333dae5ef",
+      "ui_phase": "home_library",
+      "reason": "exact_title_control_ambiguous",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-02",
+      "report_sha256": "0c1b9c258a48517af4b18aaca7174ab9fa402b0cbe7627ca2b28ecdf91c3a451",
+      "ui_phase": "library_series",
+      "reason": "exact_title_control_missing",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-03",
+      "report_sha256": "d20b23e5bb365b608b8eeee46cdfd0017e467830fe632328619e033388e02aea",
+      "ui_phase": "season_1",
+      "reason": "requested_season_navigation_not_observed",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-04",
+      "report_sha256": "00e182a0dc754b283c96f7e5bee5c130e3c609ee853a22e3485ac904418767c9",
+      "ui_phase": "series_seasons",
+      "reason": "series_season_navigation_not_observed",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-05",
+      "report_sha256": "dbe8a5f9c798223463d499e5e1933acd16cd3e322b5ffd567ddfe4f1bffabdb6",
+      "ui_phase": "season_1",
+      "reason": "requested_season_option_not_observed_after_label_click",
+      "logout_http_status": null,
+      "session_proof": "no_logout_observed",
+      "passed": false,
+      "private_recovery_file_retained": true,
+      "separate_cleanup": {
+        "outcome": "owned_token_revoked",
+        "requests": [
+          {
+            "method": "POST",
+            "route": "/emby/Sessions/Logout",
+            "status": 204,
+            "is_ui_request": false
+          },
+          {
+            "method": "GET",
+            "route": "/emby/System/Info",
+            "status": 401,
+            "is_ui_request": false
+          }
+        ],
+        "sha256": "4897681aa495b870bb01157d8f4b7661521dd32d5ef99c75ed1908ed56866cb2",
+        "is_ui_acceptance": false
+      }
+    },
+    {
+      "run": "reference-av-tv-06",
+      "report_sha256": "aba2027c96149c0de00eb8c79e38aa8f7a05722622350486b178c3c3f6d62386",
+      "ui_phase": "season_1",
+      "reason": "visible_episode_titles_do_not_match_selected_season",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-07",
+      "report_sha256": "fc88d4fdc3dd516e110eced00097962f662a77552f3a319fe7d30fae772542b2",
+      "ui_phase": "episode_detail",
+      "reason": "episode_detail_title_and_season_episode_metadata_not_observed",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    },
+    {
+      "run": "reference-av-tv-08",
+      "report_sha256": "000677fe45f9b4b94ba35e6e6841d880571188bdc1248fb53802a73a97adb3d2",
+      "ui_phase": "episode_detail",
+      "reason": "episode_detail_title_and_season_episode_metadata_not_observed",
+      "logout_http_status": 204,
+      "session_proof": "all_observed_logout_tokens_rejected",
+      "passed": false,
+      "private_recovery_file_retained": true
+    }
+  ],
+  "limitations": [
+    "The selected season label changes, but the original Series detail retains all three owned episode cards; this is not a season-exclusive filtering claim.",
+    "Opening episode details makes one original-client PlaybackInfo request for metadata; no start/progress/stop or media-stream request was observed.",
+    "State snapshots and token rejection are separate setup or cleanup reads, not UI actions.",
+    "Instance pins are checked around the frozen run; the existing proof helper has no atomic cancellation hook for a delayed independent request if the instance changes."
+  ]
+}

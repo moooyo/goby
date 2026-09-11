@@ -3,8 +3,31 @@ package backuppg
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
 )
+
+func TestPublishedRecoveryCatalogsRetainHistoricalMigrationPrefixes(t *testing.T) {
+	digests := make(map[string]int64)
+	for _, baseline := range []struct {
+		version int64
+		tables  int
+	}{{23, 29}, {24, 30}, {25, 30}} {
+		t.Run(fmt.Sprintf("schema%d", baseline.version), func(t *testing.T) {
+			catalog, migrations, err := loadCatalog(baseline.version, "published_catalog_test")
+			if err != nil {
+				t.Fatalf("load the authenticated published schema %d catalog: %v", baseline.version, err)
+			}
+			if len(catalog.Tables) != baseline.tables || len(migrations) != int(baseline.version) || migrations[len(migrations)-1].Version != baseline.version {
+				t.Fatalf("schema %d lost its historical table inventory or migration prefix", baseline.version)
+			}
+			if previous, exists := digests[catalog.SHA256]; exists {
+				t.Fatalf("schema %d reused schema %d's catalog digest", baseline.version, previous)
+			}
+			digests[catalog.SHA256] = baseline.version
+		})
+	}
+}
 
 func TestCatalogCanonicalJSONPreservesEscapesAndInt64(t *testing.T) {
 	original := []byte(`[{"value":{"source":"CHECK (id > 0 AND id < 9223372036854775807)","maximum":9223372036854775807},"name":"sequence"}]`)

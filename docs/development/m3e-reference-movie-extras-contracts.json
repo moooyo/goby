@@ -1,0 +1,585 @@
+{
+  "classification": "protocol research; not client acceptance",
+  "contracts": {
+    "intros": {
+      "case": "intros",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items/9/Intros"
+      },
+      "response": {
+        "body": {
+          "Items": [],
+          "TotalRecordCount": 0
+        },
+        "bodyKind": "json",
+        "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+        "bodyStructure": {
+          "Items": {
+            "itemShapes": [],
+            "length": 0,
+            "type": "array"
+          },
+          "TotalRecordCount": "integer"
+        },
+        "bytesRead": 33,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "33",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "special-features": {
+      "case": "special-features",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items/9/SpecialFeatures"
+      },
+      "response": {
+        "body": [],
+        "bodyKind": "json",
+        "bodySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "bodyStructure": {
+          "itemShapes": [],
+          "length": 0,
+          "type": "array"
+        },
+        "bytesRead": 2,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "special-features-fields": {
+      "case": "special-features-fields",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items/9/SpecialFeatures?Fields=Path%2CMediaSources%2CMediaStreams%2COverview"
+      },
+      "response": {
+        "body": [],
+        "bodyKind": "json",
+        "bodySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "bodyStructure": {
+          "itemShapes": [],
+          "length": 0,
+          "type": "array"
+        },
+        "bytesRead": 2,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "2",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-direct": {
+      "case": "theme-direct",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&InheritFromParent=false&EnableThemeSongs=true&EnableThemeVideos=true"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 9,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "f2ebea9c798fbac05a09cadc08aebf0bc7b2085f18a239ca559ea2957fdedbd8",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-disabled": {
+      "case": "theme-disabled",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&InheritFromParent=true&EnableThemeSongs=false&EnableThemeVideos=false"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "4bb3c0df8cad45bfe25e4dd68f4eaf460f5155d87d71376b725125c098a0d91b",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    },
+    "theme-inherit": {
+      "case": "theme-inherit",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/Items/9/ThemeMedia?UserId=46c1e1006a2c47ada1b482a96e89c549&InheritFromParent=true&EnableThemeSongs=true&EnableThemeVideos=true"
+      },
+      "response": {
+        "body": {
+          "SoundtrackSongsResult": {
+            "Items": [],
+            "OwnerId": 0,
+            "TotalRecordCount": 0
+          },
+          "ThemeSongsResult": {
+            "Items": [],
+            "OwnerId": 1,
+            "TotalRecordCount": 0
+          },
+          "ThemeVideosResult": {
+            "Items": [],
+            "OwnerId": 1,
+            "TotalRecordCount": 0
+          }
+        },
+        "bodyKind": "json",
+        "bodySha256": "cee464d406a48b8063d986dada42506977fc4713289e4e5f1c2e0846d2e93bc1",
+        "bodyStructure": {
+          "SoundtrackSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeSongsResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          },
+          "ThemeVideosResult": {
+            "Items": {
+              "itemShapes": [],
+              "length": 0,
+              "type": "array"
+            },
+            "OwnerId": "integer",
+            "TotalRecordCount": "integer"
+          }
+        },
+        "bytesRead": 202,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "202",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:39:07 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    }
+  },
+  "endpointAnnex": {
+    "anonymousStatus": 401,
+    "authenticatedEvidenceReused": true,
+    "forwardedHeaderRequests": 0,
+    "marker": "goby-m3e-movie-extras-endpoint-annex-v1",
+    "maximumBusinessRequests": 12,
+    "newRecorderInvalidTokenStatus": 401,
+    "newRecorderLogoutStatus": 204,
+    "overallBusinessRequests": 12,
+    "overallNewResearchTokens": 1,
+    "parentMarker": "goby-m3e-reference-movie-extras-v1",
+    "scope": "Direct loopback inside the fixed fresh reference namespace. The ordinary authenticated response is a prior saved contract from the same attested process. No forwarded-header or external-network matrix was performed."
+  },
+  "evidenceHashes": {
+    "endpoint-anonymous-v1/export/anonymous-system-endpoint.json": "7020a907520c9fd4cfd5840474ea55e2cb8d96ea8e09e5b45f811fbf692b1f9b",
+    "endpoint-anonymous-v1/export/previous-authenticated-system-endpoint.json": "2469938b1aa8f6bf55455f3c0c9d3b8b55289bc7df0d7dd99f3cb570fa18d06a",
+    "endpoint-anonymous-v1/export/report.json": "67b7adccd392631ca56f9d876238df9f8752e5d76b3cfda6738da35fdca1bb59",
+    "export/intros.json": "336cccd0d5d258a6f23e491dc7db3dd949b5819d6e02650a9ae161962adb371c",
+    "export/report.json": "ebab0597b1f74540c9cdcb06007f78216ca1178c2681885c1d543a41f882816d",
+    "export/special-features-fields.json": "f9ef1eae82645e386ad110f0015d495aec45a4bcd3101584ae28c23aa0ea5507",
+    "export/special-features.json": "2c4244fa0c9444cd76d8a0de05fa4cca502e2c602a3ae01ba22a417b654c0f4a",
+    "export/theme-direct.json": "35d7378aab75a6be54eb6d4e8ea4e4b1007aebbac83b8fb2c0fb4b733516d343",
+    "export/theme-disabled.json": "92aadaeef2e9c7dd61a1adc9b2d09a848bc3191bc57f19cb2eeb2ba21af25afe",
+    "export/theme-inherit.json": "952fa7c545123ce91d9d555b0d27a0ebff682f402dc64c5c1e599e3c1b91032b"
+  },
+  "limits": [
+    "All observed extras collections are empty for this one synthetic movie. No positive intro, special-feature or theme-media resource was created or configured.",
+    "ThemeMedia OwnerId changes with inheritance and enable flags even for empty collections. OwnerId 1 is an observed reference value, not a constant to copy into Goby.",
+    "System/Endpoint authenticated evidence is reused from the same fixed reference process. This capture adds only the anonymous result. No forwarded-header or non-loopback matrix was performed.",
+    "One source-path preflight failed before any study directory or HTTP request. The corrected capture completed 11 business reads and one anonymous annex read, plus login/logout/revoked-token controls."
+  ],
+  "movieFixture": {
+    "Id": "9",
+    "LocalTrailerCount": 0,
+    "Name": "M3e Client Movie",
+    "ParentId": "4",
+    "PartCount": 1,
+    "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+    "RemoteTrailers": [],
+    "Type": "Movie"
+  },
+  "report": {
+    "approvedFixtureCatalog": [
+      {
+        "Id": "9",
+        "MediaType": "Video",
+        "Name": "M3e Client Movie",
+        "ParentId": null,
+        "Path": "[fixture media]/Movies/M3e Client Movie.mp4",
+        "Type": "Movie"
+      },
+      {
+        "Id": "10",
+        "MediaType": "Audio",
+        "Name": "M3e FLAC",
+        "ParentId": null,
+        "Path": "[fixture media]/Music/M3e Client Audio.flac",
+        "Type": "Audio"
+      },
+      {
+        "Id": "11",
+        "MediaType": "Audio",
+        "Name": "M3e MP3",
+        "ParentId": null,
+        "Path": "[fixture media]/Music/M3e Client Audio.mp3",
+        "Type": "Audio"
+      },
+      {
+        "Id": "18",
+        "MediaType": "Video",
+        "Name": "Episode 1-1",
+        "ParentId": null,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+        "Type": "Episode"
+      },
+      {
+        "Id": "17",
+        "MediaType": "Video",
+        "Name": "Episode 1-2",
+        "ParentId": null,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+        "Type": "Episode"
+      },
+      {
+        "Id": "19",
+        "MediaType": "Video",
+        "Name": "Episode 2-1",
+        "ParentId": null,
+        "Path": "[fixture media]/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+        "Type": "Episode"
+      }
+    ],
+    "browserSessionUsedOrRevoked": false,
+    "businessRequests": 11,
+    "caseStatuses": {
+      "catalog": 200,
+      "intros": 200,
+      "movie-after": 200,
+      "movie-before": 200,
+      "recorder-login": 200,
+      "recorder-logout": 204,
+      "recorder-token-invalid": 401,
+      "special-features": 200,
+      "special-features-fields": 200,
+      "theme-direct": 200,
+      "theme-disabled": 200,
+      "theme-inherit": 200,
+      "viewer-after": 200,
+      "viewer-before": 200
+    },
+    "classification": "protocol research; not client acceptance",
+    "configurationAndPolicyPreserved": true,
+    "failureType": null,
+    "marker": "goby-m3e-reference-movie-extras-v1",
+    "maximumBusinessRequests": 12,
+    "mediaManifestPreserved": true,
+    "movieId": "9",
+    "movieMetadataPreserved": true,
+    "newRecorderTokenRevoked": true,
+    "oldReferenceRequests": 0,
+    "playbackPreferenceMetadataOrLibraryWrites": 0,
+    "recorderDeviceId": "goby-m3e-movie-extras-recorder-v1",
+    "recoveryOnly": false,
+    "referenceExecutableSha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+    "referencePID": 332054,
+    "referenceStartTicks": "357218",
+    "requests": 14,
+    "scope": "Only the existing synthetic movie and six approved catalog media items were read. Empty results do not establish behavior for configured intros, special features, or theme media.",
+    "sourceSha256": "80d7481a332bef03dc6b8763e64f8e28df4a512f9e9b8785214f512194816558"
+  },
+  "systemEndpoint": {
+    "anonymousCurrentCapture": {
+      "classification": "protocol research; not client acceptance",
+      "referencePID": 332054,
+      "referenceStartTicks": "357218",
+      "request": {
+        "authenticated": false,
+        "businessRequestOrdinal": 12,
+        "forwardedHeaders": false,
+        "method": "GET",
+        "path": "/emby/System/Endpoint"
+      },
+      "response": {
+        "body": "Access token is invalid or expired.",
+        "bodyKind": "text",
+        "bodySha256": "64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255",
+        "bodyStructure": "string",
+        "bytesRead": 35,
+        "complete": true,
+        "contentType": "text/plain",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "35",
+          "Content-Type": "text/plain",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Fri, 11 Sep 2026 00:42:12 GMT",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "status": 401
+      }
+    },
+    "ordinaryAuthenticatedPreviousCapture": {
+      "case": "system-endpoint",
+      "classification": "protocol research; not client acceptance",
+      "request": {
+        "authenticated": true,
+        "authenticationBodyRetained": false,
+        "contentType": null,
+        "method": "GET",
+        "path": "/emby/System/Endpoint"
+      },
+      "response": {
+        "body": {
+          "IsInNetwork": true,
+          "IsLocal": true
+        },
+        "bodyKind": "json",
+        "bodySha256": "7b159c0714bd1158d01a93ec32cc19a548cae60c8311883d966f9dd962592b27",
+        "bodyStructure": {
+          "IsInNetwork": "boolean",
+          "IsLocal": "boolean"
+        },
+        "bytesRead": 35,
+        "complete": true,
+        "contentType": "application/json; charset=utf-8",
+        "headers": {
+          "Access-Control-Allow-Headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Private-Network": "true",
+          "Content-Length": "35",
+          "Content-Type": "application/json; charset=utf-8",
+          "Cross-Origin-Resource-Policy": "cross-origin",
+          "Date": "Thu, 10 Sep 2026 23:03:01 GMT",
+          "Expires": "-1",
+          "Private-Network-Access-Id": "f56dec8ff7414847873064c4be9fba74",
+          "Private-Network-Access-Name": "Goby Client Reference M3e",
+          "Server": "UPnP/1.0 DLNADOC/1.50"
+        },
+        "readLimitBytes": 65536,
+        "status": 200,
+        "truncatedAtReadLimit": false
+      }
+    }
+  }
+}

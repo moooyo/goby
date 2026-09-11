@@ -38,7 +38,7 @@ func (s *Server) clientCapabilities(full bool) http.HandlerFunc {
 		}
 		var encoded json.RawMessage
 		if full {
-			if !decodeBody(w, r, &encoded) {
+			if !decodeEmbyJSONBody(w, r, &encoded) {
 				return
 			}
 		} else {

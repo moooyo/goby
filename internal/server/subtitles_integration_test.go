@@ -57,6 +57,9 @@ func newSubtitleHTTPFixture(t *testing.T) *subtitleHTTPFixture {
 	if track["Codec"] != "srt" || track["Language"] != "en" || track["IsDefault"] != true {
 		t.Fatal("first external subtitle must follow embedded indexes 2 and 5 with its indexed metadata")
 	}
+	if track["DisplayTitle"] != "English (SRT)" || track["DisplayLanguage"] != "English" || track["Title"] != "en" {
+		t.Fatal("the stored language title must expose an English SRT display label without changing its raw title")
+	}
 	return fixture
 }
 
@@ -165,7 +168,7 @@ func expectSubtitleHTTPBody(t *testing.T, response streamHTTPResponse, contentTy
 func TestHTTPSubtitleDescriptorsNegotiateAndDeliverCredentialedTracks(t *testing.T) {
 	s := newSubtitleHTTPFixture(t)
 	p := s.p
-	vttPath := strings.TrimSuffix(p.s.video.path, filepath.Ext(p.s.video.path)) + ".fr.vtt"
+	vttPath := strings.TrimSuffix(p.s.video.path, filepath.Ext(p.s.video.path)) + ".en.vtt"
 	writeSubtitleHTTPFile(t, vttPath, subtitleHTTPNativeVTT)
 	p.s.rescan(t, p.s.video.libraryID)
 	detail := s.detail(t)
@@ -185,10 +188,15 @@ func TestHTTPSubtitleDescriptorsNegotiateAndDeliverCredentialedTracks(t *testing
 				index              int
 				codec, contentType string
 				body               string
-			}{{6, "srt", "text/plain", subtitleHTTPSRT}, {7, "vtt", "text/vtt", subtitleHTTPNativeVTT}} {
+				displayTitle       string
+			}{{6, "srt", "text/plain", subtitleHTTPSRT, "English (SRT)"}, {7, "vtt", "text/vtt", subtitleHTTPNativeVTT, "English (VTT)"}} {
 				track := subtitleHTTPTrack(t, descriptor, test.index)
 				if track["Codec"] != test.codec {
 					t.Error("subtitle descriptor changed the indexed native codec")
+				}
+				if track["DisplayTitle"] != test.displayTitle || track["DisplayLanguage"] != "English" ||
+					track["Title"] != "en" || track["Language"] != "en" {
+					t.Error("same-language external tracks lost their distinct native-format display labels or source language facts")
 				}
 				deliveryURL := subtitleHTTPDeliveryURL(t, s, track, test.index, test.codec)
 				get := p.s.request(t, http.MethodGet, deliveryURL, "", nil, nil)
@@ -220,6 +228,9 @@ func TestHTTPSubtitleDescriptorsNegotiateAndDeliverCredentialedTracks(t *testing
 	if selected["Codec"] != "srt" {
 		t.Error("negotiated output format overwrote the native SRT codec")
 	}
+	if selected["DisplayTitle"] != "English (SRT)" || selected["DisplayLanguage"] != "English" || selected["Title"] != "en" {
+		t.Error("SRT delivery as VTT changed the indexed native-format display label or raw title")
+	}
 	deliveryURL := subtitleHTTPDeliveryURL(t, s, selected, 6, "vtt")
 	converted := p.s.request(t, http.MethodGet, deliveryURL, "", nil, nil)
 	expectSubtitleHTTPBody(t, converted, "text/vtt", subtitleHTTPConvertedVTT)
@@ -227,6 +238,85 @@ func TestHTTPSubtitleDescriptorsNegotiateAndDeliverCredentialedTracks(t *testing
 	expectSubtitleHTTPStatus(t, head, http.StatusOK)
 	if len(head.body) != 0 || head.header.Get("Content-Type") != "text/vtt" || head.header.Get("Content-Length") != strconv.Itoa(len(subtitleHTTPConvertedVTT)) {
 		t.Error("converted subtitle HEAD did not expose the converted byte length and MIME type")
+	}
+}
+
+func TestHTTPSubtitleCandidateFormatsKeepOffAndNativeCatalogURLs(t *testing.T) {
+	s := newSubtitleHTTPFixture(t)
+	p := s.p
+	vttPath := strings.TrimSuffix(p.s.video.path, filepath.Ext(p.s.video.path)) + ".en.vtt"
+	writeSubtitleHTTPFile(t, vttPath, subtitleHTTPNativeVTT)
+	p.s.rescan(t, p.s.video.libraryID)
+	// Stored capabilities must not substitute for an absent request profile.
+	expectClientCapabilityHTTPSuccess(t, p.s.f.request(t, http.MethodPost, "/emby/Sessions/Capabilities/Full", map[string]any{
+		"DeviceProfile": map[string]any{"SubtitleProfiles": []map[string]any{{"Format": "vtt", "Method": "External"}}},
+	}, p.headers))
+	off, selected := -1, 6
+	var currentPlayID string
+	for _, test := range []struct {
+		name      string
+		index     *int
+		profiles  []map[string]any
+		noProfile bool
+		wantSRT   string
+	}{
+		{"omitted selection with VTT profile", nil, []map[string]any{{"Format": "vtt", "Method": "External", "AllowChunkedResponse": true}}, false, "vtt"},
+		{"explicit Off with VTT profile", &off, []map[string]any{{"Format": "vtt", "Method": "External"}}, false, "vtt"},
+		{"selected SRT with VTT profile", &selected, []map[string]any{{"Format": "vtt", "Method": "External"}}, false, "vtt"},
+		{"both formats retain native", nil, []map[string]any{{"Format": "vtt,srt", "Method": "External"}}, false, "srt"},
+		{"unmatched candidates retain catalog facts", nil, []map[string]any{{"Format": "vtt", "Method": "Hls"}}, false, "srt"},
+		{"absent profile ignores stored capabilities", nil, nil, true, "srt"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := matchingPlaybackHTTPBody()
+			if test.noProfile {
+				delete(request, "DeviceProfile")
+			} else {
+				request["DeviceProfile"].(map[string]any)["SubtitleProfiles"] = test.profiles
+			}
+			if test.index != nil {
+				request["SubtitleStreamIndex"] = *test.index
+			}
+			if currentPlayID != "" {
+				request["CurrentPlaySessionId"] = currentPlayID
+			}
+			info, source := p.prepare(t, request)
+			currentPlayID = stringValue(t, info, "PlaySessionId")
+			playbackHTTPFlags(t, source, true, true)
+			if test.index != nil && *test.index != -1 {
+				if _, exists := source["DefaultSubtitleStreamIndex"]; exists {
+					t.Error("selected external delivery acquired an embedded default subtitle index")
+				}
+			} else if source["DefaultSubtitleStreamIndex"] != float64(-1) {
+				t.Error("candidate format projection enabled a subtitle while the current choice was Off")
+			}
+			for _, track := range []struct {
+				index         int
+				codec, format string
+			}{{6, "srt", test.wantSRT}, {7, "vtt", "vtt"}} {
+				descriptor := subtitleHTTPTrack(t, source, track.index)
+				if descriptor["Codec"] != track.codec || descriptor["Title"] != "en" ||
+					descriptor["DisplayTitle"] != "English ("+strings.ToUpper(track.codec)+")" {
+					t.Error("candidate delivery changed native subtitle identity or display facts")
+				}
+				path := subtitleHTTPDeliveryURL(t, s, descriptor, track.index, track.format)
+				response := p.s.request(t, http.MethodGet, path, "", nil, nil)
+				body, contentType := subtitleHTTPNativeVTT, "text/vtt"
+				if track.codec == "srt" {
+					body = subtitleHTTPConvertedVTT
+					if track.format == "srt" {
+						body, contentType = subtitleHTTPSRT, "text/plain"
+					}
+				}
+				expectSubtitleHTTPBody(t, response, contentType, body)
+			}
+		})
+	}
+	// Negotiation must not rewrite cached item descriptors or their default URLs.
+	detail := s.detail(t)
+	for _, descriptor := range []map[string]any{detail, subtitleHTTPSource(t, detail)} {
+		subtitleHTTPDeliveryURL(t, s, subtitleHTTPTrack(t, descriptor, 6), 6, "srt")
+		subtitleHTTPDeliveryURL(t, s, subtitleHTTPTrack(t, descriptor, 7), 7, "vtt")
 	}
 }
 

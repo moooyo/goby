@@ -1,0 +1,108 @@
+{
+  "GobyRequests": 0,
+  "allAcknowledgedRecorderTokensRevoked": true,
+  "allNewRecorderTokensRevoked": true,
+  "baselineProjection": "Shows Episodes list; no claim about omitted count/date fields",
+  "baselineUserData": {
+    "17": {
+      "IsFavorite": false,
+      "PlayCount": 0,
+      "PlaybackPositionTicks": 0,
+      "Played": false
+    },
+    "18": {
+      "IsFavorite": false,
+      "PlayCount": 0,
+      "PlaybackPositionTicks": 0,
+      "Played": false
+    },
+    "19": {
+      "IsFavorite": false,
+      "PlayCount": 0,
+      "PlaybackPositionTicks": 0,
+      "Played": false
+    }
+  },
+  "classification": "protocol research; not client acceptance",
+  "cleanupErrors": [],
+  "episodeIdsInOrder": [
+    "18",
+    "17",
+    "19"
+  ],
+  "evidenceBoundary": "One new user, one three-episode two-season series. The requested experiment only reports S01E02 at 120 of 600 seconds; consult finalItemDetailUserData to determine whether it was reached. No Played=true controls or actual client playback. New owned account, login, and protocol history remain.",
+  "existingUserWrites": 0,
+  "failureType": null,
+  "finalItemDetailUserData": {
+    "17": {
+      "IsFavorite": false,
+      "LastPlayedDate": "2026-09-11T01:02:05.0000000Z",
+      "PlayCount": 1,
+      "PlaybackPositionTicks": 1200000000,
+      "Played": false,
+      "PlayedPercentage": 20
+    },
+    "18": {
+      "IsFavorite": false,
+      "PlayCount": 0,
+      "PlaybackPositionTicks": 0,
+      "Played": false
+    },
+    "19": {
+      "IsFavorite": false,
+      "PlayCount": 0,
+      "PlaybackPositionTicks": 0,
+      "Played": false
+    }
+  },
+  "libraryConfigurationMutations": 0,
+  "marker": "goby-m3e-nextup-later-partial-v2",
+  "maximumRequests": 30,
+  "mediaAndNfoPreserved": true,
+  "mediaMutations": 0,
+  "newConfigurationAndPolicyPreserved": null,
+  "newUserId": "38431ababffb4705b447fe23833d36b8",
+  "newUsername": "m3e-nextup-later-partial",
+  "observations": {
+    "after-partial-series": {
+      "ids": [
+        "17",
+        "19"
+      ],
+      "query": {
+        "EnableImages": "false",
+        "Fields": "UserData,ParentId",
+        "Limit": 10,
+        "SeriesId": "14",
+        "UserId": "38431ababffb4705b447fe23833d36b8"
+      },
+      "total": 2
+    },
+    "baseline-series": {
+      "ids": [],
+      "query": {
+        "EnableImages": "false",
+        "Fields": "UserData,ParentId",
+        "Limit": 10,
+        "SeriesId": "14",
+        "UserId": "38431ababffb4705b447fe23833d36b8"
+      },
+      "total": 0
+    }
+  },
+  "oldReferenceRequests": 0,
+  "ownedPlaybackStopped": true,
+  "referencePID": 332054,
+  "referenceStartTicks": "357218",
+  "reportedPartialEpisodeId": "17",
+  "reportedPositionTicks": 1200000000,
+  "requests": 30,
+  "revokedRecorderRoles": [
+    "admin",
+    "new"
+  ],
+  "schemaVersion": 1,
+  "seriesId": "14",
+  "unacknowledgedLoginRoles": [],
+  "userAndProtocolHistoryRetained": true
+}

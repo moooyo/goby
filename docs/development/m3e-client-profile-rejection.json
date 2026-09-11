@@ -1,0 +1,418 @@
+{
+  "scope": "Original client request profile and its rejection; not successful playback",
+  "request": {
+    "index": 250,
+    "elapsed_ms": 1487,
+    "method": "POST",
+    "origin": "target",
+    "route": "/emby/Items/{value}/PlaybackInfo",
+    "query_field_names": [
+      "UserId",
+      "StartTimeTicks",
+      "IsPlayback",
+      "AutoOpenLiveStream",
+      "MaxStreamingBitrate",
+      "X-Emby-Client",
+      "X-Emby-Device-Name",
+      "X-Emby-Device-Id",
+      "X-Emby-Client-Version",
+      "X-Emby-Token",
+      "X-Emby-Language",
+      "reqformat"
+    ],
+    "browse_query": [],
+    "blocked_by_network_policy": false,
+    "resource_type": "fetch",
+    "content_type": "text/plain",
+    "status": 400,
+    "json_field_names": [
+      "DeviceProfile"
+    ],
+    "playback_profile": {
+      "policy": "Only bounded standard codec/profile scalar fields retain values. Names, IDs, unknown values, URLs, and opaque strings are masked; this is request evidence, not client source inspection.",
+      "profile": {
+        "MaxStaticBitrate": 200000000,
+        "MaxStreamingBitrate": 200000000,
+        "MusicStreamingTranscodingBitrate": 192000,
+        "DirectPlayProfiles": [
+          {
+            "Container": "mp4,m4v",
+            "Type": "Video",
+            "VideoCodec": "h264,av1,vp8,vp9",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis"
+          },
+          {
+            "Container": "mkv",
+            "Type": "Video",
+            "VideoCodec": "h264,av1,vp8,vp9",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis"
+          },
+          {
+            "Container": "flv",
+            "Type": "Video",
+            "VideoCodec": "h264",
+            "AudioCodec": "aac,mp3"
+          },
+          {
+            "Container": "3gp",
+            "Type": "Video",
+            "VideoCodec": "",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis"
+          },
+          {
+            "Container": "mov",
+            "Type": "Video",
+            "VideoCodec": "h264",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis"
+          },
+          {
+            "Container": "opus",
+            "Type": "Audio"
+          },
+          {
+            "Container": "mp3",
+            "Type": "Audio",
+            "AudioCodec": "mp3"
+          },
+          {
+            "Container": "mp2,mp3",
+            "Type": "Audio",
+            "AudioCodec": "mp2"
+          },
+          {
+            "Container": "aac",
+            "Type": "Audio",
+            "AudioCodec": "aac"
+          },
+          {
+            "Container": "m4a",
+            "AudioCodec": "aac",
+            "Type": "Audio"
+          },
+          {
+            "Container": "mp4",
+            "AudioCodec": "aac",
+            "Type": "Audio"
+          },
+          {
+            "Container": "flac",
+            "Type": "Audio"
+          },
+          {
+            "Container": "webma,webm",
+            "Type": "Audio"
+          },
+          {
+            "Container": "wav",
+            "Type": "Audio",
+            "AudioCodec": "PCM_S16LE,PCM_S24LE"
+          },
+          {
+            "Container": "ogg",
+            "Type": "Audio"
+          },
+          {
+            "Container": "webm",
+            "Type": "Video",
+            "AudioCodec": "vorbis,opus",
+            "VideoCodec": "av1,VP8,VP9"
+          }
+        ],
+        "TranscodingProfiles": [
+          {
+            "Container": "aac",
+            "Type": "Audio",
+            "AudioCodec": "aac",
+            "Context": "Streaming",
+            "Protocol": "hls",
+            "MaxAudioChannels": "2",
+            "MinSegments": "1",
+            "BreakOnNonKeyFrames": false
+          },
+          {
+            "Container": "aac",
+            "Type": "Audio",
+            "AudioCodec": "aac",
+            "Context": "Streaming",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "mp3",
+            "Type": "Audio",
+            "AudioCodec": "mp3",
+            "Context": "Streaming",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "opus",
+            "Type": "Audio",
+            "AudioCodec": "opus",
+            "Context": "Streaming",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "wav",
+            "Type": "Audio",
+            "AudioCodec": "wav",
+            "Context": "Streaming",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "opus",
+            "Type": "Audio",
+            "AudioCodec": "opus",
+            "Context": "Static",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "mp3",
+            "Type": "Audio",
+            "AudioCodec": "mp3",
+            "Context": "Static",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "aac",
+            "Type": "Audio",
+            "AudioCodec": "aac",
+            "Context": "Static",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "wav",
+            "Type": "Audio",
+            "AudioCodec": "wav",
+            "Context": "Static",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "mkv",
+            "Type": "Video",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis",
+            "VideoCodec": "h264,av1,vp8,vp9",
+            "Context": "Static",
+            "MaxAudioChannels": "2",
+            "CopyTimestamps": true
+          },
+          {
+            "Container": "ts",
+            "Type": "Video",
+            "AudioCodec": "mp3,aac",
+            "VideoCodec": "h264,av1",
+            "Context": "Streaming",
+            "Protocol": "hls",
+            "MaxAudioChannels": "2",
+            "MinSegments": "1",
+            "BreakOnNonKeyFrames": false,
+            "ManifestSubtitles": "vtt"
+          },
+          {
+            "Container": "webm",
+            "Type": "Video",
+            "AudioCodec": "vorbis",
+            "VideoCodec": "vpx",
+            "Context": "Streaming",
+            "Protocol": "http",
+            "MaxAudioChannels": "2"
+          },
+          {
+            "Container": "mp4",
+            "Type": "Video",
+            "AudioCodec": "mp3,aac,opus,flac,vorbis",
+            "VideoCodec": "h264",
+            "Context": "Static",
+            "Protocol": "http"
+          }
+        ],
+        "ContainerProfiles": [],
+        "CodecProfiles": [
+          {
+            "Type": "VideoAudio",
+            "Codec": "aac",
+            "Conditions": [
+              {
+                "Condition": "Equals",
+                "Property": "IsSecondaryAudio",
+                "Value": "false",
+                "IsRequired": "false"
+              }
+            ]
+          },
+          {
+            "Type": "VideoAudio",
+            "Codec": "flac",
+            "Conditions": [
+              {
+                "Condition": "Equals",
+                "Property": "IsSecondaryAudio",
+                "Value": "false",
+                "IsRequired": "false"
+              }
+            ]
+          },
+          {
+            "Type": "VideoAudio",
+            "Codec": "vorbis",
+            "Conditions": [
+              {
+                "Condition": "Equals",
+                "Property": "IsSecondaryAudio",
+                "Value": "false",
+                "IsRequired": "false"
+              }
+            ]
+          },
+          {
+            "Type": "VideoAudio",
+            "Conditions": [
+              {
+                "Condition": "Equals",
+                "Property": "IsSecondaryAudio",
+                "Value": "false",
+                "IsRequired": "false"
+              }
+            ]
+          },
+          {
+            "Type": "Video",
+            "Codec": "h264",
+            "Conditions": [
+              {
+                "Condition": "EqualsAny",
+                "Property": "VideoProfile",
+                "Value": "high|main|baseline|constrained baseline|high 10",
+                "IsRequired": false
+              },
+              {
+                "Condition": "LessThanEqual",
+                "Property": "VideoLevel",
+                "Value": "62",
+                "IsRequired": false
+              }
+            ]
+          },
+          {
+            "Type": "Video",
+            "Codec": "hevc",
+            "Conditions": []
+          }
+        ],
+        "SubtitleProfiles": [
+          {
+            "Format": "vtt",
+            "Method": "Hls"
+          },
+          {
+            "Format": "eia_608",
+            "Method": "VideoSideData",
+            "Protocol": "hls"
+          },
+          {
+            "Format": "eia_708",
+            "Method": "VideoSideData",
+            "Protocol": "hls"
+          },
+          {
+            "Format": "vtt",
+            "Method": "External",
+            "AllowChunkedResponse": true
+          },
+          {
+            "Format": "ass",
+            "Method": "External"
+          },
+          {
+            "Format": "ssa",
+            "Method": "External"
+          }
+        ],
+        "ResponseProfiles": [
+          {
+            "Type": "Video",
+            "Container": "m4v",
+            "MimeType": "video/mp4"
+          }
+        ]
+      },
+      "visited_nodes": 253
+    }
+  },
+  "source": "source-attempt-09",
+  "binarySha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+  "logout": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 2909,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 2921
+        },
+        "token_fingerprint": "ce9afc158f6ae7503f12a0f1815ab53d18e1ad2a4cdef688a9fdfe33406e35f4",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 2921,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 2930
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    },
+    "expected_ui_logout_count": 1
+  },
+  "profileContainsMaskedScalar": false
+}

@@ -1,0 +1,39 @@
+{
+  "catalog25_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "b735e0153fb8a5ee1e9953b03fef6cd02cbb6455a6b4f8d848ffe564f4f46d59",
+  "report_sha256": "358823f52f54c8b3173a37acbdaf2c3ffb088783e4074ff1b88f1eb493ff8ba4",
+  "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_030148_02a17c8190a8",
+  "scope": "Independent schema25 database/backup/recovery targeted gates; not complete product source, candidate build or client acceptance",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-14",
+  "source_file_count": 3766,
+  "source_manifest_sha256": "abbb5dee98e3546a4b70b333bd91874a0f730d02a698f19b744d65e425313785",
+  "status": "passed",
+  "tests": {
+    "failures": 0,
+    "passed": [
+      "TestEngineBackupRestoreRoundTrip",
+      "TestMigrateMusicArtistsPreservesSchema24RowsAndUnboundedLegacyCredits",
+      "TestMusicArtistMigrationEnforcesSourceShapeBoundedKeysAndOwnership",
+      "TestMusicArtistSynchronizationPreservesLegacyCreditsAndStableRoleIdentities",
+      "TestPostgreSQLBackupConsistentSnapshotAndRestore",
+      "TestPostgreSQLOfflineSchema23RestoreFinalizerFailureRollsBackAndRetries",
+      "TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer",
+      "TestPostgreSQLRestoreSchema23ArchivePreservesDataAndMigratesToCurrent",
+      "TestPublishedRecoveryCatalogsRetainHistoricalMigrationPrefixes",
+      "TestRecoveryManagerApplyRestartAndRollback",
+      "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+      "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback"
+    ],
+    "skips": 0,
+    "top_level_passes": 12
+  }
+}

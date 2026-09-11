@@ -244,10 +244,15 @@ func TestStorePlaybackReferencesRespectOwnerScopeAndImmutableItemBinding(t *test
 }
 
 func TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind(t *testing.T) {
-	ctx, pool, store, owner, ids := playSessionFixture(t, 1)
+	ctx, pool, store, owner, ids := playSessionFixture(t, 2)
 	const reference = "authorized-client-playback"
 	prepared := playReferencePrepare(t, ctx, store, owner, ids[0], reference)
 	playSessionReport(t, ctx, store, owner, PlaybackReport{PlaySessionID: reference, Event: "Started"})
+	if _, err := pool.Exec(ctx, "UPDATE items SET type = 'Audio' WHERE id = $1", ids[1]); err != nil {
+		t.Fatal("set owned audio reference fixture type")
+	}
+	const audioReference = "authorized-audio-client-playback"
+	audio := playReferencePrepare(t, ctx, store, owner, ids[1], audioReference)
 	for _, fixture := range []struct {
 		name, block, restore, id string
 		want                     error
@@ -269,6 +274,7 @@ func TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind(t 
 				}
 			})
 			before := playReferenceCounts(t, ctx, pool)
+			beforeAudio, beforeAudioData := playSessionSnapshot(t, ctx, pool, audio)
 			if _, err := store.ResolvePlaybackReference(ctx, owner, reference); !errors.Is(err, fixture.want) {
 				t.Errorf("resolve after authorization removal: got %v, want %v", err, fixture.want)
 			}
@@ -279,6 +285,14 @@ func TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind(t 
 				if _, _, err := store.ReportPlayback(ctx, owner, PlaybackReport{PlaySessionID: reference, Event: event}); !errors.Is(err, fixture.want) {
 					t.Errorf("%s after authorization removal: got %v, want %v", event, err, fixture.want)
 				}
+				if _, _, err := store.ReportPlayback(ctx, owner, PlaybackReport{
+					PlaySessionID: audioReference, ItemID: ids[1], MediaSourceID: ids[1], Event: event,
+				}); !errors.Is(err, fixture.want) {
+					t.Errorf("audio source alias %s after authorization removal: got %v, want %v", event, err, fixture.want)
+				}
+			}
+			if afterAudio, afterAudioData := playSessionSnapshot(t, ctx, pool, audio); afterAudio != beforeAudio || afterAudioData != beforeAudioData {
+				t.Error("unauthorized audio source alias reports changed stored playback or user data")
 			}
 			for _, supplied := range []string{reference, "unauthorized-new-client-playback"} {
 				if _, err := store.PrepareCorrelatedPlayback(ctx, owner, ids[0], media.SourceID(ids[0]), supplied); !errors.Is(err, fixture.want) {
@@ -287,6 +301,24 @@ func TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind(t 
 			}
 			if after := playReferenceCounts(t, ctx, pool); after != before {
 				t.Errorf("unauthorized reference requests created state: before = %+v, after = %+v", before, after)
+			}
+			afterAudio, afterAudioData := playSessionSnapshot(t, ctx, pool, audio)
+			if afterAudioData != beforeAudioData {
+				t.Error("rejected preparation changed audio user data")
+			}
+			if fixture.name == "library access" {
+				// Preparation first commits bounded cleanup of plays whose library
+				// access was revoked. Reports above must remain entirely inert;
+				// this separate phase may only retire the existing prepared play.
+				var retiredOnly bool
+				if err := pool.QueryRow(ctx, `SELECT state = 'Expired' AND stopped_at IS NOT NULL
+					AND (to_jsonb(p) - '{state,stopped_at,updated_at}'::text[]) =
+					($2::jsonb - '{state,stopped_at,updated_at}'::text[])
+					FROM play_sessions p WHERE id = $1`, audio.ID, beforeAudio).Scan(&retiredOnly); err != nil || !retiredOnly {
+					t.Errorf("library-revoked preparation did not exclusively retire its existing audio play: %v", err)
+				}
+			} else if afterAudio != beforeAudio {
+				t.Error("preparation with revoked authentication or playback permission changed audio playback")
 			}
 		})
 	}
@@ -317,6 +349,96 @@ func TestStorePlaybackReferencesRecheckAuthorizationAndEmbyAuthenticationKind(t 
 	}
 	if resolved, err := store.ResolvePlaybackReference(ctx, owner, prepared.ID); err != nil || resolved != prepared.ID {
 		t.Errorf("administrator canonical resolution lost its existing semantics: id = %q, error = %v", resolved, err)
+	}
+}
+
+func TestStoreCorrelatedAudioReportsRestrictBareSourceAlias(t *testing.T) {
+	ctx, pool, store, owner, ids := playSessionFixture(t, 3)
+	if _, err := pool.Exec(ctx, "UPDATE items SET type = 'Audio' WHERE id = ANY($1::text[])", ids[:2]); err != nil {
+		t.Fatal("set owned audio source alias fixture types")
+	}
+	const reference = "audio-source-alias"
+	prepared := playReferencePrepare(t, ctx, store, owner, ids[0], reference)
+	legacy := playSessionPrepare(t, ctx, store, owner, ids[0], "")
+	movie := playReferencePrepare(t, ctx, store, owner, ids[2], "movie-source-alias")
+	otherAuth := playSessionOwnerFixture(t, ctx, pool, owner.UserID, owner.DeviceID)
+	const otherUserID = "other-audio-source-user"
+	libraryIntegrationUser(t, ctx, pool, otherUserID, false, true, nil)
+	otherUser := playSessionOwnerFixture(t, ctx, pool, otherUserID, owner.DeviceID)
+	otherDevice := owner
+	otherDevice.DeviceID = "unknown-audio-source-device"
+	snapshot := func(t *testing.T) string {
+		t.Helper()
+		var value string
+		if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
+			'plays', (SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM play_sessions p),
+			'references', (SELECT jsonb_agg(to_jsonb(r) ORDER BY client_nonce) FROM client_playback_references r),
+			'data', (SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id, item_id) FROM user_item_data d))::text`).Scan(&value); err != nil {
+			t.Fatal("snapshot owned audio source alias state")
+		}
+		return value
+	}
+	before := snapshot(t)
+	for _, fixture := range []struct {
+		name, reference, itemID, sourceID string
+		owner                             PlaybackOwner
+		want                              error
+	}{
+		{"unknown nonce", "unknown-audio-reference", ids[0], ids[0], owner, ErrNotFound},
+		{"different item", reference, ids[1], ids[1], owner, ErrNotFound},
+		{"different bare source", reference, ids[0], ids[1], owner, ErrNotFound},
+		{"different canonical source", reference, ids[0], media.SourceID(ids[1]), owner, ErrNotFound},
+		{"legacy explicit", legacy.ID, ids[0], ids[0], owner, ErrNotFound},
+		{"legacy implicit", "", ids[0], ids[0], owner, ErrNotFound},
+		{"correlated video", movie.ID, ids[2], ids[2], owner, ErrNotFound},
+		{"other authentication", reference, ids[0], ids[0], otherAuth, ErrNotFound},
+		{"other user", reference, ids[0], ids[0], otherUser, ErrNotFound},
+		{"other device", reference, ids[0], ids[0], otherDevice, ErrForbidden},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			for _, event := range []string{"Started", "Progress", "Stopped"} {
+				if _, _, err := store.ReportPlayback(ctx, fixture.owner, PlaybackReport{
+					PlaySessionID: fixture.reference, ItemID: fixture.itemID, MediaSourceID: fixture.sourceID,
+					Event: event, PositionTicks: playSessionPosition(120 * media.TicksPerSecond),
+				}); !errors.Is(err, fixture.want) {
+					t.Errorf("rejected audio alias %s: got %v, want %v", event, err, fixture.want)
+				}
+			}
+			if snapshot(t) != before {
+				t.Fatal("rejected audio source alias created or changed playback state")
+			}
+		})
+	}
+	// Both owned reference forms select the same correlated play; the canonical
+	// source remains authoritative even when the client uses the bare item ID.
+	for _, fixture := range []struct {
+		reference, sourceID, event, state string
+		position                          int64
+	}{
+		{reference, ids[0], "Started", "Playing", 0},
+		{prepared.ID, ids[0], "Progress", "Playing", 180 * media.TicksPerSecond},
+		{reference, media.SourceID(ids[0]), "Progress", "Playing", 120 * media.TicksPerSecond},
+		{reference, ids[0], "Stopped", "Stopped", 120 * media.TicksPerSecond},
+	} {
+		play, data := playSessionReport(t, ctx, store, owner, PlaybackReport{
+			PlaySessionID: fixture.reference, ItemID: ids[0], MediaSourceID: fixture.sourceID,
+			Event: fixture.event, PositionTicks: &fixture.position,
+		})
+		if play.ID != prepared.ID || play.MediaSourceID != media.SourceID(ids[0]) || !play.clientCorrelated ||
+			play.State != fixture.state || play.PositionTicks != fixture.position || data.PlayCount != 1 ||
+			data.PlaybackPositionTicks != fixture.position || data.LastPlayedDate == nil || data.Played {
+			t.Fatalf("audio source alias lost canonical state or durable progress: play = %+v, data = %+v", play, data)
+		}
+	}
+	terminal := snapshot(t)
+	for _, event := range []string{"Started", "Progress", "Stopped"} {
+		playSessionReport(t, ctx, store, owner, PlaybackReport{
+			PlaySessionID: reference, ItemID: ids[0], MediaSourceID: ids[0], Event: event,
+			PositionTicks: playSessionPosition(500 * media.TicksPerSecond),
+		})
+	}
+	if snapshot(t) != terminal {
+		t.Fatal("late audio source aliases revived or recounted a stopped play")
 	}
 }
 

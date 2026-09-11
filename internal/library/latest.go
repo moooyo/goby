@@ -21,6 +21,9 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	if err != nil {
 		return nil, err
 	}
+	if len(query.ListItemIds) != 0 {
+		return nil, ErrUnsupportedFilter
+	}
 	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return nil, err

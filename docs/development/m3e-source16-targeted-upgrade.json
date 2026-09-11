@@ -1,0 +1,55 @@
+{
+  "build": {
+    "bytes": 26828567,
+    "exitCode": 0,
+    "path": "/opt/goby-test/exec-work-m3e/source16-build/goby-linux-amd64",
+    "sha256": "ce87ea993696ab107837ba61475977aab1e2d8c56a9a2a287350b11d9d34feb6"
+  },
+  "mainServiceChanged": false,
+  "schema": 25,
+  "scope": "source16 targeted audio/library regressions, Linux build, and exact same-schema isolated candidate replacement; complete-source and real-client acceptance remain separate",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-16",
+  "sourceManifestSha256": "066aad0a220342e01428dedd359a65d5822c790b9f7dd0d3facc4d7799f38a72",
+  "status": "passed",
+  "targeted": {
+    "cleanup": {
+      "goby_backup_m3e_source_removed": true,
+      "goby_backup_m3e_target_removed": true,
+      "hba_restored_exactly": true,
+      "preexisting_catalog_unchanged": true,
+      "receipt_saved": true,
+      "unit_terminal": true
+    },
+    "failures": 0,
+    "logSha256": "53adfec8fd472dbdd887c991312c2598eeb703fde4c686a2e1bf40d43d92e5ce",
+    "passed": 28,
+    "reportSha256": "308215208289857d5b80aab0da0687a5174751b5d083424b305d93efd464b6c0",
+    "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_042847_73f4d02c4437",
+    "skips": 0
+  },
+  "upgrade": {
+    "allPriorBusinessRowsPreserved": true,
+    "beforeStateSha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+    "completedSha256": "cffa700f67bccfa917077813cd34646cba686cb063d9996fc8721f8fd054c9b0",
+    "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-b7bc1d14528135c429ec86de66a62d65",
+    "fromSchema": 25,
+    "newProcess": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 472843,
+      "start_ticks": 2393606
+    },
+    "oldProcess": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 438666,
+      "start_ticks": 2005412
+    },
+    "operatorSha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+    "preservedCatalogEntityCount": 1,
+    "preservedMusicRoleLinkCount": 4,
+    "preservedTableCount": 30,
+    "report": "/opt/goby-test/exec-work-m3e/client-fixture-report-ce8225800770de91fd8b5f6b.json",
+    "reportSha256": "ad0bdc1358aeab57621a6bb9bdfc3ebec253c65bcc9eaf3c652bc0928ecd5ea3",
+    "runtimeAndRecoveryUnchanged": true,
+    "toSchema": 25
+  }
+}

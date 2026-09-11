@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	ErrNotFound     = errors.New("library resource not found")
-	ErrInvalidInput = errors.New("invalid library input")
-	ErrForbidden    = errors.New("library access forbidden")
-	ErrBusy         = errors.New("library scan is already active or queue is full")
-	ErrUnavailable  = errors.New("library service or root is unavailable")
+	ErrNotFound          = errors.New("library resource not found")
+	ErrInvalidInput      = errors.New("invalid library input")
+	ErrForbidden         = errors.New("library access forbidden")
+	ErrBusy              = errors.New("library scan is already active or queue is full")
+	ErrUnavailable       = errors.New("library service or root is unavailable")
+	ErrUnsupportedFilter = errors.New("catalog membership filter is not implemented")
 )
 
 type Prober interface {
@@ -52,6 +53,8 @@ type Item struct {
 	ID, LibraryID, ParentID, Name, SortName, Type, Path, Overview string
 	IsFolder                                                      bool
 	IndexNumber, ParentIndexNumber                                int
+	ChildCount                                                    *int
+	Album                                                         *AlbumRef
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
 	Metadata                                                      *metadata.Metadata
@@ -59,6 +62,13 @@ type Item struct {
 	UserData                                                      *UserData
 	Subtitles                                                     []Subtitle
 	CanPlay                                                       bool
+}
+
+// AlbumRef is the nearest physical MusicAlbum in the item's authorized library.
+// Its display name follows the album's effective catalog metadata.
+type AlbumRef struct {
+	ID, Name     string
+	AlbumArtists []EntityRef
 }
 
 type Query struct {
@@ -69,9 +79,12 @@ type Query struct {
 	IncludeItemTypes, Ids, MediaTypes               []string
 	ParentIndexNumber                               *int
 	GenreIds, TagIds, StudioIds                     []int64
+	ArtistIds, AlbumArtistIds                       []int64
+	AlbumIds, ExcludeItemIds, ListItemIds           []string
 	PersonIds, Genres, Tags, Studios, PersonTypes   []string
 	Person                                          string
 	IsPlayed, IsFavorite                            *bool
+	IsFolder, IsSpecialSeason, IsSpecialEpisode     *bool
 	Resumable                                       bool
 }
 

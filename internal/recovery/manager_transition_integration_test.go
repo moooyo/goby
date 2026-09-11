@@ -36,6 +36,7 @@ func TestRecoveryManagerApplyRestartAndRollback(t *testing.T) {
 		t.Fatal("bind source ownership before transition capture")
 	}
 	originalHistory := recoveryEngineRetainedState(t, ctx, f.seed.source)
+	originalPreferences := recoveryEnginePreferenceState(t, ctx, f.seed.source)
 	plan := createTransitionPlan(t, f)
 	if _, err := f.manager.Apply(ctx, f.seed.actor, plan.Id, ApplyRequest{Revision: plan.Revision, GenerationRevision: "0"}); err != nil {
 		t.Fatal("authorize exact ready plan application")
@@ -105,6 +106,38 @@ func TestRecoveryManagerApplyRestartAndRollback(t *testing.T) {
 		t.Fatal("accepted transition retained its lifecycle activation journal")
 	}
 	assertTransitionCredentialsRevoked(t, ctx, resumed.Pool, f)
+	if current := recoveryEngineRetainedState(t, ctx, resumed.Pool); current != originalHistory {
+		t.Fatal("restored target changed retained account, preference, music, or catalog history across acceptance")
+	}
+	f.seed.assertMusicState(t, resumed.Pool)
+	if actual := recoveryEnginePreferenceState(t, ctx, resumed.Pool); actual != originalPreferences {
+		t.Fatal("restored preference ownership, values, or timestamps changed across runtime reopen and acceptance")
+	}
+	// Accepted target writes must not rewrite the retained source image that a
+	// later explicit rollback will reactivate as a different generation.
+	if _, err := resumed.Pool.Exec(ctx, `UPDATE user_settings SET
+		settings=jsonb_set(settings,'{AfterRestore}','"accepted-target"'::jsonb),
+		updated_at='2020-01-05T00:00:00Z' WHERE user_id=$1`, f.seed.actor.User.ID); err != nil {
+		t.Fatal("write an independent preference change on the accepted target")
+	}
+	if changed := recoveryEnginePreferenceState(t, ctx, resumed.Pool); changed == originalPreferences {
+		t.Fatal("the accepted target preference witness did not change")
+	}
+	if _, err := resumed.Pool.Exec(ctx, `WITH changed AS (
+		UPDATE item_metadata_state SET music_source=jsonb_set(music_source,'{AlbumArtists}','[]'::jsonb),
+			automatic=jsonb_set(automatic,'{AlbumArtists}','[]'::jsonb),
+			effective=jsonb_set(effective,'{AlbumArtists}','[]'::jsonb)
+		WHERE item_id=$1 RETURNING item_id,effective)
+		SELECT sync_catalog_item_entities(item_id,effective) FROM changed`, f.seed.musicItemID); err != nil {
+		t.Fatal("write an independent album artist change on the accepted target")
+	}
+	var changedMusicCount int
+	if err := resumed.Pool.QueryRow(ctx, `SELECT count(*) FROM item_metadata_state state
+		WHERE item_id=$1 AND music_source->'AlbumArtists'='[]'::jsonb AND effective->'AlbumArtists'='[]'::jsonb
+		AND NOT EXISTS (SELECT 1 FROM item_entities WHERE item_id=state.item_id AND credit_group=2 AND credit_type='AlbumArtist')`,
+		f.seed.musicItemID).Scan(&changedMusicCount); err != nil || changedMusicCount != 1 {
+		t.Fatal("the accepted target music source and album artist witness did not change")
+	}
 	activeIdentity := identity.NewWithApplicationKeyVault(resumed.Pool, identity.NewApplicationKeyVault(f.manager.cfg.APIKeyMasterKeyFile))
 	login, err := activeIdentity.Authenticate(ctx, f.seed.actor.User.Name, "recovery-administrator-password", identity.Client{Name: "Post-restore administrator"}, "admin")
 	if err != nil {
@@ -149,8 +182,9 @@ func TestRecoveryManagerApplyRestartAndRollback(t *testing.T) {
 	assertTransitionAppliedReceipt(t, ctx, returned.Pool, rollback.Id)
 	assertTransitionCredentialsRevoked(t, ctx, returned.Pool, f)
 	if current := recoveryEngineRetainedState(t, ctx, returned.Pool); current != originalHistory {
-		t.Fatal("manual rollback changed retained original account, key, device, or catalog history")
+		t.Fatal("manual rollback changed retained original account, preferences, key, device, or catalog history")
 	}
+	f.seed.assertMusicState(t, returned.Pool)
 	if _, err := identity.New(returned.Pool).Authenticate(ctx, f.seed.actor.User.Name, "recovery-administrator-password", identity.Client{Name: "Post-rollback administrator"}, "admin"); err != nil {
 		t.Fatal("manual rollback lost the original account password")
 	}

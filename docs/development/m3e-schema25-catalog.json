@@ -1,0 +1,30 @@
+{
+  "catalog_artifact": {
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_025416_19aefd2529fb/schema-25-postgresql-17.json",
+    "schema": 25,
+    "sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+    "source_manifest_sha256": "e927174f3da71e16cc21e92148183178df892c3ff51c831f160cf8adda65c14b"
+  },
+  "catalog_objects_sha256": "08f70e189e0a00a925baca2e947fdc336d679dd70137650d9baaa28f3efebb83",
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "65df0d026da73cd51ea05fd58ec3d5acdc0496ca67d046d5f39b19e754839b68",
+  "migration25_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+  "report_sha256": "5c96d6ab38ec7b1960f988cb7082a996fbc472d7b7eda23437cbf42ca520e3e9",
+  "run": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_025416_19aefd2529fb",
+  "scope": "Trusted schema25 catalog generated from a new empty PostgreSQL 17 database using only frozen embedded migrations; not product, old-data migration, recovery or client acceptance",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-13",
+  "source_file_count": 3762,
+  "source_manifest_sha256": "e927174f3da71e16cc21e92148183178df892c3ff51c831f160cf8adda65c14b",
+  "source_purpose": "Catalog bootstrap only; based on source12 plus migration25 and the separately verified runner",
+  "status": "passed",
+  "table_count": 30,
+  "verification": "Artifact version/history and migration hashes match the frozen source; its complete objects match the generated source database, and the second disposable database remains empty. Cleanup reread the receipt-bound artifact before removing exact owned pairs."
+}

@@ -1,0 +1,41 @@
+{
+  "fullRegressionPassed": 1741,
+  "mainDataRestored": false,
+  "mainDatabaseMigrated": false,
+  "mainSchemaRemains": 23,
+  "mainServiceStarted": false,
+  "nextAction": "Correct only the independent operator process-proof construction while preserving SQL/OS identity cross-checks, verify its guards/build, and create another fresh preparation run.",
+  "productBinarySha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+  "productSource": "source18/schema25",
+  "runs": [
+    {
+      "clusterProofPublished": false,
+      "databaseDumpCreated": false,
+      "helperReportPublished": false,
+      "materialFiles": 423,
+      "materialManifestComplete": false,
+      "reason": "Intermediate material directory was created as 0755 by recursive mkdir; the strict 0700 check rejected the next file.",
+      "rehearsalCreated": false,
+      "run": "/opt/goby-test/backups/client-schema25-v1/run-20260911T055638Z-faaef85597c3199884385e56",
+      "sourceFilesAndFailedEvidenceRetained": true,
+      "status": "failed",
+      "terminalSha256": "b7214f9953c72b5aeb7185eb6f22f551399f7b824769be28822ed01ceee2a210",
+      "toolSource": "/opt/goby-test/exec-work-m3e/tool-build-source18-schema25-01"
+    },
+    {
+      "clusterProofPublished": false,
+      "databaseDumpCreated": false,
+      "helperReportPublished": false,
+      "materialFiles": 444,
+      "materialManifestComplete": true,
+      "reason": "The PID-file seconds and the SQL postmaster start timestamp differ by one second; the producer incorrectly required identical floor seconds.",
+      "rehearsalCreated": false,
+      "run": "/opt/goby-test/backups/client-schema25-v1/run-20260911T060659Z-0be75d4dec74a36a6eea2073",
+      "sourceFilesAndFailedEvidenceRetained": true,
+      "status": "failed",
+      "terminalSha256": "b7214f9953c72b5aeb7185eb6f22f551399f7b824769be28822ed01ceee2a210",
+      "toolSource": "/opt/goby-test/exec-work-m3e/tool-build-source18-schema25-02"
+    }
+  ],
+  "status": "preparation_incomplete"
+}

@@ -6,6 +6,38 @@ remains an administrator dashboard. The [Universal reference study](../research/
 and [profile reference study](../research/audio-profile-reference.md) separate
 observed Emby 4.9.5.0 behavior from Goby's implementation choices.
 
+## Music catalog reads
+
+MusicAlbum and Audio DTOs always include the `Artists`, `ArtistItems`,
+`AlbumArtists`, and `Composers` collections as arrays. The pinned BaseItemDto
+model declares Artists as strings and the other collections as NameIdPair
+objects. Accepted audio `format.tags` title, album, and artist values now feed
+the music catalog and persistent MusicArtist associations. Names and decimal
+string IDs come from those associations; generic People credits and
+reference-server IDs are not substituted. Untagged or unextracted music keeps
+empty relationships. Composer and raw album_artist tags are not extracted.
+
+The [music metadata contract](music-metadata.md) defines the independent cache
+version, album aggregation, source precedence, read-only music fields, current
+permissions, and migration boundary. It does not add the complete artist
+management or native music-metadata editing surface.
+
+MusicAlbum `ChildCount` is read from its actual direct catalog children in the
+same library, after the album is authorized. Detail, ordinary item lists, and
+direct-child pagination use the same directory relationship and current policy
+boundary; the count includes direct folders but excludes deeper descendants and
+cross-library parent references. Empty albums return zero. Latest grouped
+results retain their separate count of matching source items. Reading these
+fields does not rename albums or tracks, change paths or parents, scan media,
+or alter stored metadata.
+
+The isolated original-client comparison observed missing music collections and
+ChildCount on Goby's album, followed by a caught undefined-index exception and
+an empty page. The reference returned the four arrays and its actual two-child
+count, then displayed the album and tracks. These observations motivate the
+projection change; a subsequent client run is still required to establish that
+the complete music workflow succeeds with Goby.
+
 ## Routes and negotiation
 
 All routes below also accept the existing root aliases and case-normalized
@@ -34,6 +66,25 @@ does not reinterpret one as the other. Container aliases include MP4/M4A/M4B,
 AAC/ADTS, WAV/WAVE, and OGG/OGA. A container-only declaration does not acquire
 the encoder's more restrictive codec list: compatible original ALAC or other
 audio can still be served without encoding.
+
+Universal capability entries also accept one explicit codec qualifier, such as
+`mp3|mp3`, `mp3|mp2`, `mp4|aac`, or
+`wav|PCM_S16LE,wav|PCM_S24LE`. The container family and actual source codec must
+both match a qualified entry. The explicit codec is authoritative within that
+family; bare labels retain their existing implicit restrictions. For example,
+bare `mp4` can accept original ALAC, while `mp4|aac` cannot. Entries are combined
+as alternatives and deduplicated by the complete normalized entry, so different
+codecs for the same container remain distinct. These are input capabilities,
+not additions to the server's encoder matrix or conversion permissions.
+
+This syntax is confined to Universal's original-capability list. Legacy output
+selectors, `TranscodingContainer`, and `AudioCodec` do not acquire pipe syntax.
+The list retains its 1,024-byte and 32-entry bounds; each container or codec name
+is limited to 32 bytes. Empty components, extra pipes, invalid selector characters,
+and conflicting suffix constraints remain invalid. A suffix cannot discard a
+codec restriction. Matching originals still obey the existing bitrate, channel,
+and sample-rate ceilings; a required conversion still needs server and user
+permission even when the client lists an output fallback.
 
 Omitted Universal `Container` means no original-format restriction, as observed
 for the four reference inputs. A compatible original takes priority over

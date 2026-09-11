@@ -29,6 +29,7 @@ type PlaySession struct {
 	ApplicationClientID                                               string
 	counted                                                           bool
 	live                                                              bool
+	clientCorrelated                                                  bool
 }
 
 // Event reports use database-lock processing order. Position may move backward for seeks;
@@ -42,7 +43,7 @@ type PlaybackReport struct {
 }
 
 const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
-	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id`
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id, client_correlated`
 
 func scanPlaySession(row rowScanner) (PlaySession, error) {
 	var session PlaySession
@@ -52,7 +53,7 @@ func scanPlaySession(row rowScanner) (PlaySession, error) {
 	err := row.Scan(&session.ID, &userID, &session.AuthSessionID, &session.DeviceID,
 		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
 		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
-		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID)
+		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID, &session.clientCorrelated)
 	if err != nil {
 		return session, err
 	}
@@ -580,20 +581,30 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		return PlaySession{}, UserData{}, err
 	}
 	defer rollback(tx)
+	var identified PlaySession
 	if report.PlaySessionID != "" {
-		identified, err := readOwnedPlaySession(ctx, tx, owner, report.PlaySessionID, false)
+		identified, err = readOwnedPlaySession(ctx, tx, owner, report.PlaySessionID, false)
 		if err != nil {
 			return PlaySession{}, UserData{}, err
 		}
-		if (report.ItemID != "" && report.ItemID != identified.ItemID) ||
-			(report.MediaSourceID != "" && report.MediaSourceID != identified.MediaSourceID) {
+		if report.ItemID != "" && report.ItemID != identified.ItemID {
 			return PlaySession{}, UserData{}, ErrNotFound
 		}
-		report.PlaySessionID, report.ItemID, report.MediaSourceID = identified.ID, identified.ItemID, identified.MediaSourceID
+		report.PlaySessionID, report.ItemID = identified.ID, identified.ItemID
 	}
 	item, err := lockStateItem(ctx, tx, access, report.ItemID, true)
 	if err != nil {
 		return PlaySession{}, UserData{}, err
+	}
+	if report.PlaySessionID != "" {
+		// Universal audio clients can report the item ID as their source ID.
+		// Accept that alias only for an already owned correlated play and its
+		// currently authorized Audio item; keep the stored source authoritative.
+		if report.MediaSourceID != "" && report.MediaSourceID != identified.MediaSourceID &&
+			!(identified.clientCorrelated && item.itemType == "Audio" && report.MediaSourceID == item.id) {
+			return PlaySession{}, UserData{}, ErrNotFound
+		}
+		report.MediaSourceID = identified.MediaSourceID
 	}
 	sourceID, err := sourceForItem(report.ItemID, report.MediaSourceID)
 	if err != nil {

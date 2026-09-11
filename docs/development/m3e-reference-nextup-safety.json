@@ -1,0 +1,25 @@
+{
+  "actualRequests": 86,
+  "allThreeRecorderTokensRevokedWith401Proof": true,
+  "classification": "protocol research with subsequent full-detail cleanup; not client acceptance",
+  "currentLimitations": [
+    "Global NextUp remained empty for this single synthetic series.",
+    "PlayCount/date changes were not observed in full detail during the playback stages.",
+    "Full UserData POST with LastPlayedDate:null did not clear the date; dedicated episode DELETE PlayedItems did clear it."
+  ],
+  "episode17And18FullDetailRestored": true,
+  "exactCleanupReport": "/opt/goby-test/exec-work-m3e/reference-nextup-detail-cleanup-v3/export/report.json",
+  "explicitCleanupExtension": 16,
+  "initialRequestLimit": 80,
+  "initialStudyReport": "/opt/goby-test/exec-work-m3e/reference-nextup-v1/export/report.json",
+  "oldReferenceAndGobyRequests": 0,
+  "prefsConfigurationPolicyAndMediaPreserved": true,
+  "projectionCalibrationReport": "/opt/goby-test/exec-work-m3e/reference-nextup-projection-v2/export/report.json",
+  "retainedOwnedHistory": [
+    "recorder login/logout and device history",
+    "playback negotiation/report audit history",
+    "UserData and watched/unwatched audit records"
+  ],
+  "series14AndEpisode19FullDetailMatchedInCalibration": true,
+  "totalApprovedLimit": 91
+}

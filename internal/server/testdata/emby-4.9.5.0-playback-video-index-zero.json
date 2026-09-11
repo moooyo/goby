@@ -1,0 +1,86 @@
+{
+  "provenance": {
+    "source": "tests/compatibility/fixtures/reference/emby-4.9.5.0/video-profile-m4e-original-compatible-info.json",
+    "sourceSha256": "740db2a44e37bfe44d1afce125e35e2af5c73172d729d297cf1d5fb404fc2d5d",
+    "retained": "Playback request fields except the account UserId, and the matching original-source media facts.",
+    "omitted": "Authentication headers, account identity, playback session identifiers, and delivery URLs."
+  },
+  "request": {
+    "body": {
+      "MediaSourceId": "mediasource_43",
+      "IsPlayback": true,
+      "EnableDirectPlay": true,
+      "EnableDirectStream": true,
+      "EnableTranscoding": true,
+      "AllowVideoStreamCopy": true,
+      "AllowAudioStreamCopy": true,
+      "StartTimeTicks": 0,
+      "VideoStreamIndex": 0,
+      "AudioStreamIndex": 1,
+      "SubtitleStreamIndex": -1,
+      "MaxStreamingBitrate": 2000000,
+      "DeviceProfile": {
+        "Name": "Goby video progressive reference",
+        "MaxStreamingBitrate": 2000000,
+        "DirectPlayProfiles": [
+          {
+            "Type": "Video",
+            "Container": "mp4",
+            "VideoCodec": "h264",
+            "AudioCodec": "aac"
+          }
+        ],
+        "TranscodingProfiles": [
+          {
+            "Type": "Video",
+            "Container": "mp4",
+            "VideoCodec": "h264",
+            "AudioCodec": "aac",
+            "MaxAudioChannels": "2",
+            "Protocol": "http",
+            "Context": "Streaming"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "MediaSources": [
+        {
+          "Id": "mediasource_43",
+          "Path": "/reference-video-source/Reference HLS Normal (2026).mp4",
+          "Container": "mp4",
+          "RunTimeTicks": 150000000,
+          "Bitrate": 516080,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "MediaStreams": [
+            {
+              "Index": 0,
+              "Type": "Video",
+              "Codec": "h264",
+              "Profile": "Constrained Baseline",
+              "BitRate": 446913,
+              "Level": 12,
+              "Width": 320,
+              "Height": 180,
+              "IsDefault": true
+            },
+            {
+              "Index": 1,
+              "Type": "Audio",
+              "Codec": "aac",
+              "Profile": "LC",
+              "BitRate": 64293,
+              "Channels": 1,
+              "SampleRate": 48000,
+              "IsDefault": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

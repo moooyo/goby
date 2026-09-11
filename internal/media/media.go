@@ -34,6 +34,9 @@ type Info struct {
 	Size                    int64
 	Streams                 []Stream
 	Chapters                []Chapter
+	// EmbeddedMusic is nil for legacy snapshots or non-music media. An empty
+	// versioned value records that supported format tags were actually inspected.
+	EmbeddedMusic *MusicMetadata `json:",omitempty"`
 	// VideoSeekIndexes are private decoder restart evidence, never public DTOs.
 	VideoSeekIndexes []VideoSeekIndex
 }

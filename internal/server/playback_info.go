@@ -110,7 +110,7 @@ func mergePlaybackQuery(request *playback.Request, values map[string]string) err
 
 func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	var request playback.Request
-	if r.Method == http.MethodPost && !decodeBody(w, r, &request) {
+	if r.Method == http.MethodPost && !decodePlaybackInfoBody(w, r, &request) {
 		return
 	}
 	values, err := streamValues(r)
@@ -198,6 +198,12 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	formats := map[int]string{}
+	if request.DeviceProfile != nil && (decision.DirectPlay || decision.DirectStream) {
+		// A client can switch external tracks without renegotiating playback.
+		// Describe matching candidate formats while keeping the current choice
+		// (including Off) and the original-file playback decision unchanged.
+		formats = playback.ExternalSubtitleCandidateFormats(input, request.DeviceProfile)
+	}
 	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
 		if _, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex); err != nil {
 			s.playbackError(w, r, err)

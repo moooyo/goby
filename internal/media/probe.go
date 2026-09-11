@@ -33,6 +33,12 @@ func (p Prober) CacheVersion() int {
 	return CurrentProbeVersion
 }
 
+// MusicMetadataVersion identifies the independently refreshable music facts.
+// It does not invalidate already accepted technical playback snapshots.
+func (p Prober) MusicMetadataVersion() int {
+	return CurrentMusicMetadataVersion
+}
+
 // Probe accepts regular local files only. Stream indexes are the original
 // ffprobe indexes and must not be replaced with positions in a filtered list.
 func (p Prober) Probe(ctx context.Context, path string) (Info, error) {
@@ -246,11 +252,12 @@ func (b *probeBoolean) parse(value string) error {
 
 type probeDocument struct {
 	Format struct {
-		Name      string `json:"format_name"`
-		Duration  scalar `json:"duration"`
-		StartTime scalar `json:"start_time"`
-		Bitrate   scalar `json:"bit_rate"`
-		Size      scalar `json:"size"`
+		Name      string          `json:"format_name"`
+		Duration  scalar          `json:"duration"`
+		StartTime scalar          `json:"start_time"`
+		Bitrate   scalar          `json:"bit_rate"`
+		Size      scalar          `json:"size"`
+		Tags      json.RawMessage `json:"tags"`
 	} `json:"format"`
 	Streams []struct {
 		Index          scalar            `json:"index"`
@@ -446,6 +453,13 @@ func parseProbe(data []byte) (Info, error) {
 			return Info{}, invalidField(fmt.Sprintf("chapter[%d].end", index), err)
 		}
 		info.Chapters = append(info.Chapters, Chapter{StartTicks: start, EndTicks: end, Title: tagValue(source.Tags, "title")})
+	}
+	if isMusicMetadataSource(info) {
+		music, err := parseMusicMetadata(document.Format.Tags)
+		if err != nil {
+			return Info{}, err
+		}
+		info.EmbeddedMusic = &music
 	}
 	return info, nil
 }

@@ -1,0 +1,205 @@
+{
+  "status": "passed_scoped_workflow",
+  "scope": "Original Web Client genre display limit changes 1 to 2 to 1 on source09; not all settings routes or complete client acceptance",
+  "source": "source-attempt-09",
+  "binarySha256": "a645f2d9638ff955fff39da1cac578d815ea96a185bbbf3a7cafbca49bed68ff",
+  "observationSha256": "44260fd133cba9d5558629f06225330f878aa0919d37533da3212f7fe4462fba",
+  "browserVersion": "153.0.8010.12",
+  "preference": {
+    "phase": "complete",
+    "outcome": "user_settings_display_change_and_restore_observed",
+    "scope": "One display preference, changed and restored through the original UI",
+    "choice": {
+      "kind": "genre_display_limit",
+      "label": "Genre display limit",
+      "original": "1",
+      "alternate": "2"
+    },
+    "writes": [
+      {
+        "phase": "change_display_preference",
+        "route": "/emby/usersettings/{account-or-preference-id}/Partial",
+        "content_type": "text/plain",
+        "header_names": [
+          "accept",
+          "accept-language",
+          "content-type",
+          "origin",
+          "referer",
+          "sec-ch-ua",
+          "sec-ch-ua-mobile",
+          "sec-ch-ua-platform",
+          "user-agent"
+        ],
+        "query_field_names": [
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language",
+          "reqformat"
+        ],
+        "status": 204,
+        "body_encoding": "json",
+        "json_top_level_type": "object",
+        "json_encoding_layers": 1,
+        "safe_body": {
+          "genreLimitOnDetails": "2"
+        }
+      },
+      {
+        "phase": "restore_display_preference",
+        "route": "/emby/usersettings/{account-or-preference-id}/Partial",
+        "content_type": "text/plain",
+        "header_names": [
+          "accept",
+          "accept-language",
+          "content-type",
+          "origin",
+          "referer",
+          "sec-ch-ua",
+          "sec-ch-ua-mobile",
+          "sec-ch-ua-platform",
+          "user-agent"
+        ],
+        "query_field_names": [
+          "X-Emby-Client",
+          "X-Emby-Device-Name",
+          "X-Emby-Device-Id",
+          "X-Emby-Client-Version",
+          "X-Emby-Token",
+          "X-Emby-Language",
+          "reqformat"
+        ],
+        "status": 204,
+        "body_encoding": "json",
+        "json_top_level_type": "object",
+        "json_encoding_layers": 1,
+        "safe_body": {
+          "genreLimitOnDetails": "1"
+        }
+      }
+    ],
+    "restored": true
+  },
+  "logout": {
+    "format": 1,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "entries": [
+      {
+        "index": 0,
+        "ui_request": {
+          "method": "POST",
+          "route": "/emby/Sessions/Logout",
+          "elapsed_ms": 4560,
+          "response_status": 204,
+          "client_request_finished": true,
+          "client_request_failed": false,
+          "response_elapsed_ms": 4571
+        },
+        "token_fingerprint": "0309b31ea6d453fa20da61d690ce5a91f179390546ddbb2e2a10484ddd9b4046",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "verification": {
+          "source": "independent-node-http-post-logout-verification",
+          "is_ui_request": false,
+          "method": "GET",
+          "route": "/emby/System/Info",
+          "status": 401,
+          "eligible_at_request_start": true,
+          "result": "token_rejected",
+          "trigger": "ui_logout_response",
+          "started_elapsed_ms": 4571,
+          "response_bytes": 35,
+          "finished_elapsed_ms": 4581
+        },
+        "result": "logout_token_rejected"
+      }
+    ],
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "policy": {
+      "source": "original-client-request-events",
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "client_internal_state_read": false,
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "verification_source": "independent-node-http-post-logout-verification",
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_expected_status": 401,
+      "redirects": "Rejected without following",
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "payload_logging": false,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "max_request_bytes": 16384,
+      "max_logout_requests": 16,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "logoutWaitMs": 12000,
+        "httpTimeoutMs": 8000,
+        "httpIdleTimeoutMs": 3000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      }
+    },
+    "expected_ui_logout_count": 1
+  },
+  "unresolvedTargetRequests": [
+    {
+      "index": 244,
+      "elapsed_ms": 1949,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/{value}/{value}",
+      "query_field_names": [
+        "PageType",
+        "UserId",
+        "EnableInUserMenu",
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 404
+    },
+    {
+      "index": 266,
+      "elapsed_ms": 2392,
+      "method": "GET",
+      "origin": "target",
+      "route": "/emby/{value}/{value}",
+      "query_field_names": [
+        "PageType",
+        "UserId",
+        "EnableInUserMenu",
+        "X-Emby-Client",
+        "X-Emby-Device-Name",
+        "X-Emby-Device-Id",
+        "X-Emby-Client-Version",
+        "X-Emby-Token",
+        "X-Emby-Language"
+      ],
+      "browse_query": [],
+      "blocked_by_network_policy": false,
+      "resource_type": "fetch",
+      "content_type": null,
+      "status": 404,
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "externalRequestsBlocked": 4,
+  "pageErrorCount": 0,
+  "limitation": "Two optional user-menu discovery requests returned 404. The explicit default key is now stored as genreLimitOnDetails=1; the original empty dictionary was not restored. OS process restart verification is pending."
+}

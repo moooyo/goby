@@ -535,7 +535,7 @@ func TestHTTPHLSCancellationPolicySnapshotsStopAndLogoutInvalidateCachedChildren
 	graph = h.graph(t, h.accounts.viewer, 0)
 	expectHLSHTTPStatus(t, h.request(t, http.MethodGet, graph.children[0], nil, nil), http.StatusOK)
 	beforeLogout := h.userDataSnapshot(t)
-	expectHLSHTTPStatus(t, h.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, h.accounts.viewer.headers), http.StatusOK)
+	expectHLSHTTPStatus(t, h.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, h.accounts.viewer.headers), http.StatusNoContent)
 	h.retired(t, graph)
 	expectHLSHTTPStatus(t, h.request(t, http.MethodGet, graph.children[0], nil, nil), http.StatusUnauthorized)
 	if h.userDataSnapshot(t) != beforeLogout {

@@ -1,0 +1,1579 @@
+{
+  "format": 1,
+  "status": "source15_srt_vtt_and_ordinary_tv_ui_completed",
+  "scope": "Original Emby Web external SRT/VTT selection and seek, plus ordinary TV browsing on the frozen pre-music-scan schema25 candidate",
+  "profiles": [
+    {
+      "check": "subtitles",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source15-subtitles-01",
+      "report_sha256": "9d23aede4baecd4e841af941447aa31785f6a030f744f37f62d59506cf8037cb",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "703661d161ff2de4f13de5315868f1796c4495a3227f84d0dd0452f28edc67cf",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "5fe0df6e65d69c6fd7a72c812237d37b11ebea9303ec7eca2f92db64134488f1",
+        "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+        "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49"
+      },
+      "started_at": "2026-09-11T03:30:47.861Z",
+      "finished_at": "2026-09-11T03:30:59.793Z",
+      "browser_version": "153.0.8010.12",
+      "playwright_version": "1.63.0",
+      "fixture": {
+        "fixture_marker": "goby-m3e-client-acceptance-v1",
+        "fixture_tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+        "schema": 25,
+        "schema_binding": {
+          "schema": 25,
+          "binding": "completed_upgrade_and_pinned_schema25_artifacts",
+          "catalog_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+          "migration_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+          "source": "/opt/goby-test/exec-work-m3e/source-attempt-15",
+          "source_manifest_sha256": "3a2230500be92a8ce4becab733b6c79e774432431aeac78ec6a120e70ee5c398"
+        },
+        "server_id": "c7cfd76b1dee728b2bad523793a37ccb",
+        "account_marker": "goby-m3e-goby-av-user-v1",
+        "account_id": "34b4c24f6568659af7ce17938fae7f81",
+        "process": {
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+          "pid": 438666,
+          "start_ticks": 2005412
+        },
+        "binary_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+        "fixture_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+        "browser_alias_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b",
+        "creation_response_sha256": "aa5534882ebc2cfc9c452c9d400e02681c8e9d9c1900b98c7d69256e919ebae1",
+        "proxy_status_sha256": "769684e6c84eb4ea83c01f86c671d94d488626581c8dde664fa6f7ab7c05310f",
+        "libraries": {
+          "movies": "a9993591e72f0f2e7babcbf8b9c50790",
+          "music": "6383d20008836e137559698c29b10395",
+          "tv": "a34ce665fb75421ef7551570f353d705"
+        },
+        "reference": {
+          "pid": 332054,
+          "start_ticks": 357218,
+          "executable": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+          "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+        },
+        "proxy_process": {
+          "pid": 334022,
+          "start_ticks": 378464,
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+        },
+        "boundary": "Read-only private receipt and Linux process pins; no HTTP, database, or client acceptance claim"
+      },
+      "outcome": "external_srt_vtt_ui_selection_and_seek_completed",
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T02:58:21.422805Z",
+              "PlayCount": 3,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 11412,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 11424
+            },
+            "token_fingerprint": "45a1eab2163a9df0493d064c15ccbe172102f0eba40a484e48216974208efe83",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 11425,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 11432
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 2,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1352,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1634,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 11112,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 11882,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "request_count": 307,
+      "request_overflow": 0,
+      "page_errors": [
+        {
+          "elapsed_ms": 2614,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2614,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 2615,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3209,
+          "name": "Error",
+          "message": "undefined"
+        },
+        {
+          "elapsed_ms": 3241,
+          "name": "Error",
+          "message": "undefined"
+        },
+        {
+          "elapsed_ms": 9381,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "console_errors": [
+        {
+          "elapsed_ms": 1514,
+          "type": "error",
+          "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "elapsed_ms": 2613,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 2614,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 2615,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 3124,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 3209,
+          "type": "error",
+          "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "elapsed_ms": 3239,
+          "type": "error",
+          "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "elapsed_ms": 6025,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 9380,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "local_http_failures": [
+        {
+          "method": "GET",
+          "route": "/emby/Users/{value}/Items/{value}/SpecialFeatures",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/Similar",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Users/{value}/Items/{value}/Intros",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThumbnailSet",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        }
+      ],
+      "blocked_external_count": 3,
+      "private_recovery_file_retained": false,
+      "subtitle_evidence": {
+        "initial_selection": "Off",
+        "restored_selection": true,
+        "network_subtitles": [
+          {
+            "request_method": "GET",
+            "status": 200,
+            "content_type": "text/vtt",
+            "item_matches_owned_movie": true,
+            "subtitle_index": 2,
+            "start_position_ticks_path": "0",
+            "format": "vtt",
+            "query_field_names": [
+              "api_key"
+            ],
+            "body_result": "owned_subtitle_hashed",
+            "bytes": 187,
+            "sha256": "6639a605af385edeaac96cd2aab8a5ee744c60a041e7d4ecadb5f7a86980a67b",
+            "starts_with_webvtt": true,
+            "synthetic_cues_present": [
+              "Opening subtitle",
+              "Backward seek subtitle",
+              "Forward seek subtitle",
+              "Midpoint subtitle"
+            ]
+          },
+          {
+            "request_method": "GET",
+            "status": 200,
+            "content_type": "text/vtt",
+            "item_matches_owned_movie": true,
+            "subtitle_index": 3,
+            "start_position_ticks_path": "0",
+            "format": "vtt",
+            "query_field_names": [
+              "api_key"
+            ],
+            "body_result": "owned_subtitle_hashed",
+            "bytes": 220,
+            "sha256": "efbce0e543ce0acef4a0ab9f979f2a4b5386658d4a96222ec95bdf917139dd6b",
+            "starts_with_webvtt": true,
+            "synthetic_cues_present": [
+              "Opening subtitle",
+              "Backward seek subtitle",
+              "Forward seek subtitle",
+              "Midpoint subtitle"
+            ]
+          }
+        ],
+        "observations": [
+          {
+            "label": "subtitle-initial-paused",
+            "at": "2026-09-11T03:30:52.181Z",
+            "media": [
+              {
+                "current_time": 0.979525,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 35,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": []
+          },
+          {
+            "label": "subtitle-srt-selected",
+            "at": "2026-09-11T03:30:53.305Z",
+            "media": [
+              {
+                "current_time": 0.979525,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 35,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 0,
+                        "end": 5,
+                        "text": "Opening subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Opening subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-srt-opening-cue-0",
+            "at": "2026-09-11T03:30:53.313Z",
+            "media": [
+              {
+                "current_time": 0.979525,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 35,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 0,
+                        "end": 5,
+                        "text": "Opening subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Opening subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-srt-after-seek",
+            "at": "2026-09-11T03:30:54.290Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 118,
+                        "end": 128,
+                        "text": "Forward seek subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Forward seek subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-srt-forward-cue-0",
+            "at": "2026-09-11T03:30:54.303Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 118,
+                        "end": 128,
+                        "text": "Forward seek subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Forward seek subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-vtt-selected",
+            "at": "2026-09-11T03:30:55.525Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 118,
+                        "end": 128,
+                        "text": "Forward seek subtitle"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Forward seek subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-vtt-forward-cue-0",
+            "at": "2026-09-11T03:30:55.533Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "hidden",
+                    "active_cues": [
+                      {
+                        "start": 118,
+                        "end": 128,
+                        "text": "Forward seek subtitle"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": [
+              "Forward seek subtitle"
+            ]
+          },
+          {
+            "label": "subtitle-off-selected",
+            "at": "2026-09-11T03:30:56.740Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": []
+          },
+          {
+            "label": "subtitle-off-verified",
+            "at": "2026-09-11T03:30:56.748Z",
+            "media": [
+              {
+                "current_time": 121.242,
+                "duration": 600,
+                "paused": true,
+                "ready_state": 4,
+                "network_state": 1,
+                "video_width": 320,
+                "video_height": 180,
+                "total_video_frames": 76,
+                "dropped_video_frames": 0,
+                "text_tracks": [
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  },
+                  {
+                    "kind": "subtitles",
+                    "label": "en",
+                    "language": "en",
+                    "mode": "disabled",
+                    "active_cues": []
+                  }
+                ]
+              }
+            ],
+            "visible_dom_cues": []
+          },
+          {
+            "label": "subtitle-after-stop",
+            "at": "2026-09-11T03:30:58.288Z",
+            "media": [],
+            "visible_dom_cues": []
+          }
+        ]
+      },
+      "tv_evidence": null
+    },
+    {
+      "check": "tv",
+      "run": "/opt/goby-test/exec-work-m3e/goby-av-source15-tv-01",
+      "report_sha256": "8b36fb7cb494e7a0c07a2512e41dc0f8a93262735a34083ca09c51929b937338",
+      "driver_source_sha256": {
+        "client-browser-av.mjs": "703661d161ff2de4f13de5315868f1796c4495a3227f84d0dd0452f28edc67cf",
+        "client-browser-av-runtime.mjs": "f43df9ed7a471510b87e7a21d1dcac3af69a9ac1f6d591697ab8954572a20fa8",
+        "client-browser-audio-flow.mjs": "7f074d01a0fd3e89f5070d1a75d6f7fd98b42e3faf608312acaa5d5f956981d9",
+        "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+        "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+        "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+        "client-browser-goby-fixture.mjs": "5fe0df6e65d69c6fd7a72c812237d37b11ebea9303ec7eca2f92db64134488f1",
+        "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+        "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49"
+      },
+      "started_at": "2026-09-11T03:32:33.726Z",
+      "finished_at": "2026-09-11T03:32:42.550Z",
+      "browser_version": "153.0.8010.12",
+      "playwright_version": "1.63.0",
+      "fixture": {
+        "fixture_marker": "goby-m3e-client-acceptance-v1",
+        "fixture_tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+        "schema": 25,
+        "schema_binding": {
+          "schema": 25,
+          "binding": "completed_upgrade_and_pinned_schema25_artifacts",
+          "catalog_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+          "migration_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+          "source": "/opt/goby-test/exec-work-m3e/source-attempt-15",
+          "source_manifest_sha256": "3a2230500be92a8ce4becab733b6c79e774432431aeac78ec6a120e70ee5c398"
+        },
+        "server_id": "c7cfd76b1dee728b2bad523793a37ccb",
+        "account_marker": "goby-m3e-goby-av-user-v1",
+        "account_id": "34b4c24f6568659af7ce17938fae7f81",
+        "process": {
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+          "pid": 438666,
+          "start_ticks": 2005412
+        },
+        "binary_sha256": "99669e962493ef64f1315d3347b07859d1c376151c9712f48d8629d7e756d60a",
+        "fixture_state_sha256": "4321825c58793a7ca94129feb87a7dcb29298316e7dd6777c2d06c8837117e4f",
+        "browser_alias_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b",
+        "creation_response_sha256": "aa5534882ebc2cfc9c452c9d400e02681c8e9d9c1900b98c7d69256e919ebae1",
+        "proxy_status_sha256": "769684e6c84eb4ea83c01f86c671d94d488626581c8dde664fa6f7ab7c05310f",
+        "libraries": {
+          "movies": "a9993591e72f0f2e7babcbf8b9c50790",
+          "music": "6383d20008836e137559698c29b10395",
+          "tv": "a34ce665fb75421ef7551570f353d705"
+        },
+        "reference": {
+          "pid": 332054,
+          "start_ticks": 357218,
+          "executable": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+          "sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2"
+        },
+        "proxy_process": {
+          "pid": 334022,
+          "start_ticks": 378464,
+          "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+        },
+        "boundary": "Read-only private receipt and Linux process pins; no HTTP, database, or client acceptance claim"
+      },
+      "outcome": "tv_browse_ui_flow_completed_with_cross_season_list",
+      "state_before": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "530c6f071507ccd1bd59f4dddce23f12",
+            "name": "M3e Client Series",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 3
+            }
+          },
+          {
+            "id": "a69435a10f55bbfd6d754add46b6c29e",
+            "name": "Season 01",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 2
+            }
+          },
+          {
+            "id": "839e9776ad24ab4a940b85e24522914c",
+            "name": "Season 02",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 1
+            }
+          },
+          {
+            "id": "c88a94ce41239b1151630d95a55835d8",
+            "name": "Episode 1-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6b5dd15a92e5d58fae5a4e10702a7787",
+            "name": "Episode 1-2",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6c2f813c0d7d5b5e7a7b5868daae9a49",
+            "name": "Episode 2-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "state_after": {
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "items": [
+          {
+            "id": "268051d3ca734aefcf94e245fb25ad55",
+            "name": "M3e Client Movie",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "LastPlayedDate": "2026-09-11T03:30:51.104043Z",
+              "PlayCount": 4,
+              "PlaybackPositionTicks": 1212420000,
+              "Played": false
+            }
+          },
+          {
+            "id": "e2da060a0addfafde7f92c291c413f6d",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "4d2ec259d9ae5224f46aa6f56ca2b186",
+            "name": "M3e Client Audio",
+            "scope": "av-media",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "530c6f071507ccd1bd59f4dddce23f12",
+            "name": "M3e Client Series",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 3
+            }
+          },
+          {
+            "id": "a69435a10f55bbfd6d754add46b6c29e",
+            "name": "Season 01",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 2
+            }
+          },
+          {
+            "id": "839e9776ad24ab4a940b85e24522914c",
+            "name": "Season 02",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false,
+              "UnplayedItemCount": 1
+            }
+          },
+          {
+            "id": "c88a94ce41239b1151630d95a55835d8",
+            "name": "Episode 1-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6b5dd15a92e5d58fae5a4e10702a7787",
+            "name": "Episode 1-2",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          },
+          {
+            "id": "6c2f813c0d7d5b5e7a7b5868daae9a49",
+            "name": "Episode 2-1",
+            "scope": "tv-browse-only",
+            "user_data": {
+              "IsFavorite": false,
+              "PlayCount": 0,
+              "PlaybackPositionTicks": 0,
+              "Played": false
+            }
+          }
+        ],
+        "configuration_sha256": "1c08e1d1b43bb530b2a429af33b47f84c3ad627719b76c8f437fcb4c0521bda1",
+        "policy_sha256": "51d5c13da8b12aa2a9ffee0a6e45c8fe9c3982828527dc43dab316a782d5cc21",
+        "user_settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "preferences": {
+        "configuration_unchanged": true,
+        "policy_unchanged": true,
+        "user_settings_unchanged": true
+      },
+      "logout": {
+        "attempted": true,
+        "http_status": 204,
+        "result": "ui_logout_http_accepted_and_login_view_visible"
+      },
+      "session_proof": {
+        "format": 1,
+        "outcome": "all_observed_logout_tokens_rejected",
+        "entries": [
+          {
+            "index": 0,
+            "ui_request": {
+              "method": "POST",
+              "route": "/emby/Sessions/Logout",
+              "elapsed_ms": 8291,
+              "response_status": 204,
+              "client_request_finished": true,
+              "client_request_failed": false,
+              "response_elapsed_ms": 8301
+            },
+            "token_fingerprint": "28a9bf01909e6880ccba8d64b6a28adfdbeab7b2de8f45f211974521f8e8f97a",
+            "token_sources": [
+              "query:x-emby-token"
+            ],
+            "verification": {
+              "source": "independent-node-http-post-logout-verification",
+              "is_ui_request": false,
+              "method": "GET",
+              "route": "/emby/System/Info",
+              "status": 401,
+              "eligible_at_request_start": true,
+              "result": "token_rejected",
+              "trigger": "ui_logout_response",
+              "started_elapsed_ms": 8302,
+              "response_bytes": 35,
+              "finished_elapsed_ms": 8308
+            },
+            "result": "logout_token_rejected"
+          }
+        ],
+        "logout_overflow": 0,
+        "observer_errors": 0,
+        "policy": {
+          "source": "original-client-request-events",
+          "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+          "token_fingerprint": "SHA-256 of the decoded observed token",
+          "token_response_body_read": false,
+          "client_internal_state_read": false,
+          "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+          "browser_network_requirement": "Caller-enforced selected loopback origin only",
+          "verification_source": "independent-node-http-post-logout-verification",
+          "verification_is_ui_request": false,
+          "verification_method": "GET",
+          "verification_route": "/emby/System/Info",
+          "verification_expected_status": 401,
+          "redirects": "Rejected without following",
+          "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+          "payload_logging": false,
+          "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+          "max_request_bytes": 16384,
+          "max_logout_requests": 16,
+          "limits": {
+            "captureTimeoutMs": 1500,
+            "logoutWaitMs": 12000,
+            "httpTimeoutMs": 8000,
+            "httpIdleTimeoutMs": 3000,
+            "responseByteLimit": 65536,
+            "responseHeaderByteLimit": 16384
+          }
+        }
+      },
+      "target_assertions": {
+        "enabled": true,
+        "checks": [
+          {
+            "phase": "target_pin_before_browser",
+            "elapsed_ms": 1,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_login_submit",
+            "elapsed_ms": 1370,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_workflow",
+            "elapsed_ms": 1660,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_before_logout",
+            "elapsed_ms": 8001,
+            "result": "passed"
+          },
+          {
+            "phase": "target_pin_after_shutdown",
+            "elapsed_ms": 8771,
+            "result": "passed"
+          }
+        ],
+        "failed": false
+      },
+      "request_count": 288,
+      "request_overflow": 0,
+      "page_errors": [
+        {
+          "elapsed_ms": 3617,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3618,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 3619,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 6324,
+          "name": "Error",
+          "message": "Response"
+        },
+        {
+          "elapsed_ms": 6325,
+          "name": "Error",
+          "message": "Response"
+        }
+      ],
+      "console_errors": [
+        {
+          "elapsed_ms": 1522,
+          "type": "error",
+          "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "elapsed_ms": 3616,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 3618,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 3619,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 6324,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "elapsed_ms": 6325,
+          "type": "error",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "local_http_failures": [
+        {
+          "method": "GET",
+          "route": "/emby/{value}/{value}",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/Similar",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Users/{value}/Items/{value}/SpecialFeatures",
+          "status": 404
+        },
+        {
+          "method": "GET",
+          "route": "/emby/Items/{value}/ThemeMedia",
+          "status": 404
+        }
+      ],
+      "blocked_external_count": 1,
+      "private_recovery_file_retained": false,
+      "subtitle_evidence": null,
+      "tv_evidence": {
+        "seasons": [
+          {
+            "label": "tv-season-1-episodes",
+            "phase": "season_1",
+            "season": 1,
+            "expected_titles": [
+              "Episode 1-1",
+              "Episode 1-2"
+            ],
+            "observed_titles": [
+              {
+                "full_label": "S1:E1 - Episode 1-1",
+                "name": "Episode 1-1",
+                "title": "Episode 1-1",
+                "season": 1,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              },
+              {
+                "full_label": "S1:E2 - Episode 1-2",
+                "name": "Episode 1-2",
+                "title": "Episode 1-2",
+                "season": 1,
+                "episode": 2,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              },
+              {
+                "full_label": "S2:E1 - Episode 2-1",
+                "name": "Episode 2-1",
+                "title": "Episode 2-1",
+                "season": 2,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              }
+            ],
+            "all_observed_labels": [
+              "S1:E1 - Episode 1-1",
+              "S1:E2 - Episode 1-2",
+              "S2:E1 - Episode 2-1"
+            ],
+            "selected_season_episode_titles": [
+              {
+                "full_label": "S1:E1 - Episode 1-1",
+                "name": "Episode 1-1",
+                "title": "Episode 1-1",
+                "season": 1,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              },
+              {
+                "full_label": "S1:E2 - Episode 1-2",
+                "name": "Episode 1-2",
+                "title": "Episode 1-2",
+                "season": 1,
+                "episode": 2,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              }
+            ],
+            "selected_season_label": {
+              "control": {
+                "index": 0,
+                "tag": "label",
+                "role": null,
+                "type": null,
+                "label": "",
+                "title": "",
+                "text": "\ue313\nSeason 01",
+                "class": "selectLabel selectLabel-inline",
+                "action": "",
+                "command": "",
+                "has_popup": null,
+                "expanded": null,
+                "selected": null,
+                "current": null,
+                "disabled": false,
+                "options": [],
+                "ancestors": [
+                  {
+                    "tag": "div",
+                    "class": "selectContainer selectContainer-inline sectionTitle-cards detailSelectSeasonContainer",
+                    "role": null,
+                    "action": ""
+                  },
+                  {
+                    "tag": "div",
+                    "class": "sectionTitleContainer sectionTitleContainer-cards padded-left padded-left-page padded-right",
+                    "role": null,
+                    "action": ""
+                  },
+                  {
+                    "tag": "div",
+                    "class": "verticalSection verticalSection-cards seriesItemsSection emby-scrollbuttons-scroller",
+                    "role": null,
+                    "action": ""
+                  }
+                ]
+              },
+              "full_label": "\ue313\nSeason 01",
+              "parsed_season": 1
+            },
+            "selected_season_controls": [],
+            "selection_label_matches_requested_season": true,
+            "view_mode": "cross_season_series_list",
+            "complete_owned_episode_set_visible": true,
+            "other_season_titles_absent": false,
+            "strict_season_filtering_observed": false
+          },
+          {
+            "label": "tv-season-2-episodes",
+            "phase": "season_2",
+            "season": 2,
+            "expected_titles": [
+              "Episode 2-1"
+            ],
+            "observed_titles": [
+              {
+                "full_label": "S1:E1 - Episode 1-1",
+                "name": "Episode 1-1",
+                "title": "Episode 1-1",
+                "season": 1,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              },
+              {
+                "full_label": "S1:E2 - Episode 1-2",
+                "name": "Episode 1-2",
+                "title": "Episode 1-2",
+                "season": 1,
+                "episode": 2,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              },
+              {
+                "full_label": "S2:E1 - Episode 2-1",
+                "name": "Episode 2-1",
+                "title": "Episode 2-1",
+                "season": 2,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              }
+            ],
+            "all_observed_labels": [
+              "S1:E1 - Episode 1-1",
+              "S1:E2 - Episode 1-2",
+              "S2:E1 - Episode 2-1"
+            ],
+            "selected_season_episode_titles": [
+              {
+                "full_label": "S2:E1 - Episode 2-1",
+                "name": "Episode 2-1",
+                "title": "Episode 2-1",
+                "season": 2,
+                "episode": 1,
+                "has_season_episode_prefix": true,
+                "prefix_metadata_matches_name": true,
+                "card_context": true,
+                "title_navigation_control": true
+              }
+            ],
+            "selected_season_label": {
+              "control": {
+                "index": 0,
+                "tag": "label",
+                "role": null,
+                "type": null,
+                "label": "",
+                "title": "",
+                "text": "\ue313\nSeason 02",
+                "class": "selectLabel selectLabel-inline",
+                "action": "",
+                "command": "",
+                "has_popup": null,
+                "expanded": null,
+                "selected": null,
+                "current": null,
+                "disabled": false,
+                "options": [],
+                "ancestors": [
+                  {
+                    "tag": "div",
+                    "class": "selectContainer selectContainer-inline sectionTitle-cards detailSelectSeasonContainer",
+                    "role": null,
+                    "action": ""
+                  },
+                  {
+                    "tag": "div",
+                    "class": "sectionTitleContainer sectionTitleContainer-cards padded-left padded-left-page padded-right",
+                    "role": null,
+                    "action": ""
+                  },
+                  {
+                    "tag": "div",
+                    "class": "verticalSection verticalSection-cards seriesItemsSection emby-scrollbuttons-scroller",
+                    "role": null,
+                    "action": ""
+                  }
+                ]
+              },
+              "full_label": "\ue313\nSeason 02",
+              "parsed_season": 2
+            },
+            "selected_season_controls": [],
+            "selection_label_matches_requested_season": true,
+            "view_mode": "cross_season_series_list",
+            "complete_owned_episode_set_visible": true,
+            "other_season_titles_absent": false,
+            "strict_season_filtering_observed": false
+          }
+        ],
+        "episode_detail": {
+          "title": "Episode 2-1",
+          "season": 2,
+          "episode": 1,
+          "detail_title_observed": true,
+          "unique_detail_heading_observed": true,
+          "detail_heading_raw": "S2:E1 - Episode 2-1",
+          "parsed_heading_identity": {
+            "name": "Episode 2-1",
+            "season": 2,
+            "episode": 1,
+            "name_season": 2,
+            "name_episode": 1
+          },
+          "detail_heading_prefix_matches_fixture": true,
+          "page_navigation_observed": true,
+          "title_elements": [
+            {
+              "tag": "h1",
+              "role": null,
+              "class": "itemName-primary",
+              "raw_label": "S2:E1 - Episode 2-1",
+              "parsed_identity": {
+                "name": "Episode 2-1",
+                "season": 2,
+                "episode": 1,
+                "name_season": 2,
+                "name_episode": 1
+              },
+              "detail_context": true,
+              "card_context": false,
+              "content_scope": {
+                "tag": "div",
+                "class": "flex-grow detailTextContainer verticalFieldItems details-largefont"
+              },
+              "metadata_lines": [
+                "S2:E1 - Episode 2-1"
+              ]
+            }
+          ],
+          "metadata_lines": [
+            "S2:E1 - Episode 2-1"
+          ],
+          "metadata_source": "unique_visible_non_card_detail_heading",
+          "season_and_episode_metadata_observed": true
+        },
+        "return_home": "home_link_clicked_navigation_observed_and_home_tv_library_card_visible",
+        "read_only_proof": {
+          "all_observed_item_user_data_unchanged": true,
+          "observed_item_count": 9,
+          "observed_tv_item_count": 6,
+          "playback_request_count": 0,
+          "playback_metadata_request_count": 1,
+          "playback_metadata_is_start_evidence": false,
+          "observed_media_elements_inactive": true,
+          "independent_state_reads_are_ui_acceptance": false,
+          "event_scope": "Complete observed browser request set after browser shutdown",
+          "request_overflow": 0
+        }
+      }
+    }
+  ],
+  "source12_failure_evidence_preserved": true,
+  "music_ui_opened_or_played": false,
+  "music_scan_performed_by_browser_operator": false,
+  "remaining_unrevoked_sessions_from_this_run_set": [],
+  "limitations": [
+    "The owned normal-TV fixture cannot prove standalone specials or all special-content combinations.",
+    "The VTT source response is 220 bytes on Goby versus the previously observed reference 195-byte normalization; both rendered the expected cue, and hashes remain distinct.",
+    "Auxiliary HTTP failures and page errors remain reported; they are not silently counted as supported operations.",
+    "Instance checks were continuous around the explicitly frozen runs; the independent logout proof is not atomically cancellable if an instance changes."
+  ]
+}

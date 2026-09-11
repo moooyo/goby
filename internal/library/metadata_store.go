@@ -28,7 +28,7 @@ type metadataRecord struct {
 
 const metadataRecordColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''),
 	COALESCE(parent.name, ''), i.name, i.type, i.path, i.is_folder,
-	ms.automatic, i.local_metadata, ms.overrides, ms.locked_values, ms.revision,
+	ms.automatic, i.local_metadata, ms.music_source, ms.overrides, ms.locked_values, ms.revision,
 	COALESCE(ms.last_edited_by, ''), ms.last_edited_at`
 
 func metadataIdentifier(value string) bool {
@@ -157,9 +157,10 @@ func readMetadataRecord(ctx context.Context, tx pgx.Tx, itemID string, lock bool
 		statement += " FOR UPDATE OF i, ms"
 	}
 	var record metadataRecord
+	var musicSource []byte
 	err := tx.QueryRow(ctx, statement, itemID).Scan(&record.itemID, &record.libraryID,
 		&record.parentID, &record.parentName, &record.name, &record.itemType, &record.path,
-		&record.isFolder, &record.automatic, &record.localSource, &record.overrides,
+		&record.isFolder, &record.automatic, &record.localSource, &musicSource, &record.overrides,
 		&record.locked, &record.revision, &record.lastEditedBy, &record.lastEditedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return metadataRecord{}, ErrNotFound
@@ -169,6 +170,10 @@ func readMetadataRecord(ctx context.Context, tx pgx.Tx, itemID string, lock bool
 	}
 	if len(editableMetadataFields(record.itemType)) == 0 {
 		return metadataRecord{}, ErrNotFound
+	}
+	record.localSource, err = mergeAcceptedMusicSource(record.localSource, musicSource)
+	if err != nil {
+		return metadataRecord{}, err
 	}
 	return record, nil
 }
@@ -356,13 +361,16 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 	return detail, nil
 }
 
-func applyEffectiveMetadata(ctx context.Context, tx pgx.Tx, itemID string, effective MetadataValues, projection []byte) error {
+func applyEffectiveMetadata(ctx context.Context, tx pgx.Tx, itemID string, effective MetadataValues, projection []byte, synchronize ...bool) error {
 	_, err := tx.Exec(ctx, `UPDATE items SET name = $2, sort_name = $3, overview = $4,
 		index_number = CASE WHEN type = 'Episode' THEN COALESCE($5::integer, 0) ELSE index_number END,
 		updated_at = clock_timestamp() WHERE id = $1`, itemID, effective.Name, effective.SortName,
 		effective.Overview, effective.IndexNumber)
 	if err != nil {
 		return fmt.Errorf("apply effective metadata values: %w", err)
+	}
+	if len(synchronize) != 0 && !synchronize[0] {
+		return nil
 	}
 	return syncItemEntities(ctx, tx, itemID, projection)
 }

@@ -1,0 +1,116 @@
+{
+  "status": "failed",
+  "scope": "source11 full-repository attempt; the ordinary go test command failed and prevented the final recoverydb package and full build",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-11",
+  "reportSha256": "42eb1aed59dce81c210ef438d851e8cdbbf880604ae806921e68ac459b72afa0",
+  "logSha256": "5baaaef51db2a09ffe817856b2ee119ff35a3129867b9400dd6e3c4411fa2ab2",
+  "topLevelPassed": 1668,
+  "failedTests": [
+    "TestHTTPDevicesSixRoutesRequireAdministratorEmbyAuthority"
+  ],
+  "testSkips": 0,
+  "packagesWithTerminalEvent": [
+    {
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/activity",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/config",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/events",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/playback",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverycontrol",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "action": "fail"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/settings",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "action": "pass"
+    }
+  ],
+  "failureMeaning": "One legacy device test expected handler HTTP 400 for Id=%zz. Strict complete credential-query parsing now returns 401 before the handler. The test expectation is corrected in the next source; authentication was not weakened.",
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "pairRetainedByFailedRunner": true,
+  "recoverydbRun": false,
+  "builtByFullGate": false,
+  "disposalEvidence": "Exact empty pair was independently inspected and removed afterward, preserving the failed receipt/report/log; see m3e-source11-full-disposal.json."
+}
