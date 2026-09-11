@@ -1,0 +1,45 @@
+{
+  "fixture_guards": {
+    "database_mutations": 0,
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "327cb5ad0bf57543925f205467f4ff02c194d590bc139b53e16181128ae5c15b",
+    "operator_sha256": "df9f0d33b9ff3136a6958a91d855faf47d703e7f5368a953cb0d182aa12bbd3b",
+    "passed": true,
+    "schema25_catalog_sha256": "e269a7eb6b31d2eb3fff734896ca074a6113761f321f2f23f4b07441e7dc617b",
+    "schema26_catalog_sha256": "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
+    "service_actions": 0,
+    "skipped": 0,
+    "tests": 50
+  },
+  "fixture_stderr_sha256": "c8ad2f291c38d25cc0a196a577ac3f1a3b532717a2c8d2eb580fd6078351ce33",
+  "fixture_stdout_sha256": "a7bfe665ff395d3e858271a7eddfaf5a06df858609f3d33143a683f43813dbb6",
+  "fixture_timing": {
+    "elapsed_seconds": 70.30780692499684,
+    "exit_code": 0
+  },
+  "initial_timeout": {
+    "scope": "Candidate operator guard suite; no deployment attempted.",
+    "status": "timed_out",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wrapper_timeout_seconds": 120
+  },
+  "lineage_guard_sha256": "b8cbc9059cb01155e298895c845a97119841f4f6096ea45f7a1174d88ae19111",
+  "lineage_guards": {
+    "counts": {
+      "executed": 207,
+      "failed": 0,
+      "passed": 207
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "lineage_loader_sha256": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+  "lineage_stdout_sha256": "6a9bf1ec5197c080fcc293e660e5c639df855f095686928c646506a6f5bdebc5",
+  "scope": "Read-only candidate-upgrade guards and pure browser-lineage guards only; no candidate deployment or live browser chain validation.",
+  "status": "passed",
+  "timeout_resolution": "The guard snapshot-comparison helper reuses deep copies of catalogs already validated in setUpClass, while independent source/catalog drift cases still call the original verifier. Production operator checks and the wrapper timeout were unchanged."
+}

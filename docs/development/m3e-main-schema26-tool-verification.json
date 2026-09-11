@@ -1,0 +1,33 @@
+{
+  "guard_logs": "Unit stdout is captured in the private system journal; the matching invocation JSON was retained separately as guards-01-journal.json.",
+  "guard_report_path": "/opt/goby-test/exec-work-m3e/main-schema26-build-01/guard-report.json",
+  "guard_report_sha256": "b7490b7d5adda3d6e949e2d5bbcfa98723a4b81fcd64c4cc8b870e4641edb432",
+  "guard_tests_passed": 15,
+  "helper_build": {
+    "cgo_enabled": false,
+    "go_version": "go1.27.1",
+    "goarch": "amd64",
+    "goos": "linux",
+    "helper_sha256": "832487e56c62ff187fe069f9c5fc8144508d1f3e062654d5efdd7ad0c897e1a5",
+    "product_source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+    "schema": "goby-main-schema26-helper-build",
+    "status": "passed",
+    "tool_manifest_sha256": "c522bf32b52af8e5aab3ac128eb5fa32a6845c7627f65e5a8fd3a776b85e59cf",
+    "version": 1
+  },
+  "helper_build_report_path": "/opt/goby-test/exec-work-m3e/main-schema26-build-01/helper-build-report.json",
+  "helper_build_report_sha256": "a96450f5f0c1d8e5804fd964e891d5672b09aeaf9d736a7214213342fe28e0f8",
+  "primary_database_or_service_accessed": false,
+  "product_source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "scope": "Independent main schema26 tooling source, remote formatting/syntax, helper build and synthetic memory guards only. No real backup, migration, primary service access or deployment acceptance.",
+  "source_bytes_preserved_after_verification": true,
+  "status": "passed",
+  "tool_manifest_sha256": "c522bf32b52af8e5aab3ac128eb5fa32a6845c7627f65e5a8fd3a776b85e59cf",
+  "tool_sha256": {
+    "scripts/test-env/migrate-main-schema26.go": "621306bfd3068ea40b49d0c74de3e61b54a5b9e3cd210cb29ce74b11dc4fe32d",
+    "scripts/test-env/test-upgrade-main-schema26.py": "619fc02d64c50c164f81eb3fe732e35c4fffef80a71d86fee8da9aff45f24076",
+    "scripts/test-env/upgrade-main-schema26.py": "b930b6474eebf5571a76a2a14083cad200493ccb9a1f9748fbfb603ec0193237"
+  },
+  "tool_source": "/opt/goby-test/exec-work-m3e/tool-build-main-schema26-01",
+  "tool_source_files": 3915
+}

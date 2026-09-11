@@ -1,0 +1,31 @@
+{
+  "catalog_artifact": {
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_100402_aa2e9cbfe639/schema-26-postgresql-17.json",
+    "schema": 26,
+    "sha256": "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
+    "source_manifest_sha256": "d37af7f30fa18cbbd71157393c575886528ab49c800af6db401a3939596b7b2b"
+  },
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "guard_tests": 97,
+  "guards": {
+    "exit_code": 0,
+    "log_sha256": "1732ff57109d7bbf15330022d1f10d97c268bf7e36d8f4074361889a2c2f3f72",
+    "runner_sha256": "daea1d1685c073f37218b92c55ea7fa70bfe55853ee778650b4511b5b292b8b8",
+    "test_sha256": "4bf879fd0f38fca8518cab03484636b2e2a2e22c337db50cee756cad1d0d30df"
+  },
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_100402_aa2e9cbfe639/report.json",
+  "report_sha256": "b510899a9f6948021e0046729463f7afde00c5aeb02f335b428a02571c6943cd",
+  "scope": "Schema26 catalog generation only; no Theme integration or service deployment.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-21",
+  "source_manifest_sha256": "d37af7f30fa18cbbd71157393c575886528ab49c800af6db401a3939596b7b2b",
+  "status": "passed",
+  "tables": 33
+}

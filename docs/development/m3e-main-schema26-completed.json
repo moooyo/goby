@@ -1,0 +1,145 @@
+{
+  "active_process": {
+    "binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "listener": {
+      "address": "0100007F:46B0",
+      "inode": "1330903",
+      "table": "tcp"
+    },
+    "pid": 688833,
+    "start_ticks": "5620918"
+  },
+  "binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "completion_database_migrations": 0,
+  "completion_database_restores": 0,
+  "completion_operator_sha256": "7deea409b3f42671ecd23a188d495ad0a228cde99ef81864bac8b7d72431173a",
+  "completion_report": {
+    "path": "/opt/goby-test/backups/main-schema26-post-start-v1/run-20260911T134029Z-ffa629d4c596db46c07beeeb/terminal.json",
+    "sha256": "f77348323a7040d1cbe2c67a96055e1961fe88f1c4ffc73058cc154dbbcb65b9"
+  },
+  "completion_service_mutations": 0,
+  "database": {
+    "activity_total": 17,
+    "database": "goby_test",
+    "database_oid": 16385,
+    "memberships": 0,
+    "owner_oid": 16384,
+    "rehearsal_databases": 0,
+    "rehearsal_roles": 0,
+    "reserved_paths": 0,
+    "role": "goby_test",
+    "role_oid": 16384,
+    "safe": true,
+    "schema": 26,
+    "theme_owners": 22,
+    "theme_resources": 0
+  },
+  "guard_report_sha256": "3cb741df3e63b229ec956345feab8a678d08159717535f9ae2e998e6ddfa2a8e",
+  "migration_run": "/opt/goby-test/backups/main-schema26-rehearsal-repair-v1/run-20260911T132850Z-7f17a39a6e1e08ce9639d6a1",
+  "native_smoke": {
+    "archive_delete_requests": 0,
+    "backup_create_requests": 0,
+    "calls": [
+      {
+        "bytes": 16,
+        "method": "GET",
+        "path": "/healthz",
+        "status": 200
+      },
+      {
+        "bytes": 19,
+        "method": "GET",
+        "path": "/readyz",
+        "status": 200
+      },
+      {
+        "bytes": 800,
+        "method": "GET",
+        "path": "/admin/",
+        "status": 200
+      },
+      {
+        "bytes": 262,
+        "method": "POST",
+        "path": "/admin/v1/session",
+        "status": 200
+      },
+      {
+        "bytes": 262,
+        "method": "GET",
+        "path": "/admin/v1/session",
+        "status": 200
+      },
+      {
+        "bytes": 462,
+        "method": "GET",
+        "path": "/admin/v1/overview",
+        "status": 200
+      },
+      {
+        "bytes": 364,
+        "method": "GET",
+        "path": "/admin/v1/capabilities",
+        "status": 200
+      },
+      {
+        "bytes": 1269,
+        "method": "GET",
+        "path": "/admin/v1/libraries",
+        "status": 200
+      },
+      {
+        "bytes": 989,
+        "method": "GET",
+        "path": "/admin/v1/tasks",
+        "status": 200
+      },
+      {
+        "bytes": 1620,
+        "method": "GET",
+        "path": "/admin/v1/backups",
+        "status": 200
+      },
+      {
+        "bytes": 460,
+        "method": "GET",
+        "path": "/admin/v1/backups/status",
+        "status": 200
+      },
+      {
+        "bytes": 0,
+        "method": "DELETE",
+        "path": "/admin/v1/session",
+        "status": 204
+      },
+      {
+        "bytes": 149,
+        "method": "GET",
+        "path": "/admin/v1/session",
+        "status": 401
+      }
+    ],
+    "cleanup_checkpoint_error_type": null,
+    "legitimate_authentication_history_retained": true,
+    "login_acknowledged": true,
+    "logout_verified": true,
+    "new_session_only": true,
+    "paired_login_cleanup_intent_sha256": "dcc177998609d43f7cbbf87a079a7585bc51f2ea5b8adb1a02aeec236d3cdc0f",
+    "restore_requests": 0,
+    "separate_logout_intent_written": true
+  },
+  "native_smoke_sha256": "301990c72ab72bed3d9ba9863fa8ef1fb476be80411fcc74cad3f9ecfc0885aa",
+  "old_failure_records_unchanged": true,
+  "old_state_preserved_at_migration_commit": true,
+  "original_migration_terminal_preserved_as_failed": true,
+  "post_start_all_table_equality_claimed": false,
+  "product_commit": "608e2088ca6aef150833d3f9bbc954c03e5aef5b",
+  "schema": "goby-main-schema26-deployment-completion",
+  "schema_version": 26,
+  "scope": "Combined retained real backup, rehearsal, in-place migration and installation evidence plus this independently completed native smoke. Broader M3/client acceptance remains separate.",
+  "source_full_report_sha256": "8b2b755020d333de114458b064edc9d3f5e9df048d0a4d356a49f0cb80d2eab1",
+  "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "status": "passed",
+  "version": 1
+}

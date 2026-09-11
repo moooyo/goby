@@ -1,0 +1,56 @@
+{
+  "marker": "goby-main-schema26-baseline-repair-failure-summary-v1",
+  "status": "failed_after_backup_before_rehearsal",
+  "scope": "Public summary of retained remote operator results; no private baseline rows, credentials or complete material inventory are included.",
+  "tool_revision": "tool03",
+  "tool_verification": {
+    "helper_build": "passed",
+    "memory_guards_passed": 26,
+    "repair_preflight": "passed",
+    "prior_real_postgresql_readonly_regression": {
+      "directory": "/opt/goby-test/exec-work-m3e/main-schema26-acl-regression-01",
+      "passed": 1,
+      "postgresql_major": 17
+    }
+  },
+  "run_directory": "/opt/goby-test/backups/main-schema26-baseline-repair-v1/run-20260911T131730Z-85526803ca1a8b52a26f0ab7",
+  "operation": "repair-baseline",
+  "last_completed_phase": "backed-up",
+  "fresh_backup": {
+    "status": "passed",
+    "baseline_and_dump_share_one_snapshot": true,
+    "baseline_sha256": "5366745c3c6dbd6259cb7988d8d2d1986065a16e738f5ebe488c6f4f14ca5082",
+    "dump_sha256": "c821a16a2e2c56c1d094fda822c5bfce32cecb6cc523ddb5706a950c9d6ac7e5"
+  },
+  "failure": {
+    "function": "observe_rehearsal",
+    "relation": "pg_authid",
+    "column_reference": "r.rolconfig",
+    "reason": "The rehearsal observation SELECT references rolconfig, which is not a pg_authid column in PostgreSQL 17.",
+    "readonly_reproduction": "confirmed",
+    "before_any_rehearsal": true,
+    "primary_migration_ran": false,
+    "terminal_evidence_sha256": "acc7b4d173f3975399cf58dc1c6b1e9a27658941d2d028bad9424cb287f61107"
+  },
+  "post_failure_observation": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-repair-failure-review-01/failure-observation.json",
+    "sha256": "7ac34458ccea3b168d76a1981d717996d8ba050a48fb01fdc6c673565ec53764",
+    "primary_service": "STOPPED",
+    "primary_schema": 25,
+    "primary_binary_sha256": "665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b",
+    "activity_rows": 15,
+    "other_primary_database_connections": 0,
+    "connection_count_scope": "pg_stat_activity for database OID 16385, excluding the observer PID; not the sessions table row count.",
+    "rehearsal_databases": 0,
+    "rehearsal_roles": 0
+  },
+  "previous_retained_failure": {
+    "run_directory": "/opt/goby-test/backups/main-schema26-v1/run-20260911T125911Z-a3ceb3e924e2ea287959135c",
+    "phase": "baseline",
+    "error": "column_acl_capture_failed",
+    "terminal_evidence_sha256": "c0048eec237292cbda89e7b43c2c6b112bf74d22d44cc1b38419662af36b714f"
+  },
+  "startup_plan_deadline_utc": "2026-09-11T18:56:44.739406Z",
+  "next_action": "Prepare tool04 for an explicitly bound forward attempt in a new root. Preserve both failed trees and recheck the startup deadline and all preservation gates; do not replay either retained run.",
+  "acceptance_boundary": "The fresh backup passed. Rehearsal, primary migration, restart and primary schema26 deployment have not passed. Candidate and anonymous prelogin results are separate evidence."
+}

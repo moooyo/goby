@@ -1,0 +1,26 @@
+{
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "c7fb1854c48a5438ebb880aeb120191f315f1946249827ff29e7613bcf2fe882",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_105855_454c0c7f4aaa/report.json",
+  "report_sha256": "b1dfb13bd01da18d2f9ad3a635891a3a7c58d9444a9d7257b36a54c7c054b1cd",
+  "scope": "One corrected Similar concurrency regression, with actual writer execution and subsequent permission revocation required.",
+  "source_snapshot": {
+    "changed_from_source25": [
+      "internal/library/similar_integration_test.go"
+    ],
+    "files": 3909,
+    "manifest_sha256": "df27faddb9864a9fa7fce00112c373261c8c4f08f32cfacaaf0e7bcbb72783a1",
+    "purpose": "Full Theme product source with the Similar concurrency test hook corrected to the current seed query and an explicit writer-ran assertion. Production code is byte-identical to source25.",
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-26"
+  },
+  "status": "passed",
+  "tests": 1
+}

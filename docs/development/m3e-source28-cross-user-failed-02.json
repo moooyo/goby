@@ -1,0 +1,281 @@
+{
+  "accounts": [
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_warning_error_count": 3,
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "ecbbe4cb82403879bc4b4f78894c5738"
+      },
+      "id": "34b4c24f6568659af7ce17938fae7f81",
+      "login": {
+        "attempted": true,
+        "credentials_filled": true,
+        "request_count": 1,
+        "status": 200
+      },
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof_entries": [
+        {
+          "result": "logout_token_rejected",
+          "ui_finished": true,
+          "ui_status": 204,
+          "verification_status": 401
+        }
+      ],
+      "logout_proof_outcome": "all_observed_logout_tokens_rejected",
+      "network": {
+        "external_blocked": 1,
+        "forbidden_mutations": 0,
+        "guard_errors": 0,
+        "observer_errors": 0,
+        "overflow": 0,
+        "playback_attempts": 1
+      },
+      "own_item_reads": 8,
+      "page_error_count": 0,
+      "proxy": {
+        "active": 0,
+        "admitted": 254,
+        "capabilities": 1,
+        "completed": 254,
+        "failed": 0,
+        "login": 1,
+        "logout": 1,
+        "mode": "acceptance",
+        "rejected": 0,
+        "requestBytes": 849,
+        "responseBytes": 2939699,
+        "seen": 254,
+        "upgrade_rejections": 0
+      },
+      "slot": "A",
+      "ui": {
+        "observations": [
+          {
+            "label": "home_before",
+            "owned_movies_heading_visible": true
+          },
+          {
+            "label": "home_before",
+            "media_inactive": true
+          },
+          {
+            "id_matches_when_present": null,
+            "label": "owned_movie_card",
+            "title_matches": true
+          },
+          {
+            "item_id_matches": true,
+            "label": "owned_movie_detail",
+            "original_ui_finished": true,
+            "original_ui_request_index": 247,
+            "original_ui_status": 200
+          },
+          {
+            "label": "movie_detail",
+            "media_inactive": true
+          }
+        ],
+        "outcome": "not_started"
+      },
+      "websocket": {
+        "active": 0,
+        "admitted": 1,
+        "closed": 1,
+        "control_attempts": 0,
+        "entries": [
+          {
+            "client_frames": 1,
+            "client_messages": 0,
+            "client_wire_bytes": 6,
+            "closed": true,
+            "connect_transport": true,
+            "handshake_delivered": true,
+            "index": 0,
+            "outcome": "closed",
+            "proxy_connect_status": 200,
+            "reason": "server_end",
+            "server_control_attempted": false,
+            "server_frames": 1,
+            "server_message_kinds": {
+              "other": 0,
+              "user_data_changed": 0
+            },
+            "server_messages": 0,
+            "server_wire_bytes": 2,
+            "token_fingerprint": "6ef7c6e39f994515447fc7e3680c2939db190934c59101bea87b0c557f17d699",
+            "upstream_status": 101
+          }
+        ],
+        "failed": 0,
+        "opened": 1,
+        "seen": 1
+      }
+    },
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_warning_error_count": 3,
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "34b4c24f6568659af7ce17938fae7f81"
+      },
+      "id": "ecbbe4cb82403879bc4b4f78894c5738",
+      "login": {
+        "attempted": true,
+        "credentials_filled": true,
+        "request_count": 1,
+        "status": 200
+      },
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof_entries": [
+        {
+          "result": "logout_token_rejected",
+          "ui_finished": true,
+          "ui_status": 204,
+          "verification_status": 401
+        }
+      ],
+      "logout_proof_outcome": "all_observed_logout_tokens_rejected",
+      "network": {
+        "external_blocked": 1,
+        "forbidden_mutations": 0,
+        "guard_errors": 0,
+        "observer_errors": 0,
+        "overflow": 0,
+        "playback_attempts": 1
+      },
+      "own_item_reads": 8,
+      "page_error_count": 0,
+      "proxy": {
+        "active": 0,
+        "admitted": 254,
+        "capabilities": 1,
+        "completed": 254,
+        "failed": 0,
+        "login": 1,
+        "logout": 1,
+        "mode": "acceptance",
+        "rejected": 0,
+        "requestBytes": 848,
+        "responseBytes": 2938209,
+        "seen": 254,
+        "upgrade_rejections": 0
+      },
+      "slot": "B",
+      "ui": {
+        "observations": [
+          {
+            "label": "home_before",
+            "owned_movies_heading_visible": true
+          },
+          {
+            "label": "home_before",
+            "media_inactive": true
+          },
+          {
+            "id_matches_when_present": null,
+            "label": "owned_movie_card",
+            "title_matches": true
+          },
+          {
+            "item_id_matches": true,
+            "label": "owned_movie_detail",
+            "original_ui_finished": true,
+            "original_ui_request_index": 247,
+            "original_ui_status": 200
+          },
+          {
+            "label": "movie_detail",
+            "media_inactive": true
+          }
+        ],
+        "outcome": "not_started"
+      },
+      "websocket": {
+        "active": 0,
+        "admitted": 1,
+        "closed": 1,
+        "control_attempts": 0,
+        "entries": [
+          {
+            "client_frames": 1,
+            "client_messages": 0,
+            "client_wire_bytes": 6,
+            "closed": true,
+            "connect_transport": true,
+            "handshake_delivered": true,
+            "index": 0,
+            "outcome": "closed",
+            "proxy_connect_status": 200,
+            "reason": "server_end",
+            "server_control_attempted": false,
+            "server_frames": 1,
+            "server_message_kinds": {
+              "other": 0,
+              "user_data_changed": 0
+            },
+            "server_messages": 0,
+            "server_wire_bytes": 2,
+            "token_fingerprint": "6b587c12a7c541b957042f86d26d351efe79494c873e33eb92ac0a06996d7b7d",
+            "upstream_status": 101
+          }
+        ],
+        "failed": 0,
+        "opened": 1,
+        "seen": 1
+      }
+    }
+  ],
+  "boundary": "Ordinary-user authority, own and foreign API checks, state projections and both exact logout proofs passed. The complete Movie-to-Home UI journey and normal preparation request remain unaccepted. The terminal failure remains immutable; no library restriction was exercised.",
+  "candidate_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "client_acceptance": false,
+  "failure": "browse_A",
+  "finished_at": "2026-09-11T13:38:20.120Z",
+  "guard_counts": {
+    "executed": 92,
+    "failed": 0,
+    "passed": 92
+  },
+  "guard_stdout_sha256": "2eb9ca0b8d2b3f63812f51767b7e756fc91338c699088e31e0e004854afa62fe",
+  "input_closure": {
+    "client-browser-cross-user.mjs": "35e03e1533b5647b19d2a99ba250d9264ca2e8e8ea3182874f4de2a43e97351e",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "input_revision": "input04",
+  "preparation_observation": "Both original clients automatically attempted POST /emby/Items/268051d3ca734aefcf94e245fb25ad55/PlaybackInfo on the Movie detail page. It was blocked by the read-only observer. This endpoint performs database preparation writes and is not relabeled as a read. No Playing or media delivery request was admitted.",
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/client-cross-user-source28-02/report.json",
+    "sha256": "71d16d2df285637ea67497dce78bfaa6e20ebbacca0559c7af731919475c42a8"
+  },
+  "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "started_at": "2026-09-11T13:37:55.229Z",
+  "status": "failed"
+}

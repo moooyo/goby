@@ -1,0 +1,28 @@
+{
+  "actual_client_acceptance": false,
+  "files": {
+    "client-browser-cross-user.mjs": "c2622a85c02deadc2f27a6e466e20931b98bff2ae7492e1bdabd9703dcb8f80f",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "test-client-browser-cross-user.mjs": "d12c33f50c50ce652d410e671f0ced5e21db1bb0f83539eac6db7ee99bb0fcfa"
+  },
+  "guard_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "guard_stdout_sha256": "e29c82d2d088754db4467028ae0e6f7673428f216de54cfa8b110c4148c696e1",
+  "guards": {
+    "counts": {
+      "executed": 25,
+      "failed": 0,
+      "passed": 25
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "input_directory": "/opt/goby-test/exec-work-m3e/cross-user-input-01",
+  "scope": "Remote syntax checks and pure mock guards only; no browser opened or candidate authenticated.",
+  "source_unchanged_after_guards": true,
+  "status": "passed",
+  "syntax_checks_passed": 2,
+  "temporary_library_policy_change": "not_exercised"
+}

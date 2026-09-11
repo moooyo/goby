@@ -6,15 +6,141 @@ The M5j round is complete: native backup/recovery, deployment and the
 [handoff](handoff.md) are recorded at `4a840fb`. Development resumed on 2026-09-11
 at the user's request. [M3e real-client acceptance](client-acceptance-m3e.md) is
 in progress. The partial [source18/schema25 checkpoint](verification-m3e-source18-checkpoint.md)
-is deployed on the primary service; M5j remains a preserved historical baseline.
+was historically deployed on the primary service; source28/schema26 is now
+**active/running** as PID688833/start ticks5620918. M5j remains a preserved historical baseline.
 This source18 checkpoint records the deployed product and its verification evidence together.
+
+The first main-schema26 attempt stopped the primary, then failed in baseline
+capture with `column_acl_capture_failed`. The later
+[tool03 repair](m3e-main-schema26-baseline-repair-failed-01.json) passed its fresh
+same-snapshot baseline/dump, then failed before rehearsal because
+`observe_rehearsal` queried absent `pg_authid.rolconfig` on PostgreSQL17.
+Neither earlier failed attempt ran the main migration. The later
+[tool04 attempt](m3e-main-schema26-start-verification-failed-01.json) completed
+rehearsal and cleanup, migration, installation and start. Its terminal remains
+failed at `start-requested`, after 71 intents and before smoke, on an effective
+process identity assertion. Later UID995/GID986 match the fixed operator's
+expected values; the cause is unresolved. Independent read-only post-start
+verification now passed the unchanged tool04 service, installed-state and
+private-preservation checks. Formal completion and new owned-session smoke
+[subsequently passed](m3e-main-schema26-completed.json), without another
+migration, restart or restore. The 13 native calls used only a new owned session,
+ending in logout204 and the paired session401. The primary deployment gate is
+closed; the three earlier failures remain unchanged historical evidence.
+
+The [source28 product checkpoint](source28-product-publication.json) is committed
+and pushed to `origin/main` at `608e2088ca6aef150833d3f9bbc954c03e5aef5b`, tree
+`da8fcd68b41c691c17c5dd0b4d760e38d3606ec3`. Its 73 changed internal
+product/test/catalog files match the reviewed product tree. Active tools and
+documentation are excluded. This publication reuses source28's successful
+1,830-test complete suite and candidate build. Primary deployment subsequently
+passed its separate completion gate; full M3 acceptance remains unfinished.
+Six verified harness files are recorded in `07183be`, and ten main/disposal
+tool files in `b4a7f0c`. These tooling commits preserve the same product
+checkpoint and are published with this evidence update.
 
 The subsequent [source20 candidate checkpoint](verification-m3e-source20-similar.md)
 adds Similar queries and album-artist metadata. It passed 1,763 complete-source
 race tests and a 30-table same-schema candidate upgrade. Original-client Similar
 200 transfer, item state and logout passed within a retained failed auxiliary
-flow: ThemeMedia still returned 404 and Home was not reached. The main remains
-source18; complete M3 acceptance and the next Theme implementation remain open.
+flow: ThemeMedia still returned 404 and Home was not reached. That historical
+candidate was superseded by source28 below; complete M3 acceptance remains open.
+
+The now-published Theme product has a remotely generated schema26 catalog with 33
+tables and [97 passing operator guards](m3e-source21-theme-catalog.json).
+The corrected [14 database/backup race regressions](m3e-source23-theme-database.json)
+passed, including historical schema23/24/25 restore paths and persistent Theme
+classification checks. The [first failure](m3e-source22-theme-database-failed.json)
+remains preserved: three tests used an unsupported sequence-to-composite JSON
+conversion, subsequently fixed without changing production DDL. Both test runs
+and the catalog run have completed their owned cleanup. The subsequent
+[52 Theme regressions](m3e-source25-theme-targeted.json) passed, including final
+scanner edge cases and real ffprobe/scanner/TCP complete and range delivery.
+The [first library/server failure](m3e-source24-theme-targeted-failed.json) and
+its two corrected test fixtures remain recorded separately. Full-source race
+verification of source25 passed 1,813 tests and exposed one stale Similar test
+hook; recoverydb and the build did not run. The hook was fixed and its
+[single regression passed](m3e-source26-similar-snapshot-fix.json). The
+[source26 full run](m3e-source26-theme-full-failed.json) passed 1,824 tests and
+failed recovery finalizer cancellation because Theme validation replaced its
+context error. The application build did not run. Source28 freezes that fix
+and an ordinary-album scanner correction. Its [72 targeted race regressions](m3e-source28-theme-targeted.json)
+passed, including the complete recovery database integration test; both test
+databases were removed and the original HBA/catalog preserved. The complete
+source28 race suite and build [passed](m3e-source28-full.json): 1,830 tests
+across all 24 packages, with zero failures/skips and complete cleanup.
+The [candidate schema26 upgrade](m3e-source28-candidate-upgrade.json) preserved
+the old 30 tables and private/recovery files. Its [original-client auxiliary
+album flow](m3e-source28-auxiliary-album.json) completed Similar and ThemeMedia
+HTTP200 transfers, returned Home, preserved four UserData projections and
+preferences, and completed logout204/exact-token401 with zero page errors.
+The first primary-upgrade attempt left source18/schema25 stopped. Its tooling passed the
+[remote build and 15 memory guards](m3e-main-schema26-tool-verification.json),
+but the later actual attempt failed after stopping the service, before migration.
+The retained run is
+`/opt/goby-test/backups/main-schema26-v1/run-20260911T125911Z-a3ceb3e924e2ea287959135c`,
+terminal evidence SHA-256
+`c0048eec237292cbda89e7b43c2c6b112bf74d22d44cc1b38419662af36b714f`.
+Its stage was `baseline`, error `column_acl_capture_failed`; main schema25 and
+15 activity rows remain. One actual PostgreSQL17 read-only regression passed at
+`/opt/goby-test/exec-work-m3e/main-schema26-acl-regression-01`.
+That scoped regression is separate from the later
+[tool03 repair attempt](m3e-main-schema26-baseline-repair-failed-01.json).
+Tool03 passed its helper build, 26 memory guards and repair preflight, then
+completed a fresh baseline and dump from the same snapshot. Their SHA-256
+values are `5366745c3c6dbd6259cb7988d8d2d1986065a16e738f5ebe488c6f4f14ca5082`
+and `c821a16a2e2c56c1d094fda822c5bfce32cecb6cc523ddb5706a950c9d6ac7e5`.
+The new run under `main-schema26-baseline-repair-v1`,
+`run-20260911T131730Z-85526803ca1a8b52a26f0ab7`, failed in `observe_rehearsal`
+after `backed-up` and before any rehearsal. Its terminal evidence SHA-256 is
+`acc7b4d173f3975399cf58dc1c6b1e9a27658941d2d028bad9424cb287f61107`.
+The PostgreSQL17 `pg_authid.rolconfig` query error was independently reproduced
+read-only. Post-failure observation found schema25, 15 activity rows, zero
+other primary database connections and zero rehearsal databases or roles;
+the connection count is not the `sessions` table row count. Both failed trees
+remain preserved. Tool04 used a new explicitly bound forward root under
+`main-schema26-rehearsal-repair-v1`, run
+`run-20260911T132850Z-7f17a39a6e1e08ce9639d6a1`. Rehearsal and cleanup, main
+migration, installation and start completed. The [third retained failure](m3e-main-schema26-start-verification-failed-01.json)
+is its post-start identity assertion; no smoke ran. Main PID688833 is now
+active/running at schema26 with source28 binary SHA-256
+`83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
+Independent read-only review subsequently passed at
+`main-schema26-post-start-review-02/failure-observation.json`, SHA-256
+`003928387a5ee8a656c34410beae89a7159ed50fac374ecc07f37ce730c12365`.
+It binds PID688833/start ticks5620918, schema26, activity15, theme-owner22,
+reserved0/resources0 and no rehearsal database/role. Formal smoke/finalization
+then [passed](m3e-main-schema26-completed.json) in
+`main-schema26-post-start-v1/run-20260911T134029Z-ffa629d4c596db46c07beeeb`,
+terminal SHA-256 `f77348323a7040d1cbe2c67a96055e1961fe88f1c4ffc73058cc154dbbcb65b9`.
+The 13 native calls used one new owned session and ended with logout204/session401.
+The same PID688833/start ticks5620918 remains; activity15-to17 is legitimate
+login/logout history, not a preservation failure. Completion made zero service
+writes, migrations or restores and left all three failed trees unchanged.
+The [tool04 build/27 guards](m3e-main-schema26-tool04-verification.json),
+[helper regression](m3e-main-schema26-helper-regression-02.json) and
+[catalog regression](m3e-main-schema26-catalog-regression-01.json) remain separate
+tool evidence. Main deployment is complete; full dual-user acceptance remains open.
+The [first dual-user
+browser attempt](m3e-source28-cross-user-failed-01.json) stopped before submitting
+A's login and closed its browser. Input03's anonymous prelogin diagnostic then
+passed at
+`/opt/goby-test/exec-work-m3e/client-cross-user-prelogin-source28-02/report.json`,
+SHA-256 `94f3034e0ac4ccb4c5c4bf0f05ba36bea36c55d7684d0ead49180a2e2a32791d`:
+202 of 202 observed network requests completed with normal Service Workers and
+no credential submission. This remains historical diagnostic-only evidence.
+The later [input04 actual run](m3e-source28-cross-user-failed-02.json) followed
+92 passing guards: both ordinary users completed UI login200 and their owned
+Movie detail UI200 transfer. Own reads returned200, admin/foreign reads403,
+four UserData projections and configuration/policy/preferences stayed unchanged,
+and both real UI logout204 requests had exact-token401 proof. WebSocket CONNECT200
+and upstream101 handshakes closed cleanly. The overall run still failed at
+`browse_A`: return Home did not complete, and each detail page's automatic
+PlaybackInfo request was blocked. PlaybackInfo performs database preparation
+writes and is not a read-only operation. Input05 Home diagnostics and preparation
+scope review are ongoing; full dual-user acceptance is not passed. The
+[temporary library restriction plan](m3e-library-restriction-plan.md) remains
+planned and unexecuted, including its separate 404-versus403 matrix.
 
 ## Decisions
 
@@ -29,7 +155,7 @@ source18; complete M3 acceptance and the next Theme implementation remain open.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; partial checkpoint deployed | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Similar/ThemeMedia 404 responses and page errors remain unresolved. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence are historical checkpoints. Tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of all old business columns and sequences through the 30-table result, and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. [Source18 checkpoint](verification-m3e-source18-checkpoint.md) records the deployed product and its verification evidence together; broader compatibility and complete milestones remain open |
+| M3e real-client acceptance | In progress; source28 primary deployment passed, full dual-user acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input04 own/foreign/UI/logout checks passed within a failed browse_A journey; full dual-user isolation, the planned library-restriction matrix and complete milestones remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
@@ -50,7 +176,7 @@ source18; complete M3 acceptance and the next Theme implementation remain open.
 ## M5j closeout
 
 M5j remains an accepted historical product baseline. The deployment and closeout
-in this section precede the current partial source18/schema25 checkpoint.
+in this section precede the subsequent source18/schema25 and source28/schema26 checkpoints.
 The final Go source and executable are covered by one complete source30 run;
 earlier source25/source26 counts are historical and are not added to the final
 1605-test result.
@@ -368,11 +494,20 @@ within their recorded scopes; they are not results of this reference study.
 
 `test-env` is a Debian 13 Linux host. The earlier root-capacity pressure has been resolved: after the user expanded its virtual disk to 97 GiB, online `growpart` and `resize2fs` grew the root partition and ext4 filesystem. At the [2026-09-10 observation](test-env-disk-growth.json), root reported roughly 96G total and 60G available. Root identity/start and boot partitions were preserved; the original Emby PID 3131777 and main Goby PID 3535438 were unchanged. Go caches now use persistent root-disk storage under `/opt/goby-test/go-caches-m5h` through their original `/dev/shm` path symlinks; media scratch remains separate. No GPU device was present in the recorded `/dev/dri` and `/dev/nvidia0` inspection, so actual GPU execution remains unverified.
 
-The current primary service has **source18/schema25 deployed**, PID 539535,
-start ticks `3115871`, executable SHA-256
-`665df2d3851dc1b4a251012805678559e17e274c08f2548aead560e593a08d2b`.
-The isolated client candidate remains source18/schema25 with the same binary,
-PID 506532, start ticks `2681316`. The
+The current primary service is **active/running** at source28/schema26,
+PID688833/start ticks5620918, executable SHA-256
+`83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
+Its later observed UID995/GID986 match the fixed operator's expected identity,
+but the retained operator failed its initial post-start identity assertion and
+did not run smoke. Independent read-only service, installed-state and private
+preservation checks passed, followed by the separately completed owned-session
+smoke and finalization. The completion preserved the process and all three old
+failure trees; activity is now 17 after the two legitimate authentication events.
+The old PID539535/start ticks `3115871` belongs to the former source18 process.
+The isolated client candidate is
+source28/schema26, PID 682417/start ticks `5168373`, binary SHA-256
+`83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
+The historical
 [deployment evidence](m3e-source18-main-deployment.json), SHA-256
 `02ed027b353488ab31cb9e4ac3e7cfc4547422bb1a57e7f9cfdfdd945aad0bf3`,
 records preservation of all old business columns and sequences through the
@@ -380,8 +515,9 @@ records preservation of all old business columns and sequences through the
 and seven reads, logout 204, and rejection of the exact token with 401. Old
 archives were preserved; no primary restore or old-binary rollback occurred.
 This is the partial [M3e checkpoint](verification-m3e-source18-checkpoint.md),
-with its product and verification evidence recorded together. Similar/ThemeMedia 404 responses, page
-errors, broader compatibility, and complete milestones remain open.
+with its product and verification evidence recorded together. Its historical
+auxiliary failures remain retained; the later source28 candidate's scoped
+auxiliary flow passed. Broader compatibility and complete milestones remain open.
 
 The two earlier prepare attempts failed safely before the Go helper, dump,
 restore rehearsal, or migration began and remain preserved as historical failures.

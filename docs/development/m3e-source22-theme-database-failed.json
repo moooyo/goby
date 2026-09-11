@@ -1,0 +1,107 @@
+{
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "disposal": {
+    "force_or_backend_termination_used": false,
+    "operator_sha256": "5986550ca91f754cc9e9c3caf9a0253663817b1604d9b4bc9dbcae118d138d44",
+    "original_failure_evidence_preserved": true,
+    "preexisting_catalog_unchanged": true,
+    "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_100529_3644bd3c133a/disposal-report.json",
+    "report_sha256": "2381bbab9058d3a7112b64775fb41926da24653cc59eac50a9d1267156e5a15b",
+    "status": "disposed"
+  },
+  "failure_cause": "The shared test helper attempted to convert a sequence relation to a composite JSON row (PostgreSQL SQLSTATE 42809).",
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "f8c81cbd57b6633799ca645855f872a9fe5ed8afc0db0221933ad1b81f351c37",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_100529_3644bd3c133a/report.json",
+  "report_sha256": "267d301682b77386d4b9c90fc22e180278f7bcb59095199b42ab432a882e4e76",
+  "scope": "Schema26 database and backup targeted race tests only; no integrated product, candidate upgrade or client acceptance.",
+  "snapshot": {
+    "catalog_sha256": "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
+    "files": 3907,
+    "manifest_sha256": "a310305aebe670ca8e613943f64b83386bcf41d64afa9befbb2d37a4d9bf0238",
+    "purpose": "Schema26 database and backup tests only; unfinished scanner copy is not accepted or deployed.",
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-22"
+  },
+  "status": "failed",
+  "tests": {
+    "cases": [
+      {
+        "Action": "fail",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersMigrationPreservesSchema25RowsSequencesAndRollback"
+      },
+      {
+        "Action": "fail",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersEnforceKindsAndFollowItemTransactions"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersMigrationCoversWritersOnBothSidesOfBackfill"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersConcurrentItemsAndDuplicatesKeepOneMapping"
+      },
+      {
+        "Action": "fail",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeReservedPathsMigrationPreservesSchema25AndReservesOnlyCanonicalLayouts"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeReservedPathConstraintsAndRootDeletionStayScoped"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLRestoreSchema23ArchivePreservesDataAndMigratesToCurrent"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema23RestoreFinalizerFailureRollsBackAndRetries"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemanticFinalizer"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeSnapshotRejectsMissingCoverageAndInvalidInactiveOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeRestoreRejectsSemanticallyInvalidRealArchives"
+      }
+    ],
+    "failed": 3,
+    "passed": 11,
+    "skipped": 0
+  }
+}

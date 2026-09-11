@@ -1,0 +1,183 @@
+{
+  "auxiliary_album": {
+    "card": {
+      "card_present": true,
+      "id_matches_receipt": null,
+      "id_present": false,
+      "type": null
+    },
+    "detail": {
+      "album_id_matches_receipt": true,
+      "navigation_observed": true,
+      "visible_receipted_track_rows": 2
+    },
+    "expected_album_id": "002c2ea2c77769ae9b0b84b6e788998b",
+    "outcome": "completed",
+    "phase": "auxiliary_complete",
+    "responses": [
+      {
+        "failure": null,
+        "finished_elapsed_ms": 5526,
+        "request_elapsed_ms": 5499,
+        "request_index": 251,
+        "request_phase": "workflow:auxiliary_album_wait",
+        "response_elapsed_ms": 5526,
+        "response_phase": "workflow:auxiliary_album_wait",
+        "route": "/emby/Items/{value}/Similar",
+        "seed_matches_receipted_album": true,
+        "status": 200
+      },
+      {
+        "failure": null,
+        "finished_elapsed_ms": 5526,
+        "request_elapsed_ms": 5499,
+        "request_index": 252,
+        "request_phase": "workflow:auxiliary_album_wait",
+        "response_elapsed_ms": 5526,
+        "response_phase": "workflow:auxiliary_album_wait",
+        "route": "/emby/Items/{value}/ThemeMedia",
+        "seed_matches_receipted_album": true,
+        "status": 200
+      }
+    ],
+    "return_home": {
+      "hash_route": "#!/home",
+      "pathname": "/web/index.html"
+    },
+    "scope": "Original UI album navigation and auxiliary HTTP responses; no playback or history reset",
+    "steps": [
+      {
+        "action": "click_unique_album_title_in_latest_music",
+        "requested_album_id": "002c2ea2c77769ae9b0b84b6e788998b"
+      }
+    ]
+  },
+  "candidate_binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "candidate_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 682417,
+    "start_ticks": 5168373
+  },
+  "console_error_count": 1,
+  "console_errors": [
+    {
+      "elapsed_ms": 2236,
+      "message": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      "type": "error"
+    }
+  ],
+  "driver_source_sha256": {
+    "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232",
+    "client-browser-auxiliary-album.mjs": "b53bf58a6cb403c725b2bd0ce8eec96e4258dd74367d7a2d91b3886d8212c39c",
+    "client-browser-av-runtime.mjs": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0",
+    "client-browser-av.mjs": "b49239c48897ed52d88ca76e82633b1e273dc18a02ffa63b69aeff7385b2fba3",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"
+  },
+  "elapsed_ms": 8956,
+  "failure": null,
+  "finalization": {
+    "attempted": true,
+    "result": "completed"
+  },
+  "logout": {
+    "attempted": true,
+    "http_status": 204,
+    "result": "ui_logout_http_accepted_and_login_view_visible"
+  },
+  "logout_request_count": 1,
+  "network_policy_guard_errors": 0,
+  "observation_path": "/opt/goby-test/exec-work-m3e/source28-auxiliary-album-ui-01/observation.json",
+  "observation_sha256": "0db4a10867673030e5fb5c730f245d92b9ab9e945f111fccd3386e25dd6e8ab6",
+  "page_error_count": 0,
+  "page_errors": [],
+  "preferences_comparison": {
+    "configuration_unchanged": true,
+    "policy_unchanged": true,
+    "user_settings_unchanged": true
+  },
+  "request_overflow": 0,
+  "scope": "Original-client auxiliary album workflow for the source28 Theme increment; not complete M3 or all-client compatibility.",
+  "session_proof": {
+    "entries": [
+      {
+        "index": 0,
+        "result": "logout_token_rejected",
+        "token_fingerprint": "07a108c777f1b067a7b35687bad99fbb2222c715c0b83a3349cc025116c0433b",
+        "token_sources": [
+          "query:x-emby-token"
+        ],
+        "ui_request": {
+          "client_request_failed": false,
+          "client_request_finished": true,
+          "elapsed_ms": 8302,
+          "method": "POST",
+          "response_elapsed_ms": 8313,
+          "response_status": 204,
+          "route": "/emby/Sessions/Logout"
+        },
+        "verification": {
+          "eligible_at_request_start": true,
+          "finished_elapsed_ms": 8319,
+          "is_ui_request": false,
+          "method": "GET",
+          "response_bytes": 35,
+          "result": "token_rejected",
+          "route": "/emby/System/Info",
+          "source": "independent-node-http-post-logout-verification",
+          "started_elapsed_ms": 8313,
+          "status": 401,
+          "trigger": "ui_logout_response"
+        }
+      }
+    ],
+    "format": 1,
+    "logout_overflow": 0,
+    "observer_errors": 0,
+    "outcome": "all_observed_logout_tokens_rejected",
+    "policy": {
+      "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+      "browser_network_requirement": "Caller-enforced selected loopback origin only",
+      "client_internal_state_read": false,
+      "limits": {
+        "captureTimeoutMs": 1500,
+        "httpIdleTimeoutMs": 3000,
+        "httpTimeoutMs": 8000,
+        "logoutWaitMs": 12000,
+        "responseByteLimit": 65536,
+        "responseHeaderByteLimit": 16384
+      },
+      "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+      "max_logout_requests": 16,
+      "max_request_bytes": 16384,
+      "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+      "payload_logging": false,
+      "redirects": "Rejected without following",
+      "source": "original-client-request-events",
+      "token_fingerprint": "SHA-256 of the decoded observed token",
+      "token_response_body_read": false,
+      "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+      "verification_expected_status": 401,
+      "verification_is_ui_request": false,
+      "verification_method": "GET",
+      "verification_route": "/emby/System/Info",
+      "verification_source": "independent-node-http-post-logout-verification"
+    }
+  },
+  "state_proof": {
+    "all_bound_auxiliary_transfers_completed": true,
+    "all_observed_item_user_data_unchanged": true,
+    "event_scope": "Complete observed browser request set after browser shutdown",
+    "independent_state_reads_are_ui_acceptance": false,
+    "observed_item_count": 4,
+    "observed_media_elements_inactive": true,
+    "playback_request_count": 0,
+    "request_overflow": 0
+  },
+  "status": "passed"
+}

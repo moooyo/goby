@@ -1,0 +1,62 @@
+{
+  "status": "failed",
+  "scope": "Complete source26 Go race suite; not a successful build or candidate deployment.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-26",
+  "source_manifest_sha256": "df27faddb9864a9fa7fce00112c373261c8c4f08f32cfacaaf0e7bcbb72783a1",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_105904_88799d500ae6/report.json",
+  "report_sha256": "5222548cda4709640e3ca8cfa6c50310a370ebf9f80ca5499a7fadabd48aef9a",
+  "log_sha256": "5680fba9b090577d8990eda0ec746c300c60b85f75137eafaa833c098e53c6cb",
+  "tests": {
+    "top_level_passes": 1824,
+    "top_level_failures": 1,
+    "passing_packages": 23,
+    "failing_package": "github.com/moooyo/goby/internal/recoverydb",
+    "failing_test": "TestRecoveryDatabaseStoreIntegration/reset_restore_and_stamp_reuse_only_the_inactive_slot/transactional_finalizer_cancelled"
+  },
+  "failure_cause": "The Theme semantic validation wrapper converted finalizer cancellation into ErrDatabase before the existing context check.",
+  "application_binary_present": false,
+  "cleanup": {
+    "unit_terminal": true,
+    "hba_restored_exactly": true,
+    "receipt_saved": true
+  },
+  "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "retained_evidence": {
+    "path": "/opt/goby-test/exec-work-m3e/source26-retained-database-evidence-01/observations.json",
+    "sha256": "b145cd7ab9f609bb9f8bf7448e2303bdd1384e65657f216496360d1eb85f2291",
+    "source_dump_sha256": "c6706cc9860126edfce2433991f785b3ca715683ab5a56d8b8d058c12d3b2661",
+    "target_dump_sha256": "270e8c8c4d2e6d0d45a7c792eeee0e1a6270077327417055add48d427b866b43",
+    "database_mutations": false,
+    "before_after_equal": true,
+    "source_table_count": 33,
+    "target_table_count": 0,
+    "source_exception": "Only public.users OID 7063563 has an explicit owner-default ACL, following the recovery test's GRANT SELECT and REVOKE sequence; no foreign grant remains."
+  },
+  "disposal": {
+    "status": "disposed",
+    "operator_sha256": "ecba040cc836be073a45f0b1be7d2048678267875468fabce0c2a91270c203bf",
+    "remote_acl_guard_cases_passed": 12,
+    "guard_report_sha256": "a64dab6f4488b34beebbbbfd37c08a1e4e85be54be49c17eade68cd86a2bb615",
+    "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_105904_88799d500ae6/disposal-report.json",
+    "report_sha256": "bc6a6c11e2b1e31efaa2f96172641c3421d465c107cf03d260426010e6ced8bf",
+    "preexisting_catalog_unchanged": true,
+    "original_failure_evidence_preserved": true,
+    "retained_database_evidence_preserved": true,
+    "population_checks_per_database": 3,
+    "force_or_backend_termination_used": false
+  },
+  "superseding_source": {
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-28",
+    "manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+    "files": 3911,
+    "verification_status": "targeted_full_build_candidate_and_scoped_auxiliary_client_passed",
+    "targeted_run": "20260911_114314_f0eb92b8c61a",
+    "targeted_report_sha256": "5e1446d33469f0e811c621a288cb4bd3570cb26f476566c39730d9a14c9b28fc",
+    "full_run": "20260911_114525_fe88ae8d9829",
+    "full_report_sha256": "8b2b755020d333de114458b064edc9d3f5e9df048d0a4d356a49f0cb80d2eab1",
+    "corrections": [
+      "Preserve ordinary album hierarchy after root-relative Theme classification.",
+      "Preserve caller cancellation and deadline errors during backup Theme validation."
+    ]
+  }
+}

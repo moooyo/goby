@@ -1,0 +1,88 @@
+{
+  "build_report": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-build-04/helper-build-report.json",
+    "sha256": "284ec2744e049d1533516944b409528dba7bd1c676bceb50be084b7de11c631e"
+  },
+  "catalog_regression": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-catalog-regression-01/report.json",
+    "sha256": "ee21c888afa972df78e9af05e920e29b729fd50242c7c06aa5769dab16464581"
+  },
+  "guard_report": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-build-04/guard-report.json",
+    "sha256": "493f4397679e6f94cff907d21df8d9b3ecddebff55a203dd48a1f82f776f3754"
+  },
+  "helper_binary": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-build-04/migrate-main-schema26",
+    "sha256": "e24b2424a0fe69b8778ae79567b6fccef9b63ffb6be3dccc36e7464288d7bebe"
+  },
+  "helper_build": {
+    "cgo_enabled": false,
+    "go_version": "go1.27.1",
+    "goarch": "amd64",
+    "goos": "linux",
+    "helper_sha256": "e24b2424a0fe69b8778ae79567b6fccef9b63ffb6be3dccc36e7464288d7bebe",
+    "product_source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+    "schema": "goby-main-schema26-helper-build",
+    "status": "passed",
+    "tool_manifest_sha256": "8aa53797df45293d944a30173aa3c155ad589fb46b4253e7499df10dbeaf02f2",
+    "version": 1
+  },
+  "helper_regression": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema26-helper-regression-02/report.json",
+    "sha256": "b53bc868f125e0b2c6d00d612fee0923b7109387943d3ca91e9f7e2d9be422ec"
+  },
+  "manifest": {
+    "path": "/opt/goby-test/exec-work-m3e/tool-build-main-schema26-04/main-schema26-tool-inputs.json",
+    "sha256": "8aa53797df45293d944a30173aa3c155ad589fb46b4253e7499df10dbeaf02f2"
+  },
+  "pure_guards": {
+    "cases": [
+      "test_candidate_requires_matching_full_helper_guard_and_release_provenance",
+      "test_complete_product_and_tool_inventories_reject_unbound_members",
+      "test_explicit_arguments_bind_every_artifact_target_and_old_process",
+      "test_fixed_target_and_published_lifetime_do_not_reuse_candidate_authority",
+      "test_fresh_evidence_refuses_adoption_and_retains_partial_publication",
+      "test_intent_chain_is_exclusive_input_bound_and_never_advances_on_failure",
+      "test_locked_primitives_reject_unowned_entry_before_dependency_calls",
+      "test_pinned_source_compares_opened_and_final_identity_and_digest",
+      "test_pinned_source_rejects_escape_ownership_modes_and_links_before_open",
+      "test_primary_sql_target_and_independent_start_times_are_exact",
+      "test_private_json_rejects_duplicate_keys_and_nonfinite_numbers",
+      "test_published_receipt_chain_rejects_other_installations_before_dependency_execution",
+      "test_rehearsal_repair_binds_both_failures_and_the_complete_prior_backup",
+      "test_repair_authority_is_explicit_and_operation_roots_are_restored",
+      "test_repair_preflight_requires_stopped_schema25_and_an_unused_repair_root",
+      "test_repair_requires_the_complete_immutable_read_only_failure",
+      "test_retention_environment_checks_all_override_sources_without_leaking_secrets",
+      "test_shared_lock_precedes_authority_and_is_released_after_failure",
+      "test_startup_context_checks_before_each_intent_without_advancing_on_rejection",
+      "test_startup_counts_reads_one_fixed_database_clock_without_legacy_policy",
+      "test_startup_gate_preserves_one_day_history_and_allows_legal_append",
+      "test_startup_gate_rejects_active_work_lost_history_and_window_expiry",
+      "test_startup_gate_uses_database_time_and_reserved_start_login_window",
+      "test_startup_plan_binds_exact_artifacts_configuration_and_observation_types",
+      "test_startup_plan_rejects_ambiguous_json_unbounded_windows_and_early_expiry",
+      "test_unrecognized_operation_mode_is_rejected_before_external_access",
+      "test_upgrade_orders_bounded_phases_retains_failures_and_revokes_only_its_smoke_cookie"
+    ],
+    "errors": 0,
+    "failure_summaries": [],
+    "failures": 0,
+    "fixtures": "synthetic-memory-only",
+    "guard_sha256": "85ae3d5530f1aecc26d1bf18a75203724ad88d93a4e0b6dd9ffd155db5eef150",
+    "operator_sha256": "e3040771cba35ec5783b327f7df356adfb66480d2918a19356f4b4743ecad92c",
+    "real_backup_acceptance": false,
+    "real_deployment_acceptance": false,
+    "real_migration_acceptance": false,
+    "skips": 0,
+    "status": "passed",
+    "suite": "main-schema26-upgrade-guards",
+    "tests": 27
+  },
+  "revision": "tool04",
+  "schema": "goby-main-schema26-tool-verification",
+  "scope": "Tool build, pure guards and separately recorded read-only PostgreSQL regressions. This is not the main deployment completion receipt.",
+  "status": "passed",
+  "tool_source": "/opt/goby-test/exec-work-m3e/tool-build-main-schema26-04",
+  "version": 1
+}

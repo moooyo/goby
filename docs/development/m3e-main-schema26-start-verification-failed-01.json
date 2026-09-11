@@ -1,0 +1,56 @@
+{
+  "status": "operator_failed_after_primary_start",
+  "scope": "Retained tool04 result and separately observed running primary; not a completed primary acceptance report.",
+  "run_directory": "/opt/goby-test/backups/main-schema26-rehearsal-repair-v1/run-20260911T132850Z-7f17a39a6e1e08ce9639d6a1",
+  "tool_revision": "tool04",
+  "rehearsal": {
+    "status": "completed",
+    "cleanup": "completed"
+  },
+  "primary_migration": {
+    "status": "completed",
+    "schema": 26,
+    "report_path": "/opt/goby-test/backups/main-schema26-rehearsal-repair-v1/run-20260911T132850Z-7f17a39a6e1e08ce9639d6a1/main-migrated.json",
+    "report_sha256": "2cdd286ddf9012d8acc5423250967098a8d42180927cf935491904e2e193f5db",
+    "post_migration_capture": "completed",
+    "post_migration_capture_sha256": "e95c284b08f18cba6417f17cf7d724799d22e75012b4a3fea35cfa65dcefc2ec"
+  },
+  "primary_observation": {
+    "service_state": "active/running",
+    "pid": 688833,
+    "start_ticks": 5620918,
+    "source": "source28",
+    "binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+    "effective_uid": 995,
+    "effective_gid": 986,
+    "fixed_operator_expected_uid": 995,
+    "fixed_operator_expected_gid": 986
+  },
+  "terminal_result": {
+    "status": "failed",
+    "last_phase": "start-requested",
+    "intent_count": 71,
+    "error": "The candidate process has an unexpected effective identity.",
+    "terminal_evidence_sha256": "6a250c98ad0baf5e770e565e7790967f9be9465e62eadc9e4a0f0075d6bd6c43",
+    "smoke": "not_run"
+  },
+  "later_independent_readonly_review": {
+    "status": "passed",
+    "observation_path": "/opt/goby-test/exec-work-m3e/main-schema26-post-start-review-02/failure-observation.json",
+    "observation_sha256": "003928387a5ee8a656c34410beae89a7159ed50fac374ecc07f37ce730c12365",
+    "unmodified_tool04_exact_service": "passed",
+    "verify_installed": "passed",
+    "preserved_private": "passed_with_log_append_allowed",
+    "schema": 26,
+    "activity_rows": 15,
+    "theme_owner_rows": 22,
+    "reserved_paths": 0,
+    "theme_resources": 0,
+    "rehearsal_databases": 0,
+    "rehearsal_roles": 0,
+    "migration_or_restart_performed": false
+  },
+  "cause_assessment": "Unresolved. A transient startup observation is possible but unproven. The later observed UID/GID match the fixed operator's expectations; this is not evidence of incorrect UID/GID constants.",
+  "next_action": "Preserve all three failed runs. Complete the formal post-start completion step using only a new owned session smoke and exact logout proof. Do not repeat migration or restart the service.",
+  "acceptance_boundary": "Rehearsal, migration, installation and service start completed. The original operator terminal remains failed. The later independent read-only verification passed; primary session smoke and formal finalization remain pending."
+}

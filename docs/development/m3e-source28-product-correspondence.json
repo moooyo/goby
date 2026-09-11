@@ -1,0 +1,37 @@
+{
+  "archive_sha256": "f2bdc283bed640eb14660c89f1898b4026e6ec01034edc2b4976b67eceb5e2f9",
+  "changed": [
+    "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json"
+  ],
+  "extra": [],
+  "git_tree": "da8fcd68b41c691c17c5dd0b4d760e38d3606ec3",
+  "initial_observation_sha256": "548aefbac059c275b9d21666886c01d6f001cebc6849046be7a7d657efaf2c7e",
+  "missing": [],
+  "normalization_observations": [
+    {
+      "crlf_to_lf_only": true,
+      "file": "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json",
+      "parsed_json_equal": true,
+      "staged_bytes": 2533,
+      "staged_sha256": "fffebfb769295596b6994498bf980f71cedd1fbf343225a8e6f335ebd558c24e",
+      "tested_bytes": 2619,
+      "tested_sha256": "5ec0e48ef4182e58cfed2951c46ef93db29726aa92eea75b4f12b48f084f8c53"
+    }
+  ],
+  "normalization_review": {
+    "byte_identical_product_test_files": 3212,
+    "consumer": "internal/server/playback_input_test.go",
+    "consumer_bytes_unchanged_from_source20": true,
+    "consumer_sha256": "ea3dc336c2a691069b09a39d0b41965d717646a134c8370e67ef774b4ab75a88",
+    "fixture_bytes_unchanged_from_source20": true,
+    "prior_review": "docs/development/m3e-source20-staged-source-check.json",
+    "production_ancestor_embed_directives": [],
+    "production_literal_reference_files": [],
+    "scope": "All production source is byte-identical. The same previously reviewed JSON test fixture differs only by repository line-ending normalization; original reference provenance is preserved."
+  },
+  "product_files": 3213,
+  "scope": "Product and test source correspondence before publication; full regression and build are still running. Documentation and operator/harness scripts are excluded from this comparison.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-28",
+  "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "status": "passed_with_documented_test_fixture_normalization"
+}

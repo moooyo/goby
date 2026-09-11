@@ -1,0 +1,185 @@
+{
+  "binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "completed_sha256": "954c4c8885e379ab70bdeb3cda84bdd47247768a6053e66cc43dec9566d04975",
+  "music_chain": {
+    "candidate_binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+    "candidate_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 682417,
+      "start_ticks": 5168373
+    },
+    "chain_path": "/opt/goby-test/exec-work-m3e/client-music-upgrade-chain-source28.json",
+    "chain_sha256": "b8d00674951487aa541dcd8d648d77f91293cc496c4f5002ea288af56660a63a",
+    "hops": 4,
+    "upgrade": {
+      "completedSHA256": "954c4c8885e379ab70bdeb3cda84bdd47247768a6053e66cc43dec9566d04975",
+      "directory": "/opt/goby-test/exec-work-m3e/client-upgrade-92afabdded84813d3af44b6b0f86ff47",
+      "reportPath": "/opt/goby-test/exec-work-m3e/client-fixture-report-16937ed58a2985fd63d76c38.json",
+      "reportSHA256": "1c07e1eee7e9c00c9e44df78212e733a6915bb7a04e0e816461927e133d1c14c"
+    }
+  },
+  "operator_sha256": "df9f0d33b9ff3136a6958a91d855faf47d703e7f5368a953cb0d182aa12bbd3b",
+  "process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 682417,
+    "start_ticks": 5168373
+  },
+  "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-16937ed58a2985fd63d76c38.json",
+  "report_sha256": "1c07e1eee7e9c00c9e44df78212e733a6915bb7a04e0e816461927e133d1c14c",
+  "scope": "Protected isolated candidate schema25-to26 upgrade; not a primary deployment or client acceptance.",
+  "status": "passed",
+  "upgrade": {
+    "after_preservation": {
+      "added_viewer_credentials": {
+        "browser_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "credentials_sha256": "a6bbe47913c5223aaa672940593592cdce8e61d109a1045f81bac4bf217823cf",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b"
+      },
+      "browser_sha256": "0be6df4acef0565537b3b3a6e8c1518f6bed4023bfdfb5dea60b67dd32fee790",
+      "database_sha256": "ceed731f93dcd9d9562fa2a00390a8a567c9810ad917ef4f1bcd5701b68e5145",
+      "item_count": 13,
+      "library_count": 3,
+      "recovery_sha256": "3df02f3ba93ce985bdc99979e38801b78fdf598c32512f80ac47d98b9f78427a",
+      "row_counts": {
+        "activity_entries": 108,
+        "application_key_clients": 0,
+        "application_key_devices": 0,
+        "application_keys": 0,
+        "catalog_entities": 1,
+        "client_playback_references": 1,
+        "devices": 43,
+        "encoding_jobs": 0,
+        "item_entities": 4,
+        "item_images": 0,
+        "item_metadata_state": 13,
+        "item_subtitles": 2,
+        "item_theme_resources": 0,
+        "items": 13,
+        "libraries": 3,
+        "library_roots": 3,
+        "managed_settings": 1,
+        "play_sessions": 18,
+        "scan_jobs": 4,
+        "schema_migrations": 26,
+        "server_settings": 3,
+        "sessions": 49,
+        "task_definitions": 1,
+        "task_occurrences": 0,
+        "task_run_children": 0,
+        "task_run_requests": 0,
+        "task_runs": 0,
+        "task_triggers": 0,
+        "theme_owner_ids": 14,
+        "theme_reserved_paths": 0,
+        "user_item_data": 5,
+        "user_settings": 1,
+        "users": 3
+      },
+      "runtime_sha256": "746b2092897829b15a169131059d3792767b3539aca9d53ddb9e79f954dd1874",
+      "schema": 26,
+      "table_count": 33,
+      "theme": {
+        "active_resource_count": 0,
+        "mapped_item_count": 13,
+        "owner_count": 14,
+        "owner_rows_sha256": "b4d1bfe5a49faa4c3cb9b0f840b3c4261d81137dace9de74d8d5981a4fbbe1aa",
+        "reserved_path_count": 0,
+        "reserved_paths_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "resource_count": 0,
+        "resource_rows_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "virtual_root_count": 1
+      }
+    },
+    "evidence_directory": "/opt/goby-test/exec-work-m3e/client-upgrade-92afabdded84813d3af44b6b0f86ff47",
+    "from_schema": 25,
+    "from_sha256": "a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9",
+    "id": "92afabdded84813d3af44b6b0f86ff47",
+    "new_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 682417,
+      "start_ticks": 5168373
+    },
+    "old_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 581075,
+      "start_ticks": 3900536
+    },
+    "phase": "complete",
+    "preservation": {
+      "added_viewer_credentials": {
+        "browser_sha256": "bc08cce35adfda5d2725094754ad351e190559edf5d015d8bdc9429b3200d127",
+        "credentials_sha256": "a6bbe47913c5223aaa672940593592cdce8e61d109a1045f81bac4bf217823cf",
+        "receipt_sha256": "fd9248d8ab9608bbdeebdfe6a0cc79686783bddc99b10b7c0832638f41deda9b"
+      },
+      "browser_sha256": "0be6df4acef0565537b3b3a6e8c1518f6bed4023bfdfb5dea60b67dd32fee790",
+      "database_sha256": "f7bd0ec63a73fdd08f46f92aa9e2644e3d41869c98589f3d9043c6e39a0be5e0",
+      "item_count": 13,
+      "library_count": 3,
+      "recovery_sha256": "3df02f3ba93ce985bdc99979e38801b78fdf598c32512f80ac47d98b9f78427a",
+      "row_counts": {
+        "activity_entries": 108,
+        "application_key_clients": 0,
+        "application_key_devices": 0,
+        "application_keys": 0,
+        "catalog_entities": 1,
+        "client_playback_references": 1,
+        "devices": 43,
+        "encoding_jobs": 0,
+        "item_entities": 4,
+        "item_images": 0,
+        "item_metadata_state": 13,
+        "item_subtitles": 2,
+        "items": 13,
+        "libraries": 3,
+        "library_roots": 3,
+        "managed_settings": 1,
+        "play_sessions": 18,
+        "scan_jobs": 4,
+        "schema_migrations": 25,
+        "server_settings": 3,
+        "sessions": 49,
+        "task_definitions": 1,
+        "task_occurrences": 0,
+        "task_run_children": 0,
+        "task_run_requests": 0,
+        "task_runs": 0,
+        "task_triggers": 0,
+        "user_item_data": 5,
+        "user_settings": 1,
+        "users": 3
+      },
+      "runtime_sha256": "746b2092897829b15a169131059d3792767b3539aca9d53ddb9e79f954dd1874",
+      "schema": 25,
+      "table_count": 30
+    },
+    "product_version": "0.1.0-dev",
+    "protocol_version": "4.9.5.0",
+    "rollback_binary": "/opt/goby-test/exec-work-m3e/client-upgrade-92afabdded84813d3af44b6b0f86ff47/rollback.bin",
+    "schema_artifacts": {
+      "catalog_sha256": "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
+      "migration_24_sha256": "2a9c159f111073a1c01bbbda158cfe3d98d25f417d70c7eda14b70a7798a3972",
+      "migration_25_sha256": "3b21cac79173b4b9184d73b76066aff4199a4d6d4ad6fc64d2d0d826796b6eaf",
+      "migration_count": 26,
+      "operator": {
+        "path": "/opt/goby-test/exec-work-m3e/prepare-client-fixture.py",
+        "sha256": "df9f0d33b9ff3136a6958a91d855faf47d703e7f5368a953cb0d182aa12bbd3b"
+      },
+      "product_verification": {
+        "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_114525_fe88ae8d9829/report.json",
+        "report_sha256": "8b2b755020d333de114458b064edc9d3f5e9df048d0a4d356a49f0cb80d2eab1"
+      },
+      "schema26_binding": {
+        "catalog_sha256": "e02c46a49dd4200bb67954f70ca0bbe90b3ef99d8821ea56a97e3dcb97e696de",
+        "marker": "goby-client-schema26-source-m3e-v1",
+        "migration_26_sha256": "c4b7485174fe655524fe5de6973f9d75a6ce7917f4ebd82476ac1c13be5817e8",
+        "schema": 26,
+        "source": "/opt/goby-test/exec-work-m3e/source-attempt-28",
+        "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df"
+      },
+      "source": "/opt/goby-test/exec-work-m3e/source-attempt-28",
+      "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df"
+    },
+    "to_schema": 26,
+    "to_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae"
+  }
+}

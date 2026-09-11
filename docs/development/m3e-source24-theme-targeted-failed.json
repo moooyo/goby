@@ -1,0 +1,304 @@
+{
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "compile": {
+    "results": [
+      {
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "package": "library",
+        "unit": "goby-theme-source24-compile-library.service"
+      },
+      {
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "package": "server",
+        "unit": "goby-theme-source24-compile-server.service"
+      }
+    ],
+    "scope": "Compile-only race test binaries; no test binary was executed and no database credentials were supplied."
+  },
+  "disposal": {
+    "force_or_backend_termination_used": false,
+    "operator_sha256": "1b0b7a2830675004fe4d88d5d314dc96717dd992644701e2c379e8aaed71e354",
+    "original_failure_evidence_preserved": true,
+    "preexisting_catalog_unchanged": true,
+    "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_101731_c0db70c07036/disposal-report.json",
+    "report_sha256": "85a6763e16da66eb24020bd8dd9d245a8fa6d8ba75e156522f8869e6fd678c01",
+    "status": "disposed"
+  },
+  "failure_causes": [
+    "The legacy metadata test omitted the three schema26 tables from its exact expected additions.",
+    "The foreign-root authorization fixture collided with another valid item path before reaching its intended authorization assertion."
+  ],
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "bd9e75a467342b2e54b0304a9f6f81960ab71e61bb11f20d0489737185702590",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_101731_c0db70c07036/report.json",
+  "report_sha256": "7b2f2bbe44bc3bf4ac52cf4be58c7d1cea1b3135a1c207b42db5610df76bf474",
+  "scope": "Library/server Theme targeted race tests; not the complete suite, deployed candidate or original-client acceptance.",
+  "snapshot": {
+    "files": 3908,
+    "manifest_sha256": "3df8ab5eb5f9d641de302e457fa0fe5a61c6fbe681223929e087fc95c9bfeffc",
+    "overlay_files": {
+      "internal/library/metadata_migration_integration_test.go": "a053058deea8269e2f1867fc70f35b7d5727b4e7a446d5a6a913a5a10d6731fb",
+      "internal/library/scan.go": "e5aa25010f3737727cf120e912f8c7cab8a4a129ba48ad3f98aae5253e7538f8",
+      "internal/library/theme_paths.go": "962a11ca083e5589820a5627c18b61ac87205b104d49b4f36292a1d0b1052bdc",
+      "internal/library/theme_paths_test.go": "c5121b3de5f9727cf3811b6e4bf9d320f225bfca072d0bedf2060ffcd56be89f",
+      "internal/library/themes_scan.go": "3d931e5d5738e48a4c77379980d6cf941f8ef2dac8b3fc743033635157a4a3ef",
+      "internal/library/themes_scan_test.go": "2a224774766b9a4da993404297e9ca0399ea570cf0da0efbe01cd285ea69fc06"
+    },
+    "purpose": "First library/server Theme regression snapshot; excludes subsequent scanner-review tests and real-media HTTP test still in progress.",
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-24"
+  },
+  "status": "failed",
+  "tests": {
+    "cases": [
+      {
+        "Action": "fail",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityDerivedCatalogQueriesKeepOnlyOrdinarySources"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityFolderStateWritesAndNotificationsPreserveAttachments"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityAlbumAggregationAndChildCountIgnoreAllReservedMembers"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathDirectCandidatesAndDirectoryOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathUsesSupportedAudioExtensions"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathReservesUnknownAndNestedContentsWithoutCandidates"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathDoesNotReserveOrdinarySimilarNames"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathRejectsUnsafePathsAndObservedNonregularTypes"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathKeepsReservedAudioOutOfAlbumEvidence"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestClassifyThemePathDoesNotChooseBetweenIndependentLayoutsOrMovieOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityMediaAndSubtitleDeliveryRequireAnActiveOwnedResource"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityPublicImagesKeepPublicPolicyButRejectInactiveResources"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityStateRechecksClassificationAfterItemLockWait"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityOrdinaryQueriesHideReservedAndAssociatedItemsBeforePaging"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityExplicitReadsReturnOnlyActiveOwnedResources"
+      },
+      {
+        "Action": "fail",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityExplicitReadsRejectBrokenResourceOwnership"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityReservedPathsRespectRootAndComponentBoundaries"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeVisibilityExplicitBatchValidatesEveryIDAndCurrentSubject"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaMatchesRecordedDirectInheritedAndDisabledGroups"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaProjectsResourceIdentityUserDataAndSubtitles"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaInheritsOnlyGenresAndHonorsResourceControls"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaAuthorizesDisabledEmptyEntityAndApplicationQueries"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaInheritanceIsIndependentAndRetiredResourcesStayHidden"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaRejectsInvalidDirectRelationshipsAndMissingMappings"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaRejectsCyclesDepthAndResourceOverflowWithoutTruncation"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestStoreThemeMediaAuthorizationResourcesAndUserDataShareOneReadSnapshot"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestQueryThemeMediaRejectsInvalidInputsBeforeDatabaseAccess"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanAttachesSingleMovieResourcesAndKeepsCachedRoles"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanPromotionPreservesUserDataAndLeavingCreatesOrdinaryIdentity"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanMissingResourcesWaitForCompleteRootAfterFailureAndCancellation"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanDirectoryReplacementRetainsPreviousActivePopulation"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanCompleteOwnerPublishesDespiteIndependentOrdinaryProbeWarning"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanAmbiguousMovieAndSongLayoutsPreservePreviousCompletePopulation"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeScanOwnerLimitCountsSongsAndVideosAcrossRootsWithoutPartialPublication"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeProbeRequiresActualCorrespondingMedia"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeOwnerLayoutsDoNotChooseUnprovedSongPrecedence"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/library",
+        "Test": "TestThemeRetirementAbsenceRequiresAnchoredMissingComponents"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeVisibilityOverviewCountsOnlyOrdinaryItems"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeVisibilitySessionsKeepActiveThemesAndHideInvalidResources"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeMediaDefaultsInheritanceAndIndependentDisables"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeMediaFieldsExtraTypesAndProjectionSwitches"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeMediaGenreInheritanceMatchesDirectResourcesAndEmptyControls"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeMediaOrdinaryListsHideActiveInactiveAndReservedResources"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestHTTPThemeMediaAuthenticatesAndRejectsInvalidControlsOrCrossUserScope"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestThemeQueryPreservesIndependentObservedDefaults"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestThemeQueryRejectsMalformedAndRepeatedControls"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/server",
+        "Test": "TestThemeNamespaceAndExtraTypesPreserveResourceIdentity"
+      }
+    ],
+    "failed": 2,
+    "passed": 46,
+    "skipped": 0
+  }
+}

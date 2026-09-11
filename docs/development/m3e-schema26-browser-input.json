@@ -1,0 +1,106 @@
+{
+  "files": {
+    "client-browser-album-diagnostics.mjs": "80282c7a539c8eb8c3ea5c60bab6a2afdd9a444d377ce7e19ab30d9dadd406d7",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-audio-report-diagnostics.mjs": "b878bba6698d71ecc86d9bbd13dc281d06597362e7b00a787436cb183d4a3232",
+    "client-browser-auxiliary-album.mjs": "b53bf58a6cb403c725b2bd0ce8eec96e4258dd74367d7a2d91b3886d8212c39c",
+    "client-browser-av-runtime.mjs": "2362d5aceaa359c5c91a41bfe3f37ae1a3468b2a1d2ffc3fcd82f4f5468145c0",
+    "client-browser-av.mjs": "b49239c48897ed52d88ca76e82633b1e273dc18a02ffa63b69aeff7385b2fba3",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-observe.mjs": "86e4049dc0ad53bf3003c0c35c176ae93d5ff7a4cd413139e3b3aeaf65965af9",
+    "client-browser-playback.mjs": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac",
+    "client-browser-preferences.mjs": "677c68fb2349bdba5412189dbcf890d0097c1ee49be035d4eefeb6d232d6c8bd",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-subtitle-diagnostics.mjs": "d815d8a4d5792b1a3f42c1ffd3b415705314bdd204e0c1afb34a6eaef3332b49",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-client-browser-auxiliary-album.mjs": "14e253d17496cc0ff9fa58b9b124feb89f8be43e17e60216b4fa18f3dfcbdc28",
+    "test-client-browser-music-lineage.mjs": "b8cbc9059cb01155e298895c845a97119841f4f6096ea45f7a1174d88ae19111",
+    "test-client-browser-session-proof.mjs": "36b6c03b51c44d76a1c12852e1c160df20c89ffd1d9f7bb44037cd23e1b66736"
+  },
+  "input": "/opt/goby-test/exec-work-m3e/source26-browser-input-01",
+  "previous_input": "/opt/goby-test/exec-work-m3e/source20-browser-input-07",
+  "pure_lineage_result": {
+    "counts": {
+      "executed": 207,
+      "failed": 0,
+      "passed": 207
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "scope": "Complete 17-file browser closure syntax; only the schema26 loader and lineage guard changed from the accepted source20 input07. Pure lineage guards passed separately; no browser opened.",
+  "status": "passed",
+  "syntax_checks": [
+    {
+      "exit_code": 0,
+      "file": "client-browser-album-diagnostics.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-audio-flow.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-audio-report-diagnostics.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-auxiliary-album.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-av-runtime.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-av.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-goby-fixture.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-observe.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-playback.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-preferences.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-session-proof.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-subtitle-diagnostics.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-subtitle-flow.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "client-browser-tv-flow.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "test-client-browser-auxiliary-album.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "test-client-browser-music-lineage.mjs"
+    },
+    {
+      "exit_code": 0,
+      "file": "test-client-browser-session-proof.mjs"
+    }
+  ]
+}

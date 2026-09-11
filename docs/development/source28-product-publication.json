@@ -1,0 +1,36 @@
+{
+  "status": "product_checkpoint_committed_and_pushed",
+  "remote_ref": "origin/main",
+  "commit": "608e2088ca6aef150833d3f9bbc954c03e5aef5b",
+  "tree": "da8fcd68b41c691c17c5dd0b4d760e38d3606ec3",
+  "changed_files": 73,
+  "commit_scope": "Staged internal product, test and catalog files only. Active tooling and documentation changes are excluded.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-28",
+  "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "schema": 26,
+  "full_verification": {
+    "status": "passed",
+    "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_114525_fe88ae8d9829/report.json",
+    "report_sha256": "8b2b755020d333de114458b064edc9d3f5e9df048d0a4d356a49f0cb80d2eab1",
+    "top_level_passes": 1830,
+    "packages": 24,
+    "failures": 0,
+    "skips": 0,
+    "application_build": "passed",
+    "evidence_reuse": "Existing complete source28 verification; no product tests were rerun for this documentation update."
+  },
+  "candidate_binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "source_correspondence": {
+    "status": "passed_with_documented_test_fixture_normalization",
+    "review_report": "theme21-transfer-01/source28-product-index-01-reviewed.json",
+    "review_sha256": "46d192f31fc1644b9009e7a4f1dfc6220813a46e3c0c5b53f67ac41cbec798f6",
+    "reviewed_tree_matches_published_tree": true,
+    "product_test_files": 3213,
+    "byte_identical_files": 3212,
+    "normalization": {
+      "file": "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json",
+      "change": "Previously reviewed CRLF-to-LF normalization only; parsed JSON is equal and no production literal or embed consumer exists."
+    }
+  },
+  "acceptance_boundary": "This publishes the verified source28 product checkpoint only. Primary schema26 deployment, active tooling and documentation publication, dual-user acceptance and complete M3/M4/M5/M6 acceptance remain separate unfinished gates."
+}

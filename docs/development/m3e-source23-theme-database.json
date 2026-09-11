@@ -1,0 +1,102 @@
+{
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "log_sha256": "1128eb06003543e68f92aed7eb21b71265afeb2ec72a3755b5c8eb17c47a9766",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_100945_b95a359e7ea1/report.json",
+  "report_sha256": "390a911e48e986e0869267c7c7793eafe1dbdfc22482a90ffff167d4e029ab44",
+  "scope": "Schema26 database and backup targeted race tests only; no integrated product, candidate upgrade or client acceptance.",
+  "snapshot": {
+    "changed_files": [
+      "internal/database/theme_owners_migration_integration_test.go"
+    ],
+    "files": 3907,
+    "manifest_sha256": "b0c1a07d0a0204536d5e89ec6ffe39315ef8fd96ece4577fab26e51f40c6029f",
+    "purpose": "Corrected schema26 database and backup tests only; unfinished scanner copy is not accepted or deployed.",
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-23"
+  },
+  "status": "passed",
+  "tests": {
+    "cases": [
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersMigrationPreservesSchema25RowsSequencesAndRollback"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersEnforceKindsAndFollowItemTransactions"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersMigrationCoversWritersOnBothSidesOfBackfill"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeOwnersConcurrentItemsAndDuplicatesKeepOneMapping"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeReservedPathsMigrationPreservesSchema25AndReservesOnlyCanonicalLayouts"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/database",
+        "Test": "TestThemeReservedPathConstraintsAndRootDeletionStayScoped"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLRestoreSchema23ArchivePreservesDataAndMigratesToCurrent"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema23RestoreFinalizerFailureRollsBackAndRetries"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemanticFinalizer"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeSnapshotRejectsMissingCoverageAndInvalidInactiveOwners"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges"
+      },
+      {
+        "Action": "pass",
+        "Package": "github.com/moooyo/goby/internal/backuppg",
+        "Test": "TestPostgreSQLThemeRestoreRejectsSemanticallyInvalidRealArchives"
+      }
+    ],
+    "failed": 0,
+    "passed": 14,
+    "skipped": 0
+  }
+}

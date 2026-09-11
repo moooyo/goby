@@ -1,0 +1,221 @@
+{
+  "bootstrap_diagnostics": [
+    {
+      "body_character_count": 0,
+      "body_present": true,
+      "elapsed_ms": 472,
+      "label": "after_navigation",
+      "milestones": {
+        "connect_to_server": false,
+        "connection_error": false,
+        "loading": false,
+        "manual_login": false,
+        "select_server": false,
+        "sign_in": false
+      },
+      "phase": "navigation",
+      "ready_state": "complete",
+      "requests_observed": 3,
+      "scripts": {
+        "external": 1,
+        "module": 0,
+        "total": 2
+      },
+      "service_worker": {
+        "available": true,
+        "controller_present": false,
+        "query_failed": false,
+        "registration_count": 0
+      },
+      "title_kind": "goby",
+      "visible": {
+        "buttons": 0,
+        "forms": 0,
+        "links": 0,
+        "manual_login_controls": 0,
+        "password_forms": 0,
+        "password_inputs": 0,
+        "sign_in_buttons": 0,
+        "text_inputs": 0
+      }
+    },
+    {
+      "body_character_count": 0,
+      "body_present": true,
+      "elapsed_ms": 15481,
+      "label": "open_failure",
+      "milestones": {
+        "connect_to_server": false,
+        "connection_error": false,
+        "loading": false,
+        "manual_login": false,
+        "select_server": false,
+        "sign_in": false
+      },
+      "phase": "login_entry_wait",
+      "ready_state": "complete",
+      "requests_observed": 3,
+      "scripts": {
+        "external": 1,
+        "module": 0,
+        "total": 2
+      },
+      "service_worker": {
+        "available": true,
+        "controller_present": false,
+        "query_failed": false,
+        "registration_count": 0
+      },
+      "title_kind": "goby",
+      "visible": {
+        "buttons": 0,
+        "forms": 0,
+        "links": 0,
+        "manual_login_controls": 0,
+        "password_forms": 0,
+        "password_inputs": 0,
+        "sign_in_buttons": 0,
+        "text_inputs": 0
+      }
+    }
+  ],
+  "browser_closed": true,
+  "cleanup_failures": [],
+  "client_acceptance": false,
+  "console_diagnostics": [
+    {
+      "category": "service_worker",
+      "causes": [],
+      "causes_truncated": false,
+      "elapsed_ms": 469,
+      "name": "other",
+      "phase": "navigation",
+      "type": "warning"
+    }
+  ],
+  "failure": {
+    "category": "other",
+    "causes": [
+      {
+        "category": "timeout",
+        "name": "TimeoutError"
+      },
+      {
+        "category": "timeout",
+        "name": "TimeoutError"
+      }
+    ],
+    "causes_truncated": false,
+    "elapsed_ms": 15477,
+    "name": "AggregateError",
+    "phase": "login_entry_wait"
+  },
+  "input_directory": "/opt/goby-test/exec-work-m3e/cross-user-input-02",
+  "input_files": {
+    "client-browser-cross-user.mjs": "9ccbcf5fbfabd2635b2a724b1c65d87d2cc7824aac3b7e7d8c344475125c3554",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "test-client-browser-cross-user.mjs": "c340f354b9ca9778d450d4b6e209a287b67641278c00eda23c5d3e3bddada646"
+  },
+  "login": {
+    "attempted": false,
+    "credentials_filled": false,
+    "request_count": 0,
+    "status": null
+  },
+  "mode": "prelogin",
+  "navigation": {
+    "elapsed_ms": 465,
+    "result": "domcontentloaded",
+    "status": 200
+  },
+  "next_action": "Preserve normal client Service Worker startup with a forwarding policy proxy that covers worker traffic; verify using a fresh diagnostic before acceptance.",
+  "prelogin": {
+    "client_acceptance": false,
+    "credentials_submitted": false,
+    "expected_account_only": true,
+    "ready": false,
+    "service_workers": "block"
+  },
+  "prior_observed_dependency": "docs/development/client-acceptance-m3e.md:337",
+  "pure_guards": {
+    "counts": {
+      "executed": 35,
+      "failed": 0,
+      "passed": 35
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "report_path": "/opt/goby-test/exec-work-m3e/client-cross-user-prelogin-source28-01/report.json",
+  "report_sha256": "48dd4d537d17190a8563437bd13a9b5605441b60b37e21181d111a727fac0bed",
+  "requests": [
+    {
+      "category": "web_document",
+      "elapsed_ms": 447,
+      "failed": false,
+      "finished": true,
+      "finished_elapsed_ms": 460,
+      "from_service_worker": false,
+      "index": 0,
+      "kind": "read",
+      "method": "GET",
+      "origin": "target",
+      "own_movie": false,
+      "path_sha256": "6545cdc99768c6c8553f8687658282ef35dc4272b710d21321b281200cc31980",
+      "phase": "navigation",
+      "query_field_count": 0,
+      "query_fields_truncated": false,
+      "resource_type": "document",
+      "response_content_type": "text/html",
+      "response_elapsed_ms": 455,
+      "status": 200
+    },
+    {
+      "category": "web_script",
+      "elapsed_ms": 458,
+      "failed": false,
+      "finished": true,
+      "finished_elapsed_ms": 464,
+      "from_service_worker": false,
+      "index": 1,
+      "kind": "read",
+      "method": "GET",
+      "origin": "target",
+      "own_movie": false,
+      "path_sha256": "2940d24c53ad644836baaf3d8b4f722fc60af24324987f86ce314ab6309f3d7c",
+      "phase": "navigation",
+      "query_field_count": 1,
+      "query_fields_truncated": false,
+      "resource_type": "script",
+      "response_content_type": "other",
+      "response_elapsed_ms": 464,
+      "status": 200
+    },
+    {
+      "category": "web_image",
+      "elapsed_ms": 460,
+      "failed": false,
+      "finished": true,
+      "finished_elapsed_ms": 467,
+      "from_service_worker": false,
+      "index": 2,
+      "kind": "read",
+      "method": "GET",
+      "origin": "target",
+      "own_movie": false,
+      "path_sha256": "c5f8334036caa72abe48be23053b351503f4cec92f9bca9c4b3c83e37f6ad78f",
+      "phase": "navigation",
+      "query_field_count": 0,
+      "query_fields_truncated": false,
+      "resource_type": "image",
+      "response_content_type": "image/png",
+      "response_elapsed_ms": 467,
+      "status": 200
+    }
+  ],
+  "status": "diagnostic_failed",
+  "syntax_checks_passed": 2
+}

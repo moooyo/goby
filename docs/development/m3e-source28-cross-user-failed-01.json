@@ -1,0 +1,66 @@
+{
+  "accounts_started": 1,
+  "browser_closed": true,
+  "browser_version": "153.0.8010.12",
+  "candidate_binary_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "cleanup_failures": [],
+  "elapsed_seconds": 15.82,
+  "failure": "login_A",
+  "input_closure": {
+    "client-browser-cross-user.mjs": "c2622a85c02deadc2f27a6e466e20931b98bff2ae7492e1bdabd9703dcb8f80f",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "input_directory": "/opt/goby-test/exec-work-m3e/cross-user-input-01",
+  "login_requests": 0,
+  "login_status": null,
+  "network": {
+    "external_blocked": 0,
+    "forbidden_mutations": 0,
+    "guard_errors": 0,
+    "observer_errors": 0,
+    "overflow": 0,
+    "playback_attempts": 0
+  },
+  "new_user_state_or_isolation_proof": false,
+  "next_action": "Add safe pre-login page diagnostics before changing startup behavior or running a new acceptance attempt.",
+  "observed_requests": [
+    {
+      "failed": false,
+      "finished": true,
+      "index": 0,
+      "kind": "read",
+      "method": "GET",
+      "own_movie": false,
+      "phase": "manual_login",
+      "status": 200
+    },
+    {
+      "failed": false,
+      "finished": true,
+      "index": 1,
+      "kind": "read",
+      "method": "GET",
+      "own_movie": false,
+      "phase": "manual_login",
+      "status": 200
+    },
+    {
+      "failed": false,
+      "finished": true,
+      "index": 2,
+      "kind": "read",
+      "method": "GET",
+      "own_movie": false,
+      "phase": "manual_login",
+      "status": 200
+    }
+  ],
+  "original_attempt_preserved": true,
+  "page_error_count": 0,
+  "playwright_version": "1.63.0",
+  "report_path": "/opt/goby-test/exec-work-m3e/client-cross-user-source28-01/report.json",
+  "report_sha256": "6224b7e1753ee91c0f06ba16acc090d0bfb2c04937e883d9524415599c396b61",
+  "scope": "First actual dual-user harness attempt; stopped before submitting A login and provides no own-user/cross-user/state-preservation acceptance.",
+  "status": "failed"
+}

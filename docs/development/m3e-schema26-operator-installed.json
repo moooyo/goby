@@ -1,0 +1,28 @@
+{
+  "after": {
+    "device": 2049,
+    "gid": 0,
+    "inode": 2426706,
+    "mode": 384,
+    "uid": 0
+  },
+  "before": {
+    "device": 2049,
+    "gid": 0,
+    "inode": 2425480,
+    "mode": 384,
+    "uid": 0
+  },
+  "candidate_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 581075,
+    "start_ticks": 3900536
+  },
+  "guard_stdout_sha256": "a7bfe665ff395d3e858271a7eddfaf5a06df858609f3d33143a683f43813dbb6",
+  "new_sha256": "df9f0d33b9ff3136a6958a91d855faf47d703e7f5368a953cb0d182aa12bbd3b",
+  "old_sha256": "85b1c7ac16646d0af19cd67d649b72f3df6cb7e08eab4357b94d5b6e6ab818de",
+  "retained_old_path": "/opt/goby-test/exec-work-m3e/fixture-operator-schema26-replacement-01/previous.py",
+  "scope": "Candidate operator code replacement only; no candidate binary replacement, service action or database mutation.",
+  "state_sha256": "49194c99de5e0846eb297a4dc9ee3cf776b698eb27714a67438155eed28bc472",
+  "status": "installed"
+}

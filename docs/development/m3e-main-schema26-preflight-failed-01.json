@@ -1,0 +1,86 @@
+{
+  "actual_effective_activity_retention_days": 30,
+  "failure": {
+    "error_type": "Failure",
+    "frames": [
+      {
+        "file": "<stdin>",
+        "function": "<module>",
+        "line": 7
+      },
+      {
+        "file": "upgrade-main-schema26.py",
+        "function": "preflight",
+        "line": 443
+      },
+      {
+        "file": "deploy-client-schema25.py",
+        "function": "quiescent",
+        "line": 583
+      },
+      {
+        "file": "deploy-client-schema25.py",
+        "function": "require",
+        "line": 103
+      }
+    ],
+    "reason": "A schedule, unfinished work, or minimum-retention boundary requires a separate startup plan.",
+    "stage": "online_preflight",
+    "status": "failed",
+    "upgrade_root_exists": false
+  },
+  "input_directory": "/opt/goby-test/exec-work-m3e/main-schema26-preflight-input-01",
+  "inputs": {
+    "arguments_path": "/opt/goby-test/exec-work-m3e/main-schema26-preflight-input-01/preflight-arguments.json",
+    "arguments_sha256": "9ff217273c19b09cf556e551d44d59ae67145af59263559d5ae285293d57388a",
+    "assets_path": "/opt/goby-test/exec-work-m3e/schema25-tool-build-source18-03/candidate-assets.tar.gz",
+    "assets_sha256": "98b3cbc869bf9369464b8cdbb961b845118197999be6f9c934599507ab0f6cee",
+    "primary_db_queries_or_mutations_executed": false,
+    "release_report_sha256": "3fece4bbebaced7caff0eb5a5eba4314ee69334d2fb5d37bccdb3f7582076d01",
+    "service_pin_sha256": "6b2904c4525aaf40d7d68cf0eda967fd395944b6d459079be282379eac364c8f",
+    "status": "prepared",
+    "web_files_unchanged_from_source18": 57
+  },
+  "next_action": "Add an explicit bounded startup plan using the pinned actual retention policy, preserving all old data and independent activity guards.",
+  "retention_configuration": {
+    "configuration_modified": false,
+    "current_main_process_retention_values": [],
+    "environment_files": {
+      "/opt/goby-test/recovery-m5j.env": {
+        "retention_assignments": [],
+        "sha256": "6847d34cfd9af7c53a8b16406db6f341f418b6ffdacb83bfe8c1f9bfd36b4c7c"
+      },
+      "/opt/goby-test/runtime.env": {
+        "retention_assignments": [],
+        "sha256": "2043e72115338d04775485dd63702c6084d36d09331ca5cdac66819152619607"
+      }
+    },
+    "explicit_unit_retention_values": [],
+    "main_process": {
+      "pid": 539535,
+      "start_ticks": "3115871"
+    },
+    "manager_retention_values": [],
+    "primary_database_modified": false,
+    "retention_implementation_unchanged_from_source18": {
+      "internal/activity/store.go": true,
+      "internal/config/observability.go": true,
+      "internal/server/activity_retention.go": true
+    }
+  },
+  "retention_policy_source": "Pinned source18/source28 default with no process, manager, unit or environment-file override.",
+  "scope": "Read-only primary schema26 preflight; no stop, backup, rehearsal, migration or primary configuration change.",
+  "startup_counts": {
+    "active_children": 0,
+    "active_encodings": 0,
+    "active_runs": 0,
+    "active_scans": 0,
+    "activity_count": 15,
+    "database_now": "2026-09-11T12:31:45.045806+00:00",
+    "earliest_activity": "2026-09-10T10:26:41.150555+00:00",
+    "minimum_retention_eligible": 6,
+    "runnable_triggers": 0,
+    "thirty_day_eligible": 0
+  },
+  "status": "blocked_before_upgrade"
+}
