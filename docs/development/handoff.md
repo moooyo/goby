@@ -1,6 +1,48 @@
 # Development handoff
 
-Latest state: **the preparatory original-client Home and one normal browser
+Latest state: **the original-client library permission UI gate passed once
+after explicit browser reloads. Policy restoration and both owned session
+cleanups passed. Automatic refresh was not observed in either bounded window.**
+The [controller report](m3e-library-permission-ui.json), SHA-256
+`4755b35026c47b692d5f3e68f57e7f2e6e4846b53643bd714cc92f493fe62f2d`,
+and [browser report](m3e-library-permission-ui-browser.json), SHA-256
+`ed6de30665561a552a1737af5f7856dfcfe2910bc675c7bcb878e27986d7822d`,
+are retained under `/opt/goby-test/exec-work-m3e/client-library-permission-ui-v1`.
+One new B token covered baseline, restriction and restoration. Each phase had
+one fresh, completed frame/physical Views200 and matching correct-ID cards:
+four libraries, then three retaining Extras/Music/TV, then the original four.
+The restricted original Movies title, card and matching card-ID counts were
+all zero after its explicit reload.
+
+The two action-free ten-second windows contained zero Views requests. The
+restricted window retained the old Movies card; the restored window still
+lacked it until reload. Both remain `not_observed_within_window`, not a claim
+that automatic refresh can never occur. This closes only the declared Home
+permission behavior after explicit reloads: `permission_ui_acceptance=true`,
+`client_acceptance=false`, with full M3/M4/M5/M6 still open.
+
+Nine native exchanges performed one new administrator login, four managed-user
+reads, two exact Policy updates, logout and exact-token rejection. B advanced
+from revision3 to5 with its complete eight-key raw Policy restored exactly.
+Browser UI logout204/exact401, administrator logout204/exact401, WebSocket3
+opened/3 closed and empty worker process trees passed with no fallback or
+page/cleanup errors. Three external-resource blocks and three console warnings
+were retained. The independently hosted outer controller exited0 and was
+released only after its exact invocation and empty cgroup were confirmed.
+
+Current authority is this run's private `after-full.json`, SHA-256
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd`:
+73 global auth rows, 62 devices, 163 audits, 63 selected A/B auth rows,
+26 play rows, seven UserData rows, four libraries, 22 items and B revision5.
+The increment was two sessions, one device, four authentication audits and
+two owned user-update audits. Every other old row, unrelated sequence, private
+input and media file was preserved. No PlaybackInfo, playback, scan, preference
+or UserData write occurred. Do not replay this consumed run or use the old
+revision3/71-session baseline for new work. Continue remaining client/event,
+subtitle, NextUp and media/administration/release requirements from this state.
+See [permission UI verification](verification-m3e-library-permission-ui.md).
+
+Established prerequisite: **the preparatory original-client Home and one normal browser
 reload passed in v3, including exact UI logout and complete state preservation.**
 The [v3 controller](m3e-library-home-v3.json), SHA-256
 `a8117846d80eeed8e714b8951103632acfc05105d8a14c362e99f0f9d9e62270`,
@@ -14,7 +56,7 @@ there was one login. UI logout204/exact401, WebSocket2 opened/2 closed and
 complete browser/proxy/worker closure passed with no fallback or page errors.
 Two external-resource blocks and two associated console warnings were retained.
 
-Current authority is v3's private `after-full.json`, SHA-256
+The historical v3 prerequisite's private `after-full.json` has SHA-256
 `8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`:
 71 global sessions, 61 devices, 157 audits, 26 play rows, seven UserData rows,
 four libraries, 22 items and B revision3. Exactly one new B session, one device
@@ -25,10 +67,9 @@ checks, 35 Home guards, 114 shared-core guards, two Python syntax checks,
 33 Python guards and a zero-HTTP preflight preceded the actual run.
 
 This is `baseline_observation`, with both `client_acceptance` and
-`permission_ui_acceptance` false. Next, implement the separate original-client
-permission-change flow using this latest authority and a new output root:
-keep one new B token through restriction and restoration, and distinguish
-spontaneous updates from explicit reloads. Full M3/M4/M5/M6 remain open.
+`permission_ui_acceptance` false. It supplied the prerequisite for the separate
+permission-change flow now completed above. Its narrower flags are unchanged.
+Full M3/M4/M5/M6 remain open.
 See the coordination contract in the [permission UI plan](m3e-library-permission-ui-plan.md).
 
 Historical v2 state: **login, four-library Views, exact UI logout and complete

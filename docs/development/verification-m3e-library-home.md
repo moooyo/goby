@@ -1,9 +1,24 @@
 # Original-client Home and library inventory verification
 
-Status: **v3 passed the preparatory Home/reload observation, owned cleanup and
-complete expected state delta. Permission-change UI acceptance remains open.**
+Status: **Home v3 remains a passed preparatory prerequisite. The subsequent
+candidate permission-change UI run also passed its declared gate after explicit reloads.**
+See [permission UI verification](verification-m3e-library-permission-ui.md) for
+`permission_ui_acceptance=true`, `client_acceptance=false` and outcome
+`permission_observation_after_explicit_reload`. Both ten-second no-action
+windows had no fresh Views request; this does not prove automatic refresh
+never occurs. Two explicit reloads produced the correct restricted/restored
+library membership with the same new B token.
+
+Current authority is
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd`:
+73 global auth rows, 62 devices, 163 audits, 63 selected A/B auth rows, 26 play
+rows, seven UserData rows, four libraries and 22 items; B is revision 5.
+Continue remaining event, subtitle and client gaps from that state. Automatic
+notifications and the complete M3/M4/M5/M6 milestones remain open.
+
+The historical Home v3 result and evidence below retain their baseline-only scope.
 The report retains `client_acceptance=false` and `permission_ui_acceptance=false`:
-this is only `baseline_observation`. The latest complete after snapshot is
+this is only `baseline_observation`. Its then-complete after snapshot was
 `8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
 Neither v1 nor v2 is relabeled or replayed. This is preparatory
 evidence for the [permission-change UI plan](m3e-library-permission-ui-plan.md),
@@ -45,13 +60,13 @@ Old-row and sequence checks passed, preserving users/Policy, private state,
 media, 26 play rows and seven UserData rows. The new session
 `83be430b189b6ef0a4f685381dc493b8` is revoked, token SHA-256
 `51965e61bf44dfa417dd5d2f545847aed9f0aba4636e0733fcd3e545639c7feb`.
-Current counts are 71 global auth rows, 61 devices, 157 audits and 62 selected A/B
-auth rows, with four libraries and 22 items; B remains revision 3.
+Counts at the Home v3 checkpoint were 71 global auth rows, 61 devices, 157 audits
+and 62 selected A/B auth rows, with four libraries and 22 items; B was revision 3.
 
 V3 before/after snapshot SHA-256 values are
 `84738aa74749a017e7394498d40e58a330df031203d269cc599d5adeae514fb7` and
 `8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
-The latter is the latest authority for the next independent permission run.
+The latter was consumed by the later permission run; it is no longer current.
 The worker-terminal SHA-256 is
 `77a7e542193cdc4dccb918e731b10680aeec4bad6314ef7b6c2de6d63eb56fb7`.
 The final stdout descriptor now matches the actual completed log, SHA-256
@@ -238,8 +253,9 @@ SHA-256 values are respectively
 `f3a03707804521ffa57935a73d115bf35f6d54304e491eec67cf0159936da33c` and
 `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`.
 The last was the accepted recovered baseline consumed by v2. V2's after state
-was then consumed by v3; the current authority is v3's complete
-`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a` after snapshot.
+was then consumed by v3, whose 8095 after snapshot was consumed by the permission
+run. Current authority is the latter's complete
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd` after snapshot.
 
 The failed-tree digest was identical before/after recovery:
 `1ecd55bcdfc53e37db023e88e5d61e2c91027cd6956616f8a2dd5d4014812af3`.
@@ -275,15 +291,13 @@ These completed tool checks do not prove a new Home/reload flow or credential
 cleanup. Old tool01 bytes and its failed report remain unchanged; no corrected
 execution may reuse its output directory.
 
-Next, follow the permission-run coordination contract in the
-[UI plan](m3e-library-permission-ui-plan.md) using the latest
-`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a` baseline.
-Start a fresh B session and retain its token across baseline, restriction and
-restoration; the v3 session has already been revoked. Keep controller Policy
-updates and original-client observations separately proved. The v3 Home/reload
-pass does not supply those permission-change observations.
+The subsequent permission run followed the coordination contract in the
+[UI plan](m3e-library-permission-ui-plan.md) with a fresh B token across baseline,
+restriction and restoration. Its [separate verification](verification-m3e-library-permission-ui.md)
+supplies the explicit-reload permission evidence; Home v3 is only a prerequisite.
+Continue other event, subtitle and client gaps from the latest
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd` authority.
 Do not reuse the failed root or replay the earlier API-inspection authority.
-The original-client permission-change
-workflow still needs separate baseline/restricted/restored UI observations.
-Neither successful API restriction nor the preparatory Home/reload pass closes those
-gates or the broader M3/M4/M5/M6 requirements.
+Automatic notification behavior and the broader M3/M4/M5/M6 requirements remain
+open. Neither this prerequisite nor the declared explicit-reload gate establishes
+complete client compatibility.

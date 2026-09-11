@@ -497,6 +497,12 @@ const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const WS_PATHS = new Set(['/', '/emby', '/emby/', '/embywebsocket', '/emby/socket']);
 const WS_RESERVATIONS = new WeakSet();
 
+/** Only the fixed permission workflow needs initial login plus two reload handshakes. */
+export function websocketHandshakeBudget(scope = undefined) {
+  requireThat(scope === undefined || scope === 'library-permission-ui-v1');
+  return scope === 'library-permission-ui-v1' ? 3 : WS_LIMITS.handshakes;
+}
+
 /** Filter genuine frame request events without fabricating a context, page or request. */
 export function frameRequestContext(context, onError) {
   requireThat(context && typeof context.pages === 'function' && typeof context.on === 'function' && typeof context.off === 'function' &&
@@ -729,7 +735,7 @@ export function forwardWebSocketConnect(request, client, head, policy, transport
     try {
       client.pause(); state.seen += 1;
       websocketConnectPlan(request.url, request.method, request.rawHeaders, policy.mode);
-      requireThat(!policy.ownershipLost() && !policy.logoutInProgress() && state.seen <= WS_LIMITS.handshakes &&
+      requireThat(!policy.ownershipLost() && !policy.logoutInProgress() && state.seen <= websocketHandshakeBudget(policy.handshakeScope) &&
         state.active < WS_LIMITS.active && Buffer.isBuffer(head) && head.length <= PROXY_LIMITS.headerBytes + WS_LIMITS.queuedBytes);
       state.active += 1; state.admitted += 1; admitted = true;
       reservation = { state, entry, index: state.seen - 1 }; WS_RESERVATIONS.add(reservation);
@@ -843,7 +849,7 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
         WS_RESERVATIONS.delete(reserved); admitted = true; index = reserved.index;
       } else { state.seen += 1; index = state.seen - 1; }
       requireThat(acceptanceMode(policy.mode) && !policy.ownershipLost() && !policy.logoutInProgress() &&
-        state.seen <= WS_LIMITS.handshakes && (admitted ? state.active === 1 : state.active < WS_LIMITS.active) &&
+        state.seen <= websocketHandshakeBudget(policy.handshakeScope) && (admitted ? state.active === 1 : state.active < WS_LIMITS.active) &&
         Buffer.isBuffer(head) && head.length <= WS_LIMITS.queuedBytes);
       plan = websocketRequestPlan(request.url, request.method, request.rawHeaders, policy.userId, policy.mode);
       if (!admitted) { state.admitted += 1; state.active += 1; admitted = true; }
@@ -1515,13 +1521,13 @@ class BrowserActor {
     this.guard.headersTimeout = 5000; this.guard.requestTimeout = 5000;
     const startWebSocket = (request, socket, head, connect = false) => {
       if (this.preloginOnly) { denyUpgrade(request, socket); return; }
-      if (this.report.websocket.entries.length >= WS_LIMITS.handshakes + 1) {
+      if (this.report.websocket.entries.length >= websocketHandshakeBudget(this.websocketScope) + 1) {
         this.report.network.overflow += 1; socket.destroy(); return;
       }
       const control = this.socketGuards.get(socket);
       if (control) { clearTimeout(control.deadline); socket.off('timeout', control.idle); this.socketGuards.delete(socket); socket.setTimeout(0); }
       const entry = {}; this.report.websocket.entries.push(entry);
-      const socketPolicy = { mode: this.mode, userId: this.account.id,
+      const socketPolicy = { mode: this.mode, userId: this.account.id, handshakeScope: this.websocketScope,
         state: this.report.websocket, entry, ownershipLost: () => this.ownershipLost,
         logoutInProgress: () => this.logoutIntent && this.report.proxy.logout === 1,
         connectAllowed: async () => {
@@ -1907,6 +1913,14 @@ export function createHomeOnlyBrowserActor({ account, pin, report, observer }) {
   }
   const actor = new BrowserActor(account, pin, report, 'acceptance');
   actor.homeObserver = Object.freeze({ ...observer }); actor.homePhysicalCount = 0; actor.homePhysicalEntries = new WeakMap();
+  return actor;
+}
+
+/** Fixed candidate permission observation; all ordinary HTTP and frame guards are unchanged. */
+export function createPermissionBrowserActor(options) {
+  const actor = createHomeOnlyBrowserActor(options);
+  actor.websocketScope = 'library-permission-ui-v1';
+  actor.report.websocket_handshake_budget = 3;
   return actor;
 }
 

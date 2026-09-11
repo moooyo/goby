@@ -1,14 +1,14 @@
 # Implementation progress
 
-Latest state: **the preparatory original-client Home and one reload passed
-in v3 with four correct-ID library cards, fresh Views responses, one B token,
-UI logout and complete state preservation.** Current totals are 71 sessions,
-61 devices and 157 audits. The new session is revoked and its worker is terminal.
-Permission-change UI acceptance remains open.
+Latest state: **the original-client Home permission gate passed after explicit
+reloads: four libraries, three while restricted, then four after restoration,
+using the same new B token.** Both ten-second passive windows retained stale
+cards and had no Views request. Policy and both owned-session cleanups passed.
+Current totals are 73 sessions, 62 devices and 163 audits, with B revision5.
 The failed scopes are preserved. Use the [current handoff](handoff.md)
 and [Home verification](verification-m3e-library-home.md) for current state;
-the API inspection below is historical. No permission-change UI acceptance or
-complete M3/M4/M5/M6 acceptance is claimed.
+the API inspection below is historical. The completed UI claim is limited to
+Home after explicit reloads; complete M3/M4/M5/M6 acceptance remains open.
 
 Established API state: **the M3 library-restriction/restore API matrix passed in one
 attempt, with no failure or retry. This is API evidence, not original-client

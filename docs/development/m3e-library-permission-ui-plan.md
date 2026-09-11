@@ -1,7 +1,32 @@
 # Original-client library permission changes
 
-Status: **v3 passed the preparatory Home/reload observation and complete expected
-state delta. Full permission-change UI acceptance remains open.** The
+Status: **the declared candidate Home permission-change UI gate passed after explicit
+reloads in one actual run.** The [verification record](verification-m3e-library-permission-ui.md)
+reports `permission_ui_acceptance=true`, `client_acceptance=false` and outcome
+`permission_observation_after_explicit_reload`. One new B token spanned baseline,
+restriction and restoration. Both ten-second no-action windows had zero fresh
+frame/physical Views requests and retained the previous visible state. Both are
+`not_observed_within_window`, not proof that automatic refresh never happens.
+One explicit reload per changed phase produced a fresh complete frame/physical
+Views200 pair and the correct three/four ID-scoped library cards.
+
+Nine native HTTP exchanges completed the two B updates and exact restoration
+of its existing eight-key raw Policy, revision 3 to 5. UI and administrator
+logout204/exact-token401, three WebSocket closures and complete owned cleanup
+passed with no errors or fallback. Three blocked external requests and three
+console warnings are retained as totals. The admitted delta was two auth rows,
+one device and six audits; other old rows, expected sequences, private state,
+media, 26 play rows and seven UserData rows were preserved.
+
+Latest authority is
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd`:
+73 global auth rows, 62 devices, 163 audits, 63 selected A/B auth rows, four
+libraries and 22 items; B is revision 5. The unchanged coordination contract
+below records the requirements followed by this run. Continue remaining event,
+subtitle and client gaps; automatic notification behavior and complete
+M3/M4/M5/M6 acceptance remain open.
+
+The passed Home v3 prerequisite remains a separate baseline-only observation. The
 [v3 report](m3e-library-home-v3.json) remains explicitly
 `baseline_observation`, with `client_acceptance=false` and
 `permission_ui_acceptance=false`.
@@ -21,18 +46,18 @@ the actual completed log.
 
 The verified delta is one new B session, one device and two audits, with old
 rows, expected sequence state, users/Policy, private state, media, 26 play rows
-and seven UserData rows preserved. Current counts are 71 global auth rows,
+and seven UserData rows preserved. Counts at that prerequisite were 71 global auth rows,
 61 devices, 157 audits and 62 selected A/B auth rows, four libraries and 22 items;
-B remains revision 3. The latest complete after snapshot is
+B was revision 3. Its historical complete after snapshot is
 `8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
 JS04 passed seven remote syntax checks, 35 Home/114 cross-user guards; Python03
 passed two syntax checks and 33 guards, and check-only passed with zero HTTP.
 Exact report/source/terminal pins are in [Home verification](verification-m3e-library-home.md).
 
-Next, use that latest v3 authority for the full permission-change UI workflow
-under the coordination contract below. Keep a new B token across baseline,
-restricted and restored phases; do not reuse the revoked v3 token or replay
-v1/v2. A manual reload pass does not prove automatic permission-change refresh.
+The permission run subsequently consumed the v3 authority and followed the
+coordination contract with a new B token across all phases. Neither the revoked
+v3 token nor v1/v2 was reused. Continue future work from the latest permission-run state;
+the explicit-reload pass does not prove automatic permission-change refresh.
 
 Historical v2: **it failed the global-title Home predicate, while login, UI logout,
 cleanup and the complete expected state delta passed. No reload ran.** The
@@ -76,8 +101,8 @@ UserData rows, four libraries and 22 items; B remains revision 3. Recovery added
 one native administrator session and three native audit entries, with no
 device, play or UserData change. The failed evidence tree and complete media
 inventory were preserved. V2 subsequently consumed this recovered authority.
-V3 then consumed v2's after snapshot. The next permission run must use v3's
-latest v3 after snapshot and a new output root/unit; both old failed runs stay failed.
+V3 and the later permission run used new output roots/units; both old failed
+runs stay failed. Current authority is the permission run's 12278 after snapshot.
 
 The [Home verification record](verification-m3e-library-home.md) separates the
 actual successful login/Views responses from the incomplete observer, DOM and
@@ -112,14 +137,14 @@ after/failed trees and original reports. The independent recovery tool passed
 [two remote syntax checks and 12 pure guards](m3e-library-home-session-recovery-verification.json),
 zero-HTTP check-only and its actual four-exchange recovery. The later corrected
 v2 run is recorded above and remains UI-failed with complete cleanup. It has
-superseded the recovered snapshot at that stage; v3's complete after snapshot
-is now current. Do not replay either failed tree or treat the old tool02 checks
+superseded the recovered snapshot at that stage. V3 and then the permission run
+established later after snapshots; 12278 is current. Do not replay either failed tree or treat the old tool02 checks
 as the later JS04/Python03 and actual v3 evidence.
 
 The [candidate API gate](verification-m3e-library-restriction.md) passed, including
-exact restoration and independent persisted-state inspection. The next work
-must use a new bounded original-client observation after recovery, without
-replaying any previous UI or API workflow.
+exact restoration and independent persisted-state inspection. It was a
+prerequisite for the later Home and permission UI runs. Further work must bind
+the latest permission-run after state without replaying an earlier workflow.
 
 ## Known behavior and unresolved questions
 
@@ -202,7 +227,7 @@ users, Policy, play rows, UserData, references, encoding state, catalog and
 unrelated sequences must remain exact. This Home/reload observation does not
 complete the permission-change UI gate.
 
-## Historical authority and latest v3 baseline
+## Historical authority and latest permission-run baseline
 
 The last closed authority before the failed Home run was source32/schema27,
 PID748513/start ticks6996875, binary
@@ -242,12 +267,21 @@ before snapshot is
 `84738aa74749a017e7394498d40e58a330df031203d269cc599d5adeae514fb7`;
 its latest verified after snapshot is
 `8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
-Only this 71-auth/61-device/157-audit state is current for the next permission
-run. Bind its new root/unit and fresh B session to this baseline.
+That 71-auth/61-device/157-audit state was consumed by the completed permission
+run. Its before/authenticated/after snapshot SHA-256 values are
+`f81a699d20893edf05326825638bc9b312e8f17d5aaef106fa547667b29f2d13`,
+`add58cebc4289e3c957548e4e9eff76cec7a124b3c3ce7e08cec294a5f2a5664` and
+`12278b4117f352b433c246fec0b53d7879700f37245f1c6999beea00587591fd`.
+Only the last is current: 73 auth rows, 62 devices, 163 audits and B revision 5.
+Use that latest state for future independently scoped work.
 Neither the failed root nor the old `1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3` API authority may be
 replayed. Private snapshots and credentials remain on test-env.
 
 ## Subsequent permission-change gate
+
+The [completed run](verification-m3e-library-permission-ui.md) supplied the
+post-reload observations required here. These requirements describe that
+declared scope, not a request to repeat the finished operation.
 
 Use the actual Home/reload observations to freeze the next workflow. Keep one
 B UI token across baseline, restriction and restoration; a separate owned

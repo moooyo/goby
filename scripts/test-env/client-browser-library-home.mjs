@@ -60,12 +60,8 @@ export function parseHomeArguments(argv) {
   return result;
 }
 
-/** The controller supplies current authority explicitly; no historical run is searched. */
-export function validateHomeInput(input) {
-  need(keys(input, ['marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate', 'fixture',
-    'expected_libraries', 'source_closure', 'authority', 'controller']));
-  need(input.marker === 'goby-client-library-home-input-v1' && input.version === 1 && input.mode === 'b-home-views-reload' &&
-    input.root === ROOT && input.output === OUTPUT);
+/** Shared immutable candidate and credential bindings; each entry point owns its authority and scope. */
+export function validateHomeIdentityBindings(input) {
   need(keys(input.actor, ['slot', 'user_id', 'credentials', 'account_key']) && input.actor.slot === 'B' && input.actor.user_id === USER &&
     input.actor.account_key === 'viewer' && descriptor(input.actor.credentials) && input.actor.credentials.path === WORK + '/browser.json' &&
     input.actor.credentials.sha256 === '0be6df4acef0565537b3b3a6e8c1518f6bed4023bfdfb5dea60b67dd32fee790');
@@ -87,6 +83,17 @@ export function validateHomeInput(input) {
     music_scan_receipt: ['client-music-scan-v1/receipt.json', 'e0b9ba686afb1950d4ab43c3ad5bc39d67090374704379103a29759c70aab93b'],
   };
   for (const [key, [name, digest]] of Object.entries(fixtures)) need(same(input.fixture[key], { path: WORK + '/' + name, sha256: digest }));
+  return true;
+}
+
+/** The controller supplies current authority explicitly; no historical run is searched. */
+export function validateHomeInput(input) {
+  need(keys(input, ['marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate', 'fixture',
+    'expected_libraries', 'source_closure', 'authority', 'controller']));
+  need(input.marker === 'goby-client-library-home-input-v1' && input.version === 1 && input.mode === 'b-home-views-reload' &&
+    input.root === ROOT && input.output === OUTPUT);
+  validateHomeIdentityBindings(input);
+  const c = input.candidate;
   need(keys(input.authority, ['api_report', 'inspection', 'recovery', 'prior_home', 'current_snapshot', 'before_snapshot']) && Object.values(input.authority).every(descriptor));
   for (const [key, name, digest] of [
     ['api_report', 'client-library-restriction-v1/report.json', '193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb'],
@@ -110,6 +117,15 @@ export function validateHomeInput(input) {
 }
 
 export function homeSourceDigest(closure) { return sha(JSON.stringify(sorted(closure))); }
+
+/** Three views means only original Movies is restricted; no other reduced population is accepted. */
+export function validateHomeExpectedLibraries(expected) {
+  need(Array.isArray(expected) && [3, 4].includes(expected.length) &&
+    expected.every(value => keys(value, ['id', 'name']) && ID.test(value.id) && text(value.name, 128)) &&
+    new Set(expected.map(value => value.name)).size === expected.length);
+  const ids = expected.length === 4 ? LIBRARIES : LIBRARIES.filter(id => id !== 'a9993591e72f0f2e7babcbf8b9c50790');
+  need(same(expected.map(value => value.id).sort(), [...ids].sort())); return true;
+}
 
 /** Both failed UI attempts stay historical; the last closed attempt supplies the current snapshot. */
 export function validateHomeAuthority(input, api, inspection, recovery, priorHome) {
@@ -201,6 +217,7 @@ export function homeLoginEvidence(value, wire, account, serverId, existingDevice
 
 /** Only approved library identities and names leave the bounded response parser. */
 export function projectHomeViews(bytes, expected) {
+  validateHomeExpectedLibraries(expected);
   need(Buffer.isBuffer(bytes) && bytes.length > 0 && bytes.length <= 512 * 1024);
   const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   need(RECORD(value) && Array.isArray(value.Items) && value.Items.length <= 16);
@@ -212,7 +229,7 @@ export function projectHomeViews(bytes, expected) {
   const count = Object.hasOwn(value, 'TotalRecordCount') ? value.TotalRecordCount : null;
   need(count === null || Number.isSafeInteger(count) && count >= 0 && count <= 10000);
   return { Items: items, TotalRecordCount: count, total_record_count_present: Object.hasOwn(value, 'TotalRecordCount'),
-    body_bytes: bytes.length, body_sha256: sha(bytes), matches_expected: items.length === 4 && count === 4 &&
+    body_bytes: bytes.length, body_sha256: sha(bytes), matches_expected: items.length === expected.length && count === expected.length &&
       items.every(item => item.name_matches) && same(items.map(item => item.Id).sort(), expected.map(item => item.id).sort()) };
 }
 
@@ -226,8 +243,11 @@ function selectedRoute(raw, method) {
 
 /** In-memory correlation uses exact request URL digests, token equality and terminal events. */
 export class HomeViewsObserver {
-  constructor({ account, expected, existingDevices, existingSessions = [], existingTokens = [], serverId, started, persistLogin, onProven, now = () => Date.now() }) {
+  constructor({ account, expected, existingDevices, existingSessions = [], existingTokens = [], serverId, started, persistLogin, onProven,
+    now = () => Date.now(), scope = 'home' }) {
+    validateHomeExpectedLibraries(expected); need(scope === 'home' || scope === 'permission');
     Object.assign(this, { account, expected, existingDevices, existingSessions, existingTokens, serverId, started, persistLogin, onProven, now });
+    this.scope = scope; this.stageExpectations = new Map();
     this.phase = 'initial'; this.frames = []; this.physical = []; this.frameMap = new WeakMap(); this.capabilities = [];
     this.bound = null; this.binding = null; this.owned = null; this.privateDescriptor = null;
   }
@@ -235,17 +255,22 @@ export class HomeViewsObserver {
     return Object.fromEntries(['admitLogin', 'physicalRequest', 'physicalResponse', 'physicalFinished', 'frameRequest',
       'frameResponse', 'frameFinished'].map(name => [name, this[name].bind(this)]));
   }
+  armStage(name, expected) {
+    need(this.scope === 'permission' && /^[a-z_]{1,40}$/.test(name)); validateHomeExpectedLibraries(expected);
+    need(!this.stageExpectations.has(name)); this.stageExpectations.set(name, clone(expected)); this.phase = name;
+  }
   admitLogin(value) {
     const wire = homeClientMetadata(value.url, headerObject(value.headers));
     need(!this.existingDevices.includes(wire.device_id), 'home_device_not_fresh');
     return true;
   }
   physicalRequest(value, bytes) {
-    need(this.physical.length < 25 && ['login', 'views', 'capabilities'].includes(value.kind));
+    need(this.physical.length < (this.scope === 'permission' ? 41 : 25) && ['login', 'views', 'capabilities'].includes(value.kind));
     const headers = headerObject(value.headers), url = new URL(value.url);
     const entry = { id: value.id, kind: value.kind, stage: this.phase, phase: value.phase, method: value.method,
       request_sha256: sha(value.method + '\n' + url.href), request_elapsed_ms: value.elapsed_ms,
       status: null, completed: false, terminal: null };
+    if (value.kind === 'views') entry.expected = clone(this.stageExpectations.get(this.phase) ?? this.expected);
     if (value.kind === 'login') entry.wire = homeClientMetadata(value.url, headers);
     else {
       const authority = authorityForURL(url, headers); need(authority); entry.token_sha256 = authority.fingerprint;
@@ -269,7 +294,7 @@ export class HomeViewsObserver {
   physicalResponse(value, bytes) {
     const entry = this.physical.find(item => item.id === value.id); need(entry && entry.status === null);
     entry.status = value.status; entry.response_elapsed_ms = value.elapsed_ms;
-    if (entry.kind === 'views' && value.status === 200) entry.projection = projectHomeViews(bytes, this.expected);
+    if (entry.kind === 'views' && value.status === 200) entry.projection = projectHomeViews(bytes, entry.expected);
     if (entry.kind === 'login' && value.status === 200) {
       need(bytes.length > 0 && bytes.length <= 512 * 1024);
       const body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
@@ -290,7 +315,7 @@ export class HomeViewsObserver {
   frameRequest(value) {
     const request = value.request, kind = selectedRoute(request.url(), request.method());
     if (!kind || request.serviceWorker() !== null) return;
-    need(this.frames.length < 12);
+    need(this.frames.length < (this.scope === 'permission' ? 25 : 12));
     if (kind === 'login') need(!this.frames.some(entry => entry.kind === 'login'), 'home_second_login_observed');
     const entry = { index: value.index, kind, stage: this.phase, phase: value.phase,
       request_sha256: sha(request.method() + '\n' + new URL(request.url()).href), request_elapsed_ms: value.elapsed_ms,
@@ -336,9 +361,13 @@ export class HomeViewsObserver {
     })();
     return this.binding;
   }
-  viewEvidence(stage) {
-    const frames = this.frames.filter(entry => entry.kind === 'views' && entry.stage === stage);
-    const physical = this.physical.filter(entry => entry.kind === 'views' && entry.stage === stage);
+  viewEvidence(stage, window = {}) {
+    need(RECORD(window) && Object.keys(window).every(key => ['from_ms', 'until_ms', 'completed_by_ms'].includes(key)) &&
+      Object.values(window).every(value => Number.isFinite(value) && value >= 0));
+    const inWindow = entry => (window.from_ms === undefined || entry.request_elapsed_ms >= window.from_ms) &&
+      (window.until_ms === undefined || entry.request_elapsed_ms < window.until_ms);
+    const frames = this.frames.filter(entry => entry.kind === 'views' && entry.stage === stage && inWindow(entry));
+    const physical = this.physical.filter(entry => entry.kind === 'views' && entry.stage === stage && inWindow(entry));
     const pairs = frames.map(frame => {
       const matches = physical.filter(item => item.request_sha256 === frame.request_sha256 && item.token_sha256 === frame.token_sha256);
       const unique = matches.length === 1 && frames.filter(item => item.request_sha256 === frame.request_sha256).length === 1;
@@ -346,13 +375,14 @@ export class HomeViewsObserver {
       return { frame: clone(frame), physical: transfer ? this.safePhysical(transfer) : null, unambiguous: unique,
         complete: Boolean(unique && frame.finished && !frame.failed && frame.status === 200 && frame.from_service_worker === false && frame.content_type === 'application/json' &&
           transfer.completed && transfer.terminal_status === 200 && transfer.projection?.matches_expected &&
+          (window.completed_by_ms === undefined || frame.finished_elapsed_ms <= window.completed_by_ms && transfer.finished_elapsed_ms <= window.completed_by_ms) &&
           this.bound && frame.token_sha256 === this.bound.token_sha256 && transfer.token_sha256 === this.bound.token_sha256) };
     });
     return { stage, result: frames.length === 0 ? 'not_observed' : frames.length <= 4 && physical.length === frames.length &&
       pairs.every(pair => pair.complete) ? 'passed' : 'failed', frame_count: frames.length, physical_count: physical.length, pairs };
   }
   safePhysical(entry) {
-    return Object.fromEntries(Object.entries(entry).filter(([key]) => !['wire', 'login'].includes(key)).map(([key, value]) => [key, clone(value)]));
+    return Object.fromEntries(Object.entries(entry).filter(([key]) => !['wire', 'login', 'expected'].includes(key)).map(([key, value]) => [key, clone(value)]));
   }
   safeEvidence() {
     return { frames: this.frames.map(entry => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'wire'))),
@@ -405,7 +435,13 @@ export function homeCardEvidence(library, titles, cards) {
     passed: cards.length === 1 && (idPresent ? titles >= 1 && ids.every(value => value === library.id) : titles === 1) };
 }
 
-export async function observeHomeDOM(page, expected) {
+export async function observeHomeDOM(page, expected, options = {}) {
+  validateHomeExpectedLibraries(expected);
+  need(RECORD(options) && Object.keys(options).every(key => ['require_ids', 'excluded'].includes(key)) &&
+    (options.require_ids === undefined || typeof options.require_ids === 'boolean'));
+  const excluded = options.excluded ?? [];
+  need(Array.isArray(excluded) && excluded.length <= 1 && (excluded.length === 0 || expected.length === 3 &&
+    excluded[0].id === 'a9993591e72f0f2e7babcbf8b9c50790' && text(excluded[0].name, 128)));
   const location = homeNavigationLocation(page.url(), page.url()), libraries = [];
   for (const library of expected) {
     const titles = page.getByText(library.name, { exact: true }).filter({ visible: true });
@@ -426,9 +462,23 @@ export async function observeHomeDOM(page, expected) {
   need(Object.values(controls).every(value => [value.links, value.buttons].every(count => Number.isSafeInteger(count) && count >= 0 && count <= 64)));
   const activeMedia = await page.locator('audio,video').evaluateAll(elements => elements.some(element =>
     !element.paused && !element.ended || element.currentTime > 0));
+  const absent = [];
+  for (const library of excluded) {
+    const titles = page.getByText(library.name, { exact: true }).filter({ visible: true });
+    const titleCount = await titles.count();
+    const cards = titles.locator('xpath=ancestor-or-self::*[(self::button or self::a or @role="button") and @data-action="link" and ancestor::*[contains(concat(" ", normalize-space(@class), " "), " card ") or contains(concat(" ", normalize-space(@class), " "), " cardBox ")]][1]').filter({ visible: true });
+    const cardCount = await cards.count();
+    const matchingIds = await page.locator(`.card[data-id="${library.id}"],.cardBox[data-id="${library.id}"],` +
+      `.card [data-action="link"][data-id="${library.id}"],.cardBox [data-action="link"][data-id="${library.id}"]`).filter({ visible: true }).count();
+    need([titleCount, cardCount, matchingIds].every(value => Number.isSafeInteger(value) && value >= 0 && value <= 64));
+    absent.push({ id: library.id, name: library.name, visible_title_count: titleCount, visible_card_count: cardCount,
+      matching_id_card_count: matchingIds, absent: cardCount === 0 && matchingIds === 0 });
+  }
   return { location, libraries, controls, controls_scope: 'Visible exact accessible names Home, Refresh and Reload; unlabeled controls are not inferred',
+    ...(excluded.length ? { excluded_libraries: absent } : {}),
     media_inactive: !activeMedia, passed: location.same_origin && location.supported_path && location.route === 'home' &&
-      libraries.every(library => library.passed) && !activeMedia };
+      libraries.every(library => library.passed && (!options.require_ids || library.card_id_present && library.card_id_matches)) &&
+      absent.every(library => library.absent) && !activeMedia };
 }
 
 async function privateDirectory(filename) {
@@ -437,7 +487,7 @@ async function privateDirectory(filename) {
   return { device: stat.dev, inode: stat.ino };
 }
 
-async function checkedFile(filename, expected, maximum = 2 * 1024 * 1024, json = true, privateOnly = true) {
+export async function checkedHomeFile(filename, expected, maximum = 2 * 1024 * 1024, json = true, privateOnly = true) {
   need(filename.startsWith(WORK + '/') && path.posix.normalize(filename) === filename && !filename.includes('\\'));
   let parent = path.posix.dirname(filename);
   while (parent.startsWith(WORK)) {
@@ -457,6 +507,7 @@ async function checkedFile(filename, expected, maximum = 2 * 1024 * 1024, json =
     bytes.fill(0); return value;
   } finally { await handle.close(); }
 }
+const checkedFile = checkedHomeFile;
 
 async function writeExclusive(filename, value) {
   need(path.posix.dirname(filename) === OUTPUT && /^[a-z-]+\.json$/.test(path.posix.basename(filename)));
@@ -475,12 +526,14 @@ export function procStartTicks(raw) {
   need(fields.length >= 20 && /^[1-9]\d*$/.test(fields[19])); return fields[19];
 }
 
-async function processIdentity(input) {
+export async function homeProcessIdentity(input, expectedUnit = UNIT) {
+  need([UNIT, 'goby-client-library-permission-ui-v1.service'].includes(expectedUnit) && input.controller.unit === expectedUnit);
+  const selectedCgroup = '/system.slice/' + expectedUnit;
   need(process.platform === 'linux' && process.getuid() === 0 && process.getgid() === 0 && !process.env.DEBUG && !process.env.PWDEBUG);
   const boot = (await fs.readFile('/proc/sys/kernel/random/boot_id', 'utf8')).trim();
   need(boot === input.controller.boot_id && procStartTicks(await fs.readFile(`/proc/${input.controller.pid}/stat`, 'utf8')) === input.controller.start_ticks);
   const cgroups = (await fs.readFile('/proc/self/cgroup', 'utf8')).trim().split('\n');
-  need(cgroups.some(line => /^\d+:[^:]*:/.test(line) && line.split(':')[2] === CGROUP));
+  need(cgroups.some(line => /^\d+:[^:]*:/.test(line) && line.split(':')[2] === selectedCgroup));
   const executable = await fs.readlink('/proc/self/exe');
   need(path.posix.isAbsolute(executable) && !executable.endsWith(' (deleted)'));
   const handle = await fs.open('/proc/self/exe', constants.O_RDONLY);
@@ -490,8 +543,9 @@ async function processIdentity(input) {
     executableSHA = sha(await handle.readFile());
   } finally { await handle.close(); }
   return { pid: process.pid, start_ticks: procStartTicks(await fs.readFile('/proc/self/stat', 'utf8')), boot_id: boot,
-    uid: process.getuid(), gid: process.getgid(), executable_path: executable, executable_sha256: executableSHA, cgroup: CGROUP };
+    uid: process.getuid(), gid: process.getgid(), executable_path: executable, executable_sha256: executableSHA, cgroup: selectedCgroup };
 }
+const processIdentity = homeProcessIdentity;
 
 function metadataWithoutCapture(database) {
   const metadata = clone(database.metadata); need(RECORD(metadata) && typeof metadata.captured_at === 'string' && Number.isFinite(Date.parse(metadata.captured_at)));
@@ -524,13 +578,11 @@ export function bindHomeBaseline(input, before, current) {
   return a.tables.devices.map(row => { need(text(row.reported_device_id)); return row.reported_device_id; });
 }
 
-export function homeObservationPassed(report) {
+export function homeSessionClosed(report) {
   const actor = report.actor, closure = report.closure, proof = actor?.session_proof;
   const logins = report.observation?.frames?.filter(entry => entry.kind === 'login') ?? [];
   const transfers = report.observation?.physical?.filter(entry => entry.kind === 'login') ?? [];
-  return Boolean(report.initial?.views?.result === 'passed' && report.reload?.views?.result === 'passed' &&
-    report.initial.dom?.passed && report.reload.dom?.passed && report.reload.action?.count === 1 && report.reload.action.completed === true &&
-    report.login_proof && report.session_private && report.capabilities_private && logins.length === 1 && transfers.length === 1 &&
+  return Boolean(report.login_proof && report.session_private && report.capabilities_private && logins.length === 1 && transfers.length === 1 &&
     logins[0].finished && !logins[0].failed && logins[0].status === 200 && logins[0].from_service_worker === false &&
     logins[0].content_type === 'application/json' && transfers[0].completed && transfers[0].terminal_status === 200 &&
     logins[0].request_sha256 === transfers[0].request_sha256 && actor?.login?.request_count === 1 && actor.login.status === 200 &&
@@ -548,7 +600,13 @@ export function homeObservationPassed(report) {
     closure?.context_closed && closure.browser_closed && closure.proxy_closed && closure.http_pending === 0 &&
     closure.websocket_pending === 0 && closure.websocket_active === 0 && closure.websocket_opened > 0 &&
     closure.websocket_opened === closure.websocket_closed && closure.sockets_remaining === 0 && closure.cleanup_failures.length === 0 &&
-    actor.websocket.failed === 0 && actor.websocket.control_attempts === 0 && !report.failure);
+    actor.websocket.failed === 0 && actor.websocket.control_attempts === 0);
+}
+
+export function homeObservationPassed(report) {
+  return Boolean(report.initial?.views?.result === 'passed' && report.reload?.views?.result === 'passed' &&
+    report.initial.dom?.passed && report.reload.dom?.passed && report.reload.action?.count === 1 && report.reload.action.completed === true &&
+    homeSessionClosed(report) && !report.failure);
 }
 
 /** This is a new run, not a replay of either earlier cross-user entry point. */

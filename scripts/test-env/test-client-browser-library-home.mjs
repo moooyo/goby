@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseHomeArguments, validateHomeInput, homeSourceDigest, homeClientMetadata, homeLoginEvidence,
   projectHomeViews, HomeViewsObserver, homeCardEvidence, observeHomeDOM, procStartTicks,
-  bindHomeBaseline, homeObservationPassed, waitHomeLoginProof, validateHomeAuthority } from './client-browser-library-home.mjs';
+  bindHomeBaseline, homeObservationPassed, waitHomeLoginProof, validateHomeAuthority, validateHomeExpectedLibraries } from './client-browser-library-home.mjs';
 import { createHomeOnlyBrowserActor, classifyBrowserRequest } from './client-browser-cross-user.mjs';
 
 const SELF = fileURLToPath(import.meta.url);
@@ -38,7 +38,7 @@ async function rejectsAsync(fn) { let failed = false; try { await fn(); } catch 
 const cases = [];
 function test(name, fn) { cases.push({ name, fn }); }
 
-function inputFixture() {
+export function inputFixture() {
   const sources = Object.fromEntries(['client-browser-library-home.mjs', 'client-browser-cross-user.mjs',
     'client-browser-special-features-fixture.mjs', 'client-browser-goby-fixture.mjs', 'client-browser-session-proof.mjs']
     .map(name => [WORK + '/synthetic-tool/' + name, 'a'.repeat(64)]));
@@ -100,11 +100,11 @@ async function login(observer, finished = true, terminal = 'completed', loginPat
   await observer.physicalFinished({ id: 1, outcome: terminal, status: terminal === 'completed' ? 200 : null, response_bytes: 1000, elapsed_ms: 15 });
   return req;
 }
-async function views(observer, { id = 2, token = TOKEN, terminal = 'completed', status = 200, worker = false, finish = true } = {}) {
+async function views(observer, { id = 2, token = TOKEN, terminal = 'completed', status = 200, worker = false, finish = true, body = viewsBody() } = {}) {
   const req = request('views', token);
   await observer.frameRequest({ request: req, index: id + 10, phase: 'login_form_closed', elapsed_ms: id * 10 });
   observer.physicalRequest({ id, kind: 'views', method: 'GET', url: req.url(), headers: rawHeaders(token), phase: 'login_form_closed', elapsed_ms: id * 10 + 1 });
-  observer.physicalResponse({ id, status, elapsed_ms: id * 10 + 2 }, viewsBody());
+  observer.physicalResponse({ id, status, elapsed_ms: id * 10 + 2 }, body);
   observer.frameResponse({ response: response(req, status, worker), elapsed_ms: id * 10 + 3 });
   if (finish) await observer.frameFinished({ request: req, failed: false, elapsed_ms: id * 10 + 4 });
   await observer.physicalFinished({ id, outcome: terminal, status: terminal === 'completed' ? status : null, response_bytes: 1000, elapsed_ms: id * 10 + 5 });
@@ -290,6 +290,29 @@ test('Views projection preserves counts and refuses missing or unowned library s
   }
   rejects(() => projectHomeViews(Buffer.alloc(512 * 1024 + 1), LIBRARIES));
 });
+test('three-library projection is explicit and removes only original Movies', () => {
+  const expected = LIBRARIES.filter(item => item.id !== LIBRARIES[0].id);
+  validateHomeExpectedLibraries(expected);
+  const body = Buffer.from(JSON.stringify({ Items: expected.map(item => ({ Id: item.id, Name: item.name })), TotalRecordCount: 3 }));
+  check(projectHomeViews(body, expected).matches_expected);
+  rejects(() => validateHomeExpectedLibraries(LIBRARIES.slice(0, 3)));
+  const input = inputFixture(); input.expected_libraries = expected; rejects(() => validateHomeInput(input));
+});
+test('permission passive and reload stages keep separate explicit memberships', async () => {
+  const { observer } = observerFixture({ scope: 'permission' }); await login(observer); await views(observer);
+  const expected = LIBRARIES.slice(1); observer.armStage('restricted_passive', expected);
+  await views(observer, { id: 3 }); check(observer.viewEvidence('restricted_passive').result === 'failed');
+  observer.armStage('restricted_reload', expected);
+  const body = Buffer.from(JSON.stringify({ Items: expected.map(item => ({ Id: item.id, Name: item.name })), TotalRecordCount: 3 }));
+  await views(observer, { id: 4, body }); check(observer.viewEvidence('restricted_reload').result === 'passed');
+  check(observer.viewEvidence('initial').result === 'passed');
+});
+test('passive window excludes requests before acknowledgement and completions after its end', async () => {
+  const { observer } = observerFixture(); await login(observer); await views(observer);
+  equal(observer.viewEvidence('initial', { from_ms: 30 }).result, 'not_observed');
+  equal(observer.viewEvidence('initial', { from_ms: 20, until_ms: 25, completed_by_ms: 24 }).result, 'failed');
+  equal(observer.viewEvidence('initial', { from_ms: 20, until_ms: 26, completed_by_ms: 26 }).result, 'passed');
+});
 test('card identity is required when present and title fallback is explicitly limited', () => {
   check(homeCardEvidence(LIBRARIES[0], 1, [{ ids: [LIBRARIES[0].id] }]).passed);
   const noId = homeCardEvidence(LIBRARIES[0], 1, [{ ids: [] }]); check(noId.passed && !noId.card_id_present);
@@ -390,7 +413,7 @@ test('proc ticks remain canonical strings and tolerate parentheses in process na
   rejects(() => procStartTicks('123 bad'));
 });
 
-function passedReport() {
+export function passedReport() {
   const fp = hash(TOKEN), closure = { context_closed: true, browser_closed: true, proxy_closed: true, http_pending: 0,
     websocket_pending: 0, websocket_active: 0, websocket_opened: 2, websocket_closed: 2, sockets_remaining: 0, cleanup_failures: [] };
   return { initial: { views: { result: 'passed' }, dom: { passed: true } },
@@ -425,7 +448,7 @@ test('successfully blocked external posts remain visible without becoming permis
 if (process.argv[1] && path.resolve(process.argv[1]) === SELF) {
   if (process.platform !== 'linux' || process.getuid?.() !== 0) throw new Error('remote_guards_only');
   const argv = process.argv.slice(2);
-  if (argv.length !== 2 || argv[0] !== '--report' || !new RegExp('^' + WORK + '/client-library-ui-[A-Za-z0-9_-]+/[^/]+[.]json$').test(argv[1])) {
+  if (argv.length !== 2 || argv[0] !== '--report' || !new RegExp('^' + WORK + '/client-library-(?:ui|permission)-[A-Za-z0-9_-]+/[^/]+[.]json$').test(argv[1])) {
     throw new Error('guard_report_path_rejected');
   }
   const results = [];
