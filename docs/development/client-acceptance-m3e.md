@@ -1,18 +1,54 @@
 # M3e real-client acceptance
 
-Status: a partial M3e checkpoint is deployed with its verification evidence. The previous
-published baseline is `main` commit `4a840fb` (M5j). This is not a completed M3
+Status: a partial M3e checkpoint is deployed with its verification evidence. The earlier
+M5j baseline is `main` commit `4a840fb`; the current published checkpoint is
+`53144e6`. This is not a completed M3
 client milestone. The full delivery
 plan, including remaining M3, M4, M5 and M6 requirements, remains active. M7 remains
 deferred. All builds and verification execute through `ssh test-env`.
 
-Current isolated candidate: [source20/schema25](verification-m3e-source20-similar.md),
+Current main deployment: [source28/schema26](m3e-main-schema26-completed.json),
+active/running as PID688833/start ticks5620918, binary SHA-256
+`83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
+The independent 13-call native completion passed with one new owned session,
+logout204/session401 and no additional service writes, migrations or restores.
+The source28 isolated candidate remains PID682417/start ticks5168373 with the
+same binary. Full source28 regression passed 1,830 tests across 24 packages, and
+its scoped Similar/ThemeMedia/album/Home flow passed. The product checkpoint is
+`608e2088`; the main-deployment/evidence checkpoint `53144e6` is pushed to
+`origin/main`. Neither checkpoint establishes complete client acceptance.
+
+The latest [input05 dual-user preparation run](m3e-source28-cross-user-preparation-01.json),
+public summary SHA-256
+`91a8d3bc7a2e604cd62f5041b7a9403463baacb88c53901649c11a52f8b7295a`,
+passed 100 pure guards and the explicitly selected `acceptance-preparation`
+scope. Both users completed real UI Home to Movie detail, actual PlaybackInfo200,
+return Home and UI logout204/exact-token401. Own/foreign checks and four UserData
+projections, preferences, Configuration and Policy comparisons passed.
+However, each user recorded one unclassified `ui_movie` page error. The driver
+did not reject page errors; its passed result proves only the recorded flow and
+state scope. **Complete client acceptance remains open.** Input06 is adding
+strict page-error rejection and sanitized normal browser-event diagnostics.
+
+The private before/after comparison retained 18 old play rows: 17 unchanged,
+with one eligible B row Expired. A's single reference to revoked authentication
+was removed. Two new Prepared rows were added for two new Emby authentication
+rows, both revoked after logout. All 47 old auth rows and five UserData rows
+were unchanged; encoding remained zero. The next isolated-candidate baseline
+is therefore 20 plays, 49 auth rows and zero references, with the two new
+Prepared rows already bound to revoked auth. The next run needs a fresh private
+snapshot and new comparator scope; the former 18/47 comparator and before image
+must not be reused as new authority. The [library restriction matrix](m3e-library-restriction-plan.md)
+has not executed; first resolve the page errors. Raw reports and all historical
+successes/failures remain preserved.
+
+Historical isolated candidate: [source20/schema25](verification-m3e-source20-similar.md),
 binary SHA-256 `a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9`,
 PID 581075/start ticks 3900536. Its complete 1,763-test race suite and 30-table
 same-schema preservation passed. The original client verified its owned Similar
 200 response and completed transfer with unchanged item state and exact-token
 logout proof. The full auxiliary flow remains failed at ThemeMedia 404 and did
-not return Home. The primary service remains source18. This is a partial
+not return Home. The primary service then remained source18. This was a partial
 candidate checkpoint, not completed M3 acceptance or a new primary deployment.
 
 Previous isolated candidate checkpoint: source18, schema 25, executable SHA-256
@@ -30,9 +66,10 @@ actual Home route. Similar/ThemeMedia 404 responses and page errors remain
 unresolved. Both sessions are closed. [Full source18 regression](m3e-source18-full.json)
 passed 1,741 top-level race tests across 24 packages with no failures or skips.
 
-The [main source18 deployment](m3e-source18-main-deployment.json) passed. The main
-service now runs schema25 and the same source18 binary, PID 539535/start ticks
-3115871; the current isolated candidate is PID 581075/start ticks 3900536. The
+The historical [main source18 deployment](m3e-source18-main-deployment.json) passed.
+It ran schema25 and the same source18 binary, PID539535/start ticks3115871,
+before the current source28 deployment. The source20 candidate PID581075/start
+ticks3900536 was also later replaced by source28. The
 deployment preserved all old business columns and sequences through the
 29-to-30-table schema25 migration and retained old archives.
 Health, readiness, administration, login and seven reads passed, followed by
@@ -165,9 +202,9 @@ containing qualified `container|codec` capabilities. Its real UI logout returned
 204 followed by exact-token 401. Neither failed run establishes audio playback
 acceptance. The MP3 API cleanup remains separate from UI logout evidence.
 
-The main service is now the deployed source18/schema25 checkpoint. No complete
-M3 compatibility or publication is claimed. Source18 full regression, scoped
-audio acceptance and main deployment passed; broader milestones remain open.
+The source18/schema25 main deployment is historical and has been replaced by
+the accepted source28/schema26 main checkpoint above. No complete M3 compatibility
+is claimed. Historical audio evidence retains its scope; broader milestones remain open.
 
 The [source07 runtime diagnostic](m3e-client-home-configuration-blocker.json)
 records `Cannot read properties of undefined (reading 'includes')` immediately
@@ -267,9 +304,9 @@ stop and resume must be driven through the real client UI.
 | Seek, stop and resume | UI pause, forward/backward seek, stop, persisted position, reload/login and UI resume at the observed position | Scoped movie lifecycle passed; source18 audio controls, stop and history passed |
 | Direct audio | Real supported MP3/FLAC flows with method and media capability recorded separately | Source18 MP3 core passed with original Home harness failure preserved; FLAC full workflow passed |
 | External subtitles | UI track selection, actual subtitle delivery and timing through seek for the supported SRT/WebVTT paths | Source15 SRT/VTT and ordinary TV checks passed within their fixture scope |
-| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Playback reports and exact-token logout rejection evidenced; broader client isolation matrix remains open |
+| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Input05 own/foreign reads, navigation/preparation, four state projections and exact UI logout proofs passed within scope; one unclassified page error per client keeps complete acceptance open; library restriction is not executed |
 | Reference comparison | The same client/profile flows against the pinned reference, with exact supported differences and unresolved failures retained | Scoped reference/client journeys recorded; full matrix and auxiliary differences remain open |
-| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source18 full regression, tool03, fresh preparation and main deployment passed; the checkpoint records product and verification evidence together; broader compatibility remains open |
+| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source28 full regression, scoped auxiliary flow and primary deployment passed; product/evidence history is pushed through 53144e6. Input05 does not close complete client acceptance, and new input06 work remains unverified |
 
 Existing CORS support already handles implemented compatibility paths; do not
 broaden the administrator origin policy based on a missing-route symptom.

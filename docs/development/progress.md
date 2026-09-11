@@ -37,7 +37,8 @@ documentation are excluded. This publication reuses source28's successful
 passed its separate completion gate; full M3 acceptance remains unfinished.
 Six verified harness files are recorded in `07183be`, and ten main/disposal
 tool files in `b4a7f0c`. These tooling commits preserve the same product
-checkpoint and are published with this evidence update.
+checkpoint and are in the published history. The main-deployment/evidence
+checkpoint `53144e6` has been pushed to `origin/main`.
 
 The subsequent [source20 candidate checkpoint](verification-m3e-source20-similar.md)
 adds Similar queries and album-artist metadata. It passed 1,763 complete-source
@@ -137,10 +138,27 @@ and both real UI logout204 requests had exact-token401 proof. WebSocket CONNECT2
 and upstream101 handshakes closed cleanly. The overall run still failed at
 `browse_A`: return Home did not complete, and each detail page's automatic
 PlaybackInfo request was blocked. PlaybackInfo performs database preparation
-writes and is not a read-only operation. Input05 Home diagnostics and preparation
-scope review are ongoing; full dual-user acceptance is not passed. The
+writes and is not a read-only operation. This failure remains preserved. The
+[input05 preparation run](m3e-source28-cross-user-preparation-01.json) subsequently
+passed 100 pure guards and both users' Home-to-Movie-to-Home journey with real
+PlaybackInfo200, own/foreign checks, four unchanged UserData projections and
+UI logout204/exact-token401. Its private comparison retained 18 old play rows
+(17 unchanged, one eligible B row Expired), removed one A reference to revoked
+authentication, and added two Prepared rows with two now-revoked Emby auth rows.
+All 47 old auth rows and five UserData rows stayed exact; encoding remained zero.
+The public summary SHA-256 is
+`91a8d3bc7a2e604cd62f5041b7a9403463baacb88c53901649c11a52f8b7295a`.
+Each client also recorded one unclassified `ui_movie` page error. Input05's
+driver did not reject page errors, so its passed result establishes only the
+recorded flow and state scope; complete client acceptance remains open.
+Input06 is adding strict page-error rejection and sanitized normal-event
+diagnostics. Its next candidate baseline is 20 plays, 49 auth rows and zero
+references, with both new Prepared rows already bound to revoked auth. A fresh
+snapshot and new comparison scope are required; the old 18/47 comparator or
+before image must not be reused as new authority. The
 [temporary library restriction plan](m3e-library-restriction-plan.md) remains
-planned and unexecuted, including its separate 404-versus403 matrix.
+planned and unexecuted, including its separate 404-versus403 matrix; page-error
+diagnosis comes first. The main deployment remains passed independently.
 
 ## Decisions
 
@@ -155,7 +173,7 @@ planned and unexecuted, including its separate 404-versus403 matrix.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source28 primary deployment passed, full dual-user acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input04 own/foreign/UI/logout checks passed within a failed browse_A journey; full dual-user isolation, the planned library-restriction matrix and complete milestones remain open |
+| M3e real-client acceptance | In progress; source28 primary deployment passed, full dual-user acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05 navigation, bounded preparation, own/foreign reads, state checks and logout proofs passed within scope, but one unclassified ui_movie page error per client keeps complete acceptance open; input06 diagnosis, the unexecuted library-restriction matrix and broader milestones remain |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

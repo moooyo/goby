@@ -38,7 +38,11 @@ pushed to `origin/main` at `608e2088ca6aef150833d3f9bbc954c03e5aef5b`, tree
 internal product/test/catalog files; active tools and documentation are separate.
 Six verified harness files are recorded in `07183be`, and ten main/disposal
 tool files in `b4a7f0c`. These tooling commits preserve the same product
-checkpoint and are published with this evidence update.
+checkpoint and are in the published history. The main-deployment/evidence
+checkpoint `53144e6` has been pushed to `origin/main`.
+The exact executed input05 harness and its original comparator were subsequently
+committed and pushed as `7099a49`. The input06 working edits
+remain separate from that frozen input05 checkpoint.
 The corrected Theme product source28 passed 72 targeted
 race regressions and all 1,830 tests across 24 packages, with zero failures or
 skips, complete owned cleanup and a successful application build in
@@ -52,15 +56,19 @@ observed; one blocked-resource console error remains recorded. The first new
 dual-user browser attempt stopped before submitting A's login and closed its
 browser. Input03's subsequent anonymous prelogin diagnostic passed with all
 202 observed network requests completed and normal Service Worker startup;
-no credentials were submitted. The latest
+no credentials were submitted. The historical
 [input04 dual-user run](m3e-source28-cross-user-failed-02.json) then passed both
 users' UI login/detail reads, own/foreign authority checks, state preservation,
 WebSocket transport closure and exact UI logout proofs, but the overall run
 still failed at `browse_A` before return Home. Automatic PlaybackInfo was
-blocked; the next explicitly selected preparation mode has a bounded database
-change scope recorded below and has not yet run. Full
-dual-user acceptance and the [planned library restriction matrix](m3e-library-restriction-plan.md)
-remain open; that policy gate has not executed.
+blocked. The later [input05 preparation run](m3e-source28-cross-user-preparation-01.json)
+passed its explicitly scoped Home-to-Movie-to-Home flow, actual PlaybackInfo200,
+own/foreign checks, four state projections and both UI logout204/exact-token401
+proofs after 100 pure guards. Its private database comparison also passed.
+However, each client recorded one unclassified `ui_movie` page error. The driver
+did not reject page errors, so its passed result does not close full client
+acceptance. Input06 is adding a strict page-error gate and sanitized normal-event
+diagnostics. Library restriction has not executed; diagnose these errors first.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
 read-only retention rejection, and its later stopped-service baseline failure
 are separate evidence. One real PostgreSQL17 read-only ACL regression passed.
@@ -570,35 +578,75 @@ It remains failed at `browse_A`: return Home was not completed. Each original
 client also attempted automatic PlaybackInfo on the detail page, which the
 observer blocked. That endpoint performs database preparation writes and must
 not be classified as read-only. No causal explanation for the missing Home
-step is asserted. Input05 adds Home diagnostics and an explicit
-`acceptance-preparation` mode; it has not yet run. Default acceptance retains
-the prior read-only restriction. Full dual-user acceptance remains open.
+step is asserted. Input05 subsequently added Home diagnostics and an explicit
+`acceptance-preparation` mode, whose actual scoped result is recorded below.
+Default acceptance retains the prior read-only restriction.
 
-The reviewed next run permits one physical PlaybackInfo POST per actor only
+The reviewed input05 scope permitted one physical PlaybackInfo POST per actor only
 for the receipted Movie, during its detail-page phase, using that browser's
-freshly proven ordinary-user token. It must complete a real200 response without
+freshly proven ordinary-user token. It required a real200 response without
 rewriting the request or fabricating a response. Media delivery, Playing,
 remote control and unrelated writes remain blocked. Both users had no live
 playback, and their Movie UserData rows already existed in the read-only
-candidate observations. The known old changes are B's expired Prepared row
+candidate observations. The permitted old changes were B's expired Prepared row
 becoming Expired and deletion of A's reference to a revoked authentication
 session. No old play-session deletion or encoding job is eligible. New rows
 must belong to the fresh browser authentication and the bound Movie/source;
 all four UserData projections, preferences, configuration and policy must
 remain unchanged. This is preparation acceptance, not a read-only or whole-DB
-preservation claim.
+preservation claim. That allowance is specific to the recorded input05 run.
 
-Before and after that run, use the frozen read-only
+Input05 used the frozen read-only
 `inspect-client-prepare-scope.py`, SHA-256
 `2533c8804843eb5bff542f88829bd85196f0ad297586d9f8e8e5cdb6fb241ef8`,
 at `/opt/goby-test/exec-work-m3e/prepare-scope-tool-01`. Its remote syntax and
 complete PostgreSQL query check passed, observing 18 plays, one reference,
 five UserData rows, 47 authentication sessions and zero encoding jobs. That
-check created no before/after ledger. Create a fresh
-`prepare-scope-observation-*` directory immediately before actual acceptance,
-recheck the exact eligible old rows, then compare the retained private before
-and after rows against the permitted changes and observed token fingerprints.
-Do not reuse an old observation as fresh authority.
+initial check created no before/after ledger; it is historical evidence, not
+authority for a later run. The actual input05 run has its own retained private
+before/after comparison, summarized below.
+
+The [input05 public summary](m3e-source28-cross-user-preparation-01.json), SHA-256
+`91a8d3bc7a2e604cd62f5041b7a9403463baacb88c53901649c11a52f8b7295a`,
+records 100 passing pure guards and the actual `acceptance-preparation` workflow.
+Both users completed Home to owned Movie detail, a genuine PlaybackInfo200
+transfer, return Home, UI logout204 and exact-token401. Own/foreign isolation,
+four UserData projections, preferences, Configuration and Policy checks passed.
+The raw report at `client-cross-user-source28-03/report.json`, SHA-256
+`023e5169f9f7c5e9a7310733be24e94a9de91c5175f1d7f63a14195702bb6849`,
+retains its driver-level passed result. Each user nevertheless recorded one
+unclassified page error in `ui_movie`; that driver did not reject page errors.
+The accepted result is therefore scoped flow/state evidence, not complete
+client acceptance, and the raw report is not rewritten.
+
+The private database comparison retained all 18 old play rows: 17 unchanged
+and B's eligible row moved to Expired. A's one reference to revoked
+authentication was removed. Two new Prepared rows belong to two new Emby
+authentication rows, both now revoked after UI logout. All 47 old authentication
+rows and all five UserData rows were unchanged; encoding remained zero. These
+are the explicitly bounded preparation effects, not whole-database equality.
+
+The next isolated-candidate starting point is 20 play rows, 49 authentication
+rows and zero client-playback references. Input06 must explicitly select
+`--preparation-scope source28-page-error-01`. Its only permitted old cleanup is
+the two input05 Prepared rows, whose authentication is revoked, becoming
+Expired. No old reference may be deleted; the other 18 old play rows, all 49
+old auth rows, five UserData rows and zero encoding rows must remain exact.
+One new Prepared row and fresh authentication per actor are separately bound.
+The immediately preceding fresh snapshot must match the private input05 after
+image row by row, whose SHA-256 is
+`4aff79e9798fcab89652a5bdc3b83b408cdc67a1a52b8d086a6ff99c8e3f6a63`.
+Neither that old image nor the original 18-play/47-auth comparator is itself
+fresh authority; the new scope comparator is being implemented.
+
+Input06 adds the strict `page_error_count === 0` gate and bounded, sanitized
+message diagnostics from normal browser events. The observed reproduction
+contrast is input04's blocked PlaybackInfo with zero page errors versus
+input05's real PlaybackInfo200 with one error per client; it does not establish
+the error's mechanism. Keep normal preparation in the explicitly bound
+diagnostic scope. The original input05 comparator remains frozen and must not
+be reused for this new baseline. No input06 run or error-free acceptance is
+claimed, and library restriction remains planned and unexecuted.
 The harness uses existing AV viewer A and initial
 viewer B. It is designed to prove own-user reads and cross-user denial, compare four media
 UserData projections and preferences after UI login and before logout, and

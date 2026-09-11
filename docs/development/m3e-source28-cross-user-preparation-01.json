@@ -1,0 +1,509 @@
+{
+  "accounts": [
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_diagnostics": [
+        {
+          "category": "network",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 2484,
+          "name": "other",
+          "phase": "login_form_closed",
+          "type": "error"
+        },
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 14583,
+          "name": "other",
+          "phase": "ui_movie",
+          "type": "error"
+        }
+      ],
+      "console_warning_error_count": 2,
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "ecbbe4cb82403879bc4b4f78894c5738"
+      },
+      "id": "34b4c24f6568659af7ce17938fae7f81",
+      "login": {
+        "attempted": true,
+        "credentials_filled": true,
+        "request_count": 1,
+        "status": 200
+      },
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof": {
+        "entries": [
+          {
+            "result": "logout_token_rejected",
+            "ui_finished": true,
+            "ui_status": 204,
+            "verification_status": 401
+          }
+        ],
+        "outcome": "all_observed_logout_tokens_rejected"
+      },
+      "network": {
+        "external_blocked": 1,
+        "forbidden_mutations": 0,
+        "guard_errors": 0,
+        "observer_errors": 0,
+        "overflow": 0,
+        "playback_attempts": 0
+      },
+      "own_item_reads": 8,
+      "page_error_count": 1,
+      "page_errors": [
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 14583,
+          "name": "other",
+          "phase": "ui_movie"
+        }
+      ],
+      "preparation": {
+        "completed": true,
+        "existing_play_or_live_session_requested": false,
+        "item_id": "268051d3ca734aefcf94e245fb25ad55",
+        "request_bytes": 4284,
+        "request_sha256": "abd4bc240eda0f4727eee2e1710e07cfc56d99d5d0bda2313dd20af729dc375f",
+        "request_validated": true,
+        "response": {
+          "play_session_id_sha256": "be39a4afd1ce9e19c6d7ff1cf0666031839dd4d9f082733947a463d9e163d134",
+          "reason": null,
+          "response_bytes": 2967,
+          "status": 200,
+          "validated": true
+        },
+        "source_id": "mediasource_268051d3ca734aefcf94e245fb25ad55",
+        "token_fingerprint": "c2a0d76bb0aac4c63de348acc55ac6a46d4f00687230ae214506bb8f15863c2b",
+        "ui_finished": true,
+        "ui_request_index": 250,
+        "ui_status": 200,
+        "user_id": "34b4c24f6568659af7ce17938fae7f81",
+        "user_id_source": "explicit_request"
+      },
+      "preparation_source": {
+        "item_id": "268051d3ca734aefcf94e245fb25ad55",
+        "path": "/opt/goby-fixtures/client-m3e/Movies/M3e Client Movie.mp4",
+        "source_id": "mediasource_268051d3ca734aefcf94e245fb25ad55"
+      },
+      "proxy": {
+        "active": 0,
+        "admitted": 264,
+        "capabilities": 1,
+        "completed": 264,
+        "failed": 0,
+        "login": 1,
+        "logout": 1,
+        "mode": "acceptance-preparation",
+        "preparation": 1,
+        "rejected": 0,
+        "requestBytes": 5133,
+        "responseBytes": 2946794,
+        "seen": 264,
+        "upgrade_rejections": 0
+      },
+      "slot": "A",
+      "ui": {
+        "home_navigation": {
+          "buttons": 0,
+          "card_id_matches": true,
+          "card_id_present": true,
+          "card_present": true,
+          "clicked": true,
+          "control": "link",
+          "detail_heading_count": 0,
+          "library_card_count": 1,
+          "links": 1,
+          "navigation_observed": true,
+          "route": "home",
+          "same_origin": true,
+          "supported_path": true
+        },
+        "observations": [
+          {
+            "label": "home_before",
+            "owned_movies_heading_visible": true
+          },
+          {
+            "label": "home_before",
+            "media_inactive": true
+          },
+          {
+            "id_matches_when_present": null,
+            "label": "owned_movie_card",
+            "title_matches": true
+          },
+          {
+            "item_id_matches": true,
+            "label": "owned_movie_detail",
+            "original_ui_finished": true,
+            "original_ui_request_index": 247,
+            "original_ui_status": 200
+          },
+          {
+            "label": "movie_detail",
+            "media_inactive": true
+          },
+          {
+            "label": "movie_preparation_completed",
+            "media_inactive": true
+          },
+          {
+            "card_id_matches_when_present": true,
+            "detail_heading_absent": true,
+            "home_route_confirmed": true,
+            "label": "home_after",
+            "owned_movies_library_card_visible": true
+          },
+          {
+            "label": "home_after",
+            "media_inactive": true
+          }
+        ],
+        "outcome": "passed"
+      },
+      "websocket": {
+        "active": 0,
+        "admitted": 1,
+        "closed": 1,
+        "control_attempts": 0,
+        "entries": [
+          {
+            "client_frames": 1,
+            "client_messages": 0,
+            "client_wire_bytes": 6,
+            "closed": true,
+            "connect_transport": true,
+            "handshake_delivered": true,
+            "index": 0,
+            "outcome": "closed",
+            "proxy_connect_status": 200,
+            "reason": "server_end",
+            "server_control_attempted": false,
+            "server_frames": 1,
+            "server_message_kinds": {
+              "other": 0,
+              "user_data_changed": 0
+            },
+            "server_messages": 0,
+            "server_wire_bytes": 2,
+            "token_fingerprint": "c2a0d76bb0aac4c63de348acc55ac6a46d4f00687230ae214506bb8f15863c2b",
+            "upstream_status": 101
+          }
+        ],
+        "failed": 0,
+        "opened": 1,
+        "seen": 1
+      }
+    },
+    {
+      "cleanup_failures": [],
+      "closed": true,
+      "comparison": {
+        "configuration_unchanged": true,
+        "items_unchanged": true,
+        "policy_unchanged": true,
+        "preferences_unchanged": true
+      },
+      "console_diagnostics": [
+        {
+          "category": "network",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 2765,
+          "name": "other",
+          "phase": "login_form_closed",
+          "type": "error"
+        },
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 8851,
+          "name": "other",
+          "phase": "ui_movie",
+          "type": "error"
+        }
+      ],
+      "console_warning_error_count": 2,
+      "foreign_read": {
+        "error_code": "access_denied",
+        "is_ui_request": false,
+        "status": 403,
+        "target_user_id": "34b4c24f6568659af7ce17938fae7f81"
+      },
+      "id": "ecbbe4cb82403879bc4b4f78894c5738",
+      "login": {
+        "attempted": true,
+        "credentials_filled": true,
+        "request_count": 1,
+        "status": 200
+      },
+      "logout": {
+        "attempted": true,
+        "login_view_visible": true,
+        "status": 204
+      },
+      "logout_proof": {
+        "entries": [
+          {
+            "result": "logout_token_rejected",
+            "ui_finished": true,
+            "ui_status": 204,
+            "verification_status": 401
+          }
+        ],
+        "outcome": "all_observed_logout_tokens_rejected"
+      },
+      "network": {
+        "external_blocked": 1,
+        "forbidden_mutations": 0,
+        "guard_errors": 0,
+        "observer_errors": 0,
+        "overflow": 0,
+        "playback_attempts": 0
+      },
+      "own_item_reads": 8,
+      "page_error_count": 1,
+      "page_errors": [
+        {
+          "category": "other",
+          "causes": [],
+          "causes_truncated": false,
+          "elapsed_ms": 8852,
+          "name": "other",
+          "phase": "ui_movie"
+        }
+      ],
+      "preparation": {
+        "completed": true,
+        "existing_play_or_live_session_requested": false,
+        "item_id": "268051d3ca734aefcf94e245fb25ad55",
+        "request_bytes": 4284,
+        "request_sha256": "abd4bc240eda0f4727eee2e1710e07cfc56d99d5d0bda2313dd20af729dc375f",
+        "request_validated": true,
+        "response": {
+          "play_session_id_sha256": "c0ec1dbf6701d6a42c06f5843353d875e07f75613ca0f92a4d6905fc5818ed09",
+          "reason": null,
+          "response_bytes": 2967,
+          "status": 200,
+          "validated": true
+        },
+        "source_id": "mediasource_268051d3ca734aefcf94e245fb25ad55",
+        "token_fingerprint": "12bfa21d4ceed7dccc94aa7e3b210599ea2499608696e3bc1356be3a4251e60c",
+        "ui_finished": true,
+        "ui_request_index": 250,
+        "ui_status": 200,
+        "user_id": "ecbbe4cb82403879bc4b4f78894c5738",
+        "user_id_source": "explicit_request"
+      },
+      "preparation_source": {
+        "item_id": "268051d3ca734aefcf94e245fb25ad55",
+        "path": "/opt/goby-fixtures/client-m3e/Movies/M3e Client Movie.mp4",
+        "source_id": "mediasource_268051d3ca734aefcf94e245fb25ad55"
+      },
+      "proxy": {
+        "active": 0,
+        "admitted": 264,
+        "capabilities": 1,
+        "completed": 264,
+        "failed": 0,
+        "login": 1,
+        "logout": 1,
+        "mode": "acceptance-preparation",
+        "preparation": 1,
+        "rejected": 0,
+        "requestBytes": 5132,
+        "responseBytes": 2943790,
+        "seen": 264,
+        "upgrade_rejections": 0
+      },
+      "slot": "B",
+      "ui": {
+        "home_navigation": {
+          "buttons": 0,
+          "card_id_matches": true,
+          "card_id_present": true,
+          "card_present": true,
+          "clicked": true,
+          "control": "link",
+          "detail_heading_count": 0,
+          "library_card_count": 1,
+          "links": 1,
+          "navigation_observed": true,
+          "route": "home",
+          "same_origin": true,
+          "supported_path": true
+        },
+        "observations": [
+          {
+            "label": "home_before",
+            "owned_movies_heading_visible": true
+          },
+          {
+            "label": "home_before",
+            "media_inactive": true
+          },
+          {
+            "id_matches_when_present": null,
+            "label": "owned_movie_card",
+            "title_matches": true
+          },
+          {
+            "item_id_matches": true,
+            "label": "owned_movie_detail",
+            "original_ui_finished": true,
+            "original_ui_request_index": 247,
+            "original_ui_status": 200
+          },
+          {
+            "label": "movie_detail",
+            "media_inactive": true
+          },
+          {
+            "label": "movie_preparation_completed",
+            "media_inactive": true
+          },
+          {
+            "card_id_matches_when_present": true,
+            "detail_heading_absent": true,
+            "home_route_confirmed": true,
+            "label": "home_after",
+            "owned_movies_library_card_visible": true
+          },
+          {
+            "label": "home_after",
+            "media_inactive": true
+          }
+        ],
+        "outcome": "passed"
+      },
+      "websocket": {
+        "active": 0,
+        "admitted": 1,
+        "closed": 1,
+        "control_attempts": 0,
+        "entries": [
+          {
+            "client_frames": 1,
+            "client_messages": 0,
+            "client_wire_bytes": 6,
+            "closed": true,
+            "connect_transport": true,
+            "handshake_delivered": true,
+            "index": 0,
+            "outcome": "closed",
+            "proxy_connect_status": 200,
+            "reason": "server_end",
+            "server_control_attempted": false,
+            "server_frames": 1,
+            "server_message_kinds": {
+              "other": 0,
+              "user_data_changed": 0
+            },
+            "server_messages": 0,
+            "server_wire_bytes": 2,
+            "token_fingerprint": "12bfa21d4ceed7dccc94aa7e3b210599ea2499608696e3bc1356be3a4251e60c",
+            "upstream_status": 101
+          }
+        ],
+        "failed": 0,
+        "opened": 1,
+        "seen": 1
+      }
+    }
+  ],
+  "candidate_sha256": "83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae",
+  "client_interventions": {
+    "external_network_permission_granted": false,
+    "external_posts_blocked": 2,
+    "impact": "Blocked requests remain reported client interventions and are not counted as successful endpoint responses",
+    "playback_preparations_blocked": 0
+  },
+  "comparator_sha256": "1cbd3eea59a9bd4e4d8a4b8a3bf784092b6f1c246785135278789be7e25ef81a",
+  "complete_client_acceptance": false,
+  "database_comparison": {
+    "counts_and_hashes": {
+      "encoding_rows_unchanged": 0,
+      "expired_old_play_count": 1,
+      "new_auth_count": 2,
+      "new_auth_id_hashes": [
+        "adcbc1a1b6b6ce432c5db0816b426597cd2f43ff0da763844f04207fec87e911",
+        "d4f7fea1f724ae3e74ef6907d4139ee09f340ffdb63d34e717b37191767df588"
+      ],
+      "new_play_count": 2,
+      "new_play_id_hashes": [
+        "be39a4afd1ce9e19c6d7ff1cf0666031839dd4d9f082733947a463d9e163d134",
+        "c0ec1dbf6701d6a42c06f5843353d875e07f75613ca0f92a4d6905fc5818ed09"
+      ],
+      "new_reference_count": 0,
+      "old_auth_rows_unchanged": 47,
+      "old_play_rows_retained": 18,
+      "old_play_rows_unchanged": 17,
+      "removed_revoked_reference_count": 1,
+      "userdata_rows_unchanged": 5
+    },
+    "database_scope_result": "passed",
+    "database_wide_preservation_claimed": false,
+    "input_sha256": {
+      "after": "4aff79e9798fcab89652a5bdc3b83b408cdc67a1a52b8d086a6ff99c8e3f6a63",
+      "before": "9e599afb4d7c3dfb796b1be33b3deeaa5de59135f6d7456c0521cd3975504b15",
+      "report": "023e5169f9f7c5e9a7310733be24e94a9de91c5175f1d7f63a14195702bb6849"
+    },
+    "marker": "goby-client-prepare-scope-comparison-v1",
+    "reason_codes": [],
+    "ui_client_acceptance": true,
+    "ui_failure_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "ui_report_failure": null,
+    "ui_report_result": "passed",
+    "ui_result_promoted": false
+  },
+  "database_comparison_stdout_sha256": "1b1848ff69cbafa89edf91f42a0f9802ebef687c8f413b5a8cb492c05f645395",
+  "driver_client_acceptance": true,
+  "driver_result": "passed",
+  "finished_at": "2026-09-11T14:08:18.324Z",
+  "guard_counts": {
+    "executed": 100,
+    "failed": 0,
+    "passed": 100
+  },
+  "guard_stdout_sha256": "1ec5961e933a81b5fe376155aa011d2a270e6e2bb8ae72363f77541774fea0b7",
+  "input_closure": {
+    "client-browser-cross-user.mjs": "5c8452605d1a0fdbe89555c2c5aa3c697214e30fca478e301e052495f3d6a8d7",
+    "client-browser-goby-fixture.mjs": "d5e1010f24d545306ed96444d4cf8846f7f4febb1acdb6e7ed811552cc13340b",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "input_revision": "input05",
+  "library_policy_restriction_exercised": false,
+  "mode": "acceptance-preparation",
+  "observer_sha256": "2533c8804843eb5bff542f88829bd85196f0ad297586d9f8e8e5cdb6fb241ef8",
+  "remaining_issue": "Each original-client Movie detail page recorded one unclassified page error. The driver did not reject page errors, so its passed result proves the recorded navigation, isolation, preparation and logout checks only. Complete client acceptance remains open pending diagnosis; the original report is unchanged.",
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/client-cross-user-source28-03/report.json",
+    "sha256": "023e5169f9f7c5e9a7310733be24e94a9de91c5175f1d7f63a14195702bb6849"
+  },
+  "scope_result": "passed",
+  "source_manifest_sha256": "72e9301ba4405c6bddea15697e101dd62b157048f4c3b2e3e307da07ec0eb5df",
+  "started_at": "2026-09-11T14:07:53.671Z",
+  "status": "scoped_flow_and_database_passed_with_page_errors"
+}

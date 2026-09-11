@@ -30,7 +30,8 @@ build and correspondence evidence binds this checkpoint. Primary deployment
 is established by its separate completion report; complete M3 acceptance is
 not established by product publication or deployment. Later verified harness
 and main/disposal tool changes are recorded in `07183be` and `b4a7f0c`
-respectively and are published with this evidence update.
+respectively and are in the published history. The main-deployment/evidence
+checkpoint `53144e6` has been pushed to `origin/main`.
 
 The independent post-start completion also passed its
 [six isolated guards](m3e-main-schema26-completion-guards.json). A subsequent
@@ -212,7 +213,28 @@ All formatting, compilation, tests and runtime/media checks run through
   Overall status remains failed at `browse_A`: return Home did not complete,
   and the clients' automatic detail-page PlaybackInfo requests were blocked.
   PlaybackInfo has database preparation effects and is not relabeled read-only.
-  Input05 Home diagnosis and preparation-scope review remain in progress.
+  That failed input04 report remains unchanged.
+- [Input05 preparation scope](m3e-source28-cross-user-preparation-01.json),
+  public SHA-256 `91a8d3bc7a2e604cd62f5041b7a9403463baacb88c53901649c11a52f8b7295a`,
+  passed 100 pure guards and actual Home-to-Movie-to-Home UI journeys for both
+  users, including a genuine PlaybackInfo200 response each, own/foreign checks,
+  four state projections and UI logout204/exact-token401. The selected mode was
+  explicitly `acceptance-preparation`, admitting bounded preparation writes.
+  Its private comparison retained 18 old play rows, with 17 unchanged and one
+  eligible B row Expired; A's one revoked-auth reference was removed. Two new
+  Prepared rows and two new, subsequently revoked Emby auth rows were recorded.
+  All 47 old auth rows and five UserData rows stayed unchanged; encoding was zero.
+  **Complete client acceptance remains open:** each client recorded one
+  unclassified `ui_movie` page error. The driver did not reject page errors,
+  so its passed result is not promoted beyond the flow/state scope. Raw reports
+  and all earlier successes/failures remain unchanged.
+
+Input06 is adding a strict page-error gate and sanitized diagnostics from normal
+browser events. The next candidate baseline is 20 plays, 49 auth rows and zero
+references; the two new Prepared rows already have revoked authentication.
+Use a fresh private snapshot and a newly bound comparison scope, not input05's
+old 18-play/47-auth comparator or before image. Library restriction has not
+executed and remains behind page-error diagnosis.
 
 Catalog and completed database runs preserved the original HBA and preexisting
 cluster metadata. Source24's separately reviewed disposal also preserved its
@@ -225,7 +247,8 @@ The primary deployment gate is closed. Full dual-user client isolation,
 [temporary library restriction/restore](m3e-library-restriction-plan.md) and
 remaining tooling/browser/evidence publication remain open. The restriction
 plan, including its 404-versus403 matrix, has not executed. The product-only
-checkpoint is already pushed; the later harness/tool commits are local only.
+checkpoint and the main-deployment/evidence checkpoint `53144e6` are already
+pushed; new input06 work and its evidence still need their own completion gate.
 The successful retained backup is a separate gate; its existence does not
 authorize replaying a failed directory or bypassing the startup deadline.
 The new real-media case
