@@ -75,7 +75,7 @@ func InspectRecoveryTransaction(ctx context.Context, tx pgx.Tx, schema string) (
 	if err != nil || !equalJSON(actual, catalog) {
 		return nil, ErrSchema
 	}
-	if err := validateThemeState(ctx, tx, version); err != nil {
+	if err := validateResourceState(ctx, tx, version); err != nil {
 		return nil, err
 	}
 	var owner string
@@ -135,7 +135,7 @@ func (inspection *RecoveryInspection) Facts(ctx context.Context, probeVersion in
 	if inspection == nil || !inspection.locked || probeVersion < 1 {
 		return backupformat.SourceFacts{}, ErrConfiguration
 	}
-	if err := validateThemeState(ctx, inspection.tx, inspection.version); err != nil {
+	if err := validateResourceState(ctx, inspection.tx, inspection.version); err != nil {
 		return backupformat.SourceFacts{}, err
 	}
 	migrations, err := compiledMigrations(inspection.version)

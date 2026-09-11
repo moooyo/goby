@@ -230,7 +230,7 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err := validateHistory(ctx, tx, options.Schema, migrations); err != nil {
 		return result, ErrArchive
 	}
-	if err := validateThemeState(ctx, tx, facts.SchemaVersion); err != nil {
+	if err := validateResourceState(ctx, tx, facts.SchemaVersion); err != nil {
 		if errors.Is(err, ErrSchema) {
 			return result, ErrArchive
 		}
@@ -256,6 +256,9 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	}
 	current := compiled[len(compiled)-1].Version
 	if current > facts.SchemaVersion {
+		// Authenticate the raw archived rows and sequence bounds above before
+		// applying any historical normalization. In particular, migration 27
+		// may deactivate theme links hidden by newly reserved extra paths.
 		if err := migrateTarget(ctx, tx, options.Schema, current); err != nil {
 			return result, err
 		}
@@ -271,7 +274,7 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err := validateOwnership(ctx, tx, options.Schema); err != nil {
 		return result, err
 	}
-	if err := validateThemeState(ctx, tx, current); err != nil {
+	if err := validateResourceState(ctx, tx, current); err != nil {
 		return result, err
 	}
 	completed := RestoreResult{SourceVersion: facts.SchemaVersion, CurrentVersion: current, Tables: append([]backupformat.TableFact(nil), tables...)}
@@ -279,7 +282,7 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 		if err := finalizer(ctx, tx, completed); err != nil {
 			return result, err
 		}
-		if err := validateThemeState(ctx, tx, current); err != nil {
+		if err := validateResourceState(ctx, tx, current); err != nil {
 			return result, err
 		}
 	}

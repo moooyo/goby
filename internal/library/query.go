@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -75,10 +76,14 @@ type libraryAccess struct {
 
 // QueryItems applies the current user policy before counting or paging items.
 func (s *Store) QueryItems(ctx context.Context, query Query) (ItemResult, error) {
-	return s.queryItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "")
+	return s.queryCatalogItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "", true)
 }
 
 func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (ItemResult, error) {
+	return s.queryCatalogItems(ctx, query, resumeOrder, false)
+}
+
+func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder, explicitExtras bool) (ItemResult, error) {
 	query, err := normalizeItemQuery(query)
 	if err != nil {
 		return ItemResult{}, err
@@ -94,7 +99,11 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 		return ItemResult{}, err
 	}
 
-	prefix, filter, args := itemQuerySQL(query, access, parentLibraryID)
+	// Known extra IDs are a direct selection on the Items endpoint, not an
+	// ordinary-browse switch. Resume and other catalog consumers retain their
+	// existing visibility even when their own filters contain explicit IDs.
+	explicitExtras = explicitExtras && len(query.Ids) != 0
+	prefix, filter, args := itemQuerySQLWithExtraIDs(query, access, parentLibraryID, explicitExtras)
 	result := ItemResult{Items: make([]Item, 0)}
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM items i WHERE "+filter,
 		args...).Scan(&result.TotalRecordCount); err != nil {
@@ -143,6 +152,11 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err
 	}
+	if explicitExtras {
+		if err := attachExtraItemAttributes(ctx, tx, result.Items); err != nil {
+			return ItemResult{}, err
+		}
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemResult{}, fmt.Errorf("complete item query: %w", err)
 	}
@@ -176,6 +190,9 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 	item.CanPlay = access.canPlay
 	items := []Item{item}
 	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+		return Item{}, err
+	}
+	if err := attachExtraItemAttributes(ctx, tx, items); err != nil {
 		return Item{}, err
 	}
 	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
@@ -231,6 +248,9 @@ func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []stri
 	}
 	rows.Close()
 	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+		return nil, err
+	}
+	if err := attachExtraItemAttributes(ctx, tx, items); err != nil {
 		return nil, err
 	}
 	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
@@ -402,7 +422,7 @@ func normalizeItemQuery(query Query) (Query, error) {
 		"collectionfolder": "CollectionFolder", "folder": "Folder", "movie": "Movie",
 		"series": "Series", "season": "Season", "episode": "Episode", "video": "Video",
 		"audio": "Audio", "musicalbum": "MusicAlbum", "musicartist": "MusicArtist",
-		"playlist": "Playlist", "boxset": "BoxSet", "musicvideo": "MusicVideo",
+		"playlist": "Playlist", "boxset": "BoxSet", "musicvideo": "MusicVideo", "trailer": "Trailer",
 	})
 	if err != nil {
 		return Query{}, err
@@ -494,8 +514,17 @@ func normalizeQueryValues(values []string, allowed map[string]string) ([]string,
 }
 
 func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (string, string, []any) {
+	return itemQuerySQLWithExtraIDs(query, access, parentLibraryID, false)
+}
+
+func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID string, explicitExtras bool) (string, string, []any) {
+	explicitExtras = explicitExtras && len(query.Ids) != 0
 	args := []any{access.all, access.folders}
-	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]))", ordinaryItemSQL("i")}
+	visibility := ordinaryItemSQL("i")
+	if explicitExtras {
+		visibility = "(" + visibility + " OR " + database.ExtraResourceItemSQL("i", true) + ")"
+	}
+	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]))", visibility}
 	prefix := ""
 	if query.ParentID != "" {
 		args = append(args, query.ParentID, parentLibraryID)
@@ -510,7 +539,15 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 					AND child.library_id = parent.library_id
 				WHERE ` + ordinaryItemSQL("child") + `
 			) `
-			conditions = append(conditions, "i.id IN (SELECT id FROM descendants)", "i.id <> $3")
+			membership := "i.id IN (SELECT id FROM descendants)"
+			if explicitExtras {
+				// Only ordinary ancestors are traversable. An explicitly selected
+				// extra may be a leaf owned by the parent or an ordinary descendant;
+				// it cannot expand the traversal into another auxiliary subtree.
+				membership = "(" + membership + " OR (" + database.ExtraResourceItemSQL("i", true) +
+					" AND (i.parent_id = $3 OR i.parent_id IN (SELECT id FROM descendants))))"
+			}
+			conditions = append(conditions, membership, "i.id <> $3", "i.library_id = $4")
 		} else {
 			conditions = append(conditions, "i.parent_id = $3", "i.library_id = $4")
 		}
@@ -523,7 +560,15 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 	}
 	if len(query.IncludeItemTypes) != 0 {
 		args = append(args, query.IncludeItemTypes)
-		conditions = append(conditions, fmt.Sprintf("i.type = ANY($%d::text[])", len(args)))
+		itemType := "i.type"
+		if explicitExtras {
+			// A trailer is internally playable Video, but its public item type
+			// must match its DTO when a caller selects known attachment IDs.
+			itemType = `(CASE WHEN EXISTS (SELECT 1 FROM item_extra_resources type_extra
+				WHERE type_extra.resource_item_id=i.id AND type_extra.active AND type_extra.kind='trailer')
+				THEN 'Trailer' ELSE i.type END)`
+		}
+		conditions = append(conditions, fmt.Sprintf("%s = ANY($%d::text[])", itemType, len(args)))
 	}
 	// Classify numbered seasons and episodes, not every item with a default
 	// zero index. Comparing the entire predicate preserves other item types

@@ -706,7 +706,7 @@ func cleanupManagerPublicObjects(t *testing.T, pool *pgxpool.Pool) {
 		return
 	}
 	defer tx.Rollback(ctx)
-	const ownedTables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs item_entities item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users"
+	const ownedTables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users"
 	qualified := make([]string, 0, 33)
 	for _, table := range strings.Fields(ownedTables) {
 		qualified = append(qualified, pgx.Identifier{"public", table}.Sanitize())

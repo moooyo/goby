@@ -23,7 +23,7 @@ import (
 	"github.com/moooyo/goby/internal/lifecycle"
 )
 
-// The current primary retains schema26 music, preferences, and theme owners.
+// The current primary retains schema27 music, preferences, and theme owners.
 // A historical encrypted archive replaces the other slot. Reopening and rollback
 // must continue to distinguish the imported and original identities and keys.
 func TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback(t *testing.T) {
@@ -55,8 +55,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	if err := f.runtime.BindDatabase(ctx, f.seed.configuration, f.seed.source, f.lease); err != nil {
 		t.Fatal("bind the current primary before importing a historical archive")
 	}
-	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 26 {
-		t.Fatalf("original primary schema = %d, want 26: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 27 {
+		t.Fatalf("original primary schema = %d, want 27: %v", version, err)
 	}
 	var preferenceOwners int
 	if err := f.seed.source.QueryRow(ctx, "SELECT count(*) FROM user_settings WHERE settings<>'{}'::jsonb").Scan(&preferenceOwners); err != nil || preferenceOwners != 2 {
@@ -125,8 +125,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	operation, err := f.manager.operationCopy(plan.Id)
 	if err != nil || operation.Manifest == nil || operation.Manifest.Source.SchemaVersion != sourceVersion ||
-		operation.Target == nil || operation.Target.Facts.SchemaVersion != 26 || len(operation.Target.Facts.Tables) != 33 {
-		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema26 target")
+		operation.Target == nil || operation.Target.Facts.SchemaVersion != 27 || len(operation.Target.Facts.Tables) != 35 {
+		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema27 target")
 	}
 	assertHistoricalManagerTarget(t, ctx, f.seed.target, legacyState)
 	assertHistoricalManagerGeneration(t, ctx, f.runtime, operation.GenerationID, f.seed.target, legacy, legacyMaster, originalMaster)
@@ -206,7 +206,7 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	status, err := f.manager.Status(ctx, actor)
 	if err != nil || !status.Rollback.Available || status.GenerationRevision != "1" {
-		t.Fatal("the historical target did not retain the original schema26 rollback image")
+		t.Fatal("the historical target did not retain the original schema27 rollback image")
 	}
 	rollback, err := f.manager.Rollback(ctx, actor, RollbackRequest{RequestId: recoveryEngineTestID(t), GenerationRevision: "1"})
 	if err != nil {
@@ -233,8 +233,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 		t.Fatalf("accept rollback after the historical encrypted archive transition: %v", err)
 	}
 	assertTransitionAppliedReceipt(t, ctx, returned.Pool, rollback.Id)
-	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 26 {
-		t.Fatalf("rollback schema = %d, want original schema26: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 27 {
+		t.Fatalf("rollback schema = %d, want original schema27: %v", version, err)
 	}
 	if actual := recoveryEngineRetainedState(t, ctx, returned.Pool); actual != originalHistory ||
 		recoveryEnginePreferenceState(t, ctx, returned.Pool) != originalPreferences ||
@@ -495,8 +495,8 @@ func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxp
 
 func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState) {
 	t.Helper()
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
-		t.Fatalf("the historical archive target schema = %d, want 26: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
+		t.Fatalf("the historical archive target schema = %d, want 27: %v", version, err)
 	}
 	var actualUsers string
 	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u").Scan(&actualUsers); err != nil || actualUsers != state.users ||
@@ -515,13 +515,15 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 	}
 	var completeThemes bool
 	if err := pool.QueryRow(ctx, `SELECT
-		(SELECT count(*) FROM pg_tables WHERE schemaname='public')=33
+		(SELECT count(*) FROM pg_tables WHERE schemaname='public')=35
 		AND (SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL)=1
 		AND (SELECT count(*) FROM theme_owner_ids)=(SELECT count(*)+1 FROM items)
 		AND NOT EXISTS(SELECT 1 FROM items i LEFT JOIN theme_owner_ids owner ON owner.item_id=i.id WHERE owner.id IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM theme_reserved_paths)
-		AND NOT EXISTS(SELECT 1 FROM item_theme_resources)`).Scan(&completeThemes); err != nil || !completeThemes {
-		t.Fatal("historical restoration omitted theme owners or inferred resources from this unreserved fixture")
+		AND NOT EXISTS(SELECT 1 FROM item_theme_resources)
+		AND NOT EXISTS(SELECT 1 FROM extra_reserved_paths)
+		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`).Scan(&completeThemes); err != nil || !completeThemes {
+		t.Fatal("historical restoration omitted theme owners or inferred auxiliary resources from this unreserved fixture")
 	}
 }
 
@@ -531,8 +533,10 @@ func historicalManagerCurrentThemeState(t *testing.T, ctx context.Context, pool 
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'owners',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM theme_owner_ids o),
 		'paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM theme_reserved_paths p),
-		'resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_theme_resources r))::text`).Scan(&state); err != nil {
-		t.Fatal("capture the current primary's independent theme state")
+		'resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_theme_resources r),
+		'extra_paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM extra_reserved_paths p),
+		'extra_resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_extra_resources r))::text`).Scan(&state); err != nil {
+		t.Fatal("capture the current primary's independent auxiliary state")
 	}
 	return state
 }

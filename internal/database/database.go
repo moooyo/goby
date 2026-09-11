@@ -158,8 +158,14 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		if _, ok := applied[item.version]; ok {
 			continue
 		}
+		if err := beforeMigration(ctx, tx, item.version); err != nil {
+			return fmt.Errorf("prepare migration %s: %w", item.name, err)
+		}
 		if _, err := tx.Exec(ctx, item.sql); err != nil {
 			return fmt.Errorf("apply migration %s: %w", item.name, err)
+		}
+		if err := afterMigration(ctx, tx, item.version); err != nil {
+			return fmt.Errorf("validate migration %s: %w", item.name, err)
 		}
 		if _, err := tx.Exec(ctx, "INSERT INTO schema_migrations (version, name) VALUES ($1, $2)", item.version, item.name); err != nil {
 			return fmt.Errorf("record migration %s: %w", item.name, err)

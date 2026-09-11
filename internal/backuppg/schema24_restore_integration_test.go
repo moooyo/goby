@@ -26,7 +26,7 @@ func assertHistoricalArchiveMusicDefaults(t *testing.T, ctx context.Context, poo
 
 // This archive is generated from the actual schema24 prefix with two separate
 // preference owners and a legal old credit type larger than a B-tree key. The
-// offline retry must preserve those rows while applying the real schema26 DDL.
+// offline retry must preserve those rows while applying the real schema27 DDL.
 func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *testing.T) {
 	ctx, source, target, options := recoveryFixtureAtVersion(t, 24)
 	if _, err := source.Exec(ctx, `INSERT INTO users(id,name,normalized_name,password_hash,configuration)
@@ -71,7 +71,7 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	called := false
 	failed, restoreErr := RestoreOfflineFinalized(ctx, target, archive, facts, offlineOptions,
 		func(callbackCtx context.Context, tx pgx.Tx, result RestoreResult) error {
-			if result.SourceVersion != 24 || result.CurrentVersion != 26 || !equalJSON(result.Tables, facts.Tables) {
+			if result.SourceVersion != 24 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
 				return errors.New("schema24 finalizer received incorrect archive or target facts")
 			}
 			var preferenceRows string
@@ -108,13 +108,13 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	result, err := RestoreOffline(ctx, target, archive, facts, offlineOptions)
 	if err != nil {
 		logFixtureCatalogDifference(t, ctx, target, options)
-		t.Fatalf("retry the real schema24 archive into schema26: %v", err)
+		t.Fatalf("retry the real schema24 archive into schema27: %v", err)
 	}
-	if result.SourceVersion != 24 || result.CurrentVersion != 26 || !equalJSON(result.Tables, facts.Tables) {
-		t.Fatal("schema24 retry changed source facts or did not reach schema26")
+	if result.SourceVersion != 24 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+		t.Fatal("schema24 retry changed source facts or did not reach schema27")
 	}
-	if version, err := database.SchemaVersion(ctx, target); err != nil || version != 26 {
-		t.Fatalf("schema24 restored target version=%d, want 26: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, target); err != nil || version != 27 {
+		t.Fatalf("schema24 restored target version=%d, want 27: %v", version, err)
 	}
 	if version, err := database.SchemaVersion(ctx, source); err != nil || version != 24 {
 		t.Fatalf("offline restore changed original schema24: version=%d error=%v", version, err)
@@ -129,16 +129,17 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	}
 	assertHistoricalArchiveMusicDefaults(t, ctx, target)
 	assertHistoricalArchiveThemeDefaults(t, ctx, target)
+	assertHistoricalArchiveExtraDefaults(t, ctx, target)
 	assertSourceWitness(t, ctx, source, options, beforeSource, sequences)
 	factsAfter, err := json.Marshal(facts)
 	if err != nil || string(factsAfter) != string(factsBefore) {
 		t.Fatal("schema24 restoration mutated the archived source facts")
 	}
 	var historyCount int
-	var musicMigrationName, themeMigrationName string
-	if err := target.QueryRow(ctx, `SELECT count(*),max(name) FILTER (WHERE version=25),max(name) FILTER (WHERE version=26)
-		FROM schema_migrations`).Scan(&historyCount, &musicMigrationName, &themeMigrationName); err != nil || historyCount != 26 ||
-		musicMigrationName != "0025_music_artists.sql" || themeMigrationName != "0026_theme_owners.sql" {
-		t.Fatal("schema24 restoration did not append exactly the published music and theme migrations")
+	var musicMigrationName, themeMigrationName, extraMigrationName string
+	if err := target.QueryRow(ctx, `SELECT count(*),max(name) FILTER (WHERE version=25),max(name) FILTER (WHERE version=26),max(name) FILTER (WHERE version=27)
+		FROM schema_migrations`).Scan(&historyCount, &musicMigrationName, &themeMigrationName, &extraMigrationName); err != nil || historyCount != 27 ||
+		musicMigrationName != "0025_music_artists.sql" || themeMigrationName != "0026_theme_owners.sql" || extraMigrationName != "0027_movie_extras.sql" {
+		t.Fatal("schema24 restoration did not append exactly the published music, theme and extra migrations")
 	}
 }

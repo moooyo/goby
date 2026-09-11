@@ -89,7 +89,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "Password", "Policy", "Configuration")
 		if len(parts) > 2 && parts[2] == "Items" {
 			literal(3, "Root", "Latest", "Resume")
-			literal(4, "UserData", "HideFromResume")
+			literal(4, "UserData", "HideFromResume", "SpecialFeatures", "LocalTrailers")
 		}
 		literal(4, "Delete")
 	case "Items":

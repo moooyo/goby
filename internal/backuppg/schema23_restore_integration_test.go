@@ -192,6 +192,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 	}
 	assertHistoricalArchiveMusicDefaults(t, ctx, target)
 	assertHistoricalArchiveThemeDefaults(t, ctx, target)
+	assertHistoricalArchiveExtraDefaults(t, ctx, target)
 	var migrationName string
 	if err := target.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version=24").Scan(&migrationName); err != nil || migrationName != "0024_user_settings.sql" {
 		t.Fatalf("restored schema 24 migration name = %q: %v", migrationName, err)

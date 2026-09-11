@@ -97,6 +97,20 @@ Archives from schemas 23, 24, and 25 keep their source semantics until the
 trusted migration reaches 26. The independent theme sequence uses the existing
 next-value validation rather than a shared numeric namespace.
 
+Schema 27 adds permanent extra reservations and Movie resource classifications.
+The source archive is validated using its recorded schema version before any
+migration runs. All original table fingerprints and sequence bounds must match
+first. The trusted migration may then reserve existing extra directories and
+deactivate only active theme links whose owners fall inside those reservations;
+it never infers an extra relationship from a historical path. Post-migration
+validation uses combined catalog visibility and rejects shared Theme/Extra
+resource IDs, including inactive history. Active extras require an ordinary
+Movie owner in the same root. Inactive extras retain their parent, library,
+canonical resource path and reservation while their owner may change eligibility.
+The same semantic boundary runs after a trusted finalizer and during locked
+recovery inspection. Any failure rolls back the entire target transaction.
+Historical schema 26 catalog and Theme predicates remain unchanged.
+
 Schema baselines under `catalogs/` are release artifacts generated using
 `ExportCatalog` on a fresh database built from the compiled migrations. They
 must be reviewed, verified on PostgreSQL 17, and committed. The first supported

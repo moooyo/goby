@@ -28,6 +28,8 @@ func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /emby/Items/{Id}/ThemeMedia", s.requireEmby(s.embyThemeMedia))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/Latest", s.requireEmby(s.embyLatest))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/{Id}", s.requireEmby(s.embyItem))
+	mux.HandleFunc("GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures", s.requireEmby(s.embySpecialFeatures))
+	mux.HandleFunc("GET /emby/Users/{UserId}/Items/{Id}/LocalTrailers", s.requireEmby(s.embyLocalTrailers))
 	mux.HandleFunc("GET /emby/Shows/{Id}/Seasons", s.requireEmby(s.embySeasons))
 	mux.HandleFunc("GET /emby/Shows/{Id}/Episodes", s.requireEmby(s.embyEpisodes))
 	mux.HandleFunc("GET /emby/Library/VirtualFolders/Query", s.requireEmby(s.embyLibraryList))

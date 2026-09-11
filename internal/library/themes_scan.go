@@ -12,8 +12,19 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
 )
+
+type scannedMediaRole string
+
+const (
+	scannedRoleOrdinary scannedMediaRole = "ordinary"
+	scannedRoleTheme    scannedMediaRole = "theme"
+	scannedRoleExtra    scannedMediaRole = "extra"
+)
+
+var errScannedMediaRoleConflict = errors.New("the stored media identity has a permanent incompatible role")
 
 type scannedMediaInput struct {
 	file          *os.File
@@ -24,11 +35,11 @@ type scannedMediaInput struct {
 	checksVersion bool
 }
 
-// inspectScannedMedia is shared by ordinary and theme files. It retains the
+// inspectScannedMedia is shared by ordinary, theme, and extra files. It retains the
 // opened descriptor, probe version/ctime cache checks, and accepted music-source
 // validation; callers must close a successful input after their final identity
 // check and owned transaction. No owner NFO is read by this helper.
-func (state *scanState) inspectScannedMedia(path, kind string, theme bool) (*scannedMediaInput, error) {
+func (state *scanState) inspectScannedMedia(path, kind string, role scannedMediaRole) (*scannedMediaInput, error) {
 	file, err := openScanFile(state.opened, path)
 	if err != nil {
 		state.warnings++
@@ -49,16 +60,20 @@ func (state *scanState) inspectScannedMedia(path, kind string, theme bool) (*sca
 	if err := state.store.persistProgress(state.task); err != nil {
 		return nil, err
 	}
-	stored, err := state.findStoredFileForRole(filepath.ToSlash(path), info, theme)
+	stored, err := state.findStoredFileForRole(filepath.ToSlash(path), info, role)
+	if errors.Is(err, errScannedMediaRoleConflict) {
+		state.warnings++
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	if theme && stored.id != "" {
+	if state.themes != nil && stored.id != "" {
 		claims := state.themes.claimed
 		if state.themeLibrary != nil {
 			claims = state.themeLibrary.claimed
 		}
-		key := state.root.id + ":" + filepath.ToSlash(path)
+		key := string(role) + ":" + state.root.id + ":" + filepath.ToSlash(path)
 		if previous, exists := claims[stored.id]; exists && previous != key {
 			stored = storedFile{}
 		} else {
@@ -159,6 +174,7 @@ type themeLibraryScan struct {
 
 type preparedThemeFile struct {
 	state     *scanState
+	role      scannedMediaRole
 	candidate themeCandidate
 	input     *scannedMediaInput
 	id        string
@@ -285,7 +301,7 @@ func (state *scanState) recordThemeDirectoryOwner(relative string, current hiera
 	return nil
 }
 
-func (state *scanState) claimedThemeIDs(relative string, theme bool) []string {
+func (state *scanState) claimedScannedIDs(relative string, role scannedMediaRole) []string {
 	result := []string{}
 	if state.themes == nil {
 		return result
@@ -294,9 +310,9 @@ func (state *scanState) claimedThemeIDs(relative string, theme bool) []string {
 	if state.themeLibrary != nil {
 		claims = state.themeLibrary.claimed
 	}
-	key := state.root.id + ":" + relative
+	key := string(role) + ":" + state.root.id + ":" + relative
 	for id, claimed := range claims {
-		if !theme || claimed != key {
+		if claimed != key {
 			result = append(result, id)
 		}
 	}
@@ -331,11 +347,11 @@ func (state *scanState) classifyThemeDirectory(relative string, entries []os.Dir
 	var directories []string
 	for _, entry := range entries {
 		name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
-		classification, err := classifyThemePath(name, entry.Type())
+		classification, err := state.classifyScannedThemePath(name, entry.Type())
 		retained := state.themePathReserved(name)
 		if err != nil {
-			fileShape, _ := classifyThemePath(name, 0)
-			directoryShape, _ := classifyThemePath(name, os.ModeDir)
+			fileShape, _ := state.classifyScannedThemePath(name, 0)
+			directoryShape, _ := state.classifyScannedThemePath(name, os.ModeDir)
 			if retained || fileShape.Reserved || directoryShape.Reserved {
 				state.warnings++
 				state.failThemeDirectory(relative)
@@ -413,7 +429,7 @@ func (state *scanState) enumerateThemeDirectory(group *themeDirectoryScan, relat
 	}
 	for _, entry := range entries {
 		name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
-		classification, err := classifyThemePath(name, entry.Type())
+		classification, err := state.classifyScannedThemePath(name, entry.Type())
 		if err != nil {
 			return err
 		}
@@ -431,8 +447,16 @@ func (state *scanState) enumerateThemeDirectory(group *themeDirectoryScan, relat
 }
 
 func (state *scanState) persistThemeMarkers(markers map[string]bool) error {
+	return state.persistAuxiliaryMarkers(markers, false)
+}
+
+func (state *scanState) persistAuxiliaryMarkers(markers map[string]bool, extra bool) error {
 	if len(markers) == 0 {
 		return nil
+	}
+	table, retained := "theme_reserved_paths", state.themes.markers
+	if extra {
+		table, retained = "extra_reserved_paths", state.extras.markers
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
@@ -448,7 +472,7 @@ func (state *scanState) persistThemeMarkers(markers map[string]bool) error {
 	sort.Strings(keys)
 	directoryFlags := make([]bool, 0, len(keys))
 	for _, relative := range keys {
-		directoryFlags = append(directoryFlags, markers[relative] || state.themes.markers[relative])
+		directoryFlags = append(directoryFlags, markers[relative] || retained[relative])
 	}
 	// Acquire the rows that will lose ordinary visibility before publishing
 	// any marker. Bulk/direct UserData writers retain SHARE locks and recheck
@@ -465,9 +489,9 @@ func (state *scanState) persistThemeMarkers(markers map[string]bool) error {
 	}
 	for _, relative := range keys {
 		var directory bool
-		err := tx.QueryRow(state.task.ctx, `INSERT INTO theme_reserved_paths(root_id,relative_path,is_directory)
+		err := tx.QueryRow(state.task.ctx, `INSERT INTO `+table+`(root_id,relative_path,is_directory)
 			VALUES($1,$2,$3 OR EXISTS(SELECT 1 FROM items WHERE root_id=$1 AND relative_path=$2 AND is_folder))
-			ON CONFLICT(root_id,relative_path) DO UPDATE SET is_directory=theme_reserved_paths.is_directory OR EXCLUDED.is_directory
+			ON CONFLICT(root_id,relative_path) DO UPDATE SET is_directory=`+table+`.is_directory OR EXCLUDED.is_directory
 			RETURNING is_directory`, state.root.id, relative, markers[relative]).Scan(&directory)
 		if err != nil {
 			return err
@@ -481,7 +505,7 @@ func (state *scanState) persistThemeMarkers(markers map[string]bool) error {
 		return err
 	}
 	for relative, directory := range markers {
-		state.themes.markers[relative] = directory
+		retained[relative] = directory
 	}
 	for _, album := range albums {
 		state.queueMusicParent(album)
@@ -505,8 +529,11 @@ func deactivateInvalidThemeChildren(ctx context.Context, tx pgx.Tx, ownerIDs []s
 	_, err := tx.Exec(ctx, `UPDATE item_theme_resources relationship SET active=false
 		WHERE relationship.active AND relationship.owner_item_id=ANY($1::text[])
 		AND NOT EXISTS(SELECT 1 FROM items resource WHERE resource.id=relationship.resource_item_id AND `+
-		directItemSQL("resource")+`)`, ownerIDs)
-	return err
+		database.ThemeResourceItemSQL("resource", true)+`)`, ownerIDs)
+	if err != nil {
+		return err
+	}
+	return deactivateInvalidExtraChildren(ctx, tx, ownerIDs)
 }
 
 func themeProbeMatches(kind themePathKind, probe *media.Info) bool {
@@ -572,6 +599,10 @@ func (state *scanState) resolveThemeOwner(group *themeDirectoryScan) error {
 }
 
 func (state *scanState) prepareThemeFiles(group *themeDirectoryScan) ([]*preparedThemeFile, error) {
+	return state.prepareAuxiliaryFiles(group, scannedRoleTheme)
+}
+
+func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role scannedMediaRole) ([]*preparedThemeFile, error) {
 	files := make([]*preparedThemeFile, 0, len(group.candidates))
 	complete := false
 	defer func() {
@@ -584,14 +615,14 @@ func (state *scanState) prepareThemeFiles(group *themeDirectoryScan) ([]*prepare
 		if candidate.kind == themePathKindVideo {
 			kind, itemType = "video", "Video"
 		}
-		input, err := state.inspectScannedMedia(filepath.FromSlash(candidate.relative), kind, true)
+		input, err := state.inspectScannedMedia(filepath.FromSlash(candidate.relative), kind, role)
 		if err != nil {
 			return nil, err
 		}
 		if input == nil {
 			return nil, nil
 		}
-		file := &preparedThemeFile{state: state, candidate: candidate, input: input, owner: group.owner, itemType: itemType}
+		file := &preparedThemeFile{state: state, role: role, candidate: candidate, input: input, owner: group.owner, itemType: itemType}
 		files = append(files, file)
 		if !themeProbeMatches(candidate.kind, input.probe) {
 			state.warnings++
@@ -780,6 +811,17 @@ func (state *scanState) publishThemeDirectory(relative string) error {
 }
 
 func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) error {
+	opposite := "item_extra_resources"
+	if file.role == scannedRoleExtra {
+		opposite = "item_theme_resources"
+	}
+	var conflict bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM `+opposite+` WHERE resource_item_id=$1)`, file.id).Scan(&conflict); err != nil {
+		return err
+	}
+	if conflict {
+		return fmt.Errorf("%w: a permanently assigned auxiliary identity cannot change roles", ErrUnavailable)
+	}
 	if !file.changed {
 		return nil
 	}

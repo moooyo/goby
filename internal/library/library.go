@@ -52,9 +52,12 @@ type ScanOptions struct {
 type Item struct {
 	ID, LibraryID, ParentID, Name, SortName, Type, Path, Overview string
 	ThemeKind                                                     string
+	ExtraKind, ExtraOwnerName                                     string
+	ExtraNameControlled, ExtraSortNameControlled                  bool
 	IsFolder                                                      bool
 	IndexNumber, ParentIndexNumber                                int
 	ChildCount                                                    *int
+	LocalTrailerCount                                             *int
 	Album                                                         *AlbumRef
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info

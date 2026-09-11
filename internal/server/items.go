@@ -480,6 +480,10 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 			dto["Chapters"] = chapters
 		}
 	}
+	applyExtraItemDTO(dto, item, fields, detail)
+	if detail && item.Type == "Movie" && !item.IsFolder && item.LocalTrailerCount != nil && *item.LocalTrailerCount > 0 {
+		dto["LocalTrailerCount"] = *item.LocalTrailerCount
+	}
 	return dto
 }
 

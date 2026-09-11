@@ -41,6 +41,7 @@ type scanState struct {
 	musicParents        map[string]bool
 	themes              *themeScan
 	themeLibrary        *themeLibraryScan
+	extras              *extraScan
 }
 
 type storedFile struct {
@@ -93,10 +94,16 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		state := &scanState{store: s, task: task, library: library, root: root, opened: opened, themeLibrary: themeOwners}
 		err = state.startThemeScan()
 		if err == nil {
+			err = state.startExtraScan()
+		}
+		if err == nil {
 			err = state.walk(".", hierarchy{parentID: library.ID}, 0)
 		}
 		if err == nil && state.themes != nil {
 			state.themes.walkComplete = true
+		}
+		if err == nil && state.warnings == 0 {
+			err = state.finishExtraScan()
 		}
 		if err == nil && state.warnings == 0 {
 			err = state.finishThemeScan()
@@ -171,7 +178,10 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	if err != nil {
 		return err
 	}
-	entries, err = state.classifyThemeDirectory(relative, entries, info)
+	entries, err = state.classifyExtraDirectory(relative, entries, info)
+	if err == nil {
+		entries, err = state.classifyThemeDirectory(relative, entries, info)
+	}
 	if err != nil {
 		return err
 	}
@@ -267,7 +277,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 }
 
 func (state *scanState) scanFile(path, kind string, current hierarchy) error {
-	input, err := state.inspectScannedMedia(path, kind, false)
+	input, err := state.inspectScannedMedia(path, kind, scannedRoleOrdinary)
 	if err != nil || input == nil {
 		return err
 	}
@@ -438,8 +448,8 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
-	if !strings.HasPrefix(relative, "//") && state.themePathReserved(filepath.ToSlash(relative)) {
-		return "", fmt.Errorf("%w: a permanently reserved theme path cannot become an ordinary folder", ErrUnavailable)
+	if !strings.HasPrefix(relative, "//") && (state.themePathReserved(filepath.ToSlash(relative)) || state.extraPathReserved(filepath.ToSlash(relative))) {
+		return "", fmt.Errorf("%w: a permanently reserved auxiliary path cannot become an ordinary folder", ErrUnavailable)
 	}
 	metadataPath := relative
 	if strings.HasPrefix(relative, "//") {
@@ -549,16 +559,30 @@ func readStoredFile(row rowScanner) (storedFile, error) {
 }
 
 func (state *scanState) findStoredFile(relative string, info os.FileInfo) (storedFile, error) {
-	return state.findStoredFileForRole(relative, info, false)
+	return state.findStoredFileForRole(relative, info, scannedRoleOrdinary)
 }
 
-func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, theme bool) (storedFile, error) {
-	excluded := state.claimedThemeIDs(relative, theme)
+func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, role scannedMediaRole) (storedFile, error) {
+	excluded := state.claimedScannedIDs(relative, role)
 	visibility := ordinaryItemSQL("items")
-	if theme {
-		// Theme acceptance may retain a former ordinary item's identity. The
-		// reverse transition cannot reuse any permanent resource or marker.
-		visibility = "TRUE"
+	switch role {
+	case scannedRoleTheme:
+		visibility = "NOT EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=items.id)"
+	case scannedRoleExtra:
+		visibility = "NOT EXISTS(SELECT 1 FROM item_theme_resources role WHERE role.resource_item_id=items.id)"
+	case scannedRoleOrdinary:
+	default:
+		return storedFile{}, fmt.Errorf("%w: unknown scanned media role", ErrInvalidInput)
+	}
+	// A permanent opposite role at this exact pathname cannot be replaced by a
+	// fresh item either: the pathname is unique and its history is protected.
+	var conflict bool
+	if err := state.store.pool.QueryRow(state.task.ctx, `SELECT EXISTS(SELECT 1 FROM items
+		WHERE root_id=$1 AND relative_path=$2 AND NOT (`+visibility+`))`, state.root.id, relative).Scan(&conflict); err != nil {
+		return storedFile{}, err
+	}
+	if conflict {
+		return storedFile{}, errScannedMediaRoleConflict
 	}
 	stored, err := readStoredFile(state.store.pool.QueryRow(state.task.ctx,
 		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2 AND NOT (id=ANY($3::text[])) AND "+visibility,

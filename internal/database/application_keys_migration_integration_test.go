@@ -105,8 +105,8 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("migrate application credentials: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
-		t.Fatalf("application key schema = %d, want 26, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
+		t.Fatalf("application key schema = %d, want 27, error=%v", version, err)
 	}
 	if after := applicationKeyLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("application key migration changed historical rows or credential material")

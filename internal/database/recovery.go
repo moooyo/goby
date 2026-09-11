@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -82,8 +83,14 @@ func RecoveryMigrateTo(ctx context.Context, tx pgx.Tx, version int64) error {
 		if item.version > version {
 			break
 		}
+		if err := beforeMigration(ctx, tx, item.version); err != nil {
+			return fmt.Errorf("prepare trusted recovery migration: %w", err)
+		}
 		if _, err := tx.Exec(ctx, item.sql); err != nil {
 			return errors.New("apply trusted recovery migration")
+		}
+		if err := afterMigration(ctx, tx, item.version); err != nil {
+			return fmt.Errorf("validate trusted recovery migration: %w", err)
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations(version,name) VALUES($1,$2)`, item.version, item.name); err != nil {
 			return errors.New("record trusted recovery migration")

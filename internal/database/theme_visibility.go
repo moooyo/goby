@@ -21,18 +21,16 @@ func ThemeReservedItemSQL(alias string) string {
 		= ` + marker + `.relative_path || '/'))))`
 }
 
-// ThemeOrdinaryItemSQL excludes every resource association, including inactive
-// ones, and every reserved path. A failed refresh must not republish a resource
-// as an ordinary catalog item.
+// ThemeOrdinaryItemSQL preserves schema 26 visibility for historical archives.
+// Current-schema catalog reads must use CatalogOrdinaryItemSQL instead.
 func ThemeOrdinaryItemSQL(alias string) string {
 	item, link := pgx.Identifier{alias}.Sanitize(), pgx.Identifier{alias + "_theme_membership"}.Sanitize()
 	return `(NOT EXISTS (SELECT 1 FROM item_theme_resources AS ` + link + ` WHERE ` + link + `.resource_item_id = ` + item + `.id)
 		AND NOT ` + ThemeReservedItemSQL(alias) + `)`
 }
 
-// ThemeDirectItemSQL permits ordinary items or currently active, shape-valid
-// theme resources. Authorization by the caller's user/library policy remains
-// mandatory; this expression never grants an owner number a navigable alias.
+// ThemeDirectItemSQL preserves schema 26 direct visibility. Current-schema
+// reads must use CatalogDirectItemSQL and independently enforce authorization.
 func ThemeDirectItemSQL(alias string) string {
 	return `(` + ThemeOrdinaryItemSQL(alias) + ` OR ` + themeResourceItemSQL(alias, true) + `)`
 }
@@ -42,6 +40,10 @@ func ThemeDirectItemSQL(alias string) string {
 // even after its owner moves to another root or ceases to be ordinary. Those
 // owner eligibility checks remain mandatory for every active association.
 func themeResourceItemSQL(alias string, activeOnly bool) string {
+	return themeResourceItemSQLWithSemantics(alias, activeOnly, false)
+}
+
+func themeResourceItemSQLWithSemantics(alias string, activeOnly, combined bool) string {
 	item := pgx.Identifier{alias}.Sanitize()
 	link := pgx.Identifier{alias + "_theme_link"}.Sanitize()
 	ownerAlias, rootAlias := alias+"_theme_owner", alias+"_theme_root"
@@ -49,6 +51,14 @@ func themeResourceItemSQL(alias string, activeOnly bool) string {
 	active := ""
 	if activeOnly {
 		active = ` AND ` + link + `.active`
+	}
+	ordinary := ThemeOrdinaryItemSQL(ownerAlias)
+	exclusive := ""
+	if combined {
+		ordinary = CatalogOrdinaryItemSQL(ownerAlias)
+		extra := pgx.Identifier{alias + "_theme_extra_conflict"}.Sanitize()
+		exclusive = ` AND NOT EXISTS (SELECT 1 FROM item_extra_resources AS ` + extra +
+			` WHERE ` + extra + `.resource_item_id = ` + item + `.id)`
 	}
 	return `(EXISTS (SELECT 1 FROM item_theme_resources AS ` + link +
 		` JOIN items AS ` + owner + ` ON ` + owner + `.id = ` + link + `.owner_item_id
@@ -61,7 +71,7 @@ func themeResourceItemSQL(alias string, activeOnly bool) string {
 		AND ` + item + `.parent_id = ` + owner + `.id
 		AND (NOT ` + link + `.active OR ((` + owner + `.root_id = ` + item + `.root_id OR (` + owner + `.id = ` + item + `.library_id
 		AND ` + owner + `.type = 'CollectionFolder' AND ` + owner + `.is_folder))
-		AND ` + ThemeOrdinaryItemSQL(ownerAlias) + `)) AND ` + ThemeReservedItemSQL(alias) + `))`
+		AND ` + ordinary + `)) AND ` + ThemeReservedItemSQL(alias) + exclusive + `))`
 }
 
 // ErrThemeState means the schema's referential constraints do not suffice to
@@ -80,13 +90,17 @@ func ValidateThemeState(ctx context.Context, tx pgx.Tx, version int64) error {
 		return errors.New("theme state validation requires a transaction")
 	}
 	var valid bool
+	resource := themeResourceItemSQL("resource_item", false)
+	if version >= 27 {
+		resource = ThemeResourceItemSQL("resource_item", false)
+	}
 	statement := `SELECT
 		(SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL) = 1
 		AND (SELECT count(*) FROM theme_owner_ids) = (SELECT count(*) + 1 FROM items)
 		AND NOT EXISTS (SELECT 1 FROM items AS mapped_item LEFT JOIN theme_owner_ids AS owner_id
 		ON owner_id.item_id = mapped_item.id WHERE owner_id.id IS NULL)
 		AND NOT EXISTS (SELECT 1 FROM item_theme_resources AS resource_link LEFT JOIN items AS resource_item
-		ON resource_item.id = resource_link.resource_item_id WHERE resource_item.id IS NULL OR NOT ` + themeResourceItemSQL("resource_item", false) + `)`
+		ON resource_item.id = resource_link.resource_item_id WHERE resource_item.id IS NULL OR NOT ` + resource + `)`
 	if err := tx.QueryRow(ctx, statement).Scan(&valid); err != nil {
 		return fmt.Errorf("read theme semantic state: %w", err)
 	}

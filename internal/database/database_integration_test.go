@@ -108,15 +108,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		}
 	}
 	version, err := database.SchemaVersion(ctx, pool)
-	if err != nil || version != 26 {
-		t.Fatalf("schema version after concurrent migration = %d, want 26, error = %v", version, err)
+	if err != nil || version != 27 {
+		t.Fatalf("schema version after concurrent migration = %d, want 27, error = %v", version, err)
 	}
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("count applied migrations: %v", err)
 	}
-	if count != 26 {
-		t.Fatalf("migration history count = %d, want 26", count)
+	if count != 27 {
+		t.Fatalf("migration history count = %d, want 27", count)
 	}
 	before := migrationHistory(t, ctx, pool)
 	if err := database.Migrate(ctx, pool); err != nil {
@@ -125,18 +125,18 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if after := migrationHistory(t, ctx, pool); after != before {
 		t.Errorf("repeated migration changed history: before = %s, after = %s", before, after)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 26 {
-		t.Errorf("schema version after repeated migration = %d, want 26, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
+		t.Errorf("schema version after repeated migration = %d, want 27, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
-	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources"} {
+	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources"} {
 		var exists bool
 		if err := pool.QueryRow(ctx, "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists); err != nil || !exists {
 			t.Errorf("migrated table %s exists = %v, error = %v", table, exists, err)
 		}
 	}
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != 33 {
-		t.Errorf("current schema table count = %d, want 33, error = %v", count, err)
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != 35 {
+		t.Errorf("current schema table count = %d, want 35, error = %v", count, err)
 	}
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
@@ -144,13 +144,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM user_settings").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated user settings: count=%d error=%v", count, err)
 	}
-	var owners, virtualRoots, reservedPaths, themeResources int
+	var owners, virtualRoots, reservedPaths, themeResources, extraPaths, extraResources int
 	if err := pool.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM theme_owner_ids),
 		(SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL),
 		(SELECT count(*) FROM theme_reserved_paths),
-		(SELECT count(*) FROM item_theme_resources)`).Scan(&owners, &virtualRoots, &reservedPaths, &themeResources); err != nil || owners != 1 || virtualRoots != 1 || reservedPaths != 0 || themeResources != 0 {
-		t.Errorf("fresh theme state must contain one virtual owner and no discovered resources: owners=%d roots=%d paths=%d resources=%d error=%v", owners, virtualRoots, reservedPaths, themeResources, err)
+		(SELECT count(*) FROM item_theme_resources),
+		(SELECT count(*) FROM extra_reserved_paths),
+		(SELECT count(*) FROM item_extra_resources)`).Scan(&owners, &virtualRoots, &reservedPaths, &themeResources, &extraPaths, &extraResources); err != nil || owners != 1 || virtualRoots != 1 || reservedPaths != 0 || themeResources != 0 || extraPaths != 0 || extraResources != 0 {
+		t.Errorf("fresh auxiliary state must contain one virtual owner and no discovered resources: owners=%d roots=%d theme_paths=%d themes=%d extra_paths=%d extras=%d error=%v", owners, virtualRoots, reservedPaths, themeResources, extraPaths, extraResources, err)
 	}
 }
 

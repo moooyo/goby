@@ -74,7 +74,7 @@ func assertThemeRestoreTargetEmpty(t *testing.T, ctx context.Context, target *pg
 }
 
 func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemanticFinalizer(t *testing.T) {
-	ctx, source, target, options := recoveryFixture(t)
+	ctx, source, target, options := recoveryFixtureAtVersion(t, 26)
 	seedThemeSnapshotWitness(t, ctx, source)
 	want := themeSnapshotState(t, ctx, source)
 	archive, facts := sourceArchive(t, ctx, source, options)
@@ -88,7 +88,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 	failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 		func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 			called = true
-			if result.SourceVersion != 26 || result.CurrentVersion != 26 {
+			if result.SourceVersion != 26 || result.CurrentVersion != 27 {
 				t.Fatal("the theme finalizer received a different migration transition")
 			}
 			_, err := tx.Exec(ctx, "DELETE FROM theme_owner_ids WHERE virtual_root")
@@ -103,7 +103,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 		t.Fatal("rewind unchanged theme archive for retry")
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 26 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the same nonempty theme archive after semantic rollback: %v", err)
 	}
 	if themeSnapshotState(t, ctx, target) != want {
@@ -148,7 +148,7 @@ func TestPostgreSQLThemeSnapshotRejectsMissingCoverageAndInvalidInactiveOwners(t
 		{"registered_root_belongs_to_another_library", "UPDATE items SET root_id='theme-foreign-root' WHERE id='theme-root-song'; INSERT INTO theme_reserved_paths(root_id,relative_path,is_directory) VALUES('theme-foreign-root','theme.mp3',false)"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, source, _, options := recoveryFixture(t)
+			ctx, source, _, options := recoveryFixtureAtVersion(t, 26)
 			seedThemeSnapshotWitness(t, ctx, source)
 			if _, err := source.Exec(ctx, test.mutation); err != nil {
 				t.Fatalf("construct a referentially valid semantic error: %v", err)
@@ -176,7 +176,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			INSERT INTO item_theme_resources(resource_item_id,owner_item_id,kind,active) VALUES('theme-owner','theme-library','video',true)`},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, source, target, options := recoveryFixture(t)
+			ctx, source, target, options := recoveryFixtureAtVersion(t, 26)
 			seedThemeSnapshotWitness(t, ctx, source)
 			var userDataBefore string
 			if err := source.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id)::text FROM user_item_data d").Scan(&userDataBefore); err != nil {
@@ -199,7 +199,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			before := themeSnapshotState(t, ctx, source)
 			archive, facts := sourceArchive(t, ctx, source, options)
 			result, err := RestoreOffline(ctx, target, archive, facts, options)
-			if err != nil || result.CurrentVersion != 26 || themeSnapshotState(t, ctx, target) != before {
+			if err != nil || result.CurrentVersion != 27 || themeSnapshotState(t, ctx, target) != before {
 				t.Fatalf("inactive history could not be preserved after its owner moved or became reserved: %v", err)
 			}
 			var active, ordinary, direct int
@@ -264,7 +264,7 @@ func TestPostgreSQLThemeRestoreRejectsSemanticallyInvalidRealArchives(t *testing
 		{"inactive_wrong_parent", "UPDATE items SET parent_id='theme-other-owner' WHERE id='theme-inactive'"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, source, target, options := recoveryFixture(t)
+			ctx, source, target, options := recoveryFixtureAtVersion(t, 26)
 			seedThemeSnapshotWitness(t, ctx, source)
 			valid, err := OpenSnapshot(ctx, source, options)
 			if err != nil {
