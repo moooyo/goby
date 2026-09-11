@@ -1,10 +1,15 @@
 # M3e SpecialFeatures reference capture plan
 
-The [mains-only media stage](m3e-special-features-media-mains.json) has completed
-on test-env. Reference library attachment, main indexing and all positive
-extras captures remain unexecuted. The mains stage must not be rerun.
+The [mains-only media stage](m3e-special-features-media-mains.json), main
+indexing, extras generation and the first 24-case positive capture have
+completed on test-env. See the [actual contracts](m3e-special-features-positive-contracts.md)
+and [checkpoint](m3e-special-features-positive-checkpoint.json). Library `83`
+contains Movies `87` and `88`; the reference now has seven libraries. All
+completed media and reference phases are immutable and must not be rerun.
 
-Status: **planned; not executed**. This document authorizes no HTTP request,
+Status: **initial selected scope completed; broader cases remain planned**.
+The original design below records that scope and its remaining gaps. It
+authorizes no additional HTTP request,
 fixture mutation, scan or deployment by itself. The next operator must select
 an explicit scope and execute only through `ssh test-env`. Use the reference
 API as a black box and official documentation; do not inspect server or client
@@ -87,12 +92,12 @@ The following observations are still missing:
 
 ## New fixture, separate from all retained roots
 
-Proposed media root: `/opt/goby-fixtures/client-special-features-m3e-v1`.
-Proposed private evidence root:
+Created media root: `/opt/goby-fixtures/client-special-features-m3e-v1`.
+Completed private evidence root:
 `/opt/goby-test/exec-work-m3e/reference-special-features-v1`.
-Both names are proposals, not created resources. Require absence before setup;
-never adopt or overwrite an existing directory. Record an exclusive marker,
-directory identities, file hashes and a receipt binding the new library ID.
+Both roots now exist with exclusive markers, directory identities, file
+hashes and receipts binding library `83`. Do not adopt, overwrite or repeat
+their completed setup. Further scopes need separately identified evidence.
 
 Create one new owned Movies library. Preserve the current six reference
 libraries, all five existing users' configuration/policy and relevant UserData,

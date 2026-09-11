@@ -1,0 +1,57 @@
+{
+  "status": "reference_positive_capture_completed",
+  "execution_environment": "ssh test-env",
+  "operator_sha256": "51813c5478ac2eb10f990224564c57cd33631498fccbf7628466d17d1e3c728f",
+  "remote_syntax": "passed",
+  "phase_preflights": "mains and extras passed; each performed zero HTTP requests and zero evidence writes",
+  "mains_report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-special-features-v1/mains/export/report.json",
+    "sha256": "42f94024a5780ad94fc0c0f4ad525e65faa1b02494d823574e964b1d8a0cf3c4"
+  },
+  "mains_indexed_receipt": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-special-features-v1/mains-indexed.json",
+    "sha256": "53e883235f6dbcbe15cfd4046ddc8f99578f64e4266bb6623775028d0d4668f7"
+  },
+  "extras_media_manifest": {
+    "path": "/opt/goby-fixtures/client-special-features-m3e-v1/extras-manifest.json",
+    "sha256": "5bfb18a68440d0144f9eba8915561647094208664a287f263ae9d0d1f83b6e38"
+  },
+  "extras_media_receipt": {
+    "path": "/opt/goby-test/exec-work-m3e/special-features-media-v1/extras/completed.json",
+    "sha256": "dae031f6fe222faa28900b65d62271823a565e9866cf758f3f45212115dcd187"
+  },
+  "extras_report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-special-features-v1/extras/export/report.json",
+    "sha256": "8e4f9323495408540e6d97ecba19a6ba31f679ca0129a4c8eaf4d5277019c51e"
+  },
+  "reference_library": {"id": "83", "positive_movie_id": "87", "empty_movie_id": "88", "current_library_count": 7},
+  "media_file_count": 13,
+  "business_cases": {"count": 24, "http_200_complete": 24, "actor": "ordinary viewer"},
+  "positive_special_features": [
+    {"id": "91", "name": "Alpha Bonus", "type": "Video", "extra_type": "Clip", "parent_id": "87"},
+    {"id": "90", "name": "Middle Deleted Scene", "type": "Video", "extra_type": "DeletedScene", "parent_id": "87"},
+    {"id": "92", "name": "Zeta Bonus", "type": "Video", "extra_type": "Clip", "parent_id": "87"}
+  ],
+  "positive_local_trailers": [
+    {"id": "89", "name": "M3e Special Features Positive - Trailer", "type": "Trailer", "extra_type": "Trailer", "parent_id": "87", "media_source_name": "Delta Local Trailer"}
+  ],
+  "empty_controls": {
+    "movie_id": "88", "series_id": "14", "episode_id": "18",
+    "special_features_and_local_trailers": [],
+    "intros_all_four_owners": {"Items": [], "TotalRecordCount": 0}
+  },
+  "preservation": {
+    "old_six_libraries_and_five_users": true,
+    "media_files": true,
+    "all_four_new_tokens": "owned identity proven, logout204, exact-token401",
+    "scope": "Exact protected API projections, Configuration/Policy and media snapshots; not raw database or session-history equality."
+  },
+  "catalog_boundary": "The new-library ParentId=83, Recursive=true query has no IncludeItemTypes filter and returned only two Movies and three Folders. Four extras and the nested/text controls were absent in that scoped query. The separate old-library preservation query excludes Trailer by type and provides no independent trailer-visibility proof.",
+  "pending": [
+    "Persistent product implementation, schema27 migration and backup compatibility",
+    "Parent detail counts, child direct reads, projection switches, repeated ordering and access/error variants",
+    "Remaining documented extra categories, flat trailer layout and positive Series support",
+    "Actual resource byte delivery and original-client acceptance with zero page errors"
+  ],
+  "boundary": "This is reference indexing and protocol evidence. It does not change source28/schema26 or close the current original-client page-error gate. Neither completed phase may be rerun."
+}

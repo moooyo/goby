@@ -7,9 +7,15 @@ The current actual-client failure is a `404` for
 `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures`. The parent task confirmed
 the retained failure evidence with two hash comparisons. Existing
 [movie extras contracts](m3e-reference-movie-extras-contracts.json) establish an
-empty response for sampled movies; they do not establish a positive resource
-model. Positive naming, DTO, ordering, and ownership contracts still require
-reference capture. A separate reference-capture plan owns that study.
+empty response for sampled movies. The subsequent
+[positive reference capture](m3e-special-features-positive-contracts.md)
+establishes three SpecialFeatures with `Type=Video`, `ExtraType=Clip` for
+featurettes and `DeletedScene` for deleted scenes, plus a separate
+`Type=Trailer`/`ExtraType=Trailer` LocalTrailers resource. Detailed projection
+uses the actual Movie parent ID; defaults omit ParentId and media sources.
+The observed scope supplies initial naming, membership and DTO evidence;
+ordering stability, remaining layouts, access variants and playback still
+need their own gates.
 
 The product objective is to index and deliver real movie attachments, including
 an authorized empty result when no active attachment is indexed. A permanent
@@ -32,8 +38,10 @@ SpecialFeatures.
 
 Each attachment uses a stable `items.id`, its own probed media facts and user
 state, and `parent_id = owner_item_id`. Internal `Video` is the proposed playable
-type; the external `Type`, `ExtraType`, and classification mapping remain
-subject to positive protocol evidence.
+type. Initial external projections follow the observed Video/Clip,
+Video/DeletedScene and Trailer/Trailer mappings. The trailer item name is
+the Movie title plus ` - Trailer`; its media source name retains the actual
+filename stem. Other category mappings remain unproven.
 
 An active attachment must be a nonfolder resource whose ordinary Movie owner,
 resource, and registered root share the same library and root. Its path must be
@@ -86,7 +94,7 @@ Video ID without an ordinary/direct visibility check, including inactive
 resources. Preserve or explicitly revise that existing policy; do not assume
 the central visibility change covers the administrative editor.
 
-## Unresolved migration and history decision
+## Migration and history decision
 
 Migration 27 must explicitly account for an extra reservation that makes an
 existing active theme owner cease to be ordinary. For example, a newly accepted
@@ -100,15 +108,23 @@ validation. Hiding the theme in direct reads does not repair its persisted
 active state. Weakening validation to accept this contradiction is not a
 solution.
 
-Before implementing migration 27, use the accepted reference naming rules and
-the final model to inventory these conflicts and choose a coherent transition.
-Possible designs include an explicit transactional deactivation of affected
-theme relationships, or deferring reservation publication until an owner-aware
-scan can reserve paths and deactivate affected relationships atomically.
-Neither option is selected by this plan. Any chosen transition must document
-its changes to historical business state, retain identity and user data, and
-leave every committed current-schema state valid. Apply the same rule when a
-later scan discovers a new extra reservation or changes an existing owner.
+Select transactional deactivation of precisely affected active Theme
+relationships. Validate schema 26 with its original predicates first. Derive
+new reservations only from canonical stored paths and the accepted layout
+scope, without guessing attachment owners or creating attachment items during
+migration. Lock affected owners and active resource rows in deterministic ID
+order, publish markers, and set only the relationships whose owners lose
+ordinary eligibility through these new markers to inactive. Strict schema-27
+validation must pass before the same transaction commits. Do not broadly
+deactivate every currently invalid Theme relationship, which could hide old
+corruption.
+
+This transition explicitly permits the affected relationship `active` flags
+to change. Preserve their resource/owner identities, item rows, sequences,
+metadata and UserData, and leave unrelated/inactive history unchanged. Apply
+the same atomic rule when a later scan publishes a reservation or changes an
+owner. Both normal migration and recovery migration need the source/current
+semantic checks within their existing transaction boundary.
 
 ## Backup and restore integration
 

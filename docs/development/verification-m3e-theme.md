@@ -6,7 +6,9 @@ The [latest input06 diagnostic](m3e-source28-special-features-blocker.json)
 identified the missing SpecialFeatures user-item GET404 behind the two
 recorded Movie detail errors. Its 107 guards and bounded preparation-state
 comparison passed; the client run correctly failed its page-error gate.
-Real extras capture and implementation are tracked separately from ThemeMedia.
+The first [positive extras capture](m3e-special-features-positive-contracts.md)
+has completed with 24 HTTP200 cases, three SpecialFeatures and one separate
+LocalTrailer. Product implementation remains separate from ThemeMedia.
 Source28/schema26 passed 1,830 race tests across 24 packages and is installed
 on the isolated candidate. The original-client auxiliary album workflow passed;
 the primary is now source28/schema26, active/running as PID688833/start ticks5620918. The earlier
@@ -254,7 +256,9 @@ The primary deployment gate is closed. Full dual-user client isolation,
 remaining tooling/browser/evidence publication remain open. The restriction
 plan, including its 404-versus403 matrix, has not executed. The product-only
 checkpoint and the main-deployment/evidence checkpoint `53144e6` are already
-pushed; new input06 work and its evidence still need their own completion gate.
+pushed; input06 diagnostics were subsequently published at `1da3e28`.
+Its Movie page-error gate remains open pending persistent SpecialFeatures
+implementation and a fresh original-client run.
 The successful retained backup is a separate gate; its existence does not
 authorize replaying a failed directory or bypassing the startup deadline.
 The new real-media case

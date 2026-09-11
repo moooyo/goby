@@ -5,10 +5,14 @@ The goal remains the complete planned Linux backend and administrator dashboard.
 The latest [input06 diagnostic](m3e-source28-special-features-blocker.json)
 passed 107 guards and its bounded database comparison, but failed the strict
 page-error gate. The two Movie detail errors now correlate with exact
-SpecialFeatures user-item GET404 requests. Positive extras reference capture
-and persistent SpecialFeatures support are the next work; the earlier empty
-reference response does not prove the nonempty feature. Library restriction
-and full M3 acceptance remain open.
+SpecialFeatures user-item GET404 requests. The first
+[positive extras capture](m3e-special-features-positive-contracts.md) has now
+completed: library83 contains main Movies87/88, SpecialFeatures returns three
+Video attachments and LocalTrailers separately returns Trailer89. All 24
+selected ordinary-viewer cases returned complete HTTP200 responses; the old
+six libraries, five users and media were preserved, and all four new recorder
+tokens were revoked. Persistent SpecialFeatures support, remaining projection
+and access cases, library restriction and full M3 acceptance remain open.
 
 The M5j round is complete: native backup/recovery, deployment and the
 [handoff](handoff.md) are recorded at `4a840fb`. Development resumed on 2026-09-11

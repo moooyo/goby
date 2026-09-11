@@ -41,8 +41,8 @@ tool files in `b4a7f0c`. These tooling commits preserve the same product
 checkpoint and are in the published history. The main-deployment/evidence
 checkpoint `53144e6` has been pushed to `origin/main`.
 The exact executed input05 harness and its original comparator were subsequently
-committed and pushed as `7099a49`. The input06 working edits
-remain separate from that frozen input05 checkpoint.
+committed and pushed as `7099a49`. The input06 diagnostic and comparator were
+published separately at `1da3e28`; media mains were published at `6a5ff63`.
 The corrected Theme product source28 passed 72 targeted
 race regressions and all 1,830 tests across 24 packages, with zero failures or
 skips, complete owned cleanup and a successful application build in
@@ -71,8 +71,10 @@ acceptance. [Input06](m3e-source28-special-features-blocker.json) passed 107
 guards, then correctly failed its strict page-error gate. Both exact request
 hashes identify `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures` returning
 404 alongside the `Response` errors. Its separate database comparison passed.
-The next work is the [positive reference capture](m3e-special-features-reference-plan.md)
-and [persistent SpecialFeatures implementation](special-features-implementation-plan.md).
+The first [positive reference capture](m3e-special-features-positive-contracts.md)
+has now completed. The next work is
+[persistent SpecialFeatures implementation](special-features-implementation-plan.md)
+and the remaining bounded projection/access observations.
 Library restriction has not executed.
 
 The two synthetic SpecialFeatures main movies were
@@ -83,8 +85,20 @@ the completed media receipt SHA-256 is
 `b753494e27902d62bfc6021f232c38c5e69fd4374f8e4a3a92b92fe5622a1f97`.
 Both files are 12-second H264/AAC clips at 320x180/30fps. The six-file mains
 stage preserved the original and auxiliary media and performed no HTTP or
-library scan. The new reference-library operator is being prepared. Do not
-rerun mains or create extras before its actual mains-indexed receipt.
+library scan. The new reference operator subsequently indexed library `83`
+with positive Movie `87` and empty Movie `88`, then completed the separately
+receipted extras stage. The reference now has **seven libraries**, with all
+five users and the old six libraries preserved. The generator's extras stage
+completed with 13 files, and all 24 ordinary-viewer protocol cases returned
+complete HTTP200 responses. SpecialFeatures returns three Video attachments
+(Clip, DeletedScene, Clip); LocalTrailers separately returns Trailer `89`.
+Both stages proved logout204/exact-token401 for each new admin/viewer token.
+See the [exact checkpoint](m3e-special-features-positive-checkpoint.json) for
+report and media receipt hashes. Neither media nor reference phase may be rerun.
+Parent counts, projection switches, broader access/layout cases, real delivery
+and original-client verification remain open. The unfiltered new-library
+recursive query returned only main Movies and Folders. The separate old-state
+preservation query excluded Trailer by type and is not a trailer-visibility proof.
 Main-schema26 tooling's original build and 15 memory guards, its earlier
 read-only retention rejection, and its later stopped-service baseline failure
 are separate evidence. One real PostgreSQL17 read-only ACL regression passed.

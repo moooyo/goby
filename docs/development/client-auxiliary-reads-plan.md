@@ -4,8 +4,9 @@ This document retains the historical Similar/ThemeMedia research sequence.
 Source28/schema26 is now deployed and its scoped auxiliary-album flow passed.
 The current Movie detail blocker is the missing SpecialFeatures user-item
 route, identified in [input06](m3e-source28-special-features-blocker.json).
-The next positive capture is tracked in the
-[SpecialFeatures reference plan](m3e-special-features-reference-plan.md).
+The first [positive SpecialFeatures capture](m3e-special-features-positive-contracts.md)
+has completed. The [reference plan](m3e-special-features-reference-plan.md)
+retains the broader outstanding cases; persistent implementation is next.
 
 Status: the initial capture, five positive comparison captures, and metadata
 combination v2/v3 captures are complete. Metadata v1 remains a preserved failed
