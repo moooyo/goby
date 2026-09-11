@@ -6,12 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parseHomeArguments, validateHomeInput, homeSourceDigest, homeClientMetadata, homeLoginEvidence,
   projectHomeViews, HomeViewsObserver, homeCardEvidence, observeHomeDOM, procStartTicks,
-  bindHomeBaseline, homeObservationPassed, waitHomeLoginProof } from './client-browser-library-home.mjs';
+  bindHomeBaseline, homeObservationPassed, waitHomeLoginProof, validateHomeAuthority } from './client-browser-library-home.mjs';
 import { createHomeOnlyBrowserActor, classifyBrowserRequest } from './client-browser-cross-user.mjs';
 
 const SELF = fileURLToPath(import.meta.url);
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-ui-baseline-v1';
+const ROOT = WORK + '/client-library-ui-baseline-v3';
 const ORIGIN = 'http://127.0.0.1:18196';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
 const SERVER = 'c7cfd76b1dee728b2bad523793a37ccb';
@@ -60,9 +60,11 @@ function inputFixture() {
     authority: {
       api_report: descriptor('client-library-restriction-v1/report.json', '193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb'),
       inspection: descriptor('client-library-restriction-inspection-01/report.json', 'e3dcbc0c21edbc484baab89762e11857a7cbc46889b78701af8dd309f12c3441'),
-      current_snapshot: descriptor('client-library-restriction-inspection-01/current-full.json', '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3'),
-      before_snapshot: descriptor('client-library-ui-baseline-v1/before-full.json'),
-    }, controller: { pid: 100, start_ticks: '200', boot_id: '6bdfc486-7bc8-412f-82b5-70095a09dde7', unit: 'goby-client-library-ui-baseline-v1.service' } };
+      recovery: descriptor('client-library-ui-session-recovery-01/report.json', '09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb'),
+      prior_home: descriptor('client-library-ui-baseline-v2/report.json', '54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23'),
+      current_snapshot: descriptor('client-library-ui-baseline-v2/after-full.json', '27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26'),
+      before_snapshot: descriptor('client-library-ui-baseline-v3/before-full.json'),
+    }, controller: { pid: 100, start_ticks: '200', boot_id: '6bdfc486-7bc8-412f-82b5-70095a09dde7', unit: 'goby-client-library-ui-baseline-v3.service' } };
 }
 function loginBody() {
   return { ServerId: SERVER, AccessToken: TOKEN,
@@ -116,6 +118,59 @@ test('explicit input, exact four libraries and no password carrier', () => {
     value => { value.authority.current_snapshot.sha256 = 'b'.repeat(64); }, value => { value.mode = 'acceptance-preparation'; }]) {
     const input = inputFixture(); change(input); rejects(() => validateHomeInput(input));
   }
+});
+test('v3 refuses occupied roots, stale snapshots and missing or wrong historical authority', () => {
+  for (const change of [value => { value.root = WORK + '/client-library-ui-baseline-v1'; },
+    value => { value.root = WORK + '/client-library-ui-baseline-v2'; },
+    value => { value.controller.unit = 'goby-client-library-ui-baseline-v1.service'; },
+    value => { value.controller.unit = 'goby-client-library-ui-baseline-v2.service'; },
+    value => { value.authority.current_snapshot = descriptor('client-library-restriction-inspection-01/current-full.json',
+      '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3'); },
+    value => { delete value.authority.recovery; }, value => { value.authority.recovery.sha256 = '0'.repeat(64); },
+    value => { delete value.authority.prior_home; }, value => { value.authority.prior_home.sha256 = '0'.repeat(64); },
+    value => { value.authority.current_snapshot = descriptor('client-library-ui-session-recovery-01/after-full.json',
+      '5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0'); },
+    value => { value.authority.before_snapshot.path = WORK + '/client-library-ui-baseline-v1/before-full.json'; }]) {
+    const input = inputFixture(); change(input); rejects(() => validateHomeInput(input));
+  }
+});
+test('the prior closed Home supplies current authority while both UI failures and recovery remain historical', () => {
+  const input = inputFixture(), api = { result: 'passed', phase: 'complete', restoration: 'confirmed' };
+  const inspection = { status: 'passed', report_sha256: input.authority.api_report.sha256,
+    current_snapshot_sha256: '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3',
+    all_three_owned_sessions_revoked: true, stored_after_matches_current: true };
+  const recoveryAfter = descriptor('client-library-ui-session-recovery-01/after-full.json', '5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0');
+  const recovery = { marker: 'goby-client-library-home-session-recovery-v1', result: 'passed', phase: 'complete',
+    original_ui_result: 'failed', client_acceptance: false, administrator_closed: true, http_requests: 4, errors: [],
+    candidate: { binary_sha256: input.candidate.binary_sha256, process: clone(input.candidate.process), state_sha256: input.candidate.state_sha256 },
+    evidence: { 'after-full.json': clone(recoveryAfter) },
+    proof: { administrator_revoked: true, administrator_session_id: 'ad6695676912f2bd2a1bf68b9cfdd9ce',
+      target_session_id: '00fb0b833884308ab946e1c40ff6abdd', target_user_id: USER,
+      target_token_sha256: '9f71d2771f1a0d177041d6815f46d39ecea9a54bf92099a13b89dbef172afb81',
+      lost_target_token_401_observed: false, new_administrator_sessions: 1, new_native_session_audits: 3,
+      new_devices_play_userdata_references_encodings: 0, old_rows_sequences_private_preserved: true,
+      target_only_revoked_at_changed: true, target_revoked_at: TIME } };
+  const priorHome = { marker: 'goby-client-library-home-observation-v1', version: 1, result: 'failed', phase: 'complete', outcome: 'failed',
+    browser_outcome: 'failed', client_acceptance: false, permission_ui_acceptance: false, worker_closed: true, fallback_attempted: false,
+    candidate: clone(input.candidate), authority: { api_report: clone(input.authority.api_report), inspection: clone(input.authority.inspection),
+      recovery: clone(input.authority.recovery), current_snapshot: clone(recoveryAfter) },
+    evidence: { 'after-full.json': clone(input.authority.current_snapshot) },
+    errors: [{ stage: 'final_delta_or_ui_observation', failure_type: 'ObservationError' }],
+    proof: { new_b_authentication: 1, new_devices: 1, new_play_userdata_references_encodings: 0, new_session_audits: 2,
+      observed_capabilities_bound: true, old_rows_sequences_private_unchanged: true, users_and_policies_unchanged: true,
+      session_id: '2e355f661132b4ba3a3ed1445a16c3c8', token_sha256: 'e795b8ecf91e9a2b934b28484ce80a9c52e40838389473032e954cbf699c3eb3' } };
+  check(validateHomeAuthority(input, api, inspection, recovery, priorHome));
+  for (const change of [value => { value.original_ui_result = 'passed'; }, value => { value.administrator_closed = false; },
+    value => { value.proof.lost_target_token_401_observed = true; }, value => { value.proof.target_session_id = 'e'.repeat(32); },
+    value => { value.evidence['after-full.json'].sha256 = 'a'.repeat(64); }]) {
+    const altered = clone(recovery); change(altered); rejects(() => validateHomeAuthority(input, api, inspection, altered, priorHome));
+  }
+  for (const change of [value => { value.result = 'passed'; }, value => { value.worker_closed = false; },
+    value => { value.fallback_attempted = true; }, value => { value.proof.new_devices = 2; },
+    value => { value.authority.current_snapshot = clone(input.authority.current_snapshot); }, value => { value.evidence['after-full.json'].sha256 = '0'.repeat(64); }]) {
+    const altered = clone(priorHome); change(altered); rejects(() => validateHomeAuthority(input, api, inspection, recovery, altered));
+  }
+  rejects(() => validateHomeAuthority(input, api, { ...inspection, current_snapshot_sha256: input.authority.current_snapshot.sha256 }, recovery, priorHome));
 });
 test('CLI rejects changed output, duplicate flags and missing hashes', () => {
   const good = ['--input', ROOT + '/input.json', '--input-sha256', 'a'.repeat(64), '--output', ROOT + '/browser'];
@@ -242,6 +297,13 @@ test('card identity is required when present and title fallback is explicitly li
   check(!homeCardEvidence(LIBRARIES[0], 1, [{ ids: [LIBRARIES[1].id] }]).passed);
   check(!homeCardEvidence(LIBRARIES[0], 2, [{ ids: [] }, { ids: [] }]).passed);
 });
+test('the observed two titles and one exact ID card pass without weakening title-only ownership', () => {
+  check(homeCardEvidence(LIBRARIES[0], 2, [{ ids: [LIBRARIES[0].id] }]).passed);
+  check(!homeCardEvidence(LIBRARIES[0], 2, [{ ids: [LIBRARIES[1].id] }]).passed);
+  check(!homeCardEvidence(LIBRARIES[0], 2, [{ ids: [LIBRARIES[0].id] }, { ids: [LIBRARIES[0].id] }]).passed);
+  check(!homeCardEvidence(LIBRARIES[0], 2, [{ ids: [] }]).passed);
+  check(!homeCardEvidence(LIBRARIES[0], 0, [{ ids: [LIBRARIES[0].id] }]).passed);
+});
 test('DOM mock observes actual four cards and reports missing refresh controls', async () => {
   const chain = result => ({ filter() { return this; }, count: async () => result.length, evaluateAll: async () => result });
   const page = { url: () => ORIGIN + '/web/index.html#!/home',
@@ -292,22 +354,35 @@ function baseline() {
     'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions', 'task_occurrences', 'task_run_children',
     'task_run_requests', 'task_runs', 'task_triggers', 'theme_owner_ids', 'theme_reserved_paths', 'user_item_data', 'user_settings', 'users'];
   const tables = Object.fromEntries(names.map(name => [name, []]));
-  for (const [name, count] of Object.entries({ items: 22, sessions: 67, activity_entries: 149, play_sessions: 26, user_item_data: 7 })) {
+  for (const [name, count] of Object.entries({ items: 22, sessions: 70, activity_entries: 155, play_sessions: 26, user_item_data: 7 })) {
     tables[name] = Array.from({ length: count }, (_, index) => ({ id: 'synthetic-' + index }));
   }
   tables.libraries = clone(LIBRARIES);
-  tables.devices = Array.from({ length: 58 }, (_, index) => ({ id: index + 1, reported_device_id: 'old-device-' + index }));
-  tables.users = [{ id: USER, is_administrator: false, is_disabled: false, management_revision: 3 }];
+  tables.devices = Array.from({ length: 60 }, (_, index) => ({ id: index + 1, reported_device_id: 'old-device-' + index }));
+  tables.users = [{ id: USER, is_administrator: false, is_disabled: false, management_revision: 3 }, { id: 'synthetic-admin', is_administrator: true }];
+  tables.sessions[0] = { id: '00fb0b833884308ab946e1c40ff6abdd', user_id: USER, kind: 'emby', revoked_at: TIME,
+    token_hash: '\\x9f71d2771f1a0d177041d6815f46d39ecea9a54bf92099a13b89dbef172afb81' };
+  tables.sessions[1] = { id: 'ad6695676912f2bd2a1bf68b9cfdd9ce', user_id: 'synthetic-admin', kind: 'admin', revoked_at: TIME };
+  tables.sessions[2] = { id: '2e355f661132b4ba3a3ed1445a16c3c8', user_id: USER, kind: 'emby', revoked_at: TIME,
+    token_hash: '\\xe795b8ecf91e9a2b934b28484ce80a9c52e40838389473032e954cbf699c3eb3' };
   return { database: { tables, sequences: { synthetic: { last_value: 12, is_called: true } }, catalog: ['synthetic-catalog'],
     metadata: { captured_at: TIME, database: 'synthetic' } } };
 }
 test('fresh baseline preserves all old rows and allows only metadata capture timestamp progression', () => {
   const current = baseline(), before = clone(current); before.database.metadata.captured_at = '2026-09-11T20:01:00Z';
-  equal(bindHomeBaseline(inputFixture(), before, current).length, 58);
+  equal(bindHomeBaseline(inputFixture(), before, current).length, 60);
   for (const change of [value => { value.database.tables.user_item_data[0].changed = true; },
     value => { value.database.tables.devices[0].reported_device_id = 'changed'; }, value => { value.database.metadata.database = 'foreign'; },
     value => { value.database.tables.libraries[3].name = 'Other'; }, value => { value.database.metadata.captured_at = 'invalid'; }]) {
     const bad = clone(before); change(bad); rejects(() => bindHomeBaseline(inputFixture(), bad, current));
+  }
+});
+test('v3 baseline requires its new counts and all three prior owned sessions revoked', () => {
+  for (const change of [value => { value.database.tables.sessions.length = 69; }, value => { value.database.tables.devices.length = 59; },
+    value => { value.database.tables.activity_entries.length = 153; }, value => { value.database.tables.sessions[0].revoked_at = null; },
+    value => { value.database.tables.sessions[1].revoked_at = null; }, value => { value.database.tables.sessions[2].revoked_at = null; },
+    value => { value.database.tables.users[0].management_revision = 4; }]) {
+    const current = baseline(); change(current); rejects(() => bindHomeBaseline(inputFixture(), clone(current), current));
   }
 });
 test('proc ticks remain canonical strings and tolerate parentheses in process names', () => {

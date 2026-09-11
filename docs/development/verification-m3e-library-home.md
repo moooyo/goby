@@ -1,15 +1,138 @@
 # Original-client Home and library inventory verification
 
-Status: **tool01 and its controller remain failed; independent exact-session
-recovery passed once. Corrected Home/reload verification remains incomplete.**
-The latest accepted recovered after snapshot is
-`5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`.
-Next, bind that authority and the passed tool02 checks to a new Home/reload
-output root. The original UI failure is not relabeled as passed. This is preparatory
+Status: **v3 passed the preparatory Home/reload observation, owned cleanup and
+complete expected state delta. Permission-change UI acceptance remains open.**
+The report retains `client_acceptance=false` and `permission_ui_acceptance=false`:
+this is only `baseline_observation`. The latest complete after snapshot is
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
+Neither v1 nor v2 is relabeled or replayed. This is preparatory
 evidence for the [permission-change UI plan](m3e-library-permission-ui-plan.md),
 not acceptance of original-client permission changes or the complete M3/M4/M5/M6
 milestones. The previously completed [API restriction/restore matrix](verification-m3e-library-restriction.md)
 and its independent persisted-state inspection retain their separate scope.
+
+## Actual v3 Home/reload result
+
+The [v3 controller report](m3e-library-home-v3.json) passed, SHA-256
+`a8117846d80eeed8e714b8951103632acfc05105d8a14c362e99f0f9d9e62270`.
+The [browser report](m3e-library-home-v3-browser.json) has SHA-256
+`a5e4cd3a16c625c85b459c20c2349375a22bf63d889d7ac2e89f0e9237a91e28`.
+The attempt is `/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v3`.
+Controller and worker exited with code 0,
+the worker became inactive with an empty cgroup, and no page/cleanup error or fallback
+cleanup occurred.
+
+One original UI login completed with 200. Initial Home showed all four correct-ID
+library cards. Each library still had two global title matches but exactly one
+visible card for its ID, which satisfied the corrected ID-scoped predicate.
+One fresh frame-owned Views response and its matching physical forwarding
+response completed 200 with all four libraries, without service-worker delivery.
+
+Exactly one explicit `page.reload()` completed with document HTTP 200. Reload produced
+one new frame-owned and one physical Views response, both complete with HTTP 200 and the
+same B token and all four correct-ID cards. There was no second login, Movie
+navigation, PlaybackInfo, media playback, Policy write or UserData write.
+The explicit reload result is not evidence of automatic permission-change refresh.
+
+UI logout returned 204 and the same token returned 401. Two WebSockets opened
+and both closed; browser/context/proxy closure completed with zero pending work.
+Unexpected network failures were zero. Two blocked external requests and two
+console warnings remain recorded; the result does
+not claim a console free of warnings.
+
+The expected delta was one new B session, one device and two audit entries.
+Old-row and sequence checks passed, preserving users/Policy, private state,
+media, 26 play rows and seven UserData rows. The new session
+`83be430b189b6ef0a4f685381dc493b8` is revoked, token SHA-256
+`51965e61bf44dfa417dd5d2f545847aed9f0aba4636e0733fcd3e545639c7feb`.
+Current counts are 71 global auth rows, 61 devices, 157 audits and 62 selected A/B
+auth rows, with four libraries and 22 items; B remains revision 3.
+
+V3 before/after snapshot SHA-256 values are
+`84738aa74749a017e7394498d40e58a330df031203d269cc599d5adeae514fb7` and
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
+The latter is the latest authority for the next independent permission run.
+The worker-terminal SHA-256 is
+`77a7e542193cdc4dccb918e731b10680aeec4bad6314ef7b6c2de6d63eb56fb7`.
+The final stdout descriptor now matches the actual completed log, SHA-256
+`6fb8ae39aa54e2663f464f1c4c2811b6c4f6bab9b3410b5ea932e574725075aa`.
+The v2 creation-time descriptor remains unchanged historical evidence.
+
+## V3 preparatory tool and source gates
+
+[JS04 verification](m3e-library-home-js04-verification.json) passed seven remote
+syntax checks, 35 Home guards and 114 cross-user guards, report SHA-256
+`0dac68bcd2143d40331dbc19694abc76f63fb23344b8318be442b62d1aef54f4`.
+[Python03 verification](m3e-library-home-python03-verification.json) passed two
+syntax checks and 33 guards, report SHA-256
+`b74e8c1e3e7906fa59270f0747979e26897698e5ad3277c7f0c7efaa0e790ab9`.
+The actual check-only preflight passed with zero HTTP. Source-closure SHA-256:
+`d10bc2210b8557c5fcac1aa661cff183803e4e4ed3226ce19fc248783e223acb`.
+These tool gates remain distinct from the actual v3 browser and state evidence.
+
+## Retained v2 failure
+
+The [v2 controller report](m3e-library-home-v2-failed.json) remains failed,
+SHA-256 `54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23`.
+The [browser report](m3e-library-home-v2-browser-failed.json) has SHA-256
+`900c1ba1279bdd2c32eeb5f1a81a261d8302fb019b2dc912d5a0f495a74a33a3`.
+Both belong to `/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v2`.
+
+The repaired login proof succeeded. The initial real Views response returned 200,
+completed and contained all four expected libraries. The DOM observation found
+two global title matches for each library but exactly one visible card with the
+correct `data-id`. Requiring global title uniqueness even when a correct card
+ID was available made the Home predicate too strict. The UI gate failed before
+reload. This is an observer predicate defect, not an incorrect Views inventory;
+the original failed report remains unchanged.
+
+The owned WebSocket opened once and closed once. UI logout returned 204 and the
+exact token returned 401, with zero page errors, cleanup failures or fallback
+cleanup attempts. V2 therefore does not need the independent native recovery
+used for v1. Exactly one new B authentication row, one new device and two audit
+entries were admitted. All old rows, users/Policy, 26 play rows, seven UserData
+rows, private state and media were preserved; the sequence checks also passed
+within the expected state delta. This complete comparison passed independently
+of the failed UI outcome.
+
+V2 before/after snapshot SHA-256 values are
+`e2223db45db0d5bd4ae52833ad639d436f0122f334f08f21115db720bae3ec5f` and
+`27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26`.
+The latter was the authority consumed by v3: 70 global auth rows, 60 devices, 155 audits,
+61 selected A/B auth rows, 26 play rows and seven UserData rows; B remains
+revision 3. The preceding recovery snapshot `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0` is historical
+input to v2, not the next run's baseline.
+
+The worker exited normally with code 1. The independent terminal record has
+SHA-256 `032de1e26bc4cfc325ee2054644fb5502b48f3462004810d68cd92fe4409a4d5`
+and reports `MainPID=0`, `ExecMainCode=1`, `ExecMainStatus=1` and an empty cgroup.
+This is a normal process exit with a failed UI result, not the v1 timeout path.
+
+The immutable controller report's `node.stdout` descriptor contains the empty
+file digest recorded when the log was created. The actual finished stdout
+SHA-256 is `e7a18f3e12832a8621e6589f9947eb513545a16203f8934d494e064ef6de0c1d`.
+Do not rewrite the old report or use that creation-time descriptor as exit
+evidence; the retained worker terminal proves closure. A future controller
+must record terminal log size/digest after the worker has ended.
+
+## Historical intermediate tool checks
+
+[Node tool03 verification](m3e-library-home-js03-verification.json) passed seven
+remote syntax checks, 34 Home guards and 114 cross-user guards.
+Its report SHA-256 is
+`68f405571b40f78975ede3dcc0f0b481f360eae55987ce4b718b4eabdeb33702`.
+[Python tool02 verification](m3e-library-home-python02-verification.json) passed
+two remote syntax checks and 29 guards, report SHA-256
+`04f6f5607f0665edb3aea09ebf477eecd7225529f2b87fb080f3cff5149eabb2`.
+Those retained tool gates do not prove
+the complete v3 inputs or a successful v3 UI run.
+
+The subsequently verified v3 predicate requires one visible card for the correct library
+ID, allowing other same-title text outside that card. When a card has no ID,
+the fallback still requires a unique matching title. V3 used a fresh output
+root/unit, the then-current `27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26`
+authority and correct terminal log digests. Its later real pass is recorded
+above; the older tool03/Python02 guards alone were not evidence of that pass.
 
 ## Frozen input and completed preparatory checks
 
@@ -114,7 +237,9 @@ SHA-256 values are respectively
 `829204605a64614aa388022b5cda32e539cf769899ea87a755fa1c1d3d91e511`,
 `f3a03707804521ffa57935a73d115bf35f6d54304e491eec67cf0159936da33c` and
 `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`.
-The last is the latest accepted recovered baseline.
+The last was the accepted recovered baseline consumed by v2. V2's after state
+was then consumed by v3; the current authority is v3's complete
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a` after snapshot.
 
 The failed-tree digest was identical before/after recovery:
 `1ecd55bcdfc53e37db023e88e5d61e2c91027cd6956616f8a2dd5d4014812af3`.
@@ -150,11 +275,15 @@ These completed tool checks do not prove a new Home/reload flow or credential
 cleanup. Old tool01 bytes and its failed report remain unchanged; no corrected
 execution may reuse its output directory.
 
-Next, bind the successful independent recovery and completed tool02 verification,
-then freeze a new bounded Home/reload attempt in a new root against the latest
-`5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0` baseline.
+Next, follow the permission-run coordination contract in the
+[UI plan](m3e-library-permission-ui-plan.md) using the latest
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a` baseline.
+Start a fresh B session and retain its token across baseline, restriction and
+restoration; the v3 session has already been revoked. Keep controller Policy
+updates and original-client observations separately proved. The v3 Home/reload
+pass does not supply those permission-change observations.
 Do not reuse the failed root or replay the earlier API-inspection authority.
 The original-client permission-change
 workflow still needs separate baseline/restricted/restored UI observations.
-Neither successful API restriction nor the partial Views response closes those
+Neither successful API restriction nor the preparatory Home/reload pass closes those
 gates or the broader M3/M4/M5/M6 requirements.

@@ -1,22 +1,83 @@
 # Original-client library permission changes
 
-Status: **the first Home-only run remains failed; independent exact-session
-recovery passed. A corrected Home/reload run and permission-change UI acceptance
-remain open.** The [recovery report](m3e-library-home-session-recovery.json)
+Status: **v3 passed the preparatory Home/reload observation and complete expected
+state delta. Full permission-change UI acceptance remains open.** The
+[v3 report](m3e-library-home-v3.json) remains explicitly
+`baseline_observation`, with `client_acceptance=false` and
+`permission_ui_acceptance=false`.
+
+One login response with HTTP 200 led to four correct-ID Home cards and one complete
+frame/physical Views200 pair without service-worker delivery. Each library had two global title
+matches but one visible card for its correct ID. One explicit `page.reload()`
+completed document200, then a new complete frame/physical Views200 pair returned
+the same four libraries under the same B token. There was no Movie navigation,
+PlaybackInfo, media playback, Policy write or UserData write.
+
+UI logout204/same-token401 and full browser/context/proxy closure passed, with
+two WebSockets opened/closed, zero pending work, no page/cleanup errors and no fallback.
+Two external requests were blocked and two console warnings were retained.
+Controller/worker exited normally with code 0. Final stdout evidence matches
+the actual completed log.
+
+The verified delta is one new B session, one device and two audits, with old
+rows, expected sequence state, users/Policy, private state, media, 26 play rows
+and seven UserData rows preserved. Current counts are 71 global auth rows,
+61 devices, 157 audits and 62 selected A/B auth rows, four libraries and 22 items;
+B remains revision 3. The latest complete after snapshot is
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
+JS04 passed seven remote syntax checks, 35 Home/114 cross-user guards; Python03
+passed two syntax checks and 33 guards, and check-only passed with zero HTTP.
+Exact report/source/terminal pins are in [Home verification](verification-m3e-library-home.md).
+
+Next, use that latest v3 authority for the full permission-change UI workflow
+under the coordination contract below. Keep a new B token across baseline,
+restricted and restored phases; do not reuse the revoked v3 token or replay
+v1/v2. A manual reload pass does not prove automatic permission-change refresh.
+
+Historical v2: **it failed the global-title Home predicate, while login, UI logout,
+cleanup and the complete expected state delta passed. No reload ran.** The
+[v2 report](m3e-library-home-v2-failed.json) retains the failure. Its initial
+Views200 completed with four libraries; each library had two global title
+matches but exactly one visible card with the correct `data-id`. Requiring
+global title uniqueness was too strict when a card ID was already available.
+The repaired login proof succeeded, the WebSocket opened/closed once and UI
+logout204/exact401 completed with no page errors, cleanup failures or fallback.
+V2 needs no native-session recovery.
+
+V2 admitted one new B session, one device and two audits. Old-row and sequence
+checks passed, with Policy, 26 play rows, seven UserData rows, private state and media preserved.
+Its historical complete after snapshot is
+`27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26`,
+with 70 global auth rows, 60 devices, 155 audits and 61 selected A/B auth rows;
+B remains revision 3. The worker exited normally with code 1 and an empty cgroup.
+The report's `node.stdout` descriptor was captured at empty-file creation;
+its actual final digest is recorded separately in
+[Home verification](verification-m3e-library-home.md). Preserve the old report
+and use terminal evidence, not that descriptor, to prove exit.
+
+Node tool03 passed seven remote syntax checks, 34 Home guards and 114 cross-user
+guards; Python tool02 passed two syntax checks and 29 guards. The later v3
+implementation used the ID-scoped predicate, retained the unique-title fallback
+only when no ID exists, and ran with a new root/unit and terminal log digests.
+The newer JS04/Python03 gates and actual v3 pass are recorded above. V1/v2 remain
+failed; only the preparatory Home/reload gate has passed, not permission-change UI.
+
+The earlier v1 [recovery report](m3e-library-home-session-recovery.json)
 records one successful attempt with four complete HTTP exchanges: new native
 administrator login 200, revocation 200 of only B session
 `00fb0b833884308ab946e1c40ff6abdd`, administrator logout 204 and 401 for that same administrator token.
 B's token was lost, so no B exact-token 401 result is claimed. Its persisted
 session changed only `revoked_at`, to `2026-09-11T21:05:29.180099+00:00`.
 
-The latest recovered after-snapshot SHA-256 is
+The historical recovered after-snapshot SHA-256 was
 `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`.
-Current counts are 69 auth rows, 59 devices, 153 audits, 26 play rows, seven
+Counts at that recovered checkpoint were 69 auth rows, 59 devices, 153 audits, 26 play rows, seven
 UserData rows, four libraries and 22 items; B remains revision 3. Recovery added
 one native administrator session and three native audit entries, with no
 device, play or UserData change. The failed evidence tree and complete media
-inventory were preserved. The next Home/reload attempt must use this latest
-recovered authority and a new output root; the old failed run stays failed.
+inventory were preserved. V2 subsequently consumed this recovered authority.
+V3 then consumed v2's after snapshot. The next permission run must use v3's
+latest v3 after snapshot and a new output root/unit; both old failed runs stay failed.
 
 The [Home verification record](verification-m3e-library-home.md) separates the
 actual successful login/Views responses from the incomplete observer, DOM and
@@ -49,9 +110,11 @@ remote syntax checks, 31 Home guards and 114 cross-user guards. This is correcte
 tool evidence, not a successful Home/reload rerun. Preserve tool01, its before/
 after/failed trees and original reports. The independent recovery tool passed
 [two remote syntax checks and 12 pure guards](m3e-library-home-session-recovery-verification.json),
-zero-HTTP check-only and its actual four-exchange recovery. No corrected Home
-run has executed. Bind the recovery's latest after snapshot and completed
-tool02 verification before the next fresh run; do not replay the failed tree.
+zero-HTTP check-only and its actual four-exchange recovery. The later corrected
+v2 run is recorded above and remains UI-failed with complete cleanup. It has
+superseded the recovered snapshot at that stage; v3's complete after snapshot
+is now current. Do not replay either failed tree or treat the old tool02 checks
+as the later JS04/Python03 and actual v3 evidence.
 
 The [candidate API gate](verification-m3e-library-restriction.md) passed, including
 exact restoration and independent persisted-state inspection. The next work
@@ -103,8 +166,10 @@ For both initial Home and the reload:
 - Bind those responses to the physical forwarding request and successful
   downstream completion. Passive observation must not change entity bytes.
 - Require the exact four current library IDs and names, and corresponding
-  visible library cards. Match a DOM ID when present; when absent, record
-  unique-title evidence without claiming an observed DOM identifier.
+  visible library cards. With a DOM ID, require exactly one visible card for
+  that correct ID; other same-title page text does not invalidate it. Without
+  an ID, require a unique title match and record that weaker evidence without
+  claiming an observed DOM identifier.
 - Record visible navigation controls and inactive media. Preserve page errors
   and console warnings with the established redaction and bounds.
 - Require the same B token after reload and no second login. A reload is an
@@ -137,7 +202,7 @@ users, Policy, play rows, UserData, references, encoding state, catalog and
 unrelated sequences must remain exact. This Home/reload observation does not
 complete the permission-change UI gate.
 
-## Historical authority and latest recovered baseline
+## Historical authority and latest v3 baseline
 
 The last closed authority before the failed Home run was source32/schema27,
 PID748513/start ticks6996875, binary
@@ -167,8 +232,18 @@ using recovery before/authenticated/after snapshots
 `829204605a64614aa388022b5cda32e539cf769899ea87a755fa1c1d3d91e511`,
 `f3a03707804521ffa57935a73d115bf35f6d54304e491eec67cf0159936da33c` and
 `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`.
-The last value is the latest accepted recovered authority for a corrected
-Home run in a new output root. It has69 auth rows, 59 devices and153 audits.
+The last value was the recovered 69-auth/59-device/153-audit authority consumed
+by v2. V2's fresh before snapshot is
+`e2223db45db0d5bd4ae52833ad639d436f0122f334f08f21115db720bae3ec5f`;
+its preserved after snapshot is
+`27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26`.
+The latter was the 70-auth/60-device/155-audit input consumed by v3. V3's actual
+before snapshot is
+`84738aa74749a017e7394498d40e58a330df031203d269cc599d5adeae514fb7`;
+its latest verified after snapshot is
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`.
+Only this 71-auth/61-device/157-audit state is current for the next permission
+run. Bind its new root/unit and fresh B session to this baseline.
 Neither the failed root nor the old `1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3` API authority may be
 replayed. Private snapshots and credentials remain on test-env.
 
@@ -187,3 +262,38 @@ Restore Policy before closing the ordinary browser, including on observation
 failure. Verify the new complete database difference and exact owned cleanup.
 Neither the API gate nor the preparatory Home observation establishes full M3,
 the original client's automatic refresh behavior or complete M4/M5/M6 work.
+
+## Permission-run coordination contract
+
+After the corrected Home observation supplies real DOM and reload evidence,
+the next independent permission run must keep one new B browser session open
+through baseline, restriction and restoration. One separately owned native
+administrator session performs the two account updates. The controller and
+browser exchange bounded, exclusively created stage records tied to their
+input digest and live process identities; a file's existence alone cannot
+authorize an update or a browser action.
+
+| Stage | Controller condition | Original-client observation |
+| --- | --- | --- |
+| Baseline | New B login and complete four-library Home proof | Four library cards and a completed frame/physical Views response |
+| Restriction | Fresh B revision, exact original Movies restriction, acknowledged owned update | Observe up to 10 seconds without an action; then one explicit browser reload and a fresh Views response with exactly the three retained libraries |
+| Restoration | Fresh revision and restoration of all supported original account/Policy values | Observe up to 10 seconds without an action; then one explicit browser reload and a fresh Views response with the original four libraries |
+| Closure | Restoration proved, including after observation failure | UI logout, exact-token rejection and complete owned browser/WebSocket/process closure |
+
+The ten-second intervals are bounded observations, not a server timing contract.
+Record an absent request as `not_observed_within_window`; it cannot prove that
+the client never refreshes automatically. Preserve the visible state and any
+actual request during each interval, separately from the explicit reload.
+Fresh response membership must agree with the visible cards after each reload,
+and all phases must retain the same B token. The original Movies card must be
+absent while restricted; Extras Movies, Music and TV must remain visible.
+
+The controller must finish or reconcile restoration before releasing the
+ordinary browser, even if DOM observation or stage coordination fails. Bind
+each acknowledged update to its administrator, audit event and revision, and
+never overwrite an unowned intervening change. Complete snapshots must account
+for the two new sessions, the browser's new device, the two owned user updates
+and their authentication audits. All other old rows and media stay exact;
+PlaybackInfo, playback, scans, preferences and UserData writes remain outside
+this Home-only permission run. These are implementation requirements, not
+evidence that the permission run has executed or passed.

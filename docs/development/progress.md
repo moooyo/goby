@@ -1,11 +1,11 @@
 # Implementation progress
 
-Latest state: **the preparatory Home observer failed after one successful B
-login; separate exact-session recovery passed.** The target B session and the
-recovery administrator session are revoked; current totals are 69 sessions,
-59 devices and 153 audits. Its path selector and uncancelled
-wait were fixed and passed remote pure guards. The failed worker is terminal,
-and the full failed scope is preserved. Use the [current handoff](handoff.md)
+Latest state: **the preparatory original-client Home and one reload passed
+in v3 with four correct-ID library cards, fresh Views responses, one B token,
+UI logout and complete state preservation.** Current totals are 71 sessions,
+61 devices and 157 audits. The new session is revoked and its worker is terminal.
+Permission-change UI acceptance remains open.
+The failed scopes are preserved. Use the [current handoff](handoff.md)
 and [Home verification](verification-m3e-library-home.md) for current state;
 the API inspection below is historical. No permission-change UI acceptance or
 complete M3/M4/M5/M6 acceptance is claimed.

@@ -1,8 +1,61 @@
 # Development handoff
 
-Latest state: **the preparatory original-client Home observation failed in
-the observer; separate exact-session recovery has passed. The failed browser
-worker is terminal, and both new owned credentials are now revoked.**
+Latest state: **the preparatory original-client Home and one normal browser
+reload passed in v3, including exact UI logout and complete state preservation.**
+The [v3 controller](m3e-library-home-v3.json), SHA-256
+`a8117846d80eeed8e714b8951103632acfc05105d8a14c362e99f0f9d9e62270`,
+and [v3 browser report](m3e-library-home-v3-browser.json), SHA-256
+`a5e4cd3a16c625c85b459c20c2349375a22bf63d889d7ac2e89f0e9237a91e28`,
+are retained under `/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v3`.
+Both initial Home and the explicit reload displayed exactly one correct-ID
+card per library and each produced a fresh, completed frame/physical Views200
+with the four expected IDs and names. The same B token survived the reload;
+there was one login. UI logout204/exact401, WebSocket2 opened/2 closed and
+complete browser/proxy/worker closure passed with no fallback or page errors.
+Two external-resource blocks and two associated console warnings were retained.
+
+Current authority is v3's private `after-full.json`, SHA-256
+`8095db0dd2e96c7f3a8e194b3f66d71c7366e756b12f1d1f549a19c336acb29a`:
+71 global sessions, 61 devices, 157 audits, 26 play rows, seven UserData rows,
+four libraries, 22 items and B revision3. Exactly one new B session, one device
+and two audits were added; all old rows, Policy, unrelated sequences, private
+state and media were preserved. The new session is revoked. Final Node log
+descriptors now match the actual closed-worker bytes. Seven JavaScript syntax
+checks, 35 Home guards, 114 shared-core guards, two Python syntax checks,
+33 Python guards and a zero-HTTP preflight preceded the actual run.
+
+This is `baseline_observation`, with both `client_acceptance` and
+`permission_ui_acceptance` false. Next, implement the separate original-client
+permission-change flow using this latest authority and a new output root:
+keep one new B token through restriction and restoration, and distinguish
+spontaneous updates from explicit reloads. Full M3/M4/M5/M6 remain open.
+See the coordination contract in the [permission UI plan](m3e-library-permission-ui-plan.md).
+
+Historical v2 state: **login, four-library Views, exact UI logout and complete
+data preservation passed, but the DOM predicate rejected duplicate page text.**
+The [v2 controller](m3e-library-home-v2-failed.json), SHA-256
+`54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23`,
+retains a passed state-difference proof and the explicit UI failure. Its
+[browser report](m3e-library-home-v2-browser-failed.json), SHA-256
+`900c1ba1279bdd2c32eeb5f1a81a261d8302fb019b2dc912d5a0f495a74a33a3`,
+records two visible text matches per library, but exactly one visible card with
+the correct DOM ID. All four Views memberships and transfers completed200.
+No reload ran. UI logout204/exact401, WebSocket1 opened/1 closed and complete
+worker termination passed; no separate recovery was needed.
+
+The historical v2 after-snapshot is
+`/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v2/after-full.json`,
+SHA-256 `27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26`:
+70 global sessions, 60 devices, 155 audits, 26 play rows, seven UserData rows,
+four libraries, 22 items and B revision3. The v2 increment was one new B session,
+one device and two audits; all old rows, Policy, sequences outside this increment,
+private state and media were preserved. The new B session is revoked.
+Retain v2 as failed. The corrected v3 used this state and a new root;
+its ID-aware card predicate still rejects wrong IDs and multiple cards and
+retains unique-title requirements when no DOM ID is present.
+
+Established v1 recovery: **the original failed worker is terminal, and both
+credentials from its failure and independent recovery are revoked.**
 The [native recovery report](m3e-library-home-session-recovery.json), SHA-256
 `09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb`,
 is retained under
@@ -18,7 +71,7 @@ the entire original failed evidence tree retained identical before/after
 identities and hashes. Two remote syntax checks, 12 pure recovery guards and
 a zero-HTTP preflight preceded this single actual recovery.
 
-Current authority is the recovery's private `after-full.json`, SHA-256
+The recovery's historical private `after-full.json` has SHA-256
 `5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0`:
 69 global sessions, 59 devices, 153 audits, 26 play rows, seven UserData rows,
 four libraries, 22 items and B revision3. Candidate source32/schema27,

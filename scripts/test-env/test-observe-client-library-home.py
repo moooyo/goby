@@ -22,7 +22,7 @@ import unittest
 from unittest import mock
 
 sys.dont_write_bytecode = True
-TARGET = RESTRICTION = SNAPSHOT = None
+TARGET = RESTRICTION = SNAPSHOT = RECOVERY = HISTORY = API = INSPECTION = RECOVERY_BASELINE = PRIOR_HOME = None
 SERVER = 'c7cfd76b1dee728b2bad523793a37ccb'
 TOKEN = 'Z' * 43
 FINGERPRINT = hashlib.sha256(TOKEN.encode('utf-8')).hexdigest()
@@ -79,7 +79,8 @@ def bindings(proof):
     child = {'pid': 101, 'start_ticks': '123457', 'boot_id': TARGET.PROCESS['boot_id'], 'uid': 0, 'gid': 0,
         'executable_path': '/usr/bin/node', 'executable_sha256': 'a' * 64, 'cgroup': TARGET.CGROUP}
     record = {'mode': 'b-home-views-reload', 'source_closure': {'/owned/home.mjs': 'b' * 64}, 'controller': controller,
-        'candidate': {'server_id': SERVER}}
+        'candidate': {'server_id': SERVER}, 'authority': {**{key: TARGET.AUTHORITY[key] for key in ('api_report', 'inspection', 'recovery', 'prior_home', 'current_snapshot')},
+            'before_snapshot': {'path': str(TARGET.ROOT / 'before-full.json'), 'sha256': 'a' * 64}}}
     private = {'marker': 'goby-client-library-home-session-v1', 'version': 1, 'input_sha256': INPUT_SHA,
         'source_closure_sha256': TARGET.sha(TARGET.canonical(record['source_closure'])), 'node_process': child,
         'controller': controller, 'proof': proof, 'token': TOKEN}
@@ -99,6 +100,7 @@ def entry(number, value, start=10, response=20, finished=21):
 def browser_report(record, child, proof):
     return {'marker': 'goby-client-library-home-report-v1', 'version': 1, 'mode': record['mode'], 'input_sha256': INPUT_SHA,
         'source_closure_sha256': TARGET.sha(TARGET.canonical(record['source_closure'])), 'candidate': record['candidate'],
+        'authority': copy.deepcopy(record['authority']),
         'controller': record['controller'], 'node_process': child, 'client_acceptance': False, 'permission_ui_acceptance': False,
         'result': 'passed', 'outcome': 'baseline_observation', 'failure': None, 'login_proof': proof,
         'session_private': {'path': 'owned-session', 'sha256': 'a' * 64}, 'capabilities_private': {'path': 'owned-capabilities'},
@@ -159,7 +161,7 @@ class HomeGuards(unittest.TestCase):
         with self.assertRaises(Exception): TARGET.validate_delta(codec(), RESTRICTION, before, after, proof, SERVER, [{}])
 
     def test_current_complete_baseline(self):
-        self.assertEqual(TARGET.AUTHORITY['current_snapshot']['sha256'], '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3')
+        self.assertEqual(TARGET.AUTHORITY['current_snapshot']['sha256'], '27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26')
         TARGET.validate_baseline(SNAPSHOT)
         RESTRICTION.quiescent(SNAPSHOT)
         for value in ('1', 1, 2):
@@ -171,6 +173,55 @@ class HomeGuards(unittest.TestCase):
         changed = copy.deepcopy(SNAPSHOT)
         next(row for row in changed['database']['tables']['users'] if row['id'] == TARGET.B)['policy'] = {}
         with self.assertRaises(Exception): TARGET.validate_baseline(changed)
+
+    def test_actual_recovery_and_historical_inspection_have_distinct_authority(self):
+        self.assertEqual(TARGET.AUTHORITY['recovery'], {'path': '/opt/goby-test/exec-work-m3e/client-library-ui-session-recovery-01/report.json',
+            'sha256': '09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb'})
+        state = {'schema': 27, 'phase': 'ready', 'stage': 'complete', 'process': TARGET.PROCESS,
+            'binary_sha256': TARGET.BINARY_SHA, 'viewer_id': TARGET.B, 'added_viewer': {'user_id': TARGET.A}}
+        TARGET.validate_authority(API, INSPECTION, state, SNAPSHOT, RECOVERY, RECOVERY_BASELINE, PRIOR_HOME)
+        self.assertNotEqual(INSPECTION['current_snapshot_sha256'], TARGET.AUTHORITY['current_snapshot']['sha256'])
+        with self.assertRaises(Exception): TARGET.validate_authority(API, INSPECTION, state, HISTORY, RECOVERY, RECOVERY_BASELINE, PRIOR_HOME)
+
+    def test_old_67_session_baseline_cannot_be_reused(self):
+        self.assertEqual(len(HISTORY['database']['tables']['sessions']), 67)
+        with self.assertRaises(Exception): TARGET.validate_baseline(HISTORY)
+
+    def test_wrong_recovery_descriptor_or_unrevoked_historical_session_is_rejected(self):
+        for variant in ('hash', 'path', 'failed', 'target', 'admin'):
+            recovery, baseline = copy.deepcopy(RECOVERY), copy.deepcopy(RECOVERY_BASELINE)
+            if variant == 'hash': recovery['evidence']['after-full.json']['sha256'] = '0' * 64
+            if variant == 'path': recovery['evidence']['after-full.json']['path'] = TARGET.AUTHORITY['inspection_snapshot']['path']
+            if variant == 'failed': recovery['result'] = 'failed'
+            if variant in ('target', 'admin'):
+                identifier = TARGET.RECOVERED_B if variant == 'target' else TARGET.RECOVERY_ADMIN
+                next(row for row in baseline['database']['tables']['sessions'] if row['id'] == identifier)['revoked_at'] = None
+            with self.subTest(variant=variant), self.assertRaises(Exception): TARGET.validate_recovery(recovery, baseline)
+
+    def test_old_69_session_recovery_baseline_is_historical(self):
+        self.assertEqual(len(RECOVERY_BASELINE['database']['tables']['sessions']), 69)
+        TARGET.validate_recovery(RECOVERY, RECOVERY_BASELINE)
+        with self.assertRaises(Exception): TARGET.validate_baseline(RECOVERY_BASELINE)
+
+    def test_actual_v2_home_failure_preserves_failed_ui_and_verified_delta(self):
+        self.assertEqual(TARGET.AUTHORITY['prior_home'], {'path': '/opt/goby-test/exec-work-m3e/client-library-ui-baseline-v2/report.json',
+            'sha256': '54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23'})
+        TARGET.validate_prior_home(PRIOR_HOME, SNAPSHOT)
+        self.assertEqual(PRIOR_HOME['result'], 'failed')
+        self.assertFalse(PRIOR_HOME['client_acceptance'])
+        changed = copy.deepcopy(PRIOR_HOME); changed['result'] = 'passed'
+        with self.assertRaises(Exception): TARGET.validate_prior_home(changed, SNAPSHOT)
+
+    def test_wrong_prior_home_binding_error_scope_and_unrevoked_target_are_rejected(self):
+        for variant in ('hash', 'path', 'error', 'proof', 'fallback', 'target'):
+            prior, baseline = copy.deepcopy(PRIOR_HOME), copy.deepcopy(SNAPSHOT)
+            if variant == 'hash': prior['evidence']['after-full.json']['sha256'] = '0' * 64
+            if variant == 'path': prior['evidence']['after-full.json']['path'] = TARGET.AUTHORITY['recovery_snapshot']['path']
+            if variant == 'error': prior['errors'] = []
+            if variant == 'proof': prior['proof']['old_rows_sequences_private_unchanged'] = False
+            if variant == 'fallback': prior['fallback_attempted'] = True
+            if variant == 'target': next(row for row in baseline['database']['tables']['sessions'] if row['id'] == TARGET.PRIOR_HOME_B)['revoked_at'] = None
+            with self.subTest(variant=variant), self.assertRaises(Exception): TARGET.validate_prior_home(prior, baseline)
 
     def test_complete_one_login_touch_capabilities_logout_delta(self):
         before, after, proof = sample()
@@ -357,6 +408,20 @@ class HomeGuards(unittest.TestCase):
         self.assertFalse(result['output_created'])
         self.assertEqual(result['http_requests'], 0)
 
+    def test_terminal_log_descriptors_use_appended_bytes_without_rewriting(self):
+        run = TARGET.Run(types.SimpleNamespace())
+        run.closed = run.launched = True
+        run.records = {name: {'path': str(TARGET.ROOT / name), 'sha256': TARGET.sha(b'')} for name in ('node.stdout', 'node.stderr')}
+        payloads = {TARGET.ROOT / 'node.stdout': b'actual final worker output\n', TARGET.ROOT / 'node.stderr': b'actual final diagnostic\n'}
+        with mock.patch.object(TARGET, 'protected', side_effect=lambda path, **_: payloads[path]) as read:
+            run.refresh_worker_logs()
+            self.assertEqual(read.call_count, 2)
+        for name in ('node.stdout', 'node.stderr'):
+            self.assertEqual(run.records[name]['sha256'], TARGET.sha(payloads[TARGET.ROOT / name]))
+            self.assertNotEqual(run.records[name]['sha256'], TARGET.sha(b''))
+        run.closed = False
+        with self.assertRaises(Exception): run.refresh_worker_logs()
+
 
 def read_pinned(path, digest, maximum):
     info = path.lstat()
@@ -368,7 +433,7 @@ def read_pinned(path, digest, maximum):
 
 
 def main():
-    global TARGET, RESTRICTION, SNAPSHOT
+    global TARGET, RESTRICTION, SNAPSHOT, RECOVERY, HISTORY, API, INSPECTION, RECOVERY_BASELINE, PRIOR_HOME
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--operator', type=Path, required=True)
     parser.add_argument('--operator-sha256', required=True)
@@ -385,6 +450,8 @@ def main():
     RESTRICTION = types.ModuleType('accepted_pure_restriction'); RESTRICTION.__file__ = str(args.restriction_operator)
     exec(compile(raw_restriction, str(args.restriction_operator), 'exec'), RESTRICTION.__dict__)
     SNAPSHOT = TARGET.decode(read_pinned(args.baseline_snapshot, TARGET.AUTHORITY['current_snapshot']['sha256'], 32 << 20))
+    RECOVERY, HISTORY, API, INSPECTION, RECOVERY_BASELINE, PRIOR_HOME = (TARGET.read_record(TARGET.AUTHORITY[key]) for key in
+        ('recovery', 'inspection_snapshot', 'api_report', 'inspection', 'recovery_snapshot', 'prior_home'))
     result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(HomeGuards))
     report = {'marker': 'goby-client-library-home-guards-v1', 'operator_sha256': args.operator_sha256,
         'restriction_sha256': TARGET.HELPERS['restriction'][1], 'baseline_sha256': TARGET.AUTHORITY['current_snapshot']['sha256'],

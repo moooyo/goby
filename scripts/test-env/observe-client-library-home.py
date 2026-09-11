@@ -30,11 +30,11 @@ import unicodedata
 
 sys.dont_write_bytecode = True
 WORK = Path('/opt/goby-test/exec-work-m3e')
-ROOT = WORK / 'client-library-ui-baseline-v1'
+ROOT = WORK / 'client-library-ui-baseline-v3'
 BROWSER_ROOT = ROOT / 'browser'
 MARKER = 'goby-client-library-home-observation-v1'
 INPUT_MARKER = 'goby-client-library-home-input-v1'
-UNIT = 'goby-client-library-ui-baseline-v1.service'
+UNIT = 'goby-client-library-ui-baseline-v3.service'
 CGROUP = '/system.slice/' + UNIT
 B = 'ecbbe4cb82403879bc4b4f78894c5738'
 A = '34b4c24f6568659af7ce17938fae7f81'
@@ -56,11 +56,25 @@ AUTHORITY = {
     'api_report': {'path': str(WORK / 'client-library-restriction-v1/report.json'), 'sha256': '193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb'},
     'api_after': {'path': str(WORK / 'client-library-restriction-v1/after-full.json'), 'sha256': 'a09e42a404b9aa0251e2341e7ffa85c93528b7b141d81e11df6791802d6e92fd'},
     'inspection': {'path': str(WORK / 'client-library-restriction-inspection-01/report.json'), 'sha256': 'e3dcbc0c21edbc484baab89762e11857a7cbc46889b78701af8dd309f12c3441'},
-    'current_snapshot': {'path': str(WORK / 'client-library-restriction-inspection-01/current-full.json'), 'sha256': '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3'},
+    'inspection_snapshot': {'path': str(WORK / 'client-library-restriction-inspection-01/current-full.json'), 'sha256': '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3'},
+    'recovery': {'path': str(WORK / 'client-library-ui-session-recovery-01/report.json'), 'sha256': '09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb'},
+    'recovery_snapshot': {'path': str(WORK / 'client-library-ui-session-recovery-01/after-full.json'), 'sha256': '5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0'},
+    'prior_home': {'path': str(WORK / 'client-library-ui-baseline-v2/report.json'), 'sha256': '54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23'},
+    'current_snapshot': {'path': str(WORK / 'client-library-ui-baseline-v2/after-full.json'), 'sha256': '27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26'},
+}
+RECOVERED_B = '00fb0b833884308ab946e1c40ff6abdd'
+RECOVERY_ADMIN = 'ad6695676912f2bd2a1bf68b9cfdd9ce'
+RECOVERED_TOKEN_SHA = '9f71d2771f1a0d177041d6815f46d39ecea9a54bf92099a13b89dbef172afb81'
+PRIOR_HOME_B = '2e355f661132b4ba3a3ed1445a16c3c8'
+PRIOR_HOME_TOKEN_SHA = 'e795b8ecf91e9a2b934b28484ce80a9c52e40838389473032e954cbf699c3eb3'
+PRIOR_HOME_FILES = {
+    'before-full.json': {'path': str(WORK / 'client-library-ui-baseline-v2/before-full.json'), 'sha256': 'e2223db45db0d5bd4ae52833ad639d436f0122f334f08f21115db720bae3ec5f'},
+    'browser-report.json': {'path': str(WORK / 'client-library-ui-baseline-v2/browser/report.json'), 'sha256': '900c1ba1279bdd2c32eeb5f1a81a261d8302fb019b2dc912d5a0f495a74a33a3'},
+    'worker-terminal.json': {'path': str(WORK / 'client-library-ui-baseline-v2/worker-terminal.json'), 'sha256': '032de1e26bc4cfc325ee2054644fb5502b48f3462004810d68cd92fe4409a4d5'},
 }
 LIBRARIES = {'a9993591e72f0f2e7babcbf8b9c50790', '6383d20008836e137559698c29b10395',
              'a34ce665fb75421ef7551570f353d705', '57a85c1ca5b6c7ae602c587755250b2f'}
-BASE_COUNTS = {'sessions': 67, 'devices': 58, 'activity_entries': 149, 'play_sessions': 26,
+BASE_COUNTS = {'sessions': 70, 'devices': 60, 'activity_entries': 155, 'play_sessions': 26,
                'user_item_data': 7, 'libraries': 4, 'items': 22, 'client_playback_references': 0, 'encoding_jobs': 0}
 JS_NAMES = {'client-browser-library-home.mjs', 'client-browser-cross-user.mjs',
     'client-browser-special-features-fixture.mjs', 'client-browser-goby-fixture.mjs', 'client-browser-session-proof.mjs'}
@@ -182,8 +196,27 @@ def validate_baseline(snapshot):
     require(len(tables) == 35 and all(isinstance(tables.get(name), list) and len(tables[name]) == count
         for name, count in BASE_COUNTS.items()), 'The latest complete baseline population differs.')
     require({row['id'] for row in tables['libraries']} == LIBRARIES and
-            sum(row.get('user_id') in (A, B) for row in tables['sessions']) == 59,
+            sum(row.get('user_id') in (A, B) for row in tables['sessions']) == 61,
             'The current libraries or two-user authentication baseline differs.')
+    validate_recovered_credentials(snapshot)
+    prior = [row for row in tables['sessions'] if row['id'] == PRIOR_HOME_B]
+    require(len(prior) == 1 and prior[0]['user_id'] == B and prior[0]['kind'] == 'emby' and
+        prior[0]['token_hash'] == '\\x' + PRIOR_HOME_TOKEN_SHA and prior[0]['revoked_at'] is not None and
+        instant(prior[0]['created_at']) <= instant(prior[0]['revoked_at']) <= instant(snapshot['database']['metadata']['captured_at']),
+        'The exact prior Home credential is not durably revoked.')
+
+
+def validate_recovered_credentials(snapshot):
+    tables = snapshot['database']['tables']
+    recovered = {row['id']: row for row in tables['sessions'] if row['id'] in (RECOVERED_B, RECOVERY_ADMIN)}
+    administrators = [row['id'] for row in tables['users'] if row['is_administrator'] is True and row['is_disabled'] is False]
+    require(len(recovered) == 2 and len(administrators) == 1 and
+        recovered[RECOVERED_B]['user_id'] == B and recovered[RECOVERED_B]['kind'] == 'emby' and
+        recovered[RECOVERED_B]['token_hash'] == '\\x' + RECOVERED_TOKEN_SHA and
+        recovered[RECOVERY_ADMIN]['user_id'] == administrators[0] and recovered[RECOVERY_ADMIN]['kind'] == 'admin' and
+        all(row['revoked_at'] is not None and instant(row['created_at']) <= instant(row['revoked_at']) <=
+            instant(snapshot['database']['metadata']['captured_at']) for row in recovered.values()),
+        'The two exact credentials from the failed observation and completed recovery are not revoked.')
     rows = [row for row in tables['users'] if row['id'] == B]
     policy = {'EnableAllFolders': True, 'EnabledFolders': [], 'EnableMediaPlayback': True, 'EnablePlaybackRemuxing': True,
         'EnableAudioPlaybackTranscoding': True, 'EnableVideoPlaybackTranscoding': True, 'IsAdministrator': False, 'IsDisabled': False}
@@ -192,7 +225,50 @@ def validate_baseline(snapshot):
             'B is not the latest revision3, materialized restored Policy baseline.')
 
 
-def validate_authority(api, inspection, state, baseline):
+def validate_recovery(recovery, baseline):
+    expected_candidate = {'binary_sha256': BINARY_SHA, 'process': PROCESS, 'state_sha256': STATE_SHA}
+    proof = recovery.get('proof', {})
+    require(recovery.get('marker') == 'goby-client-library-home-session-recovery-v1' and recovery.get('result') == 'passed' and
+        recovery.get('phase') == 'complete' and recovery.get('candidate') == expected_candidate and recovery.get('http_requests') == 4 and
+        recovery.get('administrator_closed') is True and recovery.get('errors') == [] and recovery.get('original_ui_result') == 'failed' and
+        recovery.get('client_acceptance') is False and recovery.get('evidence', {}).get('after-full.json') == AUTHORITY['recovery_snapshot'] and
+        proof.get('target_session_id') == RECOVERED_B and proof.get('target_token_sha256') == RECOVERED_TOKEN_SHA and
+        proof.get('target_user_id') == B and proof.get('administrator_session_id') == RECOVERY_ADMIN and
+        all(proof.get(key) is True for key in ('target_only_revoked_at_changed', 'old_rows_sequences_private_preserved', 'administrator_revoked')) and
+        proof.get('new_administrator_sessions') == 1 and proof.get('new_native_session_audits') == 3 and
+        proof.get('new_devices_play_userdata_references_encodings') == 0 and proof.get('lost_target_token_401_observed') is False,
+        'The exact four-request native recovery and its latest snapshot are not completely bound.')
+    historical_counts = {**BASE_COUNTS, 'sessions': 69, 'devices': 59, 'activity_entries': 153}
+    tables = baseline['database']['tables']
+    require(baseline.get('schema') == 27 and len(tables) == 35 and
+        all(isinstance(tables.get(name), list) and len(tables[name]) == count for name, count in historical_counts.items()) and
+        {row['id'] for row in tables['libraries']} == LIBRARIES and sum(row.get('user_id') in (A, B) for row in tables['sessions']) == 60,
+        'The immutable recovery snapshot is not its exact historical population.')
+    validate_recovered_credentials(baseline)
+    target = next(row for row in baseline['database']['tables']['sessions'] if row['id'] == RECOVERED_B)
+    require(instant(target['revoked_at']) == instant(proof.get('target_revoked_at')), 'The stored target revocation differs from the completed recovery proof.')
+
+
+def validate_prior_home(prior, baseline):
+    expected_proof = {'old_rows_sequences_private_unchanged': True, 'users_and_policies_unchanged': True,
+        'new_b_authentication': 1, 'new_devices': 1, 'new_session_audits': 2, 'new_play_userdata_references_encodings': 0,
+        'session_id': PRIOR_HOME_B, 'token_sha256': PRIOR_HOME_TOKEN_SHA, 'observed_capabilities_bound': True}
+    expected_error = [{'stage': 'final_delta_or_ui_observation', 'failure_type': 'ObservationError',
+        'reason': 'The original client did not complete the exact B Home/Views and reload observation.'}]
+    require(prior.get('marker') == MARKER and prior.get('result') == 'failed' and prior.get('phase') == 'complete' and
+        prior.get('client_acceptance') is False and prior.get('permission_ui_acceptance') is False and
+        prior.get('worker_closed') is True and prior.get('fallback_attempted') is False and prior.get('proof') == expected_proof and
+        prior.get('errors') == expected_error and prior.get('candidate', {}).get('process') == PROCESS and
+        prior['candidate'].get('binary_sha256') == BINARY_SHA and prior['candidate'].get('state_sha256') == STATE_SHA and
+        prior.get('authority', {}).get('recovery') == AUTHORITY['recovery'] and
+        prior['authority'].get('current_snapshot') == AUTHORITY['recovery_snapshot'] and
+        prior.get('evidence', {}).get('after-full.json') == AUTHORITY['current_snapshot'] and
+        all(prior['evidence'].get(name) == artifact for name, artifact in PRIOR_HOME_FILES.items()),
+        'The prior Home run is not the exact failed UI scope with a verified state delta and completed cleanup.')
+    validate_baseline(baseline)
+
+
+def validate_authority(api, inspection, state, baseline, recovery, recovery_snapshot, prior_home):
     expected_candidate = {'binary_sha256': BINARY_SHA, 'process': PROCESS, 'state_sha256': STATE_SHA}
     require(api.get('marker') == 'goby-client-library-restriction-v1' and api.get('result') == 'passed' and
             api.get('phase') == 'complete' and api.get('restoration') == 'confirmed' and api.get('candidate') == expected_candidate and
@@ -200,14 +276,15 @@ def validate_authority(api, inspection, state, baseline):
             api['proof'].get('raw_policy_matches_exact_merge') is True, 'The accepted restriction/restore authority differs.')
     require(inspection.get('marker') == 'goby-client-library-restriction-inspection-v1' and inspection.get('status') == 'passed' and
             inspection.get('candidate') == expected_candidate and inspection.get('report_sha256') == AUTHORITY['api_report']['sha256'] and
-            inspection.get('current_snapshot_path') == AUTHORITY['current_snapshot']['path'] and
-            inspection.get('current_snapshot_sha256') == AUTHORITY['current_snapshot']['sha256'] and inspection.get('b_revision_after') == 3 and
+            inspection.get('current_snapshot_path') == AUTHORITY['inspection_snapshot']['path'] and
+            inspection.get('current_snapshot_sha256') == AUTHORITY['inspection_snapshot']['sha256'] and inspection.get('b_revision_after') == 3 and
             all(inspection.get(key) is True for key in ('stored_after_matches_current', 'raw_policy_exact_merge', 'media_unchanged', 'all_three_owned_sessions_revoked')),
             'The independent persisted-state inspection differs.')
     require(state.get('schema') == 27 and state.get('phase') == 'ready' and state.get('stage') == 'complete' and
             state.get('process') == PROCESS and state.get('binary_sha256') == BINARY_SHA and state.get('viewer_id') == B and
             state.get('added_viewer', {}).get('user_id') == A, 'The selected candidate is not the current ordinary fixture.')
-    validate_baseline(baseline)
+    validate_recovery(recovery, recovery_snapshot)
+    validate_prior_home(prior_home, baseline)
 
 
 def validate_login(proof, expected_server):
@@ -423,6 +500,7 @@ def validate_node_report(report, input_record, input_sha, child):
         report.get('mode') == input_record['mode'] and report.get('input_sha256') == input_sha and
         report.get('source_closure_sha256') == sha(canonical(input_record['source_closure'])) and
         report.get('candidate') == input_record['candidate'] and report.get('controller') == input_record['controller'] and
+        report.get('authority') == input_record['authority'] and
         report.get('node_process') == child and report.get('client_acceptance') is False and
         report.get('permission_ui_acceptance') is False, 'The browser report belongs to another input, process or acceptance scope.')
 
@@ -589,15 +667,21 @@ class Run:
         self.artifacts[str(self.args.source_closure)] = self.args.source_closure_sha256
         for row in AUTHORITY.values():
             self.artifacts[row['path']] = row['sha256']
+        for row in PRIOR_HOME_FILES.values():
+            self.artifacts[row['path']] = row['sha256']
         self.artifacts[str(BROWSER)] = BROWSER_SHA
         for path, digest in PROFILE_PINS.values():
             self.artifacts[str(path)] = digest
-        baseline, api, inspection = (read_record(AUTHORITY[key]) for key in ('current_snapshot', 'api_report', 'inspection'))
-        validate_authority(api, inspection, self.state, baseline)
+        baseline, api, inspection, recovery, recovery_snapshot, prior_home = (read_record(AUTHORITY[key]) for key in
+            ('current_snapshot', 'api_report', 'inspection', 'recovery', 'recovery_snapshot', 'prior_home'))
+        validate_authority(api, inspection, self.state, baseline, recovery, recovery_snapshot, prior_home)
         require(self.state.get('runtime_sha256') == 'd8689a4e0b36816ed462816856dfa73af6fba5f31f044632ed173db99c8842df' and
             self.state.get('server_id') == 'c7cfd76b1dee728b2bad523793a37ccb' and
             self.state.get('media_root_extension', {}).get('script_sha256') == HELPERS['extension'][1], 'The runtime, server or media extension changed.')
-        self.restriction.compare_fixed_snapshot(self.op, read_record(AUTHORITY['api_after']), baseline)
+        # The accepted API and inspection remain a historical equality. The
+        # completed recovery is also historical; the closed v2 Home data delta
+        # supplies the current baseline while its UI result remains failed.
+        self.restriction.compare_fixed_snapshot(self.op, read_record(AUTHORITY['api_after']), read_record(AUTHORITY['inspection_snapshot']))
         product = self.state['upgrade']['schema_artifacts']['product_verification']
         require(self.op.equal_json(self.op.verify_product_upgrade(Path(self.state['upgrade']['source']), BINARY_SHA, SOURCE,
             MANIFEST_SHA, Path(product['report_path']), product['report_sha256'], 27), product), 'The accepted source32 product proof changed.')
@@ -627,7 +711,7 @@ class Run:
                 'source': str(SOURCE), 'source_manifest_sha256': MANIFEST_SHA},
             'fixture': {key: {'path': str(path), 'sha256': digest} for key, (path, digest) in PROFILE_PINS.items()},
             'expected_libraries': sorted([{'id': row['id'], 'name': row['name']} for row in self.before['database']['tables']['libraries']], key=lambda row: row['id']),
-            'source_closure': self.sources, 'authority': {**{key: AUTHORITY[key] for key in ('api_report', 'inspection', 'current_snapshot')},
+            'source_closure': self.sources, 'authority': {**{key: AUTHORITY[key] for key in ('api_report', 'inspection', 'recovery', 'prior_home', 'current_snapshot')},
                 'before_snapshot': before_record}, 'controller': controller}
         self.input_sha = self.save('input.json', self.input)['sha256']
         self.save('cleanup-reservation.json', {'marker': MARKER, 'input_sha256': self.input_sha, 'controller': controller,
@@ -781,6 +865,9 @@ class Run:
     def collect(self):
         # Each evidence branch has an independent opportunity to complete. A bad
         # UI report cannot skip the final database or media witness.
+        if self.closed:
+            try: self.refresh_worker_logs()
+            except Exception as error: self.error('terminal_worker_logs', error)
         current = None
         try: current = self.snapshot('after-browser-full.json')
         except Exception as error: self.error('after_browser_snapshot', error)
@@ -815,6 +902,15 @@ class Run:
         elif self.after is not None:
             try: self.restriction.compare_fixed_snapshot(self.op, self.before, self.after)
             except Exception as error: self.error('unacknowledged_state_delta', error)
+
+    def refresh_worker_logs(self):
+        require(self.closed and self.launched, 'Worker logs cannot be finalized before the owned process tree closes.')
+        # systemd appends after the exclusive empty-file creation. Read the final
+        # bytes without writing or truncating either log, and replace only the
+        # in-memory descriptors used by this new report.
+        for name in ('node.stdout', 'node.stderr'):
+            raw = protected(ROOT / name, limit=4 << 20)
+            self.records[name] = {'path': str(ROOT / name), 'sha256': sha(raw)}
 
     def execute(self):
         try:

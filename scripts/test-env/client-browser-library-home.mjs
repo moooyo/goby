@@ -11,13 +11,15 @@ import { createHomeOnlyBrowserActor, authorityForURL, observedAuthority, homeNav
 import { loadSpecialFeaturesFixture } from './client-browser-special-features-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-ui-baseline-v1';
+const ROOT = WORK + '/client-library-ui-baseline-v3';
 const OUTPUT = ROOT + '/browser';
 const ORIGIN = 'http://127.0.0.1:18196';
-const UNIT = 'goby-client-library-ui-baseline-v1.service';
+const UNIT = 'goby-client-library-ui-baseline-v3.service';
 const CGROUP = '/system.slice/' + UNIT;
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
 const SERVER = 'c7cfd76b1dee728b2bad523793a37ccb';
+const RECOVERY_AFTER = Object.freeze({ path: WORK + '/client-library-ui-session-recovery-01/after-full.json',
+  sha256: '5d0f3818abf5617a817541fc4d08cca5492a579b9ce5af99d0cec45b7d5f1ee0' });
 const SELF = fileURLToPath(import.meta.url);
 const LIBRARIES = ['a9993591e72f0f2e7babcbf8b9c50790', '6383d20008836e137559698c29b10395',
   'a34ce665fb75421ef7551570f353d705', '57a85c1ca5b6c7ae602c587755250b2f'];
@@ -85,11 +87,13 @@ export function validateHomeInput(input) {
     music_scan_receipt: ['client-music-scan-v1/receipt.json', 'e0b9ba686afb1950d4ab43c3ad5bc39d67090374704379103a29759c70aab93b'],
   };
   for (const [key, [name, digest]] of Object.entries(fixtures)) need(same(input.fixture[key], { path: WORK + '/' + name, sha256: digest }));
-  need(keys(input.authority, ['api_report', 'inspection', 'current_snapshot', 'before_snapshot']) && Object.values(input.authority).every(descriptor));
+  need(keys(input.authority, ['api_report', 'inspection', 'recovery', 'prior_home', 'current_snapshot', 'before_snapshot']) && Object.values(input.authority).every(descriptor));
   for (const [key, name, digest] of [
     ['api_report', 'client-library-restriction-v1/report.json', '193a5cc5ddaa806575d630a03de1268abed2418347b4e57eb5cc57610a04e8eb'],
     ['inspection', 'client-library-restriction-inspection-01/report.json', 'e3dcbc0c21edbc484baab89762e11857a7cbc46889b78701af8dd309f12c3441'],
-    ['current_snapshot', 'client-library-restriction-inspection-01/current-full.json', '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3'],
+    ['recovery', 'client-library-ui-session-recovery-01/report.json', '09b2fad0de6dcce6e1d6ecb85a700e94673642f3c5641d3d7dff6bab43e66ffb'],
+    ['prior_home', 'client-library-ui-baseline-v2/report.json', '54c02dbc41273a5043853d31126dec7455641d5efbf73ee20b97b13d8826ec23'],
+    ['current_snapshot', 'client-library-ui-baseline-v2/after-full.json', '27e4627e774d96ab87fdb51fd5093dafcb01c529b0a8753fd50db566aadbfd26'],
   ]) need(same(input.authority[key], { path: WORK + '/' + name, sha256: digest }));
   need(input.authority.before_snapshot.path === ROOT + '/before-full.json');
   need(Array.isArray(input.expected_libraries) && input.expected_libraries.length === 4 &&
@@ -106,6 +110,39 @@ export function validateHomeInput(input) {
 }
 
 export function homeSourceDigest(closure) { return sha(JSON.stringify(sorted(closure))); }
+
+/** Both failed UI attempts stay historical; the last closed attempt supplies the current snapshot. */
+export function validateHomeAuthority(input, api, inspection, recovery, priorHome) {
+  need(api.result === 'passed' && api.phase === 'complete' && api.restoration === 'confirmed' && inspection.status === 'passed' &&
+    inspection.report_sha256 === input.authority.api_report.sha256 &&
+    inspection.current_snapshot_sha256 === '1aca0670c3d6f1cd2f45082df89cf4df9930058f9658eb439deef289b39207a3' &&
+    inspection.all_three_owned_sessions_revoked === true && inspection.stored_after_matches_current === true);
+  const proof = recovery?.proof;
+  need(recovery?.marker === 'goby-client-library-home-session-recovery-v1' && recovery.result === 'passed' && recovery.phase === 'complete' &&
+    recovery.original_ui_result === 'failed' && recovery.client_acceptance === false && recovery.administrator_closed === true &&
+    recovery.http_requests === 4 && Array.isArray(recovery.errors) && recovery.errors.length === 0 &&
+    same(recovery.candidate, { binary_sha256: input.candidate.binary_sha256, process: input.candidate.process, state_sha256: input.candidate.state_sha256 }) &&
+    same(recovery.evidence?.['after-full.json'], RECOVERY_AFTER));
+  need(proof?.administrator_revoked === true && proof.administrator_session_id === 'ad6695676912f2bd2a1bf68b9cfdd9ce' &&
+    proof.target_session_id === '00fb0b833884308ab946e1c40ff6abdd' && proof.target_user_id === USER &&
+    proof.target_token_sha256 === '9f71d2771f1a0d177041d6815f46d39ecea9a54bf92099a13b89dbef172afb81' &&
+    proof.lost_target_token_401_observed === false && proof.new_administrator_sessions === 1 && proof.new_native_session_audits === 3 &&
+    proof.new_devices_play_userdata_references_encodings === 0 && proof.old_rows_sequences_private_preserved === true &&
+    proof.target_only_revoked_at_changed === true && typeof proof.target_revoked_at === 'string' && Number.isFinite(Date.parse(proof.target_revoked_at)));
+  need(priorHome?.marker === 'goby-client-library-home-observation-v1' && priorHome.version === 1 && priorHome.result === 'failed' &&
+    priorHome.phase === 'complete' && priorHome.outcome === 'failed' && priorHome.browser_outcome === 'failed' &&
+    priorHome.client_acceptance === false && priorHome.permission_ui_acceptance === false && priorHome.worker_closed === true &&
+    priorHome.fallback_attempted === false && same(priorHome.candidate, input.candidate) &&
+    same(priorHome.authority?.api_report, input.authority.api_report) && same(priorHome.authority?.inspection, input.authority.inspection) &&
+    same(priorHome.authority?.recovery, input.authority.recovery) && same(priorHome.authority?.current_snapshot, RECOVERY_AFTER) &&
+    same(priorHome.evidence?.['after-full.json'], input.authority.current_snapshot) && Array.isArray(priorHome.errors) &&
+    priorHome.errors.length === 1 && priorHome.errors[0].stage === 'final_delta_or_ui_observation' && priorHome.errors[0].failure_type === 'ObservationError');
+  need(same(priorHome.proof, { new_b_authentication: 1, new_devices: 1, new_play_userdata_references_encodings: 0,
+    new_session_audits: 2, observed_capabilities_bound: true, old_rows_sequences_private_unchanged: true,
+    session_id: '2e355f661132b4ba3a3ed1445a16c3c8', token_sha256: 'e795b8ecf91e9a2b934b28484ce80a9c52e40838389473032e954cbf699c3eb3',
+    users_and_policies_unchanged: true }));
+  return true;
+}
 
 /** Parse only the four client metadata attributes, with conflicting carriers rejected. */
 export function homeClientMetadata(raw, headers) {
@@ -365,7 +402,7 @@ export function homeCardEvidence(library, titles, cards) {
   return { id: library.id, name: library.name, visible_title_count: titles, visible_card_count: cards.length,
     card_id_present: idPresent, card_id_matches: idPresent ? ids.every(value => value === library.id) : null,
     proof: idPresent ? 'visible_card_id_and_title' : 'unique_visible_title_without_dom_id',
-    passed: titles === 1 && cards.length === 1 && (!idPresent || ids.every(value => value === library.id)) };
+    passed: cards.length === 1 && (idPresent ? titles >= 1 && ids.every(value => value === library.id) : titles === 1) };
 }
 
 export async function observeHomeDOM(page, expected) {
@@ -467,12 +504,22 @@ export function bindHomeBaseline(input, before, current) {
   need(same(a.tables, b.tables) && same(a.sequences, b.sequences) && same(a.catalog, b.catalog) &&
     same(metadataWithoutCapture(a), metadataWithoutCapture(b)), 'home_baseline_not_continuous');
   need(Object.keys(a.tables).length === 35 && a.tables.items.length === 22 && a.tables.libraries.length === 4 &&
-    a.tables.sessions.length === 67 && a.tables.devices.length === 58 && a.tables.activity_entries.length === 149 &&
+    a.tables.sessions.length === 70 && a.tables.devices.length === 60 && a.tables.activity_entries.length === 155 &&
     a.tables.play_sessions.length === 26 && a.tables.user_item_data.length === 7 && a.tables.client_playback_references.length === 0 && a.tables.encoding_jobs.length === 0);
   need(same(a.tables.libraries.map(row => ({ id: row.id, name: row.name })).sort((x, y) => x.id.localeCompare(y.id)),
     [...input.expected_libraries].sort((x, y) => x.id.localeCompare(y.id))));
   const user = a.tables.users.find(row => row.id === USER);
   need(user && user.is_administrator === false && user.is_disabled === false && user.management_revision === 3);
+  const failedSessions = a.tables.sessions.filter(row => row.id === '00fb0b833884308ab946e1c40ff6abdd');
+  const recoverySessions = a.tables.sessions.filter(row => row.id === 'ad6695676912f2bd2a1bf68b9cfdd9ce');
+  const priorHomeSessions = a.tables.sessions.filter(row => row.id === '2e355f661132b4ba3a3ed1445a16c3c8');
+  need(failedSessions.length === 1 && recoverySessions.length === 1 && failedSessions[0].user_id === USER && failedSessions[0].kind === 'emby' &&
+    failedSessions[0].token_hash === '\\x9f71d2771f1a0d177041d6815f46d39ecea9a54bf92099a13b89dbef172afb81' && recoverySessions[0].kind === 'admin' &&
+    a.tables.users.some(row => row.id === recoverySessions[0].user_id && row.is_administrator === true) &&
+    [...failedSessions, ...recoverySessions].every(row => typeof row.revoked_at === 'string' && Number.isFinite(Date.parse(row.revoked_at))));
+  need(priorHomeSessions.length === 1 && priorHomeSessions[0].user_id === USER && priorHomeSessions[0].kind === 'emby' &&
+    priorHomeSessions[0].token_hash === '\\xe795b8ecf91e9a2b934b28484ce80a9c52e40838389473032e954cbf699c3eb3' &&
+    typeof priorHomeSessions[0].revoked_at === 'string' && Number.isFinite(Date.parse(priorHomeSessions[0].revoked_at)));
   need(Date.parse(a.metadata.captured_at) >= Date.parse(b.metadata.captured_at));
   return a.tables.devices.map(row => { need(text(row.reported_device_id)); return row.reported_device_id; });
 }
@@ -517,9 +564,10 @@ export async function runLibraryHome(options) {
   for (const source of Object.values(input.fixture)) await checkedFile(source.path, source.sha256, 2 * 1024 * 1024, false);
   const api = await checkedFile(input.authority.api_report.path, input.authority.api_report.sha256);
   const inspection = await checkedFile(input.authority.inspection.path, input.authority.inspection.sha256);
-  need(api.result === 'passed' && api.phase === 'complete' && api.restoration === 'confirmed' && inspection.status === 'passed' &&
-    inspection.report_sha256 === input.authority.api_report.sha256 && inspection.current_snapshot_sha256 === input.authority.current_snapshot.sha256 &&
-    inspection.all_three_owned_sessions_revoked === true && inspection.stored_after_matches_current === true);
+  const recovery = await checkedFile(input.authority.recovery.path, input.authority.recovery.sha256);
+  const priorHome = await checkedFile(input.authority.prior_home.path, input.authority.prior_home.sha256);
+  validateHomeAuthority(input, api, inspection, recovery, priorHome);
+  await checkedFile(RECOVERY_AFTER.path, RECOVERY_AFTER.sha256, 64 * 1024 * 1024, false);
   const current = await checkedFile(input.authority.current_snapshot.path, input.authority.current_snapshot.sha256, 64 * 1024 * 1024);
   const before = await checkedFile(input.authority.before_snapshot.path, input.authority.before_snapshot.sha256, 64 * 1024 * 1024);
   const existingDevices = bindHomeBaseline(input, before, current);
@@ -541,6 +589,7 @@ export async function runLibraryHome(options) {
   const report = { marker: 'goby-client-library-home-report-v1', version: 1, mode: input.mode, result: 'failed', outcome: 'failed',
     client_acceptance: false, permission_ui_acceptance: false, input_sha256: parsed['input-sha256'], source_closure_sha256: closureDigest,
     candidate: clone(input.candidate), controller: clone(input.controller), node_process: node, started_at: new Date(started).toISOString(),
+    authority: clone(input.authority),
     login_proof: null, session_private: null, capabilities_private: null, initial: null, reload: null, actor: {}, closure: null, failure: null,
     limits: { work_ms: 180000, cleanup_ms: 90000, login_requests: 1, reloads: 1, views_per_stage: 4, selected_frame_events: 12,
       selected_physical_requests: 25, response_projection_bytes: 512 * 1024, capabilities_requests: 16, capabilities_body_bytes: 65536 },
