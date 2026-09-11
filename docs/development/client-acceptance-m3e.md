@@ -1,7 +1,39 @@
 # M3e real-client acceptance
 
-Latest state: **positive-fixture setup01 failed after its create201; the library
-exists, and no scan has run.** The [12 pure guards](m3e-positive-fixture-tool01-guards.json),
+Latest state: **continuation tool03 completed the scan (`Completed`, 6/6/0),
+then failed an incorrect count assertion after 15 valid protocol responses.**
+Job `d7aa0acaee023dd4c82ea7a303c354ca` used the existing library/root. Inherited
+`84af.capture` required `SpecialFeatureCount=3`; the correct sampled response
+omits that field and supplies `LocalTrailerCount=1`, as the reference 20-case
+capture records. This tool assertion does not justify changing product behavior.
+The [continuation failure](m3e-positive-continuation-count-check-failed.json)
+remains retained. Both new admin/viewer sessions completed logout204/exact401.
+Full/range media requests had not started.
+
+The [independent response proof](m3e-positive-protocol-response-proof.json)
+passed six direct reads, eight lists and the parent response: all 15 complete
+HTTP200 with correct membership, paths, owner and media sources. The [snapshot review](m3e-positive-protocol-snapshot-review.json)
+passed original 13-item/all-old-row preservation, new 9 items/four Extra resources/
+three markers, three revoked actor sessions, exactly nine new audits and exact
+sequences. The current candidate has 35 tables, 22 items, 4 libraries, 5 UserData
+rows, 24 plays, zero encoding jobs, 61 global sessions and 135 audits. State is
+`continuing_special_features_fixture`/`scan_complete`, SHA-256
+`0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83`.
+PID748513/start ticks6996875, schema27, source32 binary and runtime are unchanged.
+
+Next is the authorized minimal independent protocol-finalization/inspection
+chain in [extras verification](verification-m3e-extras.md). Reuse the 15 responses;
+do not rescan, recreate or write success into either old failed tree. Only a
+fresh ordinary AV token/device may perform one full200 and one Range206 for
+each of four resources, followed by logout204/exact401: 11 HTTP exchanges total.
+All old `550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8` snapshot rows must remain; permitted additions are
+one session/device and two audit entries. Global 62 sessions/137 audits are
+expected only. Positive UI, ledger and main consumers must bind the final
+chain. Main consumer03 passed 26 guards/build but is undeployed. Both execution
+failures and both earlier preflight diagnostics remain preserved; primary is 26.
+
+Historical setup01 state: **it failed after its create201; the library
+existed, and that attempt had not run a scan.** The [12 pure guards](m3e-positive-fixture-tool01-guards.json),
 two syntax checks and preflight had passed. Library
 `57a85c1ca5b6c7ae602c587755250b2f` and root
 `604d2c0f5c78919a6ee360cda2048066` were created with only the allowed Movies
@@ -15,14 +47,15 @@ logged out 204 and its exact token returned 401; no viewer login occurred.
 The original v1 profile is paused at phase `preparing_special_features_fixture`,
 stage `library_acknowledged`, state SHA-256
 `513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`.
-The independent authorized continuation must bind the failure, create201
+The subsequently executed continuation bound the failure, create201
 acknowledgment and old trees, scan the existing library with a new administrator,
 then use a viewer for protocol and complete/range checks. No recreate/delete,
 replay or success marker in the old v1 tree is permitted. The new profile and
 UI/ledger/main consumers must separately account for the creation, continued
-scan and viewer actors. Three sessions/nine audit entries from the original
-baseline are anticipated, not a completed result. No continuation scan or
-positive UI run has happened. See [extras verification](verification-m3e-extras.md)
+scan and viewer actors. The independent review now proves the three sessions,
+nine audit entries and exact sequences from the original baseline. The scan
+completed, but the count assertion stopped full/range checks; no positive UI
+run has happened. See [extras verification](verification-m3e-extras.md)
 for exact continuation/inspection paths and immutable failure/tool pins.
 
 Established checkpoint: **source32 is published; the original Movie dual-user
@@ -36,11 +69,11 @@ is PID748513/start ticks6996875, binary SHA-256
 Its [schema26-to27 upgrade](m3e-source32-candidate-upgrade.json) retains original
 PID746709/start ticks6930051 in the immutable upgrade receipt; the later
 extension owns the new process. Its binary/runtime remain unchanged after
-setup01. The current candidate has 14 items (old 13 plus one CollectionFolder),
-4 libraries, 4 roots,35 tables, 14 metadata rows, 15 Theme owner rows, 59 global
+setup01 and tool03. At the setup01 failure the candidate had 14 items (old 13 plus one CollectionFolder),
+4 libraries, 4 roots, 35 tables, 14 metadata rows, 15 Theme owner rows, 59 global
 auth rows (old 58 plus one revoked admin session) and 129 activity entries
 (old 126 plus 3). All old rows and media were preserved, and both Extra tables
-remain empty. The extension's 13-item/three-library result is historical.
+were empty at that checkpoint. The extension's 13-item/three-library result is historical.
 This is not a completed M3
 milestone. Remaining M3/M4/M5/M6 requirements are active; M7 remains deferred.
 All builds and verification execute through `ssh test-env`.
@@ -79,12 +112,12 @@ and execution. Tool01 and all original receipts remain unchanged.
 See [extras verification](verification-m3e-extras.md) for the exact tool,
 completion-receipt, current fixture-state and runtime hashes.
 
-Next, independently continue the already-created positive library under its
-bound continuation and inspection scopes, then verify its original-client flow.
+Next, perform the minimal independent full/range finalization under its bound
+inspection scope, then verify the positive original-client flow.
 The empty-array Movie pass and added root permission
 do not establish indexed extra delivery. Primary schema27, library restriction
-and complete compatibility remain open; main27 tool02 is verified but remains
-undeployed and requires the new continuation-consumer revision. Completed media/reference phases must
+and complete compatibility remain open; main consumer03 is verified but remains
+undeployed, and consumers must bind the final chain. Completed media/reference phases must
 not be replayed.
 
 Current main deployment: [source28/schema26](m3e-main-schema26-completed.json),

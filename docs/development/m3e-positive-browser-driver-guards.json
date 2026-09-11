@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "input_directory": "/opt/goby-test/exec-work-m3e/client-special-features-browser-input-02",
+  "driver_sha256": "712feeb3fb02d9ba9f20903bd70f630b5a0ce9185b06a468433e537ad2715b5a",
+  "guard_sha256": "dc99947cc30f9f80e51871fea6b64ee11c57f6f03f9bc9da60b6ad4d481b2c38",
+  "shared_driver_sha256": "53fa6e9eb40f96ff7ace6821a0c64629ead1c95b5fc37188f28ab3d84b58b76b",
+  "syntax_checks": 2,
+  "pure_guards": 21,
+  "failures": 0,
+  "retained_first_attempt": {
+    "input_directory": "/opt/goby-test/exec-work-m3e/client-special-features-browser-input-01",
+    "guard_sha256": "cf082b2c3c9d127f5f9aa8427110847598178d441cb3dec9d136372fe955aae0",
+    "syntax_checks_passed": 2,
+    "case_execution_started": false,
+    "failure": "VM initialization rejected the shared module hashbang after it was embedded inside an IIFE. The corrected guard strips it only in the VM source; the original shared file and hash remain unchanged."
+  },
+  "boundary": "Pure driver tests only. The finalization-aware loader, actual profile receipts and fresh ledger remain prerequisites for real original-client acceptance. No actual UI, HTTP or fixture read occurred."
+}

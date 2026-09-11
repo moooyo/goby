@@ -1,0 +1,165 @@
+{
+  "boundary": "Proof uses retained completed responses only; it does not relabel the failed operation or supply media-byte proof.",
+  "direct_count": 6,
+  "full_media_reads": 0,
+  "list_count": 8,
+  "marker": "goby-client-special-features-retained-protocol-proof-v1",
+  "parent_projection_matches_reference": true,
+  "range_reads": 0,
+  "records": {
+    "detail-alpha": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "76dda4cdd60c84e053fc51dd6bf519d0",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0011-detail-alpha-response.json",
+      "sha256": "86d02a292cf68b6a90ec42c8442680c57ec3957bcc518cdf5832f73719edded7",
+      "status": 200
+    },
+    "detail-deleted": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "939f34b2ea20c68904d08f321519c23b",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0012-detail-deleted-response.json",
+      "sha256": "560f0a8d770d435f2364269e66d7f6e69d0fe7e75253aa93a302fe6fb6ba2576",
+      "status": 200
+    },
+    "detail-empty": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "1a4cea4fe0e5212e11291ab69e31341f",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0010-detail-empty-response.json",
+      "sha256": "5cbcc530309d6543c82a8c063a54c48adcbdd022680d6324b445757334b7eca8",
+      "status": 200
+    },
+    "detail-positive": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "1ac8b0f4188531e8b701bfda055d7a34",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0009-detail-positive-response.json",
+      "sha256": "17decf0f7fb2fb79b325abab48a2a0e81b62043a3cd74cd9df2d87bc9e209cbd",
+      "status": 200
+    },
+    "detail-trailer": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "0106a72a4f3840d789738fb672ddc92b",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0014-detail-trailer-response.json",
+      "sha256": "faa70b468031dc84512571402e0324ae26ccb63bb65324620d5cd99e23abaf4f",
+      "status": 200
+    },
+    "detail-zeta": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "item_id": "bb648845c377424ce4d5dc9bb3c80a0c",
+      "media_source_matches": true,
+      "owned_path_matches": true,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0013-detail-zeta-response.json",
+      "sha256": "44f834194ff722dbbc2c9a0df117e0e7fdc07334166c2a5b7de91d5ab39116ba",
+      "status": 200
+    },
+    "empty-localtrailers-default": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": false,
+      "owned_members": [],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0021-empty-localtrailers-default-response.json",
+      "sha256": "9d541ed69ceb95ed9efdfbb132029efcb491c5d469d2417983a6d9e9779ccd7e",
+      "status": 200
+    },
+    "empty-localtrailers-fields": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": true,
+      "owned_members": [],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0022-empty-localtrailers-fields-response.json",
+      "sha256": "fc8dd3562aa88b949f201401d85b1896c5dbfbefd1a75df55650c84e20f23fc4",
+      "status": 200
+    },
+    "empty-specialfeatures-default": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": false,
+      "owned_members": [],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0019-empty-specialfeatures-default-response.json",
+      "sha256": "5e6ece0ee6a1a5a9fa73fad96963f6cf0644928108bb272852fc136de7713d26",
+      "status": 200
+    },
+    "empty-specialfeatures-fields": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": true,
+      "owned_members": [],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0020-empty-specialfeatures-fields-response.json",
+      "sha256": "3e6cbf990b6a6247aa6f1bc978e6c23dd0a8ddd69c9d51812937f6ad3f7aee2d",
+      "status": 200
+    },
+    "positive-counts": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "local_trailer_count": 1,
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0023-positive-counts-response.json",
+      "sha256": "67d51c4b315b05e3c32ac9c50f967ac959bdbdbe88b04525e22a4010573b2780",
+      "special_feature_count_present": false,
+      "status": 200
+    },
+    "positive-localtrailers-default": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": false,
+      "owned_members": [
+        "0106a72a4f3840d789738fb672ddc92b"
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0017-positive-localtrailers-default-response.json",
+      "sha256": "0c68c8dffe052b5ef65280e830b7737227d53228d732f81bf35aff7f712e54a5",
+      "status": 200
+    },
+    "positive-localtrailers-fields": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": true,
+      "owned_members": [
+        "0106a72a4f3840d789738fb672ddc92b"
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0018-positive-localtrailers-fields-response.json",
+      "sha256": "2a2c3e07007b8ee81cf9f6e46bf3d33171fcd73246ae06f407f3b7e6bbed94a7",
+      "status": 200
+    },
+    "positive-specialfeatures-default": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": false,
+      "owned_members": [
+        "76dda4cdd60c84e053fc51dd6bf519d0",
+        "939f34b2ea20c68904d08f321519c23b",
+        "bb648845c377424ce4d5dc9bb3c80a0c"
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0015-positive-specialfeatures-default-response.json",
+      "sha256": "c42cbbd60804e1e9dcd43703313f6879a6b5ed23886d40253523d0aa25c3bab3",
+      "status": 200
+    },
+    "positive-specialfeatures-fields": {
+      "complete": true,
+      "content_type": "application/json; charset=utf-8",
+      "fields": true,
+      "owned_members": [
+        "76dda4cdd60c84e053fc51dd6bf519d0",
+        "939f34b2ea20c68904d08f321519c23b",
+        "bb648845c377424ce4d5dc9bb3c80a0c"
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/private/0016-positive-specialfeatures-fields-response.json",
+      "sha256": "4a633b3e8a71a641e0cf05564939163fe3b1867d944a6ba354a10527152ea40e",
+      "status": 200
+    }
+  },
+  "result": "passed"
+}

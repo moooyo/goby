@@ -2,7 +2,36 @@
 
 The goal remains the complete planned Linux backend and administrator dashboard. A completed engineering increment does not establish full Emby compatibility.
 
-Latest execution: **positive-fixture setup01 failed after creating the new
+Latest execution: **continuation tool03 completed scan 6/6/0, retained 15 valid
+protocol responses, then failed an incorrect `SpecialFeatureCount=3` assertion.**
+Job `d7aa0acaee023dd4c82ea7a303c354ca` reached `Completed` in the existing
+library/root. The correct parent response omits SpecialFeatureCount and reports
+LocalTrailerCount1, matching the reference 20-case capture; no product change
+is needed for this tool error. The [failed continuation](m3e-positive-continuation-count-check-failed.json)
+revoked both new admin/viewer tokens with 204/exact401. No full/range requests ran.
+The [15-response proof](m3e-positive-protocol-response-proof.json) passed six
+direct reads/eight lists/one parent, all complete200 with correct membership,
+paths, owners and sources. The [snapshot review](m3e-positive-protocol-snapshot-review.json)
+proved all old rows/original 13 items retained, new 9 items/four Extra resources/
+three markers, three revoked actor sessions, exactly nine audits and exact
+sequences. Current counts are 35 tables, 22 items, 4 libraries, 5 UserData rows,
+24 plays, zero encoding, 61 global sessions and 135 audit entries. Current state
+is `continuing_special_features_fixture`/`scan_complete`, SHA-256
+`0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83`.
+PID748513/start ticks6996875, schema27, binary and runtime are unchanged.
+
+Next is a minimal independent protocol-finalization/inspection chain: reuse
+the 15 responses, use a fresh ordinary AV token/device for four full200 and
+four Range206 requests plus login/logout/exact-token rejection (11 HTTP),
+and preserve all old `550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8` snapshot rows. One session/device and
+two audits are the only new history; 62 global sessions/137 audits are expected,
+not observed. No rescan, recreate or old-tree success marker is permitted.
+Both failed execution trees and both preflight diagnostics remain retained.
+Positive UI/ledger/main consumers need the final chain; main consumer03 passed
+26 guards/build but remains undeployed. Primary remains source28/schema26.
+Exact directories and evidence pins are in [extras verification](verification-m3e-extras.md).
+
+Historical setup01 execution: **it failed after creating the new
 library; no scan was dispatched.** Its [12 pure guards](m3e-positive-fixture-tool01-guards.json),
 two syntax checks and preflight passed. One create201 produced library
 `57a85c1ca5b6c7ae602c587755250b2f` and root
@@ -15,23 +44,23 @@ tool defect, not a product scanning failure. Administrator logout204/exact401
 passed; the viewer never logged in.
 
 The candidate remains source32/schema27, PID748513/start ticks6996875, with
-unchanged runtime configuration/binary. Current counts are 35 tables, 14 items,
+unchanged runtime configuration/binary. Counts at that failure were 35 tables, 14 items,
 4 libraries, 4 roots, 14 metadata rows, 15 Theme owner rows, 59 whole-database
 auth rows and 129 activity entries. All old rows and media were preserved;
-the added auth session is revoked and both Extra tables remain empty. State
+the added auth session was revoked and both Extra tables were empty then. State
 SHA-256 is `513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`,
 phase `preparing_special_features_fixture`, stage `library_acknowledged`.
-The original v1 profile is paused at that point.
+The original v1 profile remains frozen at that point.
 
-The authorized next action is an independent continuation and inspection of
+The subsequently executed action was an independent continuation and inspection of
 this existing library, binding the failed attempt, create201 acknowledgment
 and all old trees. It must not recreate/delete the library, replay setup01 or
 write success into the failed v1 tree. A new administrator will scan, then a
 viewer will check protocol and complete/range delivery. The three-stage profile
 and UI/ledger/main consumers must distinguish creation, continued scan and
-viewer actors. Three new sessions/nine audit entries from the original baseline
-are expected only, with no completed continuation result. Main27 tool02 is
-verified but undeployed and needs the new consumer revision. Primary remains
+viewer actors. The independent snapshot review now proves three new sessions,
+nine audit entries and exact sequences from the original baseline. Tool03's
+count-check failure still blocks full/range completion; primary remains
 source28/schema26. See [extras verification](verification-m3e-extras.md) for
 the explicit continuation directories and immutable evidence pins.
 
@@ -75,8 +104,8 @@ remains retained: tool01 and its mock used `encoding_states` instead of
 `encoding_jobs`; the failure preceded output-directory creation and changed
 no state/environment/service. Tool02 corrected the name and passed two syntax
 checks, 11 pure guards including the actual catalog regression, preflight and
-execution. The primary remains source28/schema26. Next is the independent
-continuation of the already-created fixture and its original-client flow. See
+execution. The primary remains source28/schema26. Next is the minimal independent
+protocol finalization above, followed by the positive original-client flow. See
 [current extras verification](verification-m3e-extras.md) for retained failures,
 the completed reference projections and remaining deployment/client gates.
 
@@ -244,8 +273,9 @@ recorded flow and state scope; complete client acceptance remains open.
 Input06 subsequently enforced strict page-error rejection and diagnosed the
 SpecialFeatures404. Its 20/49 starting point and 22/51 result are consumed
 historical baselines, as are input05's 18/47 scope and before image. Input07
-later passed the original Movie flow and its new scoped comparison; the latest
-recorded counts are 24 plays/53 selected A/B auth rows. No old before image or
+later passed the original Movie flow and its new scoped comparison; that run's
+ending counts were24 plays/53 selected A/B auth rows, before positive-fixture
+setup and continuation. No old before image or
 comparator scope may be reused; a future run needs fresh authority. The
 [temporary library restriction plan](m3e-library-restriction-plan.md) remains
 planned and unexecuted, including its separate 404-versus403 matrix. The main
@@ -264,7 +294,7 @@ schema26 deployment remains passed independently; primary schema27 is open.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source32 original-Movie dual-user flow passed, positive-extra acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05/input06 failures remain historical. Source32 passed the full 1,873-test race suite/build, candidate upgrade, input07 original-Movie dual-user flow and precise root extension; one console warning/error per user remains. Nonempty positive fixtures, primary schema27, library restriction and broader milestones remain open |
+| M3e real-client acceptance | In progress; source32 original-Movie dual-user flow passed, positive-extra acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05/input06 failures remain historical. Source32 passed the full 1,873-test race suite/build, candidate upgrade, input07 original-Movie dual-user flow and precise root extension; one console warning/error per user remains. Minimal full/range protocol finalization, positive UI, primary schema27, library restriction and broader milestones remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

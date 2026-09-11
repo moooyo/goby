@@ -1,11 +1,45 @@
 # Development handoff
 
-Latest state: **positive-fixture setup01 failed after its single create201;
-the library exists, but no root SELECT or scan POST ran.** Continuation read-only preflight has since
-exposed two separate guard-model defects, recorded in the
+Latest state: **continuation tool03 scanned the existing library successfully
+(`Completed`, 6/6/0), then failed an incorrect parent-count assertion.** Job
+`d7aa0acaee023dd4c82ea7a303c354ca` kept the library/root IDs below. The inherited
+`84af.capture` demanded `SpecialFeatureCount=3`; the correct sampled response
+omits that field and has `LocalTrailerCount=1`, matching the reference 20-case
+capture. Do not change the product for this tool error. The [continuation failure](m3e-positive-continuation-count-check-failed.json)
+remains failed; both new administrator/viewer tokens were revoked with 204/401.
+Full/range media requests had not started.
+
+The independent [15-response proof](m3e-positive-protocol-response-proof.json)
+passed six direct reads, eight lists and the parent read, all complete200 with
+correct membership, paths, owners and sources. The [snapshot review](m3e-positive-protocol-snapshot-review.json)
+passed original 13-item/all-old-row preservation, new 9 items/four resources/
+three markers, all three actor sessions revoked, exactly nine new audit entries
+and exact sequences. Current counts are 35 tables, 22 items, 4 libraries,
+three markers/four Extra resources, 5 UserData rows, 24 plays, zero encoding,
+61 global sessions and 135 audits. PID748513/start ticks6996875, schema27,
+source32 binary and runtime configuration remain unchanged. Current phase is
+`continuing_special_features_fixture`, stage `scan_complete`, state SHA-256
+`0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83`;
+the retained full-snapshot SHA-256 is
+`550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8`.
+
+Next, use only the authorized independent
+`/opt/goby-test/exec-work-m3e/client-special-features-protocol-finalization-v1`
+and `/opt/goby-test/exec-work-m3e/client-special-features-finalization-inspection-v1`.
+Reuse the 15 responses; do not rescan/recreate or mark old trees successful.
+Use a fresh ordinary AV token/device for one full200 and one Range206 for
+each of four resources, then logout204/exact401: 11 HTTP exchanges total.
+Only one new session/device and two audits are permitted; all old snapshot
+rows must remain. Expected 62 global sessions/137 audits are not actual results.
+Positive UI, ledger and main consumers must bind that final chain. Main
+consumer03 passed 26 guards/build but has not deployed; primary remains 26.
+
+Historical setup01 failed after create201 and before its scan. Subsequent
+continuation read-only preflight exposed two separate guard-model defects in the
 [current verification](verification-m3e-extras.md): login audit Count must be
 one, and the already-created fixture requires its actual 14-item/four-library
-quiescence check. No continuation business request has run.
+quiescence check. Neither preflight diagnostic made a business request; both
+remain retained alongside the setup01 and tool03 execution failure trees.
 
 The created library ID is
 `57a85c1ca5b6c7ae602c587755250b2f`, root ID
@@ -19,33 +53,33 @@ containing an underscore is rejected. This is an operator checkpoint failure,
 not a product scan failure. The original administrator logged out 204 with
 exact-token401; no viewer login or new scan occurred.
 
-The v1 profile is paused at phase `preparing_special_features_fixture`, stage
+The original v1 profile remains frozen at phase `preparing_special_features_fixture`, stage
 `library_acknowledged`, state SHA-256
 `513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1`.
 PID748513/start ticks6996875, runtime configuration and binary remain unchanged.
-Current counts are 35 tables, 14 items, 4 libraries, 4 roots, 14 metadata rows,
+Counts at the setup01 failure were 35 tables, 14 items, 4 libraries,4 roots,14 metadata rows,
 15 Theme owner rows, 59 whole-database auth rows and 129 activity entries.
 The new rows are one CollectionFolder/library/root/metadata/owner, one revoked
 administrator session and three audit entries. All old rows and media were
-preserved; both Extra tables are empty. The earlier root-extension 13-item/
+preserved; both Extra tables were empty at that checkpoint. The earlier root-extension 13-item/
 three-library result and original-Movie UI success remain valid history.
 
-Next, use the authorized independent continuation scopes
+The actual tool03 continuation used the independently authorized scopes
 `/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1`
 and `/opt/goby-test/exec-work-m3e/client-special-features-continuation-inspection-v1`.
 The [continuation profile](m3e-positive-continuation-profile-guards.json) passed
 two remote syntax checks and seven pure guard groups. The [revised positive
 ledger](m3e-positive-prepare-scope-tool02-guards.json) passed three syntax checks
-and 25 pure guards. Neither result is an actual continuation or client run.
+and 25 pure guards. These guard results are separate from the actual tool03
+scan and protocol evidence above.
 Bind the failed attempt, create201 acknowledgment and all old trees; do not
 recreate/delete the library, replay setup01 or mark its old v1 tree successful.
-Only a new administrator may scan the existing library, followed by a viewer's
-protocol and complete/range checks. The new profile separates creation, scan
-and viewer actors; actual session/audit evidence is required. The anticipated
-three-session/nine-audit final delta is not a result. UI, ledger and main27
-consumers must use the new chain; verified main27 tool02 still needs a consumer
-revision and has not deployed. No continuation scan has run; primary remains
-source28/schema26. Exact failure/tool/diagnosis pins are in
+A new administrator scanned the library and a viewer made the 15 protocol
+reads. The three-actor session/audit/sequence transition has now passed the
+independent snapshot review, but the tool's incorrect count assertion stopped
+full/range checks. The next action is the separate finalization above, not a
+replay of either failed execution. Primary remains source28/schema26.
+Exact failure/tool/diagnosis pins are in
 [extras verification](verification-m3e-extras.md); frozen tool01 stays unchanged.
 
 Current implementation increment: persistent Movie SpecialFeatures and
@@ -116,8 +150,8 @@ of `encoding_jobs`; it stopped before output-directory creation and left
 state/environment/service unchanged. Tool02 fixed that name, added an actual
 catalog regression, and passed two syntax checks, 11 pure guards and execution.
 See the [verification record](verification-m3e-extras.md) for exact report/tool
-and completion-receipt hashes. Continue the already-created positive-fixture
-library only through the independent scope above, then verify its client flow. The primary remains
+and completion-receipt hashes. Finalize only the remaining full/range protocol
+checks under the independent scope above, then verify the positive client flow. The primary remains
 source28/schema26; completed media/reference phases must not be replayed.
 The independent [nonempty-profile guards](m3e-schema27-positive-profile-guards.json)
 and [actual read-only baseline check](m3e-schema27-positive-profile-baseline.json)
@@ -125,7 +159,8 @@ passed before setup01 created the new library and failed at its checkpoint.
 The [main27 deployment tools](verification-m3e-main-schema27-tools.md)
 passed two syntax checks, 24 pure guards and the helper build. Their real
 preflight/deployment still awaits positive candidate/client evidence and the
-new continuation-consumer revision.
+finalization-chain consumer binding; main consumer03's 26-guard/build result
+does not itself establish deployment or completed media acceptance.
 The additional [20-case reference capture](m3e-reference-special-features-projections-v2.json)
 completed with state/media preservation and token revocation. It proves known-ID
 extra retrieval, positive LocalTrailerCount, field switches and sampled error

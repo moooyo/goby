@@ -1,0 +1,41 @@
+{
+  "actual_prepare_executed": false,
+  "execution_input_sha256": "8fdd6037e4bf0ca314833f3962b3253722be94319eaa6df9ef65df9b83c27adf",
+  "files": {
+    "continue-client-special-features-fixture-v2.py": "f5b448b5715456e0539b79afa84fab0ad53acee00bc6e5fb77051ff49131fca8",
+    "test-continue-client-special-features-fixture-v2.py": "9b37305053ab61ac4b7b5253a9c9e79ec0e6ed26953f06ca5d669daaaaa33ede"
+  },
+  "guard_exit": 0,
+  "guards": {
+    "database_writes": 0,
+    "errors": 0,
+    "failures": 0,
+    "http_requests": 0,
+    "operator_sha256": "f5b448b5715456e0539b79afa84fab0ad53acee00bc6e5fb77051ff49131fca8",
+    "result": "passed",
+    "service_actions": 0,
+    "tests": 20
+  },
+  "guards_stderr_sha256": "ff2eca013eb87af91bdd79b8d0e0f4402792496f03e163bf7eaad7ed7afd414e",
+  "guards_stdout_sha256": "5de5d5180301f9a08594689f914afa42a22a62e80e50b2bca7c73313fb5cb076",
+  "inspection_exists": false,
+  "marker": "goby-client-special-features-continuation-tool-v3",
+  "output_exists": false,
+  "preflight": {
+    "creation_proof": {
+      "creation_admin_revoked": true,
+      "creation_admin_session_id": "8152df67289b37d77cb8278cc6414604",
+      "creation_audit_count": 3
+    },
+    "http_requests": 0,
+    "new_evidence_writes": 0,
+    "origin_evidence_sha256": "fb825a42f76a7540ff6c291e516d6f4db8f22dd837c94fbad6e3347f794f3ddf",
+    "result": "preflight_passed"
+  },
+  "preflight_exit": 0,
+  "preflight_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "preflight_stdout_sha256": "8cb0347b1bc87eda243f2ba8dff8ae1c30a886bb26b2ea0d542d5c18f39ac12a",
+  "state_after_sha256": "513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1",
+  "state_before_sha256": "513d971260e18d24ada666a3ec942391d4679bf2a98c5c852742cc70033fccf1",
+  "syntax_passes": 2
+}

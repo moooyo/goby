@@ -1,0 +1,45 @@
+{
+  "boundary": "Read-only validation of retained snapshots and captured responses; not a completion receipt.",
+  "database_writes": 0,
+  "http_requests": 0,
+  "inputs": {
+    "/opt/goby-test/exec-work-m3e/client-fixture.json": "0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83",
+    "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/failed-current-full.json": "550b6f83cd804485cf227ee3514fb6dec0af550d61ec5926303ce589047877f8",
+    "/opt/goby-test/exec-work-m3e/client-special-features-fixture-continuation-v1/failure.json": "5696a8f7b57f2fec0b2a6bc4d056426f02faaa860ef830c4abc7989e49a54f4d",
+    "/opt/goby-test/exec-work-m3e/client-special-features-fixture-v1/before-full.json": "d65097b9916f99723b670faec5d58a01a5380a31c2a369c19db8fbb067f67376",
+    "/opt/goby-test/exec-work-m3e/client-special-features-fixture-v1/failed-current-full.json": "86cbffbc1b3c0d623ea894aab12843273adcce5c7b097f3b9878dfc276ee8275",
+    "/opt/goby-test/exec-work-m3e/client-special-features-fixture-v1/failure.json": "9ce73d72d9ce002dce06230a73213294903800b3b49b06e9b9aa33ad69eda2c0"
+  },
+  "marker": "goby-client-special-features-protocol-review-v1",
+  "proof": {
+    "aggregate_audit_count": 9,
+    "aggregate_session_count": 3,
+    "continuation_audit_count": 6,
+    "creation_admin_revoked": true,
+    "creation_admin_session_id": "8152df67289b37d77cb8278cc6414604",
+    "creation_audit_count": 3,
+    "expected_increment_preserved": true,
+    "item_ids": {
+      "alpha": "76dda4cdd60c84e053fc51dd6bf519d0",
+      "deleted": "939f34b2ea20c68904d08f321519c23b",
+      "empty": "1a4cea4fe0e5212e11291ab69e31341f",
+      "empty_folder": "21a21bb033ccb1df7d9b508788e9b474",
+      "library": "57a85c1ca5b6c7ae602c587755250b2f",
+      "positive": "1ac8b0f4188531e8b701bfda055d7a34",
+      "positive_folder": "10726c9a8c736f9efd15668667f1b011",
+      "trailer": "0106a72a4f3840d789738fb672ddc92b",
+      "zeta": "bb648845c377424ce4d5dc9bb3c80a0c"
+    },
+    "native_session_id": "203cbe26fd87ebbec482f7b2c25ac489",
+    "new_device_id": 55,
+    "new_item_count": 9,
+    "old_item_count": 13,
+    "old_rows_preserved": true,
+    "table_count": 35,
+    "viewer_session_id": "3189e7f75ac2e3e774ffaa62430c9d8a"
+  },
+  "result": "structure_auth_audit_sequences_passed",
+  "service_actions": 0,
+  "source_profile_sha256": "71d549fd60193d6813ad97a4cc587460c14d47fc0a96ce74c0367b4acf45019a",
+  "state_sha256": "0897f2bec4723d5a69df8b35978bc4be32e7ea91f1f11aebfda4c500c2116e83"
+}
