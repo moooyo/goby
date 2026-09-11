@@ -1,0 +1,25 @@
+{
+  "after_unchanged": true,
+  "before_matches_failed_attempt": true,
+  "cases": [
+    {
+      "case": "original",
+      "error_first_line": "ERROR:  operator does not exist: text = jsonb",
+      "exit_code": 3,
+      "sql_sha256": "5241586319e47372c41a3a3ade0b6bce788d53b8d422ebf20ef78ed1924991e6",
+      "stderr_sha256": "f3dacc6c62ac67e32ca1e364fba3f223a83e7fd0005ed2ac64b5d45b07a7e8bc"
+    },
+    {
+      "case": "cast-jsonb",
+      "error_first_line": null,
+      "exit_code": 0,
+      "sql_sha256": "3c954ccdd74c5cd16ded92f44a0849fae730e4e9177573ac03c8eeeaceb6e43b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "database_read_only": true,
+  "lock_or_drop_executed": false,
+  "operator_sha256": "85d63c61b938a5cf014a77a34bee085753c425d206aa923580b7c21ac4fb4800",
+  "original_receipt_unchanged": true,
+  "run_id": "20260911_154145_d9df2c8f78f8"
+}
