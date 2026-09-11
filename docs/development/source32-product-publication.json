@@ -1,0 +1,38 @@
+{
+  "status": "product_checkpoint_committed_and_pushed",
+  "remote_ref": "origin/main",
+  "commit": "b9bb7b1cf11e07e011a6e1726ddb9d53ef8e1fe9",
+  "internal_tree": "35648175ae2675f5d6a8acef0594cef216abdd25",
+  "changed_files": 56,
+  "commit_scope": "Internal product, test, migration, catalog and README files. Active tooling and development evidence are separate.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-32",
+  "source_manifest_sha256": "a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65",
+  "schema": 27,
+  "source_correspondence": {
+    "checked_worktree_files": 765,
+    "scope": "Every manifest member under internal/, cmd/ or web/, plus go.mod and go.sum",
+    "byte_mismatches": 0,
+    "changed_go_files_formatted_on_test_env": 53
+  },
+  "full_verification": {
+    "status": "passed",
+    "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_163635_51b90bc25d4b/report.json",
+    "report_sha256": "408c49ff73e66c505865494e8e2e843954fd682a4b09fb5287835c027718ee78",
+    "top_level_passes": 1873,
+    "packages": 24,
+    "failures": 0,
+    "skips": 0,
+    "cleanup_checks_passed": 6,
+    "unit_exit": 0,
+    "application_build": "passed"
+  },
+  "candidate_binary_sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+  "candidate_upgrade": {
+    "status": "ready",
+    "from_schema": 26,
+    "to_schema": 27,
+    "report_path": "/opt/goby-test/exec-work-m3e/client-fixture-report-794b5ae666c8d2b6a5999233.json",
+    "report_sha256": "e9d502f16722d73b754d810de5b8ff5d7f6ccba512bd3eece3b1a1fc375828d8"
+  },
+  "acceptance_boundary": "The primary remains source28/schema26. Fresh original-client acceptance, the separately receipted media-root extension, positive candidate extras, primary schema27 deployment and broader M3/M4/M5/M6 gates remain open."
+}

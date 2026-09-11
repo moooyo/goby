@@ -1,0 +1,57 @@
+{
+  "actual_attempt": {
+    "evidence": null,
+    "failure_type": "ExtensionError",
+    "phase": "preflight",
+    "result": "retained_for_review"
+  },
+  "diagnosis": "prepare_only_without_execute",
+  "diagnosis_result": "reproduced",
+  "failure_type": "ExtensionError",
+  "frames": [
+    {
+      "file": "<stdin>",
+      "function": "<module>",
+      "line": 7
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/client-extra-root-tool-01/extend-client-special-features-root.py",
+      "function": "prepare",
+      "line": 363
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/client-extra-root-tool-01/extend-client-special-features-root.py",
+      "function": "require_quiescent",
+      "line": 136
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/client-extra-root-tool-01/extend-client-special-features-root.py",
+      "function": "require",
+      "line": 60
+    }
+  ],
+  "inputs": {
+    "candidate_boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "candidate_pid": 746709,
+    "candidate_sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+    "candidate_start_ticks": 6930051,
+    "check_only": true,
+    "full_report": "/opt/goby-test/exec-work-m3e/client-backup-run-20260911_163635_51b90bc25d4b/report.json",
+    "full_report_sha256": "408c49ff73e66c505865494e8e2e843954fd682a4b09fb5287835c027718ee78",
+    "operator_path": "/opt/goby-test/exec-work-m3e/prepare-client-fixture.py",
+    "operator_sha256": "84d21e8ac0b48c5dfd3d2c7ae35b0aec0d7f4f811e65658081490aa44947b49c",
+    "script_sha256": "7cda7f8962744287a6576efddf852eb06ba26acc9f765d670c3297caaace037d",
+    "source": "/opt/goby-test/exec-work-m3e/source-attempt-32",
+    "source_manifest_sha256": "a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65",
+    "state_sha256": "50966b8ecfa403ae3153359170516fb5b47483284cd831ab8b029e8a901b5e81",
+    "upgrade_completed_sha256": "66c2b1f13113c5969887e963641e7ba04743f33da609e748a648117bf2edf26b",
+    "upgrade_dir": "/opt/goby-test/exec-work-m3e/client-upgrade-aaff5430e8e7fc52b1850fabe2097d89",
+    "upgrade_report": "/opt/goby-test/exec-work-m3e/client-fixture-report-794b5ae666c8d2b6a5999233.json",
+    "upgrade_report_sha256": "e9d502f16722d73b754d810de5b8ff5d7f6ccba512bd3eece3b1a1fc375828d8"
+  },
+  "marker": "goby-client-extra-root-preflight-diagnosis-v1",
+  "output_exists": false,
+  "reason": "Encoding state exists; no encoder work may cross this restart.",
+  "runtime_sha256": "746b2092897829b15a169131059d3792767b3539aca9d53ddb9e79f954dd1874",
+  "state_sha256": "50966b8ecfa403ae3153359170516fb5b47483284cd831ab8b029e8a901b5e81"
+}

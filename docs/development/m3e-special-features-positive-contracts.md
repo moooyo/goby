@@ -58,6 +58,49 @@ preservation catalog explicitly excludes `Trailer` in IncludeItemTypes and
 cannot independently establish trailer visibility. These observations do not
 prove global unindexability of nested files or all possible query behavior.
 
+## Additional projection and access observations
+
+The separate [v2 projection capture](m3e-reference-special-features-projections-v2.json)
+completed 20 fixed business GETs and 32 total requests. Its original safe export
+SHA-256 is `5a1a9e35047776a5cf35f79d0e896631c8f122f283a47f949b490f9779d9df7d`.
+The ordinary recorder's explicit 64-item baseline, four direct child projections
+and all media were preserved; the new token completed logout204/exact-token401.
+Seven-library/five-user ownership is bound to the earlier completed receipts,
+not a newly performed administrator-wide state audit.
+
+The [v1 attempt](m3e-reference-special-features-projections-failed-01.json)
+stopped before all 20 business cases. Its baseline requested the 64 explicit
+IDs without IncludeItemTypes and received a complete 200 response containing
+59 items, including the four extras but omitting five old MusicAlbums. The
+baseline completeness assertion therefore rejected the attempt. Its reported
+empty accepted-before IDs do not mean the response was empty. V2 restored the
+type selector, including Trailer, and actually received all 64 IDs; it did not
+remove the five albums from the expected set. Both attempts revoked their new
+tokens, and the v1 evidence remains unchanged.
+
+Explicit `Ids` queries can return these extras, unlike the earlier unfiltered
+ParentId=83 recursive enumeration. This evidence supports a distinct known-ID
+retrieval path and must not be generalized into ordinary attachment browsing.
+The observed request had Recursive=true and no ParentId. Combined parent/ID
+filters still require their own scope and authorization checks.
+
+The positive Movie's default direct detail and selected ItemCounts Fields
+response both contain `LocalTrailerCount: 1` and omit `SpecialFeatureCount`.
+All four child details preserve their actual Movie parent and omit VideoType;
+the three SpecialFeatures include PartCount while the Trailer does not.
+EnableUserData=false removes UserData. EnableImages=false removes ImageTags
+and BackdropImageTags. Fields=MediaSources alone adds MediaSources, Container,
+Bitrate and Size without adding top-level MediaStreams. Two repeated default
+SpecialFeatures reads preserve Alpha/Middle/Zeta order.
+
+Anonymous SpecialFeatures and LocalTrailers return 401. Direct detail for the
+fixed absent-ID candidate returns 404, whereas its SpecialFeatures returns
+200 with an empty array. LocalTrailers for an absent ID was not selected.
+The reference also returns 200 when this ordinary token names another existing
+user in both endpoint paths. Goby's existing explicit cross-user isolation
+requirement remains 403; this is a documented policy difference, not matching
+reference-error evidence or permission to relax that requirement.
+
 ## Remaining boundaries
 
 Zeta was generated before Alpha, whereas both observed SpecialFeatures arrays
@@ -65,11 +108,11 @@ are Alpha/Middle/Zeta. This is consistent with name ordering, but two requests
 with different field selections do not prove a stable sorting algorithm or
 rescan behavior. The capture does not exercise sorting or pagination controls.
 
-The selected catalog projection does not contain SpecialFeatureCount or
-LocalTrailerCount. Dedicated parent detail and child direct-item observations,
-EnableUserData/EnableImages switches and foreign/anonymous/missing/denied-owner
-errors remain separate cases. No byte-delivery or original-client playback
-claim follows from source capability booleans. Other documented directory
+The selected catalog projection does not contain either count; the subsequent
+direct-detail observations above establish only its sampled positive values
+and omissions. Denied-library cases and ordering across rescans remain open.
+No byte-delivery or original-client playback claim follows from source
+capability booleans. Other documented directory
 categories, the flat trailer suffix, image-positive resources and positive
 Series extras remain outside this fixture scope.
 

@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "mode": "chain",
+  "result": "passed",
+  "harness_guards_only": true,
+  "client_acceptance": false,
+  "boundary": "Only loader file and process guards; no browser, database, HTTP, rescan, or user mutation.",
+  "planned_test_count": 6,
+  "tests": [
+    {
+      "name": "explicit_bounded_upgrade_chain",
+      "pass": true,
+      "count": 50,
+      "evidence_sha256": "55cd64c7d35b589b43cae49a2c29a1c6764be39caf086d4c29b9de3f2955d8d9"
+    },
+    {
+      "name": "wrong_chain_sha256",
+      "pass": true,
+      "count": 3
+    },
+    {
+      "name": "missing_explicit_music_upgrade_chain",
+      "pass": true,
+      "count": 3
+    },
+    {
+      "name": "outside_music_upgrade_chain_path",
+      "pass": true,
+      "count": 3
+    },
+    {
+      "name": "single_and_chain_selections_conflict",
+      "pass": true,
+      "count": 3
+    },
+    {
+      "name": "wrong_candidate_sha256",
+      "pass": true,
+      "count": 3
+    }
+  ],
+  "source_sha256": {
+    "test-client-browser-music-lineage.mjs": "0b40683437643f74dec68b999213c8c2ef0e87dea42b972376c051fa90436cd0",
+    "client-browser-goby-fixture.mjs": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3"
+  },
+  "selected_sha256": {
+    "candidate": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+    "music_scan_receipt": "e0b9ba686afb1950d4ab43c3ad5bc39d67090374704379103a29759c70aab93b",
+    "upgrade_chain": "c235d59a317fe1b95d8d78a51ab32ca556f3ca7872e96bfea51e710e26b0c67a"
+  },
+  "chain_file_unchanged": true,
+  "source_files_unchanged": true,
+  "counts": {
+    "executed": 6,
+    "passed": 6,
+    "failed": 0
+  }
+}

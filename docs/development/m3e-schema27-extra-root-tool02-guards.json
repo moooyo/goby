@@ -1,0 +1,30 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/client-extra-root-tool-02",
+  "files": {
+    "extend-client-special-features-root.py": "7a9cda4a36ebbe9c2311031db1f6a57265eef8fc8807057a3d650ef6c16b2a46",
+    "test-extend-client-special-features-root.py": "e0374aea4db6189e3fff6b32f0967d1d72d414e0e364f4e103833bcbc9eda27f"
+  },
+  "fixture_operator_sha256": "84d21e8ac0b48c5dfd3d2c7ae35b0aec0d7f4f811e65658081490aa44947b49c",
+  "catalog_path": "/opt/goby-test/exec-work-m3e/source-attempt-32/internal/backuppg/catalogs/schema-27-postgresql-17.json",
+  "catalog_sha256": "1fc91c2e380805bff0f87867547d307bc7830ffeb49c3489da4e1713a5c0047d",
+  "syntax_checks": 2,
+  "memory_guards": 11,
+  "failures": 0,
+  "guards_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "guards_stderr_sha256": "5432bf6c44ef78640616ee60c488eac022e795a93e4a3424f92bf805ec35d491",
+  "actual_preflight": {
+    "result": "preflight_passed",
+    "stdout_sha256": "1e606f7764213ff722e02fb8a642c6b4b34b56021a539ba570f49a281d4b6913",
+    "new_evidence_writes": 0,
+    "http_requests": 0
+  },
+  "retained_failure": {
+    "tool_directory": "/opt/goby-test/exec-work-m3e/client-extra-root-tool-01",
+    "script_sha256": "7cda7f8962744287a6576efddf852eb06ba26acc9f765d670c3297caaace037d",
+    "diagnosis_report_sha256": "3037c6e5e28dcce5e2b0255e53ec0db6dfbaac062f50978e879658bbc5a24d5f",
+    "cause": "The preflight used encoding_states instead of the actual encoding_jobs table. The old synthetic guards shared that invented name. No extension evidence directory or configuration/service mutation occurred."
+  },
+  "new_regression": "Guard table membership now comes from the pinned generated schema27 catalog. Empty encoding_jobs passes; absent, null or nonempty encoding_jobs fails. Existing activity, preservation and restart fences remain."
+}

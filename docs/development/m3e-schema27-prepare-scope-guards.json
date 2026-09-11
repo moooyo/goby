@@ -1,0 +1,17 @@
+{
+  "result": "passed",
+  "environment": "test-env",
+  "scope": "schema27-original-movie-01",
+  "tool_directory": "/opt/goby-test/exec-work-m3e/prepare-scope-schema27-tool-01",
+  "files": {
+    "inspect-client-prepare-scope.py": "bb210cc4cf7d319413cb0f4ea9dbf87db51cef6687cf2abff8becc4f1d999cba",
+    "compare-client-prepare-scope.py": "cb91912e2448f7a28292487b7f17ba1fa7d27be3fb89cf8c30fbbf9c665ecd5d",
+    "test-client-prepare-schema27.py": "610b2481466e7f38e6da07fdca31668e1296b216a34f39db2421aa926d4047b6"
+  },
+  "syntax_checks": 3,
+  "memory_guards": 6,
+  "failures": 0,
+  "guards_stdout_sha256": "64c6723aeeba43a90f997ac0c74e4defd5d8670f9c5affa4cb39ad5b9d6570bb",
+  "guards_stderr_sha256": "66d12521f526d783a0e75d26893a5e2bb26465b17067ada1fd138f2189c3b04e",
+  "boundary": "Pure memory checks. Actual before/after observations and the successful original-client report are recorded separately."
+}

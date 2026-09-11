@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "environment": "test-env",
+  "scope": "schema27-original-movie-01",
+  "input_directory": "/opt/goby-test/exec-work-m3e/cross-user-input-07",
+  "files": {
+    "client-browser-cross-user.mjs": "53fa6e9eb40f96ff7ace6821a0c64629ead1c95b5fc37188f28ab3d84b58b76b",
+    "test-client-browser-cross-user.mjs": "ad107b1e3d141238829e7f20a499e70a4e1c898e4818cfae45edbafd9a26e9bf",
+    "client-browser-goby-fixture.mjs": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "syntax_checks": 2,
+  "pure_guards": { "executed": 114, "passed": 114, "failed": 0 },
+  "guards_stdout_sha256": "3cad773d323f1ed9f6b869bbbe462dec36e3528b51bc6d6dc95b6c21e074e2ee",
+  "guards_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "client_acceptance": false,
+  "boundary": "Pure harness verification only. Each real actor must separately prove a completed frame-owned SpecialFeatures GET with HTTP200 and a complete empty JSON array, alongside the existing preparation, authority, state, logout, WebSocket and zero-page-error gates."
+}

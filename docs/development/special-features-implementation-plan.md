@@ -1,9 +1,51 @@
 # Movie SpecialFeatures implementation plan
 
-Status: **planned; not implemented**. This document does not change source28,
-schema 26, the deployed service, or any existing acceptance result.
+Status: **source32 published; remote regression, build, candidate upgrade, original-Movie dual-user flow and precise media-root extension passed**.
+The candidate now runs source32/schema27; the primary remains source28/schema26.
+The schema27 catalog was generated on
+PostgreSQL17. After two retained source30 fixture failures, the corrected
+[source31 targeted run](m3e-source31-extras-targeted.json) passed 105 tests
+with zero failures/skips and complete cleanup. Its full run later found stale
+fixture table inventories and was stopped. Native Trailer name-control fixes
+were also added after static review. The source32 expanded targeted run passed
+137 race tests, followed by the [complete remote regression and build](m3e-source32-extras-full.json):
+1,873 top-level race tests across 24 packages, zero failures/skips, all six
+cleanup checks true and unit exit code 0. Its source manifest is
+`a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65`;
+the built executable SHA-256 is
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The [candidate schema26-to27 upgrade](m3e-source32-candidate-upgrade.json)
+completed with ready/complete status as PID746709/start ticks6930051. It
+preserved all preexisting rows, columns, relation OIDs, ACLs and sequences in
+the old 33 tables, plus credentials, media and recovery state. Only the
+expected schema27 migration row was appended to an old table; both new tables
+are empty. That upgrade preserved runtime configuration. The [product checkpoint](source32-product-publication.json)
+is published at `b9bb7b1`. The [original-Movie dual-user flow](m3e-source32-cross-user-original-movie.json)
+then passed Home-to-Movie-to-Home, genuine PlaybackInfo200/finished transfer,
+SpecialFeatures200 `[]`, zero page errors, own200/foreign403, unchanged four
+item-UserData projections/preferences/Configuration/Policy and UI logout204/
+exact-token401. Each WebSocket closed without cleanup failure; each user
+retained one blocked-resource console warning/error. Its [scoped comparison](m3e-source32-cross-user-original-movie-comparison.json)
+permits the recorded preparation/authentication changes and is not a
+whole-database preservation claim.
 
-The current actual-client failure is a `404` for
+The [precise extension](m3e-source32-extra-root-extension.json) subsequently
+added only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`, preserving
+all 35 table rows/sequences, credentials, recovery state and media, with zero
+HTTP calls, library creation or scans. Current PID748513/start ticks6996875
+still has 13 items, three libraries, 35 tables and two empty Extra tables.
+The original upgrade's PID746709 receipt remains unchanged. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
+is retained: tool01 and its mock used `encoding_states` instead of actual
+`encoding_jobs`; no output directory or state/environment/service change
+occurred. Tool02 corrected the name, added an actual catalog regression and
+passed two syntax checks, 11 pure guards, preflight and execution.
+
+Next, independently prepare the nonempty positive candidate fixture and its
+original-client flow. Completed media/reference phases must not be replayed.
+Positive-extra acceptance, primary schema27, library restriction and the full
+M3/M4/M5/M6 scope remain open; earlier failures remain retained.
+
+The historical source28 actual-client failure was a `404` for
 `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures`. The parent task confirmed
 the retained failure evidence with two hash comparisons. Existing
 [movie extras contracts](m3e-reference-movie-extras-contracts.json) establish an
@@ -58,7 +100,7 @@ not establish this cross-table invariant.
 | Path classification | `internal/library/scan.go`: `walk`; `theme_paths.go` | Identify proved extra layouts before ordinary scanning, album detection, and movie-owner discovery. Honor the outermost auxiliary reservation boundary. |
 | Probe and identity | `themes_scan.go`: `inspectScannedMedia`; `scan.go`: `findStoredFileForRole` | Reuse anchored descriptors, probe cache, ctime, and rename checks. Replace the theme boolean with explicit roles and shared claims; reject cross-role identity reuse. |
 | Publication | `themes_scan.go`: `persistThemeMarkers`, `publishThemeOwner`, `deactivateInvalidThemeChildren` | Reserve before promotion; publish a complete owner batch under ordered item locks. Preserve prior accepted resources after incomplete scans; retire only with complete-scan and verified-absence authority. |
-| Authorization and query | `application_key_access.go`: `beginSubjectRead`; `query.go` | Add an association-based query with owner, resource, application authority, target-user scope, and UserData in one read snapshot. Ordinary `QueryItems` intentionally cannot enumerate attachments. |
+| Authorization and query | `application_key_access.go`: `beginSubjectRead`; `query.go` | Add an association-based query with owner, resource, application authority, target-user scope, and UserData in one read snapshot. Ordinary browsing excludes attachments; the separately observed explicit-Ids retrieval may return valid Extras while retaining all parent/filter/ACL intersections and the existing Theme exclusion. |
 | Visibility | `database/theme_visibility.go`; `library/theme_visibility.go` | Current-schema ordinary visibility excludes both permanent roles and both reservation sets. Direct visibility permits only ordinary items or active, valid, mutually exclusive attachments. Preserve historical version semantics separately. |
 | Protocol adapter | `server/libraries.go`, `server/namespace.go`, `server/items.go` | Register and canonicalize the user-item SpecialFeatures route; reuse `itemUser`, request subjects, DTO projection, image switches, and UserData switches. Add consistent attachment attributes to list and direct-item projections. |
 | Delivery and state | `media_source.go`, `play_sessions.go`, `userdata.go` | Reuse the existing Video source ID, authorized playback, anchored file delivery, and per-user state. Keep lock-then-recheck classification ordering and ordinary-only folder aggregates. |

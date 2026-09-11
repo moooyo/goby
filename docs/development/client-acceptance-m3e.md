@@ -1,24 +1,72 @@
 # M3e real-client acceptance
 
-Status: a partial M3e checkpoint is deployed with its verification evidence. The earlier
-M5j baseline is `main` commit `4a840fb`; the current published checkpoint is
-`53144e6`. This is not a completed M3
-client milestone. The full delivery
-plan, including remaining M3, M4, M5 and M6 requirements, remains active. M7 remains
-deferred. All builds and verification execute through `ssh test-env`.
+Status: **source32 is published; the original Movie dual-user flow and precise
+candidate media-root extension passed. Nonempty positive-extra acceptance is next.**
+The [product checkpoint](source32-product-publication.json) is `b9bb7b1`.
+Its [complete remote regression and build](m3e-source32-extras-full.json) passed
+1,873 top-level race tests across 24 packages with zero failures/skips, all six
+cleanup checks true and unit exit code 0. The current source32/schema27 candidate
+is PID748513/start ticks6996875, binary SHA-256
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+Its [schema26-to27 upgrade](m3e-source32-candidate-upgrade.json) retains original
+PID746709/start ticks6930051 in the immutable upgrade receipt; the later
+extension owns the new process. The candidate still has 13 items, three
+libraries, 35 tables and two empty Extra tables. This is not a completed M3
+milestone. Remaining M3/M4/M5/M6 requirements are active; M7 remains deferred.
+All builds and verification execute through `ssh test-env`.
+
+The [actual input07 original-Movie run](m3e-source32-cross-user-original-movie.json)
+passed for both ordinary users, public SHA-256
+`9f50d54cb291f4dfc24009fdb0084e6af06a443b2a353c16f02b7f337f95029a`.
+Each completed Home-to-Movie-to-Home, exactly one genuine PlaybackInfo200 with
+finished transfer, complete SpecialFeatures200 `[]`, and zero page errors.
+Own200/foreign403, four unchanged item-UserData projections, preferences,
+Configuration and Policy, UI logout204 and exact-token401 all passed. Each
+WebSocket opened and closed once, with zero active sockets and no cleanup
+failures. Each user retained one blocked-resource console warning/error; the
+result does not claim a console free of errors. Input07's 114 pure guards/two
+syntax checks and six live Music lineage guards are separate supporting evidence.
+
+The [scoped database comparison](m3e-source32-cross-user-original-movie-comparison.json)
+passed, SHA-256 `0a2a1e54a95a52e15e8f4a037914ac05dc760ca561d40d5b3d5f53bcea196898`.
+Recorded play rows increased from 22 to 24 and selected A/B auth rows from 51 to 53. The
+two eligible old Prepared rows became Expired; two new Prepared rows and two
+new auth rows were added, and both new auth rows were revoked. Five UserData
+rows stayed unchanged, with zero references and encoding jobs. This proves
+the declared preparation scope, not whole-database preservation. Every used
+scope and before image is historical; a later run needs a fresh baseline.
+
+The [exact root extension](m3e-source32-extra-root-extension.json) then passed,
+SHA-256 `09bf775ff6582b0a3dbc6c52026b4da7f0ba59066884c08a4c1cea4d3ba1391e`.
+It appended only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`,
+preserving all 35 table rows/sequences, credentials, recovery state and media.
+It performed zero HTTP calls, library creation or scans. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
+remains separate: tool01 and its mock used `encoding_states` instead of actual
+`encoding_jobs`, and stopped before output-directory creation with no
+state/environment/service change. Tool02 fixed the name, added an actual
+catalog regression, and passed two syntax checks, 11 pure guards, preflight
+and execution. Tool01 and all original receipts remain unchanged.
+See [extras verification](verification-m3e-extras.md) for the exact tool,
+completion-receipt, current fixture-state and runtime hashes.
+
+Next, independently set up the nonempty positive candidate fixture and verify
+its original-client flow. The empty-array Movie pass and added root permission
+do not establish indexed extra delivery. Primary schema27, library restriction
+and complete compatibility remain open; completed media/reference phases must
+not be replayed.
 
 Current main deployment: [source28/schema26](m3e-main-schema26-completed.json),
 active/running as PID688833/start ticks5620918, binary SHA-256
 `83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
 The independent 13-call native completion passed with one new owned session,
 logout204/session401 and no additional service writes, migrations or restores.
-The source28 isolated candidate remains PID682417/start ticks5168373 with the
+The historical source28 isolated candidate was PID682417/start ticks5168373 with the
 same binary. Full source28 regression passed 1,830 tests across 24 packages, and
 its scoped Similar/ThemeMedia/album/Home flow passed. The product checkpoint is
 `608e2088`; the main-deployment/evidence checkpoint `53144e6` is pushed to
 `origin/main`. Neither checkpoint establishes complete client acceptance.
 
-The latest [input05 dual-user preparation run](m3e-source28-cross-user-preparation-01.json),
+The historical [input05 dual-user preparation run](m3e-source28-cross-user-preparation-01.json),
 public summary SHA-256
 `91a8d3bc7a2e604cd62f5041b7a9403463baacb88c53901649c11a52f8b7295a`,
 passed 100 pure guards and the explicitly selected `acceptance-preparation`
@@ -27,20 +75,24 @@ return Home and UI logout204/exact-token401. Own/foreign checks and four UserDat
 projections, preferences, Configuration and Policy comparisons passed.
 However, each user recorded one unclassified `ui_movie` page error. The driver
 did not reject page errors; its passed result proves only the recorded flow and
-state scope. **Complete client acceptance remains open.** Input06 is adding
-strict page-error rejection and sanitized normal browser-event diagnostics.
+state scope. **Complete client acceptance remains open.** The later
+[input06 diagnostic](m3e-source28-special-features-blocker.json) enforced strict
+page-error rejection and failed on each user's SpecialFeatures404/`Response`
+error. That historical failure led to source32's scoped correction above;
+neither input05 nor input06 is relabeled as a successful complete client run.
 
 The private before/after comparison retained 18 old play rows: 17 unchanged,
 with one eligible B row Expired. A's single reference to revoked authentication
 was removed. Two new Prepared rows were added for two new Emby authentication
 rows, both revoked after logout. All 47 old auth rows and five UserData rows
-were unchanged; encoding remained zero. The next isolated-candidate baseline
-is therefore 20 plays, 49 auth rows and zero references, with the two new
-Prepared rows already bound to revoked auth. The next run needs a fresh private
-snapshot and new comparator scope; the former 18/47 comparator and before image
-must not be reused as new authority. The [library restriction matrix](m3e-library-restriction-plan.md)
-has not executed; first resolve the page errors. Raw reports and all historical
-successes/failures remain preserved.
+were unchanged; encoding remained zero. That historical result was 20 plays,
+49 auth rows and zero references. Input06 consumed that 20/49 baseline and
+reached 22 plays/51 auth rows; input07 subsequently consumed 22/51 and reached
+24 plays/53 selected A/B auth rows under its separate scope. The 18/47, 20/49
+and 22/51 scopes and before images are historical and **must not be reused**
+as new authority. A future run requires a fresh private snapshot and comparator
+scope. The [library restriction matrix](m3e-library-restriction-plan.md) has
+not executed. Raw reports and all historical successes/failures remain preserved.
 
 Historical isolated candidate: [source20/schema25](verification-m3e-source20-similar.md),
 binary SHA-256 `a5028f865d3638f020c758a77bf1d431ca755699b7767a25b711509a8f8c12a9`,
@@ -304,9 +356,9 @@ stop and resume must be driven through the real client UI.
 | Seek, stop and resume | UI pause, forward/backward seek, stop, persisted position, reload/login and UI resume at the observed position | Scoped movie lifecycle passed; source18 audio controls, stop and history passed |
 | Direct audio | Real supported MP3/FLAC flows with method and media capability recorded separately | Source18 MP3 core passed with original Home harness failure preserved; FLAC full workflow passed |
 | External subtitles | UI track selection, actual subtitle delivery and timing through seek for the supported SRT/WebVTT paths | Source15 SRT/VTT and ordinary TV checks passed within their fixture scope |
-| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Input05 own/foreign reads, navigation/preparation, four state projections and exact UI logout proofs passed within scope; one unclassified page error per client keeps complete acceptance open; library restriction is not executed |
+| Sessions and isolation | Real client reports and session changes; a second owned user cannot observe or change the first user's protected state | Input07 original-Movie dual-user navigation/preparation, SpecialFeatures200 empty arrays, zero page errors, own200/foreign403, unchanged state projections and UI logout204/exact-token401 passed. One console warning/error per user remains. Nonempty positive extras and library restriction remain open; input05/input06 scopes are historical |
 | Reference comparison | The same client/profile flows against the pinned reference, with exact supported differences and unresolved failures retained | Scoped reference/client journeys recorded; full matrix and auxiliary differences remain open |
-| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source28 full regression, scoped auxiliary flow and primary deployment passed; product/evidence history is pushed through 53144e6. Input05 does not close complete client acceptance, and new input06 work remains unverified |
+| Regression and publication | Relevant remote regression, complete final-source checks, reviewed deployment where needed, documentation and commit/push | Source32 full 1,873-test race suite/build, candidate schema27 upgrade, scoped input07 client flow and precise root extension passed; product b9bb7b1 is published. Primary remains source28/schema26. Nonempty positive-fixture acceptance and complete milestones remain open |
 
 Existing CORS support already handles implemented compatibility paths; do not
 broaden the administrator origin policy based on a missing-route symptom.

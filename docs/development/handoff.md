@@ -1,5 +1,83 @@
 # Development handoff
 
+Current implementation increment: persistent Movie SpecialFeatures and
+LocalTrailers are published at schema27 in the source32 product checkpoint. The corrected
+[source31 targeted run](m3e-source31-extras-targeted.json) passed 105 race
+tests with zero failures/skips and complete owned cleanup. The subsequent
+full source31 run was stopped after real fixture failures and a separately
+confirmed Trailer metadata-display defect; its frozen manifest remains
+`0468c7e557c82249a866b81ae7b22924c2dc456bf5cd333af45b9a6d1ad7aa92`.
+The [verification record](verification-m3e-extras.md) retains source29's real
+35-table catalog, source30's two fixture failures and exact empty-pair disposal.
+Source31's full-run failures and stop evidence remain retained. The source32 product
+fixes its old table/cleanup inventories and honors native Trailer Name/SortName
+overrides and locks. The interrupted run's exact residual objects were removed
+by the independently [verified repair](m3e-source31-extras-disposal.json),
+preserving both failed attempts and the preexisting cluster.
+The verified product snapshot is `source-attempt-32`, 4002 files, manifest
+`a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65`.
+Its 53 changed Go files were formatted remotely and copied back; source files
+and manifest use 0644 within the 0700 source root. Candidate schema27 tooling
+passed 55 remote guards. Verified tooling and reference/failed-run evidence
+were published separately at `d1f0c69`. The [source32 product checkpoint](source32-product-publication.json)
+was committed and pushed at `b9bb7b1`; nine verified harness/operator files
+were published separately at `347e12d`. The [source32 expanded
+targeted run](m3e-source32-extras-targeted.json) passed 137 race tests with zero
+failures/skips and complete cleanup. The [source32 full regression and build](m3e-source32-extras-full.json)
+also passed: 1,873 top-level race tests across 24 packages, zero failures/skips,
+all six cleanup checks true and unit exit code 0. The terminal report at
+`client-backup-run-20260911_163635_51b90bc25d4b/report.json` has SHA-256
+`408c49ff73e66c505865494e8e2e843954fd682a4b09fb5287835c027718ee78`.
+Its `tmp/goby-linux-amd64` build is 28,172,723 bytes, SHA-256
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The [candidate upgrade](m3e-source32-candidate-upgrade.json) from schema26 to27
+passed with ready/complete status. Its original source32 process was PID746709/start ticks
+6930051 with the verified executable above. All preexisting rows, columns,
+relation OIDs, ACLs and sequences in the old 33-table schema were preserved,
+along with credentials, media and recovery state. The only addition to an old
+table is the expected schema27 migration row; the two new tables are empty.
+That upgrade left 35 tables, 13 items and three libraries, with unchanged
+runtime configuration and two empty Extra tables. Its receipt retains the
+original PID746709; the later extension's current process is recorded below.
+The new five-hop Music lineage passed six live guards, and input07 passed
+114 pure browser guards plus two syntax checks, all on test-env.
+The [original Movie dual-user flow](m3e-source32-cross-user-original-movie.json)
+passed: each user completed Home-to-Movie-to-Home, one real PlaybackInfo200
+with finished transfer, complete SpecialFeatures200 `[]`, zero page errors,
+own200/foreign403, unchanged four item-UserData projections/preferences/
+Configuration/Policy, and UI logout204/exact-token401. Both WebSockets closed
+with no active socket or cleanup failure. One blocked-resource console
+warning/error per user remains recorded. The [scoped database comparison](m3e-source32-cross-user-original-movie-comparison.json)
+passed: 22 to 24 play rows, 51 to 53 selected A/B auth rows, two eligible old
+Prepared-toExpired transitions, two new Prepared rows and two new revoked
+auth rows; five UserData rows stayed unchanged and references/encoding stayed zero.
+This is bounded preparation evidence, not whole-database preservation.
+
+The [exact media-root extension](m3e-source32-extra-root-extension.json) then
+passed, appending only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`.
+It preserved all 35 table rows/sequences, credentials, recovery state and media,
+with zero HTTP calls, library creation or scans. The candidate now runs as
+PID748513/start ticks6996875; it still has 13 items, three libraries and two
+empty Extra tables. Its fixture-state SHA-256 is
+`6d719ab6f3cd6c13ebf9fe3d6a927abaf5040e6e87e84be5d81a57318440cefe` and runtime
+configuration SHA-256 is
+`d8689a4e0b36816ed462816856dfa73af6fba5f31f044632ed173db99c8842df`.
+The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
+is retained: tool01 and its mock used nonexistent `encoding_states` instead
+of `encoding_jobs`; it stopped before output-directory creation and left
+state/environment/service unchanged. Tool02 fixed that name, added an actual
+catalog regression, and passed two syntax checks, 11 pure guards and execution.
+See the [verification record](verification-m3e-extras.md) for exact report/tool
+and completion-receipt hashes. Next, independently prepare the nonempty
+positive candidate fixture and its original-client flow. The primary remains
+source28/schema26; completed media/reference phases must not be replayed.
+The additional [20-case reference capture](m3e-reference-special-features-projections-v2.json)
+completed with state/media preservation and token revocation. It proves known-ID
+extra retrieval, positive LocalTrailerCount, field switches and sampled error
+responses. The cross-user403 policy remains an intentional Goby requirement,
+despite the sampled reference returning200 for another existing user path.
+Primary schema27 deployment and positive-extra original-client verification remain open.
+
 Current operational state: the primary service is **active/running** at
 source28/schema26, PID 688833/start ticks 5620918, executable SHA-256
 `83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
@@ -31,8 +109,8 @@ connections and zero rehearsal databases or roles. These are not authentication
 session row counts. Both earlier failed trees remain preserved alongside the
 later tool04 start-verification failure; none is relabeled as a successful run.
 
-The isolated candidate remains source28/schema26, PID 682417/start ticks 5168373.
-Its [product checkpoint](source28-product-publication.json) is committed and
+The isolated candidate now runs source32/schema27, PID748513/start ticks6996875.
+Its previous [source28 product checkpoint](source28-product-publication.json) is committed and
 pushed to `origin/main` at `608e2088ca6aef150833d3f9bbc954c03e5aef5b`, tree
 `da8fcd68b41c691c17c5dd0b4d760e38d3606ec3`. The commit contains only 73 staged
 internal product/test/catalog files; active tools and documentation are separate.
@@ -72,9 +150,10 @@ guards, then correctly failed its strict page-error gate. Both exact request
 hashes identify `GET /emby/Users/{UserId}/Items/{Id}/SpecialFeatures` returning
 404 alongside the `Response` errors. Its separate database comparison passed.
 The first [positive reference capture](m3e-special-features-positive-contracts.md)
-has now completed. The next work is
-[persistent SpecialFeatures implementation](special-features-implementation-plan.md)
-and the remaining bounded projection/access observations.
+has now completed. The [persistent SpecialFeatures implementation](special-features-implementation-plan.md)
+has passed source32 remote regression/build verification and candidate deployment;
+the original empty-extra Movie flow also passed. Positive-extra client checks
+and broader projection/access coverage remain open.
 Library restriction has not executed.
 
 The two synthetic SpecialFeatures main movies were
@@ -695,7 +774,10 @@ passed with output SHA-256
 All 20 old play rows remain, with only the two approved Prepared rows becoming
 Expired. All 49 old auth rows and five UserData rows remain exact. There are
 two new Prepared rows and two new, now-revoked auth rows; references and
-encoding jobs remain zero. The candidate now has 22 plays and 51 auth rows.
+encoding jobs remain zero. That historical input06 result had 22 plays and
+51 auth rows. Input07 subsequently consumed that baseline and reached 24 plays/
+53 selected A/B auth rows; input05/input06 before images and scopes must not
+be reused for a new run.
 This result does not authorize replaying either earlier preparation scope.
 No error-free acceptance is claimed, and library restriction remains planned.
 The harness uses existing AV viewer A and initial
@@ -748,7 +830,8 @@ The historical [main source18 deployment](m3e-source18-main-deployment.json) pas
 and ran schema25 with that same executable SHA-256, PID 539535/start ticks 3115871.
 That historical primary process was stopped during the main-schema26 work;
 the new primary is source28/PID688833 as recorded above.
-The isolated candidate is source28/PID 682417/start ticks 5168373.
+The isolated candidate is now source32/schema27, PID748513/start ticks6996875;
+the former source28 process was PID682417/start ticks5168373.
 All old business columns and sequences were preserved through the
 29-to-30-table schema25 migration, together with the old archives.
 Health, readiness, administration, login and seven reads passed, then logout

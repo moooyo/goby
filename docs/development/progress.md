@@ -2,7 +2,51 @@
 
 The goal remains the complete planned Linux backend and administrator dashboard. A completed engineering increment does not establish full Emby compatibility.
 
-The latest [input06 diagnostic](m3e-source28-special-features-blocker.json)
+Persistent Movie extras are implemented in the worktree. The schema27
+PostgreSQL17 catalog was generated and the corrected source31 targeted run
+passed 105 race tests with no failures/skips and complete cleanup. Its full
+run was subsequently stopped after fixture failures; additional native Trailer
+name-control fixes passed the source32 expanded targeted run: 137 race tests,
+zero failures/skips and complete cleanup. The [source32 full suite and build](m3e-source32-extras-full.json)
+also passed: 1,873 top-level race tests across 24 packages, zero failures/skips,
+all six cleanup checks true and unit exit code 0. The frozen manifest is
+`a65070315ce3b31dd70143267cbf774a838bc0e5b1ed99f34c3c759d392daa65`;
+the built executable SHA-256 is
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+The [candidate schema26-to27 upgrade](m3e-source32-candidate-upgrade.json) also
+passed with ready/complete status as PID746709/start ticks6930051, retained
+in that upgrade's original receipt. All preexisting rows, columns, relation OIDs, ACLs and sequences in
+the old 33 tables were preserved, as were credentials, media and recovery state.
+Only the expected schema27 migration row was appended to an old table; the
+two new tables are empty. The candidate has 35 tables, 13 items and three
+libraries; that upgrade preserved runtime configuration. The [source32 product](source32-product-publication.json)
+is published at `b9bb7b1`. The [input07 original-Movie dual-user flow](m3e-source32-cross-user-original-movie.json)
+subsequently passed: both Home-to-Movie-to-Home flows, genuine PlaybackInfo200
+and finished transfer, SpecialFeatures200 `[]`, zero page errors, own200/
+foreign403, unchanged four item-UserData projections/preferences/Configuration/
+Policy, UI logout204/exact-token401 and closed WebSockets. Each retained one
+blocked-resource console warning/error. The [separate preparation comparison](m3e-source32-cross-user-original-movie-comparison.json)
+passed with 22 to 24 play rows, 51 to 53 selected A/B auth rows, two eligible old
+Prepared rows expired and two new Prepared rows plus two new revoked auth rows.
+Five UserData rows stayed unchanged and references/encoding stayed zero; this
+is not a whole-database preservation claim.
+
+The [precise media-root extension](m3e-source32-extra-root-extension.json) also
+passed, adding only `/opt/goby-fixtures/client-special-features-m3e-v1/Movies`.
+It preserved all 35 table rows/sequences, credentials, recovery state and media,
+with zero HTTP calls, library creation or scans. The current candidate process
+is PID748513/start ticks6996875, still 13 items/three libraries/35 tables and
+two empty Extra tables. The [first preflight failure](m3e-source32-extra-root-preflight-failed.json)
+remains retained: tool01 and its mock used `encoding_states` instead of
+`encoding_jobs`; the failure preceded output-directory creation and changed
+no state/environment/service. Tool02 corrected the name and passed two syntax
+checks, 11 pure guards including the actual catalog regression, preflight and
+execution. The primary remains source28/schema26. Next are independently
+prepared nonempty positive fixtures and their original-client flow. See
+[current extras verification](verification-m3e-extras.md) for retained failures,
+the completed reference projections and remaining deployment/client gates.
+
+The historical [input06 diagnostic](m3e-source28-special-features-blocker.json)
 passed 107 guards and its bounded database comparison, but failed the strict
 page-error gate. The two Movie detail errors now correlate with exact
 SpecialFeatures user-item GET404 requests. The first
@@ -11,7 +55,7 @@ completed: library83 contains main Movies87/88, SpecialFeatures returns three
 Video attachments and LocalTrailers separately returns Trailer89. All 24
 selected ordinary-viewer cases returned complete HTTP200 responses; the old
 six libraries, five users and media were preserved, and all four new recorder
-tokens were revoked. Persistent SpecialFeatures support, remaining projection
+tokens were revoked. Persistent SpecialFeatures primary deployment, broader projection
 and access cases, library restriction and full M3 acceptance remain open.
 
 The M5j round is complete: native backup/recovery, deployment and the
@@ -163,14 +207,15 @@ The public summary SHA-256 is
 Each client also recorded one unclassified `ui_movie` page error. Input05's
 driver did not reject page errors, so its passed result establishes only the
 recorded flow and state scope; complete client acceptance remains open.
-Input06 is adding strict page-error rejection and sanitized normal-event
-diagnostics. Its next candidate baseline is 20 plays, 49 auth rows and zero
-references, with both new Prepared rows already bound to revoked auth. A fresh
-snapshot and new comparison scope are required; the old 18/47 comparator or
-before image must not be reused as new authority. The
+Input06 subsequently enforced strict page-error rejection and diagnosed the
+SpecialFeatures404. Its 20/49 starting point and 22/51 result are consumed
+historical baselines, as are input05's 18/47 scope and before image. Input07
+later passed the original Movie flow and its new scoped comparison; the latest
+recorded counts are 24 plays/53 selected A/B auth rows. No old before image or
+comparator scope may be reused; a future run needs fresh authority. The
 [temporary library restriction plan](m3e-library-restriction-plan.md) remains
-planned and unexecuted, including its separate 404-versus403 matrix; page-error
-diagnosis comes first. The main deployment remains passed independently.
+planned and unexecuted, including its separate 404-versus403 matrix. The main
+schema26 deployment remains passed independently; primary schema27 is open.
 
 ## Decisions
 
@@ -185,7 +230,7 @@ diagnosis comes first. The main deployment remains passed independently.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source28 primary deployment passed, full dual-user acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05 navigation, bounded preparation, own/foreign reads, state checks and logout proofs passed within scope, but one unclassified ui_movie page error per client keeps complete acceptance open; input06 diagnosis, the unexecuted library-restriction matrix and broader milestones remain |
+| M3e real-client acceptance | In progress; source32 original-Movie dual-user flow passed, positive-extra acceptance open | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05/input06 failures remain historical. Source32 passed the full 1,873-test race suite/build, candidate upgrade, input07 original-Movie dual-user flow and precise root extension; one console warning/error per user remains. Nonempty positive fixtures, primary schema27, library restriction and broader milestones remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
@@ -535,8 +580,12 @@ smoke and finalization. The completion preserved the process and all three old
 failure trees; activity is now 17 after the two legitimate authentication events.
 The old PID539535/start ticks `3115871` belongs to the former source18 process.
 The isolated client candidate is
-source28/schema26, PID 682417/start ticks `5168373`, binary SHA-256
-`83757e79a1694573e4c1fab83e18c67be5f0c2d8696246daccb91f009ab2efae`.
+source32/schema27, PID748513/start ticks `6996875`, binary SHA-256
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
+Its [schema27 upgrade](m3e-source32-candidate-upgrade.json) and subsequent
+[exact media-root extension](m3e-source32-extra-root-extension.json) passed.
+The upgrade retains PID746709/start ticks6930051; candidate PID682417/start
+ticks5168373 is an older historical process.
 The historical
 [deployment evidence](m3e-source18-main-deployment.json), SHA-256
 `02ed027b353488ab31cb9e4ac3e7cfc4547422bb1a57e7f9cfdfdd945aad0bf3`,
