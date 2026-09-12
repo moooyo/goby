@@ -1,0 +1,17 @@
+{
+  "afterPublic": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-observation-03/private/public-baseline.json",
+    "sha256": "518bf101500b94c1b1c07c2c90934f96ee741265b5058e16a4103b4d45439a0f"
+  },
+  "allGeneratedBytesMatched": true,
+  "businessHttpRequests": 0,
+  "independent": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-execution-03/independent-terminal.json",
+    "sha256": "f5b2521936e18b00787c4d8ec068410d6d142363f74dfba9051577016005bba1"
+  },
+  "kind": "nextup-preparation04-baseline-independent-verification",
+  "passed": true,
+  "requestCount": 64,
+  "schemaVersion": 1,
+  "scopeEntries": 207
+}

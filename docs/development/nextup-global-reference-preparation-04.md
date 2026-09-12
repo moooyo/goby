@@ -193,13 +193,14 @@ after recovery, and establishes no matrix fixture release or client acceptance.
 
 Preparation 04 and the independent recovery attempt are consumed scopes.
 Neither authorizes additional business HTTP or rewriting its original outcome.
-The full preparation-04 seal is complete. A fresh observer and release remain
-required for the changed retained environment.
+The full preparation-04 seal is complete. The [fresh observer03](nextup-global-baseline-observer-03.md)
+has independently captured the current ten users, twelve libraries, 98 devices
+and 24 full details. Producer integration with its accepted baseline and the
+new release-v3 contract remains required.
 
-That fresh baseline must capture the retained population of ten users and
-twelve libraries, the recovery-created device, P's new authentication dates,
-and the restored direct UserData. The complete current reference device
-population has not yet been recaptured, so no device total is inferred here.
+The accepted fresh baseline includes the recovery-created device, P's new
+authentication dates and the restored direct UserData. Its complete device
+population is directly observed, rather than inferred from login counts.
 The old eight-user/ten-library Guid baseline cannot be reused to start
 preparation 05 directly.
 
@@ -208,7 +209,8 @@ validates the observed episode percentage against the actual full DTO/runtime
 while retaining unrelated fields and exact zero-state equality. Its four
 remote suites passed 379 guards and eight compile checks. This development
 bundle still uses the older release-v2 population contract, so it cannot start
-a fresh actual preparation until the new observer and release are accepted.
+a fresh actual preparation until the accepted observer's baseline and new
+release contract are integrated and remotely verified.
 Complete four-calibration evidence, matrix execution and actual client
 acceptance remain outstanding.
 

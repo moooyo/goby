@@ -1,0 +1,27 @@
+{
+  "actualBaselineAccepted": false,
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "compilation": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-01/verification-01/compile-report.json",
+    "sha256": "e19fdcad01f6bf9e7abee239f6fe8fe6cba2489314dffee9ac2bec9eb54d1835"
+  },
+  "compileChecks": 2,
+  "errors": 0,
+  "exitCode": 0,
+  "failureTypes": [],
+  "failures": 0,
+  "guards": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-01/verification-01/guards-report.json",
+    "sha256": "f901d632c3df5db6ef63180f65a7fe2d85a78da61d00b36eec2ed87632f2fbd0"
+  },
+  "kind": "nextup-preparation04-baseline-observer-verification",
+  "passed": true,
+  "schemaVersion": 1,
+  "skipped": 0,
+  "sourceManifest": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-01/source-manifest.json",
+    "sha256": "ac15f67cc7fe9c5346fe5337745c3e17be9af6fdfc1a0a5041dc141d944d84ff"
+  },
+  "tests": 96
+}

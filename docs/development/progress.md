@@ -1,75 +1,79 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T21:42:00+00:00`. The shared Episode
-percentage and cleanup contract passed all 379 remote guards and eight compile
-checks. The new predicate also accepted the three exact retained full DTOs from
-preparation04 and its independent recovery. Preparation04 now has a complete
-independent failed-scope seal. A fresh current public baseline, successful new
-calibrations, a released matrix fixture and actual NextUp results remain open.
+Execution state checkpoint: `2026-09-12T22:11:05+00:00`. The dedicated
+preparation04 baseline observer completed all 64 actual requests and passed
+independent exact-byte replay. Its accepted current snapshot contains ten users,
+twelve libraries, 98 devices and 24 full detail witnesses. The new administrator
+token has logout204/same-token401 closure, and all 158 protected roots and the
+complete Goby state remain unchanged. This releases a baseline for a new
+preparation; it does not release a matrix fixture or establish client acceptance.
 
-The [verification summary](nextup-playback-contract-verification-01.json),
-SHA-256 `3f79f264037d657fd4f2dbae0834caf73d049debc077b232a84684145bc85039`,
-records matrix53, transport100, preparation161 and operator65 guards, with no
-failures/errors, eight compile checks and no actual business HTTP or process
-probes. The exact remote bundle is
-`W/nextup-playback-contract-tool-01/revision-01`; its wrapper PID1514315 has
-exited0 and is absent. The [retained DTO check](nextup-playback-contract-actual-retained-verification-01.json)
-uses the original zero, partial percentage20 and recovered full zero responses;
-it does not repeat any live calibration or DELETE.
+The [observer03 record](nextup-global-baseline-observer-03.md) and its
+[independent terminal](nextup-global-baseline-observer-03-independent-terminal.json),
+SHA-256 `f5b2521936e18b00787c4d8ec068410d6d142363f74dfba9051577016005bba1`,
+bind the actual 62 normal and two cleanup requests. The 61 snapshot GETs retain
+the old twelve full details and collect both preparation04 actors' six Episodes
+each under the actual administrator token. Older own-token DTOs constrain item
+identity and zero UserData; they were not spliced into the fresh full DTOs. The
+single recovered P4/A1 projection, P authentication dates and recovery-created
+device are reconciled against the actual 172-request parent ledger and separate
+six-request recovery. All 207 scope entries, including 204 files, agree with
+the complete replay. The worker's original awaiting_independent_attestation
+status and baselineReleased=false remain unchanged.
 
-The [new contract](nextup-playback-percentage-contract.md) validates a present
-finite numeric percentage against the actual Episode position/runtime exactly.
-It preserves every value, type and absent field. A present percentage with
-Played=true remains unsupported until actual completed-state evidence is
-obtained; no 0/100 value is inferred from Played. The version-three cleanup
-proof retains beforeZero, PlaybackInfo, Started, Progress, Stopped,
-beforeDelete, DELETE and afterDelete for each calibration: 34 distinct response
-receipts including the two actor logins. Each stopped playback session permits
-one DELETE attempt. An unacknowledged DELETE retains pending responsibility;
-an acknowledged DELETE that fails full zero restoration cannot be repeated by
-cleanup. Neither rule weakens the exact complete zero-state requirement.
+| Current accepted observer input or output | SHA-256 |
+| --- | --- |
+| Dedicated observer source | `126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6` |
+| Observer guards | `b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28` |
+| Actual input | `cc59138eda23e99832263d3d85feda89f92a39fda69e7c4146a0609e8ee4a320` |
+| Frozen plan | `60ea6d44c9389239370ad56ac5885b70126d29fd0804a52fe76a4519e174a309` |
+| Complete private public-baseline.json | `518bf101500b94c1b1c07c2c90934f96ee741265b5058e16a4103b4d45439a0f` |
+| Actual closed-authentication.json | `ea9b9311e3c6b7a30270e37c429a725b6a3f6aea86d6a892274aed7c6456e736` |
 
-Current frozen producer SHA-256 is
-`206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574`;
-transport is `4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8`,
-matrix is `a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d`,
-and operator is `e97667ac01541d2115d0df3d4062239895662d41140637e8030b410b1a05475a`.
-This verified development bundle still uses the historical eight-user,
-ten-library, twelve-detail release-v2 input contract and 257/263/89 plan maxima
-with 280/100/380 hard caps. It cannot start a new real preparation against the
-enlarged current population. Matrix hard caps remain 220/80/300.
+Input, execution and output roots are respectively
+`W/nextup-global-reference-baseline-inputs-03`,
+`W/reference-nextup-global-baseline-execution-03`, and
+`W/reference-nextup-global-baseline-observation-03`. The observer source is
+frozen under `W/nextup-preparation04-baseline-observer-tool-01/revision-02`.
+Its [final verification](nextup-preparation04-baseline-observer-verification-02.json)
+passed 101 remote guards and two compile checks. The initial revision's 96
+passing guards remain retained separately; review subsequently tightened actual
+output-file and complete observe-argv bindings before any business HTTP.
 
-The [preparation04 independent seal](nextup-global-reference-preparation-04-independent-terminal.json),
-SHA-256 `33f40ce85fc0934bc88a12c4e34cbf4cd8a8b9a682e446d9b1e1feb85e28841a`,
-replays all 172 actual requests with 526 private and 173 export files byte-exact,
-zero differences and no normalization. All 154 protected roots and the full
-Goby state at 83 sessions, 70 devices and 185 activity entries are preserved.
-The original parent status remains recovery_required. Its separate accepted
-[six-request recovery](nextup-preparation04-userdata-recovery-independent-terminal.json)
-restored P4/A1's complete four-key zero UserData and closed its exact new token.
-Both original invocations are terminal, with absent former PIDs and empty
-cgroups. No consumed parent, recovery or seal may be replayed or rewritten.
+The actual unit `goby-nextup-preparation04-baseline-observer-03.service` retains
+invocation `475e6e5130ca4ab5947f37bafc60d535`, exit0/MainPID0, absent former
+PID1515339 and an empty cgroup. Before preservation SHA-256 is
+`77baa27e16bf527e5b676ff497e4bd6b03c626c9cda924312048e0769570e98f`;
+after is `972e3a9bdff3c4580da0784cf6057e835fe1a3e13b96df83e424093094428d3b`.
+All 158 roots, old service identities, main files and the full Goby state at
+83 sessions, 70 devices and 185 activity entries match. This observer scope is
+consumed; do not run it again or change its original files.
 
-Next: finish and remotely verify the dedicated
-`observe-nextup-preparation04-baseline.py` and its guards, currently under
-development. Its planned 64 requests comprise one administrator login,
-61 snapshot GETs and logout204/same-token401. The new snapshot must contain
-the actual ten users, twelve libraries and 24 full detail witnesses: retain
-the old twelve and read both preparation04 actors' six Episodes each. New
-full DTOs must be collected under the actual observer token; older own-token
-responses constrain identity and zero UserData but are not spliced into a
-fabricated administrator projection. Reconcile the recovery-created device,
-P authentication dates and scoped restored UserData from exact raw evidence.
-The complete current device population has not yet been recaptured.
+The [shared playback contract](nextup-playback-percentage-contract.md) remains
+verified and published as `d47a733`: matrix53, transport100, preparation161 and
+operator65 guards, eight compile checks, and three actual retained Episode DTO
+checks. It validates exact finite partial percentages, retains all UserData
+values/types/presence, and requires 34 distinct response receipts for the four
+calibrations. Each stopped lifecycle permits one DELETE; an unacknowledged
+write or an acknowledged write without exact restoration cannot be retried.
+Played=true with a present percentage remains unsupported pending actual evidence.
 
-After independent observer acceptance, bind its actual baseline through a new
-release-v3 input and adapt the producer's population and plan. The planned
-ten-user/twelve-library/24-detail preparation needs 293 normal requests at its
-maximum, 299 with successful closure, and 107 failure-cleanup requests; its
-new proposed hard caps are 320/120/440. Those adaptations are not implemented
-or admitted yet. Then use a fresh scope for four complete calibrations,
-independent fixture release and the actual reference NextUp matrix. All former
-Guid, observer and preparation scopes remain immutable historical evidence.
+Next: finish the producer and outer-operator integration for this accepted
+baseline. The currently published producer still requires the historical
+eight-user/ten-library/twelve-detail release-v2 input and must not run against
+the enlarged population. The new release-v3 contract retains the actual v4 and
+Guid history and adds baselineObservation={manifest, independent}; its fixed
+observer source must replay the complete actual evidence through
+verify_completed_evidence before returning the baseline and closure descriptors.
+The adaptation is in progress and not yet remotely verified or admitted.
+
+The proposed new preparation plan is 293 normal requests, 299 with successful
+closure, and 107 failure-cleanup requests, within 320/120/440 hard caps. Matrix
+caps remain 220/80/300. After verification, use a fresh input and scope for four
+actual calibrations, independent fixture release and the reference NextUp
+matrix. The [preparation04 seal](nextup-global-reference-preparation-04-independent-terminal.json),
+all 172 exact replayed requests and its separate accepted UserData recovery
+remain immutable historical evidence.
 
 The original v4 and Goby v7 automatic-refresh observations remain negative;
 matched public payloads establish no Goby-specific defect. The positive
@@ -1609,7 +1613,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; playback tooling verified; current baseline and matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. The revised Episode percentage and v3 lifecycle/one-DELETE contract passed 379 remote guards and eight compile checks. Preparation04 is independently sealed after 172-request replay with all 526 private and 173 export files exact; its separately restored zero state and closed tokens remain accepted, with 154 roots and Goby 83/70/185 preserved. The current tool input still targets historical 8 users / 10 libraries / 12 details. A dedicated 64-request observer for the actual 10 users / 12 libraries / 24 details is under development; after its independent acceptance, new release-v3 population/budget adaptation and four real calibrations must precede fixture release and the NextUp matrix. Automatic-refresh v4/v7 controls remain negative. Primary upgrade requires positive client acceptance and a fresh independently attested upgrade. See [playback contract](nextup-playback-percentage-contract.md) and [preparation04 seal](nextup-global-reference-preparation-04-independent-terminal.json). |
+| M3e real-client acceptance | In progress; current baseline independently accepted; preparation/matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. Observer03 completed 64 requests and independent exact-byte replay, capturing 10 users/12 libraries/98 devices/24 full details with exact new-token closure, 158 preserved roots and full Goby 83/70/185 unchanged. Its source passed 101 guards/two compile checks. The shared Episode percentage/v3 lifecycle/one-DELETE contract previously passed 379 guards/eight compile checks. Producer and operator integration for the new baseline and release-v3 are in progress; the currently published 8-user/10-library/12-detail producer remains unsuitable for a new actual run. Four actual calibrations, fixture release and NextUp matrix remain open. Automatic-refresh v4/v7 controls remain negative. Primary upgrade needs positive client acceptance and a fresh independently attested upgrade. See [observer03](nextup-global-baseline-observer-03.md). |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
