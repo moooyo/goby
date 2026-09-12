@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "name": "actor",
+  "report": {
+    "counts": {
+      "executed": 127,
+      "failed": 0,
+      "passed": 127
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "c96d564ac4a9ceab78aec3865ffc5d2a660d1177e381d0457ac06bc37b05fcbd"
+}

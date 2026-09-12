@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "name": "controller",
+  "report": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "6d29ced57e547723ba0ff2feeefd98b445715c6eb7e25855b4265f1106aa8f09",
+    "operator_sha256": "68753cc567ceb138b1a2cfd693020b42556448cc5da0821c4ead1f8cf93700f2",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-source55-controller-guards",
+    "test_count": 64
+  },
+  "stderr_sha256": "1c2f86e8488ed914e553baa42769c9ad7f05fa829573311d618f00b0dbadb76c",
+  "stdout_sha256": "c4388f9b01f24feab51c1ca774dc3420d8bcb1cab01fe9221a13d07c9a604a52"
+}

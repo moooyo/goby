@@ -378,9 +378,10 @@ AV = "ce" * 16
 def authority_fixture():
     output = CONTROLLER.WORK / "client-schema28-source55-upgrade-20260912_140000_123456abcdef"
     return {"marker": "goby-client-library-changed-source55-authority-v1", "version": 1, "candidate": copy.deepcopy(CANDIDATE),
-        "authority": {key: {"path": str(path), "sha256": hashlib.sha256(key.encode()).hexdigest()} for key, path in (
+        "authority": {**{key: {"path": str(path), "sha256": hashlib.sha256(key.encode()).hexdigest()} for key, path in (
             ("upgrade_intent", CONTROLLER.UPGRADE_TOOL / "intent.json"), ("upgrade_report", output / "report.json"),
-            ("upgrade_attestation", output / "attestation.json"), ("current_snapshot", output / "after-full.json"))}}
+            ("upgrade_attestation", output / "attestation.json"), ("current_snapshot", output / "after-full.json"))},
+            **copy.deepcopy(CONTROLLER.PRIOR_PINS)}}
 
 
 def schema_state():
@@ -653,12 +654,192 @@ def upgrade_documents_fixture():
     return envelope, intent, report, attestation, state, previous
 
 
+def prior_documents_fixture():
+    """Model the failed v2 login-only ledger without executing its old controller."""
+    value = ledger_fixture("original", True)
+    before, after = value["before"], value["after"]
+    rows = after["database"]["tables"]
+    rows["sessions"] = [row for row in rows["sessions"] if row["id"] != NATIVE_SESSION]
+    rows["activity_entries"] = [row for row in rows["activity_entries"] if row["actor_credential_id"] != NATIVE_SESSION]
+    appended = [row for row in rows["activity_entries"] if row["actor_credential_id"] == SESSION]
+    first = before["database"]["sequences"]["activity_entries_id_seq"]["last_value"] + 1
+    for index, row in enumerate(appended):
+        row["id"] = first + index
+    after["database"]["sequences"]["activity_entries_id_seq"] = {"last_value": first + 1, "is_called": True}
+    upgraded = copy.deepcopy(before)
+    upgraded["database"]["metadata"]["captured_at"] = at(-1)
+    authority = authority_fixture()["authority"]
+    upgrade_authority = {key: authority[key] for key in CONTROLLER.UPGRADE_AUTHORITY_KEYS}
+    outer = {"pid": 310055, "start_ticks": "210055", "boot_id": CONTROLLER.BOOT, "unit": CONTROLLER.PRIOR_CONTROLLER}
+    worker = {"pid": 310056, "start_ticks": "210056", "boot_id": CONTROLLER.BOOT, "uid": 0, "gid": 0,
+              "cgroup": "/system.slice/" + CONTROLLER.PRIOR_WORKER}
+    sources = {str(CONTROLLER.PRIOR_TOOL / name): hashlib.sha256(name.encode()).hexdigest() for name in CONTROLLER.JS_NAMES}
+    browser_authority = {**upgrade_authority, "before_snapshot": authority["prior_before_snapshot"]}
+    target = profile_fixture(before)["target"]
+    prior_input = {"marker": CONTROLLER.INPUT_MARKER, "version": 1, "mode": CONTROLLER.MODE, "root": str(CONTROLLER.PRIOR_ROOT),
+        "output": str(CONTROLLER.PRIOR_ROOT / "browser"), "candidate": copy.deepcopy(CANDIDATE), "controller": outer,
+        "actor": {"slot": "B", "user_id": CONTROLLER.B, "account_key": "viewer", "source_credentials_sha256": CONTROLLER.CREDENTIALS_SHA,
+            "credentials": {"path": str(CONTROLLER.PRIOR_ROOT / "viewer-credentials.json"), "sha256": "ab" * 32}},
+        "source_closure": sources, "authority": browser_authority, "target": target,
+        "fixture": {key: {"path": str(path), "sha256": sha} for key, (path, sha) in CONTROLLER.FIXTURE.items()},
+        "expected_libraries": sorted([{"id": row["id"], "name": row["name"]} for row in before["database"]["tables"]["libraries"]], key=lambda row: row["id"])}
+    ledger = {"new_sessions": 1, "new_devices": 1, "new_audits": 2, "metadata_revision_delta": 0,
+              "old_rows_sequences_private_preserved": True, "owned_sessions_closed": True}
+    capabilities = {"path": str(CONTROLLER.PRIOR_ROOT / "browser/capabilities-private.json"), "sha256": "cd" * 32,
+                    "request_count": 1, "last_successful_body_sha256": "de" * 32}
+    controller = {"marker": CONTROLLER.MARKER, "version": 1, "mode": CONTROLLER.MODE, "status": "failed", "phase": "discovery",
+        "input_sha256": authority["prior_input"]["sha256"], "source_closure_sha256": CONTROLLER.sha(CONTROLLER.canonical(sources)),
+        "authority": upgrade_authority, "controller": outer, "candidate_process": CANDIDATE["process"],
+        "candidate_invocation": CANDIDATE["invocation_id"], "state_sha256": CANDIDATE["state_sha256"], "node_process": worker,
+        "reserved_native_intents": [], "dispatched_native_intents": [], "restoration": "not_required", "restoration_required": False,
+        "browser_fallback_used": False, "automatic_retry": False, "sql_business_writes": False, "candidate_or_primary_service_writes": False,
+        "worker_chain_ledger_passed": False, "acceptance_ready_for_outer_terminal": False, "library_changed_client_acceptance": False,
+        "client_acceptance": False, "full_m3_complete": False, "errors": [{"stage": "execution_discovery", "failure_type": "ObservationError"}],
+        "ledger": ledger, "evidence": {name: authority[key] for key, name in (("prior_input", "input.json"),
+            ("prior_browser_report", "browser-report.json"), ("prior_before_snapshot", "before-full.json"), ("prior_after_snapshot", "after-full.json"))}}
+    controller["evidence"]["browser-capabilities-private.json"] = {key: capabilities[key] for key in ("path", "sha256")}
+    proof = ordinary_proof()
+    actor = {"slot": "B", "id": CONTROLLER.B, "ordinary_authority_confirmed": True, "closed": True, "cleanup_failures": [],
+        "token_fingerprint": TOKEN_SHA, "proxy_login_status": 200, "login": {"status": 200, "request_count": 1},
+        "logout": {"status": 204, "login_view_visible": True}, "proxy_logout": {"status": 204, "completed": True, "token_fingerprint": TOKEN_SHA},
+        "session_proof": {"outcome": "all_observed_logout_tokens_rejected", "entries": [{"token_fingerprint": TOKEN_SHA,
+            "result": "logout_token_rejected", "verification": {"status": 401, "method": "GET", "route": "/emby/System/Info",
+                "is_ui_request": False, "eligible_at_request_start": True, "result": "token_rejected"}}]}}
+    browser = {"marker": "goby-client-library-changed-report-v1", "version": 1, "mode": CONTROLLER.MODE, "result": "failed", "outcome": "failed",
+        "failure": "library_changed_target_card_not_observed", "input_sha256": controller["input_sha256"], "source_closure_sha256": controller["source_closure_sha256"],
+        "controller": outer, "node_process": worker, "candidate": copy.deepcopy(CANDIDATE), "authority": browser_authority, "target": target,
+        "stages": [], "controls": [], "discovery": None, "armed": None, "forward": None, "restore_armed": None, "restored": None,
+        "library_changed_client_acceptance": False, "client_acceptance": False, "full_m3_complete": False, "restoration": "not_required",
+        "login_proof": proof, "actor": actor, "capabilities_private": capabilities,
+        "closure": {"context_closed": True, "browser_closed": True, "proxy_closed": True, "http_pending": 0, "websocket_pending": 0,
+                    "websocket_active": 0, "sockets_remaining": 0, "websocket_opened": 1, "websocket_closed": 1, "cleanup_failures": []}}
+    return {"candidate": copy.deepcopy(CANDIDATE), "authority": authority, "prior_input": prior_input, "controller": controller,
+            "browser": browser, "upgraded": upgraded, "before": before, "after": after}
+
+
+def prior_terminal_fixture(value):
+    candidate, authority, controller = value['candidate'], value['authority'], value['controller']
+    def properties(unit, process, invocation, working, live=False):
+        return {'ActiveState': 'active' if live else 'failed', 'ControlGroup': '/system.slice/' + unit if live else '',
+            'DropInPaths': '', 'ExecMainCode': '0' if live else '1', 'ExecMainStatus': '0' if live else '1',
+            'FragmentPath': ('/etc/systemd/system/' if live else '/run/systemd/transient/') + unit,
+            'Group': 'goby' if live else 'root', 'Id': unit, 'InvocationID': invocation, 'LoadState': 'loaded',
+            'MainPID': str(process['pid']) if live else '0', 'Restart': 'no', 'Result': 'success' if live else 'exit-code',
+            'SubState': 'running' if live else 'failed', 'Transient': 'no' if live else 'yes',
+            'User': 'goby' if live else 'root', 'WorkingDirectory': working}
+    failed = {}
+    for unit, source, invocation, working in ((CONTROLLER.PRIOR_CONTROLLER, controller['controller'], 'd6376750d8ff4fc08c97c69ac993f1e6', str(CONTROLLER.PRIOR_TOOL)),
+            (CONTROLLER.PRIOR_WORKER, controller['node_process'], '40884584c2784e3da2a91f816f563b45', str(CONTROLLER.PRIOR_ROOT))):
+        process = {'pid': source['pid'], 'start_ticks': int(source['start_ticks']), 'boot_id': source['boot_id']}
+        failed[unit] = {'old_process': process, 'old_process_gone': True,
+            'properties': properties(unit, process, invocation, working),
+            'recursive_cgroup': {'exists': False, 'files_checked': 0, 'path': '/sys/fs/cgroup/system.slice/' + unit, 'processes': 0}}
+    controller['worker_terminal'] = dict(failed[CONTROLLER.PRIOR_WORKER]['properties'], cgroup_empty=True)
+    terminal = {'marker': 'goby-source55-failed-ui-terminal-v2', 'version': 1, 'schema': 28, 'status': 'failed_scope_sealed',
+        'observed_run_status': 'failed', 'phase': 'discovery', 'scope': str(CONTROLLER.PRIOR_ROOT), 'tool': str(CONTROLLER.PRIOR_TOOL),
+        'captured_at': at(12), 'cleanup': 'not_required', 'restoration': 'not_required', 'cleanup_needed': False, 'cleanup_performed': False,
+        'automatic_retry': False, 'client_acceptance': False, 'full_m3_complete': False, 'library_changed_client_acceptance': False,
+        'sql_business_writes': False, 'http_requests': 0, 'service_writes': 0, 'reserved_native_intents': [], 'dispatched_native_intents': [],
+        'candidate_preserved': True, 'current_matches_prior_after': True, 'exact_owned_additions_retained': True, 'media_preserved': True,
+        'old_rows_sequences_private_preserved': True, 'old_v1_scope_preserved': True, 'owned_session_closed': True,
+        'primary_preserved': True, 'scope_files_unchanged': True, 'ledger': copy.deepcopy(controller['ledger']),
+        'before_snapshot': authority['prior_before_snapshot'], 'prior_after_snapshot': authority['prior_after_snapshot'],
+        'input': authority['prior_input'], 'browser_report': authority['prior_browser_report'], 'report': authority['prior_controller_report'],
+        'upgrade_authority_snapshot': authority['current_snapshot'], 'independent_snapshot': copy.deepcopy(CONTROLLER.PRIOR_INDEPENDENT),
+        'media_fact_sha256': '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d',
+        'primary_fact_sha256': '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a',
+        'primary_process': copy.deepcopy(CONTROLLER.PRIMARY_PROCESS), 'primary_invocation_id': CONTROLLER.PRIMARY_INVOCATION,
+        'candidate': {**{key: copy.deepcopy(candidate[key]) for key in ('binary_sha256', 'invocation_id', 'process')},
+            'properties': properties('goby-client-m3e.service', candidate['process'], candidate['invocation_id'], '/var/lib/goby-test/client-m3e', True)},
+        'failed_units': failed, 'browser': {'browser_closed': True, 'capabilities_verified': True, 'capability_requests': 1, 'context_closed': True,
+            'failure': 'library_changed_target_card_not_observed', 'failure_counters': {'observer_errors': 0, 'page_errors': 0, 'proxy_failed': 0,
+                'proxy_rejected': 0, 'websocket_failed': 0}, 'http_pending': 0, 'login_proven': True, 'owned_session_revoked': True,
+            'proxy_closed': True, 'result': 'failed', 'sockets_remaining': 0, 'ui_logout_and_token_rejection_proven': True,
+            'websocket_active': 0, 'websocket_closed': 1, 'websocket_opened': 1, 'websocket_pending': 0},
+        **copy.deepcopy(CONTROLLER.PRIOR_SEAL_RECORDS)}
+    independent = copy.deepcopy(value['after'])
+    independent['database']['metadata']['captured_at'] = at(11)
+    return terminal, independent
+
+
+class Source55PriorFailureGuards(GuardTestCase):
+    def test_independent_failed_terminal_requires_exact_closed_lifetimes_and_snapshot(self):
+        value = prior_documents_fixture()
+        terminal, independent = prior_terminal_fixture(value)
+        CONTROLLER.validate_prior_documents(**value)
+        CONTROLLER.validate_prior_terminal(value['candidate'], value['authority'], value['controller'], value['browser'], terminal, value['after'], independent)
+        for key, replacement in (('status', 'passed'), ('cleanup_performed', True), ('http_requests', 1),
+                                 ('current_matches_prior_after', False), ('library_changed_client_acceptance', True)):
+            changed = copy.deepcopy(terminal)
+            changed[key] = replacement
+            with self.subTest(field=key):
+                self.reject(lambda: CONTROLLER.validate_prior_terminal(value['candidate'], value['authority'], value['controller'],
+                    value['browser'], changed, value['after'], independent))
+        for unit in (CONTROLLER.PRIOR_CONTROLLER, CONTROLLER.PRIOR_WORKER):
+            changed = copy.deepcopy(terminal)
+            changed['failed_units'][unit]['recursive_cgroup']['processes'] = 1
+            with self.subTest(unit=unit):
+                self.reject(lambda: CONTROLLER.validate_prior_terminal(value['candidate'], value['authority'], value['controller'],
+                    value['browser'], changed, value['after'], independent))
+        changed = copy.deepcopy(independent)
+        changed['database']['tables']['items'][0]['name'] = 'Unowned title'
+        self.reject(lambda: CONTROLLER.validate_prior_terminal(value['candidate'], value['authority'], value['controller'],
+            value['browser'], terminal, value['after'], changed))
+
+    def test_prior_failure_chain_retains_exact_upgrade_before_and_one_closed_login(self):
+        value = prior_documents_fixture()
+        original = copy.deepcopy(value)
+        result = CONTROLLER.validate_prior_documents(**value)
+        self.assertEqual(result, value["controller"]["ledger"])
+        self.assertEqual(value, original)
+        fresh = copy.deepcopy(value["after"])
+        fresh["database"]["metadata"]["captured_at"] = at(12)
+        CONTROLLER.compare_fixed_snapshot(value["after"], fresh)
+        self.reject(lambda: CONTROLLER.compare_fixed_snapshot(value["upgraded"], fresh))
+
+    def test_prior_failure_cannot_be_upgraded_to_ui_success_or_native_activity(self):
+        for document, key, replacement in (("controller", "status", "passed"), ("controller", "reserved_native_intents", ["login"]),
+                ("controller", "dispatched_native_intents", ["forward"]), ("browser", "result", "passed"),
+                ("browser", "discovery", {"passed": True}), ("browser", "library_changed_client_acceptance", True)):
+            value = prior_documents_fixture()
+            value[document][key] = replacement
+            with self.subTest(document=document, field=key):
+                self.reject(lambda: CONTROLLER.validate_prior_documents(**value))
+
+    def test_prior_old_rows_metadata_and_capture_chain_are_preserved(self):
+        for table, field in (("users", "management_revision"), ("items", "name"), ("item_metadata_state", "revision"),
+                              ("sessions", "last_seen_at"), ("activity_entries", "previous_revision"), ("library_roots", "storage_binding")):
+            value = prior_documents_fixture()
+            value["after"]["database"]["tables"][table][0][field] = "unowned"
+            with self.subTest(table=table):
+                self.reject(lambda: CONTROLLER.validate_prior_documents(**value))
+        value = prior_documents_fixture()
+        value["before"]["database"]["metadata"]["captured_at"] = at(-2)
+        self.reject(lambda: CONTROLLER.validate_prior_documents(**value))
+
+    def test_prior_token_device_logout_and_exact_sequence_deltas_are_bound(self):
+        for mutation in ("token", "device", "logout", "sequence", "audit"):
+            value = prior_documents_fixture()
+            if mutation == "token":
+                value["browser"]["login_proof"]["token_sha256"] = "fe" * 32
+            elif mutation == "device":
+                value["after"]["database"]["tables"]["devices"][-1]["reported_device_id"] = "another-browser"
+            elif mutation == "logout":
+                value["browser"]["actor"]["session_proof"]["entries"][0]["verification"]["status"] = 200
+            elif mutation == "sequence":
+                value["after"]["database"]["sequences"]["activity_entries_id_seq"]["last_value"] += 1
+            else:
+                value["after"]["database"]["tables"]["activity_entries"][-1]["previous_revision"] = 1
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.validate_prior_documents(**value))
+
+
 class Source55AuthorityGuards(GuardTestCase):
     def test_cli_requires_the_exact_authority_and_new_driver_paths(self):
-        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-02")
-        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v2")
-        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v2.service")
-        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v2.service")
+        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-03")
+        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v3")
+        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v3.service")
+        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v3.service")
         values = ["--script-sha256", "12" * 32, "--driver", str(CONTROLLER.TOOL / CONTROLLER.JS_NAMES[0]),
             "--source-closure", str(CONTROLLER.TOOL / "sources.json"), "--source-closure-sha256", "23" * 32,
             "--authority", str(CONTROLLER.TOOL / "authority.json"), "--authority-sha256", "34" * 32,
@@ -668,7 +849,7 @@ class Source55AuthorityGuards(GuardTestCase):
         changed = list(values)
         changed[changed.index("--authority") + 1] = str(CONTROLLER.WORK / "authority.json")
         self.reject(lambda: CONTROLLER.arguments(changed))
-        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-01"
+        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-02"
         for option, name in (("--driver", CONTROLLER.JS_NAMES[0]), ("--authority", "authority.json"), ("--source-closure", "sources.json")):
             changed = list(values)
             changed[changed.index(option) + 1] = str(previous_tool / name)

@@ -1,0 +1,285 @@
+{
+  "marker": "goby-client-library-changed-discovery-failure-v1",
+  "version": 1,
+  "phase": "discovery",
+  "failure": "library_changed_target_card_not_observed",
+  "last": {
+    "home": {
+      "location": {
+        "same_origin": true,
+        "supported_path": true,
+        "navigation_observed": false,
+        "route": "home"
+      },
+      "libraries": [
+        {
+          "id": "57a85c1ca5b6c7ae602c587755250b2f",
+          "name": "M3e Client Special Features Movies",
+          "visible_title_count": 2,
+          "visible_card_count": 1,
+          "card_id_present": true,
+          "card_id_matches": true,
+          "proof": "visible_card_id_and_title",
+          "passed": true
+        },
+        {
+          "id": "6383d20008836e137559698c29b10395",
+          "name": "M3e Client Music",
+          "visible_title_count": 2,
+          "visible_card_count": 1,
+          "card_id_present": true,
+          "card_id_matches": true,
+          "proof": "visible_card_id_and_title",
+          "passed": true
+        },
+        {
+          "id": "a34ce665fb75421ef7551570f353d705",
+          "name": "M3e Client Television",
+          "visible_title_count": 2,
+          "visible_card_count": 1,
+          "card_id_present": true,
+          "card_id_matches": true,
+          "proof": "visible_card_id_and_title",
+          "passed": true
+        },
+        {
+          "id": "a9993591e72f0f2e7babcbf8b9c50790",
+          "name": "M3e Client Movies",
+          "visible_title_count": 2,
+          "visible_card_count": 1,
+          "card_id_present": true,
+          "card_id_matches": true,
+          "proof": "visible_card_id_and_title",
+          "passed": true
+        }
+      ],
+      "controls": {
+        "home": {
+          "links": 1,
+          "buttons": 1
+        },
+        "refresh": {
+          "links": 0,
+          "buttons": 0
+        },
+        "reload": {
+          "links": 0,
+          "buttons": 0
+        }
+      },
+      "controls_scope": "Visible exact accessible names Home, Refresh and Reload; unlabeled controls are not inferred",
+      "media_inactive": true,
+      "passed": true
+    },
+    "dom": {
+      "route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+      "document_id": "document-6",
+      "target_id": "268051d3ca734aefcf94e245fb25ad55",
+      "expected_name": "M3e Client Movie",
+      "visible_target_cards": 0,
+      "target_title_count": 0,
+      "forbidden_title_count": 0,
+      "identity_proven": false,
+      "media_inactive": true,
+      "passed": false,
+      "selector": {
+        "identity_attribute": "data-id",
+        "title_mode": "exact-visible-text",
+        "card_tag": null,
+        "card_class": null,
+        "context": "current-visible-dom"
+      }
+    },
+    "navigation": {
+      "before_route": "/web/index.html#!/home",
+      "current_route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+      "before_sequence": 0
+    },
+    "catalog": {
+      "physical": [
+        {
+          "id": 1,
+          "kind": "collection-folder",
+          "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/a9993591e72f0f2e7babcbf8b9c50790",
+          "query": [],
+          "shape_sha256": "15d33742d8af3e6d2c858a0721d04c9f2e03509f94cd780197dcb99065c67292",
+          "request_sha256": "685aa27082ab58951e0c1c577664c87cb04d3d5ef4809108de9472d57a16d511",
+          "phase": "discovery",
+          "method": "GET",
+          "token_sha256": "0d59f721f2bf735487b5eefbdd271e0f78ffb83093bcffb86f632fc1d69c1909",
+          "request_elapsed_ms": 3391.3204120099545,
+          "request_sequence": 4,
+          "status": 200,
+          "completed": true,
+          "terminal": "completed",
+          "response_elapsed_ms": 3402.9015989899635,
+          "projection": {
+            "collection_folder": {
+              "Id": "a9993591e72f0f2e7babcbf8b9c50790",
+              "Name": "M3e Client Movies",
+              "Type": "CollectionFolder",
+              "Subviews": [
+                "movies",
+                "movies",
+                "folders"
+              ]
+            },
+            "count": 1,
+            "body_sha256": "6890b27e451ff70dcb6c6635c697ddaa8c4dfd923fb4326146185b8e7660363c",
+            "body_bytes": 471
+          },
+          "finished_elapsed_ms": 3403.776888012886,
+          "terminal_status": 200,
+          "response_bytes": 471
+        },
+        {
+          "id": 2,
+          "kind": "items",
+          "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items",
+          "query": [
+            [
+              "EnableImageTypes",
+              "Primary,Backdrop,Thumb"
+            ],
+            [
+              "Fields",
+              "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate"
+            ],
+            [
+              "ImageTypeLimit",
+              "1"
+            ],
+            [
+              "IncludeItemTypes",
+              "Movie"
+            ],
+            [
+              "Limit",
+              "50"
+            ],
+            [
+              "ParentId",
+              "a9993591e72f0f2e7babcbf8b9c50790"
+            ],
+            [
+              "Recursive",
+              "true"
+            ],
+            [
+              "SortBy",
+              "SortName"
+            ],
+            [
+              "SortOrder",
+              "Ascending"
+            ],
+            [
+              "StartIndex",
+              "0"
+            ]
+          ],
+          "shape_sha256": "92a6a766d00ee3ebef88ad8e5ecfdc148e0e687133ed0d71af6f839ac76435a4",
+          "request_sha256": "9ce46c54bba55957f3fde9ffa4627198ce2e09edbd964046a442f06468a89d49",
+          "phase": "discovery",
+          "method": "GET",
+          "token_sha256": "0d59f721f2bf735487b5eefbdd271e0f78ffb83093bcffb86f632fc1d69c1909",
+          "request_elapsed_ms": 3427.8943290114403,
+          "request_sequence": 10,
+          "status": 200,
+          "completed": true,
+          "terminal": "completed",
+          "response_elapsed_ms": 3438.4277310073376,
+          "projection": {
+            "target": {
+              "Id": "268051d3ca734aefcf94e245fb25ad55",
+              "Name": "M3e Client Movie",
+              "Type": "Movie"
+            },
+            "count": 1,
+            "body_sha256": "620f76a0d66e4bc99cd013ecebdc2a92024894523d189460dbb89bb4cb40978d",
+            "body_bytes": 577
+          },
+          "finished_elapsed_ms": 3439.0166470110416,
+          "terminal_status": 200,
+          "response_bytes": 577
+        }
+      ],
+      "frames": [
+        {
+          "index": 238,
+          "kind": "collection-folder",
+          "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/a9993591e72f0f2e7babcbf8b9c50790",
+          "shape_sha256": "15d33742d8af3e6d2c858a0721d04c9f2e03509f94cd780197dcb99065c67292",
+          "request_sha256": "685aa27082ab58951e0c1c577664c87cb04d3d5ef4809108de9472d57a16d511",
+          "phase": "discovery",
+          "source": "page",
+          "worker_id": null,
+          "main_frame": true,
+          "request_elapsed_ms": 3389.1641049981117,
+          "request_sequence": 3,
+          "document_id": "document-6",
+          "page_route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+          "status": 200,
+          "finished": true,
+          "failed": false,
+          "from_service_worker": false,
+          "token_sha256": "0d59f721f2bf735487b5eefbdd271e0f78ffb83093bcffb86f632fc1d69c1909",
+          "content_type": "application/json",
+          "response_elapsed_ms": 3405.737470984459,
+          "finished_elapsed_ms": 3405.8334780037403
+        },
+        {
+          "index": 242,
+          "kind": "items",
+          "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items",
+          "shape_sha256": "92a6a766d00ee3ebef88ad8e5ecfdc148e0e687133ed0d71af6f839ac76435a4",
+          "request_sha256": "9ce46c54bba55957f3fde9ffa4627198ce2e09edbd964046a442f06468a89d49",
+          "phase": "discovery",
+          "source": "page",
+          "worker_id": null,
+          "main_frame": true,
+          "request_elapsed_ms": 3426.3197270035744,
+          "request_sequence": 9,
+          "document_id": "document-6",
+          "page_route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+          "status": 200,
+          "finished": true,
+          "failed": false,
+          "from_service_worker": false,
+          "token_sha256": "0d59f721f2bf735487b5eefbdd271e0f78ffb83093bcffb86f632fc1d69c1909",
+          "content_type": "application/json",
+          "response_elapsed_ms": 3440.6447870135307,
+          "finished_elapsed_ms": 3440.71806499362
+        }
+      ],
+      "pairs": [
+        {
+          "frame_request_index": 238,
+          "physical_exchange_id": 1,
+          "unambiguous": true,
+          "complete": true
+        },
+        {
+          "frame_request_index": 242,
+          "physical_exchange_id": 2,
+          "unambiguous": true,
+          "complete": true
+        }
+      ],
+      "correlation_error": null
+    }
+  },
+  "target_candidates": {
+    "target_id": "268051d3ca734aefcf94e245fb25ad55",
+    "total_target_nodes": 0,
+    "targets": [],
+    "entries": [],
+    "truncated": false
+  },
+  "candidates_reason": null,
+  "screenshot": {
+    "status": "omitted",
+    "reason": "visible_content_not_safe",
+    "artifact": null
+  }
+}

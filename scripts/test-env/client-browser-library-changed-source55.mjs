@@ -7,17 +7,17 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { TextDecoder } from 'node:util';
 import { createLibraryChangedSource55BrowserActor, authorityForURL,
-  safeBrowserFailure, resanitizeBrowserDiagnostics } from './client-browser-cross-user.mjs';
+  safeBrowserFailure, resanitizeBrowserDiagnostics, sanitizeBrowserMessage } from './client-browser-cross-user.mjs';
 import { HomeViewsObserver, waitHomeLoginProof, observeHomeDOM, checkedHomeFile,
   homeSourceDigest, homeSessionClosed, procStartTicks, validateHomeExpectedLibraries } from './client-browser-library-home.mjs';
 import { loadLibraryChangedSource55Fixture, readLibraryChangedSource55Snapshot,
   libraryChangedSetupDiagnostic } from './client-library-changed-source55-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v2';
+export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v3';
 export const CHANGED_OUTPUT = CHANGED_ROOT + '/browser';
-export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v2.service';
-export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v2.service';
+export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v3.service';
+export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v3.service';
 const ROOT = CHANGED_ROOT, OUTPUT = CHANGED_OUTPUT;
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
@@ -39,6 +39,8 @@ export const CHANGED_LIMITS = Object.freeze({ work_ms: 390000, cleanup_ms: 90000
   samples: 600, catalog_per_window: 20, catalog_total: 64, events: 64, lifecycle: 128,
   message_bytes: 65536, json_bytes: 2 * 1024 * 1024, record_bytes: 512 * 1024,
   report_bytes: 4 * 1024 * 1024, publication_wait_ms: 5000 });
+export const CHANGED_DIAGNOSTIC_LIMITS = Object.freeze({ capture_ms: 3000, publish_ms: 3000,
+  screenshot_bytes: 4 * 1024 * 1024, target_nodes: 24, structure_nodes: 96, text_chars: 256 });
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const clone = value => Array.isArray(value) ? value.map(clone) : record(value)
   ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, clone(child)])) : value;
@@ -114,7 +116,8 @@ export function validateLibraryChangedInput(input) {
     safeText(input.target.relative_path, 4096) && !input.target.relative_path.startsWith('/') &&
     !input.target.relative_path.includes('\\') && path.posix.normalize(input.target.relative_path) === input.target.relative_path &&
     !input.target.relative_path.split('/').some(value => value === '..' || value === '.' || value === ''));
-  need(exact(input.authority, ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) &&
+  need(exact(input.authority, ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot',
+    'prior_input', 'prior_browser_report', 'prior_controller_report', 'prior_terminal', 'prior_before_snapshot', 'prior_after_snapshot']) &&
     Object.values(input.authority).every(descriptor));
   const upgradeRoot = path.posix.dirname(input.authority.upgrade_report.path);
   need(path.posix.dirname(upgradeRoot) === WORK &&
@@ -124,13 +127,23 @@ export function validateLibraryChangedInput(input) {
     input.authority.upgrade_attestation.path === upgradeRoot + '/attestation.json' &&
     input.authority.current_snapshot.path === upgradeRoot + '/after-full.json' &&
     input.authority.before_snapshot.path === ROOT + '/before-full.json');
+  const priorRoot = WORK + '/client-library-changed-ui-source55-v2';
+  for (const [key, [suffix, digest]] of Object.entries({
+    prior_input: ['/input.json', 'c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73'],
+    prior_browser_report: ['/browser/report.json', 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743'],
+    prior_controller_report: ['/report.json', '467f473ef20b1b05bfc76c863b41f69eeb77f1f2a783f57d6549beaa46f28104'],
+    prior_before_snapshot: ['/before-full.json', '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f'],
+    prior_after_snapshot: ['/after-full.json', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc'] }))
+    need(input.authority[key].path === priorRoot + suffix && input.authority[key].sha256 === digest);
+  need(input.authority.prior_terminal.path === WORK + '/client-library-changed-source55-execution-02/failed-terminal.json' &&
+    input.authority.prior_terminal.sha256 === 'b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6');
   need(exact(input.controller, ['pid', 'start_ticks', 'boot_id', 'unit']) && Number.isSafeInteger(input.controller.pid) && input.controller.pid > 1 &&
     /^[1-9]\d*$/.test(input.controller.start_ticks) && input.controller.boot_id === candidate.process.boot_id &&
     input.controller.unit === CHANGED_CONTROLLER_UNIT);
   need(record(input.source_closure) && Object.keys(input.source_closure).length === SOURCES.length &&
     Object.entries(input.source_closure).every(([filename, hash]) => descriptor({ path: filename, sha256: hash })));
   const scripts = Object.keys(input.source_closure).filter(filename => filename.endsWith('.mjs'));
-  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-02/' + name).sort()));
+  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-03/' + name).sort()));
   return input;
 }
 
@@ -153,8 +166,8 @@ export function validateLibraryChangedBaseline(input, before, current) {
   need(same(captured(before), captured(current)) && instant(first.metadata.captured_at) > instant(previous.metadata.captured_at));
   const tables = first.tables;
   need(Object.keys(tables).length === 35 && Object.values(tables).every(Array.isArray) && Object.keys(first.sequences).length === 5 &&
-    tables.sessions.length === 75 && tables.devices.length === 64 &&
-    tables.activity_entries.length === 167 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
+    tables.sessions.length === 76 && tables.devices.length === 65 &&
+    tables.activity_entries.length === 169 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
     tables.libraries.length === 4 && tables.items.length === 22 && tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0);
   const user = tables.users.find(row => row.id === USER), target = tables.items.find(row => row.id === ITEM);
   need(user && user.is_disabled === false && user.is_administrator === false && user.management_revision === 5 && target &&
@@ -170,10 +183,10 @@ export function validateLibraryChangedBaseline(input, before, current) {
     token_hashes: tables.sessions.map(row => { need(/^\\x[0-9a-f]{64}$/.test(row.token_hash)); return row.token_hash.slice(2); }) };
 }
 
-/** Read only the two sealed snapshot paths without rounding PostgreSQL integers. */
+/** Read only the three declared snapshot paths without rounding PostgreSQL integers. */
 export async function readLibraryChangedSnapshot(input, key, read = readLibraryChangedSource55Snapshot) {
   validateLibraryChangedInput(input);
-  need((key === 'current_snapshot' || key === 'before_snapshot') && typeof read === 'function');
+  need(['current_snapshot', 'before_snapshot', 'prior_after_snapshot'].includes(key) && typeof read === 'function');
   return read(input, key);
 }
 
@@ -502,6 +515,17 @@ export async function publishLibraryChangedRecord(filename, value, io = fs) {
   need(path.posix.dirname(filename) === OUTPUT && /^[a-z][a-z0-9-]*\.json$/.test(path.posix.basename(filename)));
   const maximum = path.posix.basename(filename) === 'report.json' ? CHANGED_LIMITS.report_bytes : CHANGED_LIMITS.record_bytes;
   const bytes = encodeLibraryChangedRecord(value);
+  return publishLibraryChangedBytes(filename, bytes, maximum, io);
+}
+
+export async function publishLibraryChangedScreenshot(bytes, io = fs) {
+  need(Buffer.isBuffer(bytes) && bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])));
+  const size = bytes.length;
+  const source = await publishLibraryChangedBytes(OUTPUT + '/discovery-failure.png', bytes, CHANGED_DIAGNOSTIC_LIMITS.screenshot_bytes, io);
+  return { ...source, bytes: size };
+}
+
+async function publishLibraryChangedBytes(filename, bytes, maximum, io) {
   try {
     need(bytes.length > 0 && bytes.length <= maximum);
     const pending = filename + '.pending';
@@ -840,6 +864,95 @@ export async function observeLibraryChangedDOM(page, target, expectedName, forbi
       card_class: cards.length === 1 ? cards[0].classes : null, context: 'current-visible-dom' } };
 }
 
+/** Keep bounded public structure for diagnosis without changing the acceptance matcher. */
+export async function observeLibraryChangedCandidates(page, secrets = []) {
+  const locator = page.locator(`[data-id="${ITEM}"]`);
+  const total = await locator.count();
+  need(Number.isSafeInteger(total) && total >= 0 && total <= 256, 'library_changed_diagnostic_dom_limit');
+  const value = await locator.evaluateAll((elements, limits) => {
+    const entries = [], seen = new Map();
+    const describe = (element, relation, owner) => {
+      if (!element || entries.length >= limits.structure_nodes) return null;
+      if (seen.has(element)) return seen.get(element);
+      const box = element.getBoundingClientRect(), style = getComputedStyle(element), text = element.innerText;
+      const visible = box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth &&
+        style.display !== 'none' && style.visibility !== 'hidden';
+      const coordinate = value => Number.isFinite(value) ? Math.max(-100000, Math.min(100000, Math.round(value * 10) / 10)) : null;
+      const id = element.getAttribute('data-id'), type = element.getAttribute('data-type');
+      const tag = element.tagName.toLowerCase();
+      const entry = { index: entries.length, relation, owner, tag: /^(?:div|span|a|button|img|h[1-6]|p|section|li|ul|article)$/.test(tag) ? tag : 'other',
+        classes: [...element.classList].filter(value => /^(?:card|item|emby|button|text|section|list)[A-Za-z0-9_-]{0,58}$/.test(value)).slice(0, 12),
+        data_id: [limits.target_id, limits.library_id].includes(id) ? id : null,
+        data_type: ['Movie', 'CollectionFolder', 'Folder'].includes(type) ? type : null,
+        data_type_present: type !== null, type_matches_expected: type === 'Movie',
+        type_casefold_matches_movie: typeof type === 'string' && type.toLowerCase() === 'movie',
+        rect: { x: coordinate(box.x), y: coordinate(box.y), width: coordinate(box.width), height: coordinate(box.height) },
+        visible, text: visible && typeof text === 'string' && text.length <= limits.text_chars ? text : null,
+        text_length: typeof text === 'string' ? Math.min(text.length, 1000000) : 0,
+        leading_whitespace: typeof text === 'string' && /^\s/.test(text), trailing_whitespace: typeof text === 'string' && /\s$/.test(text) };
+      seen.set(element, entry.index); entries.push(entry); return entry.index;
+    };
+    const targets = [];
+    for (const element of elements.slice(0, limits.target_nodes)) {
+      const index = describe(element, 'target', null); targets.push(index);
+      entries[index].parent_index = describe(element.parentElement, 'parent', index);
+      entries[index].grandparent_index = describe(element.parentElement?.parentElement, 'grandparent', index);
+      entries[index].card_index = describe(element.closest('.card, .cardBox'), 'card', index);
+    }
+    return { targets, entries, truncated: elements.length > limits.target_nodes };
+  }, { ...CHANGED_DIAGNOSTIC_LIMITS, target_id: ITEM, library_id: LIBRARY });
+  need(record(value) && Array.isArray(value.entries) && value.entries.length <= CHANGED_DIAGNOSTIC_LIMITS.structure_nodes &&
+    Array.isArray(value.targets) && value.targets.length <= CHANGED_DIAGNOSTIC_LIMITS.target_nodes);
+  for (const entry of value.entries) {
+    entry.text = entry.text === null ? '[text omitted]' : sanitizeBrowserMessage(entry.text, secrets);
+    entry.classes = entry.classes.map(value => sanitizeBrowserMessage(value, secrets));
+  }
+  return { target_id: ITEM, total_target_nodes: total, ...value };
+}
+
+export async function captureLibraryChangedFailureScreenshot(actor, login, secrets, publish = publishLibraryChangedScreenshot) {
+  const omitted = reason => ({ status: 'omitted', reason, artifact: null });
+  if (!actor?.proven || !actor.page || !login?.bound || typeof actor.token !== 'string' || sha(actor.token) !== login.bound.token_sha256)
+    return omitted('login_not_proven');
+  let bytes;
+  try {
+    need(Array.isArray(secrets) && secrets.length <= 128 && secrets.every(value => value === null || typeof value === 'string' && value.length <= 4096));
+    const variants = secrets.filter(Boolean).flatMap(value => [value, encodeURIComponent(value), Buffer.from(value).toString('base64'), Buffer.from(value).toString('hex')]);
+    const route = libraryChangedRoute(actor.page.url()), documentID = actor.libraryChangedDocumentID;
+    const safe = async () => {
+      const observation = await actor.page.locator('body').evaluateAll(bodies => {
+        if (bodies.length !== 1) return { visible_text: null, password_visible: true, embedded_content: true, viewport_valid: false };
+        const visible = element => { const box = element.getBoundingClientRect(), style = getComputedStyle(element);
+          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth &&
+            style.display !== 'none' && style.visibility !== 'hidden'; };
+        const passwords = [...document.querySelectorAll('input[type="password"]')], text = bodies[0].innerText;
+        return { visible_text: typeof text === 'string' && text.length <= 65536 ? text : null,
+          password_visible: passwords.length > 32 || passwords.some(visible), embedded_content: document.querySelectorAll('iframe').length > 0,
+          viewport_valid: innerWidth > 0 && innerHeight > 0 };
+      });
+      try {
+        if (!record(observation) || observation.password_visible !== false || observation.embedded_content !== false ||
+          observation.viewport_valid !== true || typeof observation.visible_text !== 'string' || observation.visible_text.length > 65536) return false;
+        const text = observation.visible_text;
+        if (/\b(?:api[_-]?key|access[_-]?token|authorization|password|token|credential|csrf|secret)\b/i.test(text) ||
+          /\b[A-Za-z0-9][A-Za-z0-9_+/.=-]{23,}\b/.test(text)) return false;
+        const lower = text.toLowerCase();
+        return !variants.some(value => value && lower.includes(value.toLowerCase()));
+      } finally { if (record(observation)) observation.visible_text = null; }
+    };
+    if (!await bounded(safe(), CHANGED_DIAGNOSTIC_LIMITS.capture_ms)) return omitted('visible_content_not_safe');
+    const mask = [actor.page.locator('input, textarea, [contenteditable], [data-userid], [data-user-id]'),
+      actor.page.getByText('m3e-client-viewer', { exact: true })];
+    bytes = await bounded(actor.page.screenshot({ type: 'png', fullPage: false, timeout: 2000, mask }), CHANGED_DIAGNOSTIC_LIMITS.capture_ms);
+    if (libraryChangedRoute(actor.page.url()) !== route || actor.libraryChangedDocumentID !== documentID ||
+      !await bounded(safe(), CHANGED_DIAGNOSTIC_LIMITS.capture_ms)) return omitted('visible_content_changed');
+    if (!Buffer.isBuffer(bytes) || bytes.length > CHANGED_DIAGNOSTIC_LIMITS.screenshot_bytes) return omitted('screenshot_size_limit');
+    const artifact = await bounded(publish(bytes), CHANGED_DIAGNOSTIC_LIMITS.publish_ms);
+    return { status: 'saved', reason: null, artifact };
+  } catch { return omitted('screenshot_unavailable'); }
+  finally { bytes?.fill(0); }
+}
+
 export function libraryChangedStageRecord(name, observation, binding, session, previousControl) {
   const shapes = { discovery: ['home', 'dom', 'reads', 'query_allowlist', 'socket', 'collection_folder_reads', 'collection_folder', 'navigation'],
     armed: ['quiet', 'boundary'],
@@ -876,6 +989,9 @@ export class LibraryChangedWorkflow {
     this.state = { input, started_at: this.started, stages: [], stage_attempts: [], consumed: [], reservation: null, aborted: false };
     this.publishing = new Map(); this.windowSamples = new Map(); this.samples = 0;
     this.phase = 'discovery'; this.closeControl = null; this.disposed = false;
+    this.lastDiscovery = { home: null, dom: null, navigation: { before_route: null, current_route: null, before_sequence: 0 },
+      catalog: { physical: [], frames: [], pairs: [], correlation_error: null } };
+    this.failureDiagnosticsAttempted = false;
     Object.assign(report, { stages: [], controls: [], stage_publication_attempts: [], abort: null, restoration: 'pending' });
   }
   active() { need(!this.disposed && !this.state.aborted && this.now() < this.deadline, 'library_changed_work_deadline'); }
@@ -945,6 +1061,50 @@ export class LibraryChangedWorkflow {
     diagnostic.completed = true; this.state.stages.push({ name, ...source, publication_started_at: publicationStarted });
     this.report.stages.push({ name, ...source });
   }
+  retainDiscovery(values = {}) {
+    const previous = this.lastDiscovery;
+    if (values.home !== undefined) previous.home = clone(values.home);
+    if (values.dom !== undefined) {
+      previous.dom = clone(values.dom);
+      if (previous.dom?.selector?.card_class) previous.dom.selector.card_class =
+        sanitizeBrowserMessage(previous.dom.selector.card_class, this.actor.diagnosticSecrets?.() ?? []);
+    }
+    if (values.before_route !== undefined) previous.navigation.before_route = values.before_route;
+    if (values.before_sequence !== undefined) previous.navigation.before_sequence = values.before_sequence;
+    try { previous.navigation.current_route = libraryChangedRoute(this.actor.page.url()); } catch { /* Keep the last safe route. */ }
+    previous.catalog.physical = clone(this.observer.physical.slice(0, CHANGED_LIMITS.catalog_total));
+    previous.catalog.frames = clone(this.observer.frames.slice(0, CHANGED_LIMITS.catalog_total * 2));
+    try { previous.catalog.pairs = pairLibraryChangedReads(previous.catalog.physical, previous.catalog.frames).map(pair => ({
+      frame_request_index: pair.frame.index, physical_exchange_id: pair.physical?.id ?? null,
+      unambiguous: pair.unambiguous, complete: pair.complete })); }
+    catch { previous.catalog.pairs = []; previous.catalog.correlation_error = 'correlation_unavailable'; }
+  }
+  async captureFailureDiagnostics(failure, secrets, dependencies = {}) {
+    if (this.failureDiagnosticsAttempted) return;
+    this.failureDiagnosticsAttempted = true;
+    const candidates = dependencies.candidates ?? observeLibraryChangedCandidates;
+    const screenshot = dependencies.screenshot ?? captureLibraryChangedFailureScreenshot;
+    const publish = dependencies.publish ?? this.publish;
+    const result = { discovery_failure: null, screenshot: null, status: 'unavailable', reason: null };
+    this.report.diagnostics = result;
+    try {
+      this.retainDiscovery();
+      let targetCandidates = null, candidatesReason = null;
+      try { targetCandidates = await bounded(candidates(this.actor.page, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms); }
+      catch { candidatesReason = 'target_candidates_unavailable'; }
+      const capture = await bounded(screenshot(this.actor, this.observer.login, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms * 4 + CHANGED_DIAGNOSTIC_LIMITS.publish_ms)
+        .catch(() => ({ status: 'omitted', reason: 'screenshot_unavailable', artifact: null }));
+      result.screenshot = capture.artifact;
+      const value = { marker: 'goby-client-library-changed-discovery-failure-v1', version: 1,
+        phase: 'discovery', failure: /^library_changed_[a-z_]+$/.test(failure) ? failure : 'library_changed_discovery_failed',
+        last: clone(this.lastDiscovery), target_candidates: targetCandidates, candidates_reason: candidatesReason, screenshot: capture };
+      const encoded = encodeLibraryChangedRecord(value), size = encoded.length;
+      try { need(size <= CHANGED_LIMITS.record_bytes && secrets.every(secret => !secret || !encoded.includes(Buffer.from(secret)))); }
+      finally { encoded.fill(0); }
+      const artifact = await bounded(publish(OUTPUT + '/discovery-failure.json', value), CHANGED_DIAGNOSTIC_LIMITS.publish_ms);
+      result.discovery_failure = { ...artifact, bytes: size }; result.status = 'saved';
+    } catch { result.reason = 'failure_diagnostic_unavailable'; }
+  }
   async discovery() {
     await bounded(this.actor.open(), 120000); await waitHomeLoginProof(this.observer.login, { settle: () => bounded(this.actor.settled(), 3000) });
     need(this.report.session_private, 'library_changed_login_receipt_missing'); this.observer.attachPage();
@@ -952,6 +1112,7 @@ export class LibraryChangedWorkflow {
     const until = Math.min(this.deadline, this.now() + 20000);
     do {
       this.active(); home = await bounded(this.homeDOM(this.actor.page, this.input.expected_libraries, { require_ids: true }), 3000);
+      this.retainDiscovery({ home });
       await bounded(this.actor.settled(), 3000);
       if (home.passed && this.observer.login.viewEvidence('initial').result === 'passed') break;
       await this.wait(100);
@@ -959,6 +1120,7 @@ export class LibraryChangedWorkflow {
     need(home?.passed && this.observer.login.viewEvidence('initial').result === 'passed', 'library_changed_home_prerequisite');
     await bounded(this.actor.proxyIdle(), 10000); this.observer.assertStable(); await bounded(this.actor.assertPinned(), 10000);
     const previousRoute = libraryChangedRoute(this.actor.page.url()), beforeSequence = this.observer.sequence;
+    this.retainDiscovery({ before_route: previousRoute, before_sequence: beforeSequence });
     const titles = this.actor.page.getByText('M3e Client Movies', { exact: true }).filter({ visible: true });
     const cards = titles.locator('xpath=ancestor-or-self::*[(self::button or self::a or @role="button") and @data-action="link" and ancestor::*[contains(concat(" ", normalize-space(@class), " "), " card ") or contains(concat(" ", normalize-space(@class), " "), " cardBox ")]][1]').filter({ visible: true });
     need(await cards.count() === 1, 'library_changed_library_control_ambiguous');
@@ -969,7 +1131,8 @@ export class LibraryChangedWorkflow {
     await cards.click({ timeout: 8000 });
     let dom, reads; const end = Math.min(this.deadline, this.now() + 25000);
     do {
-      dom = await this.capture(this.input.target.name, null); reads = this.observer.reads(beforeSequence);
+      this.retainDiscovery();
+      dom = await this.capture(this.input.target.name, null); this.retainDiscovery({ dom }); reads = this.observer.reads(beforeSequence);
       if (dom.passed && dom.route !== previousRoute && !dom.route.includes(ITEM) && reads.some(pair => pair.complete && pair.physical.kind === 'items' &&
         pair.frame.page_route === dom.route && pair.frame.document_id === dom.document_id &&
         pair.physical.projection.target.Name === this.input.target.name && pair.frame.token_sha256 === this.observer.boundToken()) &&
@@ -1118,7 +1281,7 @@ export async function runLibraryChanged(options) {
     setupPhase = 'source_closure'; need(Object.hasOwn(input.source_closure, SELF));
     for (const [filename, hash] of Object.entries(input.source_closure)) await checkedHomeFile(filename, hash, 2 * 1024 * 1024, false, false);
     setupPhase = 'baseline';
-    const current = await readLibraryChangedSnapshot(input, 'current_snapshot');
+    const current = await readLibraryChangedSnapshot(input, 'prior_after_snapshot');
     const before = await readLibraryChangedSnapshot(input, 'before_snapshot');
     baseline = validateLibraryChangedBaseline(input, before, current);
     need(Date.now() >= instant(before.database.metadata.captured_at) && Date.now() - instant(before.database.metadata.captured_at) <= 180000);
@@ -1174,7 +1337,9 @@ export async function runLibraryChanged(options) {
   catch (error) {
     const reason = typeof error?.message === 'string' && /^(?:library_changed_[a-z_]+|(?:websocket|automatic_http|dom_update)_not_observed_within_window)$/.test(error.message)
       ? error.message : 'library_changed_flow_failed';
-    report.failure_diagnostic = safeBrowserFailure(error, actor.phase); await flow.abort(reason);
+    report.failure_diagnostic = safeBrowserFailure(error, actor.phase);
+    if (flow.phase === 'discovery') await flow.captureFailureDiagnostics(reason, secrets);
+    await flow.abort(reason);
   } finally {
     try {
       login.phase = 'cleanup'; observer.phase = 'cleanup'; observer.window = null; flow.disposed = true;

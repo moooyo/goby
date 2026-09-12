@@ -7,8 +7,10 @@ import { TextDecoder } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-changed-ui-source55-v2';
-const TOOL = WORK + '/client-library-changed-source55-tool-02';
+const ROOT = WORK + '/client-library-changed-ui-source55-v3';
+const TOOL = WORK + '/client-library-changed-source55-tool-03';
+const PRIOR_ROOT = WORK + '/client-library-changed-ui-source55-v2';
+const PRIOR_TOOL = WORK + '/client-library-changed-source55-tool-02';
 const STATE = WORK + '/client-fixture.json';
 const SELF = fileURLToPath(import.meta.url);
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
@@ -22,7 +24,35 @@ const SOURCE_SHA = '7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765
 const CATALOG_SHA = '8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b';
 const UPGRADE_TOOL = WORK + '/client-schema28-source55-tool-05';
 const UPGRADE_MARKER = 'goby-client-schema28-source55-upgrade-v1';
-const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v2.service';
+const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v3.service';
+const PRIOR_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v2.service';
+const PRIOR_WORKER_UNIT = 'goby-client-library-changed-ui-source55-v2.service';
+const UPGRADE_ROOT = WORK + '/client-schema28-source55-upgrade-20260912_100845_47bff13c329b';
+const UPGRADE_PINS = Object.freeze({
+  upgrade_intent: { path: UPGRADE_TOOL + '/intent.json', sha256: 'f1eec6ea8d9aeffdba689f60182ad4ebc75d733f221b4154b5bb75cf05033111' },
+  upgrade_report: { path: UPGRADE_ROOT + '/report.json', sha256: '328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832' },
+  upgrade_attestation: { path: UPGRADE_ROOT + '/attestation.json', sha256: 'ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032' },
+  current_snapshot: { path: UPGRADE_ROOT + '/after-full.json', sha256: '7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d' },
+});
+const PRIOR_PINS = Object.freeze({
+  prior_input: { path: PRIOR_ROOT + '/input.json', sha256: 'c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73' },
+  prior_browser_report: { path: PRIOR_ROOT + '/browser/report.json', sha256: 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743' },
+  prior_controller_report: { path: PRIOR_ROOT + '/report.json', sha256: '467f473ef20b1b05bfc76c863b41f69eeb77f1f2a783f57d6549beaa46f28104' },
+  prior_terminal: { path: WORK + '/client-library-changed-source55-execution-02/failed-terminal.json',
+    sha256: 'b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6' },
+  prior_before_snapshot: { path: PRIOR_ROOT + '/before-full.json', sha256: '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f' },
+  prior_after_snapshot: { path: PRIOR_ROOT + '/after-full.json', sha256: 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc' },
+});
+const PRIOR_TERMINAL_PINS = Object.freeze({
+  independent_snapshot: { path: WORK + '/client-library-changed-source55-execution-02/independent-after-full.json',
+    sha256: '6dfe6cbbf2288b21a66466719067b2c0d063bb588e693e06479d20da4feb9cd4' },
+  scope_files: { path: WORK + '/client-library-changed-source55-execution-02/failed-scope-files.json',
+    sha256: '3ef622b6f1724c996177ab7a2673b34c9d16a41608957f8546c0ac24d2085eaf' },
+  seal_script: { path: WORK + '/client-library-changed-source55-execution-02/seal-failed-terminal.py',
+    sha256: '3f9bcdbf83c62b5e5cd5ead3fc77d9398b9754ca255ca3e97298cf79fb8d2c8c' },
+  controller_source: { path: PRIOR_TOOL + '/observe-client-library-changed-source55.py',
+    sha256: '57fe02b0fc32d335bb08a89e3f5c31c9121a7af44997c31e1329761b82701f25' },
+});
 const PREVIOUS = Object.freeze({
   binary_sha256: 'cd67f2e71ff1b63e3c138cdba1f9c9d1e584e2788b47964a332b38311cda0e2d',
   process: Object.freeze({ pid: 1264063, start_ticks: 11104222, boot_id: BOOT }),
@@ -181,8 +211,9 @@ export function validateLibraryChangedSource55Input(input) {
     input.actor.source_credentials_sha256 === SOURCE_CREDENTIALS_SHA && descriptor(input.actor.credentials) &&
     input.actor.credentials.path === ROOT + '/viewer-credentials.json');
   const authority = input.authority;
-  need(exact(authority, ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) &&
+  need(exact(authority, [...Object.keys(UPGRADE_PINS), ...Object.keys(PRIOR_PINS), 'before_snapshot']) &&
     Object.values(authority).every(descriptor));
+  need(Object.entries({ ...UPGRADE_PINS, ...PRIOR_PINS }).every(([key, value]) => same(authority[key], value)));
   const scope = upgradeScope(authority);
   need(authority.upgrade_intent.path === UPGRADE_TOOL + '/intent.json' &&
     authority.upgrade_attestation.path === scope.output + '/attestation.json' &&
@@ -321,6 +352,261 @@ function validateSchema28Snapshots(current, before, catalog, candidate) {
   return tables;
 }
 
+function ledgerInstant(value) {
+  const matched = typeof value === 'string' ? /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?(?:Z|\+00:00)$/.exec(value) : null;
+  need(matched);
+  const whole = Date.parse(matched[1] + 'Z');
+  need(Number.isSafeInteger(whole) && new Date(whole).toISOString().slice(0, 19) === matched[1]);
+  return BigInt(whole) * 1000n + BigInt((matched[2] ?? '').padEnd(6, '0'));
+}
+
+function identicalSnapshotWithLaterCapture(left, right) {
+  need(record(left) && record(right) && record(left.database?.metadata) && record(right.database?.metadata));
+  const clean = value => {
+    const metadata = { ...value.database.metadata }; delete metadata.captured_at;
+    return { ...value, database: { ...value.database, metadata } };
+  };
+  need(same(clean(left), clean(right)) && ledgerInstant(right.database.metadata.captured_at) > ledgerInstant(left.database.metadata.captured_at));
+}
+
+function validatePriorLogin(proof) {
+  need(exact(proof, ['token_sha256', 'session_id', 'user_id', 'client_name', 'device_id', 'device_name', 'client_version',
+    'server_id', 'created_at', 'created_at_source', 'kind', 'slot', 'frame_login_finished', 'physical_login_completed', 'request_metadata_matches']) &&
+    digest(proof.token_sha256) && typeof proof.session_id === 'string' && ID.test(proof.session_id) &&
+    proof.user_id === USER && proof.server_id === SERVER && proof.kind === 'emby' && proof.slot === 'B' &&
+    proof.created_at_source === 'SessionInfo.LastActivityDate' &&
+    ['frame_login_finished', 'physical_login_completed', 'request_metadata_matches'].every(key => proof[key] === true) &&
+    ['client_name', 'device_id', 'device_name', 'client_version'].every(key => text(proof[key], 256)));
+  ledgerInstant(proof.created_at);
+}
+
+function validatePriorSnapshotDelta(before, after, browser) {
+  const proof = browser.login_proof; validatePriorLogin(proof);
+  need(record(before) && record(after) && before.schema === 28 && after.schema === 28 &&
+    same(Object.keys(before).sort(), Object.keys(after).sort()) &&
+    Object.keys(before).filter(key => key !== 'database').every(key => same(before[key], after[key])));
+  const left = before.database, right = after.database;
+  need(record(left) && record(right) && same(Object.keys(left).sort(), Object.keys(right).sort()) &&
+    Object.keys(left).filter(key => !['tables', 'sequences', 'metadata'].includes(key)).every(key => same(left[key], right[key])) &&
+    record(left.metadata) && record(right.metadata) && same(Object.keys(left.metadata).sort(), Object.keys(right.metadata).sort()) &&
+    Object.keys(left.metadata).filter(key => key !== 'captured_at').every(key => same(left.metadata[key], right.metadata[key])) &&
+    record(left.tables) && record(right.tables) && Object.keys(left.tables).length === 35 &&
+    same(Object.keys(left.tables).sort(), Object.keys(right.tables).sort()));
+  const start = ledgerInstant(left.metadata.captured_at), end = ledgerInstant(right.metadata.captured_at);
+  need(start < end && ledgerInstant(browser.started_at) >= start && ledgerInstant(browser.completed_at) <= end &&
+    ledgerInstant(browser.started_at) <= ledgerInstant(browser.completed_at));
+  const additions = Object.create(null);
+  for (const [name, rows] of Object.entries(left.tables)) {
+    const current = right.tables[name], columns = left.metadata.columns[name];
+    need(Array.isArray(rows) && Array.isArray(current) && Array.isArray(columns) &&
+      [...rows, ...current].every(row => exact(row, columns)));
+    if (!['sessions', 'devices', 'activity_entries'].includes(name)) {
+      need(same(rows, current)); continue;
+    }
+    const remaining = new Map();
+    for (const row of rows) { const key = canonical(row); remaining.set(key, (remaining.get(key) ?? 0) + 1); }
+    const added = [];
+    for (const row of current) {
+      const key = canonical(row), count = remaining.get(key) ?? 0;
+      if (count > 0) remaining.set(key, count - 1); else added.push(row);
+    }
+    need([...remaining.values()].every(value => value === 0) && new Set(added.map(canonical)).size === added.length);
+    additions[name] = added;
+  }
+  need(left.tables.sessions.length === 75 && left.tables.devices.length === 64 && left.tables.activity_entries.length === 167 &&
+    right.tables.sessions.length === 76 && right.tables.devices.length === 65 && right.tables.activity_entries.length === 169 &&
+    additions.sessions.length === 1 && additions.devices.length === 1 && additions.activity_entries.length === 2);
+  const session = additions.sessions[0], device = additions.devices[0];
+  const integral = value => typeof value === 'bigint' || Number.isSafeInteger(value);
+  need(left.tables.sessions.every(row => row.id !== proof.session_id && row.token_hash !== '\\x' + proof.token_sha256) &&
+    session.id === proof.session_id && session.token_hash === '\\x' + proof.token_sha256 && session.user_id === USER && session.kind === 'emby' &&
+    session.device_id === proof.device_id && ['client_name', 'device_name', 'client_version'].every(key => session[key] === proof[key]) &&
+    ledgerInstant(session.created_at) === ledgerInstant(proof.created_at) && record(session.client_capabilities) && integral(session.device_registry_id));
+  const issued = ledgerInstant(session.created_at), touched = ledgerInstant(session.last_seen_at), revoked = ledgerInstant(session.revoked_at);
+  need(start <= issued && issued <= touched && touched <= end && issued <= revoked && revoked <= end &&
+    ledgerInstant(browser.started_at) <= issued && revoked <= ledgerInstant(browser.completed_at) &&
+    ledgerInstant(session.expires_at) === issued + 30n * 24n * 60n * 60n * 1000000n);
+  need(integral(device.id) && same(device.id, session.device_registry_id) &&
+    left.tables.devices.every(row => row.id !== device.id && row.reported_device_id !== proof.device_id) &&
+    device.reported_device_id === proof.device_id && device.reported_name === proof.device_name && device.app_name === proof.client_name &&
+    device.app_version === proof.client_version && device.last_user_id === USER && device.ip_address === '127.0.0.1' &&
+    device.custom_name === null && device.deleted_at === null && device.revision === 1 &&
+    start <= ledgerInstant(device.created_at) && ledgerInstant(device.created_at) <= issued &&
+    ledgerInstant(device.created_at) <= ledgerInstant(device.last_seen_at) && ledgerInstant(device.last_seen_at) <= end);
+  const audits = additions.activity_entries;
+  need(same(audits.map(row => row.action).sort(), ['session.login', 'session.revoked']) &&
+    audits.every(row => integral(row.id) && row.severity === 'Info' && row.source === 'emby' && row.actor_kind === 'user' &&
+      row.actor_id === USER && row.actor_credential_id === session.id && row.resource_kind === 'session' && row.resource_id === session.id &&
+      row.revision === 0 && row.affected_count === 1 && row.request_id === '' && row.state === '' && same(row.changed_fields, []) &&
+      row.previous_revision === 0 && row.observation_fingerprint === '' && start <= ledgerInstant(row.created_at) && ledgerInstant(row.created_at) <= end));
+  need(record(left.sequences) && record(right.sequences) && same(Object.keys(left.sequences).sort(), Object.keys(right.sequences).sort()));
+  for (const [name, initial] of Object.entries(left.sequences)) {
+    const current = right.sequences[name], table = { devices_id_seq: 'devices', activity_entries_id_seq: 'activity_entries' }[name];
+    need(exact(initial, ['last_value', 'is_called']) && exact(current, ['last_value', 'is_called']) &&
+      integral(initial.last_value) && integral(current.last_value) && typeof initial.is_called === 'boolean' && typeof current.is_called === 'boolean');
+    if (!table) { need(same(initial, current)); continue; }
+    const added = additions[table], first = BigInt(initial.last_value) + 1n;
+    need(initial.is_called === true && current.is_called === true && BigInt(current.last_value) === BigInt(initial.last_value) + BigInt(added.length) &&
+      same(added.map(row => BigInt(row.id)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0), added.map((_, index) => first + BigInt(index))));
+  }
+  need(Object.hasOwn(left.sequences, 'devices_id_seq') && Object.hasOwn(left.sequences, 'activity_entries_id_seq'));
+  return { new_sessions: 1, new_devices: 1, new_audits: 2, metadata_revision_delta: 0,
+    old_rows_sequences_private_preserved: true, owned_sessions_closed: true };
+}
+
+function validatePriorClosure(value) {
+  need(exact(value, ['context_closed', 'browser_closed', 'proxy_closed', 'http_pending', 'websocket_pending', 'websocket_active',
+    'websocket_opened', 'websocket_closed', 'sockets_remaining', 'cleanup_failures']) &&
+    ['context_closed', 'browser_closed', 'proxy_closed'].every(key => value[key] === true) &&
+    ['http_pending', 'websocket_pending', 'websocket_active', 'sockets_remaining'].every(key => value[key] === 0) &&
+    value.websocket_opened === 1 && value.websocket_closed === 1 && same(value.cleanup_failures, []));
+}
+
+function validatePriorTerminal(input, terminal, priorInput, browser, report, ledger) {
+  need(exact(terminal, ['automatic_retry', 'before_snapshot', 'browser', 'browser_report', 'candidate', 'candidate_preserved', 'captured_at',
+    'cleanup', 'cleanup_needed', 'cleanup_performed', 'client_acceptance', 'controller_source', 'current_matches_prior_after',
+    'dispatched_native_intents', 'exact_owned_additions_retained', 'failed_units', 'full_m3_complete', 'http_requests', 'independent_snapshot',
+    'input', 'ledger', 'library_changed_client_acceptance', 'marker', 'media_fact_sha256', 'media_preserved', 'observed_run_status',
+    'old_rows_sequences_private_preserved', 'old_v1_scope_preserved', 'owned_session_closed', 'phase', 'primary_fact_sha256',
+    'primary_invocation_id', 'primary_preserved', 'primary_process', 'prior_after_snapshot', 'report', 'reserved_native_intents',
+    'restoration', 'schema', 'scope', 'scope_files', 'scope_files_unchanged', 'seal_script', 'service_writes', 'sql_business_writes',
+    'status', 'tool', 'upgrade_authority_snapshot', 'version']) &&
+    terminal.marker === 'goby-source55-failed-ui-terminal-v2' && terminal.version === 1 && terminal.status === 'failed_scope_sealed' &&
+    terminal.observed_run_status === 'failed' && terminal.phase === 'discovery' && terminal.schema === 28 &&
+    terminal.scope === PRIOR_ROOT && terminal.tool === PRIOR_TOOL && terminal.cleanup === 'not_required' && terminal.restoration === 'not_required' &&
+    terminal.http_requests === 0 && terminal.service_writes === 0 && typeof terminal.captured_at === 'string' && Number.isFinite(Date.parse(terminal.captured_at)) &&
+    ['candidate_preserved', 'current_matches_prior_after', 'exact_owned_additions_retained', 'media_preserved', 'old_rows_sequences_private_preserved',
+      'old_v1_scope_preserved', 'owned_session_closed', 'primary_preserved', 'scope_files_unchanged'].every(key => terminal[key] === true) &&
+    ['automatic_retry', 'cleanup_needed', 'cleanup_performed', 'client_acceptance', 'full_m3_complete', 'library_changed_client_acceptance',
+      'sql_business_writes'].every(key => terminal[key] === false) && same(terminal.reserved_native_intents, []) &&
+    same(terminal.dispatched_native_intents, []) && same(terminal.ledger, ledger));
+  for (const [key, expected] of Object.entries({ input: PRIOR_PINS.prior_input, report: PRIOR_PINS.prior_controller_report,
+    browser_report: PRIOR_PINS.prior_browser_report, before_snapshot: PRIOR_PINS.prior_before_snapshot,
+    prior_after_snapshot: PRIOR_PINS.prior_after_snapshot, upgrade_authority_snapshot: UPGRADE_PINS.current_snapshot, ...PRIOR_TERMINAL_PINS }))
+    need(same(terminal[key], expected));
+  need(same(terminal.primary_process, { pid: PRIMARY.pid, start_ticks: PRIMARY.start_ticks, boot_id: BOOT }) &&
+    terminal.primary_invocation_id === PRIMARY.invocation &&
+    terminal.primary_fact_sha256 === '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a' &&
+    terminal.media_fact_sha256 === '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d');
+  const serviceKeys = ['ActiveState', 'ControlGroup', 'DropInPaths', 'ExecMainCode', 'ExecMainStatus', 'FragmentPath', 'Group', 'Id',
+    'InvocationID', 'LoadState', 'MainPID', 'Restart', 'Result', 'SubState', 'Transient', 'User', 'WorkingDirectory'];
+  const candidate = terminal.candidate, live = candidate?.properties;
+  need(exact(candidate, ['binary_sha256', 'invocation_id', 'process', 'properties']) &&
+    candidate.binary_sha256 === input.candidate.binary_sha256 && candidate.invocation_id === input.candidate.invocation_id &&
+    same(candidate.process, input.candidate.process) && exact(live, serviceKeys) &&
+    same(live, { ActiveState: 'active', ControlGroup: '/system.slice/goby-client-m3e.service', DropInPaths: '', ExecMainCode: '0', ExecMainStatus: '0',
+      FragmentPath: '/etc/systemd/system/goby-client-m3e.service', Group: 'goby', Id: 'goby-client-m3e.service',
+      InvocationID: input.candidate.invocation_id, LoadState: 'loaded', MainPID: String(input.candidate.process.pid), Restart: 'no',
+      Result: 'success', SubState: 'running', Transient: 'no', User: 'goby', WorkingDirectory: '/var/lib/goby-test/client-m3e' }));
+  need(exact(terminal.failed_units, [PRIOR_CONTROLLER_UNIT, PRIOR_WORKER_UNIT]));
+  for (const [unit, original, invocation, directory] of [
+    [PRIOR_CONTROLLER_UNIT, priorInput.controller, 'd6376750d8ff4fc08c97c69ac993f1e6', PRIOR_TOOL],
+    [PRIOR_WORKER_UNIT, browser.node_process, '40884584c2784e3da2a91f816f563b45', PRIOR_ROOT],
+  ]) {
+    const failure = terminal.failed_units[unit], expected = { pid: original.pid, start_ticks: Number(original.start_ticks), boot_id: BOOT };
+    need(exact(failure, ['old_process', 'old_process_gone', 'properties', 'recursive_cgroup']) && same(failure.old_process, expected) &&
+      failure.old_process_gone === true && exact(failure.properties, serviceKeys) && same(failure.properties, {
+        ActiveState: 'failed', ControlGroup: '', DropInPaths: '', ExecMainCode: '1', ExecMainStatus: '1',
+        FragmentPath: '/run/systemd/transient/' + unit, Group: 'root', Id: unit, InvocationID: invocation, LoadState: 'loaded', MainPID: '0',
+        Restart: 'no', Result: 'exit-code', SubState: 'failed', Transient: 'yes', User: 'root', WorkingDirectory: directory }) &&
+      same(failure.recursive_cgroup, { exists: false, files_checked: 0, path: '/sys/fs/cgroup/system.slice/' + unit, processes: 0 }));
+  }
+  need(same(report.worker_terminal, { ...terminal.failed_units[PRIOR_WORKER_UNIT].properties, cgroup_empty: true }));
+  const observed = terminal.browser;
+  need(exact(observed, ['browser_closed', 'capabilities_verified', 'capability_requests', 'context_closed', 'failure', 'failure_counters',
+    'http_pending', 'login_proven', 'owned_session_revoked', 'proxy_closed', 'result', 'sockets_remaining',
+    'ui_logout_and_token_rejection_proven', 'websocket_active', 'websocket_closed', 'websocket_opened', 'websocket_pending']) &&
+    observed.result === 'failed' && observed.failure === 'library_changed_target_card_not_observed' && observed.capability_requests === 1 &&
+    ['browser_closed', 'capabilities_verified', 'context_closed', 'login_proven', 'owned_session_revoked', 'proxy_closed',
+      'ui_logout_and_token_rejection_proven'].every(key => observed[key] === true) &&
+    ['http_pending', 'sockets_remaining', 'websocket_active', 'websocket_pending'].every(key => observed[key] === 0) &&
+    observed.websocket_opened === 1 && observed.websocket_closed === 1 &&
+    same(observed.failure_counters, { observer_errors: 0, page_errors: 0, proxy_failed: 0, proxy_rejected: 0, websocket_failed: 0 }));
+}
+
+function validatePriorDocuments(input, documents) {
+  const { priorInput, priorBrowserReport: browser, priorControllerReport: report, priorTerminal, priorBefore, priorAfter, priorIndependent } = documents;
+  need(exact(priorInput, ['marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate', 'fixture', 'expected_libraries', 'target',
+    'source_closure', 'authority', 'controller']) && priorInput.marker === input.marker && priorInput.version === 1 && priorInput.mode === input.mode &&
+    priorInput.root === PRIOR_ROOT && priorInput.output === PRIOR_ROOT + '/browser' && same(priorInput.candidate, input.candidate) &&
+    same(priorInput.fixture, FIXTURES) && same(priorInput.expected_libraries, input.expected_libraries) && same(priorInput.target, input.target) &&
+    exact(priorInput.authority, [...Object.keys(UPGRADE_PINS), 'before_snapshot']) &&
+    same(priorInput.authority, { ...UPGRADE_PINS, before_snapshot: PRIOR_PINS.prior_before_snapshot }) &&
+    exact(priorInput.source_closure, SOURCES.map(name => PRIOR_TOOL + '/' + name)) && Object.values(priorInput.source_closure).every(digest));
+  const actor = priorInput.actor, controller = priorInput.controller;
+  need(exact(actor, ['slot', 'user_id', 'credentials', 'account_key', 'source_credentials_sha256']) && actor.slot === 'B' && actor.user_id === USER &&
+    actor.account_key === 'viewer' && actor.source_credentials_sha256 === SOURCE_CREDENTIALS_SHA && descriptor(actor.credentials) &&
+    actor.credentials.path === PRIOR_ROOT + '/viewer-credentials.json' &&
+    exact(controller, ['pid', 'start_ticks', 'boot_id', 'unit']) && Number.isSafeInteger(controller.pid) && controller.pid > 1 &&
+    typeof controller.start_ticks === 'string' && /^[1-9]\d*$/.test(controller.start_ticks) && Number.isSafeInteger(Number(controller.start_ticks)) &&
+    controller.boot_id === BOOT && controller.unit === PRIOR_CONTROLLER_UNIT);
+  const closureSHA = hash(canonical(priorInput.source_closure)), node = browser?.node_process;
+  need(record(browser) && browser.marker === 'goby-client-library-changed-report-v1' && browser.version === 1 && browser.mode === input.mode &&
+    browser.result === 'failed' && browser.outcome === 'failed' && browser.failure === 'library_changed_target_card_not_observed' &&
+    browser.input_sha256 === PRIOR_PINS.prior_input.sha256 && browser.source_closure_sha256 === closureSHA &&
+    same(browser.controller, controller) && same(browser.candidate, input.candidate) && same(browser.authority, priorInput.authority) &&
+    same(browser.target, input.target) && ['client_acceptance', 'library_changed_client_acceptance', 'full_m3_complete'].every(key => browser[key] === false) &&
+    ['discovery', 'armed', 'forward', 'restore_armed', 'restored'].every(key => browser[key] === null) &&
+    same(browser.stages, []) && same(browser.controls, []) && browser.restoration === 'not_required' &&
+    exact(node, ['pid', 'start_ticks', 'boot_id', 'uid', 'gid', 'executable_path', 'executable_sha256', 'cgroup']) &&
+    Number.isSafeInteger(node.pid) && node.pid > 1 && typeof node.start_ticks === 'string' && /^[1-9]\d*$/.test(node.start_ticks) &&
+    Number.isSafeInteger(Number(node.start_ticks)) && node.boot_id === BOOT && node.uid === 0 && node.gid === 0 &&
+    node.executable_path === WORK + '/client-library-changed-source44-tool-01/node' &&
+    node.executable_sha256 === '3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327' && node.cgroup === '/system.slice/' + PRIOR_WORKER_UNIT);
+  validatePriorLogin(browser.login_proof);
+  const observedActor = browser.actor, proof = browser.login_proof, token = proof.token_sha256;
+  need(record(observedActor) && observedActor.slot === 'B' && observedActor.id === USER && observedActor.credentials_sha256 === actor.credentials.sha256 &&
+    observedActor.ordinary_authority_confirmed === true && observedActor.closed === true && observedActor.token_fingerprint === token &&
+    same(observedActor.cleanup_failures, []) && same(observedActor.login, { status: 200, request_count: 1, attempted: true, credentials_filled: true }) &&
+    same(observedActor.logout, { status: 204, login_view_visible: true, attempted: true }) &&
+    same(observedActor.proxy_logout, { source: 'physical-http-forwarding-proxy-request', token_fingerprint: token, status: 204, completed: true }));
+  validatePriorClosure(browser.closure); validatePriorClosure(observedActor.home_closure);
+  const logoutProof = observedActor.session_proof, entry = logoutProof?.entries?.[0], verification = entry?.verification, ui = entry?.ui_request;
+  need(record(logoutProof) && logoutProof.format === 1 && logoutProof.outcome === 'all_observed_logout_tokens_rejected' &&
+    Array.isArray(logoutProof.entries) && logoutProof.entries.length === 1 && logoutProof.logout_overflow === 0 && logoutProof.observer_errors === 0 &&
+    entry.index === 0 && entry.token_fingerprint === token && entry.result === 'logout_token_rejected' &&
+    same(entry.token_sources, ['query:x-emby-token']) && ui?.method === 'POST' && ui.route === '/emby/Sessions/Logout' && ui.response_status === 204 &&
+    ui.client_request_finished === true && ui.client_request_failed === false &&
+    verification?.source === 'independent-node-http-post-logout-verification' && verification.is_ui_request === false &&
+    verification.method === 'GET' && verification.route === '/emby/System/Info' && verification.status === 401 &&
+    verification.eligible_at_request_start === true && verification.result === 'token_rejected' && verification.trigger === 'ui_logout_response');
+  const times = [ui.elapsed_ms, ui.response_elapsed_ms, verification.started_elapsed_ms, verification.finished_elapsed_ms];
+  need(times.every(value => Number.isSafeInteger(value) && value >= 0 && value <= 600000) &&
+    times.every((value, index) => index === 0 || value >= times[index - 1]));
+  const capabilities = browser.capabilities_private;
+  need(exact(capabilities, ['path', 'sha256', 'request_count', 'last_successful_body_sha256']) &&
+    capabilities.path === PRIOR_ROOT + '/browser/capabilities-private.json' && digest(capabilities.sha256) &&
+    capabilities.request_count === 1 && digest(capabilities.last_successful_body_sha256));
+  need(record(report) && report.marker === 'goby-client-library-changed-observation-v1' && report.version === 1 && report.mode === input.mode &&
+    report.status === 'failed' && report.phase === 'discovery' && report.input_sha256 === PRIOR_PINS.prior_input.sha256 &&
+    report.source_closure_sha256 === closureSHA && same(report.controller, controller) && same(report.node_process, node) &&
+    same(report.candidate_process, input.candidate.process) && report.candidate_invocation === input.candidate.invocation_id &&
+    report.state_sha256 === input.candidate.state_sha256 && same(report.authority, UPGRADE_PINS) &&
+    same(report.reserved_native_intents, []) && same(report.dispatched_native_intents, []) && report.restoration === 'not_required' &&
+    ['automatic_retry', 'browser_fallback_used', 'candidate_or_primary_service_writes', 'client_acceptance', 'full_m3_complete',
+      'library_changed_client_acceptance', 'restoration_required', 'sql_business_writes', 'worker_chain_ledger_passed',
+      'acceptance_ready_for_outer_terminal'].every(key => report[key] === false) && report.outer_controller_terminal_required === true && record(report.evidence));
+  for (const [name, expected] of Object.entries({ 'input.json': PRIOR_PINS.prior_input, 'browser-report.json': PRIOR_PINS.prior_browser_report,
+    'before-full.json': PRIOR_PINS.prior_before_snapshot, 'after-full.json': PRIOR_PINS.prior_after_snapshot,
+    'browser-capabilities-private.json': { path: capabilities.path, sha256: capabilities.sha256 } })) need(same(report.evidence[name], expected));
+  const close = browser.control_close, value = close?.value;
+  need(exact(close, ['path', 'sha256', 'value']) && close.path === PRIOR_ROOT + '/control-close.json' && digest(close.sha256) &&
+    same(report.evidence['control-close.json'], { path: close.path, sha256: close.sha256 }) &&
+    exact(value, ['marker', 'version', 'name', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process',
+      'previous_stage_sha256', 'reservation', 'commit', 'restoration']) && value.marker === 'goby-client-library-changed-control-v1' &&
+    value.version === 1 && value.name === 'close' && value.input_sha256 === PRIOR_PINS.prior_input.sha256 && value.source_closure_sha256 === closureSHA &&
+    same(value.controller, controller) && same(value.node_process, node) && value.previous_stage_sha256 === null && value.reservation === null &&
+    value.commit === null && value.restoration === 'not_required');
+  const ledger = validatePriorSnapshotDelta(priorBefore, priorAfter, browser);
+  need(same(report.ledger, ledger));
+  validatePriorTerminal(input, priorTerminal, priorInput, browser, report, ledger);
+  identicalSnapshotWithLaterCapture(priorAfter, priorIndependent);
+  need(ledgerInstant(priorIndependent.database.metadata.captured_at) <= ledgerInstant(priorTerminal.captured_at));
+  identicalSnapshotWithLaterCapture(priorAfter, documents.before);
+  need(ledgerInstant(documents.before.database.metadata.captured_at) > ledgerInstant(priorIndependent.database.metadata.captured_at));
+  return ledger;
+}
+
 function validateUpgradeIntent(input, intent) {
   const scope = upgradeScope(input.authority), candidate = input.candidate;
   need(record(intent) && intent.marker === UPGRADE_MARKER && intent.version === 1 && intent.run_id === scope.run &&
@@ -345,7 +631,8 @@ function validateUpgradeIntent(input, intent) {
 export function validateLibraryChangedSource55Documents(input, documents) {
   validateLibraryChangedSource55Input(input);
   need(exact(documents, ['state', 'beforeState', 'intent', 'report', 'attestation', 'publication', 'catalog', 'current', 'before',
-    'profileReceipt', 'profileReport', 'profileInspection', 'musicChain', 'musicScanReceipt', 'proxy']));
+    'profileReceipt', 'profileReport', 'profileInspection', 'musicChain', 'musicScanReceipt', 'proxy', 'priorInput', 'priorBrowserReport',
+    'priorControllerReport', 'priorTerminal', 'priorBefore', 'priorAfter', 'priorIndependent']));
   const { state, beforeState, intent, report, attestation, publication, catalog, current, before, profileReceipt, profileReport,
     profileInspection, musicChain, musicScanReceipt, proxy } = documents;
   const candidate = input.candidate, authority = input.authority, scope = validateUpgradeIntent(input, intent);
@@ -436,7 +723,10 @@ export function validateLibraryChangedSource55Documents(input, documents) {
   need(proxy?.pid === PROXY_PROCESS.pid && String(proxy.start_ticks) === String(PROXY_PROCESS.start_ticks) &&
     proxy.reference_only === false && Array.isArray(proxy.listen) && proxy.listen.length <= 4 &&
     proxy.listen.filter(value => value === '127.0.0.1:18196').length === 1);
-  const tables = validateSchema28Snapshots(current, before, catalog, candidate);
+  validateSchema28Snapshots(current, documents.priorBefore, catalog, candidate);
+  validatePriorDocuments(input, documents);
+  catalogSequences(catalog, documents.priorAfter.database);
+  const tables = before.database.tables;
   const user = tables.users?.find(value => value.id === USER), target = tables.items.find(value => value.id === ITEM);
   need(user?.is_administrator === false && user.is_disabled === false && user.management_revision === 5 && target?.type === 'Movie' &&
     target.is_folder === false && target.library_id === LIBRARY && target.name === input.target.name &&
@@ -541,11 +831,11 @@ async function protectedFile(filename, expectedSHA, directories, json = true, ma
   } finally { bytes.fill(0); for (const chunk of chunks) chunk.fill(0); await handle.close(); }
 }
 
-/** Read only one of the two already declared complete snapshots without numeric coercion. */
+/** Read only an explicitly declared upgrade, prior-after or fresh-before snapshot without numeric coercion. */
 export async function readLibraryChangedSource55Snapshot(input, key) {
   try {
     validateLibraryChangedSource55Input(input);
-    need(key === 'current_snapshot' || key === 'before_snapshot');
+    need(key === 'current_snapshot' || key === 'prior_after_snapshot' || key === 'before_snapshot');
     need(process.platform === 'linux' && process.getuid?.() === 0 && process.getgid?.() === 0 &&
       SELF === TOOL + '/client-library-changed-source55-fixture.mjs');
     const item = input.authority[key];
@@ -678,6 +968,10 @@ export async function loadLibraryChangedSource55Fixture(options = {}) {
       report: await read(authority.upgrade_report), attestation: await read(authority.upgrade_attestation),
       publication: await read(intent.source.publication), catalog: await read(PINS.catalog, true, SNAPSHOT_LIMIT, [0o600n]),
       current: await read(authority.current_snapshot, true, SNAPSHOT_LIMIT), before: await read(authority.before_snapshot, true, SNAPSHOT_LIMIT),
+      priorInput: await read(PRIOR_PINS.prior_input), priorBrowserReport: await read(PRIOR_PINS.prior_browser_report),
+      priorControllerReport: await read(PRIOR_PINS.prior_controller_report), priorTerminal: await read(PRIOR_PINS.prior_terminal),
+      priorBefore: await read(PRIOR_PINS.prior_before_snapshot, true, SNAPSHOT_LIMIT), priorAfter: await read(PRIOR_PINS.prior_after_snapshot, true, SNAPSHOT_LIMIT),
+      priorIndependent: await read(PRIOR_TERMINAL_PINS.independent_snapshot, true, SNAPSHOT_LIMIT),
       profileReceipt: await read(FIXTURES.profile_receipt), profileReport: await read(FIXTURES.profile_report),
       profileInspection: await read(FIXTURES.profile_inspection), musicChain: await read(FIXTURES.music_chain),
       musicScanReceipt: await read(FIXTURES.music_scan_receipt), proxy: await read(PINS.proxy),
@@ -694,6 +988,8 @@ export async function loadLibraryChangedSource55Fixture(options = {}) {
       source_manifest_sha256: SOURCE_SHA, catalog_sha256: CATALOG_SHA, publication: candidate.publication,
       candidate_invocation_id: candidate.invocation_id, input_sha256: options.inputSHA256,
       source_closure_sha256: hash(canonical(input.source_closure)), authority: { ...input.authority },
+      prior_scope: { root: PRIOR_ROOT, status: 'failed_scope_sealed', terminal: PRIOR_PINS.prior_terminal,
+        retained_additions: { sessions: 1, devices: 1, activity_entries: 2, metadata_revision: 0 } },
       historical_anchors: FIXTURES, account_id: USER, credentials_sha256: input.actor.credentials.sha256,
       proxy_process: { ...PROXY_PROCESS }, primary_process: { pid: PRIMARY.pid, start_ticks: PRIMARY.start_ticks, boot_id: BOOT },
       boundary: 'Read-only Goby files, source closure, process lifetimes and two listener owners; live database deltas belong to the controller ledger' });

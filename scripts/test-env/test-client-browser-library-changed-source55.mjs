@@ -12,9 +12,10 @@ import { CHANGED_ROOT as ROOT, CHANGED_OUTPUT as OUTPUT, CHANGED_UNIT, CHANGED_C
   libraryChangedPublication, encodeLibraryChangedRecord, publishLibraryChangedRecord, LibraryChangedObserver,
   observeLibraryChangedDOM, libraryChangedStageRecord, LibraryChangedWorkflow, libraryChangedObservationPassed,
   disposeLibraryChangedSecrets, validateLibraryChangedAbort, readLibraryChangedSnapshot,
-  libraryChangedSetupFailure } from './client-browser-library-changed-source55.mjs';
+  libraryChangedSetupFailure, observeLibraryChangedCandidates, captureLibraryChangedFailureScreenshot,
+  publishLibraryChangedScreenshot, CHANGED_DIAGNOSTIC_LIMITS } from './client-browser-library-changed-source55.mjs';
 
-const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-02';
+const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-03';
 const SYNTHETIC_UPGRADE = WORK + '/client-schema28-source55-upgrade-20260912_120000_c0ffee123456';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738', ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
@@ -57,7 +58,13 @@ export function libraryChangedInputFixture() {
       upgrade_report: descriptor(SYNTHETIC_UPGRADE + '/report.json', sha('synthetic-upgrade-report')),
       upgrade_attestation: descriptor(SYNTHETIC_UPGRADE + '/attestation.json', sha('synthetic-upgrade-attestation')),
       current_snapshot: descriptor(SYNTHETIC_UPGRADE + '/after-full.json', sha('synthetic-current-snapshot')),
-      before_snapshot: descriptor(ROOT + '/before-full.json') },
+      before_snapshot: descriptor(ROOT + '/before-full.json'),
+      prior_input: descriptor(WORK + '/client-library-changed-ui-source55-v2/input.json', 'c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73'),
+      prior_browser_report: descriptor(WORK + '/client-library-changed-ui-source55-v2/browser/report.json', 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743'),
+      prior_controller_report: descriptor(WORK + '/client-library-changed-ui-source55-v2/report.json', '467f473ef20b1b05bfc76c863b41f69eeb77f1f2a783f57d6549beaa46f28104'),
+      prior_terminal: descriptor(WORK + '/client-library-changed-source55-execution-02/failed-terminal.json', 'b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6'),
+      prior_before_snapshot: descriptor(WORK + '/client-library-changed-ui-source55-v2/before-full.json', '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f'),
+      prior_after_snapshot: descriptor(WORK + '/client-library-changed-ui-source55-v2/after-full.json', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc') },
     controller: { pid: 2000000, start_ticks: '12000000', boot_id: '6bdfc486-7bc8-412f-82b5-70095a09dde7', unit: CHANGED_CONTROLLER_UNIT } };
 }
 
@@ -67,7 +74,7 @@ function binding(input = libraryChangedInputFixture()) {
       executable_path: '/synthetic/node', executable_sha256: '3'.repeat(64), cgroup: '/system.slice/' + CHANGED_UNIT } };
 }
 export function libraryChangedReservationFixture() {
-  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v2]',
+  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v3]',
     original_controls_sha256: '4'.repeat(64), forward_body_sha256: '5'.repeat(64), restore_body_sha256: '6'.repeat(64) };
 }
 function controlFixture(name = 'reserved', bound = binding()) {
@@ -176,9 +183,9 @@ test('source55 input binds the exact seven-file new scope', () => {
   for (const change of [value => { value.candidate.process.pid = 1; }, value => { value.candidate.source = WORK + '/source-attempt-44'; },
     value => { value.candidate.state_sha256 = '0'.repeat(64); }, value => { delete value.authority.upgrade_attestation; },
     value => { value.actor.credentials.path = WORK + '/browser.json'; }, value => { value.actor.admin = {}; },
-    value => { value.root = ROOT.replace('source55-v2', 'source55-v1'); },
+    value => { value.root = ROOT.replace('source55-v3', 'source55-v2'); },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure)
-      .map(([filename, hash]) => [filename.replace('source55-tool-02', 'source55-tool-01'), hash])); },
+      .map(([filename, hash]) => [filename.replace('source55-tool-03', 'source55-tool-02'), hash])); },
     value => { value.source_closure[TOOL + '/unexpected.mjs'] = 'a'.repeat(64); }, value => { delete value.source_closure[TOOL + '/client-browser-goby-fixture.mjs']; },
     value => { value.target.id = USER; }, value => { value.controller.unit = CHANGED_UNIT; }]) {
     const input = libraryChangedInputFixture(); change(input); rejects(() => validateLibraryChangedInput(input));
@@ -191,6 +198,10 @@ test('source55 requires future process and upgrade authority inputs without defa
   }
   for (const key of ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) {
     const input = libraryChangedInputFixture(); delete input.authority[key]; rejects(() => validateLibraryChangedInput(input));
+  }
+  for (const key of ['prior_input', 'prior_browser_report', 'prior_controller_report', 'prior_terminal', 'prior_before_snapshot', 'prior_after_snapshot']) {
+    const input = libraryChangedInputFixture(); input.authority[key].sha256 = sha('synthetic-foreign-prior');
+    rejects(() => validateLibraryChangedInput(input));
   }
   for (const mutate of [value => { value.candidate.publication = 'pending'; }, value => { value.candidate.publication = 'a'.repeat(40); },
     value => { value.candidate.invocation_id = '0'.repeat(32); }, value => { value.candidate.process.start_ticks = 0; },
@@ -301,9 +312,9 @@ test('the complete before ledger must match current authority and its target', (
     'play_sessions', 'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions', 'task_occurrences', 'task_run_children',
     'task_run_requests', 'task_runs', 'task_triggers', 'theme_owner_ids', 'theme_reserved_paths', 'user_item_data', 'user_settings', 'users'];
   const tables = Object.fromEntries(names.map(name => [name, []]));
-  tables.sessions = Array.from({ length: 75 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
-  tables.devices = Array.from({ length: 64 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
-  for (const [name, count] of [['activity_entries', 167], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
+  tables.sessions = Array.from({ length: 76 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
+  tables.devices = Array.from({ length: 65 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
+  for (const [name, count] of [['activity_entries', 169], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
   tables.libraries = clone(input.expected_libraries); tables.users = [{ id: USER, is_disabled: false, is_administrator: false, management_revision: 5 }];
   tables.items = [{ ...input.target, is_folder: false }, ...Array.from({ length: 21 }, () => ({}))]; tables.item_metadata_state = [{ item_id: ITEM }];
   const sequences = Object.fromEntries(['activity_entries_id_seq', 'application_keys_id_seq', 'catalog_entities_id_seq',
@@ -314,7 +325,7 @@ test('the complete before ledger must match current authority and its target', (
   current.database.sequences.activity_entries_id_seq.last_value = 9007199254740993n;
   tables.items[0].file_size = 9007199254740995n;
   const before = clone(current); before.database.metadata.captured_at = new Date(START + 1000).toISOString();
-  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 75);
+  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 76);
   for (const change of [value => { value.database.tables.items[0].name = 'Foreign Name'; }, value => { value.database.tables.devices.pop(); },
     value => { value.database.sequences.unknown = 1; }, value => { value.schema = 27; },
     value => { delete value.database.tables.library_roots[0].binding_revision; },
@@ -329,25 +340,25 @@ test('the complete before ledger must match current authority and its target', (
   }
 });
 
-test('only the two sealed snapshots reach the lossless reader without numeric conversion', async () => {
+test('only the three sealed snapshots reach the lossless reader without numeric conversion', async () => {
   const input = libraryChangedInputFixture(), calls = [];
   const parsed = parseSource55JSON('{"first":9007199254740993,"adjacent":9007199254740994,"negative":-9007199254740993}');
   const read = async (bound, key) => { check(bound === input); calls.push(key); return parsed; };
-  for (const key of ['current_snapshot', 'before_snapshot']) {
+  for (const key of ['current_snapshot', 'before_snapshot', 'prior_after_snapshot']) {
     const value = await readLibraryChangedSnapshot(input, key, read);
     check(value === parsed && value.first === 9007199254740993n && value.adjacent === 9007199254740994n && value.negative === -9007199254740993n);
   }
-  equal(calls, ['current_snapshot', 'before_snapshot']);
+  equal(calls, ['current_snapshot', 'before_snapshot', 'prior_after_snapshot']);
   for (const key of ['upgrade_intent', 'credentials', input.authority.current_snapshot.path, '__proto__']) {
     await rejectsAsync(() => readLibraryChangedSnapshot(input, key, read));
   }
   for (const mutate of [value => { value.authority.current_snapshot.path = WORK + '/client-fixture.json'; },
-    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v2', 'source55-v1') + '/before-full.json'; },
-    value => { value.root = ROOT.replace('source55-v2', 'source55-v1'); }]) {
+    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v3', 'source55-v2') + '/before-full.json'; },
+    value => { value.root = ROOT.replace('source55-v3', 'source55-v2'); }]) {
     const altered = clone(input); mutate(altered);
     await rejectsAsync(() => readLibraryChangedSnapshot(altered, 'current_snapshot', read));
   }
-  check(calls.length === 2);
+  check(calls.length === 3);
 });
 
 test('setup failures retain only the safe phase and original owned source locations', () => {
@@ -360,6 +371,71 @@ test('setup failures retain only the safe phase and original owned source locati
   equal(forwarded.frames, wrapped.diagnostic.frames); check(forwarded.phase === 'baseline');
   const encoded = JSON.stringify(forwarded); check(!encoded.includes(TOKEN) && !encoded.includes(WORK) && !encoded.includes('credentials'));
   check(libraryChangedSetupFailure(original, 'arbitrary-secret-phase').diagnostic.phase === 'arguments');
+});
+
+test('failed discovery keeps evidence without creating a successful stage and cannot block cleanup', async () => {
+  const input = libraryChangedInputFixture(), window = libraryChangedWindowFixture(), writes = [];
+  const actor = { started: START, page: { url: () => 'http://127.0.0.1:18196' + ROUTE },
+    diagnosticSecrets: () => [TOKEN], closed: false, async close() { this.closed = true; } };
+  const observer = { physical: window.http.physical, frames: window.http.frames, login: {} }, report = {};
+  const flow = new LibraryChangedWorkflow({ input, binding: binding(input), actor, observer, report });
+  const dom = domObservation(input.target.name, false);
+  flow.retainDiscovery({ home: { passed: true }, dom, before_route: '/web/index.html#!/home', before_sequence: 1 });
+  await flow.captureFailureDiagnostics('library_changed_target_card_not_observed', [TOKEN], {
+    candidates: async () => ({ target_id: ITEM, entries: [], targets: [], total_target_nodes: 0, truncated: false }),
+    screenshot: async () => ({ status: 'omitted', reason: 'visible_content_not_safe', artifact: null }),
+    publish: async (filename, value) => { writes.push({ filename, value: clone(value) }); return descriptor(filename, sha(JSON.stringify(value))); } });
+  check(writes.length === 1 && writes[0].filename === OUTPUT + '/discovery-failure.json' && !actor.closed);
+  check(writes[0].value.last.dom.passed === false && writes[0].value.last.catalog.pairs.length === 1 && report.stages.length === 0 && !report.discovery);
+  check(report.diagnostics.discovery_failure.bytes > 0 && report.diagnostics.screenshot === null);
+  await flow.captureFailureDiagnostics('library_changed_target_card_not_observed', [TOKEN]); check(writes.length === 1);
+  const failed = new LibraryChangedWorkflow({ input, binding: binding(input), actor, observer, report: {} });
+  await failed.captureFailureDiagnostics('library_changed_target_card_not_observed', [TOKEN], {
+    candidates: async () => { throw new Error(TOKEN); }, screenshot: async () => { throw new Error(TOKEN); },
+    publish: async () => { throw new Error(TOKEN); } });
+  await actor.close(); check(actor.closed && failed.report.diagnostics.reason === 'failure_diagnostic_unavailable');
+});
+
+test('failure screenshots require proven safe login and remain one bounded viewport image', async () => {
+  const png = () => Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(16)]);
+  let safe = true, captures = 0, written = 0;
+  const page = { url: () => 'http://127.0.0.1:18196' + ROUTE,
+    locator: selector => ({ selector, evaluateAll: async (_run, args) => { check(args === undefined);
+      return { visible_text: 'Public Movies', password_visible: !safe, embedded_content: false, viewport_valid: true }; } }),
+    getByText: value => ({ label: value }),
+    screenshot: async options => { captures++; check(options.fullPage === false && options.type === 'png' && options.mask.length === 2 && options.timeout === 2000); return png(); } };
+  const actor = { page, proven: false, token: TOKEN, libraryChangedDocumentID: 'document-2' }, login = { bound: { token_sha256: sha(TOKEN) } };
+  const publish = async bytes => { written++; return { path: OUTPUT + '/discovery-failure.png', sha256: sha(bytes), bytes: bytes.length }; };
+  check((await captureLibraryChangedFailureScreenshot(actor, login, [TOKEN], publish)).reason === 'login_not_proven' && captures === 0);
+  actor.proven = true; safe = false;
+  check((await captureLibraryChangedFailureScreenshot(actor, login, [TOKEN], publish)).reason === 'visible_content_not_safe' && captures === 0);
+  safe = true; const result = await captureLibraryChangedFailureScreenshot(actor, login, [TOKEN], publish);
+  check(result.status === 'saved' && captures === 1 && written === 1 && result.artifact.bytes === 24);
+  page.screenshot = async () => { throw new Error(TOKEN); };
+  check((await captureLibraryChangedFailureScreenshot(actor, login, [TOKEN], publish)).reason === 'screenshot_unavailable' && written === 1);
+});
+
+test('public candidate diagnostics retain duplicate siblings and redact private text', async () => {
+  const globals = ['getComputedStyle', 'innerHeight', 'innerWidth'];
+  const saved = new Map(globals.map(name => [name, { exists: Object.hasOwn(globalThis, name), value: globalThis[name] }]));
+  globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible' }); globalThis.innerWidth = 1000; globalThis.innerHeight = 800;
+  const node = (id, text, type = 'Movie') => ({ tagName: 'DIV', classList: ['card', 'cardText'], innerText: text, parentElement: null,
+    getAttribute: name => name === 'data-id' ? id : name === 'data-type' ? type : null,
+    getBoundingClientRect: () => ({ x: 10, y: 10, top: 10, left: 10, bottom: 30, right: 100, width: 90, height: 20 }),
+    closest() { return this.parentElement ?? this; } });
+  try {
+    const parent = node(null, 'Public title ' + TOKEN), first = node(ITEM, 'M3e Client Movie'), second = node(ITEM, 'M3e Client Movie 2026', 'movie');
+    const missing = node(ITEM, 'M3e Client Movie', null), other = node(ITEM, 'M3e Client Movie', 'other');
+    const nodes = [first, second, missing, other]; for (const value of nodes) value.parentElement = parent;
+    const page = { locator: () => ({ count: async () => nodes.length, evaluateAll: async (run, values) => run(nodes, values) }) };
+    const value = await observeLibraryChangedCandidates(page, [TOKEN]);
+    check(value.total_target_nodes === 4 && value.targets.length === 4 && value.entries[value.targets[0]].parent_index === value.entries[value.targets[1]].parent_index);
+    equal(value.targets.map(index => { const entry = value.entries[index];
+      return [entry.data_type, entry.data_type_present, entry.type_matches_expected, entry.type_casefold_matches_movie]; }),
+    [['Movie', true, true, true], [null, true, false, true], [null, false, false, false], [null, true, false, false]]);
+    check(!JSON.stringify(value).includes(TOKEN) && value.entries.some(entry => entry.text.includes('2026')) && value.entries.length <= CHANGED_DIAGNOSTIC_LIMITS.structure_nodes);
+    check(!JSON.stringify(value).includes('href') && !JSON.stringify(value).includes('outerHTML'));
+  } finally { for (const [name, prior] of saved) { if (prior.exists) globalThis[name] = prior.value; else delete globalThis[name]; } }
 });
 
 test('stage and control barriers bind exact phase, native receipt and reservation', () => {
@@ -448,7 +524,7 @@ test('driver and shared transport agree on the single library and exact target s
     [`/Items?ParentId=${USER}&Ids=${ITEM}`, false], [`/Users/${USER}/Items?ParentId=${USER}`, false]]) {
     const url = 'http://127.0.0.1:18196/emby' + route;
     check(Boolean(libraryChangedCatalogRequest(url, 'GET', input)) === expected);
-    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v2')) === expected);
+    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v3')) === expected);
   }
 });
 
@@ -608,6 +684,16 @@ function memoryIO() {
   async lstat(filename) { check(files.has(filename)); return snapshot(files.get(filename)); },
   async unlink(filename) { check(files.has(filename)); files.delete(filename); } };
 }
+
+test('failure screenshot publication is exclusive bounded PNG with no JSON encoding', async () => {
+  const io = memoryIO(), bytes = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(16)]), expected = sha(bytes);
+  const source = await publishLibraryChangedScreenshot(bytes, io);
+  check(source.path === OUTPUT + '/discovery-failure.png' && source.sha256 === expected && source.bytes === 24 && bytes.every(value => value === 0));
+  check(io.files.get(source.path).bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])));
+  await rejectsAsync(() => publishLibraryChangedScreenshot(Buffer.from('not-png'), memoryIO()));
+  const oversized = Buffer.alloc(CHANGED_DIAGNOSTIC_LIMITS.screenshot_bytes + 1); Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(oversized);
+  await rejectsAsync(() => publishLibraryChangedScreenshot(oversized, memoryIO()));
+});
 
 test('exclusive IPC publication rejects partial and foreign ownership states', async () => {
   const owned = { file: true, symbolic: false, uid: 0, gid: 0, mode: 0o600, nlink: 1, size: 12, dev: 1, ino: 1 };
