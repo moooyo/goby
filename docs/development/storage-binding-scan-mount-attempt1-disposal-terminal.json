@@ -1,0 +1,21 @@
+{
+  "attestation_sha256": "752baec4e675d6dcb210bde2df0658f46e24d4cc9b890691d8b6a69e5bd76667",
+  "historical_evidence_preserved": true,
+  "marker": "goby-source54-mount-disposal-terminal-v1",
+  "observed_at": "2026-09-12T06:30:21.539522+00:00",
+  "original_receipt_preserved": true,
+  "pair_identities_absent": true,
+  "properties": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "256f0821c0cc40c6985c234a75238714",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "recursive_cgroup_empty": true,
+  "report_sha256": "1edf41f74cf1866a0a4fde54f9a516b3a2e1906e795774d2c1b459dfeb6619cf",
+  "status": "disposed",
+  "unit": "goby-source54-mount-disposal-v1.service"
+}

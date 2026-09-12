@@ -23,6 +23,9 @@ const A_CREDENTIALS = `${ROOT}/goby-av-browser.json`;
 const B_CREDENTIALS = `${ROOT}/browser.json`;
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const PREPARATION_SCOPE = 'schema27-original-movie-01';
+const LIBRARY_CHANGED_SCOPE = 'library-changed-ui-source44-v1';
+const LIBRARY_CHANGED_USER = 'ecbbe4cb82403879bc4b4f78894c5738';
+const LIBRARY_CHANGED_LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
 const LIMIT = 2 * 1024 * 1024;
 const INPUT_NAMES = ['client-browser-cross-user.mjs', 'client-browser-goby-fixture.mjs', 'client-browser-session-proof.mjs'];
 const ID = /^[0-9a-f]{32}$/;
@@ -471,6 +474,7 @@ export function forwardBrowserHTTP(request, response, policy, transport = http) 
             if (policy.intents().ownershipLost) { fail('ownership_lost'); return; }
             outgoingBody = Buffer.concat(responseChunks);
             try {
+              policy.onResponseHeaders?.(request, plan, Object.freeze([...incoming.rawHeaders]));
               policy.onResponse?.(request, plan, reply.status, outgoingBody);
               response.writeHead(reply.status, reply.headers);
               response.end(outgoingBody, error => {
@@ -499,8 +503,55 @@ const WS_RESERVATIONS = new WeakSet();
 
 /** Only the fixed permission workflow needs initial login plus two reload handshakes. */
 export function websocketHandshakeBudget(scope = undefined) {
-  requireThat(scope === undefined || scope === 'library-permission-ui-v1');
+  requireThat(scope === undefined || scope === 'library-permission-ui-v1' || scope === LIBRARY_CHANGED_SCOPE);
   return scope === 'library-permission-ui-v1' ? 3 : WS_LIMITS.handshakes;
+}
+
+export function websocketLifetimeBudget(scope = undefined) {
+  websocketHandshakeBudget(scope);
+  return scope === LIBRARY_CHANGED_SCOPE ? 480000 : WS_LIMITS.lifetimeMs;
+}
+
+/** Select only the fixed Movie list or exact target reads for passive capture. */
+export function libraryChangedCatalogRequest(raw, method, userId) {
+  requireThat(userId === LIBRARY_CHANGED_USER && typeof raw === 'string' && Buffer.byteLength(raw) <= 16384);
+  if (method !== 'GET') return false;
+  const url = new URL(raw), route = url.pathname.replace(/^\/emby(?=\/)/i, '');
+  requireThat(url.origin === ORIGIN && !url.username && !url.password && !url.hash && url.href === raw);
+  const values = key => [...url.searchParams].filter(([name]) => name.toLowerCase() === key).map(([, value]) => value);
+  const users = values('userid');
+  requireThat(users.length <= 1 && (!users.length || users[0] === userId));
+  if ([`/Users/${userId}/Items/${PREPARATION_ITEM}`, `/Items/${PREPARATION_ITEM}`].includes(route)) return true;
+  if (![`/Users/${userId}/Items`, '/Items'].includes(route)) return false;
+  const parents = values('parentid'), ids = values('ids');
+  requireThat(parents.length <= 1 && ids.length <= 1);
+  return parents.length === 1 && parents[0] === LIBRARY_CHANGED_LIBRARY &&
+    (ids.length === 0 || ids[0] === PREPARATION_ITEM) || ids.length === 1 && ids[0] === PREPARATION_ITEM &&
+    (parents.length === 0 || parents[0] === LIBRARY_CHANGED_LIBRARY);
+}
+
+export function libraryChangedSocketAuthority(raw, expectedToken = undefined) {
+  requireThat(typeof raw === 'string' && Buffer.byteLength(raw) <= 16384 && !raw.includes('\\'));
+  const url = new URL(raw);
+  requireThat(url.protocol === 'ws:' && `http://${url.host}` === ORIGIN && url.href === raw &&
+    !url.username && !url.password && !url.hash && WS_PATHS.has(url.pathname.toLowerCase()));
+  const users = [...url.searchParams].filter(([name]) => name.toLowerCase() === 'userid').map(([, value]) => value);
+  requireThat(users.length <= 1 && (!users.length || users[0] === LIBRARY_CHANGED_USER));
+  const authority = authorityForURL(url, {}, expectedToken);
+  requireThat(authority !== null);
+  return authority;
+}
+
+export function libraryChangedSocketMatch(entries, tokenSHA256, expectedIndex = undefined) {
+  requireThat(Array.isArray(entries) && entries.length <= 3 && SHA.test(tokenSHA256));
+  requireThat(expectedIndex === undefined || Number.isSafeInteger(expectedIndex) && expectedIndex >= 0 && expectedIndex < 2);
+  const matches = entries.filter(entry => entry.handshake_delivered === true && entry.closed !== true &&
+    entry.token_fingerprint === tokenSHA256);
+  requireThat(matches.length <= 1);
+  const entry = matches[0];
+  if (entry) requireThat(Number.isSafeInteger(entry.index) && entry.index >= 0 && entry.index < 2 &&
+    entry.connection_id === `library-changed-ws-${entry.index}`);
+  return entry && (expectedIndex === undefined || entry.index === expectedIndex) ? entry : null;
 }
 
 /** Filter genuine frame request events without fabricating a context, page or request. */
@@ -602,8 +653,10 @@ function websocketMessageKind(bytes) {
   return envelope.MessageType.toLowerCase();
 }
 
-/** Return only unchanged wire frames; message inspection emits no application data. */
-export function inspectWebSocketFrames(state, chunk, now) {
+/** Existing callers receive only unchanged wire frames. The optional observer
+ * receives a borrowed copy after complete text-message validation. */
+export function inspectWebSocketFrames(state, chunk, now, onLibraryChanged = undefined) {
+  requireThat(onLibraryChanged === undefined || typeof onLibraryChanged === 'function');
   requireThat(Buffer.isBuffer(chunk) && Number.isFinite(now) && chunk.length + state.wireBytes <= WS_LIMITS.wireBytes);
   state.wireBytes += chunk.length; state.pending = Buffer.concat([state.pending, chunk]);
   const frames = [];
@@ -640,6 +693,14 @@ export function inspectWebSocketFrames(state, chunk, now) {
             state.controlAttempt = true; throw new Error('cross_user_server_control_message');
           }
           state.messageKinds[kind === 'userdatachanged' ? 'user_data_changed' : 'other'] += 1;
+          if (state.direction === 'server' && kind === 'librarychanged' && onLibraryChanged) {
+            requireThat((state.fragmentOpcode ?? opcode) === 1);
+            const observed = Buffer.from(message);
+            try {
+              requireThat(onLibraryChanged(Object.freeze({ frame_number: state.frames,
+                message_index: state.messages + 1, received_at: now }), observed) === undefined);
+            } finally { observed.fill(0); }
+          }
           state.messages += 1;
         } finally {
           message.fill(0); for (const part of state.messageParts) part.fill(0);
@@ -768,6 +829,13 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
     let plan, admitted = false, settled = false, opened = false, closing = false, headsQueued = false, outgoing, peer, authorityTask;
     let lifeTimer, idleTimer, flushTimer, queued = 0;
     const buffers = new Set(), blockedSources = new Set(), clientFrames = websocketFrameState('client'), serverFrames = websocketFrameState('server');
+    const libraryMessages = new Map();
+    const libraryChanged = policy.handshakeScope === LIBRARY_CHANGED_SCOPE;
+    const captureLibraryChanged = libraryChanged ? (value, bytes) => {
+      requireThat(typeof policy.onLibraryChanged === 'function' && libraryMessages.size < WS_LIMITS.framesTotal);
+      const retained = Buffer.from(bytes); buffers.add(retained);
+      libraryMessages.set(value.frame_number, { ...value, bytes: retained });
+    } : undefined;
     const handshakeTimer = setTimeout(() => finish('failed', 'handshake_timeout'), WS_LIMITS.handshakeMs);
     const updateCounters = () => Object.assign(entry, {
       client_wire_bytes: clientFrames.wireBytes, server_wire_bytes: serverFrames.wireBytes,
@@ -787,6 +855,7 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
       peer?.destroy(); client.destroy();
       clearWebSocketFrameState(clientFrames); clearWebSocketFrameState(serverFrames);
       for (const value of buffers) value.fill(0); buffers.clear();
+      libraryMessages.clear();
       if (plan) { plan.authority.token = null; plan.authority = null; plan.headers = null; }
       try { policy.onEvent(entry); } catch { state.failed += 1; }
       Promise.resolve(authorityTask).catch(() => {}).finally(resolve);
@@ -832,10 +901,25 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
       if (policy.ownershipLost()) { finish('failed', 'ownership_lost'); return; }
       const frames = direction === 'client' ? clientFrames : serverFrames;
       try {
-        const accepted = inspectWebSocketFrames(frames, bytes, Date.now()); activity();
-        for (const frame of accepted) write(direction === 'client' ? peer : client, frame, direction === 'client' ? client : peer);
+        const firstFrame = frames.frames + 1;
+        const accepted = inspectWebSocketFrames(frames, bytes, Date.now(), direction === 'server' ? captureLibraryChanged : undefined); activity();
+        forwardFrames(direction, accepted, firstFrame);
         updateCounters();
       } catch { finish('failed', serverFrames.controlAttempt ? 'server_control_message' : 'invalid_frames'); }
+    };
+    const forwardFrames = (direction, accepted, firstFrame) => {
+      for (let index = 0; index < accepted.length; index += 1) {
+        const observed = direction === 'server' ? libraryMessages.get(firstFrame + index) : null;
+        if (observed) libraryMessages.delete(firstFrame + index);
+        write(direction === 'client' ? peer : client, accepted[index], direction === 'client' ? client : peer, observed ? () => {
+          try {
+            policy.onLibraryChanged(Object.freeze({ connection_id: entry.connection_id,
+              token_sha256: entry.token_fingerprint, physical_message_index: observed.message_index,
+              received_at: observed.received_at, forwarded_at: Date.now(), complete: true, received: true, forwarded: true }), observed.bytes);
+          } catch { finish('failed', 'library_changed_observer_failed'); }
+          finally { observed.bytes.fill(0); buffers.delete(observed.bytes); }
+        } : null);
+      }
     };
     client.on('error', () => { if (expectedClose()) closeNormally(peer, 'client_closed_after_logout_or_close'); else finish('failed', 'client_error'); });
     client.on('end', () => closeNormally(peer, 'client_end'));
@@ -855,6 +939,7 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
       if (!admitted) { state.admitted += 1; state.active += 1; admitted = true; }
       Object.assign(entry, { index, token_fingerprint: plan.authority.fingerprint, upstream_status: null,
         handshake_delivered: false, outcome: 'pending', closed: false });
+      if (libraryChanged) entry.connection_id = `library-changed-ws-${index}`;
     } catch { finish('failed', 'admission_rejected'); return; }
     const capturedToken = plan.authority.token;
     authorityTask = Promise.resolve().then(() => policy.authorize(capturedToken));
@@ -901,18 +986,23 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
           try {
             requireThat(!policy.ownershipLost() && !policy.logoutInProgress() && Buffer.isBuffer(incomingHead) && incomingHead.length <= WS_LIMITS.queuedBytes);
             const headers = websocketResponsePlan(response.statusCode, response.rawHeaders, plan);
-            const serverHeadFrames = inspectWebSocketFrames(serverFrames, incomingHead, Date.now());
+            const firstServerFrame = serverFrames.frames + 1, firstClientFrame = clientFrames.frames + 1;
+            const serverHeadFrames = inspectWebSocketFrames(serverFrames, incomingHead, Date.now(), captureLibraryChanged);
             const clientHeadFrames = inspectWebSocketFrames(clientFrames, head, Date.now());
             client.setTimeout(0); peer.setTimeout(0);
             client.on('data', bytes => relay('client', bytes)); peer.on('data', bytes => relay('server', bytes));
             write(client, websocketHTTPHead(response.statusCode, response.statusMessage ?? 'Switching Protocols', headers), null, () => {
               if (settled) return;
               opened = true; state.opened += 1; entry.handshake_delivered = true; clearTimeout(handshakeTimer);
-              lifeTimer = setTimeout(() => finish('failed', 'lifetime_timeout'), WS_LIMITS.lifetimeMs); activity();
+              lifeTimer = setTimeout(() => finish('failed', 'lifetime_timeout'), websocketLifetimeBudget(policy.handshakeScope)); activity();
+              if (libraryChanged) {
+                try { policy.onLibraryChangedHandshake?.(entry); }
+                catch { finish('failed', 'library_changed_handshake_observer_failed'); return; }
+              }
               resumeSources();
             });
-            for (const frame of serverHeadFrames) write(client, frame, peer);
-            for (const frame of clientHeadFrames) write(peer, frame, client);
+            forwardFrames('server', serverHeadFrames, firstServerFrame);
+            forwardFrames('client', clientHeadFrames, firstClientFrame);
             headsQueued = true; updateCounters(); resumeSources();
           } catch { finish('failed', serverFrames.controlAttempt ? 'server_control_message' : 'handshake_or_head_invalid'); }
         });
@@ -1367,7 +1457,8 @@ class BrowserActor {
     try {
       requireThat(typeof this.homeObserver[name] === 'function' && this.pending.size < 32);
       if (bytes !== undefined) {
-        requireThat(Buffer.isBuffer(bytes) && bytes.length <= 512 * 1024);
+        const maximum = this.libraryChangedObserver && name.startsWith('catalog') ? LIMIT : 512 * 1024;
+        requireThat(Buffer.isBuffer(bytes) && bytes.length <= maximum);
         copied = Buffer.from(bytes);
       }
       const result = this.homeObserver[name](Object.freeze(value), copied);
@@ -1393,6 +1484,67 @@ class BrowserActor {
     this.notifyHome('physicalRequest', { id, kind, method: plan.method, url: request.url,
       headers: Object.freeze([...request.rawHeaders]), phase: this.phase, elapsed_ms: Date.now() - this.started },
     kind === 'capabilities' ? body : undefined);
+  }
+  observeLibraryChangedCatalog(request, plan) {
+    if (!this.libraryChangedObserver || !libraryChangedCatalogRequest(request.url, plan.method, this.account.id)) return;
+    requireThat(++this.catalogPhysicalCount <= 80);
+    const selected = { id: this.catalogPhysicalCount, kind: 'catalog' };
+    this.catalogPhysicalEntries.set(request, selected);
+    this.notifyHome('catalogRequest', { ...selected, method: plan.method, url: request.url,
+      headers: Object.freeze([...request.rawHeaders]), phase: this.phase, elapsed_ms: Date.now() - this.started });
+  }
+  bindLibraryChangedSocket(record, required = false) {
+    const entry = libraryChangedSocketMatch(this.report.websocket.entries, record.token_sha256, record.id);
+    if (!entry) { requireThat(!required); return null; }
+    requireThat(record.connection_id === null || record.connection_id === entry.connection_id);
+    requireThat(entry.browser_observation_id === undefined || entry.browser_observation_id === record.id);
+    entry.browser_observation_id = record.id; entry.browser_handshake_observed = true;
+    record.connection_id = entry.connection_id;
+    return entry;
+  }
+  observeLibraryChangedSockets() {
+    this.page.on('framenavigated', frame => {
+      if (frame === this.page.mainFrame()) this.libraryChangedDocumentID = `document-${++this.libraryChangedDocumentNumber}`;
+    });
+    this.page.on('websocket', socket => {
+      try {
+        requireThat(this.libraryChangedBrowserSockets.size < 2);
+        const authority = libraryChangedSocketAuthority(socket.url(), this.token ?? undefined);
+        this.rememberSecret(authority.token); authority.token = null;
+        const observation = { id: this.libraryChangedBrowserSockets.size, token_sha256: authority.fingerprint,
+          connection_id: null, messages: 0, closed: false };
+        this.libraryChangedBrowserSockets.set(socket, observation);
+        this.bindLibraryChangedSocket(observation);
+        socket.on('framereceived', event => {
+          let bytes;
+          try {
+            requireThat(!observation.closed && (typeof event.payload === 'string' && event.payload.length <= WS_LIMITS.messageBytes ||
+              Buffer.isBuffer(event.payload) && event.payload.length <= WS_LIMITS.messageBytes));
+            bytes = Buffer.from(event.payload);
+            requireThat(bytes.length <= WS_LIMITS.messageBytes && ++observation.messages <= WS_LIMITS.framesTotal);
+            const kind = websocketMessageKind(bytes);
+            if (kind !== 'librarychanged') return;
+            requireThat(typeof event.payload === 'string');
+            const entry = this.bindLibraryChangedSocket(observation, true);
+            requireThat(this.token !== null && hash(this.token) === observation.token_sha256);
+            this.notifyHome('browserLibraryChanged', { connection_id: entry.connection_id,
+              token_sha256: observation.token_sha256, browser_message_index: observation.messages, complete: true, received: true,
+              document_id: this.libraryChangedDocumentID, route: this.page.url(), elapsed_ms: Date.now() - this.started }, bytes);
+          } catch { this.report.network.observer_errors += 1; }
+          finally { bytes?.fill(0); }
+        });
+        socket.on('close', () => {
+          observation.closed = true;
+          const entry = this.report.websocket.entries.find(value => value.index === observation.id);
+          if (entry) entry.browser_closed = true;
+        });
+        socket.on('socketerror', () => {
+          const entry = this.report.websocket.entries.find(value => value.index === observation.id);
+          if (entry) entry.browser_socket_error = true;
+          if (!this.logoutIntent || this.report.proxy.logout !== 1) this.report.network.observer_errors += 1;
+        });
+      } catch { this.report.network.observer_errors += 1; }
+    });
   }
   async bootstrapDiagnostic(label) {
     if (!this.page || this.report.bootstrap_diagnostics.length >= 8) return;
@@ -1464,6 +1616,7 @@ class BrowserActor {
       intents: () => ({ login: this.loginIntent, logout: this.logoutIntent, ownershipLost: this.ownershipLost, preparation: this.preparationAllowed() }),
       onRequest: (request, plan, body) => {
         this.observeHomePhysicalRequest(request, plan, body);
+        this.observeLibraryChangedCatalog(request, plan);
         if (plan.kind === 'preparation') {
           requireThat(this.preparationAllowed() && !this.report.preparation);
           this.report.preparation = { request_validated: false, completed: false, response: null, ui_status: null, ui_finished: false };
@@ -1480,9 +1633,16 @@ class BrowserActor {
           status: null, completed: false };
         authority.token = null;
       },
+      onResponseHeaders: (request, _plan, headers) => {
+        const selected = this.catalogPhysicalEntries?.get(request);
+        if (selected) selected.headers = headers;
+      },
       onResponse: (_request, plan, status, body) => {
         const selected = this.homePhysicalEntries?.get(_request);
         if (selected) this.notifyHome('physicalResponse', { ...selected, status, phase: this.phase,
+          elapsed_ms: Date.now() - this.started }, body);
+        const catalog = this.catalogPhysicalEntries?.get(_request);
+        if (catalog) this.notifyHome('catalogResponse', { ...catalog, status, phase: this.phase,
           elapsed_ms: Date.now() - this.started }, body);
         if (plan.kind === 'preparation' && this.report.preparation) {
           this.report.preparation.response = preparationResponseEvidence(status, body, this.preparationSource);
@@ -1491,6 +1651,9 @@ class BrowserActor {
       onTransferFinished: (request, event) => {
         const selected = this.homePhysicalEntries?.get(request);
         if (selected) this.notifyHome('physicalFinished', { ...selected, ...event, phase: this.phase,
+          elapsed_ms: Date.now() - this.started });
+        const catalog = this.catalogPhysicalEntries?.get(request);
+        if (catalog) this.notifyHome('catalogFinished', { id: catalog.id, kind: 'catalog', ...event, phase: this.phase,
           elapsed_ms: Date.now() - this.started });
       },
       onEvent: event => {
@@ -1544,6 +1707,17 @@ class BrowserActor {
           await this.authorizeSocket();
         },
         onEvent: value => { if (value.outcome !== 'closed') this.report.network.guard_errors += 1; },
+        ...(this.libraryChangedObserver ? {
+          onLibraryChanged: (value, bytes) => this.notifyHome('physicalLibraryChanged', { ...value,
+            received_elapsed_ms: value.received_at - this.started,
+            forwarded_elapsed_ms: value.forwarded_at - this.started,
+            elapsed_ms: value.forwarded_at - this.started, phase: this.phase }, bytes),
+          onLibraryChangedHandshake: () => {
+            for (const observation of this.libraryChangedBrowserSockets.values()) {
+              if (!observation.closed) this.bindLibraryChangedSocket(observation);
+            }
+          },
+        } : {}),
       };
       const pending = connect ? forwardWebSocketConnect(request, socket, head, socketPolicy)
         : forwardBrowserWebSocket(request, socket, head, socketPolicy);
@@ -1689,6 +1863,7 @@ class BrowserActor {
     });
     this.phase = 'new_page';
     this.page = await this.context.newPage();
+    if (this.libraryChangedObserver) this.observeLibraryChangedSockets();
     this.page.on('pageerror', error => recordBrowserPageError(this.report, error, this.phase,
       Date.now() - this.started, this.diagnosticSecrets()));
     this.page.on('console', message => {
@@ -1921,6 +2096,22 @@ export function createPermissionBrowserActor(options) {
   const actor = createHomeOnlyBrowserActor(options);
   actor.websocketScope = 'library-permission-ui-v1';
   actor.report.websocket_handshake_budget = 3;
+  return actor;
+}
+
+/** The new source44 scope only adds passive catalog observations and lifetime. */
+export function createLibraryChangedBrowserActor(options) {
+  requireThat(options?.account?.id === LIBRARY_CHANGED_USER);
+  for (const name of ['catalogRequest', 'catalogResponse', 'catalogFinished', 'physicalLibraryChanged', 'browserLibraryChanged']) {
+    requireThat(typeof options.observer?.[name] === 'function');
+  }
+  const actor = createHomeOnlyBrowserActor(options);
+  actor.libraryChangedObserver = true; actor.websocketScope = LIBRARY_CHANGED_SCOPE;
+  actor.report.websocket_handshake_budget = 2;
+  actor.report.websocket_lifetime_ms = websocketLifetimeBudget(LIBRARY_CHANGED_SCOPE);
+  actor.catalogPhysicalCount = 0; actor.catalogPhysicalEntries = new WeakMap();
+  actor.libraryChangedBrowserSockets = new Map();
+  actor.libraryChangedDocumentNumber = 0; actor.libraryChangedDocumentID = 'document-0';
   return actor;
 }
 

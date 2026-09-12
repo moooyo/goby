@@ -1,0 +1,13 @@
+{
+  "effects": "memory-only guard checks; no database or mount operation",
+  "exit_code": 0,
+  "files": {
+    "test-verify-bound-scan-root-mount.py": "b104c44731a51b0459a6b6ae3f0e2d8da91920266df21125e5883dd56cf81399",
+    "verify-bound-scan-root-mount.py": "34a4204ee9fb63e4f61f9061fb15304e726ccb865eaf525185c4fd376c6b172c"
+  },
+  "status": "passed",
+  "stderr_sha256": "c5acba2d0b50024e11b35b7906eff0765c3fd19daf2a3e27419b59baee4cf816",
+  "stdout_sha256": "ce8f2cb8078cf000837355aa1455c749cc681755136421888cd61afda2e52e6e",
+  "syntax_files": 2,
+  "tests": 72
+}

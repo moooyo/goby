@@ -1,8 +1,9 @@
 # Development handoff
 
 Current verification boundary: **source54 passed 2,173 full-suite tests across
-25 packages, the Linux build and all six cleanup checks. Schema28 and the new
-scanner remain unpublished pending actual mount and live UI acceptance.**
+25 packages, the Linux build and all six cleanup checks. Its separate real
+private-mount recovery test also passed. Schema28 and the new scanner remain
+unpublished pending live management UI acceptance.**
 The latest published product checkpoint is source44, which passed 2,002 tests;
 its exact 27-file increment is on main as
 `35ae3d000f812fa18d234921cedb3c33d88190e0`.
@@ -20,8 +21,10 @@ source54 PostgreSQL target passed all 74 tests; it includes that fixture fix and
 the new scanner implementation. Source54 full regression/build subsequently
 passed, with its exact pair removed. A separate actual mount attempt stopped
 before namespace dispatch because its host-witness reader assumed a missing
-sysfs block directory. That new failed pair is retained; do not overlap it or
-replay either consumed run.
+sysfs block directory. Its exact empty pair was independently disposed, with
+the original receipt and evidence preserved. The corrected operator then
+passed a fresh actual mount run and all six cleanup checks. All three scopes
+are terminal and consumed.
 
 The separately reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 **passed** at 2026-09-12 04:42:59 UTC. Candidate now runs source44/schema27,
@@ -40,7 +43,16 @@ All business rows, sequences, catalog, credentials, recovery files and three
 media groups were preserved. The original failed upgrade evidence is immutable.
 Primary remains source32/schema27, PID762090; SSH is restored. Schema28 has
 not been published or deployed. Original-client automatic-refresh acceptance
-remains open; the two readiness GETs are not client acceptance.
+remains open. Its first live attempt is now terminal: the client raised a
+TypeError on opening Movies, before any native login or metadata edit. Normal
+UI logout and exact-token 401 passed; the complete ledger permits exactly one
+new session, one device and two audit rows. Current candidate totals are
+74 sessions, 63 devices and 165 audits. The new authoritative private snapshot
+is `client-library-changed-ui-source44-v1/after-full.json`, SHA-256
+`1277a8034d738ed451cf99e71b88c53e31c9731576bca7fbae16085e573ce870`.
+Any new client scope must account for that proven transition from the earlier
+source44 continuation; do not replay the consumed v1 scope or compare a new
+snapshot directly with the old 73/62/163 totals.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -50,13 +62,24 @@ and notifications. A shared music-readiness gate checks proposed surviving
 members before deletion; actual album publication remains afterward. Its 28
 selected race checks and related test-package compilation passed without
 database access, followed by 74 passing PostgreSQL checks and the complete
-2,173-test regression/build. Actual private-mount scan recovery, publication
-and live UI gates remain open.
+2,173-test regression/build and actual private-mount scan recovery. Publication
+and live management UI gates remain open. This does not establish recovery
+across a system reboot or on other filesystem types.
+The separate [live management UI plan](storage-binding-live-ui-acceptance-plan.md)
+uses a fresh isolated Go backend, database and private mount namespace with the
+already verified binary and web build. It does not restart the candidate or
+primary, and it does not reuse a consumed paired-run receipt.
 
-The source44 automatic-refresh tooling is still under implementation/review.
-The shared transport passed 124 remote pure guards (114 existing plus 10 new),
-and the new source44 fixture loader passed 248 remote pure guards. These checks
-used no live browser or HTTP and do not establish automatic-refresh acceptance.
+The source44 automatic-refresh tooling passed 124 shared transport guards and
+342 TOOL02 guards: 49 controller, 248 fixture and 45 browser checks. Its corrected
+zero-HTTP preflight passed before the first live attempt. That attempt exposed
+a real client library-navigation failure; the pure checks do not establish
+automatic-refresh acceptance. The observed failing page consumed a 200 JSON
+response for the virtual Movies CollectionFolder, then raised
+`Cannot read properties of undefined (reading 'includes')`. Existing public
+Views fixtures show missing CollectionFolder fields, but no retained direct
+library-detail reference response identifies the particular causal field.
+Collect the missing public DTO evidence before implementing a guessed fix.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -515,11 +538,36 @@ SHA-256 is `737c70c0919491a559f0b79457849e34d6b0a19e394b955bf0ff5310ae88de60`.
 Outer `goby-bound-scan-root-mount-controller-v1.service`, invocation
 `6c741a464ae74b31839355d3ed2e9f06`, and its exact inner unit are terminal with
 empty cgroups. HBA is restored exactly; the dedicated pair is retained, not
-removed. Its live receipt SHA-256 is
+removed at that failed checkpoint. Its retained receipt SHA-256 is
 `190c202ca956a52b1914fabe7363ea821bd691f0a6f47869edc8785bc3fe288f`.
-Repair the host inventory reader, independently review disposal of this exact
-retained pair, and use a fresh scope for any subsequent actual mount test.
-Do not treat an absent inventory directory as proof of an empty inventory.
+The subsequent [exact disposal](storage-binding-scan-mount-attempt1-disposal.json)
+passed after [27 memory guards](storage-binding-scan-mount-disposal-tool-verification.json).
+Report SHA-256 is `1edf41f74cf1866a0a4fde54f9a516b3a2e1906e795774d2c1b459dfeb6619cf`;
+[attestation](storage-binding-scan-mount-attempt1-disposal-attestation.json)
+SHA-256 is `752baec4e675d6dcb210bde2df0658f46e24d4cc9b890691d8b6a69e5bd76667`.
+Both exact role/database pairs were removed, while the original retained
+receipt, source and failure trees remained unchanged. Its
+[terminal](storage-binding-scan-mount-attempt1-disposal-terminal.json) SHA-256 is
+`5fc929bbe1149a7d405878633bf0bd4178c509dc9f3cf4da77ee70200fb09e88`.
+
+The corrected mount reader requires complete bounded `/sys/class/block`
+enumeration, including every block device and partition. It never interprets
+a missing directory as an empty inventory. Its [72 guards](storage-binding-scan-mount-tool-v2-verification.json)
+passed, followed by [two actual read-only inventories](storage-binding-scan-mount-block-inventory.json)
+of six devices. The [new actual run](storage-binding-scan-mount-v2.json)
+`20260912_063021_cfe0f03b5112` then passed the real race-enabled Go mount helper:
+original remount recovered; replacement storage learned no approval; approval
+rows and sibling anchors remained unchanged; old leases still read the original
+storage; fresh live mount identity was observed. Host mountinfo, namespace and
+complete block inventory were unchanged, and all six pair/HBA cleanup checks
+passed. This is private ext4 bind-mount recovery, not a system reboot test.
+Report SHA-256: `295257dc500ef6067e4811aa4bb682e6b0eca68d67bfdd943434e764b6d266b1`.
+Controller `goby-bound-scan-root-mount-controller-v2.service`, invocation
+`d2e6d3eba8b74a7196e26e6ce95edd15`, exited0/MainPID0 with empty recursive groups;
+[terminal](storage-binding-scan-mount-v2-terminal.json) SHA-256:
+`5174cc48f8ae1d2a34bf0e9208fcef73653faa5c085bda78eaa5075b3a9d32ac`.
+The live pair receipt now belongs to this finished and cleaned run; previous
+FULL, failed mount and disposal evidence remain historical and immutable.
 
 The new automatic-refresh [shared transport guards](m3e-library-changed-transport-guards.json)
 passed 124 cases, report SHA-256
@@ -527,9 +575,48 @@ passed 124 cases, report SHA-256
 The [source44 fixture guards](m3e-library-changed-source44-fixture-guards.json)
 passed 248 cases, report SHA-256
 `fbae697f3ec03835dfcf9b5fa3c2699ed2761585fc049e3d4ad84b8a59c3f106`.
-Both included two syntax checks and no live browser/HTTP. The browser driver
-and independent controller still need final review and remote guards before
-the single live automatic-refresh attempt.
+Both included two syntax checks and no live browser/HTTP. The initial controller
+also passed [48 memory checks](m3e-library-changed-client-tool-v1-controller-guards.json).
+Two zero-HTTP preflights then stopped before creating the business scope:
+[preflight01](m3e-library-changed-client-preflight01.json) rejected the original
+Node installation's non-root ownership; [preflight02](m3e-library-changed-client-preflight02.json)
+found a tuple in the primary file-identity JSON projection. A private root-owned
+copy retains the exact reviewed Node bytes without changing the original
+installation. TOOL02 changes only the tool path and that projection to a list;
+JSON type and ownership requirements remain strict. Its
+[342 pure checks](m3e-library-changed-client-tool-v2-guards.json), 11 syntax
+checks and [zero-HTTP preflight03](m3e-library-changed-client-preflight03.json)
+passed. The TOOL02 guard report SHA-256 is
+`468afff94623d456add555004e635af3139353b412c4434dfff51a647655ddd1`;
+preflight03 SHA-256 is
+`b9fd175a7242e85055b36a9104e41fff927a65b9e835792c548abf832905b503`.
+The repository's LF rule normalizes one CRLF separator in the controller only.
+The [published-byte check](m3e-library-changed-controller-published-bytes.json)
+proved every other byte identical and passed two syntax checks plus all 49
+controller guards. Published controller SHA-256 is
+`b64cbcc87c1a24da5cc2c390e65c1166d7da620e69991285a7c84f8e72135d1e`;
+the immutable TOOL02 runtime retains
+`331164bb828152169130a578d53aedae495b62ea79d18ae70d86c7eb12141f9c`.
+The published-byte report SHA-256 is
+`d6b598a479a93318f1072bf8fd823175f16212a58e91a7b59332b791c2baba3d`.
+
+The [first actual client run](m3e-library-changed-client-attempt1.json) stopped
+in discovery, with exactly one page TypeError after clicking Movies. The
+recorded last API path hash identifies
+`GET /emby/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/a9993591e72f0f2e7babcbf8b9c50790`:
+200, application/json, 430 bytes. No target movie list, LibraryChanged event,
+native request or metadata mutation followed. The B session completed normal
+UI logout and exact401; no fallback was used. Full row/sequence/private-state,
+media and primary comparisons passed with the exact +1/+1/+2 session/device/audit
+allowance and zero metadata revision change. The original client response body
+was not retained by that unselected request observer, so do not invent its
+contents or infer a particular missing field from the JavaScript error alone.
+Controller report SHA-256:
+`471c86db295cda6741582f318577cf1c075a18ab4bf603b81b91b92f485c7208`.
+The [independent terminal](m3e-library-changed-client-attempt1-terminal.json)
+SHA-256 is `7fc5c52d33c5ae4044da0a5fe761a23bbb4dbced9c82ca4bba1018e8fd802134`.
+Both controller and browser worker are terminal with empty cgroups. Preserve
+TOOL01, TOOL02, both preflight failures and the consumed client-v1 scope.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
@@ -2292,7 +2379,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Source54 full regression/build passed. Repair and complete actual private-mount acceptance after exact failed-pair disposal, then finish binding UI/publication/deployment and original-client automatic refresh. Broader global projections, events, subtitles and NextUp remain open. |
+| P1 — M2/M3 / catalog and client acceptance | Source54 full regression/build and actual private-mount recovery passed. Finish real binding UI/publication/deployment. Diagnose the real Movies CollectionFolder navigation failure with public DTO evidence, then complete automatic refresh in a fresh scope using the preserved post-failure baseline. Broader global projections, events, subtitles and NextUp remain open. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

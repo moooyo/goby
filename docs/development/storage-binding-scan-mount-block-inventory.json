@@ -1,0 +1,39 @@
+{
+  "complete": true,
+  "device_count": 6,
+  "devices": {
+    "sda": {
+      "dev": "8:0\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1e.0/0000:05:04.0/0000:09:01.0/virtio3/host0/target0:0:0/0:0:0:0/block/sda"
+    },
+    "sda1": {
+      "dev": "8:1\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1e.0/0000:05:04.0/0000:09:01.0/virtio3/host0/target0:0:0/0:0:0:0/block/sda/sda1"
+    },
+    "sda14": {
+      "dev": "8:14\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1e.0/0000:05:04.0/0000:09:01.0/virtio3/host0/target0:0:0/0:0:0:0/block/sda/sda14"
+    },
+    "sda15": {
+      "dev": "8:15\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1e.0/0000:05:04.0/0000:09:01.0/virtio3/host0/target0:0:0/0:0:0:0/block/sda/sda15"
+    },
+    "sr0": {
+      "dev": "11:0\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1f.2/ata1/host1/target1:0:0/1:0:0:0/block/sr0"
+    },
+    "sr1": {
+      "dev": "11:1\n",
+      "loop": null,
+      "target": "/sys/devices/pci0000:00/0000:00:1f.2/ata2/host2/target2:0:0/2:0:0:0/block/sr1"
+    }
+  },
+  "loop_count": 0,
+  "observations": 2,
+  "path": "/sys/class/block"
+}

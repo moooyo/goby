@@ -1,0 +1,23 @@
+{
+  "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "marker": "goby-client-backup-disposal-m3e-v1",
+  "pairs": [
+    {
+      "database_oid": 18925102,
+      "name": "goby_backup_m3e_source",
+      "role_oid": 18925101
+    },
+    {
+      "database_oid": 18925104,
+      "name": "goby_backup_m3e_target",
+      "role_oid": 18925103
+    }
+  ],
+  "report_path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_061505_b2b453a716a9/disposal-report.json",
+  "report_sha256": "1edf41f74cf1866a0a4fde54f9a516b3a2e1906e795774d2c1b459dfeb6619cf",
+  "run_id": "20260912_061505_b2b453a716a9",
+  "source_receipt_sha256": "190c202ca956a52b1914fabe7363ea821bd691f0a6f47869edc8785bc3fe288f",
+  "status": "disposed",
+  "system_identifier": "7684040109719526738",
+  "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9"
+}

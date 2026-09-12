@@ -30,7 +30,8 @@ const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'clas
   'preparationRequestEvidence', 'preparationResponseEvidence', 'homeNavigationLocation', 'selectHomeControl', 'confirmedHomeNavigation',
   'sanitizeBrowserMessage', 'browserEventDiagnostic', 'recordBrowserPageError', 'resanitizeBrowserDiagnostics',
   'requirePreparationFixture', 'ownSpecialFeaturesRequest', 'specialFeaturesResponseEvidence',
-  'captureSpecialFeaturesResponse', 'specialFeaturesEvidence'];
+  'captureSpecialFeaturesResponse', 'specialFeaturesEvidence', 'websocketHandshakeBudget', 'websocketLifetimeBudget',
+  'libraryChangedCatalogRequest', 'libraryChangedSocketAuthority', 'libraryChangedSocketMatch', 'createLibraryChangedBrowserActor'];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const syntheticHash = label => hash(`synthetic-cross-user:${label}`);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -434,6 +435,7 @@ export async function runCrossUserGuards(source) {
       options.rawHeaders ?? requestHeaders());
     const response = options.response ?? new FakeProxyResponse(), peer = options.peer ?? transport(), events = [];
     const policy = { state, intents: () => intents, onRequest: options.onRequest, onResponse: options.onResponse,
+      onResponseHeaders: options.onResponseHeaders,
       onEvent: event => events.push(clone(event)) };
     const promise = api.forwardBrowserHTTP(request, response, policy, peer);
     return { state, intents, request, response, peer, events, promise };
@@ -458,7 +460,9 @@ export async function runCrossUserGuards(source) {
     const flags = options.flags ?? { ownershipLost: false, logoutInProgress: false };
     const request = { url: options.url ?? (options.connect ? '127.0.0.1:18196' : 'ws://127.0.0.1:18196/emby/socket'),
       method: options.connect ? 'CONNECT' : 'GET', rawHeaders: options.rawHeaders ?? (options.connect ? requestHeaders() : websocketHeaders()) };
-    const policy = { mode: options.mode ?? 'acceptance', userId: A_ID, state, entry,
+    const policy = { mode: options.mode ?? 'acceptance', userId: options.userId ?? A_ID, state, entry,
+      handshakeScope: options.scope, onLibraryChanged: options.onLibraryChanged,
+      onLibraryChangedHandshake: options.onLibraryChangedHandshake,
       ownershipLost: () => flags.ownershipLost, logoutInProgress: () => flags.logoutInProgress,
       connectAllowed: async () => { permissions.push(true); await options.connectAllowed?.(); },
       authorize: async token => { authorizations.push(token); await options.authorize?.(token); },
@@ -2056,6 +2060,125 @@ export async function runCrossUserGuards(source) {
       value => { value.preparation_scope = 'source28-page-error-01'; }]) {
       const report = completedPreparationReport(api); mutate(report); check(api.crossUserResult(report) === false);
     }
+  });
+  const changedScope = 'library-changed-ui-source44-v1', changedUser = 'ecbbe4cb82403879bc4b4f78894c5738';
+  const changedLibrary = 'a9993591e72f0f2e7babcbf8b9c50790';
+  const changedBytes = Buffer.from(JSON.stringify({ MessageType: 'LibraryChanged', MessageId: 'e'.repeat(32),
+    Data: { ItemsAdded: [], ItemsUpdated: [PREPARATION_ITEM], ItemsRemoved: [], CollectionFolders: [changedLibrary] } }));
+  test('library_changed_scope_preserves_old_handshake_and_lifetime_limits', () => {
+    check(api.websocketHandshakeBudget() === 2 && api.websocketLifetimeBudget() === 240000);
+    check(api.websocketHandshakeBudget('library-permission-ui-v1') === 3 && api.websocketLifetimeBudget('library-permission-ui-v1') === 240000);
+    check(api.websocketHandshakeBudget(changedScope) === 2 && api.websocketLifetimeBudget(changedScope) === 480000);
+    for (const value of ['', 'library-changed', 'library-changed-ui-source44-v2']) rejected(() => api.websocketLifetimeBudget(value));
+  });
+  test('library_changed_catalog_selection_has_one_fixed_library_and_target', () => {
+    for (const route of [`/Users/${changedUser}/Items?ParentId=${changedLibrary}`, `/Items?UserId=${changedUser}&ParentId=${changedLibrary}`,
+      `/Users/${changedUser}/Items/${PREPARATION_ITEM}`, `/Items/${PREPARATION_ITEM}`, `/Items?Ids=${PREPARATION_ITEM}`]) {
+      check(api.libraryChangedCatalogRequest(ORIGIN + route, 'GET', changedUser));
+      check(!api.libraryChangedCatalogRequest(ORIGIN + route, 'POST', changedUser));
+    }
+    for (const route of ['/web/index.html', `/Users/${changedUser}/Views`, `/Items?ParentId=${'1'.repeat(32)}`,
+      `/Items/${'1'.repeat(32)}`, `/Users/${changedUser}/Items?ParentId=${changedLibrary}&Ids=${'1'.repeat(32)}`]) {
+      check(!api.libraryChangedCatalogRequest(ORIGIN + route, 'GET', changedUser));
+    }
+    for (const route of [`/Items?ParentId=${changedLibrary}&ParentId=${changedLibrary}`,
+      `/Items/${PREPARATION_ITEM}?UserId=${A_ID}`, `/Items?Ids=${PREPARATION_ITEM}&Ids=${PREPARATION_ITEM}`]) {
+      rejected(() => api.libraryChangedCatalogRequest(ORIGIN + route, 'GET', changedUser));
+    }
+    rejected(() => api.libraryChangedCatalogRequest(DIRECT + '/Items', 'GET', changedUser));
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + '/Items', 'GET', A_ID));
+  });
+  test('library_changed_complete_fragments_are_borrowed_and_never_change_wire', () => {
+    const state = api.websocketFrameState('server'), observed = [], borrowed = [];
+    const callback = (value, bytes) => { observed.push({ ...value, body: Buffer.from(bytes) }); borrowed.push(bytes); };
+    const first = wireFrame(changedBytes.subarray(0, 18), { final: false });
+    const middle = wireFrame('ping', { opcode: 9 });
+    const last = wireFrame(changedBytes.subarray(18), { opcode: 0 });
+    check(api.inspectWebSocketFrames(state, first, 1, callback)[0].equals(first) && observed.length === 0);
+    check(api.inspectWebSocketFrames(state, middle, 2, callback)[0].equals(middle) && observed.length === 0);
+    check(api.inspectWebSocketFrames(state, last, 3, callback)[0].equals(last));
+    check(observed.length === 1 && observed[0].message_index === 1 && observed[0].frame_number === 3 && observed[0].body.equals(changedBytes));
+    check(borrowed.every(bytes => bytes.every(value => value === 0)));
+    const standalone = wireFrame(changedBytes);
+    check(api.inspectWebSocketFrames(api.websocketFrameState('server'), standalone, 4, (_value, bytes) => { bytes.fill(0); })[0].equals(standalone));
+    rejected(() => api.inspectWebSocketFrames(api.websocketFrameState('server'), standalone, 4, async () => {}));
+    rejected(() => api.inspectWebSocketFrames(api.websocketFrameState('server'), wireFrame(changedBytes, { opcode: 2 }), 4, callback));
+    check(api.inspectWebSocketFrames(api.websocketFrameState('server'), wireFrame(changedBytes, { opcode: 2 }), 4).length === 1);
+  });
+  test('library_changed_delivery_requires_successful_final_wire_write', async () => {
+    const received = [], borrowed = [];
+    const active = startSocket({ scope: changedScope, onLibraryChanged: (value, bytes) => { received.push({ ...value, body: Buffer.from(bytes) }); borrowed.push(bytes); } });
+    await upgradeSocket(active);
+    check(active.entry.connection_id === 'library-changed-ws-0' && [...loaded.timers.values()].some(value => value.milliseconds === 480000));
+    active.client.autoWrite = false;
+    const first = wireFrame(changedBytes.subarray(0, 15), { final: false }), last = wireFrame(changedBytes.subarray(15), { opcode: 0 });
+    active.peer.receive(first); active.peer.receive(last);
+    check(received.length === 0);
+    active.client.flushWrites();
+    check(received.length === 1 && received[0].forwarded === true && received[0].complete === true && received[0].received === true &&
+      received[0].physical_message_index === 1 && received[0].body.equals(changedBytes) && received[0].token_sha256 === hash(A_TOKEN));
+    check(borrowed.every(bytes => bytes.every(value => value === 0)));
+    check(active.client.writes.at(-2).equals(first) && active.client.writes.at(-1).equals(last));
+    active.flags.logoutInProgress = true; active.peer.emit('end'); await finishSocket(active);
+  });
+  test('library_changed_failed_wire_write_has_no_delivery_observation', async () => {
+    let delivered = 0;
+    const active = startSocket({ scope: changedScope, onLibraryChanged: () => { delivered += 1; } });
+    await upgradeSocket(active); active.client.autoWrite = false;
+    active.peer.receive(wireFrame(changedBytes)); check(delivered === 0);
+    active.client.flushWrites(new Error('synthetic failed write'));
+    await finishSocket(active, 'failed'); check(delivered === 0);
+  });
+  test('library_changed_handshake_head_waits_for_actual_downstream_write', async () => {
+    const client = new FakeWebSocket(); client.autoWrite = false;
+    let delivered = 0;
+    const active = startSocket({ client, scope: changedScope, onLibraryChanged: () => { delivered += 1; } });
+    await upgradeSocket(active, wireFrame(changedBytes));
+    check(delivered === 0 && !active.entry.handshake_delivered);
+    client.flushWrites(); check(delivered === 1 && active.entry.handshake_delivered);
+    active.flags.logoutInProgress = true; active.peer.emit('end'); await finishSocket(active);
+  });
+  test('library_changed_handshake_observer_failure_closes_only_its_stream', async () => {
+    const active = startSocket({ scope: changedScope, onLibraryChanged: () => {}, onLibraryChangedHandshake: () => { throw new Error('synthetic observer failure'); } });
+    await upgradeSocket(active); await finishSocket(active, 'failed');
+    check(active.entry.reason === 'library_changed_handshake_observer_failed');
+  });
+  test('library_changed_socket_binding_rejects_ambiguous_or_foreign_lifetimes', () => {
+    const token = hash(B_TOKEN), entry = { index: 0, connection_id: 'library-changed-ws-0', token_fingerprint: token,
+      handshake_delivered: true, closed: false };
+    check(api.libraryChangedSocketMatch([entry], token, 0) === entry);
+    check(api.libraryChangedSocketMatch([entry], token, 1) === null);
+    check(api.libraryChangedSocketMatch([{ ...entry, closed: true }], token, 0) === null);
+    check(api.libraryChangedSocketMatch([entry], hash(A_TOKEN)) === null);
+    rejected(() => api.libraryChangedSocketMatch([entry, { ...entry, index: 1, connection_id: 'library-changed-ws-1' }], token));
+    rejected(() => api.libraryChangedSocketMatch([{ ...entry, connection_id: 'wrong' }], token));
+    check(api.libraryChangedSocketAuthority(`ws://127.0.0.1:18196/emby/socket?api_key=${B_TOKEN}`, B_TOKEN).fingerprint === token);
+    rejected(() => api.libraryChangedSocketAuthority(`ws://127.0.0.1:18197/emby/socket?api_key=${B_TOKEN}`, B_TOKEN));
+    rejected(() => api.libraryChangedSocketAuthority(`ws://127.0.0.1:18196/emby/socket?api_key=${A_TOKEN}`, B_TOKEN));
+  });
+  test('library_changed_catalog_headers_are_passive_unchanged_copies', async () => {
+    let captured;
+    const active = startForward({ onResponseHeaders: (_request, _plan, headers) => { captured = headers; check(Object.isFrozen(headers)); } });
+    active.request.finish();
+    const headers = ['Content-Type', 'application/json', 'ETag', 'synthetic-tag'];
+    respondForward(active, 200, headers, Buffer.from('{}')); await forwardFinished(active);
+    check(same(captured, headers) && active.response.entity.equals(Buffer.from('{}')));
+  });
+  test('library_changed_browser_close_is_visible_before_physical_close_flush', () => {
+    const observer = Object.fromEntries(['admitLogin', 'physicalRequest', 'physicalResponse', 'physicalFinished', 'frameRequest', 'frameResponse',
+      'frameFinished', 'catalogRequest', 'catalogResponse', 'catalogFinished', 'physicalLibraryChanged', 'browserLibraryChanged'].map(name => [name, () => {}]));
+    const actor = api.createLibraryChangedBrowserActor({ account: { slot: 'B', id: changedUser, password: B_PASSWORD }, pin: () => {}, report: {}, observer });
+    const frame = {}, page = new EventEmitter(), socket = new EventEmitter();
+    page.mainFrame = () => frame; page.url = () => ORIGIN + '/web/index.html#synthetic-list';
+    socket.url = () => `ws://127.0.0.1:18196/emby/socket?api_key=${B_TOKEN}`;
+    actor.page = page; actor.token = B_TOKEN;
+    actor.report.websocket = { entries: [{ index: 0, connection_id: 'library-changed-ws-0', token_fingerprint: hash(B_TOKEN),
+      handshake_delivered: true, closed: false }] };
+    actor.observeLibraryChangedSockets(); page.emit('framenavigated', frame); page.emit('websocket', socket);
+    const entry = actor.report.websocket.entries[0];
+    check(entry.browser_handshake_observed === true && actor.libraryChangedDocumentID === 'document-1');
+    socket.emit('close'); check(entry.browser_closed === true && entry.closed === false);
+    rejected(() => api.createLibraryChangedBrowserActor({ account: { slot: 'B', id: A_ID }, pin: () => {}, report: {}, observer }));
   });
   const report = { format: 1, mode: 'pure', result: 'blocked', harness_guards_only: true, client_acceptance: false,
     source_sha256: hash(source), planned_test_count: cases.length, tests: [] };

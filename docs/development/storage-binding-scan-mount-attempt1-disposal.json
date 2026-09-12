@@ -1,0 +1,656 @@
+{
+  "actual_mount_recovery_accepted": false,
+  "after": {
+    "databases": [
+      {
+        "acl": [
+          "=c/postgres",
+          "postgres=CTc/postgres"
+        ],
+        "connect": true,
+        "limit": -1,
+        "name": "template1",
+        "oid": "1",
+        "owner": "10",
+        "tag": "default template for new databases",
+        "template": true
+      },
+      {
+        "acl": [
+          "=c/postgres",
+          "postgres=CTc/postgres"
+        ],
+        "connect": false,
+        "limit": -1,
+        "name": "template0",
+        "oid": "4",
+        "owner": "10",
+        "tag": "unmodifiable empty database",
+        "template": true
+      },
+      {
+        "acl": null,
+        "connect": true,
+        "limit": -1,
+        "name": "postgres",
+        "oid": "5",
+        "owner": "10",
+        "tag": "default administrative connection database",
+        "template": false
+      },
+      {
+        "acl": null,
+        "connect": true,
+        "limit": -1,
+        "name": "goby_test",
+        "oid": "16385",
+        "owner": "16384",
+        "tag": null,
+        "template": false
+      },
+      {
+        "acl": null,
+        "connect": true,
+        "limit": -1,
+        "name": "goby_client_m3e",
+        "oid": "16398",
+        "owner": "16397",
+        "tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274",
+        "template": false
+      }
+    ],
+    "memberships": [
+      {
+        "admin_option": false,
+        "grantor": "10",
+        "inherit_option": true,
+        "member": "3373",
+        "oid": "10226",
+        "roleid": "3374",
+        "set_option": true
+      },
+      {
+        "admin_option": false,
+        "grantor": "10",
+        "inherit_option": true,
+        "member": "3373",
+        "oid": "10227",
+        "roleid": "3375",
+        "set_option": true
+      },
+      {
+        "admin_option": false,
+        "grantor": "10",
+        "inherit_option": true,
+        "member": "3373",
+        "oid": "10228",
+        "roleid": "3377",
+        "set_option": true
+      }
+    ],
+    "roles": [
+      {
+        "bypass": true,
+        "config": null,
+        "createdb": true,
+        "createrole": true,
+        "inherit": true,
+        "limit": -1,
+        "login": true,
+        "name": "postgres",
+        "oid": "10",
+        "replication": true,
+        "super": true,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_monitor",
+        "oid": "3373",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_read_all_settings",
+        "oid": "3374",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_read_all_stats",
+        "oid": "3375",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_stat_scan_tables",
+        "oid": "3377",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_signal_backend",
+        "oid": "4200",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_checkpoint",
+        "oid": "4544",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_use_reserved_connections",
+        "oid": "4550",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_read_server_files",
+        "oid": "4569",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_write_server_files",
+        "oid": "4570",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_execute_server_program",
+        "oid": "4571",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_database_owner",
+        "oid": "6171",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_read_all_data",
+        "oid": "6181",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_write_all_data",
+        "oid": "6182",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_create_subscription",
+        "oid": "6304",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": false,
+        "name": "pg_maintain",
+        "oid": "6337",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": true,
+        "limit": -1,
+        "login": true,
+        "name": "goby_test",
+        "oid": "16384",
+        "replication": false,
+        "super": false,
+        "tag": null
+      },
+      {
+        "bypass": false,
+        "config": null,
+        "createdb": false,
+        "createrole": false,
+        "inherit": false,
+        "limit": 20,
+        "login": true,
+        "name": "goby_client_m3e",
+        "oid": "16397",
+        "replication": false,
+        "super": false,
+        "tag": "goby-m3e-client-acceptance-v1:274a517dbe24dd8665abcd6765cf2274"
+      }
+    ],
+    "settings": []
+  },
+  "before": {
+    "goby_backup_m3e_source": {
+      "casts_sha256": "571c35d40ff27b9972b3275e878fac303ec17df99663c72a04801f9c973926ef",
+      "catalog_objects": [],
+      "identity": {
+        "database": {
+          "acl": [
+            {
+              "grantee": 18925101,
+              "grantor": 18925101,
+              "is_grantable": false,
+              "privilege_type": "CONNECT"
+            },
+            {
+              "grantee": 18925101,
+              "grantor": 18925101,
+              "is_grantable": false,
+              "privilege_type": "CREATE"
+            },
+            {
+              "grantee": 18925101,
+              "grantor": 18925101,
+              "is_grantable": false,
+              "privilege_type": "TEMPORARY"
+            }
+          ],
+          "allow": true,
+          "encoding": "UTF8",
+          "limit": -1,
+          "oid": 18925102,
+          "owner_oid": 18925101,
+          "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+          "template": false
+        },
+        "role": {
+          "bypass": false,
+          "config": null,
+          "createdb": false,
+          "createrole": false,
+          "inherit": false,
+          "limit": 12,
+          "login": true,
+          "oid": 18925101,
+          "replication": false,
+          "scram": true,
+          "super": false,
+          "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+          "valid_until": null
+        }
+      },
+      "local_role_dependencies": [],
+      "post_init_objects": [],
+      "public": {
+        "acl": [
+          "pg_database_owner=UC/pg_database_owner",
+          "=U/pg_database_owner"
+        ],
+        "comment": "standard public schema",
+        "oid": 2200,
+        "owner": "pg_database_owner"
+      },
+      "public_identities": [],
+      "sequence_states": {},
+      "sessions": {
+        "activity": [],
+        "prepared": 0,
+        "slots": 0
+      },
+      "table_row_counts": {}
+    },
+    "goby_backup_m3e_target": {
+      "casts_sha256": "571c35d40ff27b9972b3275e878fac303ec17df99663c72a04801f9c973926ef",
+      "catalog_objects": [],
+      "identity": {
+        "database": {
+          "acl": [
+            {
+              "grantee": 18925103,
+              "grantor": 18925103,
+              "is_grantable": false,
+              "privilege_type": "CONNECT"
+            },
+            {
+              "grantee": 18925103,
+              "grantor": 18925103,
+              "is_grantable": false,
+              "privilege_type": "CREATE"
+            },
+            {
+              "grantee": 18925103,
+              "grantor": 18925103,
+              "is_grantable": false,
+              "privilege_type": "TEMPORARY"
+            }
+          ],
+          "allow": true,
+          "encoding": "UTF8",
+          "limit": -1,
+          "oid": 18925104,
+          "owner_oid": 18925103,
+          "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+          "template": false
+        },
+        "role": {
+          "bypass": false,
+          "config": null,
+          "createdb": false,
+          "createrole": false,
+          "inherit": false,
+          "limit": 12,
+          "login": true,
+          "oid": 18925103,
+          "replication": false,
+          "scram": true,
+          "super": false,
+          "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+          "valid_until": null
+        }
+      },
+      "local_role_dependencies": [],
+      "post_init_objects": [],
+      "public": {
+        "acl": [
+          "pg_database_owner=UC/pg_database_owner",
+          "=U/pg_database_owner"
+        ],
+        "comment": "standard public schema",
+        "oid": 2200,
+        "owner": "pg_database_owner"
+      },
+      "public_identities": [],
+      "sequence_states": {},
+      "sessions": {
+        "activity": [],
+        "prepared": 0,
+        "slots": 0
+      },
+      "table_row_counts": {}
+    }
+  },
+  "catalog_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b",
+  "cluster": {
+    "process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 327173,
+      "start_ticks": 289359
+    },
+    "system_identifier": "7684040109719526738"
+  },
+  "cluster_owner_sha256": "610b3dcdafa8b6bb960a26946c398b98c02357d61c9c7fdf9b5a8b8504b9d5af",
+  "failed_controller_terminal_sha256": "737c70c0919491a559f0b79457849e34d6b0a19e394b955bf0ff5310ae88de60",
+  "failed_log_bytes": 0,
+  "failed_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "failed_mount_report_sha256": "0111e24b9a21e8ba4cc0fdebf02707611c29915adb57610f7852d987463190a3",
+  "failed_report_sha256": "248fc45c97250da02994d3947b401f43bb74ee568e3ebadb31dec46a291487f6",
+  "force_or_backend_termination_used": false,
+  "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "live_failure_receipt_preserved": true,
+  "marker": "goby-client-backup-disposal-m3e-v1",
+  "mount_failure_artifacts": {
+    "absent_paths": [
+      "helper.stdout",
+      "helper.stderr",
+      "host-mountinfo-before",
+      "host-loops-before.json",
+      "host-mountinfo-after",
+      "host-loops-after.json",
+      "host-mountinfo-terminal",
+      "host-loops-terminal.json",
+      "tmp/goby-linux-amd64"
+    ],
+    "binary": {
+      "bytes": 34877621,
+      "device": 2049,
+      "inode": 2526708,
+      "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_061505_b2b453a716a9/tmp/library.test",
+      "sha256": "c9bf6cfd000afe3b0da512d98d7ffcf811885f31fb2cc3e7e8d82195d4fc03a0"
+    },
+    "compile_stderr_bytes": 0,
+    "compile_stdout_bytes": 0,
+    "fixture_directory_empty": true,
+    "go_log_bytes": 0
+  },
+  "namespace_helper_dispatched": false,
+  "normalization_used": false,
+  "operator_sha256": "d57eb53fad4c7420435fe7712da09b246bdc6e91812e06ef7ed9551184cafb2c",
+  "original_failure_evidence_preserved": true,
+  "pair_identities_absent": true,
+  "pairs": [
+    {
+      "database_oid": 18925102,
+      "name": "goby_backup_m3e_source",
+      "role_oid": 18925101
+    },
+    {
+      "database_oid": 18925104,
+      "name": "goby_backup_m3e_target",
+      "role_oid": 18925103
+    }
+  ],
+  "preexisting_catalog_unchanged": true,
+  "receipt_transition": "Retained bytes preserved; the fresh runner must validate the separate disposal attestation.",
+  "removed": [
+    {
+      "database_oid": 18925104,
+      "name": "goby_backup_m3e_target",
+      "phase": "removed",
+      "role_oid": 18925103
+    },
+    {
+      "database_oid": 18925102,
+      "name": "goby_backup_m3e_source",
+      "phase": "removed",
+      "role_oid": 18925101
+    }
+  ],
+  "root_ownership_and_historical_trees_unchanged": true,
+  "root_tree_sha256": {
+    "/opt/goby-test/exec-work-m3e/bound-scan-root-mount-execution-01": "d2daa0c92c12a0d9029929cf3eb8feebf79db73f8220ca6a7077bda14309032a",
+    "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_061505_b2b453a716a9": "a55839d5dda0ea825f77c0364e7a14b6e1148bc9969e743a76d04e1462035e3f",
+    "/opt/goby-test/exec-work-m3e/source-attempt-54": "1d94233a92f26b4a9f66d6210de1c744d79729b9a6a4d63df9aca94fd866f355"
+  },
+  "run_id": "20260912_061505_b2b453a716a9",
+  "runner_guard_evidence": {
+    "report.json": "ba27c2c539e5f18020db811c31d82e56b1e528e456d0a66e59baf0f1f9c8f6d3",
+    "stderr": "adcceb7f042242fdd8375aae0fbd1334ce7179489e307babca2d44babde86aac",
+    "stdout": "9ecb9d07c61c61b7510c8ed16e895ad2c146d0244920914906663d1d40703ea9"
+  },
+  "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+  "schema": 28,
+  "source_manifest_sha256": "c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3",
+  "source_receipt_sha256": "190c202ca956a52b1914fabe7363ea821bd691f0a6f47869edc8785bc3fe288f",
+  "status": "disposed",
+  "system_identifier": "7684040109719526738",
+  "tag": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+  "terminal_after": {
+    "cgroups": {
+      "goby-bound-scan-root-mount-controller-v1.service": [],
+      "goby-client-backup-20260912-061505-b2b453a716a9.service": []
+    },
+    "original_inner_process_absent": true,
+    "units": {
+      "goby-bound-scan-root-mount-controller-v1.service": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "Description": "[systemd-run] /usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/bound-scan-root-mount-tool-01/verify-bound-scan-root-mount.py --full-report /opt/goby-test/exec-work-m3e/client-backup-run-20260912_053517_9cb0074fc731/report.json --full-report-sha256 50f8543b1b11cf7a3e00d3a0a83684080835fdad0f54ca4c983650f0f1e8892e --host-namespace \"mnt:[4026531841]\"",
+        "ExecMainCode": "1",
+        "ExecMainPID": "1329773",
+        "ExecMainStatus": "1",
+        "Id": "goby-bound-scan-root-mount-controller-v1.service",
+        "InvocationID": "6c741a464ae74b31839355d3ed2e9f06",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "goby-client-backup-20260912-061505-b2b453a716a9.service": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "Description": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+        "ExecMainCode": "1",
+        "ExecMainPID": "1329950",
+        "ExecMainStatus": "1",
+        "Id": "goby-client-backup-20260912-061505-b2b453a716a9.service",
+        "InvocationID": "bf8018cffd8548e99d177f54628752cc",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      }
+    }
+  },
+  "terminal_before": {
+    "cgroups": {
+      "goby-bound-scan-root-mount-controller-v1.service": [],
+      "goby-client-backup-20260912-061505-b2b453a716a9.service": []
+    },
+    "original_inner_process_absent": true,
+    "units": {
+      "goby-bound-scan-root-mount-controller-v1.service": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "Description": "[systemd-run] /usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/bound-scan-root-mount-tool-01/verify-bound-scan-root-mount.py --full-report /opt/goby-test/exec-work-m3e/client-backup-run-20260912_053517_9cb0074fc731/report.json --full-report-sha256 50f8543b1b11cf7a3e00d3a0a83684080835fdad0f54ca4c983650f0f1e8892e --host-namespace \"mnt:[4026531841]\"",
+        "ExecMainCode": "1",
+        "ExecMainPID": "1329773",
+        "ExecMainStatus": "1",
+        "Id": "goby-bound-scan-root-mount-controller-v1.service",
+        "InvocationID": "6c741a464ae74b31839355d3ed2e9f06",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "goby-client-backup-20260912-061505-b2b453a716a9.service": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "Description": "goby-client-backup-pair-m3e-v1:20260912_061505_b2b453a716a9",
+        "ExecMainCode": "1",
+        "ExecMainPID": "1329950",
+        "ExecMainStatus": "1",
+        "Id": "goby-client-backup-20260912-061505-b2b453a716a9.service",
+        "InvocationID": "bf8018cffd8548e99d177f54628752cc",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      }
+    }
+  }
+}

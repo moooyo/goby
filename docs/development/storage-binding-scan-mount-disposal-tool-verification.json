@@ -1,0 +1,13 @@
+{
+  "collection_report_sha256": "b3be23846382df6cd09da11d6040d0c19db423c6742aad1e7b8205f031435e1c",
+  "count_source": "The guard emits its exact test count as stdout JSON.",
+  "database_commands": 0,
+  "effect_fence_self_checks": 12,
+  "filesystem_mutations": 0,
+  "guard_sha256": "58c3a6df210142f7ab1bf2d1c24ee5e2c2d5ead80629047a4a85eb5f04833ae2",
+  "guard_stdout_sha256": "e790cd25553a301eb3cb54e1f454b17d15676d409662b1d90c3d3b55f81f07d7",
+  "operator_sha256": "d57eb53fad4c7420435fe7712da09b246bdc6e91812e06ef7ed9551184cafb2c",
+  "status": "passed",
+  "syntax_files": 2,
+  "tests": 27
+}

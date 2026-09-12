@@ -1,0 +1,66 @@
+{
+  "browser_report_sha256": "07813707a08155111bec6b2208229181b7796ac81f8b6232d06a18af8f7c3030",
+  "browser_sessions_closed": true,
+  "controller_report_sha256": "471c86db295cda6741582f318577cf1c075a18ab4bf603b81b91b92f485c7208",
+  "evidence_sha256": {
+    "after-full.json": "1277a8034d738ed451cf99e71b88c53e31c9731576bca7fbae16085e573ce870",
+    "before-full.json": "362454b5dd8eb128bdc24d86b200dbdc50de03beeb180fd0cb271a715b0e87df",
+    "input.json": "c0ecf3cf0a2b48f0b9a3974b9e4fa4efe369fc43aa4c7842da9c29f5023893c0",
+    "media-after.json": "da593eb64e417260ee97653ea04526429332533b286fc16cda683560bf0ff476",
+    "media-before.json": "da593eb64e417260ee97653ea04526429332533b286fc16cda683560bf0ff476",
+    "primary-after.json": "26c76c4a92f7a3c90d5eed67dfafa749ffe91077af52af7b46a0f0fe2473679e",
+    "primary-before.json": "26c76c4a92f7a3c90d5eed67dfafa749ffe91077af52af7b46a0f0fe2473679e",
+    "worker-terminal.json": "ce20b32bb39a6ae80a2a05fbf00f48fd0763b7cfbdcf7c7ed2219288c10d03bd"
+  },
+  "failure": "The original client raised TypeError while opening the Movies library, before a target catalog list request or native edit.",
+  "last_observed_api_path": "/emby/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/a9993591e72f0f2e7babcbf8b9c50790",
+  "last_observed_api_response_bytes": 430,
+  "last_observed_api_status": 200,
+  "ledger": {
+    "metadata_revision_delta": 0,
+    "new_audits": 2,
+    "new_devices": 1,
+    "new_sessions": 1,
+    "old_rows_sequences_private_preserved": true,
+    "owned_sessions_closed": true
+  },
+  "library_changed_client_acceptance": false,
+  "marker": "goby-client-library-changed-failed-terminal-v1",
+  "media_preserved": true,
+  "metadata_writes": 0,
+  "native_requests": 0,
+  "normal_ui_logout_and_exact401": true,
+  "observed_at": "2026-09-12T06:41:06.056624+00:00",
+  "page_error_message": "Cannot read properties of undefined (reading 'includes')",
+  "phase": "discovery",
+  "primary_preserved": true,
+  "states": [
+    {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "InvocationID": "38eb3125e4d946c4ae04cf5c50aa65a9",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_empty": true,
+      "unit": "goby-client-library-changed-ui-source44-controller-v1.service"
+    },
+    {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "InvocationID": "6f91799314ba44e1bb6cd047b6da5c50",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_empty": true,
+      "unit": "goby-client-library-changed-ui-source44-v1.service"
+    }
+  ],
+  "status": "failed"
+}

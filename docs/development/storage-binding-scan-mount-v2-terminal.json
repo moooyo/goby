@@ -1,0 +1,47 @@
+{
+  "actual_original_remount_recovery_accepted": true,
+  "binary": {
+    "bytes": 34877621,
+    "device": 2049,
+    "inode": 2526809,
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_063021_cfe0f03b5112/tmp/library.test",
+    "sha256": "c9bf6cfd000afe3b0da512d98d7ffcf811885f31fb2cc3e7e8d82195d4fc03a0"
+  },
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "helper_stdout_sha256": "d56283898d9329e3065920dff1d35911c46f219ee6ea73f797a53fb09ea5d2d7",
+  "host_preserved": true,
+  "marker": "goby-bound-scan-root-mount-terminal-v2",
+  "mount_report_sha256": "db06d4a8b40ae92c6ebf8ab1557f7c171fdb0688c8f8524fef7d418231bf1bf0",
+  "observed_at": "2026-09-12T06:35:13.219811+00:00",
+  "private_namespace": {
+    "cgroup": "/system.slice/goby-client-backup-20260912-063021-cfe0f03b5112.service",
+    "namespace": "mnt:[4026533402]",
+    "pid": 1331657,
+    "start_ticks": "11748911",
+    "subprocess_terminal": true
+  },
+  "properties": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "d2e6d3eba8b74a7196e26e6ce95edd15",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "receipt_sha256": "78cbcfc9082634f549428277e5c59c693a075856607da9133bfa9b3311366d58",
+  "recursive_cgroups_empty": true,
+  "report_sha256": "295257dc500ef6067e4811aa4bb682e6b0eca68d67bfdd943434e764b6d266b1",
+  "run_id": "20260912_063021_cfe0f03b5112",
+  "source_manifest_sha256": "c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3",
+  "status": "passed",
+  "system_reboot_tested": false,
+  "unit": "goby-bound-scan-root-mount-controller-v2.service"
+}

@@ -1,8 +1,22 @@
 # Source44 original-client automatic refresh acceptance
 
-Status: implementation plan only. No browser, HTTP, SSH, database query, test,
-build, or runtime observation was performed while writing this document.
-Execution belongs to a new candidate-only scope on test-env.
+Status: the first candidate-only scope was executed and is now consumed.
+It failed during Movies navigation before any native login or metadata write.
+The original client raised a TypeError after a successful CollectionFolder
+detail response. Normal UI logout, exact-token rejection, complete state
+preservation and both process terminal checks passed. See the
+[attempt report](m3e-library-changed-client-attempt1.json) and
+[independent terminal](m3e-library-changed-client-attempt1-terminal.json).
+This document retains that scope's design; it is not permission to replay it.
+
+Any subsequent scope needs a new identity and an explicit lineage from
+`client-library-changed-ui-source44-v1/after-full.json`, SHA-256
+`1277a8034d738ed451cf99e71b88c53e31c9731576bca7fbae16085e573ce870`.
+That state has 74 sessions, 63 devices and 165 audits. It preserves all old
+business state and adds only this run's closed B session, device and two audits.
+First obtain direct public CollectionFolder DTO evidence to diagnose the
+navigation failure. Neither this failure nor passing pure guards establishes
+automatic-refresh acceptance.
 
 The required observation is one real native metadata commit, its unmodified
 `LibraryChanged` message received by the existing original Web Client, a new

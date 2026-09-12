@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "no_live_client_or_database": true,
+  "stderr_sha256": "0f0e1b4b32dbe484a925010adc128cbeca53afad369528284654fd46ab111af2",
+  "stdout_sha256": "495bedaa7154261c7089a3e448eb1356922da7f136fccf8eb240fd49ec95a46e",
+  "summary": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "4efb7662a61a150a7d35b4480aabea939d431fa9145bedcecfef5f15c995f908",
+    "operator_sha256": "12cf9c5e1ddfc6fd5ed6358824c0d05d86b4329c95b7c9a7391cc855a7dbbf91",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-controller-guards",
+    "test_count": 48
+  },
+  "syntax_files": 2
+}

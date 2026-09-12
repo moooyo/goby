@@ -1,0 +1,23 @@
+{
+  "change": "One CRLF separator normalized to LF under the repository attributes; all other bytes identical.",
+  "changed_separators": 1,
+  "exit_code": 0,
+  "guards": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "fe6455378e249c70c9477df139e0fe4ecea7afdac3be8261a7668edb9b12fbcc",
+    "operator_sha256": "b64cbcc87c1a24da5cc2c390e65c1166d7da620e69991285a7c84f8e72135d1e",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-controller-guards",
+    "test_count": 49
+  },
+  "historical_runtime_operator_sha256": "331164bb828152169130a578d53aedae495b62ea79d18ae70d86c7eb12141f9c",
+  "historical_runtime_unchanged": true,
+  "live_client_acceptance": false,
+  "published_operator_sha256": "b64cbcc87c1a24da5cc2c390e65c1166d7da620e69991285a7c84f8e72135d1e",
+  "status": "passed",
+  "stderr_sha256": "802e782fa691e8e9f84daf3b26efacb7578a94b857402c4996131030beba0fc9",
+  "stdout_sha256": "2453e872ddd9a9d76788809a3a824eda95e02ca3371db721acecb31816c7a249",
+  "syntax_files": 2
+}
