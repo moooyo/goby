@@ -32,12 +32,12 @@ import types
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'reference-library-changed-ui-tool-02'
-ROOT = WORK / 'reference-library-changed-ui-v2'
-PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v2'
-WORKER_UNIT = 'goby-reference-library-changed-ui-v2.service'
-CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v2.service'
-PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v2.service'
+TOOL = WORK / 'reference-library-changed-ui-tool-03'
+ROOT = WORK / 'reference-library-changed-ui-v3'
+PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v3'
+WORKER_UNIT = 'goby-reference-library-changed-ui-v3.service'
+CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v3.service'
+PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v3.service'
 MARKER = 'goby-reference-library-changed-observation-v1'
 INPUT_MARKER = 'goby-reference-library-changed-input-v1'
 SNAPSHOT_MARKER = 'goby-reference-library-changed-public-snapshot-v1'
@@ -78,7 +78,7 @@ EDIT_FIELDS = ('Name', 'SortName', 'ForcedSortName', 'OriginalTitle', 'Overview'
     'PreferredMetadataCountryCode', 'IndexNumber', 'ParentIndexNumber', 'SortIndexNumber', 'SortParentIndexNumber', 'DisplayOrder', 'Status', 'DateCreated')
 AUTOMATIC_FIELDS = frozenset(('Etag', 'ETag', 'DateLastSaved', 'DateLastRefreshed'))
 SORT_FIELDS = ('SortName', 'ForcedSortName')
-MARKER_NAME = 'reference library changed ui two'
+MARKER_NAME = 'reference library changed ui three'
 AUTH_TIME_FIELDS = frozenset(('LastLoginDate', 'LastActivityDate'))
 FIELDS = 'Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear'
 STAGES, CONTROLS = ('discovery', 'armed', 'restore-armed', 'restored'), ('reserved', 'forward', 'restored', 'close')
@@ -1142,10 +1142,23 @@ def validate_preflight(value, script_sha, service):
     instant(value['completed_at'])
 
 
+HTTP_TRANSPORT_FIELDS = frozenset(('transport_phase', 'error_code', 'request_content_type', 'request_body_sha256',
+    'upstream_create_attempted', 'upstream_created', 'upstream_end_attempted', 'upstream_end_returned', 'upstream_response_received'))
+HTTP_TRANSPORT_PHASES = frozenset(('admission', 'request_body', 'login_form', 'client_metadata', 'pin', 'upstream_create',
+    'upstream_setup', 'upstream_end', 'upstream_response', 'response_body', 'downstream_write', 'completed'))
+HTTP_TRANSPORT_ERRORS = frozenset(('login_content_type_rejected', 'login_form_encoding_rejected', 'login_form_fields_rejected',
+    'login_username_mismatch', 'login_password_mismatch', 'admission_rejected', 'request_body_rejected', 'client_metadata_rejected',
+    'pin_rejected', 'upstream_create_failed', 'upstream_setup_failed', 'upstream_end_failed', 'upstream_response_rejected',
+    'response_body_rejected', 'downstream_write_failed', 'http_timeout', 'request_transport_error', 'request_aborted',
+    'downstream_transport_error', 'downstream_closed', 'upstream_idle_timeout', 'upstream_transport_error', 'unexpected_upgrade', 'incomplete_exchange'))
+HTTP_REQUEST_TYPES = frozenset(('application/x-www-form-urlencoded; charset=UTF-8', 'application/json', 'text/html', 'text/plain',
+    'text/css', 'text/javascript', 'application/javascript', 'image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/x-icon',
+    'font/woff', 'font/woff2', 'application/octet-stream', 'other'))
+HTTP_UPSTREAM_FLAGS = ('upstream_create_attempted', 'upstream_created', 'upstream_end_attempted', 'upstream_end_returned', 'upstream_response_received')
 HTTP_FIELDS = frozenset(('id', 'index', 'method', 'kind', 'route', 'query', 'hidden_query', 'shape_sha256', 'request_sha256',
     'token_sha256', 'request_sequence', 'start_elapsed_ms', 'response_elapsed_ms', 'finished_elapsed_ms', 'phase', 'document_id',
     'page_route', 'sourceworker', 'main_frame', 'from_service_worker', 'content_type', 'status', 'completed', 'failed', 'projection',
-    'outcome', 'reason', 'request_bytes', 'response_bytes'))
+    'outcome', 'reason', 'request_bytes', 'response_bytes')).union(HTTP_TRANSPORT_FIELDS)
 WIRE_FIELDS = frozenset(('phase', 'physical_exchange_id', 'frame_request_index', 'body_sha256', 'shape_sha256', 'request_sha256', 'token_sha256', 'message_id'))
 MESSAGE_ARRAYS = ('CollectionFolders', 'FoldersAddedTo', 'FoldersRemovedFrom', 'ItemsAdded', 'ItemsRemoved', 'ItemsUpdated')
 
@@ -1162,7 +1175,28 @@ def movies_route(value):
     return parents == [LIBRARY] and (servers == [] or servers == [SERVER])
 
 
-def http_shape(row):
+def http_transport(row, physical):
+    if not physical:
+        require(all(row[key] is None for key in HTTP_TRANSPORT_FIELDS), 'A frame request invented physical transport facts.')
+        return
+    require(isinstance(row['transport_phase'], str) and row['transport_phase'] in HTTP_TRANSPORT_PHASES and
+            (row['error_code'] is None or isinstance(row['error_code'], str) and row['error_code'] in HTTP_TRANSPORT_ERRORS) and
+            (row['request_content_type'] is None or isinstance(row['request_content_type'], str) and row['request_content_type'] in HTTP_REQUEST_TYPES) and
+            (row['request_body_sha256'] is None or digest(row['request_body_sha256'])) and
+            all(type(row[key]) is bool for key in HTTP_UPSTREAM_FLAGS), 'A physical HTTP row changed its bounded transport facts.')
+    for later, earlier in (('upstream_created', 'upstream_create_attempted'), ('upstream_end_attempted', 'upstream_created'),
+                           ('upstream_end_returned', 'upstream_end_attempted'), ('upstream_response_received', 'upstream_create_attempted')):
+        require(not row[later] or row[earlier], 'Physical HTTP facts contradict the order of local transport calls.')
+    require((row['error_code'] is not None) == row['failed'], 'A physical HTTP failure lost its fixed safe error code.')
+    if row['completed']:
+        require(row['transport_phase'] == 'completed' and row['failed'] is False and row['error_code'] is None and
+                all(row[key] is True for key in HTTP_UPSTREAM_FLAGS) and digest(row['request_body_sha256']),
+                'A completed physical exchange lacks its actual upstream and body observations.')
+    else:
+        require(row['transport_phase'] != 'completed', 'An incomplete physical exchange claimed the completed phase.')
+
+
+def http_shape(row, physical):
     require(isinstance(row, dict) and set(row) == HTTP_FIELDS and text(row['id'], 128) and type(row['index']) is int and row['index'] >= 0 and
             text(row['route'], 4096) and row['route'].startswith('/') and not row['route'].startswith('//') and
             isinstance(row['query'], dict) and len(row['query']) <= 32 and isinstance(row['hidden_query'], list) and len(row['hidden_query']) <= 32,
@@ -1178,6 +1212,7 @@ def http_shape(row):
             type(row['completed']) is bool and type(row['failed']) is bool, 'An HTTP shape digest, sequence or completion type changed.')
     require(all(row[key] is None or type(row[key]) is int and 0 <= row[key] <= 2 << 20 for key in ('request_bytes', 'response_bytes')) and
             (row['outcome'] not in ('failed', 'rejected') or row['failed'] is True), 'HTTP byte or failure accounting changed its actual outcome.')
+    http_transport(row, physical)
     if row['projection'] is not None:
         projection = row['projection']
         require(row['kind'] in ('items', 'target') and isinstance(projection, dict) and set(projection) == {'items', 'count', 'body_sha256', 'body_bytes'} and
@@ -1192,7 +1227,8 @@ def http_shape(row):
 def pair_reads(physical, frames):
     require(isinstance(physical, list) and isinstance(frames, list) and len(physical) <= 2000 and len(frames) <= 2000,
             'A browser HTTP inventory exceeds its fixed bound.')
-    for row in physical + frames: http_shape(row)
+    for row in physical: http_shape(row, True)
+    for row in frames: http_shape(row, False)
     require(len({row['id'] for row in physical}) == len(physical) and len({row['index'] for row in frames}) == len(frames),
             'A physical exchange or frame request was duplicated.')
     eligible = [row for row in frames if digest(row['token_sha256']) and row['completed'] is True and row['failed'] is False and

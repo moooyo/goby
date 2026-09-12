@@ -1,0 +1,54 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-03/test-observe-client-library-changed-reference-ui.py"
+  ],
+  "business_http": false,
+  "classification": "pure tool guards; not reference or client acceptance",
+  "compilations": [
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-03/observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": [
+        {
+          "category": "SyntaxWarning",
+          "line": 513,
+          "message": "invalid escape sequence '\\.'"
+        },
+        {
+          "category": "SyntaxWarning",
+          "line": 862,
+          "message": "invalid escape sequence '\\.'"
+        }
+      ]
+    },
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-03/test-observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": []
+    }
+  ],
+  "completed_at": "2026-09-12T15:43:00.628211+00:00",
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-python-v3-verification",
+  "python_version": "3.13.5 (main, Jun 13 2026, 14:18:01) [GCC 14.2.0]",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-03/observe-client-library-changed-reference-ui.py": {
+      "bytes": 130606,
+      "sha256": "fe5c0c365c8b3bdfdd41b0ed57c05198d8b605502e3d3da70cf566a235854a4a"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-03/test-observe-client-library-changed-reference-ui.py": {
+      "bytes": 70399,
+      "sha256": "999dbe9e6a8cb6bcf4edbd2c1775b0cf5497bc25397f6814beb30e8ce6c100c5"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "466f9a2dced96b31c17192fd7e48342d95a8bf1559885fbd328230755b822b07",
+  "stdout_sha256": "b977e123692316a96f10e4144c8c3ea24b51c66d872f957e381c2df79e9c695a",
+  "tests": 49
+}

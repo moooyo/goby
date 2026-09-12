@@ -8,7 +8,7 @@ import { REFERENCE_TOOL as TOOL, REFERENCE_ROOT as ROOT, REFERENCE_OUTPUT as OUT
   parseReferenceArguments, validateReferenceInput, validateReferencePublicBaseline, referenceRoute, referenceMoviesRoute,
   referenceFullMovieQuery, projectReferenceItems, pairReferenceReads, referencePairReferences, pairReferenceMessages,
   referenceMessageEvidence, referenceLibraryChangedMessages,
-  bindReferenceDOM, referenceWindowEvidence, referenceAcceptedReads, observeReferenceDOM, normalizeReferenceSnapshot,
+  bindReferenceDOM, referenceWindowEvidence, referenceAcceptedReads, observeReferenceDOM, normalizeReferenceSnapshot, validateReferenceTransportFacts,
   validateReferenceReservation, validateReferenceControl, validateReferenceAbort, referenceStageRecord, encodeReferenceRecord,
   publishReferenceRecord, canonicalReferenceCgroup, projectReferenceNodeProcess, ReferenceWorkflow } from './client-browser-library-changed-reference.mjs';
 
@@ -35,7 +35,7 @@ export function referenceInputFixture() {
       path: '/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Anchor (2030)/LibraryChanged Anchor (2030).mp4', type: 'Movie' },
     source_closure: Object.fromEntries(['client-browser-library-changed-reference.mjs', 'client-browser-library-changed-reference-runtime.mjs',
       'client-browser-session-proof.mjs'].map(name => [TOOL + '/' + name, sha('synthetic-source:' + name)])),
-    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v2/report.json'),
+    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v3/report.json'),
       before_snapshot: descriptor(ROOT + '/before-public.json') },
     controller: { pid: 12345, start_ticks: '23456', boot_id: '12345678-1234-1234-1234-123456789abc', unit: REFERENCE_CONTROLLER_UNIT,
       invocation_id: sha('synthetic-controller').slice(0, 32) } };
@@ -54,8 +54,12 @@ function wirePair(phase = 'discovery', name = referenceInputFixture().target.nam
     response_elapsed_ms: 4200, finished_elapsed_ms: 4250, sourceworker: false, main_frame: true, from_service_worker: false,
     content_type: 'application/json', status: 200, completed: true, failed: false };
   return { physical: { ...clone(common), id: 'physical-1', index: 1, request_sequence: 4010, start_elapsed_ms: 4010,
+    transport_phase: 'completed', error_code: null, request_content_type: null, request_body_sha256: sha(''), upstream_create_attempted: true,
+    upstream_created: true, upstream_end_attempted: true, upstream_end_returned: true, upstream_response_received: true,
     projection: projectReferenceItems({ body_sha256: sha(JSON.stringify(body)), bytes: Buffer.byteLength(JSON.stringify(body)), json: body }, 'items') },
-  frame: { ...clone(common), id: 'frame-1', index: 1, request_sequence: 4000, start_elapsed_ms: 4000, finished_elapsed_ms: 4260, projection: null } };
+  frame: { ...clone(common), id: 'frame-1', index: 1, request_sequence: 4000, start_elapsed_ms: 4000, finished_elapsed_ms: 4260, projection: null,
+    transport_phase: null, error_code: null, request_content_type: null, request_body_sha256: null, upstream_create_attempted: null,
+    upstream_created: null, upstream_end_attempted: null, upstream_end_returned: null, upstream_response_received: null } };
 }
 function dom(expected = referenceInputFixture().target.name, observed = expected, started = 4500) {
   const input = referenceInputFixture(); return { route: ROUTE, document_id: 'document-6', started_elapsed_ms: started, expected_name: expected,
@@ -112,36 +116,36 @@ test('input and CLI bind only the fresh reference scope', () => {
   rejects(() => parseReferenceArguments(['--input', ROOT + '/input.json']));
 });
 test('raw proc cgroup records publish the exact canonical worker path across the IPC boundary', () => {
-  const input = referenceInputFixture(), rawLine = '0::/system.slice/goby-reference-library-changed-ui-v2.service\n';
+  const input = referenceInputFixture(), rawLine = '0::/system.slice/goby-reference-library-changed-ui-v3.service\n';
   const proc = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
     executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: rawLine };
   const projected = projectReferenceNodeProcess(proc, input.controller.boot_id);
-  check(projected.cgroup === '/system.slice/goby-reference-library-changed-ui-v2.service' && proc.cgroup === rawLine);
+  check(projected.cgroup === '/system.slice/goby-reference-library-changed-ui-v3.service' && proc.cgroup === rawLine);
   check(canonicalReferenceCgroup(rawLine.slice(0, -1), REFERENCE_UNIT) === projected.cgroup);
   const actualBinding = { ...binding(), node_process: projected }, session = descriptor(OUTPUT + '/session-private.json');
   const stage = referenceStageRecord(actualBinding, 'discovery', discovery(), sha('synthetic-token'), session, null);
   const decodedStage = JSON.parse(encodeReferenceRecord(stage).toString('utf8'));
-  check(decodedStage.node_process.cgroup === '/system.slice/goby-reference-library-changed-ui-v2.service');
+  check(decodedStage.node_process.cgroup === '/system.slice/goby-reference-library-changed-ui-v3.service');
   const controllerChild = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
-    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: '/system.slice/goby-reference-library-changed-ui-v2.service' };
+    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: '/system.slice/goby-reference-library-changed-ui-v3.service' };
   const control = { marker: 'goby-reference-library-changed-control-v1', version: 1, name: 'reserved', ...actualBinding,
     node_process: controllerChild, previous_stage_sha256: sha('stage'), reservation: reservation(), commit: null, restoration: 'pending' };
   validateReferenceControl(control, actualBinding, { input, previous_stage_sha256: sha('stage') });
   rejects(() => validateReferenceControl({ ...control, node_process: { ...controllerChild, cgroup: rawLine } }, actualBinding,
     { input, previous_stage_sha256: sha('stage') }));
-  for (const raw of ['/system.slice/goby-reference-library-changed-ui-v2.service', rawLine.replace('\n', '\r\n'),
-    rawLine + '1:name=systemd:/system.slice/other.service\n', rawLine.replace('ui-v2.service', 'ui-v1.service'),
+  for (const raw of ['/system.slice/goby-reference-library-changed-ui-v3.service', rawLine.replace('\n', '\r\n'),
+    rawLine + '1:name=systemd:/system.slice/other.service\n', rawLine.replace('ui-v3.service', 'ui-v2.service'),
     rawLine.replace('.service\n', '.service/child\n'), rawLine.replace('0::', '1:name=systemd:'),
-    '0::/system.slice/goby-reference-library-changed-ui-controller-v2.service\n']) {
+    '0::/system.slice/goby-reference-library-changed-ui-controller-v3.service\n']) {
     rejects(() => projectReferenceNodeProcess({ ...proc, cgroup: raw }, input.controller.boot_id));
   }
-  check(canonicalReferenceCgroup('0::/system.slice/goby-reference-library-changed-ui-controller-v2.service\n', REFERENCE_CONTROLLER_UNIT) ===
-    '/system.slice/goby-reference-library-changed-ui-controller-v2.service');
+  check(canonicalReferenceCgroup('0::/system.slice/goby-reference-library-changed-ui-controller-v3.service\n', REFERENCE_CONTROLLER_UNIT) ===
+    '/system.slice/goby-reference-library-changed-ui-controller-v3.service');
   check(input.reference.service_identity.cgroup === '0::/system.slice/synthetic-reference.service\n');
-  for (const mutate of [value => { value.root = WORK + '/reference-library-changed-ui-v1'; },
-    value => { value.authority.preflight.path = WORK + '/reference-library-changed-ui-preflight-v1/report.json'; },
+  for (const mutate of [value => { value.root = WORK + '/reference-library-changed-ui-v2'; },
+    value => { value.authority.preflight.path = WORK + '/reference-library-changed-ui-preflight-v2/report.json'; },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure).map(([filename, hash]) =>
-      [filename.replace('ui-tool-02', 'ui-tool-01'), hash])); }]) {
+      [filename.replace('ui-tool-03', 'ui-tool-02'), hash])); }]) {
     const stale = clone(input); mutate(stale); rejects(() => validateReferenceInput(stale));
   }
 });
@@ -149,8 +153,8 @@ test('the fresh public baseline includes both Movies and complete device ownersh
   const input = referenceInputFixture(), movies = [input.anchor, input.target].map(value => ({ Id: value.id, Name: value.name, Type: 'Movie', IsFolder: false, Path: value.path,
     ParentId: value.id === '100' ? '99' : '95' }));
   const preflight = { marker: 'goby-reference-library-changed-preflight-v1', version: 1, mode: 'business-read-only-preflight',
-    root: WORK + '/reference-library-changed-ui-preflight-v2', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
-    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v2/after-public.json'), target: input.target, anchor: input.anchor,
+    root: WORK + '/reference-library-changed-ui-preflight-v3', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
+    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v3/after-public.json'), target: input.target, anchor: input.anchor,
     expected_libraries: input.expected_libraries, admin: { closed: true, login_status: 200, login_complete: true, logout_status: 204,
       logout_complete: true, exact401_status: 401, exact401_complete: true }, ledger: { authentication_posts: 2, metadata_posts: 0, http_requests: 80 },
     preservation: { passed: true }, errors: [], status: 'passed', completed_at: new Date(START).toISOString(), evidence: {} };
@@ -256,10 +260,45 @@ test('raw HTTP normalization is bounded public projection only', () => {
   check(result.http.physical[0].kind === 'items' && result.http.physical[0].projection.count === 2 && !JSON.stringify(result).includes('private-not-exported') && !('report' in result));
 });
 test('blocked physical transfers retain their real terminal failure and byte facts', () => {
-  const pair = wirePair(), blocked = { ...pair.physical, completed: false, outcome: 'rejected', reason: 'http_admission_rejected', request_bytes: 0, response_bytes: 0 };
+  const pair = wirePair(), blocked = { ...pair.physical, status: null, response_elapsed_ms: null, completed: false, outcome: 'rejected', reason: 'http_admission_rejected', request_bytes: 0, response_bytes: 0,
+    transport_phase: 'admission', error_code: 'admission_rejected', request_body_sha256: null, upstream_create_attempted: false,
+    upstream_created: false, upstream_end_attempted: false, upstream_end_returned: false, upstream_response_received: false };
   delete blocked.failed;
   const result = normalizeReferenceSnapshot({ http: { physical: [blocked], frames: [] }, events: { physical: [], browser: [] } }).http.physical[0];
   check(result.failed === true && result.outcome === 'rejected' && result.reason === 'http_admission_rejected' && result.request_bytes === 0 && result.response_bytes === 0);
+});
+test('physical dispatch facts survive zero-response normalization without inventing non-dispatch', () => {
+  const pair = wirePair(), body = 'Username=synthetic-viewer&Pw=synthetic-only-password';
+  const failed = { ...pair.physical, method: 'POST', kind: 'login', route: '/Users/AuthenticateByName', status: null, completed: false,
+    outcome: 'failed', failed: true, reason: 'http_upstream_idle', response_bytes: 0, request_bytes: Buffer.byteLength(body),
+    transport_phase: 'upstream_end', error_code: 'upstream_idle_timeout', request_content_type: 'application/x-www-form-urlencoded; charset=UTF-8',
+    request_body_sha256: sha(body), upstream_create_attempted: true, upstream_created: true, upstream_end_attempted: true,
+    upstream_end_returned: true, upstream_response_received: false };
+  const snapshot = { http: { physical: [failed], frames: [pair.frame] }, events: { physical: [], browser: [] } };
+  const normalized = normalizeReferenceSnapshot(snapshot), actual = normalized.http.physical[0];
+  check(Object.keys(actual).length === 38 && actual.status === null && actual.response_bytes === 0 && actual.failed &&
+    actual.upstream_create_attempted && actual.upstream_created && actual.upstream_end_attempted && actual.upstream_end_returned &&
+    actual.upstream_response_received === false && actual.transport_phase === 'upstream_end' && actual.error_code === 'upstream_idle_timeout' &&
+    actual.request_body_sha256 === sha(body) && actual.request_content_type === 'application/x-www-form-urlencoded; charset=UTF-8');
+  for (const key of ['transport_phase', 'error_code', 'request_content_type', 'request_body_sha256', 'upstream_create_attempted',
+    'upstream_created', 'upstream_end_attempted', 'upstream_end_returned', 'upstream_response_received']) check(normalized.http.frames[0][key] === null);
+  check(!JSON.stringify(normalized).includes('synthetic-only-password'));
+  const pending = { ...actual, failed: false, outcome: null, error_code: null, reason: null }; validateReferenceTransportFacts(pending, true);
+  check(pending.upstream_end_returned === true && pending.upstream_response_received === false && pending.status === null);
+});
+test('transport fact guards reject contradictory channels, stages, and local call ordering', () => {
+  const pair = wirePair(); validateReferenceTransportFacts(pair.physical, true); validateReferenceTransportFacts(pair.frame, false);
+  for (const mutate of [value => { value.upstream_create_attempted = false; }, value => { value.upstream_end_attempted = false; },
+    value => { value.upstream_end_returned = 'true'; }, value => { value.request_body_sha256 = null; },
+    value => { value.error_code = 'raw exception with a secret'; }, value => { value.transport_phase = 'unknown'; },
+    value => { value.request_content_type = 'arbitrary/private'; }, value => { value.completed = false; }]) {
+    const changed = clone(pair.physical); mutate(changed); rejects(() => validateReferenceTransportFacts(changed, true));
+  }
+  rejects(() => validateReferenceTransportFacts({ ...pair.frame, upstream_created: false }, false));
+  rejects(() => validateReferenceTransportFacts({ ...pair.physical, failed: true }, true));
+  const callbackBeforeReturn = { ...pair.physical, transport_phase: 'upstream_response', completed: false, failed: false,
+    upstream_create_attempted: true, upstream_created: false, upstream_end_attempted: false, upstream_end_returned: false, upstream_response_received: true };
+  validateReferenceTransportFacts(callbackBeforeReturn, true);
 });
 test('unsupported LibraryChanged schema is received and paired without fabricated empty Data', () => {
   const value = referenceWindowFixture();
@@ -370,7 +409,7 @@ test('a bound controller abort interrupts a control wait before its timeout', as
 
 /** The explicit DOM mode is an isolated synthetic fixture, never a reference client run. */
 export async function runReferenceDOMGuards(argv) {
-  const domTool = WORK + '/reference-library-changed-ui-js-tool-02';
+  const domTool = WORK + '/reference-library-changed-ui-js-tool-03';
   check(process.platform === 'linux' && process.getuid?.() === 0 && SELF === domTool + '/test-client-browser-library-changed-reference.mjs');
   check(Array.isArray(argv) && argv.length === 9 && argv[0] === '--dom'); const values = {};
   for (let index = 1; index < argv.length; index += 2) {

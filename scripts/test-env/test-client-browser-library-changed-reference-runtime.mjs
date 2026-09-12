@@ -10,7 +10,8 @@ import { REFERENCE_ORIGIN as ORIGIN, REFERENCE_VIEWER as VIEWER, requireReferenc
   referenceWebSocketResponsePlan, referenceConnectInner, createReferenceFrameState, decodeWebSocketFrames,
   referenceSocketMessageRecord, createReferenceLogoutProofContext, referenceTrafficAllowed,
   referenceHTTPBudgetAvailable, referenceBootstrapExternalRequest, REFERENCE_SERVER,
-  referenceObservedRequestAuthority, referenceObservationFailure } from './client-browser-library-changed-reference-runtime.mjs';
+  referenceObservedRequestAuthority, referenceObservationFailure, dispatchReferenceHTTP,
+  referencePhysicalHTTPFacts } from './client-browser-library-changed-reference-runtime.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const token = 'private-token-for-pure-reference-tests';
@@ -33,6 +34,33 @@ function frame(payload, { masked = false, final = true, opcode = 1 } = {}) {
     for (let index = 0; index < encoded.length; index += 1) encoded[index] ^= mask[index % 4];
   }
   return Buffer.concat([header, encoded]);
+}
+
+function formDispatchFixture(body = undefined, contentType = 'application/x-www-form-urlencoded; charset=UTF-8') {
+  const account = { username: 'v'.repeat(29), password: 'a'.repeat(64) };
+  const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body ?? `Username=${account.username}&Pw=${account.password}`);
+  const rawHeaders = ['Host', '127.0.0.1:18197', 'Content-Type', contentType, 'Content-Length', String(bytes.length), 'Authorization', metadata];
+  const plan = referenceHTTPPlan(`${ORIGIN}/emby/Users/authenticatebyname`, 'POST', rawHeaders);
+  const evidence = referencePhysicalHTTPFacts(); evidence.transport_phase = 'request_body';
+  return { plan, bytes, account, evidence, pin: async () => {}, canDispatch: () => true, onLoginMetadata: () => {},
+    onCreated: () => {}, onResponse: () => {}, onError: () => {}, onIdle: () => {}, onUpgrade: () => {} };
+}
+
+function recordingHTTPTransport(mode = 'normal') {
+  const calls = []; let respond = null;
+  return { calls, response(value) { respond(value); }, transport: { request(options, onResponse) {
+    calls.push({ kind: 'request', options });
+    if (mode === 'create_error') throw new Error('Private constructor detail');
+    respond = onResponse;
+    const outgoing = new EventEmitter();
+    outgoing.setTimeout = () => outgoing;
+    outgoing.end = bytes => {
+      calls.push({ kind: 'end', bytes });
+      if (mode === 'end_error') throw new Error('Private end detail');
+      return outgoing;
+    };
+    return outgoing;
+  } } };
 }
 
 test('the runtime can only start on a remote Linux root environment', () => {
@@ -178,6 +206,72 @@ test('request framing refuses ambiguity and preserves end-to-end header values',
   const response = referenceHTTPResponsePlan(200, ['Content-Type', 'application/json', 'Content-Encoding', 'gzip', 'Content-Length', '123'], 'GET');
   assert.equal(response.status, 200); assert.equal(response.contentEncoding, 'gzip'); assert.equal(response.length, 123);
   assert.throws(() => referenceHTTPResponsePlan(200, ['Content-Length', '3', 'Transfer-Encoding', 'chunked'], 'GET'));
+});
+
+test('the production dispatcher forwards the exact 106-byte form and original content type', async () => {
+  const fixture = formDispatchFixture(), original = Buffer.from(fixture.bytes), transport = recordingHTTPTransport();
+  let clientMetadata, response;
+  fixture.onLoginMetadata = value => { clientMetadata = value; };
+  fixture.onResponse = value => { response = value; };
+  assert.equal(fixture.bytes.length, 106);
+  await dispatchReferenceHTTP(fixture, transport.transport);
+  assert.deepEqual(transport.calls.map(value => value.kind), ['request', 'end']);
+  assert.strictEqual(transport.calls[0].options.headers, fixture.plan.headers);
+  assert.equal(transport.calls[0].options.headers[3], 'application/x-www-form-urlencoded; charset=UTF-8');
+  assert.strictEqual(transport.calls[1].bytes, fixture.bytes); assert.deepEqual(fixture.bytes, original);
+  assert.deepEqual(clientMetadata, { client_name: 'Emby Web', device_name: 'Chrome', device_id: 'fresh-device', client_version: '4.9' });
+  assert.equal(fixture.evidence.request_body_sha256, hash(original));
+  assert.equal(fixture.evidence.request_content_type, 'application/x-www-form-urlencoded; charset=UTF-8');
+  assert.equal(fixture.evidence.upstream_create_attempted, true); assert.equal(fixture.evidence.upstream_created, true);
+  assert.equal(fixture.evidence.upstream_end_attempted, true); assert.equal(fixture.evidence.upstream_end_returned, true);
+  assert.equal(fixture.evidence.upstream_response_received, false);
+  const received = { statusCode: 200 }; transport.response(received);
+  assert.strictEqual(response, received); assert.equal(fixture.evidence.upstream_response_received, true);
+  assert.equal(fixture.evidence.transport_phase, 'upstream_response');
+});
+
+test('the production dispatcher rejects malformed or unapproved login bodies before creating an upstream request', async () => {
+  const base = formDispatchFixture(), form = base.bytes.toString();
+  const cases = [
+    { body: form, type: 'application/json', code: 'login_content_type_rejected' },
+    { body: form, type: 'application/x-www-form-urlencoded', code: 'login_content_type_rejected' },
+    { body: form, type: 'application/x-www-form-urlencoded; charset=latin1', code: 'login_content_type_rejected' },
+    { body: '{"Username":"dummy","Pw":"dummy"}', code: 'login_form_encoding_rejected' },
+    { body: `Username=${base.account.username}&Pw=%GG`, code: 'login_form_encoding_rejected' },
+    { body: `Username=${base.account.username}&Pw=%FF`, code: 'login_form_encoding_rejected' },
+    { body: `Username=${base.account.username}&Pw=%`, code: 'login_form_encoding_rejected' },
+    { body: Buffer.from([255, 254]), code: 'login_form_encoding_rejected' },
+    { body: form + '&Pw=duplicate', code: 'login_form_fields_rejected' },
+    { body: form + '&%50w=duplicate', code: 'login_form_fields_rejected' },
+    { body: form + '&extra=value', code: 'login_form_fields_rejected' },
+    { body: `Username=${base.account.username}`, code: 'login_form_fields_rejected' },
+    { body: `Username=different&Pw=${base.account.password}`, code: 'login_username_mismatch' },
+    { body: `Username=${base.account.username}&Pw=different`, code: 'login_password_mismatch' },
+  ];
+  for (const value of cases) {
+    const fixture = formDispatchFixture(value.body, value.type);
+    fixture.pin = async () => assert.fail('Rejected forms must not reach the pin or transport stage');
+    await assert.rejects(dispatchReferenceHTTP(fixture, { request() { assert.fail('Rejected forms must not call the upstream factory'); } }),
+      error => error.code === value.code && error.message === 'reference_physical_http_failure');
+    assert.equal(fixture.evidence.transport_phase, 'login_form');
+    assert.equal(fixture.evidence.request_body_sha256, hash(fixture.bytes));
+    for (const field of ['upstream_create_attempted', 'upstream_created', 'upstream_end_attempted', 'upstream_end_returned', 'upstream_response_received'])
+      assert.equal(fixture.evidence[field], false);
+  }
+});
+
+test('the production dispatcher distinguishes constructor and end failures without inventing server receipt', async () => {
+  for (const [mode, code, created, endAttempted] of [
+    ['create_error', 'upstream_create_failed', false, false], ['end_error', 'upstream_end_failed', true, true],
+  ]) {
+    const fixture = formDispatchFixture(), transport = recordingHTTPTransport(mode);
+    await assert.rejects(dispatchReferenceHTTP(fixture, transport.transport), error =>
+      error.code === code && error.message === 'reference_physical_http_failure' && !error.message.includes('Private'));
+    assert.equal(fixture.evidence.upstream_create_attempted, true);
+    assert.equal(fixture.evidence.upstream_created, created); assert.equal(fixture.evidence.upstream_end_attempted, endAttempted);
+    assert.equal(fixture.evidence.upstream_end_returned, false); assert.equal(fixture.evidence.upstream_response_received, false);
+    assert.equal(Object.hasOwn(fixture.evidence, 'server_received'), false);
+  }
 });
 
 test('authority must agree across all carriers and only fingerprints are public', () => {

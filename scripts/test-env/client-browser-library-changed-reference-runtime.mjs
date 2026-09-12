@@ -15,6 +15,18 @@ export const REFERENCE_RUNTIME_LIMITS = Object.freeze({ requests: 2000, concurre
   messageBytes: 65536, messages: 2048, wireBytes: 8388608, frames: 4096, framesPerSecond: 128,
   socketMs: 900000, socketIdleMs: 130000, queuedBytes: 1048576,
   cleanupRequests: 64, cleanupConcurrent: 8, cleanupRequestBytes: 65536, cleanupResponseBytes: 16777216 });
+export const REFERENCE_HTTP_PHASES = Object.freeze(['admission', 'request_body', 'login_form', 'client_metadata', 'pin',
+  'upstream_create', 'upstream_setup', 'upstream_end', 'upstream_response', 'response_body', 'downstream_write', 'completed']);
+export const REFERENCE_HTTP_ERROR_CODES = Object.freeze(['login_content_type_rejected', 'login_form_encoding_rejected',
+  'login_form_fields_rejected', 'login_username_mismatch', 'login_password_mismatch', 'admission_rejected',
+  'request_body_rejected', 'client_metadata_rejected', 'pin_rejected', 'upstream_create_failed', 'upstream_setup_failed',
+  'upstream_end_failed', 'upstream_response_rejected', 'response_body_rejected', 'downstream_write_failed', 'http_timeout',
+  'request_transport_error', 'request_aborted', 'downstream_transport_error', 'downstream_closed', 'upstream_idle_timeout',
+  'upstream_transport_error', 'unexpected_upgrade', 'incomplete_exchange']);
+const LOGIN_FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded; charset=UTF-8';
+export const REFERENCE_REQUEST_CONTENT_TYPES = Object.freeze([null, LOGIN_FORM_CONTENT_TYPE, 'application/json', 'text/html',
+  'text/plain', 'text/css', 'text/javascript', 'application/javascript', 'image/png', 'image/jpeg', 'image/svg+xml',
+  'image/webp', 'image/x-icon', 'font/woff', 'font/woff2', 'application/octet-stream', 'other']);
 const PLAYWRIGHT = '/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright';
 const TOKEN_KEYS = new Set(['token', 'accesstoken', 'api_key', 'x-emby-token', 'x-mediabrowser-token']);
 const SECRET_KEYS = new Set([...TOKEN_KEYS, 'password', 'pw', 'passwordhash', 'authorization', 'x-emby-authorization']);
@@ -360,6 +372,100 @@ export function referenceHTTPResponsePlan(status, rawHeaders, method) {
     contentEncoding: headers.first('content-encoding') ?? null };
 }
 
+function physicalHTTPError(code) {
+  const error = new Error('reference_physical_http_failure');
+  error.code = REFERENCE_HTTP_ERROR_CODES.includes(code) ? code : 'incomplete_exchange';
+  return error;
+}
+
+function physicalHTTPErrorCode(error, phase, reason = null) {
+  if (REFERENCE_HTTP_ERROR_CODES.includes(error?.code)) return error.code;
+  const transport = { http_timeout: 'http_timeout', http_request_error: 'request_transport_error',
+    http_request_aborted: 'request_aborted', http_response_error: 'downstream_transport_error',
+    http_downstream_closed: 'downstream_closed', http_upstream_idle: 'upstream_idle_timeout',
+    http_upstream_error: 'upstream_transport_error', http_unexpected_upgrade: 'unexpected_upgrade', http_incomplete: 'incomplete_exchange' };
+  if (reason && Object.hasOwn(transport, reason)) return transport[reason];
+  return ({ admission: 'admission_rejected', request_body: 'request_body_rejected', login_form: 'login_form_encoding_rejected',
+    client_metadata: 'client_metadata_rejected', pin: 'pin_rejected', upstream_create: 'upstream_create_failed',
+    upstream_setup: 'upstream_setup_failed', upstream_end: 'upstream_end_failed', upstream_response: 'upstream_response_rejected',
+    response_body: 'response_body_rejected', downstream_write: 'downstream_write_failed' })[phase] ?? 'incomplete_exchange';
+}
+
+function physicalHTTPPhase(evidence, phase) {
+  const current = REFERENCE_HTTP_PHASES.indexOf(evidence.transport_phase), next = REFERENCE_HTTP_PHASES.indexOf(phase);
+  guard(next >= 0);
+  if (next >= current) evidence.transport_phase = phase;
+}
+
+export function referencePhysicalHTTPFacts() {
+  return { transport_phase: 'admission', error_code: null, request_content_type: null, request_body_sha256: null,
+    upstream_create_attempted: false, upstream_created: false, upstream_end_attempted: false,
+    upstream_end_returned: false, upstream_response_received: false };
+}
+
+function loginFormContentType(value) {
+  return typeof value === 'string' && /^application\/x-www-form-urlencoded; *charset=UTF-8$/i.test(value.trim());
+}
+
+function requestContentType(value) {
+  return loginFormContentType(value) ? LOGIN_FORM_CONTENT_TYPE : safeContentType(value);
+}
+
+/** Validate only the observed explicit form contract; credentials never leave this function. */
+export function validateReferenceLoginForm(contentType, bytes, account) {
+  if (!loginFormContentType(contentType)) throw physicalHTTPError('login_content_type_rejected');
+  if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > L.requestBytes) throw physicalHTTPError('login_form_encoding_rejected');
+  let text;
+  try { text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { throw physicalHTTPError('login_form_encoding_rejected'); }
+  if (!/^[\x20-\x7e]+$/.test(text)) throw physicalHTTPError('login_form_encoding_rejected');
+  const values = new Map();
+  for (const field of text.split('&')) {
+    const split = field.indexOf('=');
+    if (split < 1) throw physicalHTTPError('login_form_encoding_rejected');
+    let name, value;
+    try {
+      name = decodeURIComponent(field.slice(0, split).replace(/\+/g, ' '));
+      value = decodeURIComponent(field.slice(split + 1).replace(/\+/g, ' '));
+    } catch { throw physicalHTTPError('login_form_encoding_rejected'); }
+    if (!['Username', 'Pw'].includes(name) || values.has(name)) throw physicalHTTPError('login_form_fields_rejected');
+    values.set(name, value);
+  }
+  if (values.size !== 2 || !values.has('Username') || !values.has('Pw')) throw physicalHTTPError('login_form_fields_rejected');
+  if (typeof account?.username !== 'string' || values.get('Username') !== account.username) throw physicalHTTPError('login_username_mismatch');
+  if (typeof account?.password !== 'string' || values.get('Pw') !== account.password) throw physicalHTTPError('login_password_mismatch');
+  return Object.freeze({ content_type: LOGIN_FORM_CONTENT_TYPE, body_sha256: sha(bytes), bytes: bytes.length });
+}
+
+/** The production dispatcher validates first, then passes the exact original headers and body to transport. */
+export async function dispatchReferenceHTTP({ plan, bytes, account, pin, canDispatch, evidence, onLoginMetadata, onCreated,
+  onResponse, onError, onIdle, onUpgrade }, transport = http) {
+  try {
+    evidence.request_content_type = requestContentType(plan.authorityHeaders['content-type']);
+    evidence.request_body_sha256 = sha(bytes);
+    if (plan.kind === 'login') {
+      physicalHTTPPhase(evidence, 'login_form');
+      validateReferenceLoginForm(plan.authorityHeaders['content-type'], bytes, account);
+      physicalHTTPPhase(evidence, 'client_metadata');
+      onLoginMetadata(referenceClientMetadata(REFERENCE_ORIGIN + plan.path, plan.authorityHeaders));
+    }
+    if (plan.kind !== 'read') { physicalHTTPPhase(evidence, 'pin'); await pin(); }
+    if (!canDispatch()) throw physicalHTTPError(plan.kind === 'read' ? 'request_body_rejected' : 'pin_rejected');
+    physicalHTTPPhase(evidence, 'upstream_create'); evidence.upstream_create_attempted = true;
+    const outgoing = transport.request({ hostname: '127.0.0.1', port: 18197, method: plan.method, path: plan.path,
+      headers: plan.headers, agent: false, maxHeaderSize: L.headerBytes }, response => {
+      evidence.upstream_response_received = true; physicalHTTPPhase(evidence, 'upstream_response'); onResponse(response);
+    });
+    evidence.upstream_created = true; physicalHTTPPhase(evidence, 'upstream_setup'); onCreated(outgoing);
+    outgoing.setTimeout(L.idleMs, onIdle); outgoing.on('error', onError); outgoing.on('upgrade', onUpgrade);
+    physicalHTTPPhase(evidence, 'upstream_end'); evidence.upstream_end_attempted = true;
+    outgoing.end(bytes); evidence.upstream_end_returned = true;
+    return outgoing;
+  } catch (error) {
+    throw physicalHTTPError(physicalHTTPErrorCode(error, evidence.transport_phase));
+  }
+}
+
 export function referenceWebSocketPlan(raw, method, rawHeaders) {
   const { url } = normalizedURL(raw, true), headers = parseHeaders(rawHeaders, { websocket: true });
   guard(classifyReferenceRequest(`ws://${url.host}${url.pathname}${url.search}`, method).allow);
@@ -678,7 +784,7 @@ export async function createReferenceBrowserActor(options = {}) {
     return { id: `${scope}-${index}`, index, ...evidence, scope, ...timing, request_sequence: timing.sequence,
       start_elapsed_ms: timing.elapsed_ms, response_elapsed_ms: null,
       finished_elapsed_ms: null, ...metadata(), sourceworker: scope === 'physical' ? null : false, main_frame: null, from_service_worker: null,
-      content_type: null, status: null, completed: false, ...extra };
+      content_type: null, status: null, completed: false, ...(scope === 'physical' ? referencePhysicalHTTPFacts() : {}), ...extra };
   }
   function bootstrapRequest(request, evidence = null) {
     let state = bootstrapRequests.get(request);
@@ -785,8 +891,11 @@ export async function createReferenceBrowserActor(options = {}) {
     const state = report.http;
     let plan, evidence, upstream, incoming, admitted = false, finished = false, requestBytes = 0, responseBytes = 0;
     const timer = setTimeout(() => stop('http_timeout'), L.httpMs);
-    function finish(outcome, reason = null) {
+    function finish(outcome, reason = null, errorCode = null) {
       if (finished) return;
+      if (outcome === 'completed' && (!evidence || !evidence.upstream_create_attempted || !evidence.upstream_created ||
+        !evidence.upstream_end_attempted || !evidence.upstream_end_returned || !evidence.upstream_response_received ||
+        !/^[0-9a-f]{64}$/.test(evidence.request_body_sha256 ?? ''))) { stop('http_incomplete'); return; }
       finished = true; clearTimeout(timer);
       if (admitted) state.active -= 1;
       state[outcome] += 1;
@@ -795,7 +904,9 @@ export async function createReferenceBrowserActor(options = {}) {
         report.cleanup_http[outcome] += 1;
       }
       if (evidence) {
+        if (outcome === 'completed') physicalHTTPPhase(evidence, 'completed');
         Object.assign(evidence, { finished_elapsed_ms: elapsed(), completed: outcome === 'completed', outcome, reason,
+          failed: outcome !== 'completed', error_code: outcome === 'completed' ? null : errorCode,
           request_bytes: requestBytes, response_bytes: responseBytes });
         notify('onHTTPFinished', evidence);
         if (plan?.kind === 'login' && outcome === 'completed' && evidence.status === 200) {
@@ -804,12 +915,14 @@ export async function createReferenceBrowserActor(options = {}) {
         if (plan?.kind === 'logout' && outcome === 'completed' && evidence.status === 204) report.logout.physical_completed = true;
       }
     }
-    function stop(reason, rejected = false) {
+    function stop(reason, rejected = false, error = null) {
       if (finished) return;
+      const code = physicalHTTPErrorCode(error, evidence?.transport_phase ?? 'admission', reason);
       upstream?.destroy(); incoming?.destroy();
       if (!response.headersSent && !response.destroyed) { response.writeHead(rejected ? 403 : 502, { Connection: 'close', 'Content-Length': '0' }); response.end(); }
       else response.destroy();
-      finish(rejected ? 'rejected' : 'failed', reason); fail(reason);
+      finish(rejected ? 'rejected' : 'failed', reason, code);
+      fail(reason, undefined, { request_id: evidence?.id ?? `physical-${requestIndex}`, channel: 'physical_http', observation_reason: code });
     }
     request.on('error', () => stop('http_request_error'));
     request.on('aborted', () => stop('http_request_aborted'));
@@ -822,7 +935,9 @@ export async function createReferenceBrowserActor(options = {}) {
       evidence = requestEvidence(request.url, request.method, rawHeaders, 'physical', requestIndex);
       physicalHTTP.push(evidence); notify('onHTTPStart', evidence, true);
       plan = referenceHTTPPlan(request.url, request.method, request.rawHeaders);
+      evidence.request_content_type = requestContentType(plan.authorityHeaders['content-type']);
       reserve(plan); admitted = true;
+      physicalHTTPPhase(evidence, 'request_body');
       const chunks = [];
       for await (const chunk of request) {
         requestBytes += chunk.length; state.request_bytes += chunk.length;
@@ -833,15 +948,15 @@ export async function createReferenceBrowserActor(options = {}) {
       }
       guard(!finished && request.complete && requestBytes === plan.length && !request.rawTrailers?.length);
       const bytes = Buffer.concat(chunks);
-      if (plan.kind === 'login') {
-        const credentials = JSON.parse(bytes.toString('utf8'));
-        guard(record(credentials) && (credentials.Username ?? credentials.UserName) === account.username, 'reference_login_username_mismatch');
-        physicalLoginMetadata = referenceClientMetadata(request.url, plan.authorityHeaders);
-      }
-      if (plan.kind !== 'read') await (plan.cleanup ? assertCleanupPinned() : assertPinned());
       await new Promise(resolve => {
-        upstream = http.request({ hostname: '127.0.0.1', port: 18197, method: plan.method, path: plan.path,
-          headers: plan.headers, agent: false, maxHeaderSize: L.headerBytes }, received => {
+        void dispatchReferenceHTTP({ plan, bytes, account, evidence,
+          pin: () => plan.cleanup ? assertCleanupPinned() : assertPinned(),
+          canDispatch: () => !finished && trafficAllowed(plan.kind),
+          onLoginMetadata: value => { physicalLoginMetadata = value; }, onCreated: value => { upstream = value; },
+          onError: () => { stop('http_upstream_error'); resolve(); },
+          onIdle: () => { stop('http_upstream_idle'); resolve(); },
+          onUpgrade: (_reply, socket) => { socket.destroy(); stop('http_unexpected_upgrade'); resolve(); },
+          onResponse: received => {
           incoming = received;
           void (async () => {
             try {
@@ -850,6 +965,7 @@ export async function createReferenceBrowserActor(options = {}) {
               const responseStamp = stamp();
               const capture = reply.status === 200 && (plan.kind === 'login' || evidence.capture);
               const responseChunks = [];
+              physicalHTTPPhase(evidence, 'response_body');
               for await (const chunk of incoming) {
                 responseBytes += chunk.length; state.response_bytes += chunk.length;
                 if (plan.cleanup) report.cleanup_http.response_bytes += chunk.length;
@@ -870,17 +986,14 @@ export async function createReferenceBrowserActor(options = {}) {
               guard(trafficAllowed(plan.kind) && !finished);
               Object.assign(evidence, { sequence: responseStamp.sequence, elapsed_ms: responseStamp.elapsed_ms }); notify('onHTTPResponse', evidence, true);
               guard(trafficAllowed(plan.kind));
+              physicalHTTPPhase(evidence, 'downstream_write');
               response.writeHead(reply.status, incoming.statusMessage, reply.headers);
-              response.end(body, () => { finish('completed'); resolve(); });
-            } catch { stop('http_response_guard_failed'); resolve(); }
+              response.end(body, error => { if (error) stop('http_response_error', false, error); else finish('completed'); resolve(); });
+            } catch (error) { stop('http_response_guard_failed', false, error); resolve(); }
           })();
-        });
-        upstream.setTimeout(L.idleMs, () => { stop('http_upstream_idle'); resolve(); });
-        upstream.on('error', () => { stop('http_upstream_error'); resolve(); });
-        upstream.on('upgrade', (_reply, socket) => { socket.destroy(); stop('http_unexpected_upgrade'); resolve(); });
-        upstream.end(bytes);
+        } }).catch(error => { stop('http_admission_or_request_failed', false, error); resolve(); });
       });
-    } catch { stop('http_admission_or_request_failed', !admitted); }
+    } catch (error) { stop('http_admission_or_request_failed', !admitted, error); }
     finally { if (!finished) stop('http_incomplete'); }
   }
   function forwardWebSocket(raw, method, rawHeaders, client, head, connected = false, observedHandshake = null) {

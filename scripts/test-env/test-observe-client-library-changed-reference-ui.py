@@ -431,10 +431,13 @@ def read_pair(name='Observed', phase='discovery', start=100, sequence=2, index=0
         'phase': phase, 'document_id': DOCUMENT, 'page_route': ROUTE, 'sourceworker': False, 'main_frame': True,
         'from_service_worker': False, 'content_type': 'application/json', 'status': 200, 'completed': True, 'failed': False,
         'projection': None, 'outcome': 'completed', 'reason': None, 'request_bytes': None, 'response_bytes': None}
+    base.update({key: None for key in CONTROLLER.HTTP_TRANSPORT_FIELDS})
     frame = dict(base, id='frame-' + str(index))
     physical = dict(base, id='physical-' + str(index), request_sequence=sequence + 1, start_elapsed_ms=start + 10,
         finished_elapsed_ms=start + 80, sourceworker=None, main_frame=None, request_bytes=0, response_bytes=len(body),
         projection={'items': items, 'count': len(items), 'body_sha256': CONTROLLER.sha(body), 'body_bytes': len(body)})
+    physical.update(transport_phase='completed', request_body_sha256=hashlib.sha256(b'').hexdigest(),
+        upstream_create_attempted=True, upstream_created=True, upstream_end_attempted=True, upstream_end_returned=True, upstream_response_received=True)
     return {'physical': physical, 'frame': frame, 'complete': True, 'unambiguous': True}
 
 
@@ -569,7 +572,7 @@ class MetadataAndPublicGuards(GuardTestCase):
 
     def test_sorting_is_derived_in_the_response_but_never_a_separate_write(self):
         original = movie(); reservation = CONTROLLER.reserve_edit(original)
-        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui two')
+        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui three')
         self.assertEqual(reservation['forward_body']['SortName'], original['SortName'])
         self.assertEqual(reservation['forward_body']['ForcedSortName'], original['ForcedSortName'])
         forward = dict(original, Name=CONTROLLER.MARKER_NAME, SortName=CONTROLLER.MARKER_NAME, ForcedSortName=CONTROLLER.MARKER_NAME)
@@ -685,6 +688,52 @@ class BrowserEvidenceGuards(GuardTestCase):
             else: value['http']['frames'][0]['failed'] = True
             with self.subTest(defect=defect): self.reject(lambda: CONTROLLER.window_evidence(value, input_record(), reservation, discovery()))
 
+    def test_transport_facts_preserve_possible_dispatch_without_a_response(self):
+        pair = read_pair(); physical = pair['physical']
+        physical.update(transport_phase='upstream_end', completed=False, failed=False, outcome='pending',
+            status=None, response_elapsed_ms=None, finished_elapsed_ms=None, response_bytes=0, projection=None,
+            upstream_response_received=False)
+        original = copy.deepcopy(physical)
+        pairs = CONTROLLER.pair_reads([physical], [pair['frame']])
+        self.assertFalse(pairs[0]['complete']); self.assertEqual(physical, original)
+        self.assertTrue(physical['upstream_created']); self.assertTrue(physical['upstream_end_returned'])
+        physical.update(failed=True, outcome='failed', error_code='upstream_transport_error', reason='http_upstream_error', finished_elapsed_ms=180)
+        original = copy.deepcopy(physical)
+        self.assertFalse(CONTROLLER.pair_reads([physical], [pair['frame']])[0]['complete'])
+        self.assertEqual(physical, original); self.assertIsNone(physical['status']); self.assertEqual(physical['response_bytes'], 0)
+        admission = copy.deepcopy(physical)
+        admission.update(transport_phase='admission', failed=False, outcome='pending', error_code=None, reason=None,
+            finished_elapsed_ms=None, request_body_sha256=None, **{key: False for key in CONTROLLER.HTTP_UPSTREAM_FLAGS})
+        CONTROLLER.http_shape(admission, True)
+        response = copy.deepcopy(physical)
+        response.update(transport_phase='upstream_response', error_code='upstream_response_rejected', upstream_created=False,
+            upstream_end_attempted=False, upstream_end_returned=False, upstream_response_received=True)
+        CONTROLLER.http_shape(response, True)
+
+    def test_transport_stages_flags_and_frame_unknowns_cannot_be_forged(self):
+        for defect in ('missing', 'unknown_phase', 'unsafe_error', 'unsafe_content_type', 'nonboolean', 'created_without_attempt',
+                       'end_without_create', 'returned_without_end', 'response_without_attempt', 'completed_without_body',
+                       'completed_wrong_phase', 'completed_without_response', 'failed_without_error', 'pending_completed_phase', 'frame_false'):
+            pair = read_pair(); physical, frame = pair['physical'], pair['frame']
+            if defect == 'missing': del physical['upstream_created']
+            elif defect == 'unknown_phase': physical['transport_phase'] = 'dispatch_not_proven'
+            elif defect == 'unsafe_error': physical.update(completed=False, failed=True, transport_phase='upstream_end', error_code='untrusted exception text')
+            elif defect == 'unsafe_content_type': physical['request_content_type'] = 'application/x-www-form-urlencoded; password=forbidden'
+            elif defect == 'nonboolean': physical['upstream_created'] = 1
+            elif defect == 'created_without_attempt': physical['upstream_create_attempted'] = False
+            elif defect == 'end_without_create': physical['upstream_created'] = False
+            elif defect == 'returned_without_end': physical['upstream_end_attempted'] = False
+            elif defect == 'response_without_attempt':
+                physical.update(completed=False, transport_phase='upstream_response', **{key: False for key in CONTROLLER.HTTP_UPSTREAM_FLAGS})
+                physical['upstream_response_received'] = True
+            elif defect == 'completed_without_body': physical['request_body_sha256'] = None
+            elif defect == 'completed_wrong_phase': physical['transport_phase'] = 'downstream_write'
+            elif defect == 'completed_without_response': physical['upstream_response_received'] = False
+            elif defect == 'failed_without_error': physical.update(completed=False, failed=True, outcome='failed', transport_phase='upstream_end')
+            elif defect == 'pending_completed_phase': physical.update(completed=False, outcome='pending')
+            else: frame['upstream_created'] = False
+            with self.subTest(defect=defect): self.reject(lambda: CONTROLLER.pair_reads([physical], [frame]))
+
     def test_full_raw_sessions_replies_do_not_consume_librarychanged_budget(self):
         value = window()
         for number in range(100):
@@ -732,9 +781,9 @@ class BrowserEvidenceGuards(GuardTestCase):
             with self.subTest(field=field): self.reject(lambda: CONTROLLER.validate_private_session(changed, value, 'a' * 64, CHILD, snapshot()))
 
     def test_real_proc_cgroup_projects_identically_into_private_stage_and_report(self):
-        expected = '/system.slice/goby-reference-library-changed-ui-v2.service'
-        for raw in ('0::/system.slice/goby-reference-library-changed-ui-v2.service',
-                    '0::/system.slice/goby-reference-library-changed-ui-v2.service\n'):
+        expected = '/system.slice/goby-reference-library-changed-ui-v3.service'
+        for raw in ('0::/system.slice/goby-reference-library-changed-ui-v3.service',
+                    '0::/system.slice/goby-reference-library-changed-ui-v3.service\n'):
             with self.subTest(raw=raw):
                 child = copy.deepcopy(CHILD)
                 child['cgroup'] = CONTROLLER.worker_cgroup_path(raw)
@@ -751,13 +800,14 @@ class BrowserEvidenceGuards(GuardTestCase):
                 self.assertEqual(report['reference']['service_identity']['cgroup'], '0::/system.slice/reference.service\n')
 
     def test_cgroup_rejects_malformed_proc_rows_and_coherently_wrong_publication(self):
-        expected = '/system.slice/goby-reference-library-changed-ui-v2.service'
+        expected = '/system.slice/goby-reference-library-changed-ui-v3.service'
         old = '/system.slice/goby-reference-library-changed-ui-v1.service'
-        controller = '/system.slice/goby-reference-library-changed-ui-controller-v2.service'
-        for raw in (expected, '0::' + old, '0::' + controller, '0::' + expected + '\r\n',
+        previous = '/system.slice/goby-reference-library-changed-ui-v2.service'
+        controller = '/system.slice/goby-reference-library-changed-ui-controller-v3.service'
+        for raw in (expected, '0::' + old, '0::' + previous, '0::' + controller, '0::' + expected + '\r\n',
                     '0::' + expected + '\n\n', '0::' + expected + '\n0::/other', ' 0::' + expected):
             with self.subTest(raw=raw): self.reject(lambda: CONTROLLER.worker_cgroup_path(raw))
-        for published in ('0::' + expected + '\n', old, controller):
+        for published in ('0::' + expected + '\n', old, previous, controller):
             child = copy.deepcopy(CHILD); child['cgroup'] = published
             value = input_record(); private = private_session(value); private['node_process'] = copy.deepcopy(child)
             current_stage = stage('discovery', discovery(), value); current_stage['node_process'] = copy.deepcopy(child)
@@ -817,7 +867,8 @@ class QuietAndCLIGuards(GuardTestCase):
         self.assertEqual(CONTROLLER.arguments(values).mode, 'observe')
         for flag, replacement in (('--node', '/opt/reference/original-executable'), ('--preflight-sha256', 'pending'),
                                   ('--source-closure', str(CONTROLLER.ROOT / 'sources.json')),
-                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-01/source-closure.json'))):
+                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-01/source-closure.json')),
+                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-02/source-closure.json'))):
             changed = list(values); changed[changed.index(flag) + 1] = replacement
             with self.subTest(flag=flag): self.reject(lambda: CONTROLLER.arguments(changed))
 

@@ -5,14 +5,15 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { createReferenceBrowserActor, sanitizeDiagnostic } from './client-browser-library-changed-reference-runtime.mjs';
+import { createReferenceBrowserActor, sanitizeDiagnostic, REFERENCE_HTTP_PHASES, REFERENCE_HTTP_ERROR_CODES,
+  REFERENCE_REQUEST_CONTENT_TYPES } from './client-browser-library-changed-reference-runtime.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-02';
-export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v2';
+export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-03';
+export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v3';
 export const REFERENCE_OUTPUT = REFERENCE_ROOT + '/browser';
-export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v2.service';
-export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v2.service';
+export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v3.service';
+export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v3.service';
 export const REFERENCE_ORIGIN = 'http://127.0.0.1:18197';
 export const REFERENCE_USER = 'c5f36699a54f4971a891682cd9de410f';
 export const REFERENCE_SERVER = 'f56dec8ff7414847873064c4be9fba74';
@@ -85,7 +86,7 @@ export function validateReferenceInput(value) {
     value.expected_libraries.some(row => row.id === LIBRARY && row.name === 'M3e Controlled LibraryChanged Movies'));
   need(exact(value.authority, ['owner', 'preflight', 'before_snapshot']) && Object.values(value.authority).every(descriptor) &&
     value.authority.owner.path === WORK + '/reference-owner.json' &&
-    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v2/report.json' &&
+    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v3/report.json' &&
     value.authority.before_snapshot.path === REFERENCE_ROOT + '/before-public.json');
   need(record(value.source_closure) && same(Object.keys(value.source_closure).sort(), SOURCES.map(name => REFERENCE_TOOL + '/' + name).sort()) &&
     Object.values(value.source_closure).every(value => SHA.test(value)));
@@ -102,7 +103,7 @@ export function validateReferencePublicBaseline(input, owner, preflight, before)
   need(exact(preflight, ['marker', 'version', 'mode', 'root', 'reference', 'script_sha256', 'source_closure_sha256', 'public_snapshot',
     'target', 'anchor', 'expected_libraries', 'admin', 'ledger', 'preservation', 'errors', 'status', 'completed_at', 'evidence']) &&
     preflight.marker === 'goby-reference-library-changed-preflight-v1' && preflight.version === 1 &&
-    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v2' &&
+    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v3' &&
     preflight.status === 'passed' && same(preflight.errors, []) && preflight.preservation?.passed === true &&
     SHA.test(preflight.script_sha256) && preflight.source_closure_sha256 === null &&
     same(preflight.reference, input.reference) && same(preflight.target, input.target) && same(preflight.anchor, input.anchor) &&
@@ -518,21 +519,39 @@ function catalogKind(row) {
   const query = Object.fromEntries(Object.entries(row.query ?? {}).map(([key, value]) => [key.toLowerCase(), value]));
   return query.parentid === LIBRARY || query.ids === ITEM ? 'items' : row.kind;
 }
+const TRANSPORT_FACT_FIELDS = ['transport_phase', 'error_code', 'request_content_type', 'request_body_sha256',
+  'upstream_create_attempted', 'upstream_created', 'upstream_end_attempted', 'upstream_end_returned', 'upstream_response_received'];
+export function validateReferenceTransportFacts(row, physical) {
+  if (!physical) { need(TRANSPORT_FACT_FIELDS.every(key => row[key] === null), 'reference_frame_transport_facts'); return row; }
+  const flags = TRANSPORT_FACT_FIELDS.slice(4);
+  need(REFERENCE_HTTP_PHASES.includes(row.transport_phase) && (row.error_code === null || REFERENCE_HTTP_ERROR_CODES.includes(row.error_code)) &&
+    REFERENCE_REQUEST_CONTENT_TYPES.includes(row.request_content_type) && (row.request_body_sha256 === null || SHA.test(row.request_body_sha256)) &&
+    flags.every(key => typeof row[key] === 'boolean'), 'reference_physical_transport_facts');
+  need((!row.upstream_created || row.upstream_create_attempted) && (!row.upstream_end_attempted || row.upstream_created) &&
+    (!row.upstream_end_returned || row.upstream_end_attempted) && (!row.upstream_response_received || row.upstream_create_attempted),
+  'reference_physical_transport_order');
+  need((row.error_code !== null) === (row.failed === true), 'reference_physical_transport_error');
+  if (row.completed === true) need(row.transport_phase === 'completed' && flags.every(key => row[key] === true) &&
+    SHA.test(row.request_body_sha256) && row.error_code === null, 'reference_physical_transport_completion');
+  else need(row.transport_phase !== 'completed', 'reference_physical_transport_completion');
+  return row;
+}
 export function normalizeReferenceSnapshot(snapshot) {
   const result = clone(snapshot);
   const keys = ['id', 'index', 'method', 'kind', 'route', 'query', 'hidden_query', 'shape_sha256', 'request_sha256', 'token_sha256',
     'request_sequence', 'start_elapsed_ms', 'response_elapsed_ms', 'finished_elapsed_ms', 'phase', 'document_id', 'page_route',
-    'sourceworker', 'main_frame', 'from_service_worker', 'content_type', 'status', 'completed', 'reason', 'request_bytes', 'response_bytes'];
-  const project = row => {
+    'sourceworker', 'main_frame', 'from_service_worker', 'content_type', 'status', 'completed', 'reason', 'request_bytes', 'response_bytes', ...TRANSPORT_FACT_FIELDS];
+  const project = (row, physical) => {
     const value = Object.fromEntries(keys.map(key => [key, row[key] ?? null])); value.kind = catalogKind(row);
     value.outcome = row.outcome ?? (row.failed === true ? 'failed' : row.completed === true ? 'completed' : null);
     need(value.outcome === null || ['completed', 'failed', 'rejected'].includes(value.outcome));
     need(value.reason === null || typeof value.reason === 'string' && /^[a-z][a-z0-9_]{0,127}$/.test(value.reason));
     value.failed = row.failed === true || ['failed', 'rejected'].includes(value.outcome);
+    validateReferenceTransportFacts(value, physical);
     value.projection = ['items', 'target'].includes(value.kind) && row.response && row.status === 200 ? projectReferenceItems(row.response, value.kind) : null;
     return value;
   };
-  result.http.physical = result.http.physical.map(project); result.http.frames = result.http.frames.map(project);
+  result.http.physical = result.http.physical.map(row => project(row, true)); result.http.frames = result.http.frames.map(row => project(row, false));
   delete result.report;
   return result;
 }
