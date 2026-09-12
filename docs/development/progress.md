@@ -12,8 +12,9 @@ source48 passed all 143 targeted PostgreSQL checks. Source49 full regression
 ended with 2,105 passes and two historical encrypted recovery fixture failures;
 recoverydb and Linux build were not reached. The exact empty failed pair has
 been disposed with original evidence preserved. Source50 fixes current audit
-writes during historical fixture preparation; it is included in the currently
-running source54 PostgreSQL target, alongside scanner/music/notification cases.
+writes during historical fixture preparation; both failures passed in source54's
+74-test PostgreSQL target, alongside scanner/music/notification cases. All six
+cleanup checks passed. Source54 full regression and Linux build are now running.
 The later source45 binding read/write, native route and per-root anchor drafts
 passed [36 selected non-database race checks](storage-binding-workflow-pure-verification.json).
 The later source48 targeted run includes database write/HTTP/archive checks;
@@ -25,8 +26,9 @@ including initial registration capture and capability fallback. Missing-file
 reconciliation is drafted. Source53 passed 20 selected race checks for original-root
 recovery and directory evidence without database access. Source54 integrates
 scanning, cascade deletion and a shared music-readiness gate before deletion;
-28 non-database race checks and related package compilation passed. End-to-end
-PostgreSQL scanning, mount recovery and deletion acceptance remain.
+28 non-database race checks and related package compilation passed, followed by
+74 PostgreSQL checks. Actual private-mount scan recovery, full-suite/build,
+publication and live UI acceptance remain.
 The reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 passed at 2026-09-12 04:42:59 UTC, preserving business data and media. Candidate
 now runs source44/schema27, PID1264063, ready/complete. The original pre-stop

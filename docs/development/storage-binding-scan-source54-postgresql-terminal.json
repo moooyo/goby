@@ -1,0 +1,343 @@
+{
+  "actual_mount_namespace_tested": false,
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "counts": {
+    "pass": 74
+  },
+  "log_sha256": "9fcaccc521d0bfb37314e61620b635f46027a5a0e246b42a3426e0fa63968ba2",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "status": "pass"
+    }
+  ],
+  "recursive_cgroup_empty": true,
+  "report_sha256": "2e926040ee48d0f0a33435da7882f6047516472c524637b863fa20613f9b714f",
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "84e777b5356d45adbb834ea393a08039",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "status": "passed",
+  "tests": [
+    {
+      "status": "pass",
+      "test": "TestStoreAlbumArtistTagsPublishMixedArtistsWithSharedPersistentCredits"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreAlbumArtistPublicationDoesNotHidePartialOrConflictingTags"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreAlbumArtistIncompleteMembersRetainPublishedAlbumAndFreshTrackSource"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreMusicMetadataPreservesControlsAndCachedRelations"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreMusicMetadataRequiresCompleteMembersBeforeAlbumPublication"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreMusicMetadataKeepsPublishedAlbumWhenNextPublicationIsCancelled"
+    },
+    {
+      "status": "pass",
+      "test": "TestStoreMusicMetadataMoveRefreshesBothAlbumsWithoutReprobing"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationMatchesApprovalWithoutAuthorityOrCatalogWrites"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationUnverifiedStoragePreservesApprovalAndAnchor"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationRechecksExactApprovalAndTaskAfterCapture"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationRejectsCancellationInsideProtectedTransaction"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationRejectsUnownedJobsAndChangedInputMapping"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationKeepsLostOwnershipFatalAfterObservation"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationChecksTaskChildAndRunCancellation"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanFilesystemClonesObservedRegisteredRootAcrossTransientReplacement"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanIntegrationNamedOriginalRecoveryAfterRestartIsRootScoped"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanObservationClassificationKeepsTransactionFailuresFatal"
+    },
+    {
+      "status": "pass",
+      "test": "TestRootBindingScanCaptureClosesIndependentRootAndRejectsUnverifiedEvidence"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesAddAndCachePreserveManualState"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesFolderComparesEffectiveMetadata"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesSuccessfulForceProbeInvalidatesIdenticalMedia"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesMoveRetainsIdentityStateAndBothParents"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesCommittedFileSurvivesLaterFailureOrCancellation"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesFileDirectoryReclassificationRetainsID"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanCatalogChangesCachedMusicAlbumUsesAcceptedEffectiveSource"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationRemovesProvenAbsentPhysicalItem"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationUnprovenDescendantPreservesEntirePass"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationCancellationAfterDeleteRollsBackWithoutLosingOwnership"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationLaterRootMoveRetainsSharedSeenIdentity"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationEvidenceBudgetExhaustionPreservesEntirePass"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationFindsSurvivingAlbumAboveRemovedFolder"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationChangedApprovalPreservesEntirePass"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationRejectsEvidenceFromAnotherDirectory"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationInactiveOwnerEdgePreservesHistoryOutsideParentCascade"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationOversizedSQLCandidatePreservesEntirePass"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationCommitIntegrationRemovesProvenAbsentActiveAuxiliaryWithOwner"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationObservationClassificationPreservesFatalErrors"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationPhysicalMembersRequireExactCurrentScope"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationMusicAncestorsSurviveRemovedIntermediateParents"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationRejectsCyclesAndExcessiveHierarchyDepth"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationBudgetsRejectRatherThanTruncateProof"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceStableCompleteMembershipAndAbsence"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceOwnedClonesOutliveBorrowedWalkRoot"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceRequiresEveryWalkToComplete"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceRejectsUnobservedAndNonDirectoryAncestors"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceKeepsSpecialRawMembers"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidencePreviouslyPresentEntriesCannotBecomeAbsence"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceRevalidatesNamedDirectoryChain"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceDetectsEntryRewriteWithRestoredMtime"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceRequiresCompleteStableInitialListing"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceDetectsChangesDuringFinalRead"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceCancellationAndUnavailableHandles"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceBudgetsAreSharedAcrossRoots"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceCannotReplaceAnEarlierObservation"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceRejectsUnavailableChangeTime"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidencePhysicalPaths"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceInvalidBudgetsAndEmptyPass"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationEvidenceSeenIDsAreDistinctAndIrreversible"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationMusicIncompleteSurvivorRetainsWholeBatch"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationMusicMissingInvalidMemberAllowsAlbumRecovery"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationMusicAggregationPagesNestedMembership"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationScanRemovesMissingFilesAndDirectoriesPreservesCache"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationScanUnboundOrUnavailableRootPreservesWholeLibrary"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationScanCrossRootMoveRetainsIdentityAndUserData"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationScanReplacementRetainsThenOriginalResumesWithoutRebind"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationDirectoryReadCompleteRawMembership"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationDirectoryReadLimitsNeverReturnPartialEntries"
+    },
+    {
+      "status": "pass",
+      "test": "TestScanReconciliationDirectoryReadCancellationPrecedesIO"
+    },
+    {
+      "status": "pass",
+      "test": "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback"
+    },
+    {
+      "status": "pass",
+      "test": "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback"
+    },
+    {
+      "status": "pass",
+      "test": "TestHTTPLibraryNotifierNativeAuxiliaryScansRespectMovieOwnershipAndCurrentACL"
+    },
+    {
+      "status": "pass",
+      "test": "TestHTTPLibraryRefreshDurablyQueuesEveryLibraryBeyondScannerCapacity"
+    },
+    {
+      "status": "pass",
+      "test": "TestManagerRetriesCapacityAndIndependentScansBeyondTerminalPage"
+    }
+  ],
+  "unit": "goby-scan-reconciliation-postgresql-controller-v1.service"
+}

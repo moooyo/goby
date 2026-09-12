@@ -6,8 +6,8 @@ backup checks and audit fields are drafted; the actual PostgreSQL catalog was
 generated. Source48 feature/migration/archive acceptance passed all 143 targeted
 tests after two fixture corrections. Source49 full regression ended with 2,105
 passes and two historical recovery fixture failures. The exact failed pair was
-disposed with evidence preserved; source50's fixture repair is now included in
-the running source54 PostgreSQL target.
+disposed with evidence preserved; source50's fixture repair passed in source54's
+74-test PostgreSQL target. Source54 full regression and Linux build are running.
 Native binding/rebind, per-root
 anchor publication and administrator UI are drafted; source45 passed 36 selected
 non-database race checks and the UI passed 68 decoder/mocked-browser checks.
@@ -15,8 +15,9 @@ New-registration automatic binding passed its selected non-database checks.
 Source53's original-root recovery and directory-evidence helpers passed 20
 selected race checks without database access. The full scanner/delete path and
 shared music-completeness gate are integrated in source54 and passed 28 selected
-non-database race checks and related package compilation. PostgreSQL deletion
-and actual mount-recovery acceptance remain pending.
+non-database race checks and related package compilation, followed by 74 passing
+PostgreSQL checks. Actual private-mount scan recovery and complete release
+acceptance remain pending.
 Source44's repair of the
 source41 scan-throughput regression passed its 2,002-test full run and is published.
 
@@ -221,10 +222,10 @@ a same-process descriptor comparison cannot satisfy it. Reuse the unavailable
 root, cross-root rename, theme directory replacement, and backup round-trip
 fixtures before adding privileged mount fixtures.
 
-## Pending scanner integration details
+## Scanner integration contract
 
-The current scanner neither reads persisted binding columns nor retains a
-complete ordinary-item seen set. Keep additions and updates in their existing
+The scanner must read persisted binding columns and retain a complete
+ordinary-item seen set. Keep additions and updates in their existing
 transactions; build a separate bounded reconciliation evidence object per
 library. Capture every root's approved row, revision and mapping before walking,
 retain its independent handles/topology and directory observations until the

@@ -13,8 +13,9 @@ tests, both at historical administrator bootstrap. The current audit INSERT
 uses schema28-only columns against the historical fixture. Source50 isolates
 the test adapter fix and passed source preflight. The exact failed pair has
 subsequently been disposed with original evidence preserved. A combined
-source54 PostgreSQL target is now running; it includes that fixture fix and
-the new scanner implementation. Do not overlap its pair or replay source49.
+source54 PostgreSQL target passed all 74 tests; it includes that fixture fix and
+the new scanner implementation. Source54 full regression/build is now running.
+Do not overlap its pair or replay source49.
 
 The separately reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 **passed** at 2026-09-12 04:42:59 UTC. Candidate now runs source44/schema27,
@@ -42,7 +43,8 @@ cache-hit tracking, positive absence, cascade validation, transactional deletion
 and notifications. A shared music-readiness gate checks proposed surviving
 members before deletion; actual album publication remains afterward. Its 28
 selected race checks and related test-package compilation passed without
-database access. PostgreSQL scanning/deletion acceptance remains pending.
+database access, followed by 74 passing PostgreSQL checks. Actual private-mount
+scan recovery, full regression/build, publication and live UI gates remain open.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -426,7 +428,8 @@ removed before catalog inspection and encryption. The [preflight](storage-bindin
 passed for 4,227 files, manifest
 `42ab2be14e56832f9af70d6c0abef2a6d033bb7d15254b46a7fb137f654d4e5c`;
 test-file SHA-256 `c6466aebd0e9dd32353fba6873c1a368962a6cceeb88fd920a78dcc8a174369a`.
-Production code is unchanged from source49. PostgreSQL rerun remains pending.
+Production code is unchanged from source49. Both historical recovery cases
+subsequently passed in the combined source54 PostgreSQL target.
 
 Source51's [format failure](storage-binding-scan-source51-format-failed.json)
 occurred before manifest publication, tests or database access: one test loop
@@ -455,17 +458,31 @@ passed with zero failures/skips; recovery/server test packages compiled only.
 Report SHA-256 `3c5c5e750f7329cb77dfa166fdde137ade8622e8818b6d1e6da6bbfb0a9c712b`;
 [terminal](storage-binding-scan-source54-pure-terminal.json) SHA-256
 `2a6410ae2f16b80ad7cde61914db007ac1cb98b3d62b71fa5615883a9759ee47`.
-The combined PostgreSQL target is running source50's historical archive repair,
+The combined PostgreSQL target passed source50's historical archive repair,
 source54 root recovery/scanner/cascade/music tests, existing scan notifications
 and both unchanged capacity regressions. Controller:
 `goby-scan-reconciliation-postgresql-controller-v1.service`, invocation
-`84e777b5356d45adbb834ea393a08039`, PID1292882; execution directory
+`84e777b5356d45adbb834ea393a08039`, historical PID1292882; execution directory
 `/opt/goby-test/exec-work-m3e/scan-reconciliation-postgresql-execution-01`.
-Run ID `20260912_053050_ec4b750c19e5` has reached phase=running, inner unit
-`goby-client-backup-20260912-053050-ec4b750c19e5.service`. The original source49
-receipt is historical and preserved; the live receipt now belongs to source54.
-Poll this exact controller/run and do not start another fixed-pair job.
-The inert mount helper is excluded and is not actual mount-namespace acceptance.
+Run ID `20260912_053050_ec4b750c19e5`, inner unit
+`goby-client-backup-20260912-053050-ec4b750c19e5.service`, passed 74 top-level
+tests across four packages with zero failures/skips and all six cleanup checks.
+The [report](storage-binding-scan-source54-postgresql.json) SHA-256 is
+`2e926040ee48d0f0a33435da7882f6047516472c524637b863fa20613f9b714f`;
+[terminal](storage-binding-scan-source54-postgresql-terminal.json) SHA-256 is
+`31e653a2c9d57abcf8039313cde2e3eb2227bc99e760b20697a3192a85e60917`.
+The controller exited0/MainPID0 with an empty cgroup. The inert mount helper was
+excluded; this is not actual private mount-namespace scan acceptance.
+
+Full regression and Linux build are now running from the same immutable source54.
+Controller `goby-scan-reconciliation-full-controller-v1.service`, invocation
+`c8641f6597f0411ca832d052b885499d`, PID1294649/start monotonic114182310421;
+execution directory `/opt/goby-test/exec-work-m3e/scan-reconciliation-full-execution-01`.
+Run `20260912_053517_9cb0074fc731` has reached running; inner unit
+`goby-client-backup-20260912-053517-9cb0074fc731.service`. Recoverydb runs as the
+separate final package before the build. Poll that exact handle; do not overlap
+another fixed-pair job or restart on observation timeout. Earlier source49 and
+source54-target receipts are historical and preserved.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
