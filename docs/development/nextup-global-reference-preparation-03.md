@@ -108,8 +108,10 @@ this statement does not claim its internal executable reads are zero.
 
 ## Remaining work
 
-Establish the actual public folder-grant semantics before preparing a fresh
-bounded scope. The previous six-user/eight-library baseline is historical
+The later [Guid verification](nextup-folder-grant-verification-01.md) established
+the missing restricted-access contract and restored its temporary policy.
+Update the producer and release authority before a fresh bounded preparation.
+The previous six-user/eight-library baseline is historical
 after these retained creations and must not be reused as the current baseline.
 Four playback/cleanup calibrations, a usable matrix fixture, global NextUp
 observations and real client playback remain incomplete. The positive client

@@ -1,0 +1,144 @@
+{
+  "actualClientAcceptance": false,
+  "afterPreservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/preservation-after.json",
+    "sha256": "30aef65f1a92129e46dd3f14a82389c5ffe7334681a036c6f289d5de73d992fc"
+  },
+  "afterPublic": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/after-public.json",
+    "sha256": "2e222c6c79a4e24725510a6234a29f88ba673bb310d180a3bb6c5c21ac07bf54"
+  },
+  "all143RootsPreserved": true,
+  "allExportBytesMatched": true,
+  "allKnownTokensClosed": true,
+  "allPrivateBytesMatched": true,
+  "auditSource": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/attest.py",
+    "sha256": "b6596291745af8f43469115172590de318f71e5d769a1f5303bdc3ac7a219b0d"
+  },
+  "beforePreservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/preservation-before.json",
+    "sha256": "a4884708e3685706b362ca4d05fadd0e92603be548e373b514c935a27c09e973"
+  },
+  "beforePublic": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/before-public.json",
+    "sha256": "cff371193a261dafe452bb812154aae488be9cda02645fb1ab8635f73c0e062e"
+  },
+  "businessHttpByAudit": 0,
+  "capturedAt": "2026-09-12T20:25:30.627922+00:00",
+  "changedPolicyFields": [
+    "EnabledFolders"
+  ],
+  "cleanupRequestCount": 50,
+  "closedAuthentication": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/closed-authentication.json",
+    "sha256": "06b0b741174ae08d2e4aec84d8c9ba47fe2be4e3a5f25f923fca3a8686438ea8"
+  },
+  "exportFilesMatched": 110,
+  "fullPublicRoundtripPreserved": true,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "gobyPreserved": true,
+  "grantSemanticsProven": true,
+  "guidFolders": [
+    {
+      "guid": "b953914417ce42b5a5e07a3e8f6fd386",
+      "libraryId": "101"
+    },
+    {
+      "guid": "38fbd09cb8af4731993dd77e1750457f",
+      "libraryId": "103"
+    }
+  ],
+  "input": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-folder-grant-verification-inputs-01/input.json",
+    "sha256": "b7006c08f9995c522351923075243cfc9ad757e7f8c17dff0e26eebeae719896"
+  },
+  "kind": "nextup-folder-grant-independent-terminal",
+  "matrixInputsUsable": false,
+  "normalRequestCount": 59,
+  "originalImplementationBytesRead": false,
+  "originalPidAbsent": true,
+  "originalPolicy": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/original-policy.json",
+    "sha256": "dba7e371d02fe2d219dd33141c8d8f103897635690f1b2f56b74e2fa9160a881"
+  },
+  "originalPolicyRestored": true,
+  "ownCatalogsComplete": true,
+  "ownEpisodeDetailsZero": 6,
+  "ownSelectableRows": 10,
+  "ownSelectableStatus": 200,
+  "ownViews": [
+    "101",
+    "103"
+  ],
+  "playbackCalibrationsCompleted": 0,
+  "policyWrites": 2,
+  "privateFilesMatched": 227,
+  "producerTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/terminal.json",
+    "sha256": "1a58ecda51284fa410fdf75500b5ed47ab2c4cfcc6ee263825ccaedd8672492d"
+  },
+  "publicPreservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/public-preservation.json",
+    "sha256": "b827fa9d12f16dc2d5bc6506de08378a410d825de0e6dd01e4e2eb98b3897dbb"
+  },
+  "recursiveCgroupEmpty": true,
+  "referenceCounts": {
+    "detailWitnesses": 12,
+    "devices": 93,
+    "libraries": 10,
+    "users": 8
+  },
+  "referenceDatabaseRead": false,
+  "replayOnlyFreshOutputGateSubstituted": true,
+  "replayPerformedHttp": false,
+  "requestCount": 109,
+  "restoredOwnViewsEmpty": true,
+  "runId": "nextup-folder-grant-verification-20260913-01",
+  "schemaVersion": 1,
+  "scopeInventory": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/completed-scope-files.json",
+    "sha256": "2bb01ced363348bcb2d8ed414aa358edf5eacd5833389b6fa08d803275a6f736"
+  },
+  "selectableInventoryDoesNotProveBrowseAccess": true,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-folder-grant-verification-tool-01/draft-02/verify-folder-grant-01.py",
+    "sha256": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971"
+  },
+  "state": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/state.json",
+    "sha256": "324e1e90395b0cf323c189de84a2f0358acd9c1123fcc11669ca2832055fe8d3"
+  },
+  "status": "folder_guid_grants_independently_verified_and_policy_restored",
+  "targetPolicy": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-verification-01/private/target-policy.json",
+    "sha256": "c0ba697f5d845bf393ba448e997eee9642f41f60f6e2c298443e52f75d9595b2"
+  },
+  "unit": {
+    "cgroupPath": "/sys/fs/cgroup/system.slice/goby-nextup-folder-grant-verification-01.service",
+    "name": "goby-nextup-folder-grant-verification-01.service",
+    "properties": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainPID": "1510226",
+      "ExecMainStatus": "0",
+      "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-folder-grant-verification-tool-01/draft-02/verify-folder-grant-01.py /opt/goby-test/exec-work-m3e/nextup-folder-grant-verification-inputs-01/input.json b7006c08f9995c522351923075243cfc9ad757e7f8c17dff0e26eebeae719896 ; ignore_errors=no ; start_time=[Sun 2026-09-13 04:15:40 CST] ; stop_time=[Sun 2026-09-13 04:15:47 CST] ; pid=1510226 ; code=exited ; status=0 }",
+      "Id": "goby-nextup-folder-grant-verification-01.service",
+      "InvocationID": "630e6194e8c84127a0176dcebc65939f",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "RemainAfterExit": "yes",
+      "Result": "success",
+      "SubState": "exited",
+      "Type": "oneshot"
+    }
+  },
+  "wireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-grant-execution-01/wire-index.json",
+    "sha256": "a96b0b444cd821aac0fc2024b15fec3d6f4979312e0cbba1c9c506ad3d4b412b"
+  }
+}

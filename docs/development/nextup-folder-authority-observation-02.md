@@ -75,10 +75,16 @@ pre-execution-review.json remain preserved with zero HTTP and no unit/output.
 Revision02 uses the supported uid argument and an explicit owner-only mode
 check in fresh input/execution/output roots.
 
-## Next bounded verification
+## Subsequent bounded verification
 
-Treat the observed Guid pair as a candidate for a separate retained-owned-P
-policy experiment. Freeze the complete original policy, exact proposed grants,
+The [109-request Guid verification](nextup-folder-grant-verification-01.md)
+subsequently confirmed the Guid pair through P's own Views, catalogs and six
+episode details, restored the complete original policy and closed both tokens.
+That separate experiment supplies grant evidence; this earlier read-only
+observation and its original false grantSemanticsProven flag remain unchanged.
+
+The experiment treated the observed Guid pair as a candidate and froze the
+complete original policy, exact proposed grants,
 raw identifier authority, before/after public preservation and cleanup limits.
 Require own-token profile, Views and complete catalog evidence. Restore the
 original full policy and close every new token after success or known failure;
@@ -88,4 +94,3 @@ Do not substitute EnableAllFolders true for restricted access. Fresh matrix
 preparation still requires current population/budget authority, four playback
 calibrations and independent fixture attestation. Main upgrade and positive
 client acceptance remain open.
-

@@ -1,0 +1,17 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "errors": 0,
+  "failures": 0,
+  "guardSha256": "99d1168ebbdea9570b613d777549d125c54af8424cb72b254f9306ed773762b5",
+  "kind": "nextup-folder-grant-synthetic-guards",
+  "passed": true,
+  "skips": 0,
+  "sourceSha256": {
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "preparation": "d5167f51d9e2203693eeab1f65b521342fa3221b231f7183f8a4b817f54afc39",
+    "source": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "testsRun": 27
+}

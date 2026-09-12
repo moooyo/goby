@@ -1,0 +1,8 @@
+{
+  "businessHttpRequests": 0,
+  "expectedCleanupRequests": 50,
+  "expectedNormalRequests": 59,
+  "expectedTotalRequests": 109,
+  "inputSha256": "b7006c08f9995c522351923075243cfc9ad757e7f8c17dff0e26eebeae719896",
+  "kind": "nextup-folder-grant-verification-plan"
+}

@@ -1,0 +1,15 @@
+{
+  "authorityConstructionPassed": true,
+  "businessHttpRequests": 0,
+  "capturedAt": "2026-09-12T20:13:55.100701+00:00",
+  "currentReferenceAndProxyMetadataMatched": true,
+  "existingLockAcquiredAndReleased": true,
+  "inputSha256": "b7006c08f9995c522351923075243cfc9ad757e7f8c17dff0e26eebeae719896",
+  "kind": "nextup-folder-grant-readonly-admission",
+  "oldDeviceRows": 91,
+  "outputRootExists": false,
+  "readonlyRoots": 143,
+  "runnerConstructed": false,
+  "schemaVersion": 1,
+  "sourceSha256": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971"
+}

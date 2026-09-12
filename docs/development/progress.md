@@ -1,15 +1,17 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T19:54:08+00:00`. Preparation03 is independently sealed after its 107-request failed visibility gate. A fresh folder-authority observation02 completed six requests, with exact session closure and all 138 historical roots/Goby state preserved. It established the two libraries' numeric IDs, distinct Guids and native subfolder paths, but made zero policy writes and does not prove grant semantics. TOOL07 passed 143 guards after a deterministic report-order repair. No matrix fixture is released.
+Execution state checkpoint: `2026-09-12T20:25:30+00:00`. The 109-request Guid grant experiment passed independent attestation: P sees exactly the two intended libraries under Guid grants, its six episode details have zero history, and restoring its original numeric grants restores empty Views. The complete 45-field policy, both tokens, all 143 historical roots and the full Goby state are independently reconciled. The complete after snapshot contains eight users, ten libraries, ninety-three devices and twelve detail witnesses. Fresh preparation TOOL08 and operator TOOL03 adaptations are in progress; no new preparation or matrix has been dispatched.
 
 The [preparation03 record](nextup-global-reference-preparation-03.md) records
 64 normal and 43 cleanup requests, with zero playback calibrations. P's profile
 acknowledges folder grants `101` and `103`, but its actual Views response is an
 empty Items array. The failure is a real visibility mismatch, not a pagination
-count error. The correct original-server grant identity remains unresolved;
-native roots `102` and `104` are not yet proven valid alternatives. The retained
-accounts and libraries mean the historical observer02 baseline below cannot be
-reused as a current six-user/eight-library baseline for another preparation.
+count error. The subsequent [Guid experiment](nextup-folder-grant-verification-01.md)
+proves the observed top-level Guid pair supplies the intended restricted access.
+P's own SelectableMediaFolders still lists all ten libraries, so that endpoint
+is inventory evidence and does not prove browse access. The original policies
+are restored and all these runs are consumed. The historical observer02 baseline
+below cannot be reused as a current six-user/eight-library baseline.
 
 The [accepted observer02](nextup-global-baseline-observer-02.md) used frozen
 TOOL04 source `5436668b824c3432fe52b6f250faea6626f4fa6dc13fc33955fa152337487228`.
@@ -49,18 +51,19 @@ published as `c2291d9`; the preparation repair and actual failed-run evidence
 were published as `00bd1c5`. The operator now checks all 16 media files and nine
 required directories and excludes read-only authority from writable parents.
 
-Next: freeze a separate bounded grant-verification scope for the retained owned
-P account, using the actual SelectableMediaFolders Guid pair as an unproven
-candidate. Require complete original-policy readback, exact limited mutation,
-own-token Views/catalog validation, original-policy restoration and all-token
-closure. Do not infer authorization from an echoed Policy or weaken the gate
-with EnableAllFolders. Preparation03 and folder observation02 are consumed.
-The complete historical preparation snapshot contains eight users/ten libraries/
-ninety devices; the later read-only observation confirms ninety-one devices,
-but is not a new complete public snapshot. Fresh preparation therefore needs
-reviewed current population/input/budget authority. Four calibrations, a usable
-matrix fixture, reference matrix, actual playback and positive automatic refresh
-remain open; no matrix or main-upgrade unit has been dispatched.
+Next: finish and remotely verify the updated fresh preparation producer and
+outer matrix operator. Preserve the actual complete twelve-detail baseline;
+new preparation creates two new ordinary accounts, two TV libraries and six
+copies. Bind each new policyFolderId to its actual selectable Guid and paths.
+The new plan maxima are 257 normal, 263 including successful logout, and 89
+failure-cleanup requests; its frozen hard caps are 280 normal/100 cleanup/380
+total. Matrix transport budgets remain unchanged. Release v2 must preserve
+actual v4 evidence and additionally bind the independently confirmed Guid run,
+its complete raw closure records, after snapshot and closed current unit. The
+operator must use the producer's recomputed plan maxima rather than fixed old
+232/238 values. These adaptations are not yet accepted or dispatched. Four
+calibrations, a usable matrix fixture, the reference matrix, actual playback
+and positive automatic refresh remain open; main has not been upgraded.
 
 The reference v4 and Goby v7 automatic-refresh observations remain negative;
 normalized public payload equality establishes no Goby-specific defect. The

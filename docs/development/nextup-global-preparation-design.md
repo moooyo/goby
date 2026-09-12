@@ -153,9 +153,11 @@ response is empty before catalog/detail/calibration work. The separate
 [folder observation02](nextup-folder-authority-observation-02.md) establishes
 the selectable numeric IDs, distinct Guids and native subfolder IDs using the
 official public endpoint and exact root paths. It makes no policy writes.
-The next experiment must test the observed Guid pair under one retained owned
-ordinary account and restore its original policy. Do not silently relabel the
-existing numeric policyFolderId as a proven authorization mapping.
+The subsequent [Guid verification01](nextup-folder-grant-verification-01.md)
+confirmed that pair under P's own token and restored all 45 original policy
+fields. Its 109 requests and both token closures are independently attested.
+The fresh producer is being updated to resolve each new library's actual Guid;
+the old numeric policyFolderId must not be relabeled as a proven grant.
 
 For each library, adapt the owned `prepare-client-reference.py:281` template
 by changing only its name, root paths, and `CollectionType` to `tvshows`:
