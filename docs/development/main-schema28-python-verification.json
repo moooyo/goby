@@ -1,0 +1,31 @@
+{
+  "exit_code": 0,
+  "marker": "goby-main-schema28-python-guards-v1",
+  "report": {
+    "actual_controller_flow": true,
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "849ad3ab93d0efb89dc1640e771bda70c3a6b360b17c1d8622f3f18733d7cafd",
+    "operator_sha256": "6388cae77225a631f341928a47b15ff55c6af337d819a6b93008c5ba72dfc646",
+    "skips": 0,
+    "status": "passed",
+    "suite": "main-schema28-upgrade-guards",
+    "test_count": 51,
+    "unexpected_effects": 0
+  },
+  "status": "passed",
+  "stderr_sha256": "0d73bb64d0dfec65eb9c0984c37fa5003319d673d2d8dd776ff3b3f90cdbfb19",
+  "stdout_sha256": "8a50814aa878607946fac928ea4d0049b41dfc1ede1a95f0173fc19bb990eec6",
+  "syntax": [
+    {
+      "passed": true,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema28-source55-tool-01/upgrade-main-schema28.py",
+      "sha256": "6388cae77225a631f341928a47b15ff55c6af337d819a6b93008c5ba72dfc646"
+    },
+    {
+      "passed": true,
+      "path": "/opt/goby-test/exec-work-m3e/main-schema28-source55-tool-01/test-upgrade-main-schema28.py",
+      "sha256": "849ad3ab93d0efb89dc1640e771bda70c3a6b360b17c1d8622f3f18733d7cafd"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "argv": [
+    "/opt/goby-toolchains/go1.27.1/bin/go",
+    "test",
+    "-json",
+    "-race",
+    "-mod=readonly",
+    "-count=1",
+    "-timeout=120s",
+    "./cmd/main-schema28-migration/main.go",
+    "./cmd/main-schema28-migration/main_test.go"
+  ],
+  "database_access": false,
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "amd64",
+    "GOCACHE": "/opt/goby-test/go-caches-m5h/build",
+    "GOMODCACHE": "/opt/goby-test/go-caches-m5h/modules",
+    "GOOS": "linux",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOWORK": "off",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "PATH": "/opt/goby-toolchains/go1.27.1/bin:/usr/bin:/bin"
+  },
+  "environment_provenance": "The original remote runner explicitly passed CGO_ENABLED=0 to build and CGO_ENABLED=1 to the race guard subprocess; verification_report.environment records their shared variables.",
+  "exit_code": 0,
+  "failures_or_skips": 0,
+  "guard_source_sha256": "af6a5705ad90cee4e67f4dc42ef439f49d5ac5f5f8eecb24d38446b7964bd65a",
+  "helper_source_sha256": "c5ae4d0228d0b00170aa3e17e2abac7243e60df4b808668f7e52e9904bae4e2f",
+  "marker": "goby-main-schema28-helper-go-guards-v1",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "3dd9dd4dca646ba97115d38f434380843e1dfd5cbca50bcb0d5127a46e6cb7ef",
+  "tests": [
+    "TestRolePropertiesPostgreSQLWhitespaceReportRoundTrip",
+    "TestRolePropertiesPrivilegeChangesRemainSignificant",
+    "TestRolePropertiesIntegerAndNullableValuesArePreserved",
+    "TestRolePropertiesRejectMissingUnknownDuplicateAndWrongShapes",
+    "TestRolePropertiesRejectValueTypeChanges",
+    "TestRolePropertiesNormalizationDoesNotMutateOrAliasInput",
+    "TestRoleNormalizationDoesNotHideOtherCapturedStateChanges",
+    "TestMainIntentUsesOnlyPinnedPrimaryAndFreshIndependentRehearsal",
+    "TestMainConnectionURLCannotSelectWorkspaceOrInactiveDatabase",
+    "TestMainBindingPreservesSelectedGenerationAndExactRawValue",
+    "TestMainPopulationUsesACompleteDynamicBaseline",
+    "TestLifecycleDescriptorsAreExplicitAndMigrateOnly",
+    "TestLifecycleScopeRequiresPinnedExistingServiceObjects",
+    "TestLifecycleDescriptorChecksPathTypeOwnerLinksAndPinnedMetadata",
+    "TestLifecycleFDInfoRequiresAnAlreadyHeldWholeFileExclusiveFlock"
+  ],
+  "verification_report": {
+    "path": "/opt/goby-test/exec-work-m3e/main-schema28-source55-helper-verification-01/report.json",
+    "sha256": "450fd5d54b25924b8b4b2bf03b5142148c2c1b25f487a20ff60c59f26d7cb3ba"
+  }
+}
