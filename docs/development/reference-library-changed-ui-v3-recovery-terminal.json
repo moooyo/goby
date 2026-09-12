@@ -1,0 +1,42 @@
+{
+  "administrator_logout204_and_same_token401_verified": true,
+  "anchor_unchanged": true,
+  "captured_at": "2026-09-12T16:07:32.096425+00:00",
+  "full_target_restored_except_etag": true,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-ui-recovery-terminal-v3",
+  "media_source_name_restored": true,
+  "media_unchanged": true,
+  "original_failed_report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v3/report.json",
+    "sha256": "a7290d22100b63f919324b7dded7d15228458b9ebf456384b6b6b4de5fa4e23a"
+  },
+  "original_report_rewritten": false,
+  "recursive_cgroup_members": [],
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/report.json",
+    "sha256": "3e9a555f0a91e42df63657652a5a2f84b3104db76871a340ffca7001ebf67e3e"
+  },
+  "restore_posts": 1,
+  "restore_status": 204,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/recover.py",
+    "sha256": "b230b22d29a34a154745c1d822ead6e2fcf68084ea78ff889eb0e1196aafea1b"
+  },
+  "status": "restoration_independently_confirmed",
+  "systemd": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "Id": "goby-reference-library-changed-ui-recovery-v3b.service",
+    "InvocationID": "c7b4694665e841ce98024e61107a1d47",
+    "MainPID": "0",
+    "RemainAfterExit": "yes",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "unit": "goby-reference-library-changed-ui-recovery-v3b.service",
+  "viewer_context_read_authentication": "administrator",
+  "viewer_ui_login_performed": false
+}

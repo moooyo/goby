@@ -1,0 +1,33 @@
+{
+  "administrator_cleanup_verified": true,
+  "authentication_posts": 2,
+  "business_http": true,
+  "captured_at": "2026-09-12T15:53:19.306648+00:00",
+  "http_requests": 65,
+  "marker": "goby-reference-ui-preflight-terminal-v3",
+  "metadata_posts": 0,
+  "preservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-03/preservation-after-preflight.json",
+    "sha256": "ae130d88b3b7ba3c0a72e87648b6a0772cfe43b31f9071fab44fea6f86a9066d"
+  },
+  "recursive_cgroup_members": [],
+  "reference_client_acceptance": false,
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-preflight-v3/report.json",
+    "sha256": "88b7946a1d91dc54a9c5db9bdacc959739c5d4b8af1397b4dab60428e03132f5"
+  },
+  "status": "passed",
+  "systemd": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainCode": "1",
+    "ExecMainStatus": "0",
+    "Id": "goby-reference-library-changed-ui-preflight-v3.service",
+    "InvocationID": "b10fdbcd3ea84128af0ea7f454be35fb",
+    "MainPID": "0",
+    "RemainAfterExit": "yes",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "unit": "goby-reference-library-changed-ui-preflight-v3.service"
+}

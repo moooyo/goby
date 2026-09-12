@@ -1,0 +1,93 @@
+{
+  "artifacts": {
+    "browser_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v3/browser/report.json",
+      "sha256": "afde08c75baaf50d2f073f8b7e5a6c7fac2194c3cd40d1d4da764a46402ea40f"
+    },
+    "controller_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v3/report.json",
+      "sha256": "a7290d22100b63f919324b7dded7d15228458b9ebf456384b6b6b4de5fa4e23a"
+    },
+    "input": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v3/input.json",
+      "sha256": "0b08853b394b728f603aa3e097d1df6b22821487ee40a6759d58f37f877b6fa7"
+    },
+    "preflight_terminal": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-03/preflight-terminal.json",
+      "sha256": "b3ec80988d67d01370e27552184a0734d6b3d3226b6a440ea4d237c1207b0ed7"
+    },
+    "preservation": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-03/preservation-after-reference.json",
+      "sha256": "74c116152c34e39c92ecf349723d9edfee21e5f2302a24320492e6d5a9172723"
+    },
+    "recovery_terminal": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-03/recovery-terminal.json",
+      "sha256": "8bed884bc76dfe2277f0a9f116195a5db28cabfacf40a45bdf0d1886385fbc6e"
+    },
+    "scope_files": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-03/failed-scope-files.json",
+      "sha256": "ce4ef753e849d7fc3944699bf9dffed636d6b9161050c0df55de9f66eb1c832d"
+    }
+  },
+  "captured_at": "2026-09-12T16:12:04.708469+00:00",
+  "current_restoration": "independently_confirmed_by_separate_recovery",
+  "discovery_and_armed_stages_completed": true,
+  "failure": "derived_media_source_name_and_viewer_authentication_baseline_not_modeled",
+  "forward_observation_window_completed": false,
+  "forward_posts": 1,
+  "full_target_restored_except_etag": true,
+  "goby_counts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "goby_state_equal_to_v7_except_capture_time": true,
+  "independent_recovery_restore_posts": 1,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-ui-failed-terminal-v3",
+  "media_source_name_restored": true,
+  "metadata_derived_change": "MediaSources[0].Name follows Name while source identity and technical fields remain unchanged",
+  "original_administrator_cleanup_verified": true,
+  "original_report_restoration": "restoration_required",
+  "original_report_rewritten": false,
+  "original_scope_restore_posts": 0,
+  "preserved_roots": 74,
+  "protocol_observation_complete": false,
+  "recovery_administrator_cleanup_verified": true,
+  "restoration_observation_window_completed": false,
+  "source_commit": "7b07a468811352514c21d60b5683f4268f14e8c1",
+  "status": "failed_scope_sealed_after_independent_restoration",
+  "units": {
+    "controller": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-controller-v3.service",
+        "InvocationID": "b8c2a44129ed4fb5bc9340e1b9eee9f0",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    },
+    "worker": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-v3.service",
+        "InvocationID": "1f658278cf0c4162a29f71dbbd9b330d",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    }
+  },
+  "viewer_baseline_issue": "administrator-token UserId projection was compared with an actual viewer-token DTO",
+  "viewer_ui_logout204_and_same_token401_verified": true
+}
