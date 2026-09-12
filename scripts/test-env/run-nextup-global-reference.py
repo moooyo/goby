@@ -34,7 +34,7 @@ sys.dont_write_bytecode = True
 TRANSPORT_SHA256 = "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
 MATRIX_SHA256 = "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259"
 MAX_JSON_BYTES = 64 * 1024 * 1024
-MAX_INDEX_REQUESTS = 238
+SUCCESSFUL_LOGOUT_REQUESTS = 6
 RECEIPTS = {"preparation", "coordination", "catalog", "cleanup", "policy-P", "policy-Q", "media-LA", "media-LB"}
 PREPARATION_FILES = {"manifest": "manifest.json", "plan": "frozen-plan.json", "terminal": "terminal.json",
     "state": "state.json", "draftExecution": "draft-execution.json", "draftMatrix": "draft-matrix.json",
@@ -71,6 +71,19 @@ def sha(value):
 
 def same(left, right):
     return canonical(left) == canonical(right)
+
+
+def successful_preparation_limits(plan):
+    """Read success bounds only after the producer source and plan are bound."""
+    keys = ("normalMaximum", "successMaximumIncludingLogout", "normalLimit", "cleanupReserve", "maximumRequests")
+    require(isinstance(plan, dict) and all(type(plan.get(key)) is int and plan[key] > 0 for key in keys),
+            "The source-bound preparation plan needs finite integer request limits.")
+    normal, total = plan["normalMaximum"], plan["successMaximumIncludingLogout"]
+    require(normal <= plan["normalLimit"] and plan["cleanupReserve"] >= SUCCESSFUL_LOGOUT_REQUESTS and
+            total == normal + SUCCESSFUL_LOGOUT_REQUESTS and total <= plan["maximumRequests"] and
+            plan["maximumRequests"] == plan["normalLimit"] + plan["cleanupReserve"],
+            "The source-bound preparation plan does not reserve exactly six successful logout/rejection requests.")
+    return normal, total
 
 
 def instant(value):
@@ -290,7 +303,9 @@ class Admission:
         input_root = Path(self.manifest["scope"]["inputRoot"])
         raw_input = self._descriptor(preparation["inputManifest"], [input_root])
         require(same(strict_json(raw_input), self.manifest), "The original CLI input differs from the retained producer manifest.")
-        require(same(self.documents["plan"], self.preparation.frozen_plan(self.manifest)), "The retained plan is not the source-bound actual plan.")
+        source_plan = self.preparation.frozen_plan(self.manifest)
+        require(same(self.documents["plan"], source_plan), "The retained plan is not the source-bound actual plan.")
+        self.producer_normal_maximum, self.producer_success_maximum = successful_preparation_limits(source_plan)
         self.plan_sha256 = digest(canonical(self.documents["plan"]).encode())
         self.inputs = {}
         for key, row in self.manifest["inputs"].items():
@@ -299,6 +314,7 @@ class Admission:
         checker = object.__new__(self.preparation.Authority)
         checker.manifest, checker.records = self.manifest, self.inputs
         checker.release, checker.baseline = self.inputs["release"], self.inputs["publicBaseline"]
+        checker.support, checker.planner = self.support, self.matrix
         def evidence(row, *, sealed=False):
             roots = [Path(root) for root in self.manifest["sealedRoots"]]
             if not sealed:
@@ -327,11 +343,14 @@ class Admission:
                 state.get("uncertain") is False and all(state.get(key) is None for key in ("failure", "pending", "ownershipPending")) and
                 set(state.get("tokens", {})) == set(state.get("sessions", {})) == set(state.get("revoked", [])) == {"admin", "P", "Q"},
                 "The final producer state has unresolved actor or playback responsibility.")
-        require(type(terminal.get("requestCount")) is int and 0 < terminal["requestCount"] <= MAX_INDEX_REQUESTS and
-                type(terminal.get("normalRequestCount")) is int and terminal["normalRequestCount"] <= 232 and
-                terminal.get("cleanupRequestCount") == 6 and terminal.get("phaseRequestCounts", {}).get("cleanup") == 6 and
-                terminal["requestCount"] == terminal["normalRequestCount"] + 6 and
-                all(state.get(key) == terminal.get(key) for key in ("requestCount", "normalRequestCount", "cleanupRequestCount", "chargedResponseBytes")),
+        require(type(terminal.get("requestCount")) is int and 0 < terminal["requestCount"] <= self.producer_success_maximum and
+                type(terminal.get("normalRequestCount")) is int and 0 < terminal["normalRequestCount"] <= self.producer_normal_maximum and
+                terminal.get("cleanupRequestCount") == SUCCESSFUL_LOGOUT_REQUESTS and
+                type(terminal.get("phaseRequestCounts", {}).get("cleanup")) is int and
+                terminal.get("phaseRequestCounts", {}).get("cleanup") == SUCCESSFUL_LOGOUT_REQUESTS and
+                terminal["requestCount"] == terminal["normalRequestCount"] + SUCCESSFUL_LOGOUT_REQUESTS and
+                all(type(state.get(key)) is int and type(terminal.get(key)) is int and state[key] == terminal[key]
+                    for key in ("requestCount", "normalRequestCount", "cleanupRequestCount", "chargedResponseBytes")),
                 "The actual successful preparation request budget does not close.")
         require(set(terminal.get("outputs", {})) == RECEIPTS | {"matrix", "execution"}, "The producer terminal output set is incomplete.")
         for key in ("matrix", "execution"):

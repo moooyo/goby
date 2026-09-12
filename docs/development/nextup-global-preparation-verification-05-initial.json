@@ -1,0 +1,47 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic preparation and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [
+    {
+      "test": "__main__.ActualAuthorityGuards.test_raw_release_rejects_reordered_login_form_bytes",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-08/revision-01/test-prepare-nextup-global-reference.py\", line 2279, in test_raw_release_rejects_reordered_login_form_bytes\n    self.reject_raw_release(mutate)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-08/revision-01/test-prepare-nextup-global-reference.py\", line 2270, in reject_raw_release\n    checker._grant_verification()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/tmp/nextup-preparation-guards-z3l_zrb2/sourceRoot/prepare-nextup-global-reference.py\", line 557, in _grant_verification\n    intent, response = (self._evidence(row[kind], sealed=True) for kind in (\"intent\", \"response\"))\n    ^^^^^^^^^^^^^^^^\n  File \"/tmp/nextup-preparation-guards-z3l_zrb2/sourceRoot/prepare-nextup-global-reference.py\", line 557, in <genexpr>\n    intent, response = (self._evidence(row[kind], sealed=True) for kind in (\"intent\", \"response\"))\n                        ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-08/revision-01/test-prepare-nextup-global-reference.py\", line 2266, in evidence\n    mutate(row, value)\n    ~~~~~~^^^^^^^^^^^^\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-08/revision-01/test-prepare-nextup-global-reference.py\", line 2278, in mutate\n    value[\"payloadBase64\"] = base64.b64encode(urlencode([(\"Pw\", body[\"Pw\"]), (\"Username\", body[\"Username\"])]).encode()).decode()\n                                              ^^^^^^^^^\nNameError: name 'urlencode' is not defined\n"
+    }
+  ],
+  "errors": 1,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "passed": false,
+  "preservationOrderProbe": {
+    "expectedReportSha256": "def6349ceb9b74b954d1c8fe17bc8e4b0c033c9f83639984e251eab7600b03aa",
+    "hashSeedEnvironmentIgnoredByIsolatedWorkers": true,
+    "maximumWorkers": 32,
+    "nativeOrdersObserved": [
+      [
+        "LastActivityDate",
+        "LastLoginDate"
+      ],
+      [
+        "LastLoginDate",
+        "LastActivityDate"
+      ]
+    ],
+    "observedReportSha256": [
+      "def6349ceb9b74b954d1c8fe17bc8e4b0c033c9f83639984e251eab7600b03aa"
+    ],
+    "precondition": "both-native-orders-observed",
+    "workersRun": 4
+  },
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "7ab8cdfaf44f63c851b5b3b2ecbe5a5fe2504ddde90c24018582fb642afbe9e3",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "preparation": "347d71f310182e3258dc2f0b51142dbf31088292ee6ec5d3689621971deb152a",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "suite": "prepare-nextup-global-reference-guards",
+  "testsRun": 154
+}

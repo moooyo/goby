@@ -1,0 +1,105 @@
+{
+  "allReadonlyRootsPreserved": true,
+  "auditBusinessHttpRequests": 0,
+  "auditOriginalImplementationBytesRead": false,
+  "auditReferenceDatabaseRead": false,
+  "auditSource": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-execution-01/attest.py",
+    "sha256": "d38e10412e8ccb209fd386f251f38ab2c9ee795a6a380b1faead09bf462beb0e"
+  },
+  "cgroupEmpty": true,
+  "cleanupRequestCount": 2,
+  "clientAcceptance": false,
+  "createdAt": "2026-09-12T21:19:21.066645+00:00",
+  "deleteRequests": 1,
+  "exactFullZeroUserDataRestored": true,
+  "exactTokenClosed": true,
+  "formerPid": 1513281,
+  "formerPidAbsent": true,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "input": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-userdata-recovery-inputs-01/input.json",
+    "sha256": "73ebe46ffebfe2731f8f6be61ad006f5306568d59f3435ae58c04bbc695df0df"
+  },
+  "kind": "nextup-preparation-userdata-recovery-independent-terminal",
+  "logoutResponse": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/0005-logout-response.json",
+    "sha256": "f68d020a8b8b99aad96a9a18658ab9b9b079b41e4b3e12089f6cd2f86b1f590a"
+  },
+  "matrixInputsUsable": false,
+  "normalRequestCount": 4,
+  "parentState": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-04/private/state.json",
+    "sha256": "4bc7ff2286d0cbdd61735eee2a18fd30db752da080206cbcc91aec4d6b7380b7"
+  },
+  "parentStatusUnchanged": "recovery_required",
+  "parentTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-04/private/terminal.json",
+    "sha256": "a770fff3346b64657b9338b8a1f985b03fe5208464f8f236c4e7c1649da8cb8e"
+  },
+  "preservationAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-execution-01/preservation-after.json",
+    "sha256": "7ba5770390db0fcebc16cd2c4d26341d1629bbf5882048ce481726df82f1b3dd"
+  },
+  "preservationBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-execution-01/preservation-before.json",
+    "sha256": "7fd47766407bf71e44cf01abdef5408d411a4c7a1c610cd5a20f8e1d403c0200"
+  },
+  "proxyImplementationReadClaim": "The existing proxy was reused unchanged; its internal executable hashing is not claimed absent.",
+  "readonlyRootCount": 152,
+  "rejectionResponse": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/0006-rejection-response.json",
+    "sha256": "318009dd90d5d4480f9a83176ed5775864d5b4c076ecb8871a073b1010a01071"
+  },
+  "requestCount": 6,
+  "restorationResponse": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/0004-after-response.json",
+    "sha256": "3f2639ae13fee114943059376b82a9e3595893f412880f744fbb42c8522bfd9c"
+  },
+  "runId": "nextup-preparation04-userdata-recovery-20260913-01",
+  "schemaVersion": 1,
+  "scopeInventory": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-execution-01/completed-scope-inventory.json",
+    "sha256": "81a8e546c50a863191fb2f7e06c63da47d7f61a33cd7359dc4d4de655f35d96e"
+  },
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-userdata-recovery-tool-01/revision-01/recover-preparation04-userdata-01.py",
+    "sha256": "0fba1ac06517aac5a5b3e7977df564839439b1523c7559ab44be18fe408a81c4"
+  },
+  "status": "owned_userdata_restored_and_exact_token_closed",
+  "tokenSha256": "69b5efb10146734db458a1f9db29ccdd2d2779967cd3f05d2e8c57db3c9047d4",
+  "unit": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainPID": "1513281",
+    "ExecMainStatus": "0",
+    "Id": "goby-nextup-preparation04-userdata-recovery-01.service",
+    "InvocationID": "f047e7fe5af1499a8cbb3e45940a812c",
+    "LoadState": "loaded",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "wireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-execution-01/wire-index.json",
+    "sha256": "8d6e9659f81de085c708342deb889ba936a07c03b86eef6faec99b09fa6eac8d"
+  },
+  "workerState": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/state.json",
+    "sha256": "93150f52243aa072fdc9853891236e2fdab7e1e415435ebc60a53e2bf5772d06"
+  },
+  "workerTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/terminal.json",
+    "sha256": "0c8698a71bef7e7eac9e02b60cf796a792fd098ed17105bb2538b197ac358ba0"
+  },
+  "zeroUserData": {
+    "IsFavorite": false,
+    "PlayCount": 0,
+    "PlaybackPositionTicks": 0,
+    "Played": false
+  }
+}

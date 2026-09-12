@@ -1,0 +1,18 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "closedTokensVerified": 2,
+  "independentSha256": "68b0e1d5ff13b985d21fcfbcb1a54d2792c216b79bf27aa5b07ff5316cd76684",
+  "livePreparationAcceptanceClaim": false,
+  "passed": true,
+  "rawRequestsVerified": 109,
+  "rawResponsesVerified": 109,
+  "snapshotGetsReconstructed": 86,
+  "sourceSha256": {
+    "guards": "c5419b99cb0cfde910b29b5d47e6fbc7a7f4061afcebe378c826fb056720c177",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "preparation": "347d71f310182e3258dc2f0b51142dbf31088292ee6ec5d3689621971deb152a",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "suite": "completed-grant-release-raw-reconstruction"
+}

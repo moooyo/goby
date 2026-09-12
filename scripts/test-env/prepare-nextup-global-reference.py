@@ -26,11 +26,13 @@ import math
 import os
 from pathlib import Path
 import re
+import shlex
 import stat
 import subprocess
 import time
 from types import SimpleNamespace
 from urllib.parse import parse_qsl, urlencode, urlsplit
+import uuid
 
 sys.dont_write_bytecode = True
 TRANSPORT_SHA256 = "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
@@ -40,9 +42,9 @@ CALIBRATIONS = (("P", "A1", "partial"), ("P", "A1", "complete"),
                 ("Q", "B1", "partial"), ("Q", "B1", "complete"))
 FIELDS = "Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear"
 RUNTIME, PARTIAL = 6_000_000_000, 1_200_000_000
-MAX_REQUESTS, NORMAL_LIMIT, CLEANUP_RESERVE = 320, 240, 80
-PHASE_LIMITS = {"before": 32, "libraries": 42, "mapping": 5, "accounts": 8,
-                "baseline": 36, "calibration": 44, "zero": 28, "after": 37, "cleanup": 77}
+MAX_REQUESTS, NORMAL_LIMIT, CLEANUP_RESERVE = 380, 280, 100
+PHASE_LIMITS = {"before": 44, "libraries": 42, "mapping": 6, "accounts": 8,
+                "baseline": 36, "calibration": 44, "zero": 28, "after": 49, "cleanup": 89}
 PLAYBACK_FIELDS = {"Played", "PlayCount", "PlaybackPositionTicks", "LastPlayedDate"}
 
 
@@ -236,25 +238,26 @@ def validate_manifest(value):
     for key in ("name", "seriesName"):
         require(value["libraries"]["LA"][key].casefold() != value["libraries"]["LB"][key].casefold(), "Library and series names must be distinct.")
     preserve = value["preservation"]
-    require(set(preserve) == {"userIds", "libraryIds", "detailRoutes"} and len(preserve["userIds"]) == 6 and len(preserve["libraryIds"]) == 8 and
-            len(set(preserve["userIds"])) == 6 and len(set(preserve["libraryIds"])) == 8 and
+    require(set(preserve) == {"userIds", "libraryIds", "detailRoutes"} and len(preserve["userIds"]) == 8 and len(preserve["libraryIds"]) == 10 and
+            len(set(preserve["userIds"])) == 8 and len(set(preserve["libraryIds"])) == 10 and
             all(identifier(item) for item in preserve["userIds"] + preserve["libraryIds"]) and
-            value["actors"]["admin"]["userId"] in preserve["userIds"] and len(preserve["detailRoutes"]) == 6,
-            "The frozen six-user/eight-library and six-detail preservation scope is required.")
+            value["actors"]["admin"]["userId"] in preserve["userIds"] and len(preserve["detailRoutes"]) == 12,
+            "The frozen eight-user/ten-library and twelve-detail preservation scope is required.")
     for row in preserve["detailRoutes"]:
         require(set(row) == {"group", "userId", "itemId"} and identifier(row["group"]) and row["userId"] in preserve["userIds"] and identifier(row["itemId"]),
                 "Each old full-detail route needs its exact actor and item.")
-    require(len({(row["group"], row["itemId"]) for row in preserve["detailRoutes"]}) == 6, "Old detail routes cannot repeat.")
+    require(len({(row["group"], row["itemId"]) for row in preserve["detailRoutes"]}) == 12, "Old detail routes cannot repeat.")
     limits = {"requestSeconds": (1, 15), "normalSeconds": (1, 1200), "cleanupSeconds": (1, 600),
               "requestBytes": (1024, 32768), "responseBytes": (1024, 1024 * 1024),
-              "totalResponseBytes": (4096, 384 * 1024 * 1024), "cleanupResponseBytes": (1024, 81 * 1024 * 1024)}
+              "totalResponseBytes": (4096, 384 * 1024 * 1024), "cleanupResponseBytes": (1024, 101 * 1024 * 1024)}
     for name in ("budgets", "matrixBudgets"):
         budget = value[name]
         require(isinstance(budget, dict) and set(budget) == set(limits), "Every finite time and byte budget must be explicit.")
         for key, (low, high) in limits.items():
             require(type(budget[key]) is int and low <= budget[key] <= high, "A budget exceeds its bound: " + key)
-        require(budget["cleanupResponseBytes"] >= 80 * (budget["responseBytes"] + 1) and
-                budget["totalResponseBytes"] > budget["cleanupResponseBytes"], "The cleanup byte reserve must cover eighty bounded responses.")
+        reserve = CLEANUP_RESERVE if name == "budgets" else 80
+        require(budget["cleanupResponseBytes"] >= reserve * (budget["responseBytes"] + 1) and
+                budget["totalResponseBytes"] > budget["cleanupResponseBytes"], "The separate cleanup byte reserve cannot cover its bounded response slots.")
     require(value["matrixBudgets"]["totalResponseBytes"] <= 128 * 1024 * 1024 and
             value["matrixBudgets"]["cleanupResponseBytes"] <= 80 * 1024 * 1024,
             "Matrix transport budgets must satisfy its separate reviewed bounds.")
@@ -267,7 +270,7 @@ def frozen_plan(manifest):
     return {"schemaVersion": 1, "classification": "planned preparation; no execution", "runId": value["runId"],
             "manifestSha256": digest(canonical(value).encode()), "maximumRequests": MAX_REQUESTS,
             "normalLimit": NORMAL_LIMIT, "cleanupReserve": CLEANUP_RESERVE, "phaseMaximums": deepcopy(PHASE_LIMITS),
-            "normalMaximum": 232, "successMaximumIncludingLogout": 238, "cleanupMaximum": 77,
+            "normalMaximum": 257, "successMaximumIncludingLogout": 263, "cleanupMaximum": 89,
             "calibrations": [list(row) for row in CALIBRATIONS], "scanRounds": 12,
             "terminal": "awaiting_independent_attestation", "catalogDisposition": "retained"}
 
@@ -347,7 +350,7 @@ def validate_public_baseline(value, manifest):
     detail_keys = {(group, item) for group, rows in value["details"].items() if isinstance(rows, dict) for item in rows}
     expected = {(row["group"], row["itemId"]) for row in manifest["preservation"]["detailRoutes"]}
     require(detail_keys == expected and all(isinstance(rows, dict) and all(isinstance(row, dict) and row.get("Id") == item for item, row in rows.items())
-            for rows in value["details"].values()), "All six retained explicit detail witnesses are required.")
+            for rows in value["details"].values()), "All twelve retained explicit detail witnesses are required.")
     require(len(value["devices"]) <= 256 and all(identifier(key) and isinstance(row, dict) and row.get("Id") == key and
             isinstance(row.get("ReportedDeviceId"), str) and 0 < len(row["ReportedDeviceId"]) <= 512 for key, row in value["devices"].items()) and
             len({row["ReportedDeviceId"] for row in value["devices"].values()}) == len(value["devices"]),
@@ -406,12 +409,15 @@ class Authority:
                 "A historical proof escaped its exact owned JSON evidence roots.")
         raw = read_owned(row["path"], private=True)
         require(digest(raw) == row["sha256"], "A sealed or closed-token proof changed.")
+        if not hasattr(self, "evidence_identities"):
+            self.evidence_identities = {}
+        self.evidence_identities[row["path"]] = file_identity(protected(row["path"], private=True))
         return strict_json(raw)
 
     def _inputs(self):
         value, release = self.manifest, self.release
-        require(set(release) == {"schemaVersion", "kind", "runId", "process", "lock", "sealedRoots", "releasedAt", "sealed", "units", "closedAuthentication"} and
-                release["schemaVersion"] == 1 and release["kind"] == "nextup-global-preparation-release" and release["runId"] == value["runId"] and
+        require(set(release) == {"schemaVersion", "kind", "runId", "process", "lock", "sealedRoots", "releasedAt", "sealed", "units", "closedAuthentication", "grantVerification"} and
+                release["schemaVersion"] == 2 and release["kind"] == "nextup-global-preparation-release" and release["runId"] == value["runId"] and
                 same(release["process"], value["process"]) and same(release["lock"], value["lock"]) and
                 same(release["sealedRoots"], value["sealedRoots"]), "The release proof does not bind this exact new run.")
         instant(release["releasedAt"])
@@ -449,9 +455,12 @@ class Authority:
         validate_public_baseline(self.baseline, value)
         require(isinstance(release["closedAuthentication"], list), "Recorded prior logout windows must be explicit.")
         for row in release["closedAuthentication"]:
-            require(set(row) == {"userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection"} and
+            require(set(row) in ({"userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection"},
+                                {"userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection", "login"}) and
                     row["userId"] in value["preservation"]["userIds"] and identifier(row["reportedDeviceId"]) and sha(row["tokenSha256"]) and
                     instant(row["from"]) <= instant(row["through"]), "A prior closed authentication window is malformed.")
+            if "login" in row:
+                continue
             for name, expected_status in (("logout", 204), ("rejection", 401)):
                 proof = row[name]
                 require(set(proof) == {"record", "intent", "status", "tokenSha256", "completedAt"} and type(proof["status"]) is int and proof["status"] == expected_status and
@@ -470,6 +479,7 @@ class Authority:
                     row["logout"]["record"]["sha256"] != row["rejection"]["record"]["sha256"] and
                     any(item.get("ReportedDeviceId") == row["reportedDeviceId"] and item.get("LastUserId") == row["userId"] for item in self.baseline["devices"].values()),
                     "A prior closed-token window does not bind one retained device and ordered distinct responses.")
+        self._grant_verification()
         credential_record = self.records["credentials"]
         require(set(credential_record) == {"schemaVersion", "runId", "accounts"} and credential_record["schemaVersion"] == 1 and
                 credential_record["runId"] == value["runId"] and set(credential_record["accounts"]) == {"admin", "P", "Q"},
@@ -495,8 +505,251 @@ class Authority:
                 isinstance(media_manifest.get("files"), dict) and media_manifest["files"].get(relative) == value["media"]["source"]["sha256"],
                 "The actual approved media manifest does not bind these source bytes and profile.")
 
+    def _grant_verification(self):
+        """Reconcile the accepted Guid experiment against all actual raw attempts."""
+        independent = self._evidence(self.release["grantVerification"], sealed=True)
+        require(independent.get("schemaVersion") == 1 and independent.get("kind") == "nextup-folder-grant-independent-terminal" and
+                independent.get("status") == "folder_guid_grants_independently_verified_and_policy_restored" and
+                independent.get("referenceCounts") == {"users": 8, "libraries": 10, "devices": 93, "detailWitnesses": 12} and
+                independent.get("afterPublic") == self.manifest["inputs"]["publicBaseline"] and
+                (independent.get("requestCount"), independent.get("normalRequestCount"), independent.get("cleanupRequestCount")) == (109, 59, 50) and
+                instant(independent["capturedAt"]) <= instant(self.release["releasedAt"]),
+                "The latest independent Guid terminal does not bind the exact retained population and baseline.")
+        require(all(independent.get(key) is True for key in ("allKnownTokensClosed", "originalPolicyRestored", "fullPublicRoundtripPreserved",
+                "allPrivateBytesMatched", "allExportBytesMatched", "recursiveCgroupEmpty", "grantSemanticsProven")) and
+                independent.get("originalImplementationBytesRead") is False and independent.get("referenceDatabaseRead") is False,
+                "The latest Guid observation lacks completed independent preservation and closure.")
+        documents = {key: self._evidence(independent[key], sealed=True) for key in (
+            "input", "producerTerminal", "wireIndex", "closedAuthentication", "beforePublic", "afterPublic", "originalPolicy", "targetPolicy", "publicPreservation", "scopeInventory")}
+        prior, terminal, index, closures = (documents[key] for key in ("input", "producerTerminal", "wireIndex", "closedAuthentication"))
+        source = independent["source"]
+        descriptor(source)
+        require(source == prior["source"] and source["sha256"] == "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971" and
+                Path(source["path"]).suffix == ".py" and any(Path(root) in Path(source["path"]).parents for root in self.manifest["sealedRoots"]) and
+                all(Path(root) not in Path(source["path"]).parents for root in self.manifest["forbiddenOriginalRoots"]) and
+                digest(read_owned(source["path"])) == source["sha256"], "The successful Guid worker source is not its exact reviewed owned implementation.")
+        if not hasattr(self, "evidence_identities"):
+            self.evidence_identities = {}
+        self.evidence_identities[source["path"]] = file_identity(protected(source["path"]))
+        require(prior["runId"] == independent["runId"] == terminal["runId"] == index["runId"] == closures["runId"] and
+                prior["process"] == self.manifest["process"] and prior["endpoint"] == self.manifest["endpoint"] and prior["lock"] == self.manifest["lock"] and
+                prior["preservation"] == self.manifest["preservation"] and same(documents["afterPublic"], self.baseline),
+                "The successful Guid experiment and new preparation have different target or preserved-scope identities.")
+        require(terminal.get("status") == "awaiting_independent_attestation" and terminal.get("failure") is None and
+                terminal.get("pendingPresent") is False and terminal.get("uncertain") is False and
+                all(terminal.get(key) is True for key in ("grantSemanticsProven", "originalPolicyRestored", "publicPreserved", "allKnownTokensClosed")) and
+                (terminal.get("requestCount"), terminal.get("normalRequestCount"), terminal.get("cleanupRequestCount")) == (109, 59, 50),
+                "The original Guid worker did not close its actual attempt sequence.")
+        root = Path(prior["outputRoot"])
+        require(index.get("schemaVersion") == 1 and index.get("kind") == "nextup-folder-grant-wire-index" and index.get("root") == str(root) and
+                isinstance(index.get("requests"), list) and len(index["requests"]) == 109 and
+                closures.get("schemaVersion") == 1 and closures.get("kind") == "nextup-folder-grant-authentication-closures" and
+                isinstance(closures.get("closures"), list) and [row.get("actor") for row in closures["closures"]] == ["P", "admin"],
+                "The complete Guid ledger and two actual authentication closures are required.")
+        ledger, tokens, sessions, previous, charges, phase_counts = {}, {}, set(), None, 0, {"normal": 0, "cleanup": 0}
+        for ordinal, row in enumerate(index["requests"], 1):
+            require(set(row) == {"ordinal", "label", "intent", "response"} and row["ordinal"] == ordinal and
+                    isinstance(row["label"], str) and re.fullmatch(r"[A-Za-z0-9_-]{1,88}", row["label"]) and row["label"] not in ledger,
+                    "The Guid index must cover each ordinal and label once.")
+            for kind in ("intent", "response"):
+                require(row[kind]["path"] == str(root / "private" / ("%04d-%s-%s.json" % (ordinal, row["label"], kind))),
+                        "A Guid wire descriptor escaped its exact historical attempt path.")
+            intent, response = (self._evidence(row[kind], sealed=True) for kind in ("intent", "response"))
+            require(intent.get("ordinal") == response.get("ordinal") == ordinal and intent.get("label") == response.get("label") == row["label"] and
+                    intent.get("actor") == response.get("actor") and intent["actor"] in ("admin", "P") and
+                    intent.get("phase") == ("normal" if ordinal <= 59 else "cleanup") and same(intent.get("request"), response.get("request")) and
+                    response.get("completeHttp") is True and response.get("failure") is None and response.get("retainedRawTruncated") is False and
+                    type(response.get("status")) is int and 100 <= response["status"] <= 599,
+                    "A raw Guid response is incomplete or disagrees with its reserved request.")
+            raw = base64.b64decode(response["rawBase64"], validate=True)
+            require(len(raw) == response.get("observedRawBytes") <= 262144 and instant(intent["createdAt"]) <= instant(response["completedAt"]) and
+                    (previous is None or previous <= instant(intent["createdAt"])) and instant(response["completedAt"]) <= instant(independent["capturedAt"]),
+                    "A Guid response exceeded its byte bound or chronological attempt window.")
+            headers = response["headers"]
+            require(len(self.support.bounded_header_prefix(headers)) == len(headers), "A Guid response header collection exceeded its bound.")
+            lengths = [item for key, item in headers if key.lower() == "content-length"]
+            transfers = [item for key, item in headers if key.lower() == "transfer-encoding"]
+            require(not lengths or len(set(lengths)) == 1 and lengths[0].isdigit() and int(lengths[0]) == len(raw) and not transfers,
+                    "A completed Guid response has inconsistent HTTP framing.")
+            required_json = response["status"] == 200 and (intent["request"]["method"] == "GET" or
+                            intent["request"]["route"] == "/emby/Users/AuthenticateByName")
+            body = (strict_json(raw) if required_json else raw.decode("utf-8", errors="strict")) if raw else None
+            actor, request = intent["actor"], intent["request"]
+            require(set(request) == {"method", "route", "headers", "body"} and request["method"] in ("GET", "POST") and
+                    request["route"].startswith("/emby/") and not any(char in request["route"] for char in ("\r", "\n")) and
+                    len({key.lower() for key, item in request["headers"]}) == len(request["headers"]), "A Guid request has an unreviewed shape or repeated context header.")
+            payload = None if intent["payloadBase64"] is None else base64.b64decode(intent["payloadBase64"], validate=True)
+            if request["body"] is None:
+                require(payload is None, "An empty request recorded unexpected wire payload bytes.")
+            elif row["label"] == "login-" + actor:
+                require(set(request["body"]) == {"Username", "Pw"} and request["body"]["Username"] == prior["actors"][actor]["username"] and
+                        isinstance(request["body"]["Pw"], str) and len(request["body"]["Pw"]) >= 32 and
+                        payload == urlencode([("Username", request["body"]["Username"]), ("Pw", request["body"]["Pw"])]).encode(),
+                        "The actual login form bytes disagree with the owned actor credential intent and fixed field order.")
+            else:
+                require(payload == canonical(request["body"]).encode(), "The mutation JSON intent differs from its actual encoded wire payload.")
+            auth = [item for key, item in request["headers"] if key.lower() == "authorization"]
+            selected = [item for key, item in request["headers"] if key.lower() == "x-emby-token"]
+            require(auth == ['Emby Client="Goby Folder Grant Verifier", Device="Linux Fixture Recorder", DeviceId="' +
+                    prior["actors"][actor]["deviceId"] + '", Version="1.0"'], "A Guid request substituted another device or client context.")
+            if row["label"] == "login-" + actor:
+                require(not selected and actor not in tokens and response["status"] == 200 and request["method"] == "POST" and
+                        request["route"] == "/emby/Users/AuthenticateByName" and body["ServerId"] == self.manifest["server"]["id"] and
+                        body["User"]["Id"] == prior["actors"][actor]["userId"] and body["User"]["Name"] == prior["actors"][actor]["username"] and
+                        body["User"]["Policy"]["IsAdministrator"] is (actor == "admin") and
+                        body["SessionInfo"]["UserId"] == body["User"]["Id"] and body["SessionInfo"]["DeviceId"] == prior["actors"][actor]["deviceId"] and
+                        identifier(body["SessionInfo"].get("Id")) and body["SessionInfo"]["Id"] not in sessions and
+                        isinstance(body.get("AccessToken"), str) and body["AccessToken"] and body["AccessToken"] not in tokens.values(),
+                        "The Guid login does not acknowledge one distinct exact actor/token/session.")
+                tokens[actor] = body["AccessToken"]; sessions.add(body["SessionInfo"]["Id"])
+            else:
+                require(actor in tokens and selected == [tokens[actor]] and intent.get("tokenSha256") == digest(tokens[actor].encode()),
+                        "A Guid request used another actor's actual token.")
+            phase_counts[intent["phase"]] += 1
+            charges += len(raw); previous = instant(response["completedAt"])
+            ledger[row["label"]] = {"index": row, "intent": intent, "response": response, "body": body, "raw": raw}
+        require(phase_counts == {"normal": 59, "cleanup": 50} and set(tokens) == {"admin", "P"}, "The actual Guid phase/login counts differ.")
+        actual_closed = []
+        for row in closures["closures"]:
+            actor = row["actor"]
+            require(row["userId"] == prior["actors"][actor]["userId"] and row["deviceId"] == prior["actors"][actor]["deviceId"] and
+                    row["tokenSha256"] == digest(tokens[actor].encode()) and row.get("exactTokenClosed") is True,
+                    "A closure summary does not bind its actual acknowledged login.")
+            normalized = {"userId": row["userId"], "reportedDeviceId": row["deviceId"], "tokenSha256": row["tokenSha256"],
+                          "from": row["from"], "through": row["through"], "login": row["login"]["response"]}
+            for name, method, route, status in (("login", "POST", "/emby/Users/AuthenticateByName", 200),
+                    ("logout", "POST", "/emby/Sessions/Logout", 204), ("rejection", "GET", "/emby/Sessions", 401)):
+                event = ledger[name + "-" + actor]
+                require(row[name] == {key: event["index"][key] for key in ("intent", "response")} and
+                        event["intent"]["request"]["method"] == method and event["intent"]["request"]["route"] == route and
+                        event["response"]["status"] == status and instant(row["from"]) <= instant(event["response"]["completedAt"]) <= instant(row["through"]),
+                        "A real closure response does not match the exact indexed token lifecycle.")
+                if name != "login":
+                    normalized[name] = {"record": row[name]["response"], "intent": row[name]["intent"], "status": status,
+                        "tokenSha256": row["tokenSha256"], "completedAt": event["response"]["completedAt"]}
+            require(row["from"] == ledger["login-" + actor]["intent"]["createdAt"] and
+                    row["through"] == ledger["rejection-" + actor]["response"]["completedAt"] and
+                    ledger["logout-" + actor]["index"]["ordinal"] < ledger["rejection-" + actor]["index"]["ordinal"] and
+                    instant(row["through"]) <= instant(self.release["releasedAt"]), "The actual closure window is not exact and ordered.")
+            actual_closed.append(normalized)
+        require([row for row in self.release["closedAuthentication"] if "login" in row] == actual_closed,
+                "The new release closures must be the exact indexed Guid worker facts.")
+        original, target = documents["originalPolicy"], documents["targetPolicy"]
+        require(set(original) == set(target) and [key for key in sorted(original) if not same(original[key], target[key])] == ["EnabledFolders"] and
+                target.get("EnableAllFolders") is False and target.get("IsAdministrator") is False and
+                target["EnabledFolders"] == [row["guid"] for row in prior["guidFolders"]], "The proven historical policy change was not only the exact Guid pair.")
+        writes = [event for event in ledger.values() if event["intent"]["request"]["method"] not in ("GET",) and
+                  event["intent"]["request"]["route"] not in ("/emby/Users/AuthenticateByName", "/emby/Sessions/Logout")]
+        require([row["index"]["label"] for row in writes] == ["grant-policy", "restore-policy"] and
+                all(row["intent"]["actor"] == "admin" and row["intent"]["request"]["method"] == "POST" and row["response"]["status"] in (200, 204) and
+                    row["intent"]["request"]["route"] == "/emby/Users/" + prior["actors"]["P"]["userId"] + "/Policy" for row in writes) and
+                same(writes[0]["intent"]["request"]["body"], target) and same(writes[1]["intent"]["request"]["body"], original),
+                "Actual wire does not show exactly the two complete policy writes and restoration.")
+        for label, expected in (("original-P-policy", original), ("granted-P-policy", target), ("own-P-profile", target), ("restored-P-policy", original)):
+            event = ledger[label]
+            require(event["intent"]["actor"] == ("P" if label == "own-P-profile" else "admin") and event["intent"]["request"]["method"] == "GET" and
+                    event["intent"]["request"]["route"] == "/emby/Users/" + prior["actors"]["P"]["userId"] and
+                    event["response"]["status"] == 200 and event["body"].get("Id") == prior["actors"]["P"]["userId"] and
+                    same(event["body"].get("Policy"), expected), "The complete actual policy readback does not confirm the acknowledged mutation.")
+        require(set(page(ledger["own-P-views"]["body"])) == {row["libraryId"] for row in prior["guidFolders"]} and
+                page(ledger["restored-own-P-views"]["body"]) == {} and
+                all(ledger[label]["response"]["status"] == 200 for label in ("own-P-views", "restored-own-P-views")),
+                "Own-token views do not demonstrate the grant and its restoration.")
+        old_user = prior["actors"]["P"]["userId"]
+        for label in ("own-P-views", "restored-own-P-views"):
+            require(ledger[label]["intent"]["actor"] == "P" and ledger[label]["intent"]["request"]["method"] == "GET" and
+                    ledger[label]["intent"]["request"]["route"] == "/emby/Users/" + old_user + "/Views", "A Views proof used another actor or route.")
+        for symbol, folder in zip(("LA", "LB"), prior["guidFolders"]):
+            event = ledger["own-P-catalog-" + symbol]
+            require(event["intent"]["actor"] == "P" and event["response"]["status"] == 200 and
+                    event["intent"]["request"]["route"] == PreparationRunner._query(None, old_user, parent=folder["libraryId"]) and
+                    set(page(event["body"])) == set(documents["beforePublic"]["catalog_by_library"][folder["libraryId"]]),
+                    "An own-token catalog did not observe the complete intended library item set.")
+        for item in EPISODES:
+            event = ledger["own-P-detail-" + item]
+            body = event["body"]
+            witness = documents["beforePublic"]["details"]["grant-P"].get(body.get("Id"))
+            require(event["intent"]["actor"] == "P" and event["response"]["status"] == 200 and body.get("Type") == "Episode" and
+                    event["intent"]["request"]["route"] == "/emby/Users/" + old_user + "/Items/" + body["Id"] and
+                    isinstance(witness, dict) and all(body.get(key) == witness.get(key) for key in
+                        ("Id", "Type", "ParentId", "SeriesId", "SeasonId", "IndexNumber", "ParentIndexNumber", "RunTimeTicks")) and
+                    body.get("SeasonId") == body.get("ParentId") and same(body["UserData"], witness["UserData"]) and
+                    self.planner.zero_state(self.planner.userdata_fact(body)), "The first own-token episode proof differs from its exact full before witness or zero history.")
+        snapshot_labels = {"before": [], "after": []}
+        for prefix in ("before", "after"):
+            snapshot = documents[prefix + "Public"]
+            def get(label, actor, route):
+                snapshot_labels[prefix].append(label)
+                event = ledger[label]
+                require(event["intent"]["actor"] == actor == "admin" and event["intent"]["request"]["method"] == "GET" and
+                        event["intent"]["request"]["route"] == route and event["response"]["status"] == 200,
+                        "A full snapshot document was not observed under its exact administrator token.")
+                return deepcopy(event["body"])
+            context = SimpleNamespace(manifest={"server": self.manifest["server"], "preservation": prior["preservation"]},
+                user_ids={actor: row["userId"] for actor, row in prior["actors"].items()}, libraries={}, tokens=tokens,
+                authority=SimpleNamespace(baseline=snapshot), _get=get, _save=lambda name, value: None, utc_now=lambda: snapshot["captured_at"])
+            context._query = lambda user, **kwargs: PreparationRunner._query(context, user, **kwargs)
+            context._devices = lambda label: devices_page(get(label, "admin", "/emby/Devices"))
+            require(same(PreparationRunner._snapshot(context, prefix), snapshot), "The complete public snapshot is not reproduced by its 43 actual raw GETs.")
+        expected_labels = ["login-admin", *snapshot_labels["before"], "original-P-policy", "grant-policy", "granted-P-policy", "login-P",
+            "own-P-profile", "own-P-views", "own-P-selectable-folders", "own-P-catalog-LA", "own-P-catalog-LB",
+            *["own-P-detail-" + item for item in EPISODES], "restore-policy", "restored-P-policy", "restored-own-P-views",
+            *snapshot_labels["after"], "logout-P", "rejection-P", "logout-admin", "rejection-admin"]
+        require(list(ledger) == expected_labels, "The raw Guid ledger is not the exact ordered 109-request experiment.")
+        selectable = ledger["own-P-selectable-folders"]["intent"]
+        require(selectable["actor"] == "P" and selectable["request"]["method"] == "GET" and
+                selectable["request"]["route"] == "/emby/Library/SelectableMediaFolders", "The independent selectable observation used another principal or endpoint.")
+        before, after, changes = documents["beforePublic"], documents["afterPublic"], []
+        require(len(before["devices"]) == 92 and len(after["devices"]) == 93 and
+                len(after["roster"]) == 8 and len(after["libraries"]) == 10 and sum(map(len, after["details"].values())) == 12,
+                "The actual complete Guid snapshots have another retained population.")
+        for key in ("server", "configuration", "libraries", "catalog_by_library", "preferences", "items_by_user", "details"):
+            require(same(before[key], after[key]), "The actual Guid roundtrip changed a preserved full public section.")
+        windows = {row["userId"]: row for row in closures["closures"]}
+        require(set(before["roster"]) == set(after["roster"]), "The Guid roundtrip changed the old account roster.")
+        for user in sorted(before["roster"]):
+            old, current = before["roster"][user], after["roster"][user]
+            allowed = {"LastLoginDate", "LastActivityDate"} if user in windows else set()
+            require(same({key: val for key, val in old.items() if key not in allowed}, {key: val for key, val in current.items() if key not in allowed}),
+                    "The Guid roundtrip changed a retained full account policy or configuration.")
+            for key in sorted(allowed):
+                if old.get(key) == current.get(key) and (key in old) == (key in current): continue
+                require(instant(windows[user]["from"]) <= instant(current[key]) <= instant(after["captured_at"]), "A Guid authentication date escaped its real login window.")
+                changes.append({"kind": "owned-authentication-time", "userId": user, "field": key})
+        device_windows = {row["deviceId"]: row for row in closures["closures"]}
+        require(set(before["devices"]) <= set(after["devices"]), "An old device disappeared during the Guid roundtrip.")
+        for key in sorted(after["devices"]):
+            current, old = after["devices"][key], before["devices"].get(key)
+            if old is not None:
+                require(same({key: val for key, val in old.items() if key != "DateLastActivity"},
+                             {key: val for key, val in current.items() if key != "DateLastActivity"}), "A retained Guid-roundtrip device structure changed.")
+            if old is None or old.get("DateLastActivity") != current.get("DateLastActivity"):
+                window = device_windows.get(current.get("ReportedDeviceId"))
+                require(window is not None and current.get("LastUserId") == window["userId"] and
+                        instant(window["from"]).replace(microsecond=0) <= instant(current["DateLastActivity"]) <= instant(after["captured_at"]),
+                        "An unowned device or out-of-window device date changed during the Guid roundtrip.")
+                changes.append({"kind": "owned-device-time", "deviceId": key})
+        require(documents["publicPreservation"] == {"preserved": True, "allowedAuthenticationChanges": changes,
+                "beforeTokenSha256": before["credential_context"]["token_sha256"], "afterTokenSha256": after["credential_context"]["token_sha256"]},
+                "The preservation report is not reproduced by the actual full before/after DTOs.")
+        unit = independent["unit"]
+        properties = unit["properties"]
+        expected_group = "/system.slice/" + unit["name"]
+        require(re.fullmatch(r"[A-Za-z0-9_.@-]+\.service", unit["name"]) and unit["name"] not in {row["name"] for row in self.release["units"]} and
+                re.fullmatch(r"[0-9a-f]{32}", properties["InvocationID"]) and properties["MainPID"] == "0" and properties["Result"] == "success" and
+                properties["ExecMainStatus"] == "0" and properties["RemainAfterExit"] == "yes" and
+                (properties["ActiveState"], properties["SubState"]) in (("active", "exited"), ("inactive", "dead")) and
+                properties["ControlGroup"] in ("", expected_group) and unit["cgroupPath"] == "/sys/fs/cgroup" + expected_group,
+                "The latest Guid worker lacks its exact completed invocation and cgroup proof.")
+        require(properties.get("Type") == "oneshot" and properties["ExecStart"].count("argv[]=") == 1 and
+                shlex.split(properties["ExecStart"].split("argv[]=", 1)[1].split(";", 1)[0].strip()) ==
+                ["/usr/bin/python3", "-I", "-B", source["path"], independent["input"]["path"], independent["input"]["sha256"]],
+                "The independently completed unit did not execute the exact recorded owned source and input.")
+        self.grant_unit = {"name": unit["name"], "invocationId": properties["InvocationID"], "cgroupPath": unit["cgroupPath"],
+            "properties": {key: properties[key] for key in ("ActiveState", "SubState", "MainPID", "Result", "ControlGroup", "ExecMainStatus", "RemainAfterExit", "Type", "ExecStart")}}
+
     def _units(self):
-        for row in self.release["units"]:
+        for row in [*self.release["units"], self.grant_unit]:
             names = ("InvocationID", *row["properties"])
             result = subprocess.run(["/usr/bin/systemctl", "show", row["name"], *[part for name in names for part in ("-p", name)]],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, check=False,
@@ -534,6 +787,9 @@ class Authority:
         require(self.support.process_identity(self.manifest["process"]) == self.manifest["process"], "The original metadata or existing proxy identity changed.")
         for row in (*self.manifest["sources"].values(), *self.manifest["inputs"].values()):
             require(digest(read_owned(row["path"])) == row["sha256"], "A frozen owned input changed during preparation.")
+        for path, expected in self.evidence_identities.items():
+            require(file_identity(protected(path, private=Path(path).suffix != ".py")) == expected,
+                    "A previously verified raw release/provenance file changed during preparation.")
         approved = self.manifest["media"]["approvedReceipt"]
         require(digest(read_owned(approved["path"])) == approved["sha256"], "The approved synthetic media manifest changed during preparation.")
         source = self.manifest["media"]["source"]
@@ -760,6 +1016,10 @@ class PreparationRunner:
             require(body is None, "Read requests cannot send a body.")
             if actor == "admin" and path in ("/emby/System/Info/Public", "/emby/Users", "/emby/Library/VirtualFolders/Query", "/emby/Devices", "/emby/System/Configuration"):
                 require(not query, "A public preservation document cannot add query flags.")
+                return
+            if actor == "admin" and path == "/emby/Library/SelectableMediaFolders":
+                require(not query and self.phase == "mapping" and set(self.libraries) == {"LA", "LB"},
+                        "Selectable folders are only one explicit new-library mapping observation.")
                 return
             for user in user_ids:
                 require(actor == "admin" or user != self.user_ids.get(actor) or actor in ("P", "Q"), "An ordinary user binding differs.")
@@ -1103,12 +1363,15 @@ class PreparationRunner:
             require(same(rows, {key: val for key, val in after["items_by_user"][user].items() if key in old_ids}), "An old per-user item projection changed.")
         for user, row in before["roster"].items():
             current = after["roster"][user]
-            allowed = {"LastLoginDate", "LastActivityDate"} if user == self.user_ids["admin"] else set()
+            historical = [entry for entry in self.authority.release["closedAuthentication"] if prior and entry["userId"] == user]
+            allowed = {"LastLoginDate", "LastActivityDate"} if user == self.user_ids["admin"] or historical else set()
             require(same({key: val for key, val in row.items() if key not in allowed}, {key: val for key, val in current.items() if key not in allowed}),
                     "An old account policy/configuration or unrelated field changed.")
             for key in sorted(allowed):
                 if row.get(key) == current.get(key) and (key in row) == (key in current): continue
-                require(instant(before["captured_at"]) <= instant(current[key]) <= instant(after["captured_at"]), "An owned admin authentication date escaped the snapshot interval.")
+                require(user == self.user_ids["admin"] and instant(before["captured_at"]) <= instant(current[key]) <= instant(after["captured_at"]) or
+                        any(instant(entry["from"]) <= instant(current[key]) <= instant(entry["through"]) for entry in historical),
+                        "An authentication date escaped its exact current or already closed login window.")
                 changes.append({"kind": "owned-authentication-time", "userId": user, "field": key})
         owned_devices = {row["deviceId"]: role for role, row in self.manifest["actors"].items() if role in self.tokens}
         prior_devices = {row["reportedDeviceId"]: row for row in self.authority.release["closedAuthentication"]} if prior else {}
@@ -1134,7 +1397,8 @@ class PreparationRunner:
                 require(old is not None and row.get("LastUserId") == closed["userId"], "A historical closed device changed owner or appeared newly.")
                 low, high = closed["from"], closed["through"]
             if old is None or old.get("DateLastActivity") != row.get("DateLastActivity"):
-                require(instant(low) <= instant(row["DateLastActivity"]) <= instant(high), "An authentication device update escaped its exact observed window.")
+                require(instant(low).replace(microsecond=0) <= instant(row["DateLastActivity"]) <= instant(high),
+                        "An authentication device update escaped its exact observed whole-second window.")
                 changes.append({"kind": "owned-device-time" if owned else "prior-closed-device-time", "deviceId": key})
         return {"preserved": True, "allowedAuthenticationChanges": changes,
                 "beforeTokenSha256": before["credential_context"]["token_sha256"], "afterTokenSha256": after["credential_context"]["token_sha256"]}
@@ -1224,7 +1488,7 @@ class PreparationRunner:
             selected = next(iter(new.values()))
             self._verify_library(selected, symbol)
             item = selected["ItemId"]
-            self.libraries[symbol] = {"libraryId": item, "policyFolderId": item, "collectionType": "tvshows", "owned": True}
+            self.libraries[symbol] = {"libraryId": item, "collectionType": "tvshows", "owned": True}
             self._complete_ownership(event, kind="library", actor="admin",
                                      owner={"symbol": symbol, "libraryId": item, "rootPath": self.manifest["media"]["roots"][symbol]})
         for symbol in ("LA", "LB"):
@@ -1265,6 +1529,9 @@ class PreparationRunner:
 
     def _map_roots(self):
         views = page(self._get("admin-views", "admin", "/emby/Users/" + self.user_ids["admin"] + "/Views"))
+        selectable = self._get("admin-selectable-folders", "admin", "/emby/Library/SelectableMediaFolders")
+        require(isinstance(selectable, list) and 0 < len(selectable) <= 64 and all(isinstance(row, dict) for row in selectable),
+                "A complete bounded selectable-folder observation is required.")
         for symbol in ("LA", "LB"):
             selected = [row for row in views.values() if row.get("Name") == self.manifest["libraries"][symbol]["name"] and row.get("CollectionType") == "tvshows"]
             require(len(selected) == 1, "The new TV library lacks one actual public view.")
@@ -1276,6 +1543,19 @@ class PreparationRunner:
                     "The series' public parent is not the exact new native source root.")
             require(view.get("Id") == selected[0]["Id"] and (view["Id"] == self.libraries[symbol]["libraryId"] or
                     view.get("Path") == root or view.get("ParentId") == source["Id"]), "The view-to-library/source relation is not established publicly.")
+            grant = [row for row in selectable if row.get("Id") == self.libraries[symbol]["libraryId"]]
+            require(len(grant) == 1, "The newly owned library lacks one unique selectable identity.")
+            grant = grant[0]
+            guid = grant.get("Guid")
+            require(isinstance(guid, str) and re.fullmatch(r"[0-9a-f]{32}", guid) and uuid.UUID(guid).hex == guid and
+                    sum(row.get("Guid") == guid for row in selectable) == 1 and grant.get("Name") == self.manifest["libraries"][symbol]["name"] and
+                    grant.get("IsUserAccessConfigurable") is True and isinstance(grant.get("SubFolders"), list) and len(grant["SubFolders"]) == 1,
+                    "The selected policy Guid is missing, duplicated, or not the owned configurable library.")
+            folder = grant["SubFolders"][0]
+            require(isinstance(folder, dict) and folder.get("Id") == source["Id"] and folder.get("Path") == root and
+                    folder.get("IsUserAccessConfigurable") is True and guid not in {self.libraries[symbol]["libraryId"], selected[0]["Id"], source["Id"]},
+                    "The actual selectable Guid does not bind the new native source root and path.")
+            self.libraries[symbol]["policyFolderId"] = guid
         require(all(self.libraries["LA"][key] != self.libraries["LB"][key] for key in ("libraryId", "viewId", "sourceRootId", "policyFolderId")),
                 "The two TV libraries must have separate management/view/source/policy identities.")
         self._persist()

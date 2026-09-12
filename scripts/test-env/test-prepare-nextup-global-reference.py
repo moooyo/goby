@@ -3,7 +3,8 @@
 
 Each case owns a fresh temporary scope, copied reviewed source bytes, synthetic
 credentials and public state, and an in-memory transport. No reference service,
-original implementation, existing evidence root, or actual process is observed.
+original implementation or actual process is observed. An explicit optional
+audit mode reads pinned completed owned evidence and performs no HTTP.
 Run only from an authorized Linux SSH session with explicit source descriptors.
 """
 
@@ -25,7 +26,7 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit
 import uuid
 
 
@@ -162,9 +163,10 @@ class PreparationFixture:
             testcase.addCleanup(sys.modules.pop, module.__name__, None)
         self.server_id = "synthetic-reference"
         self.actor_ids = {"admin": "old-user-0", "P": "synthetic-user-P", "Q": "synthetic-user-Q"}
-        self.old_user_ids = ["old-user-" + str(index) for index in range(6)]
-        self.old_library_ids = ["old-library-" + str(index) for index in range(8)]
+        self.old_user_ids = ["old-user-" + str(index) for index in range(8)]
+        self.old_library_ids = ["old-library-" + str(index) for index in range(10)]
         self.library_ids = {library: "synthetic-library-" + library for library in ("LA", "LB")}
+        self.policy_guids = {"LA": "a123456789abcdef0123456789abcdef", "LB": "b123456789abcdef0123456789abcdef"}
         self.view_ids = {library: "synthetic-view-" + library for library in ("LA", "LB")}
         self.root_ids = {library: "synthetic-root-" + library for library in ("LA", "LB")}
         self.library_names = {library: "Synthetic Library " + library for library in ("LA", "LB")}
@@ -235,7 +237,7 @@ class PreparationFixture:
                 actors[actor]["matrixDeviceId"] = "synthetic-matrix-device-" + actor
         budgets = {"requestSeconds": 5, "normalSeconds": 1200, "cleanupSeconds": 600,
                    "requestBytes": 32768, "responseBytes": 65536,
-                   "totalResponseBytes": 16 * 1024 * 1024, "cleanupResponseBytes": 6 * 1024 * 1024}
+                   "totalResponseBytes": 24 * 1024 * 1024, "cleanupResponseBytes": 7 * 1024 * 1024}
         self.manifest = {"schemaVersion": 1, "runId": "synthetic-preparation", "target": "reference", "ownerUid": 0,
             "server": {"id": self.server_id, "version": "synthetic-version"},
             "endpoint": {"scheme": "http", "host": "127.0.0.1", "port": 18197}, "process": self.process,
@@ -247,7 +249,7 @@ class PreparationFixture:
             "actors": actors, "libraries": {library: {"name": self.library_names[library],
                                                      "seriesName": self.series_names[library]} for library in ("LA", "LB")},
             "preservation": {"userIds": self.old_user_ids, "libraryIds": self.old_library_ids,
-                "detailRoutes": [{"group": group, "userId": "old-user-0" if group == "admin" else "old-user-1", "itemId": item}
+                "detailRoutes": [{"group": group, "userId": "old-user-0" if group == "admin" else "old-user-6" if group == "grant-P" else "old-user-1", "itemId": item}
                                  for group, rows in self.baseline["details"].items() for item in rows]},
             "budgets": budgets, "matrixBudgets": deepcopy(budgets), "lifecycleSeparationSeconds": 2}
 
@@ -264,7 +266,7 @@ class PreparationFixture:
     def profile(self, actor):
         return {"Id": self.actor_ids[actor], "Name": self.credentials[actor]["username"],
             "Policy": {"IsAdministrator": actor == "admin", "EnableAllFolders": actor == "admin",
-                       "EnabledFolders": [] if actor == "admin" else list(self.library_ids.values()), "IsDisabled": False},
+                       "EnabledFolders": [] if actor == "admin" else list(self.policy_guids.values()), "IsDisabled": False},
             "Configuration": {"Order": ["tv"]}}
 
     def make_baseline(self):
@@ -287,7 +289,8 @@ class PreparationFixture:
             "items_by_user": {user: deepcopy(items) for user in self.old_user_ids},
             "preferences": {user: {"SyntheticPreference": index} for index, user in enumerate(self.old_user_ids)},
             "details": {"admin": {key: deepcopy(items[key]) for key in list(items)[:4]},
-                        "viewer": {key: deepcopy(items[key]) for key in list(items)[:2]}},
+                        "viewer": {key: deepcopy(items[key]) for key in list(items)[:2]},
+                        "grant-P": {key: deepcopy(items[key]) for key in list(items)[:6]}},
             "devices": {"old-device-0": {"Id": "old-device-0", "ReportedDeviceId": "old-reported-device-0",
                 "LastUserId": "old-user-1", "LastUserName": roster["old-user-1"]["Name"],
                 "AppName": "Old Synthetic Client", "AppVersion": "0.1", "Name": "Old Synthetic Device",
@@ -437,6 +440,13 @@ class FakeWire:
         if route == "/emby/Library/VirtualFolders/Query" and method == "GET":
             return self.wire(200, {"Items": list(deepcopy(self.libraries).values()),
                                    "TotalRecordCount": len(self.libraries)})
+        if route == "/emby/Library/SelectableMediaFolders" and method == "GET":
+            if actor != "admin":
+                raise AssertionError("Preparation mapping requires the existing administrator token.")
+            return self.wire(200, [{"Id": fixture.library_ids[library], "Name": fixture.library_names[library],
+                "Guid": fixture.policy_guids[library], "IsUserAccessConfigurable": True,
+                "SubFolders": [{"Id": fixture.root_ids[library], "Path": fixture.media[library]["rootPath"],
+                    "Name": library, "IsUserAccessConfigurable": True}]} for library in ("LA", "LB")])
         if route == "/emby/Library/VirtualFolders" and method == "POST":
             library = next((name for name in ("LA", "LB")
                             if fixture.library_names[name] == body.get("Name")), None)
@@ -486,7 +496,7 @@ class FakeWire:
                 self.users[user_id]["Policy"] = deepcopy(body)
                 return self.wire(204)
             if len(parts) == 5 and parts[4] == "Views" and method == "GET":
-                rows = fixture.views(actor)
+                rows = fixture.views(actor) if actor == "admin" or set(self.users[user_id]["Policy"].get("EnabledFolders", [])) == set(fixture.policy_guids.values()) else []
                 return self.wire(200, {"Items": rows, "TotalRecordCount": len(rows)})
             if len(parts) == 5 and parts[4] == "Items" and method == "GET":
                 if "ParentId" in query:
@@ -604,12 +614,12 @@ class PlanGuards(GuardCase):
         observed["actors"]["P"]["username"] = "Changed Only In Returned Copy"
         self.assertNotEqual(observed, original)
         self.assertFalse(self.fixture.output.exists())
-        self.assertEqual(plan["maximumRequests"], 320)
-        self.assertEqual(plan["normalLimit"], 240)
-        self.assertEqual(plan["cleanupReserve"], 80)
-        self.assertEqual(plan["normalMaximum"], 232)
-        self.assertEqual(plan["successMaximumIncludingLogout"], 238)
-        self.assertEqual(plan["cleanupMaximum"], 77)
+        self.assertEqual(plan["maximumRequests"], 380)
+        self.assertEqual(plan["normalLimit"], 280)
+        self.assertEqual(plan["cleanupReserve"], 100)
+        self.assertEqual(plan["normalMaximum"], 257)
+        self.assertEqual(plan["successMaximumIncludingLogout"], 263)
+        self.assertEqual(plan["cleanupMaximum"], 89)
         self.assertEqual(plan["calibrations"], [["P", "A1", "partial"], ["P", "A1", "complete"],
                                                 ["Q", "B1", "partial"], ["Q", "B1", "complete"]])
 
@@ -678,7 +688,7 @@ class PlanGuards(GuardCase):
                     with self.subTest(family=family, key=key, value=value):
                         self.reject(lambda manifest: manifest[family].update({key: value}))
         self.reject(lambda manifest: manifest["budgets"].update(responseBytes=1024 * 1024 + 1))
-        self.reject(lambda manifest: manifest["budgets"].update(cleanupResponseBytes=80 * manifest["budgets"]["responseBytes"]))
+        self.reject(lambda manifest: manifest["budgets"].update(cleanupResponseBytes=100 * manifest["budgets"]["responseBytes"]))
         self.reject(lambda manifest: manifest["matrixBudgets"].update(totalResponseBytes=384 * 1024 * 1024))
         self.reject(lambda manifest: manifest["matrixBudgets"].update(cleanupResponseBytes=81 * 1024 * 1024))
 
@@ -705,8 +715,8 @@ class PipelineGuards(GuardCase):
         self.assertEqual(result["status"], "awaiting_independent_attestation")
         self.assertIsNone(result["ownershipPending"])
         self.assertFalse(result["uncertain"])
-        self.assertLessEqual(result["requestCount"], 238)
-        self.assertLessEqual(result["normalRequestCount"], 232)
+        self.assertLessEqual(result["requestCount"], 263)
+        self.assertLessEqual(result["normalRequestCount"], 257)
         self.assertEqual(result["cleanupRequestCount"], 6)
         self.assertEqual(len(wire.calls), result["requestCount"])
         self.assertEqual(wire.revoked, {"admin", "P", "Q"})
@@ -808,7 +818,7 @@ class PipelineGuards(GuardCase):
                 self.assertTrue(all(call["headers"]["X-Emby-Token"] == wire.tokens[actor] for call in calls))
             profile = wire.users[self.fixture.actor_ids[actor]]
             self.assertIs(profile["Policy"]["EnableAllFolders"], False)
-            self.assertEqual(set(profile["Policy"]["EnabledFolders"]), set(self.fixture.library_ids.values()))
+            self.assertEqual(set(profile["Policy"]["EnabledFolders"]), set(self.fixture.policy_guids.values()))
 
     def test_logout_and_rejection_preserve_each_exact_original_token(self):
         runner, wire, unused_authority = self.runner()
@@ -1611,8 +1621,8 @@ class DispatchBudgetGuards(GuardCase):
 
     def test_normal_count_cannot_spend_reserved_cleanup_capacity(self):
         runner, wire, unused_authority = self.prepared_dispatch()
-        runner.normal_count = 240
-        runner.count = 240
+        runner.normal_count = 280
+        runner.count = 280
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1621,7 +1631,7 @@ class DispatchBudgetGuards(GuardCase):
         runner, wire, unused_authority = self.prepared_dispatch()
         runner.phase = "cleanup"
         runner.cleanup_started = self.clock()
-        runner.count = 320
+        runner.count = 380
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1630,14 +1640,14 @@ class DispatchBudgetGuards(GuardCase):
         runner, wire, unused_authority = self.prepared_dispatch()
         runner.phase = "cleanup"
         runner.cleanup_started = self.clock()
-        runner.cleanup_count = 80
+        runner.cleanup_count = 100
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
 
     def test_phase_limit_cannot_use_unused_other_phase_slots(self):
         runner, wire, unused_authority = self.prepared_dispatch()
-        runner.phase_counts["before"] = 32
+        runner.phase_counts["before"] = 44
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1723,6 +1733,382 @@ class DispatchBudgetGuards(GuardCase):
         self.assertEqual(len(wire.calls), 0)
 
 
+class GuidMappingGuards(GuardCase):
+    def reject_mapping(self, mutate):
+        runner, wire, unused = self.runner()
+        def response_hook(current, call, response):
+            if call["request"].route != "/emby/Library/SelectableMediaFolders": return None
+            body = json.loads(response.raw)
+            mutate(body)
+            return current.wire(200, body)
+        wire.response_hook = response_hook
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertFalse(any(call["request"].route == "/emby/Users/New" for call in wire.calls))
+
+    def test_missing_guid_blocks_account_creation(self):
+        self.reject_mapping(lambda rows: rows[0].pop("Guid"))
+
+    def test_duplicate_guid_blocks_account_creation(self):
+        self.reject_mapping(lambda rows: rows[1].update(Guid=rows[0]["Guid"]))
+
+    def test_wrong_owned_root_blocks_account_creation(self):
+        self.reject_mapping(lambda rows: rows[0]["SubFolders"][0].update(Path="/synthetic/foreign-root"))
+
+    def test_numeric_management_ids_are_not_policy_guids(self):
+        self.reject_mapping(lambda rows: rows[0].update(Guid=rows[0]["Id"]))
+
+    def test_fake_browse_access_requires_guid_pair_instead_of_policy_echo(self):
+        unused, wire, unused_authority = self.runner()
+        actor, user = "P", self.fixture.actor_ids["P"]
+        wire.users[user] = self.fixture.profile(actor)
+        request = SimpleNamespace(method="GET", route="/emby/Users/" + user + "/Views", actor=actor, label="synthetic-own-views")
+        wire.users[user]["Policy"]["EnabledFolders"] = list(self.fixture.library_ids.values())
+        denied = wire.respond(request, {"X-Emby-Token": wire.tokens[actor]}, None)
+        self.assertEqual(self.P.page(json.loads(denied.raw)), {})
+        wire.users[user]["Policy"]["EnabledFolders"] = list(self.fixture.policy_guids.values())
+        allowed = wire.respond(request, {"X-Emby-Token": wire.tokens[actor]}, None)
+        self.assertEqual(set(self.P.page(json.loads(allowed.raw))), set(self.fixture.view_ids.values()))
+
+
+def add_grant_verification_fixture(fixture, release):
+    """Add self-owned synthetic Guid evidence without observing a real service."""
+    import base64
+    from copy import deepcopy
+    from datetime import datetime, timedelta
+    import hashlib
+    import json
+    from pathlib import Path
+    import shlex
+    from urllib.parse import urlencode
+    import uuid
+
+    def encode(value):
+        return (json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode()
+
+    def checksum(raw):
+        return hashlib.sha256(raw).hexdigest()
+
+    def save(path, value):
+        fixture.write(path, encode(value))
+        return fixture.descriptor(path)
+
+    manifest = fixture.manifest
+    baseline = deepcopy(fixture.baseline)
+    preservation = manifest["preservation"]
+    assert len(preservation["userIds"]) == 8
+    assert len(preservation["libraryIds"]) == 10
+    assert len(preservation["detailRoutes"]) == 12
+    assert set(baseline["roster"]) == set(preservation["userIds"])
+    assert set(baseline["libraries"]) == set(preservation["libraryIds"])
+    admin_id = manifest["actors"]["admin"]["userId"]
+    viewer_id = "old-user-6"
+    assert admin_id == "old-user-0" and viewer_id in baseline["roster"]
+    assert not {fixture.actor_ids[actor] for actor in ("P", "Q")}.intersection(baseline["roster"])
+    witness_routes = [row for row in preservation["detailRoutes"] if row["group"] == "grant-P"]
+    assert len(witness_routes) == 6 and all(row["userId"] == viewer_id for row in witness_routes)
+    assert len({row["itemId"] for row in witness_routes}) == 6
+
+    root = Path(manifest["sealedRoots"][0]) / "synthetic-grant-verification"
+    assert fixture.root in root.parents
+    root.mkdir(mode=0o700)
+    private = root / "private"
+    private.mkdir(mode=0o700)
+    source_bytes = Path(PREPARATION_SOURCE).with_name("verify-folder-grant-01.py").read_bytes()
+    assert checksum(source_bytes) == "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971"
+    source_path = root / "verify-folder-grant-01.py"
+    fixture.write(source_path, source_bytes)
+    source_descriptor = fixture.descriptor(source_path)
+    run_id = "synthetic-folder-grant-verification"
+    base = datetime.fromisoformat(baseline["captured_at"].replace("Z", "+00:00")) - timedelta(minutes=2)
+
+    def created_at(ordinal):
+        return (base + timedelta(seconds=ordinal / 2)).isoformat()
+
+    def completed_at(ordinal):
+        return (base + timedelta(seconds=ordinal / 2, milliseconds=125)).isoformat()
+
+    def snapshot_at(ordinal):
+        return (base + timedelta(seconds=ordinal / 2, milliseconds=250)).isoformat()
+
+    actors = {
+        actor: {"userId": user, "username": baseline["roster"][user]["Name"],
+                "credentialRef": "synthetic-grant-credential-" + actor,
+                "deviceId": "synthetic-grant-device-" + actor}
+        for actor, user in (("admin", admin_id), ("P", viewer_id))
+    }
+    tokens = {actor: "synthetic-grant-token-" + actor + "-" + actor[0] * 40 for actor in actors}
+    grants = [
+        {"libraryId": preservation["libraryIds"][-2], "guid": "11111111111141118111111111111111"},
+        {"libraryId": preservation["libraryIds"][-1], "guid": "22222222222242228222222222222222"},
+    ]
+    original = deepcopy(baseline["roster"][viewer_id]["Policy"])
+    original.update(IsAdministrator=False, EnableAllFolders=False,
+                    EnabledFolders=[row["libraryId"] for row in grants], IsDisabled=False)
+    target = deepcopy(original)
+    target["EnabledFolders"] = [row["guid"] for row in grants]
+    baseline["roster"][viewer_id]["Policy"] = deepcopy(original)
+    episode_ids = {row["itemId"] for row in witness_routes}
+    for rows in baseline["catalog_by_library"].values():
+        for item_id in episode_ids:
+            rows.pop(item_id, None)
+    episode_bodies = {}
+    for index, route in enumerate(witness_routes):
+        symbol = ("A", "B")[index // 3] + str(index % 3 + 1)
+        library = grants[index // 3]["libraryId"]
+        season, episode = ((1, 1), (1, 2), (2, 1))[index % 3]
+        series_id = "synthetic-grant-series-" + symbol[0]
+        season_id = "synthetic-grant-season-" + symbol[0] + str(season)
+        media_path = str(Path(baseline["libraries"][library]["Locations"][0]) /
+                         ("Synthetic Grant Series " + symbol[0]) / ("Season %02d" % season) /
+                         ("Synthetic Grant " + symbol + ".mp4"))
+        body = {"Id": route["itemId"], "Name": "Synthetic Grant Episode " + symbol,
+            "Type": "Episode", "IsFolder": False, "ParentId": season_id, "SeasonId": season_id,
+            "SeriesId": series_id, "IndexNumber": episode, "ParentIndexNumber": season,
+            "RunTimeTicks": 6_000_000_000, "Path": media_path,
+            "MediaSources": [{"Id": "synthetic-grant-source-" + symbol, "Path": media_path,
+                              "RunTimeTicks": 6_000_000_000}],
+            "MediaStreams": [{"Type": "Video", "AverageFrameRate": 30, "RealFrameRate": 30}],
+            "UserData": {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0,
+                         "LastPlayedDate": None, "IsFavorite": False, "Key": "synthetic-grant-" + symbol}}
+        episode_bodies[symbol] = deepcopy(body)
+        baseline["catalog_by_library"][library][route["itemId"]] = deepcopy(body)
+        for rows in baseline["items_by_user"].values():
+            rows[route["itemId"]] = deepcopy(body)
+        for rows in baseline["details"].values():
+            if route["itemId"] in rows:
+                rows[route["itemId"]] = deepcopy(body)
+        baseline["details"]["grant-P"][route["itemId"]] = deepcopy(body)
+
+    assert len(baseline["devices"]) <= 91
+    retained_index = 0
+    while len(baseline["devices"]) < 91:
+        registry = "synthetic-grant-retained-registry-%03d" % retained_index
+        reported = "synthetic-grant-retained-device-%03d" % retained_index
+        retained_index += 1
+        if registry in baseline["devices"] or any(
+                row["ReportedDeviceId"] == reported for row in baseline["devices"].values()):
+            continue
+        user_id = preservation["userIds"][retained_index % len(preservation["userIds"])]
+        baseline["devices"][registry] = {"Id": registry, "ReportedDeviceId": reported,
+            "LastUserId": user_id, "LastUserName": baseline["roster"][user_id]["Name"],
+            "AppName": "Synthetic Retained Client", "AppVersion": "0.1", "Name": "Synthetic Retained Device",
+            "DateLastActivity": (base - timedelta(minutes=1)).isoformat()}
+
+    def device(actor, ordinal):
+        return {"Id": "synthetic-grant-registry-" + actor, "ReportedDeviceId": actors[actor]["deviceId"],
+            "LastUserId": actors[actor]["userId"], "LastUserName": actors[actor]["username"],
+            "AppName": "Goby Folder Grant Verifier", "AppVersion": "1.0", "Name": "Linux Fixture Recorder",
+            "DateLastActivity": completed_at(ordinal)}
+
+    before = deepcopy(baseline)
+    before["captured_at"] = snapshot_at(44)
+    before["credential_context"] = {"channel": "controller_api", "authenticated_user_id": admin_id,
+        "token_sha256": checksum(tokens["admin"].encode()), "user_id_semantics": "subject_projection"}
+    before["devices"]["synthetic-grant-registry-admin"] = device("admin", 1)
+    after = deepcopy(before)
+    after["captured_at"] = snapshot_at(105)
+    after["devices"]["synthetic-grant-registry-P"] = device("P", 48)
+    assert len(before["devices"]) == 92 and len(after["devices"]) == 93
+
+    fields = "Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear"
+
+    def query(user_id, *, parent=None, ids=None):
+        parameters = {"Recursive": "true", "Fields": fields, "EnableUserData": "true",
+                      "EnableTotalRecordCount": "true", "Limit": "256"}
+        if parent is not None:
+            parameters["ParentId"] = parent
+        if ids is not None:
+            parameters["Ids"] = ",".join(sorted(ids))
+        return "/emby/Users/" + user_id + "/Items?" + urlencode(parameters)
+
+    def page(rows, *, devices=False):
+        values = [deepcopy(rows[key]) for key in sorted(rows)]
+        return {"Items": values, "TotalRecordCount": 0 if devices else len(values)}
+
+    events = []
+
+    def add(label, actor, method, route, response_body=None, *, body=None, status=200, form=False):
+        events.append({"label": label, "actor": actor, "method": method, "route": route,
+                       "responseBody": deepcopy(response_body), "body": deepcopy(body), "status": status, "form": form})
+
+    def login(actor, ordinal):
+        user = deepcopy(before["roster"][actors[actor]["userId"]])
+        user["Policy"] = deepcopy(target if actor == "P" else user["Policy"])
+        user["LastLoginDate"] = created_at(ordinal)
+        add("login-" + actor, actor, "POST", "/emby/Users/AuthenticateByName",
+            {"ServerId": manifest["server"]["id"], "User": user, "AccessToken": tokens[actor],
+             "SessionInfo": {"Id": "synthetic-grant-session-" + actor, "UserId": user["Id"],
+                             "DeviceId": actors[actor]["deviceId"]}},
+            body={"Username": actors[actor]["username"], "Pw": "synthetic-grant-password-" + actor + "-" + "x" * 40}, form=True)
+
+    def snapshot(prefix, value):
+        add(prefix + "-server", "admin", "GET", "/emby/System/Info/Public", value["server"])
+        add(prefix + "-users", "admin", "GET", "/emby/Users", [value["roster"][key] for key in sorted(value["roster"])])
+        add(prefix + "-libraries", "admin", "GET", "/emby/Library/VirtualFolders/Query", page(value["libraries"]))
+        all_ids = {item for rows in value["catalog_by_library"].values() for item in rows}
+        for index, library in enumerate(sorted(value["libraries"])):
+            add(prefix + "-catalog-" + str(index), "admin", "GET", query(admin_id, parent=library),
+                page(value["catalog_by_library"][library]))
+        for index, user in enumerate(sorted(value["roster"])):
+            add(prefix + "-items-" + str(index), "admin", "GET", query(user, ids=all_ids), page(value["items_by_user"][user]))
+            add(prefix + "-prefs-" + str(index), "admin", "GET", "/emby/UserSettings/" + user, value["preferences"][user])
+        for index, route in enumerate(preservation["detailRoutes"]):
+            add(prefix + "-detail-" + str(index), "admin", "GET",
+                "/emby/Users/" + route["userId"] + "/Items/" + route["itemId"], value["details"][route["group"]][route["itemId"]])
+        add(prefix + "-devices", "admin", "GET", "/emby/Devices", page(value["devices"], devices=True))
+        add(prefix + "-configuration", "admin", "GET", "/emby/System/Configuration", value["configuration"])
+
+    def profile(policy):
+        value = deepcopy(before["roster"][viewer_id])
+        value["Policy"] = deepcopy(policy)
+        return value
+
+    login("admin", 1)
+    snapshot("before", before)
+    assert len(events) == 44
+    profile_route = "/emby/Users/" + viewer_id
+    policy_route = profile_route + "/Policy"
+    add("original-P-policy", "admin", "GET", profile_route, profile(original))
+    add("grant-policy", "admin", "POST", policy_route, body=target, status=204)
+    add("granted-P-policy", "admin", "GET", profile_route, profile(target))
+    login("P", 48)
+    add("own-P-profile", "P", "GET", profile_route, profile(target))
+    own_views = {row["libraryId"]: {"Id": row["libraryId"], "Name": before["libraries"][row["libraryId"]]["Name"],
+                "Type": "CollectionFolder", "CollectionType": "tvshows"} for row in grants}
+    add("own-P-views", "P", "GET", profile_route + "/Views", page(own_views))
+    selectable = []
+    for library in sorted(before["libraries"]):
+        matched = next((row for row in grants if row["libraryId"] == library), None)
+        selectable.append({"Id": library, "Name": before["libraries"][library]["Name"],
+            "Guid": matched["guid"] if matched else uuid.uuid5(uuid.NAMESPACE_URL, "synthetic-grant-" + library).hex,
+            "IsUserAccessConfigurable": True,
+            "SubFolders": [{"Id": "synthetic-grant-root-" + library, "Name": "Synthetic Grant Root " + library,
+                "Path": before["libraries"][library]["Locations"][0], "IsUserAccessConfigurable": True}]})
+    add("own-P-selectable-folders", "P", "GET", "/emby/Library/SelectableMediaFolders", selectable)
+    for symbol, grant in zip(("LA", "LB"), grants):
+        add("own-P-catalog-" + symbol, "P", "GET", query(viewer_id, parent=grant["libraryId"]),
+            page(before["catalog_by_library"][grant["libraryId"]]))
+    for symbol, body in episode_bodies.items():
+        add("own-P-detail-" + symbol, "P", "GET", profile_route + "/Items/" + body["Id"], body)
+    assert len(events) == 59
+    add("restore-policy", "admin", "POST", policy_route, body=original, status=204)
+    add("restored-P-policy", "admin", "GET", profile_route, profile(original))
+    add("restored-own-P-views", "P", "GET", profile_route + "/Views", {"Items": [], "TotalRecordCount": 0})
+    snapshot("after", after)
+    assert len(events) == 105
+    for actor in ("P", "admin"):
+        add("logout-" + actor, actor, "POST", "/emby/Sessions/Logout", status=204)
+        add("rejection-" + actor, actor, "GET", "/emby/Sessions", {"Error": "Synthetic closed session"}, status=401)
+    assert len(events) == 109
+
+    requests, records, charged = [], {}, 0
+    for ordinal, event in enumerate(events, 1):
+        actor, label = event["actor"], event["label"]
+        is_login = label == "login-" + actor
+        headers = [["Accept", "application/json"], ["Authorization",
+            'Emby Client="Goby Folder Grant Verifier", Device="Linux Fixture Recorder", DeviceId="' +
+            actors[actor]["deviceId"] + '", Version="1.0"']]
+        if not is_login:
+            headers.append(["X-Emby-Token", tokens[actor]])
+        payload = None
+        if event["body"] is not None:
+            payload = urlencode([("Username", event["body"]["Username"]), ("Pw", event["body"]["Pw"]) ]).encode() if event["form"] else encode(event["body"]).rstrip(b"\n")
+            headers.append(["Content-Type", "application/x-www-form-urlencoded; charset=utf-8" if event["form"] else "application/json"])
+        request = {"method": event["method"], "route": event["route"], "headers": headers, "body": event["body"]}
+        intent = {"ordinal": ordinal, "actor": actor, "label": label, "phase": "normal" if ordinal <= 59 else "cleanup",
+            "createdAt": created_at(ordinal), "request": deepcopy(request),
+            "payloadBase64": None if payload is None else base64.b64encode(payload).decode(),
+            "tokenSha256": None if is_login else checksum(tokens[actor].encode())}
+        raw = b"" if event["status"] == 204 else b"Access token is invalid or expired." if event["status"] == 401 else encode(event["responseBody"])
+        charged += len(raw)
+        response = {"ordinal": ordinal, "actor": actor, "label": label, "request": deepcopy(request),
+            "status": event["status"], "headers": [["Content-Type", "application/json; charset=utf-8"], ["Content-Length", str(len(raw))]],
+            "rawBase64": base64.b64encode(raw).decode(), "observedRawBytes": len(raw), "retainedRawTruncated": False,
+            "completeHttp": True, "completedAt": completed_at(ordinal), "failure": None}
+        stem = "%04d-%s" % (ordinal, label)
+        references = {"intent": save(private / (stem + "-intent.json"), intent),
+                      "response": save(private / (stem + "-response.json"), response)}
+        requests.append({"ordinal": ordinal, "label": label, **deepcopy(references)})
+        records[label] = {"intent": intent, "response": response, "descriptors": references}
+
+    closures, normalized = [], []
+    for actor in ("P", "admin"):
+        row = {"actor": actor, "userId": actors[actor]["userId"], "deviceId": actors[actor]["deviceId"],
+            "tokenSha256": checksum(tokens[actor].encode()), "from": records["login-" + actor]["intent"]["createdAt"],
+            "through": records["rejection-" + actor]["response"]["completedAt"], "exactTokenClosed": True}
+        for name in ("login", "logout", "rejection"):
+            row[name] = deepcopy(records[name + "-" + actor]["descriptors"])
+        closures.append(row)
+        normalized_row = {"userId": row["userId"], "reportedDeviceId": row["deviceId"], "tokenSha256": row["tokenSha256"],
+            "from": row["from"], "through": row["through"], "login": deepcopy(row["login"]["response"])}
+        for name, status in (("logout", 204), ("rejection", 401)):
+            normalized_row[name] = {"record": deepcopy(row[name]["response"]), "intent": deepcopy(row[name]["intent"]),
+                "status": status, "tokenSha256": row["tokenSha256"],
+                "completedAt": records[name + "-" + actor]["response"]["completedAt"]}
+        normalized.append(normalized_row)
+
+    prior = {"schemaVersion": 1, "kind": "nextup-folder-grant-verification-input", "runId": run_id, "source": deepcopy(source_descriptor),
+        "process": deepcopy(manifest["process"]), "endpoint": deepcopy(manifest["endpoint"]), "lock": deepcopy(manifest["lock"]),
+        "preservation": deepcopy(preservation), "actors": deepcopy(actors), "guidFolders": deepcopy(grants), "outputRoot": str(root)}
+    terminal = {"runId": run_id, "status": "awaiting_independent_attestation", "failure": None, "pendingPresent": False,
+        "uncertain": False, "grantSemanticsProven": True, "originalPolicyRestored": True, "publicPreserved": True,
+        "allKnownTokensClosed": True, "requestCount": 109, "normalRequestCount": 59, "cleanupRequestCount": 50}
+    index_document = {"schemaVersion": 1, "kind": "nextup-folder-grant-wire-index", "runId": run_id,
+                      "root": str(root), "requests": requests}
+    closure_document = {"schemaVersion": 1, "kind": "nextup-folder-grant-authentication-closures", "runId": run_id, "closures": closures}
+    preservation_report = {"preserved": True,
+        "allowedAuthenticationChanges": [{"kind": "owned-device-time", "deviceId": "synthetic-grant-registry-P"}],
+        "beforeTokenSha256": before["credential_context"]["token_sha256"],
+        "afterTokenSha256": after["credential_context"]["token_sha256"]}
+    documents = {"input": prior, "producerTerminal": terminal, "wireIndex": index_document,
+        "closedAuthentication": closure_document, "beforePublic": before, "afterPublic": after,
+        "originalPolicy": original, "targetPolicy": target, "publicPreservation": preservation_report}
+    names = {"input": "input.json", "producerTerminal": "terminal.json", "wireIndex": "wire-index.json",
+        "closedAuthentication": "closed-authentication.json", "beforePublic": "before-public.json", "afterPublic": "after-public.json",
+        "originalPolicy": "original-policy.json", "targetPolicy": "target-policy.json", "publicPreservation": "public-preservation.json"}
+    descriptors = {name: save(private / names[name], value) for name, value in documents.items()}
+    inventory_rows = {}
+    for path in [root, *sorted(root.rglob("*"))]:
+        info = path.lstat()
+        row = {"device": info.st_dev, "inode": info.st_ino, "uid": info.st_uid, "gid": info.st_gid, "mode": info.st_mode,
+            "links": info.st_nlink, "bytes": info.st_size, "mtime_ns": info.st_mtime_ns, "ctime_ns": info.st_ctime_ns}
+        if path.is_file():
+            row["sha256"] = fixture.descriptor(path)["sha256"]
+        inventory_rows[str(path.relative_to(root))] = row
+    documents["scopeInventory"] = {str(root): inventory_rows}
+    descriptors["scopeInventory"] = save(root / "completed-scope-files.json", documents["scopeInventory"])
+    unit_name = "synthetic-folder-grant-worker.service"
+    unit = {"name": unit_name, "cgroupPath": "/sys/fs/cgroup/system.slice/" + unit_name,
+        "properties": {"Id": unit_name, "InvocationID": "3" * 32, "ActiveState": "active", "SubState": "exited",
+            "MainPID": "0", "Result": "success", "ControlGroup": "", "ExecMainStatus": "0", "RemainAfterExit": "yes", "Type": "oneshot"}}
+    command = ["/usr/bin/python3", "-I", "-B", source_descriptor["path"], descriptors["input"]["path"], descriptors["input"]["sha256"]]
+    unit["properties"]["ExecStart"] = "{ path=/usr/bin/python3 ; argv[]=" + shlex.join(command) + " ; ignore_errors=no ; }"
+    independent = {"schemaVersion": 1, "kind": "nextup-folder-grant-independent-terminal",
+        "status": "folder_guid_grants_independently_verified_and_policy_restored", "runId": run_id,
+        "capturedAt": snapshot_at(110), "referenceCounts": {"users": 8, "libraries": 10, "devices": 93, "detailWitnesses": 12},
+        "requestCount": 109, "normalRequestCount": 59, "cleanupRequestCount": 50,
+        "allKnownTokensClosed": True, "originalPolicyRestored": True, "fullPublicRoundtripPreserved": True,
+        "allPrivateBytesMatched": True, "allExportBytesMatched": True, "recursiveCgroupEmpty": True, "grantSemanticsProven": True,
+        "originalImplementationBytesRead": False, "referenceDatabaseRead": False, "businessHttpByAudit": 0,
+        "replayPerformedHttp": False, "unit": unit, "source": deepcopy(source_descriptor), **deepcopy(descriptors)}
+    independent_descriptor = save(root / "independent-terminal.json", independent)
+    release["schemaVersion"] = 2
+    release["grantVerification"] = independent_descriptor
+    release["closedAuthentication"].extend(deepcopy(normalized))
+    release_time = datetime.fromisoformat(release["releasedAt"].replace("Z", "+00:00"))
+    grant_time = datetime.fromisoformat(independent["capturedAt"])
+    assert grant_time <= release_time
+    fixture.baseline = deepcopy(after)
+    fixture.release = release
+    manifest["inputs"]["publicBaseline"] = deepcopy(descriptors["afterPublic"])
+    manifest["inputs"]["release"] = save(Path(manifest["scope"]["inputRoot"]) / "synthetic-grant-release.json", release)
+    fixture.grant_verification = {"root": root, "private": private, "documents": documents, "descriptors": descriptors,
+        "independent": independent, "independentDescriptor": independent_descriptor, "records": records, "actors": actors,
+        "normalizedClosures": normalized, "chargedResponseBytes": charged}
+    return fixture.grant_verification
+
+
 class ActualAuthorityGuards(unittest.TestCase):
     """Exercise real authority against only self-owned synthetic private files."""
 
@@ -1795,6 +2181,7 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.fixture.baseline["devices"]["synthetic-prior-registry"] = {"Id": "synthetic-prior-registry",
             "ReportedDeviceId": "synthetic-prior-device", "LastUserId": "old-user-1"}
         self.replace_input("publicBaseline", self.fixture.baseline)
+        add_grant_verification_fixture(self.fixture, self.release)
         self.refresh_media_approval()
 
     def refresh_media_approval(self):
@@ -1858,6 +2245,62 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.assertTrue(self.process_checked)
         self.assertEqual(self.network_attempts, [])
         self.assertFalse(Path(self.manifest["scope"]["matrixEvidenceRoot"]).exists())
+
+    def test_raw_release_accepts_realistic_non_json_401_and_fixed_login_form_order(self):
+        for actor in ("P", "admin"):
+            record = self.fixture.grant_verification["records"]["rejection-" + actor]["response"]
+            raw = base64.b64decode(record["rawBase64"], validate=True)
+            self.assertEqual(len(raw), 35)
+            with self.assertRaises(ValueError): json.loads(raw)
+            intent = self.fixture.grant_verification["records"]["login-" + actor]["intent"]
+            self.assertTrue(base64.b64decode(intent["payloadBase64"]).startswith(b"Username="))
+        authority = self.authority()
+        self.assertEqual(authority.grant_unit["invocationId"], "3" * 32)
+        self.assertEqual(self.network_attempts, [])
+
+    def reject_raw_release(self, mutate):
+        checker = object.__new__(self.P.Authority)
+        checker.manifest, checker.release, checker.baseline = self.manifest, self.release, self.fixture.baseline
+        checker.support, checker.planner = self.fixture.support, self.fixture.planner
+        def evidence(row, *, sealed=False):
+            value = self.P.strict_json(self.P.read_owned(row["path"], private=True))
+            mutate(row, value)
+            return value
+        checker._evidence = evidence
+        with self.assertRaises((self.P.PreparationError, ValueError, KeyError, TypeError)):
+            checker._grant_verification()
+        self.assertFalse(self.fixture.output.exists())
+        self.assertEqual(self.network_attempts, [])
+
+    def test_raw_release_rejects_reordered_login_form_bytes(self):
+        def mutate(row, value):
+            if row["path"].endswith("0001-login-admin-intent.json"):
+                body = value["request"]["body"]
+                value["payloadBase64"] = base64.b64encode(urlencode([("Pw", body["Pw"]), ("Username", body["Username"])]).encode()).decode()
+        self.reject_raw_release(mutate)
+
+    def test_raw_release_rejects_incomplete_actual_response(self):
+        def mutate(row, value):
+            if row["path"].endswith("0107-rejection-P-response.json"): value["completeHttp"] = False
+        self.reject_raw_release(mutate)
+
+    def test_raw_release_rejects_missing_ledger_attempt(self):
+        def mutate(row, value):
+            if value.get("kind") == "nextup-folder-grant-wire-index": value["requests"].pop()
+        self.reject_raw_release(mutate)
+
+    def test_raw_release_rejects_other_actor_token_in_logout_context(self):
+        def mutate(row, value):
+            if "0106-logout-P-" in row["path"]:
+                for header in value["request"]["headers"]:
+                    if header[0] == "X-Emby-Token": header[1] = "synthetic-another-actor-token"
+        self.reject_raw_release(mutate)
+
+    def test_raw_release_rejects_unindexed_closure_response(self):
+        def mutate(row, value):
+            if value.get("kind") == "nextup-folder-grant-authentication-closures":
+                value["closures"][0]["logout"] = deepcopy(value["closures"][1]["logout"])
+        self.reject_raw_release(mutate)
 
     def test_missing_private_input_is_rejected_without_output_or_http(self):
         Path(self.manifest["inputs"]["publicBaseline"]["path"]).unlink()
@@ -2106,6 +2549,50 @@ class PreservationOrderingGuards(unittest.TestCase):
             self.assertEqual(value["reportSha256"], PRESERVATION_ORDER_OBSERVATION["expectedReportSha256"])
 
 
+def verify_actual_grant_release(independent_path, independent_sha):
+    """Exercise only the new raw-release adapter against explicitly pinned history."""
+    preparation = load_source(PREPARATION_SOURCE, "actual_grant_release_preparation")
+    support = load_source(TRANSPORT_SOURCE, "actual_grant_release_transport")
+    planner = load_source(MATRIX_SOURCE, "actual_grant_release_matrix")
+    def read(row):
+        preparation.descriptor(row)
+        raw = preparation.read_owned(row["path"], private=True)
+        preparation.require(digest(raw) == row["sha256"], "An explicitly pinned completed evidence file changed.")
+        return preparation.strict_json(raw)
+    independent_descriptor = {"path": str(independent_path), "sha256": independent_sha}
+    independent = read(independent_descriptor)
+    prior = read(independent["input"])
+    original_input = read(prior["preparationInput"])
+    baseline = read(independent["afterPublic"])
+    closures = read(independent["closedAuthentication"])
+    normalized = []
+    for row in closures["closures"]:
+        item = {"userId": row["userId"], "reportedDeviceId": row["deviceId"], "tokenSha256": row["tokenSha256"],
+            "from": row["from"], "through": row["through"], "login": row["login"]["response"]}
+        for name, status in (("logout", 204), ("rejection", 401)):
+            item[name] = {"record": row[name]["response"], "intent": row[name]["intent"], "status": status,
+                "tokenSha256": row["tokenSha256"], "completedAt": read(row[name]["response"])["completedAt"]}
+        normalized.append(item)
+    checker = object.__new__(preparation.Authority)
+    checker.manifest = {"inputs": {"publicBaseline": independent["afterPublic"]},
+        "server": {"id": baseline["server"]["Id"], "version": baseline["server"]["Version"]},
+        "process": prior["process"], "endpoint": prior["endpoint"], "lock": prior["lock"],
+        "preservation": prior["preservation"], "sealedRoots": prior["readonlyRoots"] + [str(Path(prior["outputRoot"])), str(independent_path.parent)],
+        "forbiddenOriginalRoots": original_input["forbiddenOriginalRoots"], "scope": {"inputRoot": str(independent_path.parent)}}
+    checker.release = {"grantVerification": independent_descriptor, "releasedAt": independent["capturedAt"], "units": [],
+        "closedAuthentication": normalized}
+    checker.baseline, checker.support, checker.planner = baseline, support, planner
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Completed-evidence audit cannot perform HTTP or process probes.")
+    with patch.object(socket, "socket", side_effect=forbidden), patch.object(socket, "create_connection", side_effect=forbidden), \
+         patch.object(support.HTTPTransport, "send", side_effect=forbidden), patch.object(support, "process_identity", side_effect=forbidden), \
+         patch.object(preparation.subprocess, "run", side_effect=forbidden):
+        checker._grant_verification()
+    return {"suite": "completed-grant-release-raw-reconstruction", "passed": True, "independentSha256": independent_sha,
+        "rawRequestsVerified": 109, "rawResponsesVerified": 109, "snapshotGetsReconstructed": 86, "closedTokensVerified": 2,
+        "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "livePreparationAcceptanceClaim": False}
+
+
 def main():
     global PREPARATION_SOURCE, TRANSPORT_SOURCE, MATRIX_SOURCE
     if (sys.platform != "linux" or not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY")) or
@@ -2120,6 +2607,9 @@ def main():
     parser.add_argument("--report-path", required=True, type=Path)
     parser.add_argument("--preservation-order-worker", action="store_true",
                         help="Run one bounded synthetic comparator observation; never perform preparation or write a report.")
+    parser.add_argument("--verify-grant-independent", type=Path,
+                        help="Read only the explicitly pinned completed Guid evidence through the new raw-release adapter.")
+    parser.add_argument("--grant-independent-sha256")
     arguments = parser.parse_args()
     PREPARATION_SOURCE = arguments.preparation_source.resolve(strict=True)
     TRANSPORT_SOURCE = arguments.transport_source.resolve(strict=True)
@@ -2136,6 +2626,18 @@ def main():
                      "transport": digest(TRANSPORT_SOURCE.read_bytes()),
                      "matrix": digest(MATRIX_SOURCE.read_bytes()),
                      "guards": digest(Path(__file__).read_bytes())}
+    if arguments.verify_grant_independent is not None:
+        try:
+            report = verify_actual_grant_release(arguments.verify_grant_independent, arguments.grant_independent_sha256)
+        except Exception as error:
+            report = {"suite": "completed-grant-release-raw-reconstruction", "passed": False,
+                "errorType": type(error).__name__, "reason": str(error), "actualBusinessHttpRequests": 0, "actualProcessProbes": 0}
+        report["sourceSha256"] = source_hashes
+        with report_path.open("x", encoding="utf-8") as handle:
+            json.dump(report, handle, sort_keys=True, indent=2)
+            handle.write("\n")
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["passed"] else 1
     suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     report = {"schemaVersion": 1, "suite": "prepare-nextup-global-reference-guards",

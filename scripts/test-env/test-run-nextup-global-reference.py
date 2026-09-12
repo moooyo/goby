@@ -39,6 +39,7 @@ import uuid
 sys.dont_write_bytecode = True
 SOURCE_BYTES = {}
 PREPARATION_GUARDS = None
+GRANT_WORKER_SHA256 = "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971"
 ACTORS = ("P", "Q")
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 RUNTIME_TICKS = 6_000_000_000
@@ -130,6 +131,7 @@ def complete_preparation_inputs(fixture):
         "frameRate": 30, "originalImplementationBytesRead": False}
     for name, value in (("release", fixture.release), ("publicBaseline", fixture.baseline), ("mediaApproval", approval)):
         manifest["inputs"][name] = write_json(manifest["inputs"][name]["path"], value)
+    PREPARATION_GUARDS.add_grant_verification_fixture(fixture, fixture.release)
 
 
 class IOBoundary:
@@ -183,10 +185,11 @@ class IOBoundary:
 class OperatorFixture:
     """Produce actual source-bound bytes, then publish only fixtureReleased."""
 
-    def __init__(self, testcase, boundary, *, broad_matrix_parent=False):
+    def __init__(self, testcase, boundary, *, broad_matrix_parent=False, scan_ready_round=0):
         self.testcase, self.boundary = testcase, boundary
         self.prepared = PREPARATION_GUARDS.PreparationFixture(testcase)
         fixture = self.prepared
+        boundary.forbidden.update(Path(path) for path in fixture.manifest["forbiddenOriginalRoots"])
         self.run_parent = fixture.root / "nextup-global-reference-runs-03"
         self.run_parent.mkdir(mode=0o700)
         matrix_parent = fixture.root if broad_matrix_parent else self.run_parent
@@ -200,7 +203,6 @@ class OperatorFixture:
         fixture.write(self.operator_source, SOURCE_BYTES["operator"])
         self.operator = load_source(self.operator_source, "matrix_entry_guard_subject")
         testcase.addCleanup(sys.modules.pop, self.operator.__name__, None)
-        boundary.forbidden.update(Path(path) for path in fixture.manifest["forbiddenOriginalRoots"])
         for module in (self.operator, fixture.module, fixture.support):
             boundary.module(module)
         stage_media = fixture.module.Authority.stage_media
@@ -216,7 +218,19 @@ class OperatorFixture:
         self.input_manifest = Path(fixture.scope["inputRoot"]) / "cli-manifest.json"
         fixture.write(self.input_manifest, encoded(fixture.manifest))
         self.preparation_authority = CompleteSyntheticAuthority(fixture)
-        self.preparation_wire = PREPARATION_GUARDS.FakeWire(fixture)
+        if type(scan_ready_round) is not int or not 0 <= scan_ready_round <= 10:
+            raise ValueError("The synthetic scan must leave two stable rounds within the frozen twelve-round plan.")
+
+        def observed_scan_progress(wire, call, response):
+            label = call["request"].label
+            if label.startswith("scan-") and label.endswith("-libraries") and int(label.split("-")[1]) < scan_ready_round:
+                body = json.loads(response.raw)
+                for row in body["Items"]:
+                    if row["ItemId"] in fixture.library_ids.values(): row["RefreshStatus"] = "Running"
+                return fixture.support.WireResponse(response.status, response.headers, encoded(body), response.complete_http, response.completed_at, response.failure)
+            return response
+
+        self.preparation_wire = PREPARATION_GUARDS.FakeWire(fixture, response_hook=observed_scan_progress)
         self.preparation_runner = fixture.module.PreparationRunner(fixture.manifest,
             authority=self.preparation_authority, transport=self.preparation_wire,
             journal_factory=lambda root, uid: fixture.support.Journal(root, uid=uid),
@@ -580,6 +594,73 @@ class AdmissionGuards(GuardCase):
         self.assertFalse(self.fixture.matrix_output.exists())
         admission.checkpoint(full=True)
 
+    def test_short_success_uses_source_limits_without_requiring_maximum_count(self):
+        admission = self.fixture.admit()
+        plan = admission.preparation.frozen_plan(admission.manifest)
+        self.assertEqual((admission.producer_normal_maximum, admission.producer_success_maximum),
+                         (plan["normalMaximum"], plan["successMaximumIncludingLogout"]))
+        self.assertEqual((plan["normalMaximum"], plan["successMaximumIncludingLogout"]), (257, 263))
+        self.assertLess(self.fixture.terminal["requestCount"], plan["successMaximumIncludingLogout"])
+        self.assertEqual(self.fixture.terminal["requestCount"], self.fixture.terminal["normalRequestCount"] + 6)
+        self.assertEqual(admission.replay_count, self.fixture.terminal["requestCount"])
+        self.assertEqual((admission.matrix.MAX_REQUESTS, admission.matrix.NORMAL_LIMIT, admission.matrix.CLEANUP_RESERVE), (300, 220, 80))
+
+    def test_source_plan_success_limits_require_integer_capacity_and_six_closures(self):
+        plan = self.fixture.prepared.module.frozen_plan(self.fixture.prepared.manifest)
+        changes = ({"normalMaximum": True}, {"normalMaximum": 0}, {"successMaximumIncludingLogout": "263"},
+                   {"normalMaximum": plan["normalLimit"] + 1}, {"cleanupReserve": 5},
+                   {"successMaximumIncludingLogout": plan["normalMaximum"] + 5},
+                   {"successMaximumIncludingLogout": plan["normalMaximum"] + 7},
+                   {"maximumRequests": plan["maximumRequests"] + 1})
+        for change in changes:
+            with self.subTest(change=change), self.assertRaises(self.O.OperatorError):
+                self.O.successful_preparation_limits({**deepcopy(plan), **change})
+
+    def test_updated_descriptor_cannot_forge_source_plan_request_maxima(self):
+        original = read_json(self.fixture.private / "frozen-plan.json")
+        for change in ({"normalMaximum": original["normalMaximum"] + 1, "successMaximumIncludingLogout": original["successMaximumIncludingLogout"] + 1},
+                       {"normalMaximum": 232, "successMaximumIncludingLogout": 238},
+                       {"normalMaximum": original["normalMaximum"] - 1, "successMaximumIncludingLogout": original["successMaximumIncludingLogout"] - 1}):
+            with self.subTest(change=change):
+                self.fixture.replace_document("plan", {**deepcopy(original), **change})
+                self.reject(pattern="source-bound actual plan")
+
+    def test_semantically_identical_plan_still_requires_original_producer_bytes(self):
+        path = self.fixture.private / "frozen-plan.json"
+        path.write_bytes(b" " + path.read_bytes())
+        self.fixture.attestation["preparation"]["plan"] = descriptor(path)
+        self.reject(pattern="private output cannot be reproduced.*frozen-plan")
+
+    def test_terminal_and_state_cannot_exceed_recomputed_normal_success_maxima(self):
+        plan = self.fixture.prepared.module.frozen_plan(self.fixture.prepared.manifest)
+        terminal, state = read_json(self.fixture.private / "terminal.json"), read_json(self.fixture.private / "state.json")
+        for change in ({"normalRequestCount": plan["normalMaximum"] + 1, "requestCount": plan["successMaximumIncludingLogout"] + 1},
+                       {"normalRequestCount": -1, "requestCount": 5}, {"normalRequestCount": True, "requestCount": 7}):
+            with self.subTest(change=change):
+                self.fixture.replace_document("terminal", {**deepcopy(terminal), **change})
+                self.fixture.replace_document("state", {**deepcopy(state), **change})
+                self.reject(pattern="request budget does not close")
+
+    def test_successful_cleanup_requires_exactly_six_in_all_recorded_counters(self):
+        terminal, state = read_json(self.fixture.private / "terminal.json"), read_json(self.fixture.private / "state.json")
+        for cleanup in (5, 7, True, "6", 6.0):
+            with self.subTest(cleanup=cleanup):
+                candidate = deepcopy(terminal)
+                candidate.update(cleanupRequestCount=cleanup, requestCount=candidate["normalRequestCount"] + (cleanup if type(cleanup) is int else 6))
+                candidate["phaseRequestCounts"]["cleanup"] = cleanup
+                saved = {**deepcopy(state), **{key: candidate[key] for key in ("requestCount", "normalRequestCount", "cleanupRequestCount")}}
+                self.fixture.replace_document("terminal", candidate); self.fixture.replace_document("state", saved)
+                self.reject(pattern="request budget does not close")
+
+    def test_success_summary_counts_cannot_replace_actual_wire_population(self):
+        terminal, state = read_json(self.fixture.private / "terminal.json"), read_json(self.fixture.private / "state.json")
+        for delta in (-1, 1):
+            with self.subTest(delta=delta):
+                change = {"normalRequestCount": terminal["normalRequestCount"] + delta, "requestCount": terminal["requestCount"] + delta}
+                self.fixture.replace_document("terminal", {**deepcopy(terminal), **change})
+                self.fixture.replace_document("state", {**deepcopy(state), **change})
+                self.reject(pattern="complete actual preparation wire index")
+
     def test_attestation_checksum_and_exact_shape_are_required(self):
         self.reject(checksum="0" * 64, pattern="digest")
         for mutate in (lambda value: value.update(schemaVersion=True),
@@ -771,6 +852,24 @@ class AdmissionGuards(GuardCase):
                      Path(self.fixture.attestation["sealedRoots"][0]) / "nested"):
             with self.subTest(overlap=str(path)):
                 self.reject_attestation(lambda value: value["scope"].update(operatorEvidenceRoot=str(path)))
+
+
+class FullScanBudgetGuards(GuardCase):
+    fixture_options = {"scan_ready_round": 10}
+
+    def test_source_bound_success_maximum_replays_actual_twelve_round_ledger(self):
+        admission = self.fixture.admit()
+        plan, terminal = admission.documents["plan"], self.fixture.terminal
+        self.assertEqual(terminal["normalRequestCount"], plan["normalMaximum"])
+        self.assertEqual(terminal["requestCount"], plan["successMaximumIncludingLogout"])
+        self.assertGreater(terminal["normalRequestCount"], 232)
+        self.assertGreater(terminal["requestCount"], 238)
+        self.assertEqual(terminal["cleanupRequestCount"], 6)
+        self.assertEqual(admission.replay_count, len(self.fixture.index["requests"]))
+        self.assertEqual(admission.replay_count, terminal["requestCount"])
+        self.assertEqual((admission.matrix.MAX_REQUESTS, admission.matrix.NORMAL_LIMIT, admission.matrix.CLEANUP_RESERVE), (300, 220, 80))
+        self.assertFalse(self.fixture.operator_output.exists())
+        self.assertFalse(self.fixture.matrix_output.exists())
 
 
 class MediaMembershipGuards(GuardCase):
@@ -1286,6 +1385,11 @@ def main():
     arguments = parser.parse_args()
     SOURCE_BYTES = {role: source_bytes(getattr(arguments, role.replace("-", "_") + "_source"), name)
                     for role, name in names.items()}
+    grant_source = arguments.preparation_source.with_name("verify-folder-grant-01.py")
+    SOURCE_BYTES["grant-worker"] = source_bytes(grant_source, "verify-folder-grant-01.py")
+    if digest(SOURCE_BYTES["grant-worker"]) != GRANT_WORKER_SHA256:
+        raise ValueError("The preparation fixture requires its exact reviewed grant-verification worker source.")
+    names["grant-worker"] = "verify-folder-grant-01.py"
     source_hashes = {role: digest(raw) for role, raw in SOURCE_BYTES.items()}
     source_hashes["guards"] = digest(Path(__file__).read_bytes())
     report_path = arguments.report_path.absolute()

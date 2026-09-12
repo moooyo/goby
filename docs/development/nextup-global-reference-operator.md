@@ -1,7 +1,9 @@
 # Independently attested reference matrix operator
 
-Status: **57 remote fake guards and two compile checks passed after media
-membership and writable-parent review fixes; no live matrix executed**.
+Status: **Frozen TOOL03 passed 65 remote fake guards and two compile checks
+against the frozen TOOL08 producer, which passed 154 remote guards and two
+compile checks. Real preparation-04 failed; no new fixture was independently
+released and no live matrix or client acceptance was established**.
 
 [run-nextup-global-reference.py](../../scripts/test-env/run-nextup-global-reference.py)
 is the outer entry for the unchanged `TransportRunner`. It does not prepare a
@@ -99,14 +101,53 @@ The producer terminal must be the actual successful
 true, matrixInputsUsable false, independentAttestationRequired true, no failure,
 no pending HTTP or ownership, no uncertainty, and no cleanup errors. The final
 state remains phase cleanup with the three tokens/sessions retained and all
-three actors revoked. Successful cleanup is exactly six requests. Counts must
-close within the 232-normal/238-success contract.
+three actors revoked. Successful cleanup is exactly six requests. The operator
+recomputes the plan with the pinned producer source, requires the retained plan
+to match, and reads `plan.normalMaximum` and
+`plan.successMaximumIncludingLogout` from that recomputed plan. For frozen
+TOOL08 these are **257 normal requests and 263 including successful cleanup**.
+They replace the historical 232/238 assumptions. All five plan limit fields
+must be positive integers; the success maximum must equal the normal maximum
+plus six, fit the total cap, and leave the required cleanup reserve.
+
+The preparation allocation is independently bounded by a **280 normal limit,
+100 cleanup reserve, and 380 total hard cap**. Its maximum failure cleanup is
+**89 requests**. These producer limits do not change the frozen matrix's
+separate **300 total / 220 normal / 80 cleanup** contract.
 
 The entry reuses the frozen producer's static input validation. This reads and
 pins its actual release terminal/inventory, closed-token intent/result proofs,
 media approval, and approved synthetic media manifest. Missing or changed
 nested evidence is rejected, rather than trusting a preservation boolean.
 The original implementation or reference database is never read.
+
+The producer release is `nextup-global-preparation-release` with
+`schemaVersion: 2`; the outer matrix attestation above remains version 1.
+The release adds the exact `grantVerification` descriptor for the completed
+independent Guid-grant observation. Admission reconstructs all **109 raw
+request/response pairs**, including **86 snapshot GETs** and **two exact token
+closures**, through the pinned producer's static checks. It checks the exact
+ordered method, route, actor, token, headers, form/JSON payload bytes, complete
+bounded response bytes, and timestamps. The latest `afterPublic` descriptor
+must be the new preparation's `publicBaseline`, covering **8 retained users,
+10 retained libraries, 12 full-detail witnesses, and 93 devices**. Summary
+booleans cannot replace those raw observations.
+
+The release evidence also binds the completed Guid worker's invocation,
+source/input argv, and exact cgroup. During real preparation, the producer's
+authority rereads current unit properties and requires recursive cgroup
+emptiness for that worker as well as the original released worker/controller
+pair. A stale successful unit summary is insufficient. The operator's separate
+current producer and matrix unit checks are described below.
+
+For each newly owned library, preparation observes the actual
+`SelectableMediaFolders` row whose `Id` equals its library-management ID, takes
+that row's unique lowercase 32-hex `Guid` as `policyFolderId`, and binds its
+single configurable `SubFolders` entry to the observed source-root ID and exact
+owned media path. The Guid must differ from the management, view, and source-root
+IDs; LA and LB must remain distinct across all four identities. The full
+[producer contract](nextup-global-preparation-implementation.md) documents these
+release and mapping requirements.
 
 The copied media tree must contain exactly six independent MP4 files, eight
 NFOs, and two ownership markers. Their bytes, hashes, file identities, and exact
@@ -226,9 +267,10 @@ protected evidence. Source paths are checked individually as well as through
 their declared lookup scopes. A shared lookup ancestor does not itself become
 writable merely because a dedicated output subtree sits below it.
 
-For the planned preparation-03 integration, use a fresh dedicated parent such
-as `W/nextup-global-reference-runs-03`, with matrix-03 and operator-03 as its
-separate children. Keep the independent attestation and all source, preparation,
+For a future independently admitted integration, use a fresh dedicated parent
+with separate matrix and operator children. The historical preparation-03
+layout example was `W/nextup-global-reference-runs-03`, containing matrix-03 and
+operator-03. Keep the independent attestation and all source, preparation,
 credential, input, and sealed evidence outside that writable subtree. The
 existing lock remains an explicitly named file exception. The failed
 preparation-02 layout does not authorize a writable shared work root.
@@ -280,6 +322,63 @@ fake unit/cgroup/process observations, an indexed fake response source, and
 fake matrix HTTP. All Python runs use `/usr/bin/python3 -I -B` through
 `ssh test-env`; no local verification is allowed.
 
+### Current frozen TOOL03 and TOOL08 verification
+
+The [TOOL03 operator receipt](nextup-global-reference-operator-verification-03.json)
+records **65 guards passed**, with zero failures, errors, or skips; both remote
+compile checks also passed. It records zero actual business HTTP, actual process
+probes, original implementation reads, and blocked real-I/O attempts. The
+operator consumes source-bound successful-preparation limits and the TOOL08
+release contract while retaining the media-membership, writable-parent,
+replay, and persistence guards.
+
+The [TOOL08 producer receipt](nextup-global-preparation-verification-05.json)
+records **154 guards passed**, with zero failures, errors, or skips; both remote
+compile checks also passed. Its
+[initial retained run](nextup-global-preparation-verification-05-initial.json)
+had one guard error because the test helper lacked the `urlencode` import;
+that initial result remains a failed historical record. The producer digest
+was unchanged by the guard-helper correction. The final preservation-order
+probe observed both native authentication-field orders and reproduced one
+identical report digest across four isolated workers.
+
+The [completed-release reconstruction receipt](nextup-global-preparation-real-release-verification-01.json)
+separately records 109 raw requests and responses verified, 86 snapshot GETs
+reconstructed, and two token closures verified against the actual retained
+independent grant terminal. It issued zero business HTTP requests and zero
+process probes. This proves reconstruction of that prior release evidence;
+it is not successful live preparation or matrix acceptance.
+
+| Current frozen artifact | SHA-256 |
+| --- | --- |
+| TOOL03 operator source | `3a07ff2fdd6817a38e98a205d3b44fb0f1231d4d1b58d785cf6b1cc3eba3dd8a` |
+| TOOL03 operator guards | `2fc36f452e12eb3c165135b84cb56ba8420842bd222cd720e5ef7a0893f78cc3` |
+| TOOL08 producer dependency | `347d71f310182e3258dc2f0b51142dbf31088292ee6ec5d3689621971deb152a` |
+| TOOL08 producer guards | `c5419b99cb0cfde910b29b5d47e6fbc7a7f4061afcebe378c826fb056720c177` |
+| Grant-worker dependency | `70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971` |
+| Completed independent grant terminal | `68b0e1d5ff13b985d21fcfbcb1a54d2792c216b79bf27aa5b07ff5316cd76684` |
+| Transport dependency | `d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1` |
+| Matrix dependency | `da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259` |
+
+The [real preparation-04 attempt](nextup-global-reference-preparation-04.md)
+failed during partial calibration when full
+`UserData` acquired `PlayedPercentage: 20`. Frozen TOOL08 still permits playback
+changes only to `Played`, `PlayCount`, `PlaybackPositionTicks`, and
+`LastPlayedDate` before comparing all remaining full `UserData` fields. That
+same four-field gate also precedes cleanup reset and has not been repaired.
+The separately scoped
+[independent recovery](nextup-preparation04-userdata-recovery-independent-terminal.json)
+confirmed one DELETE, exact full zero restoration, and new-token closure in six
+requests while preserving 152 protected roots. It does not repair the frozen
+producer rule or supply the missing four calibrations. A future preparation
+requires a reviewed rule and a new complete baseline for the enlarged population.
+Preparation-04 therefore does not provide the successful terminal required by
+this operator. Neither synthetic verification nor completed prior-release
+reconstruction publishes a fixture, completes a live matrix, or establishes
+reference/client acceptance.
+
+### Historical TOOL01 verification
+
 Initial operator verification used the independent remote scope
 `/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-01/verification-01`.
 All **43 guards passed**, with zero failures, errors, or skips. Both new Python
@@ -292,7 +391,7 @@ reports zero actual business HTTP requests, zero actual process probes, and
 zero blocked real I/O attempts across HTTP, process, original-read, and
 authority categories. Original implementation bytes were not read.
 
-| Frozen artifact | SHA-256 |
+| Historical TOOL01 artifact | SHA-256 |
 | --- | --- |
 | Operator source | `4471154408ed09f4c12434e12928c8f37fd37f7ee231207615089f2529ccd01e` |
 | Operator guards | `d976f0bb0796222fec616ba9e89430ae51cc26c88f80e5240beda14d8b24213e` |
@@ -309,17 +408,17 @@ terminal/export/commit/close failures, current unit changes, evidence
 permissions/source pins, sealed-root exclusions, raw ledger/token tampering,
 and rejection of a forged successful preparation summary.
 
-### Media membership and writable-parent review verification
+### Historical TOOL02 media membership and writable-parent review verification
 
 Independent review found that opening only receipt-listed media files did not
 detect an additional filesystem node, and that a disjoint output child could
 still grant write access to a parent containing protected authorities. Both
-guards are now enforced directly in the operator.
+guards were added directly to the operator and remain enforced.
 
-The new
+The historical
 `/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-02/verification-01`
 run passed all **57 guards** and both compile checks. There were zero failures,
-errors, or skips. The [new retained receipt](nextup-global-reference-operator-verification-02.json)
+errors, or skips. The [historical retained receipt](nextup-global-reference-operator-verification-02.json)
 records zero business HTTP, real process probes, original-byte reads, and
 blocked real-I/O attempts. All Python verification used `/usr/bin/python3 -I -B`
 through `ssh test-env`.
@@ -332,7 +431,7 @@ unsafe matrix parent. The safe positive fixture uses a dedicated runs-03 parent
 with matrix-03/operator-03 siblings, an external attestation root, and only the
 exact existing lock file as its additional writable permission.
 
-| Current artifact | SHA-256 |
+| Historical TOOL02 artifact | SHA-256 |
 | --- | --- |
 | Operator source | `624c70b5a0217c94feab72eb18e5b7c760c12a6341851560efeee73c1b9a2720` |
 | Operator guards | `780dc1478bd5747182bcb8f6eaf675ad5bb8ce1aebc5c1c3785bebc481added2` |
@@ -340,11 +439,13 @@ exact existing lock file as its additional writable permission.
 | TOOL02 guards.log | `c830922c800fc36ce2f377c29ed5a8a54e29367387c07fdc6baf396efbd9a515` |
 | TOOL02 compile.log (empty successful output) | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
-The producer, producer fixture-helper, transport, and matrix dependency bytes
-are unchanged from the initial operator run. TOOL01 and its 43-case report remain
-intact. No original or failed preparation scope was written during this repair.
+For TOOL02, the producer, producer fixture-helper, transport, and matrix
+dependency bytes were unchanged from the initial operator run. TOOL01 and its
+43-case report remain intact. No original or failed preparation scope was
+written during this repair.
 
 There is currently no newly published fixture established by this document.
-The failed preparation-02 scope and all previous sources/failure scopes remain
-read-only. No business HTTP, original executable/assets/database read, or
-service mutation is part of operator development verification.
+The failed preparation-02 and preparation-04 scopes and all previous
+sources/failure scopes remain read-only. No business HTTP, original
+executable/assets/database read, or service mutation is part of operator
+development verification.
