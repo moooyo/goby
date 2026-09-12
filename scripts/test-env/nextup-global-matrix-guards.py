@@ -31,6 +31,16 @@ sys.modules[SPEC.name] = M
 SPEC.loader.exec_module(M)
 SHA = "a" * 64
 STAMP = "2026-09-12T01:00:00Z"
+# UserData values transcribed from the retained preparation04 direct responses:
+# 0110 SHA f8eab2ca15298f393defd49d63e5eaefb26e4c4e8edd5a80b5b714e035b59822;
+# 0115 SHA 50782901ce61e3d845c0c09cc921eca55f6d821b3f3526ead4c45bffc515120b.
+# The independently restored response has the same four-key zero. These value
+# regressions do not read private records or treat fake DELETE as real evidence.
+OBSERVED_ZERO_USERDATA_SHAPE = {"Played": False, "PlayCount": 0,
+                                "PlaybackPositionTicks": 0, "IsFavorite": False}
+OBSERVED_PARTIAL_USERDATA_SHAPE = {**OBSERVED_ZERO_USERDATA_SHAPE, "PlayCount": 1,
+    "PlaybackPositionTicks": 1_200_000_000, "PlayedPercentage": 20,
+    "LastPlayedDate": "2026-09-12T20:52:59.0000000Z"}
 
 
 def fixture_manifest():
@@ -73,8 +83,7 @@ class ObservedServer:
 
     def __init__(self, matrix, positive=False, date_tie=False, null_dates=False):
         self.matrix, self.positive, self.date_tie = matrix, positive, date_tie
-        self.states = {actor: {item: {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0,
-                                    "IsFavorite": False, "Key": item} for item in M.EPISODES}
+        self.states = {actor: {item: deepcopy(OBSERVED_ZERO_USERDATA_SHAPE) for item in M.EPISODES}
                        for actor in M.ACTORS}
         if null_dates:
             for actor in self.states.values():
@@ -108,6 +117,10 @@ class ObservedServer:
                     PlayCount=value["PlayCount"] + 1,
                     PlaybackPositionTicks=0 if position == M.RUNTIME_TICKS else position,
                     LastPlayedDate="2026-09-12T01:00:" + f"{1 if self.date_tie else self.date_index:02d}" + "Z")
+                if position == M.RUNTIME_TICKS:
+                    value.pop("PlayedPercentage", None)
+                else:
+                    value["PlayedPercentage"] = position * 100 / M.RUNTIME_TICKS
             return 204, None
         if step.kind in ("reset", "cleanup-reset"):
             self.states[step.actor][step.item] = deepcopy(self.initial_states[step.actor][step.item])
@@ -454,6 +467,230 @@ class MatrixGuards(unittest.TestCase):
             matrix.accept(status, body, STAMP, SHA, matrix.last_elapsed)
         with self.assertRaises(M.MatrixError):
             matrix.begin_cleanup()
+
+    def test_34_observed_percentage_shapes_are_validated_without_normalization(self):
+        zero = deepcopy(OBSERVED_ZERO_USERDATA_SHAPE)
+        partial = deepcopy(OBSERVED_PARTIAL_USERDATA_SHAPE)
+        for value in (zero, partial):
+            retained = deepcopy(value)
+            M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+            self.assertEqual(M.canonical(value), M.canonical(retained))
+        self.assertEqual(set(zero), {"Played", "PlayCount", "PlaybackPositionTicks", "IsFavorite"})
+        self.assertNotIn("PlayedPercentage", zero)
+        self.assertNotIn("LastPlayedDate", zero)
+        self.assertEqual(partial["PlayedPercentage"], 20)
+
+    def test_35_percentage_accepts_finite_integer_and_float_without_retyping(self):
+        for percentage in (20, 20.0):
+            with self.subTest(percentage_type=type(percentage).__name__):
+                value = {**OBSERVED_PARTIAL_USERDATA_SHAPE, "PlayedPercentage": percentage}
+                M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+                self.assertIs(type(value["PlayedPercentage"]), type(percentage))
+
+    def test_36_percentage_rejects_nonfinite_wrong_types_and_out_of_range(self):
+        for percentage in (None, True, False, "20", [], {}, float("nan"), float("inf"), float("-inf"), -1, 101):
+            with self.subTest(percentage=repr(percentage)):
+                value = {**OBSERVED_PARTIAL_USERDATA_SHAPE, "PlayedPercentage": percentage}
+                with self.assertRaises(M.MatrixError):
+                    M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+
+    def test_37_percentage_uses_the_actual_position_and_supplied_runtime_exactly(self):
+        value = {**OBSERVED_PARTIAL_USERDATA_SHAPE, "PlayedPercentage": 10}
+        M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS * 2)
+        with self.assertRaises(M.MatrixError):
+            M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+        for percentage in (0, 19, 20.000000000000004, 100):
+            with self.subTest(percentage=percentage):
+                value = {**OBSERVED_PARTIAL_USERDATA_SHAPE, "PlayedPercentage": percentage}
+                with self.assertRaises(M.MatrixError):
+                    M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+
+    def test_38_completed_percentage_semantics_remain_unproven(self):
+        completed = {**OBSERVED_ZERO_USERDATA_SHAPE, "Played": True, "PlayCount": 1,
+                     "LastPlayedDate": STAMP}
+        M.require_episode_percentage(completed, runtime_ticks=M.RUNTIME_TICKS)
+        for percentage in (0, 20, 100):
+            with self.subTest(percentage=percentage):
+                with self.assertRaises(M.MatrixError):
+                    M.require_episode_percentage({**completed, "PlayedPercentage": percentage},
+                                                 runtime_ticks=M.RUNTIME_TICKS)
+
+    def test_39_absent_percentage_and_present_zero_remain_distinct(self):
+        absent = deepcopy(OBSERVED_ZERO_USERDATA_SHAPE)
+        present = {**absent, "PlayedPercentage": 0}
+        for value in (absent, present):
+            M.require_episode_percentage(value, runtime_ticks=M.RUNTIME_TICKS)
+        absent_fact = M.userdata_fact({"UserData": absent})
+        present_fact = M.userdata_fact({"UserData": present})
+        self.assertNotEqual(M.canonical(absent_fact), M.canonical(present_fact))
+        self.assertNotIn("PlayedPercentage", absent)
+        self.assertIn("PlayedPercentage", present)
+
+    def test_40_playback_change_accepts_valid_percentage_and_preserves_inputs(self):
+        zero, partial = deepcopy(OBSERVED_ZERO_USERDATA_SHAPE), deepcopy(OBSERVED_PARTIAL_USERDATA_SHAPE)
+        completed = {**zero, "Played": True, "PlayCount": 2, "LastPlayedDate": "2026-09-12T20:53:02Z"}
+        for before, after in ((zero, partial), (partial, completed)):
+            retained = M.canonical([before, after])
+            M.require_playback_userdata_change(before, after, runtime_ticks=M.RUNTIME_TICKS)
+            self.assertEqual(M.canonical([before, after]), retained)
+
+    def test_41_playback_change_validates_both_percentage_observations(self):
+        invalid_before = {**OBSERVED_ZERO_USERDATA_SHAPE, "PlayedPercentage": 1}
+        invalid_after = {**OBSERVED_PARTIAL_USERDATA_SHAPE, "PlayedPercentage": 19}
+        for before, after in ((invalid_before, OBSERVED_PARTIAL_USERDATA_SHAPE),
+                              (OBSERVED_ZERO_USERDATA_SHAPE, invalid_after)):
+            with self.subTest(invalid_before=before is invalid_before):
+                with self.assertRaises(M.MatrixError):
+                    M.require_playback_userdata_change(before, after, runtime_ticks=M.RUNTIME_TICKS)
+
+    def test_42_playback_change_rejects_unrelated_fields_presence_values_and_types(self):
+        cases = [({}, {"UnexpectedProgressField": 20}),
+                 ({"RetainedField": None}, {}),
+                 ({"RetainedField": 0}, {"RetainedField": False}),
+                 ({"RetainedField": "a"}, {"RetainedField": "b"}),
+                 ({"RetainedField": {"value": False}}, {"RetainedField": {"value": 0}}),
+                 ({}, {"IsFavorite": 0})]
+        for before_extra, after_extra in cases:
+            with self.subTest(before_extra=before_extra, after_extra=after_extra):
+                before = {**OBSERVED_ZERO_USERDATA_SHAPE, **before_extra}
+                after = {**OBSERVED_PARTIAL_USERDATA_SHAPE, **after_extra}
+                with self.assertRaises(M.MatrixError):
+                    M.require_playback_userdata_change(before, after, runtime_ticks=M.RUNTIME_TICKS)
+
+    def test_43_full_partial_detail_establishes_verified_percentage_twenty(self):
+        matrix, server = self.matrix(positive=True)
+        advance(matrix, server, lambda state: state.queue[0].stage == "R5" and state.queue[0].kind == "after-play")
+        self.assertTrue(matrix.plays["R5"]["stopped"])
+        self.assertEqual(server.states["P"]["A2"]["PlayedPercentage"], 20)
+        consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertEqual(matrix.current["P"]["A2"]["value"]["PlayedPercentage"], 20)
+        self.assertTrue(matrix.plays["R5"]["stateConfirmed"])
+
+    def test_44_full_partial_detail_keeps_legacy_percentage_absence(self):
+        matrix, server = self.matrix(positive=True)
+        advance(matrix, server, lambda state: state.queue[0].stage == "R5" and state.queue[0].kind == "after-play")
+        server.states["P"]["A2"].pop("PlayedPercentage")
+        consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertNotIn("PlayedPercentage", matrix.current["P"]["A2"]["value"])
+
+    def test_45_full_partial_detail_rejects_invalid_percentage(self):
+        for percentage in (19, True, float("nan")):
+            with self.subTest(percentage=repr(percentage)):
+                matrix, server = self.matrix(positive=True)
+                advance(matrix, server, lambda state: state.queue[0].stage == "R5" and state.queue[0].kind == "after-play")
+                server.states["P"]["A2"]["PlayedPercentage"] = percentage
+                with self.assertRaises(M.MatrixError):
+                    consume(matrix, server, matrix.last_elapsed + 10)
+                self.assertEqual(matrix.mode, "recovery-required")
+                self.assertFalse(matrix.plays["R5"]["stateConfirmed"])
+
+    def test_46_synthetic_completion_removes_an_inherited_partial_percentage(self):
+        matrix, server = self.matrix()
+        advance(matrix, server, lambda state: state.queue[0].kind == "stopped")
+        server.states["P"]["A1"]["PlayedPercentage"] = 20
+        consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertNotIn("PlayedPercentage", server.states["P"]["A1"])
+        consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertTrue(matrix.current["P"]["A1"]["value"]["Played"])
+        self.assertNotIn("PlayedPercentage", matrix.current["P"]["A1"]["value"])
+
+    def test_47_completed_full_detail_rejects_any_present_percentage(self):
+        for percentage in (0, 100):
+            with self.subTest(percentage=percentage):
+                matrix, server = self.matrix()
+                advance(matrix, server, lambda state: state.queue[0].kind == "after-play")
+                server.states["P"]["A1"]["PlayedPercentage"] = percentage
+                with self.assertRaises(M.MatrixError):
+                    consume(matrix, server, matrix.last_elapsed + 10)
+
+    def test_48_owned_playback_does_not_authorize_an_unknown_userdata_field(self):
+        matrix, server = self.matrix()
+        advance(matrix, server, lambda state: state.queue[0].kind == "after-play")
+        server.states["P"]["A1"]["UnexpectedProgressField"] = 100
+        with self.assertRaises(M.MatrixError):
+            consume(matrix, server, matrix.last_elapsed + 10)
+
+    def test_49_cleanup_reconciles_the_exact_partial_percentage_after_a_failed_read(self):
+        matrix, server = self.matrix(positive=True)
+        advance(matrix, server, lambda state: state.queue[0].stage == "R5" and state.queue[0].kind == "after-play")
+        request = matrix.prepare_next(matrix.last_elapsed)
+        authorize(matrix, request, matrix.last_elapsed)
+        with self.assertRaises(M.MatrixError):
+            matrix.accept(500, {"error": "synthetic detail failure"}, STAMP, SHA, matrix.last_elapsed)
+        matrix.begin_cleanup()
+        advance(matrix, server, lambda state: state.queue[0].kind == "cleanup-reconcile" and
+                (state.queue[0].actor, state.queue[0].item) == ("P", "A2"))
+        consume(matrix, server, matrix.last_elapsed + 10)
+        reconciled = matrix.facts[-1]
+        self.assertTrue(reconciled["ownedStopStateReconciled"])
+        self.assertTrue(reconciled["cleanupResetRequired"])
+        self.assertEqual(matrix.current["P"]["A2"]["value"]["PlayedPercentage"], 20)
+        while matrix.queue:
+            consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertEqual(matrix.mode, "closed-with-observation-failure")
+        self.assertEqual(matrix.current, matrix.baseline)
+
+    def test_50_cleanup_reconcile_rejects_percentage_inconsistent_with_actual_position(self):
+        matrix, server = self.matrix()
+        advance(matrix, server, lambda state: state.queue[0].kind == "progress")
+        request = matrix.prepare_next(matrix.last_elapsed)
+        authorize(matrix, request, matrix.last_elapsed)
+        with self.assertRaises(M.MatrixError):
+            matrix.accept(400, None, STAMP, SHA, matrix.last_elapsed)
+        matrix.begin_cleanup()
+        consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertEqual(server.states["P"]["A1"]["PlaybackPositionTicks"], 0)
+        server.states["P"]["A1"]["PlayedPercentage"] = 20
+        with self.assertRaises(M.MatrixError):
+            consume(matrix, server, matrix.last_elapsed + 10)
+        self.assertFalse(any(row["kind"] == "cleanup-reset" for row in matrix.facts))
+
+    def test_51_stage_delete_200_still_requires_the_exact_four_field_zero_detail(self):
+        for residual in ({"PlayedPercentage": 0}, {"LastPlayedDate": None}):
+            with self.subTest(residual=residual):
+                matrix, server = self.matrix(positive=True)
+                advance(matrix, server, lambda state: state.queue[0].kind == "reset-proof")
+                self.assertTrue(any(row["kind"] == "reset" and row["status"] == 200 and
+                                    row["label"].endswith("-A1") for row in matrix.facts))
+                self.assertEqual(set(server.states["P"]["A1"]), set(OBSERVED_ZERO_USERDATA_SHAPE))
+                server.states["P"]["A1"].update(residual)
+                with self.assertRaises(M.MatrixError):
+                    consume(matrix, server, matrix.last_elapsed + 10)
+                self.assertNotIn("A1", matrix.reset_proofs)
+
+    def test_52_cleanup_delete_200_still_requires_the_exact_four_field_zero_detail(self):
+        for residual in ({"PlayedPercentage": 0}, {"LastPlayedDate": None}):
+            with self.subTest(residual=residual):
+                matrix, server = self.matrix(positive=True)
+                advance(matrix, server, lambda state: state.mode == "api-observed")
+                matrix.begin_cleanup()
+                advance(matrix, server, lambda state: state.queue[0].kind == "cleanup-reset")
+                actor, item = matrix.queue[0].actor, matrix.queue[0].item
+                consume(matrix, server, matrix.last_elapsed + 10)
+                self.assertEqual(matrix.facts[-1]["status"], 200)
+                self.assertEqual(set(server.states[actor][item]), set(OBSERVED_ZERO_USERDATA_SHAPE))
+                server.states[actor][item].update(residual)
+                advance(matrix, server, lambda state: state.queue[0].kind == "cleanup-proof" and
+                        (state.queue[0].actor, state.queue[0].item) == (actor, item))
+                with self.assertRaises(M.MatrixError):
+                    consume(matrix, server, matrix.last_elapsed + 10)
+                self.assertNotIn((actor, item), matrix.cleanup_proofs)
+
+    def test_53_unacknowledged_stage_delete_cannot_be_retried_by_cleanup(self):
+        matrix, server = self.matrix(positive=True)
+        advance(matrix, server, lambda state: state.queue[0].kind == "reset")
+        request = matrix.prepare_next(matrix.last_elapsed)
+        self.assertEqual(request.method, "DELETE")
+        before = matrix.count
+        authorize(matrix, request, matrix.last_elapsed)
+        with self.assertRaises(M.MatrixError):
+            matrix.accept(500, {"error": "synthetic unacknowledged DELETE"}, STAMP, SHA, matrix.last_elapsed)
+        with self.assertRaises(M.MatrixError):
+            matrix.begin_cleanup()
+        with self.assertRaises(M.MatrixError):
+            matrix.prepare_next(matrix.last_elapsed + 10)
+        self.assertEqual(matrix.count, before + 1)
+        self.assertEqual(sum(row["request"]["method"] == "DELETE" for row in matrix.facts), 1)
 
 
 if __name__ == "__main__":

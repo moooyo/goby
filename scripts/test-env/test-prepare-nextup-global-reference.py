@@ -62,7 +62,7 @@ def load_source(path, label):
 
 def zero_state(item):
     return {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0,
-            "LastPlayedDate": None, "IsFavorite": False, "Key": "synthetic-" + item}
+            "IsFavorite": False}
 
 
 class FakeClock:
@@ -558,6 +558,8 @@ class FakeWire:
                 self.states[actor][symbol].update(Played=position == RUNTIME_TICKS, PlayCount=1,
                     PlaybackPositionTicks=0 if position == RUNTIME_TICKS else position,
                     LastPlayedDate=fixture.clock.utc_now())
+                if 0 < position < RUNTIME_TICKS:
+                    self.states[actor][symbol]["PlayedPercentage"] = 100 * position / RUNTIME_TICKS
                 self.started.pop(actor, None)
             return self.wire(204)
         raise AssertionError("An unenumerated request reached the synthetic transport: " + method + " " + request.route)
@@ -729,12 +731,14 @@ class PipelineGuards(GuardCase):
         self.assertIsNone(state["ownershipPending"])
         self.assertFalse(state["uncertain"])
         self.assertEqual(len(state["playSessionIds"]), 4)
+        self.assertEqual(len(state["deleteAttempts"]), 4)
+        self.assertEqual(len({row[2] for row in state["deleteAttempts"]}), 4)
         cleanup_paths = [path for path in self.fixture.output.rglob("*.json")
                          if json.loads(path.read_text()).get("kind") == "nextup-global-cleanup"]
         self.assertEqual(len(cleanup_paths), 1)
         cleanup = json.loads(cleanup_paths[0].read_text())
         facts = cleanup["facts"]
-        self.assertEqual(facts["contractVersion"], 2)
+        self.assertEqual(facts["contractVersion"], 3)
         self.assertEqual([(row["actor"], row["item"], row["mode"]) for row in facts["calibrations"]],
                          [("P", "A1", "partial"), ("P", "A1", "complete"), ("Q", "B1", "partial"), ("Q", "B1", "complete")])
         self.assertEqual(cleanup["attestationState"], "pending")
@@ -744,6 +748,13 @@ class PipelineGuards(GuardCase):
                 self.assertIn(["X-Emby-Token", wire.tokens[row["actor"]]], event["request"]["headers"])
                 self.assertEqual(event["response"]["status"], 200)
                 self.assertIsNone(event["request"]["body"])
+            for event_name in ("playbackInfo", "started", "progress", "stopped"):
+                event = row[event_name]
+                self.assertIn(["X-Emby-Token", wire.tokens[row["actor"]]], event["request"]["headers"])
+                self.assertEqual(event["response"]["status"], 200 if event_name == "playbackInfo" else 204)
+            if row["mode"] == "partial":
+                self.assertEqual(row["beforeDelete"]["response"]["body"]["UserData"]["PlayedPercentage"], 20)
+                self.assertNotIn("PlayedPercentage", row["afterDelete"]["response"]["body"]["UserData"])
         self.assert_no_resume(runner, wire)
 
     def test_draft_is_rejected_then_synthetic_independent_attestation_satisfies_actual_consumer(self):
@@ -1005,6 +1016,87 @@ class FailureGuards(GuardCase):
         runner, wire, unused_authority = self.runner(response_hook=corrupt)
         result = runner.run()
         self.assert_failed(result)
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in wire.calls), 1)
+
+    def test_complete_delete_rejection_keeps_pending_and_forbids_every_followup(self):
+        def reject(wire, call, response):
+            if call["request"].method == "DELETE":
+                return wire.wire(500, {"error": "Synthetic unacknowledged DELETE."})
+        runner, wire, unused_authority = self.runner(response_hook=reject)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertEqual(result["status"], "recovery_required")
+        self.assertTrue(result["uncertain"])
+        self.assertFalse(result["cleanupComplete"])
+        self.assertEqual(wire.calls[-1]["request"].label, "cal-P-partial-delete")
+        self.assertEqual(result["pending"]["ordinal"], len(wire.calls))
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in wire.calls), 1)
+        self.assertEqual(wire.revoked, set())
+        path = self.fixture.output / "private" / ("%04d-cal-P-partial-delete-response.json" % len(wire.calls))
+        self.assertEqual(result["pending"]["responseReceiptSha256"], digest(path.read_bytes()))
+        state = json.loads((self.fixture.output / "private/state.json").read_text())
+        self.assertEqual(len(state["deleteAttempts"]), 1)
+        self.assertTrue(state["uncertain"])
+        self.assertEqual(state["pending"], result["pending"])
+        self.assert_no_resume(runner, wire)
+
+    def test_incorrect_partial_percentage_stops_before_any_delete(self):
+        def corrupt(wire, call, response):
+            if call["request"].label == "cal-P-partial-before-delete":
+                wire.states["P"]["A1"]["PlayedPercentage"] = 21
+                body = json.loads(response.raw)
+                body["UserData"]["PlayedPercentage"] = 21
+                return wire.wire(200, body)
+        runner, wire, unused_authority = self.runner(response_hook=corrupt)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in wire.calls), 0)
+        self.assertEqual(wire.stop_count, 1)
+        self.assertEqual(wire.revoked, {"admin", "P", "Q"})
+
+    def test_nonzero_percentage_cannot_enter_the_zero_baseline(self):
+        def corrupt(wire, call, response):
+            if call["request"].label == "baseline-detail-P-A1":
+                body = json.loads(response.raw)
+                body["UserData"]["PlayedPercentage"] = 20
+                return wire.wire(200, body)
+        runner, wire, unused_authority = self.runner(response_hook=corrupt)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertFalse(any(call["request"].route.endswith("/PlaybackInfo") for call in wire.calls))
+        self.assertEqual(wire.stop_count, 0)
+
+    def test_completed_percentage_requires_new_actual_semantics_before_delete(self):
+        def corrupt(wire, call, response):
+            if call["request"].label == "cal-P-complete-before-delete":
+                wire.states["P"]["A1"]["PlayedPercentage"] = 100
+                body = json.loads(response.raw)
+                body["UserData"]["PlayedPercentage"] = 100
+                return wire.wire(200, body)
+        runner, wire, unused_authority = self.runner(response_hook=corrupt)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertEqual(len(runner.calibrations), 1)
+        self.assertEqual(wire.stop_count, 2)
+        self.assertEqual([call["request"].label for call in wire.calls if call["request"].method == "DELETE"], ["cal-P-partial-delete"])
+
+    def residual_zero_field(self, key, value):
+        def retain(wire, call, response):
+            if call["request"].method == "DELETE":
+                wire.states["P"]["A1"][key] = value
+        runner, wire, unused_authority = self.runner(response_hook=retain)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertFalse(result["cleanupComplete"])
+        self.assertEqual(len(runner.calibrations), 0)
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in wire.calls), 1)
+        self.assertEqual(wire.states["P"]["A1"][key], value)
+
+    def test_zero_percentage_presence_cannot_replace_the_measured_absent_field(self):
+        self.residual_zero_field("PlayedPercentage", 0)
+
+    def test_null_playback_date_cannot_replace_the_measured_absent_field(self):
+        self.residual_zero_field("LastPlayedDate", None)
 
     def test_old_public_configuration_drift_cannot_publish_draft(self):
         seen = []
@@ -1508,6 +1600,27 @@ class OwnershipGuards(GuardCase):
 
 
 class PersistenceGuards(GuardCase):
+    def test_delete_attempt_persistence_failure_prevents_the_write_and_followup(self):
+        def factory(root, uid):
+            journal = self.T.Journal(root, uid=uid)
+            original = journal.state
+            def state(value):
+                pending = value.get("pending")
+                if pending is not None and pending["request"]["method"] == "DELETE":
+                    self.assertEqual(len(value["deleteAttempts"]), 1)
+                    raise OSError("Synthetic DELETE reservation persistence failure.")
+                return original(value)
+            journal.state = state
+            return journal
+        runner, wire, unused_authority = self.runner(journal_factory=factory)
+        result = runner.run()
+        self.assert_failed(result)
+        self.assertTrue(result["uncertain"])
+        self.assertEqual(wire.calls[-1]["request"].label, "cal-P-partial-before-delete")
+        self.assertFalse(any(call["request"].method == "DELETE" for call in wire.calls))
+        self.assertEqual(wire.revoked, set())
+        self.assert_no_resume(runner, wire)
+
     def fail_save(self, suffix, *, export=False, attempts):
         failures = []
         def factory(root, uid):

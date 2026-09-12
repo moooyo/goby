@@ -1,0 +1,22 @@
+{
+  "businessHttpRequests": 0,
+  "classification": "New shared predicate applied to three pinned historical full Episode responses; no new HTTP or live calibration.",
+  "exactFullZeroPreserved": true,
+  "partialPercentageVerified": 20,
+  "passed": true,
+  "receipts": {
+    "partial": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-04/private/0115-cal-P-partial-before-delete-response.json",
+      "sha256": "50782901ce61e3d845c0c09cc921eca55f6d821b3f3526ead4c45bffc515120b"
+    },
+    "restored": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-preparation04-userdata-recovery-01/private/0004-after-response.json",
+      "sha256": "3f2639ae13fee114943059376b82a9e3595893f412880f744fbb42c8522bfd9c"
+    },
+    "zero": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-04/private/0110-cal-P-partial-before-zero-response.json",
+      "sha256": "f8eab2ca15298f393defd49d63e5eaefb26e4c4e8edd5a80b5b714e035b59822"
+    }
+  },
+  "sourceSha256": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d"
+}

@@ -1,0 +1,55 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "actualRetainedPercentage": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01/verification-01/actual-retained-percentage-report.json",
+    "sha256": "c567acf831c4fee0bb5cbbc4110610cf476dd0433d2e4a962a269a9710d66e2e"
+  },
+  "compilation": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01/verification-01/compile-report.json",
+    "sha256": "0d9beb7ab2d3c415f0e42c050efd5ad3dad0ac1af39646157d850e7dbb1c2e95"
+  },
+  "compileChecks": 8,
+  "kind": "nextup-playback-contract-verification",
+  "liveAcceptanceClaim": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "sourceManifest": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01/source-manifest.json",
+    "sha256": "bc933f03bdefedb2e9ab65a9dbd5be493038245510a649aecad2b864a690a39b"
+  },
+  "suites": [
+    {
+      "errors": 0,
+      "exitCode": 0,
+      "failures": 0,
+      "passed": true,
+      "suite": "matrix",
+      "testsRun": 53
+    },
+    {
+      "errors": 0,
+      "exitCode": 0,
+      "failures": 0,
+      "passed": true,
+      "suite": "transport",
+      "testsRun": 100
+    },
+    {
+      "errors": 0,
+      "exitCode": 0,
+      "failures": 0,
+      "passed": true,
+      "suite": "preparation",
+      "testsRun": 161
+    },
+    {
+      "errors": 0,
+      "exitCode": 0,
+      "failures": 0,
+      "passed": true,
+      "suite": "operator",
+      "testsRun": 65
+    }
+  ]
+}

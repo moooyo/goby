@@ -1,0 +1,42 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic preparation and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "passed": true,
+  "preservationOrderProbe": {
+    "expectedReportSha256": "def6349ceb9b74b954d1c8fe17bc8e4b0c033c9f83639984e251eab7600b03aa",
+    "hashSeedEnvironmentIgnoredByIsolatedWorkers": true,
+    "maximumWorkers": 32,
+    "nativeOrdersObserved": [
+      [
+        "LastActivityDate",
+        "LastLoginDate"
+      ],
+      [
+        "LastLoginDate",
+        "LastActivityDate"
+      ]
+    ],
+    "observedReportSha256": [
+      "def6349ceb9b74b954d1c8fe17bc8e4b0c033c9f83639984e251eab7600b03aa"
+    ],
+    "precondition": "both-native-orders-observed",
+    "workersRun": 4
+  },
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d",
+    "matrix": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "preparation": "206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574",
+    "transport": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "suite": "prepare-nextup-global-reference-guards",
+  "testsRun": 161
+}

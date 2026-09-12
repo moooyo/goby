@@ -1,0 +1,16 @@
+{
+  "businessHttpRequests": 0,
+  "bytecodeWritten": false,
+  "checks": 8,
+  "files": {
+    "nextup-global-matrix-guards.py": "e18f06dc57b28ab07754cf0cd04de510ca0cdc94e50cc39b64d92cf72deecdf7",
+    "nextup-global-matrix.py": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "nextup-global-transport-guards.py": "f99fd15148cd18cc8166da83ac9eb1612f4319b6bf31593ce8ef100b80535844",
+    "nextup-global-transport.py": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8",
+    "prepare-nextup-global-reference.py": "206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574",
+    "run-nextup-global-reference.py": "e97667ac01541d2115d0df3d4062239895662d41140637e8030b410b1a05475a",
+    "test-prepare-nextup-global-reference.py": "e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d",
+    "test-run-nextup-global-reference.py": "2b9d5b76efcaf78af71f61ea606987a9ba2361a82a7885a4b2d3c4c488852371"
+  },
+  "passed": true
+}

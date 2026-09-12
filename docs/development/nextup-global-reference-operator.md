@@ -1,12 +1,14 @@
 # Independently attested reference matrix operator
 
-Status: **Frozen TOOL03 passed 65 remote fake guards and two compile checks
-against the frozen TOOL08 producer, which passed 154 remote guards and two
-compile checks. Real preparation-04 failed; no new fixture was independently
-released and no live matrix or client acceptance was established**.
+Status: **The frozen playback-contract bundle passed 65 operator guards,
+161 preparation guards, 100 transport guards, 53 matrix guards, and eight
+compile checks. It integrates cleanup v3, strict shared percentage validation,
+and once-per-lifecycle DELETE. The retained 8/10/12 release-v2 population is
+synthetic-only; preparation05 requires the new observer/release integration.
+No new fixture, live matrix result, or client acceptance is established**.
 
 [run-nextup-global-reference.py](../../scripts/test-env/run-nextup-global-reference.py)
-is the outer entry for the unchanged `TransportRunner`. It does not prepare a
+is the outer entry for the source-bound `TransportRunner`. It does not prepare a
 fixture, publish an attestation, modify a producer draft, create a proxy, enter
 a namespace, restart a service, support Goby, or resume a failed run. Its only
 live HTTP path is the frozen reference matrix after complete admission.
@@ -16,6 +18,12 @@ write a new owner-only attestation outside the preparation output. A failed
 preparation, an administrator-only cleanup, or a boolean-edited execution file
 cannot satisfy this entry. Root also creates the bounded systemd unit; this
 operator only reads its properties and current process identity.
+
+Actual preparation05 remains prohibited until fresh ten-user/twelve-library/
+24-detail observer evidence and the reviewed producer release-v3 contract are
+integrated. The current development source retains the older 8/10/12 baseline,
+release schema v2, and its existing budgets for synthetic checks; neither that
+fixture nor the completed tests authorize another live preparation.
 
 ## Entry and attestation
 
@@ -104,8 +112,8 @@ state remains phase cleanup with the three tokens/sessions retained and all
 three actors revoked. Successful cleanup is exactly six requests. The operator
 recomputes the plan with the pinned producer source, requires the retained plan
 to match, and reads `plan.normalMaximum` and
-`plan.successMaximumIncludingLogout` from that recomputed plan. For frozen
-TOOL08 these are **257 normal requests and 263 including successful cleanup**.
+`plan.successMaximumIncludingLogout` from that recomputed plan. The retained
+development plan allows **257 normal requests and 263 including successful cleanup**.
 They replace the historical 232/238 assumptions. All five plan limit fields
 must be positive integers; the success maximum must equal the normal maximum
 plus six, fit the total cap, and leave the required cleanup reserve.
@@ -207,6 +215,24 @@ The replay naturally preserves legitimate output details: tokens and stopped
 plays remain in final state, library receipt digests are added during draft
 creation, and the one permitted library inventory reconciliation retains its
 ownership-pending reserved state.
+
+Current cleanup facts use contractVersion 3. Each of the four calibrations
+retains beforeZero, playbackInfo, started, progress, stopped, beforeDelete,
+delete, and afterDelete: 32 ordered events and 34 distinct response receipt
+digests including the two preparation logins. The transport validates actual
+item/runtime and source/session/STOP bindings before accepting each change and
+exact full-zero restoration. The operator's complete raw replay supplies the
+independent request and file-byte evidence behind those receipt values.
+
+The [shared percentage contract](nextup-playback-percentage-contract.md)
+permits a present finite numeric PlayedPercentage only for Played=false and
+the exact position/runtime ratio. It preserves absent fields and unrelated
+values/types; Played=true with a present percentage remains unproved. DELETE
+attempts are reserved before dispatch per actor/item/acknowledged stopped
+PlaySessionId. An unacknowledged DELETE retains pending responsibility, and a
+200 followed by failed exact restoration cannot trigger another cleanup DELETE
+for that lifecycle. The operator preserves these failures instead of publishing
+a fixture or retrying the transport.
 
 ## Completed producer unit and running matrix unit
 
@@ -322,7 +348,35 @@ fake unit/cgroup/process observations, an indexed fake response source, and
 fake matrix HTTP. All Python runs use `/usr/bin/python3 -I -B` through
 `ssh test-env`; no local verification is allowed.
 
-### Current frozen TOOL03 and TOOL08 verification
+### Current frozen playback-contract verification
+
+The remote bundle is
+`/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01`.
+Its [operator suite](nextup-playback-contract-operator-verification-01.json)
+passed 65 guards; the
+[preparation suite](nextup-playback-contract-preparation-verification-01.json)
+passed 161, [transport](nextup-playback-contract-transport-verification-01.json)
+passed 100, and [matrix](nextup-playback-contract-matrix-verification-01.json)
+passed 53. All 379 guards and eight compile checks passed, and the new predicate
+accepted three pinned actual partial-state DTOs. The
+[bundle report](nextup-playback-contract-verification-01.json), SHA-256
+`3f79f264037d657fd4f2dbae0834caf73d049debc077b232a84684145bc85039`,
+records zero actual business HTTP or process probes and no live acceptance claim.
+
+| Current frozen artifact | SHA-256 |
+| --- | --- |
+| Operator source | `e97667ac01541d2115d0df3d4062239895662d41140637e8030b410b1a05475a` |
+| Operator guards | `2b9d5b76efcaf78af71f61ea606987a9ba2361a82a7885a4b2d3c4c488852371` |
+| Producer dependency | `206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574` |
+| Producer guards | `e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d` |
+| Transport dependency | `4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8` |
+| Matrix dependency | `a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d` |
+
+The four suite results establish synthetic source compatibility, persistence
+behavior, and retained-DTO interpretation. They do not supply the fresh
+population/release authority or a successful live preparation terminal.
+
+### Historical TOOL03 and TOOL08 verification
 
 The [TOOL03 operator receipt](nextup-global-reference-operator-verification-03.json)
 records **65 guards passed**, with zero failures, errors, or skips; both remote
@@ -349,7 +403,7 @@ independent grant terminal. It issued zero business HTTP requests and zero
 process probes. This proves reconstruction of that prior release evidence;
 it is not successful live preparation or matrix acceptance.
 
-| Current frozen artifact | SHA-256 |
+| Historical TOOL03/TOOL08 artifact | SHA-256 |
 | --- | --- |
 | TOOL03 operator source | `3a07ff2fdd6817a38e98a205d3b44fb0f1231d4d1b58d785cf6b1cc3eba3dd8a` |
 | TOOL03 operator guards | `2fc36f452e12eb3c165135b84cb56ba8420842bd222cd720e5ef7a0893f78cc3` |
@@ -362,16 +416,17 @@ it is not successful live preparation or matrix acceptance.
 
 The [real preparation-04 attempt](nextup-global-reference-preparation-04.md)
 failed during partial calibration when full
-`UserData` acquired `PlayedPercentage: 20`. Frozen TOOL08 still permits playback
+`UserData` acquired `PlayedPercentage: 20`. Historical TOOL08 permitted playback
 changes only to `Played`, `PlayCount`, `PlaybackPositionTicks`, and
 `LastPlayedDate` before comparing all remaining full `UserData` fields. That
-same four-field gate also precedes cleanup reset and has not been repaired.
+same four-field gate also preceded cleanup reset in that retained source.
 The separately scoped
 [independent recovery](nextup-preparation04-userdata-recovery-independent-terminal.json)
 confirmed one DELETE, exact full zero restoration, and new-token closure in six
-requests while preserving 152 protected roots. It does not repair the frozen
-producer rule or supply the missing four calibrations. A future preparation
-requires a reviewed rule and a new complete baseline for the enlarged population.
+requests while preserving 152 protected roots. It does not rewrite that source
+or supply the missing four calibrations. The new shared rule is verified in the
+current bundle; a future preparation still requires the fresh enlarged baseline
+and reviewed release-v3 integration.
 Preparation-04 therefore does not provide the successful terminal required by
 this operator. Neither synthetic verification nor completed prior-release
 reconstruction publishes a fixture, completes a live matrix, or establishes

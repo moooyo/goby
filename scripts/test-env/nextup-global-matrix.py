@@ -90,6 +90,44 @@ def userdata_fact(body):
             "types": {key: type(item).__name__ for key, item in value.items()}}
 
 
+def require_episode_percentage(userdata, *, runtime_ticks):
+    """Validate an observed Episode percentage without normalizing absent fields.
+
+    The caller must first bind the full Episode identity and actual runtime.
+    A completed Played=true percentage has no accepted reference contract yet.
+    """
+    require(isinstance(userdata, dict) and integer(runtime_ticks) and runtime_ticks > 0,
+            "Episode percentage validation needs full UserData and an actual positive integer runtime.")
+    require(type(userdata.get("Played")) is bool and integer(userdata.get("PlayCount")) and userdata["PlayCount"] >= 0 and
+            integer(userdata.get("PlaybackPositionTicks")) and 0 <= userdata["PlaybackPositionTicks"] <= runtime_ticks,
+            "Episode percentage validation requires actual bounded playback primitives.")
+    if "PlayedPercentage" not in userdata:
+        return
+    percentage = userdata["PlayedPercentage"]
+    require(type(percentage) in (int, float) and (type(percentage) is int or math.isfinite(percentage)) and 0 <= percentage <= 100,
+            "A present PlayedPercentage must be a finite number in [0, 100], not a boolean, null, or string.")
+    require(userdata["Played"] is False,
+            "A present percentage for Played=true requires a separately observed completed-state contract.")
+    numerator, denominator = (percentage, 1) if integer(percentage) else percentage.as_integer_ratio()
+    require(numerator * runtime_ticks == 100 * userdata["PlaybackPositionTicks"] * denominator,
+            "The observed Episode percentage differs from the exact actual position/runtime ratio.")
+
+
+def require_playback_userdata_change(before_userdata, after_userdata, *, runtime_ticks):
+    """Allow only bounded playback-derived changes after an acknowledged owned STOP.
+
+    Callers retain the complete values, fields, and primitive types, bind the
+    Episode/runtime, and prove the STOP separately. Exact zero restoration is a
+    separate full-baseline equality check; this function never authorizes DELETE.
+    """
+    require_episode_percentage(before_userdata, runtime_ticks=runtime_ticks)
+    require_episode_percentage(after_userdata, runtime_ticks=runtime_ticks)
+    playback = {"Played", "PlayCount", "PlaybackPositionTicks", "LastPlayedDate", "PlayedPercentage"}
+    old = {key: value for key, value in before_userdata.items() if key not in playback}
+    current = {key: value for key, value in after_userdata.items() if key not in playback}
+    require(canonical(old) == canonical(current), "An owned STOP does not authorize changing unrelated UserData fields or types.")
+
+
 def zero_state(fact):
     value = fact["value"]
     return (value["Played"] is False and value["PlayCount"] == 0 and
@@ -340,6 +378,8 @@ class Matrix:
         self.plays = {}
         self.touched = set()
         self.restored_pairs = set()
+        self.delete_attempts = set()
+        self.restoration_failed = False
         self.reset_proofs = set()
         self.cleanup_proofs = set()
         self.revoked = set()
@@ -489,6 +529,9 @@ class Matrix:
             if step.cleanup and not planning:
                 require((step.actor, step.item) in self.cleanup_reconciled,
                         "Cleanup needs a fresh full-detail reconciliation before its DELETE.")
+            if not planning:
+                require(self._delete_key(step) not in self.delete_attempts,
+                        "A stopped lifecycle already attempted DELETE; repeated restoration needs a separate recovery manifest.")
             route, method = prefix + "/PlayedItems/" + item, "DELETE"
         elif step.kind == "playback-info":
             require(planning or all(len(self.baseline[actor]) == 6 for actor in ACTORS),
@@ -552,7 +595,14 @@ class Matrix:
                 "actorTokenSha256": actor_token_sha256}
         if self.queue[0].kind == "playback-info":
             self.touched.add((self.queue[0].actor, self.queue[0].item))
+        if self.queue[0].kind in ("reset", "cleanup-reset"):
+            self.delete_attempts.add(self._delete_key(self.queue[0]))
         return {"ordinal": self.count, "request": request.fact(), "intentReceiptSha256": intent_receipt_sha256}
+
+    def _delete_key(self, step):
+        known = [play for play in self.plays.values() if play["actor"] == step.actor and play["item"] == step.item]
+        require(known and known[-1]["stopped"], "DELETE needs the latest acknowledged stopped actor/item lifecycle.")
+        return (step.actor, step.item, known[-1]["context"]["PlaySessionId"])
 
     def accept(self, status, body, response_timestamp, response_receipt_sha256, elapsed_seconds):
         """Consume actual decoded HTTP facts; requested positions never establish state."""
@@ -568,10 +618,16 @@ class Matrix:
                 "status": status, "responseTimestamp": response_timestamp,
                 "responseReceiptSha256": response_receipt_sha256, "bodyType": type(body).__name__}
         self.facts.append(fact)
+        if step.kind in ("reset", "cleanup-reset") and (not integer(status) or status != 200):
+            self.failure = {"label": step.label, "reason": "The attempted DELETE was not acknowledged with HTTP 200.", "responseRetained": True}
+            self.mode, self.outcome = "recovery-required", "recovery_required"
+            raise MatrixError("An unacknowledged DELETE keeps its pending intent and requires independent recovery.")
         self.pending = None
         try:
             self._accept_step(step, status, body, fact, elapsed_seconds)
         except (MatrixError, TypeError, KeyError, IndexError) as error:
+            if step.kind == "reset-proof":
+                self.restoration_failed = True
             self.failure = {"label": step.label, "reason": str(error), "responseRetained": True}
             self.mode = "recovery-required"
             self.outcome = "recovery_required"
@@ -636,7 +692,7 @@ class Matrix:
                     "Exactly one owned media source and an acknowledged play session are required.")
             source = body["MediaSources"][0]
             require(isinstance(source, dict) and isinstance(source.get("Id"), str) and source["Id"] and
-                    source.get("RunTimeTicks") == RUNTIME_TICKS,
+                    integer(source.get("RunTimeTicks")) and source["RunTimeTicks"] == RUNTIME_TICKS,
                     "The negotiated source differs from the authoritative 600-second fixture.")
             require(all(play["context"]["PlaySessionId"] != body["PlaySessionId"] for play in self.plays.values()),
                     "A new lifecycle unexpectedly reused a known play session identifier.")
@@ -712,9 +768,11 @@ class Matrix:
                     self.reset_proofs.add(step.item)
             return
         require(body.get("ParentId") == mapped["parentId"] and body.get("SeriesId") == mapped["seriesId"] and
-                body.get("ParentIndexNumber") == mapped["parentIndexNumber"] and
-                body.get("IndexNumber") == mapped["indexNumber"] and body.get("RunTimeTicks") == RUNTIME_TICKS,
+                integer(body.get("ParentIndexNumber")) and body["ParentIndexNumber"] == mapped["parentIndexNumber"] and
+                integer(body.get("IndexNumber")) and body["IndexNumber"] == mapped["indexNumber"] and
+                integer(body.get("RunTimeTicks")) and body["RunTimeTicks"] == mapped["runtimeTicks"] == RUNTIME_TICKS,
                 "The full episode identity, numbering, relations, or runtime differs.")
+        require_episode_percentage(body.get("UserData"), runtime_ticks=body["RunTimeTicks"])
         observed = userdata_fact(body)
         fact["userData"] = deepcopy(observed)
         previous = self.current[step.actor].get(step.item)
@@ -733,6 +791,8 @@ class Matrix:
         elif step.kind == "after-play":
             value = observed["value"]
             require(self.plays[step.lifecycle]["stopped"], "State proof cannot precede its acknowledged stop.")
+            require(previous is not None, "Playback state changes need the retained full before observation.")
+            require_playback_userdata_change(previous["value"], value, runtime_ticks=body["RunTimeTicks"])
             require(value["PlayCount"] > 0, "Reported playback did not persist a positive count.")
             observed_date = parse_date(value.get("LastPlayedDate"))
             if step.position == RUNTIME_TICKS:
@@ -759,11 +819,8 @@ class Matrix:
                        play["item"] == step.item and play["stopped"] and not play["stateConfirmed"]]
             if canonical(observed) != canonical(previous):
                 require(stopped, "A changed cleanup observation lacks an unreconciled acknowledged owned stop.")
-                playback_fields = {"Played", "PlayCount", "PlaybackPositionTicks", "LastPlayedDate"}
                 old, current = previous["value"], observed["value"]
-                require(canonical({key: value for key, value in old.items() if key not in playback_fields}) ==
-                        canonical({key: value for key, value in current.items() if key not in playback_fields}),
-                        "An owned stop does not authorize changing unrelated UserData fields.")
+                require_playback_userdata_change(old, current, runtime_ticks=body["RunTimeTicks"])
                 require(current["PlayCount"] >= old["PlayCount"] and
                         current["PlaybackPositionTicks"] <= RUNTIME_TICKS,
                         "The stopped playback history is outside the bounded owned episode state.")
@@ -804,6 +861,7 @@ class Matrix:
         """Select only the pre-enumerated cleanup subset; never replay a lost mutation."""
         self._check_frozen_inputs()
         require(not self.cleanup_started, "Cleanup is single-use; a failed cleanup needs a separate recovery manifest.")
+        require(not self.restoration_failed, "A completed DELETE that failed exact zero proof needs separate recovery, not another cleanup write.")
         require(self.pending is None, "A lost response needs separate retained recovery; cleanup cannot infer its effects.")
         require(self.mode in ("api-observed", "client-discovery-required", "recovery-required"),
                 "Cleanup requires a completed API branch or an explicit retained failure.")
@@ -876,6 +934,7 @@ class Matrix:
                 "summaries": deepcopy(self.summaries), "profiles": deepcopy(self.profiles),
                 "preferences": deepcopy(self.preferences), "sessions": deepcopy(self.sessions),
                 "plays": deepcopy(self.plays), "touched": sorted(self.touched),
+                "deleteAttempts": [list(row) for row in sorted(self.delete_attempts)], "restorationFailed": self.restoration_failed,
                 "positive": deepcopy(self.positive), "ranking": deepcopy(self.ranking),
                 "r0R4Complete": self.r0_r4_complete, "r5R6Started": self.r5_r6_started,
                 "extensionComplete": self.extension_complete, "failure": deepcopy(self.failure),

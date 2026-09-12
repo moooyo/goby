@@ -1,0 +1,11 @@
+{
+  "classification": "synthetic planner guards; not reference evidence",
+  "errors": 0,
+  "failures": 0,
+  "guardSha256": "e18f06dc57b28ab07754cf0cd04de510ca0cdc94e50cc39b64d92cf72deecdf7",
+  "passed": true,
+  "skipped": 0,
+  "sourceSha256": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+  "suite": "nextup-global-matrix-guards",
+  "testsRun": 53
+}

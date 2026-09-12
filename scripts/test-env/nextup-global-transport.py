@@ -37,6 +37,7 @@ URL_SECRET = re.compile(r"(?i)([?&](?:" + "|".join(re.escape(key) for key in sor
 RECEIPT_NAMES = {"preparation", "coordination", "catalog", "cleanup", "policy-P", "policy-Q", "media-LA", "media-LB"}
 CALIBRATIONS = (("P", "A1", "partial"), ("P", "A1", "complete"),
                 ("Q", "B1", "partial"), ("Q", "B1", "complete"))
+CALIBRATION_EVENTS = ("beforeZero", "playbackInfo", "started", "progress", "stopped", "beforeDelete", "delete", "afterDelete")
 CALIBRATION_HEADERS = {"accept", "authorization", "x-emby-token", "host", "accept-encoding",
                        "connection", "content-length", "user-agent", "content-type"}
 
@@ -356,9 +357,9 @@ class Authority:
     def _cleanup_proof(self, facts):
         matrix = self.matrix
         require(isinstance(facts, dict) and set(facts) == {"contractVersion", "process", "serverId", "actors", "calibrations"} and
-                type(facts["contractVersion"]) is int and facts["contractVersion"] == 2 and
+                type(facts["contractVersion"]) is int and facts["contractVersion"] == 3 and
                 facts["process"] == self.execution["process"] and facts["serverId"] == matrix["serverId"],
-                "The version-two four-calibration cleanup contract is required.")
+                "The version-three four-calibration cleanup contract with complete stopped lifecycles is required.")
         require(isinstance(facts["actors"], dict) and set(facts["actors"]) == {"P", "Q"},
                 "Cleanup calibration must acknowledge both ordinary preparation actors.")
         actors = {actor: self._calibration_actor(actor, facts["actors"][actor]) for actor in ("P", "Q")}
@@ -368,16 +369,16 @@ class Authority:
         require(len(receipts) == 2, "Each preparation login must retain its own independent response receipt.")
         rows = facts["calibrations"]
         require(isinstance(rows, list) and len(rows) == len(CALIBRATIONS), "Exactly four owned cleanup calibrations are required.")
-        baselines, previous_ordinal, previous_time = {}, 0, None
+        baselines, previous_ordinal, previous_time, play_sessions = {}, 0, None, set()
         for row, expected in zip(rows, CALIBRATIONS):
-            require(isinstance(row, dict) and set(row) == {"actor", "item", "mode", "beforeZero", "beforeDelete", "delete", "afterDelete"} and
+            require(isinstance(row, dict) and set(row) == {"actor", "item", "mode", *CALIBRATION_EVENTS} and
                     (row["actor"], row["item"], row["mode"]) == expected,
                     "Calibration order must be P/A1 partial, P/A1 complete, Q/B1 partial, Q/B1 complete.")
             actor, item, mode = expected
             details = {}
-            for name in ("beforeZero", "beforeDelete", "delete", "afterDelete"):
+            for name in CALIBRATION_EVENTS:
                 event = row[name]
-                body = self._calibration_event(event, actor, item, actors[actor], deleting=name == "delete")
+                body = self._calibration_event(event, actor, item, actors[actor], kind=name)
                 require(event["responseReceiptSha256"] not in receipts, "A historical response receipt cannot be reused as another calibration observation.")
                 receipts.add(event["responseReceiptSha256"])
                 try:
@@ -387,8 +388,29 @@ class Authority:
                 require(event["ordinal"] > previous_ordinal and (previous_time is None or completed >= previous_time),
                         "Completed calibration observations must retain their actual increasing request order.")
                 previous_ordinal, previous_time = event["ordinal"], completed
-                if name != "delete":
+                if name in ("beforeZero", "beforeDelete", "afterDelete"):
                     details[name] = self._calibration_detail(body, item)
+            runtime = row["beforeZero"]["response"]["body"]["RunTimeTicks"]
+            info = row["playbackInfo"]["response"]["body"]
+            require(isinstance(info, dict) and isinstance(info.get("MediaSources"), list) and len(info["MediaSources"]) == 1 and
+                    isinstance(info["MediaSources"][0], dict) and type(info["MediaSources"][0].get("RunTimeTicks")) is int and
+                    info["MediaSources"][0]["RunTimeTicks"] == runtime, "PlaybackInfo must acknowledge one source with the actual bound Episode runtime.")
+            try:
+                self.planner.require_id(info.get("PlaySessionId"), "Calibration PlaySessionId")
+                self.planner.require_id(info["MediaSources"][0].get("Id"), "Calibration MediaSourceId")
+            except (ValueError, TypeError) as error:
+                raise TransportError("Calibration playback identifiers must be real acknowledged public identifiers.") from error
+            require(info["PlaySessionId"] not in play_sessions, "A calibration cannot reuse a prior actor or mode's play session.")
+            play_sessions.add(info["PlaySessionId"])
+            context = {"ItemId": matrix["items"][item]["id"], "MediaSourceId": info["MediaSources"][0]["Id"],
+                "PlaySessionId": info["PlaySessionId"], "SessionId": actors[actor]["sessionId"]}
+            target = self.planner.PARTIAL_TICKS if mode == "partial" else runtime
+            started = {**context, "RunTimeTicks": runtime, "PositionTicks": 0, "CanSeek": True, "IsPaused": False,
+                "IsMuted": False, "PlayMethod": "DirectStream", "PlaybackRate": 1}
+            expected_bodies = {"started": started, "progress": {**started, "PositionTicks": target, "EventName": "TimeUpdate"},
+                "stopped": {**context, "PositionTicks": target, "Failed": False, "IsAutomated": False}}
+            require(all(canonical(row[name]["request"]["body"]) == canonical(body) for name, body in expected_bodies.items()),
+                    "The completed start/progress/STOP receipts do not bind the exact login, source, play session, runtime, and target.")
             baseline, changed, restored = details["beforeZero"], details["beforeDelete"], details["afterDelete"]
             require(self.planner.zero_state(baseline) and self.planner.zero_state(restored) and
                     canonical(baseline) == canonical(restored), "The exact complete zero UserData was not restored after this calibration.")
@@ -407,10 +429,10 @@ class Authority:
                         "Partial calibration must prove unplayed state at exactly 120 seconds.")
             else:
                 require(value["Played"] is True, "Complete calibration must prove actual Played=true at the authoritative duration.")
-            playback_fields = {"Played", "PlayCount", "PlaybackPositionTicks", "LastPlayedDate"}
-            unchanged_before = {key: value for key, value in baseline["value"].items() if key not in playback_fields}
-            unchanged_after = {key: value for key, value in changed["value"].items() if key not in playback_fields}
-            require(canonical(unchanged_before) == canonical(unchanged_after), "Calibration playback changed unrelated UserData fields.")
+            try:
+                self.planner.require_playback_userdata_change(baseline["value"], changed["value"], runtime_ticks=runtime)
+            except (ValueError, TypeError) as error:
+                raise TransportError("Confirmed calibration playback changed unrelated fields or an unproved derived percentage.") from error
 
     def _calibration_actor(self, actor, value):
         mapped = self.matrix["actors"][actor]
@@ -435,21 +457,34 @@ class Authority:
             raise TransportError("Preparation device and session identifiers must be explicit public identifiers.") from error
         return {"tokenSha256": sha_bytes(body["AccessToken"].encode()), "sessionId": session["Id"], "deviceId": value["deviceId"]}
 
-    def _calibration_event(self, event, actor, item, context, *, deleting):
+    def _calibration_event(self, event, actor, item, context, *, kind):
         require(isinstance(event, dict) and set(event) == {"ordinal", "completedAt", "responseReceiptSha256", "request", "response"} and
                 type(event["ordinal"]) is int and event["ordinal"] > 0 and valid_sha(event["responseReceiptSha256"]),
                 "Every calibration observation needs its actual ordinal and response receipt digest.")
         request, response = event["request"], event["response"]
-        route = "/emby/Users/" + self.matrix["actors"][actor]["userId"] + ("/PlayedItems/" if deleting else "/Items/") + self.matrix["items"][item]["id"]
+        user, item_id = self.matrix["actors"][actor]["userId"], self.matrix["items"][item]["id"]
+        routes = {"beforeZero": ("GET", "/emby/Users/" + user + "/Items/" + item_id, 200),
+            "beforeDelete": ("GET", "/emby/Users/" + user + "/Items/" + item_id, 200),
+            "afterDelete": ("GET", "/emby/Users/" + user + "/Items/" + item_id, 200),
+            "delete": ("DELETE", "/emby/Users/" + user + "/PlayedItems/" + item_id, 200),
+            "playbackInfo": ("POST", "/emby/Items/" + item_id + "/PlaybackInfo", 200),
+            "started": ("POST", "/emby/Sessions/Playing", 204), "progress": ("POST", "/emby/Sessions/Playing/Progress", 204),
+            "stopped": ("POST", "/emby/Sessions/Playing/Stopped", 204)}
+        method, route, status = routes[kind]
         require(isinstance(request, dict) and set(request) == {"method", "route", "headers", "body"} and
-                request["method"] == ("DELETE" if deleting else "GET") and request["route"] == route and request["body"] is None,
-                "Calibration reads and DELETE must use the exact owned actor/item route with no body or query.")
+                request["method"] == method and request["route"] == route and
+                (request["body"] is None if method in ("GET", "DELETE") else isinstance(request["body"], dict)),
+                "Calibration operations must use their exact actor/item route and request body shape without extra query flags.")
+        if kind == "playbackInfo":
+            require(canonical(request["body"]) == canonical({"UserId": user, "IsPlayback": True}),
+                    "Calibration negotiation must use the exact ordinary actor and playback flag.")
         headers = request["headers"]
         require(len(bounded_header_prefix(headers)) == len(headers) and
                 all(key.lower() in CALIBRATION_HEADERS and "\r" not in key + value and "\n" not in key + value for key, value in headers),
                 "Calibration request headers exceed their bound or contain an unreviewed header or line break.")
-        require(all(value == "0" for key, value in headers if key.lower() == "content-length"),
-                "Bodyless calibration requests cannot declare an entity body.")
+        expected_length = "0" if request["body"] is None else str(len(canonical(request["body"]).encode()))
+        require(all(value == expected_length for key, value in headers if key.lower() == "content-length"),
+                "Calibration content length differs from its exact complete request body.")
         tokens = [value for key, value in headers if key.lower() == "x-emby-token"]
         authorization = [value for key, value in headers if key.lower() == "authorization"]
         require(len(tokens) == 1 and sha_bytes(tokens[0].encode()) == context["tokenSha256"] and len(authorization) == 1 and
@@ -464,8 +499,8 @@ class Authority:
             metadata[match.group(1)] = match.group(2)
         require(set(metadata) == {"Client", "Device", "DeviceId", "Version"} and metadata["DeviceId"] == context["deviceId"],
                 "Calibration requests cannot substitute another actor's device or an additional token source.")
-        require(isinstance(response, dict) and set(response) == {"status", "body"} and type(response["status"]) is int and response["status"] == 200,
-                "Each full-detail read and narrow DELETE requires its actual HTTP 200 response.")
+        require(isinstance(response, dict) and set(response) == {"status", "body"} and type(response["status"]) is int and response["status"] == status,
+                "Each calibration operation requires its actual expected complete HTTP status.")
         return response["body"]
 
     def _calibration_detail(self, body, item):
@@ -477,7 +512,9 @@ class Authority:
                 type(body.get("RunTimeTicks")) is int and body["RunTimeTicks"] == self.planner.RUNTIME_TICKS,
                 "Every calibration full detail must retain its mapped episode identity, relations, numbering, and runtime.")
         try:
-            return self.planner.userdata_fact(body)
+            fact = self.planner.userdata_fact(body)
+            self.planner.require_episode_percentage(fact["value"], runtime_ticks=body["RunTimeTicks"])
+            return fact
         except (ValueError, TypeError) as error:
             raise TransportError("Calibration UserData must preserve the planner's complete field and primitive-type contract.") from error
 
@@ -857,7 +894,8 @@ class TransportRunner:
         except BaseException as error:
             if self.matrix.pending is not None or request.login or request.route.endswith("/PlaybackInfo") or self.matrix.failure is None or request.cleanup:
                 self.unresolved_responses.append({"label": request.label, "actor": request.actor, "privateWireSha256": response_sha})
-                self._failure("acceptance-recovery-required", error, lost=self.matrix.pending is not None)
+                retained_delete_failure = request.method == "DELETE" and self.matrix.failure is not None and self.matrix.failure.get("responseRetained") is True
+                self._failure("acceptance-recovery-required", error, lost=self.matrix.pending is not None and not retained_delete_failure)
             else:
                 self.failure = {"kind": "observation-failure", "errorType": type(error).__name__, "message": str(error)}
                 self.failure_events.append(self.failure)

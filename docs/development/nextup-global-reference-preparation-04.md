@@ -10,7 +10,8 @@ calibration set, matrix fixture release, or client acceptance is established.
 A separate bounded recovery has been independently accepted after its
 six-request sequence. The actual raw receipts prove exact zero-state
 restoration and closure of its new token. The original failed preparation
-record remains unchanged.
+record remains unchanged. The full parent scope has also completed independent
+seal-03 verification, including exact source replay of all 172 requests.
 
 ## Frozen tooling and prior verification
 
@@ -136,12 +137,64 @@ capture; the complete Goby fixture remained at 83 sessions, 70 devices, and
 The existing proxy was reused unchanged. This document makes no assertion
 that its internal reads of original implementation bytes were zero.
 
+## Completed independent parent seal
+
+The full preparation-04 seal is complete in
+`/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-seal-03`.
+The [independent parent terminal](nextup-global-reference-preparation-04-independent-terminal.json)
+has SHA-256
+`33f40ce85fc0934bc88a12c4e34cbf4cd8a8b9a682e446d9b1e1feb85e28841a`
+and status `failed_preparation_independently_sealed_with_separate_recovery`.
+
+The audit executed the exact frozen producer source against all 172 retained
+attempts, with their actual requests, reserved states, raw responses, payloads,
+token contexts, and timestamps. The historical output-existence gate was
+substituted in memory; verified media receipts and an in-memory journal avoided
+new fixture writes, and the replay transport returned only the indexed recorded
+responses. Actual source/input/release, lock, and process authority checks were
+retained. No data, status, error obligation, or report was normalized.
+
+All **526 private files and 173 export files matched byte for byte**, including
+the final state, terminal, and preservation reports. There were zero byte
+differences. The source reproduced 115 normal and 57 cleanup requests, zero
+parent DELETEs, four playback requests, zero completed calibrations, and all
+three exact token closures. It reproduced the percentage-field rejection in
+both calibration and cleanup. The parent terminal remains `recovery_required`
+with `cleanupComplete=false`; independent recovery is a separately linked fact.
+
+| Seal-03 evidence, relative to its root | SHA-256 |
+| --- | --- |
+| `seal-01.py` | `bbdc47ed398b96cafdbe109204b3dee970569a2d027ddec013609b5e19849943` |
+| `exact-replay-comparison.json` | `106aa6a144d3b9ce37d086d82b7f98582e648b43f6c22f910f8daaa62db4e056` |
+| `public-reconstruction.json` | `6f8c8e13bf4e443c1da474baff40efd37b9c13c8e94e30b9dc5dc12ccf369f93` |
+| `completed-scope-files.json` | `d76b6ef06d69f91d824aa02ae140f638b2e536372d240e99f8359ef885947708` |
+| `preservation-after.json` | `cf631148519136bcdbd20238532dab99cf3943f344cd90aa6747686045c252fe` |
+
+The parent unit retained invocation `fec8b8d4fc054a8fa5ecb63b4c92d8ac`,
+exit status 2, MainPID 0, and former PID `1511969`. The accepted recovery unit
+retained its recorded invocation and exit status 0. Both former PIDs were absent
+and both exact service cgroups were empty. The seal additionally reconciled the
+recovery's six raw requests, one DELETE, exact full zero restoration, and new
+token closure against the accepted independent recovery terminal.
+
+Fresh before/after preservation captures matched all **154 roots**: the previous
+152 protected roots plus the accepted recovery output and execution roots.
+The prior 148-root preparation preservation remained intact. Service identities,
+main files, and the complete approved Goby fixture matched, including the
+historical v7 state except its capture timestamp and counts of 83 sessions,
+70 devices, and 185 activity entries. The seal issued zero business HTTP and
+read no reference database or original implementation bytes.
+
+The parent cleanup snapshot recorded ten users, twelve libraries, and 96 devices
+at that time. The seal does not turn it into a new complete reference baseline
+after recovery, and establishes no matrix fixture release or client acceptance.
+
 ## Required next evidence
 
 Preparation 04 and the independent recovery attempt are consumed scopes.
-Neither may be replayed or have its original outcome rewritten. The remaining
-work includes the full preparation-04 seal and a fresh observer/release for
-the changed retained environment.
+Neither authorizes additional business HTTP or rewriting its original outcome.
+The full preparation-04 seal is complete. A fresh observer and release remain
+required for the changed retained environment.
 
 That fresh baseline must capture the retained population of ten users and
 twelve libraries, the recovery-created device, P's new authentication dates,
@@ -149,6 +202,15 @@ and the restored direct UserData. The complete current reference device
 population has not yet been recaptured, so no device total is inferred here.
 The old eight-user/ten-library Guid baseline cannot be reused to start
 preparation 05 directly.
+
+The [revised playback contract](nextup-playback-percentage-contract.md) now
+validates the observed episode percentage against the actual full DTO/runtime
+while retaining unrelated fields and exact zero-state equality. Its four
+remote suites passed 379 guards and eight compile checks. This development
+bundle still uses the older release-v2 population contract, so it cannot start
+a fresh actual preparation until the new observer and release are accepted.
+Complete four-calibration evidence, matrix execution and actual client
+acceptance remain outstanding.
 
 The accepted episode recovery establishes only that scoped restoration and
 token closure. It does not publish a NextUp matrix fixture, complete the four

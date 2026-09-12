@@ -31,8 +31,8 @@ import subprocess
 from types import SimpleNamespace
 
 sys.dont_write_bytecode = True
-TRANSPORT_SHA256 = "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
-MATRIX_SHA256 = "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259"
+TRANSPORT_SHA256 = "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+MATRIX_SHA256 = "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d"
 MAX_JSON_BYTES = 64 * 1024 * 1024
 SUCCESSFUL_LOGOUT_REQUESTS = 6
 RECEIPTS = {"preparation", "coordination", "catalog", "cleanup", "policy-P", "policy-Q", "media-LA", "media-LB"}

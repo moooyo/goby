@@ -1,26 +1,29 @@
 # Global NextUp preparation producer implementation
 
-Status: **TOOL08 passed 154 remote guards and two compile checks. Its real retained
-Guid-release reconstruction passed with zero HTTP. Actual preparation04 then
-stopped during its first partial-playback calibration because the public
-UserData added PlayedPercentage=20; that field remains outside the frozen
-producer's four-field playback allowance. No matrix fixture or client acceptance
-is established.** The source is
+Status: **The frozen playback-contract bundle passed 161 preparation guards,
+53 matrix guards, 100 transport guards, 65 operator guards, and eight compile
+checks. The producer now uses shared strict percentage checks, version-three
+cleanup evidence, and one DELETE attempt per stopped lifecycle. Its retained
+8-user/10-library/12-detail release-v2 population is for synthetic integration;
+actual preparation05 remains prohibited until the new observer and release-v3
+contract are integrated. No matrix fixture or client acceptance is established.**
+The source is
 [prepare-nextup-global-reference.py](../../scripts/test-env/prepare-nextup-global-reference.py).
 The remote-only guards are
 [test-prepare-nextup-global-reference.py](../../scripts/test-env/test-prepare-nextup-global-reference.py).
 This producer creates neither a reference result nor a client acceptance claim
 until a separately authorized live run actually supplies those observations.
 
-The current [TOOL08 report](nextup-global-preparation-verification-05.json) binds
+The current [preparation report](nextup-playback-contract-preparation-verification-01.json) binds
 producer SHA-256
-`347d71f310182e3258dc2f0b51142dbf31088292ee6ec5d3689621971deb152a`
+`206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574`
 and guards SHA-256
-`c5419b99cb0cfde910b29b5d47e6fbc7a7f4061afcebe378c826fb056720c177`.
-The [real-release report](nextup-global-preparation-real-release-verification-01.json)
-reconstructed 109 retained request/response pairs, 86 snapshot GETs, and two
-actual token closures. These checks establish the input and evidence contract;
-they do not complete a new live preparation. Historical runs are retained below.
+`e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d`.
+The [bundle report](nextup-playback-contract-verification-01.json), SHA-256
+`3f79f264037d657fd4f2dbae0834caf73d049debc077b232a84684145bc85039`,
+records all 379 guards and eight compile checks passing, plus the shared
+predicate's acceptance of three pinned actual partial-state DTOs. It issued
+zero actual business HTTP or process probes. Historical runs are retained below.
 
 ## Execution and publication boundary
 
@@ -87,7 +90,7 @@ cgroup, and namespace. No original executable hash is accepted or read.
 `sources` contains descriptors `{path, sha256}` for `preparation`, `transport`,
 `matrix`, and `proxy`. The first three filenames are fixed. The transport must
 have reviewed SHA-256
-`d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1`.
+`4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8`.
 The existing proxy Python path must appear in its actual command line beside
 the bound `--reference-pid` and `--reference-start-ticks` values.
 
@@ -114,6 +117,12 @@ already retained old full-detail witnesses. Its group/item mapping must match
 the retained snapshot. A changed historical population requires a new reviewed
 plan rather than dynamic expansion.
 
+This retained population and release schema v2 are the current synthetic
+development fixture contract. They cannot authorize a new live preparation
+after the consumed preparation04/recovery scopes. Actual preparation05 requires
+the fresh ten-user/twelve-library/24-detail observer evidence and a reviewed
+release schema v3 integration, including its newly source-bound plan.
+
 ## Actual input receipts required from the root task
 
 `inputs` contains four owner-only JSON descriptors: `release`,
@@ -122,7 +131,7 @@ inputRoot, except that publicBaseline may refer directly to an explicitly
 sealed historical root. These descriptors must be real current files; a
 symbolic path, copied boolean, or missing receipt prevents prepare admission.
 
-The TOOL08 publicBaseline input is the complete independently accepted Guid
+The retained development publicBaseline is TOOL08's independently accepted Guid
 verification `after-public.json`, with
 exactly marker/version/captured_at/server/roster/configuration/libraries/
 catalog_by_library/items_by_user/preferences/details/devices/credential_context.
@@ -329,11 +338,26 @@ alone is not a browse-access proof.
 
 Calibrations are P/A1 partial, P/A1 complete, Q/B1 partial, Q/B1 complete. Each
 uses its own token and real acknowledged source/session identities. The full
-before-zero, before-DELETE, DELETE, and after-DELETE responses provide sixteen
-ordered observations; the two actual logins produce eighteen distinct private
-response receipts. The resulting contractVersion 2 cleanup receipt is consumed
-by the published transport's actual validator. Playback is a protocol control,
+beforeZero, playbackInfo, started, progress, stopped, beforeDelete, delete, and
+afterDelete events provide 32 ordered observations. Together with the two
+actual logins they reference 34 distinct private response receipts. Every new
+PlaySessionId is retained and distinct across the four calibrations. The
+resulting contractVersion 3 cleanup receipt is consumed by the current
+transport's validator. Playback is a protocol control,
 not proof of actual media delivery or client playback.
+
+The shared planner APIs `require_episode_percentage` and
+`require_playback_userdata_change` implement the
+[strict percentage contract](nextup-playback-percentage-contract.md). Full
+Episode identity and actual runtime are checked before the percentage helper.
+A missing PlayedPercentage remains missing; a present finite int/float in
+[0, 100] is accepted only for Played=false and must exactly equal
+100 * PlaybackPositionTicks / RunTimeTicks. Boolean, null, string, nonfinite,
+inconsistent, and Played=true percentage values are rejected. There is no
+rounding or tolerance. After an acknowledged owned STOP, only the four playback
+primitives and this validated percentage may differ; unrelated fields and types
+remain exact. After DELETE, the entire original zero UserData, including field
+presence and types, must match. The helper itself never authorizes DELETE.
 
 Login, account creation, library creation, and PlaybackInfo responses first
 persist ownershipPending with their actual response receipt digest and
@@ -350,6 +374,15 @@ durable state commit clears ownershipPending and uncertainty. If either write
 fails, the retained state and terminal continue to identify unresolved
 ownership; no later HTTP, including cleanup HTTP, is authorized. The original
 raw response remains independently available for a separate recovery review.
+
+Each DELETE reserves `(actor, item, PlaySessionId)` in deleteAttempts before
+the transport attempt and persists that set with pending intent. The current
+owned lifecycle and all other known playback sessions must be stopped. A
+non-200 DELETE keeps pending, sets uncertainty, and persists the actual response
+receipt digest before any pending-clear step; no further known-cleanup HTTP is
+authorized. A DELETE 200 whose following detail fails exact zero cannot be
+retried by cleanup for that lifecycle. Different acknowledged PlaySessionIds
+remain eligible, so this bound does not suppress the four required calibrations.
 
 Known-responsibility cleanup has at most 89 requests: two stop slots, two
 reconciliation details, two conditional episode DELETEs, twenty-four full zero
@@ -374,7 +407,7 @@ and protocol audit history remain declared artifacts. Successful pending output
 requires exposed UserData to return to zero; the producer never claims audit
 deletion or whole-database equality.
 
-## Current TOOL08 verification
+## Current playback-contract verification
 
 The guard entry requires explicit owned preparation/transport/matrix source
 paths and writes an exclusive report to a fresh remote tool directory. Every
@@ -383,6 +416,27 @@ Network and business process access are blocked by the harness. Actual
 Authority cases additionally exercise owned-file admission, real temporary
 flock contention, and six independent temporary media copies; they never read
 the real synthetic source or connect to a business service.
+
+The frozen scope is
+`/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01`.
+The [preparation suite](nextup-playback-contract-preparation-verification-01.json)
+passed all 161 guards, alongside
+[53 matrix guards](nextup-playback-contract-matrix-verification-01.json),
+[100 transport guards](nextup-playback-contract-transport-verification-01.json),
+and [65 operator guards](nextup-playback-contract-operator-verification-01.json).
+All 379 guards and eight compile checks passed. Three pinned actual partial
+DTOs passed the shared predicate in the same bundle. No actual business HTTP or
+process probe was performed. These results validate synthetic integration and
+retained DTO interpretation, not a new successful preparation.
+
+| Current source | SHA-256 |
+| --- | --- |
+| Preparation producer | `206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574` |
+| Preparation guards | `e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d` |
+| Transport consumer | `4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8` |
+| Matrix planner | `a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d` |
+
+## Historical TOOL08 verification
 
 The [TOOL08 report](nextup-global-preparation-verification-05.json) records all
 **154 guards passed**, with zero failures, errors, or skips. Both source files
@@ -393,7 +447,7 @@ and two token closures against the independent terminal pinned above, with zero
 business HTTP or actual process probes. It explicitly makes no live preparation
 acceptance claim.
 
-| Current TOOL08 source | SHA-256 |
+| Historical TOOL08 source | SHA-256 |
 | --- | --- |
 | Preparation producer | `347d71f310182e3258dc2f0b51142dbf31088292ee6ec5d3689621971deb152a` |
 | Preparation guards | `c5419b99cb0cfde910b29b5d47e6fbc7a7f4061afcebe378c826fb056720c177` |
@@ -540,10 +594,10 @@ the new outer admission record. The producer's release contract may continue to
 bind the genuine sealed v4 terminal/inventory anchor, with the new observer's
 actual controller_api logout/401 evidence supplied to closedAuthentication.
 That historical renewal required no release-schema expansion or fabricated
-composite snapshot. The current TOOL08 contract additionally requires release
+composite snapshot. The later TOOL08 contract additionally required release
 version 2 and the complete Guid-verification evidence described above.
 
-## Current live limitation after preparation04
+## Historical preparation04 failure and remaining live integration
 
 The [preparation04 record](nextup-global-reference-preparation-04.md) documents
 how the frozen TOOL08 producer created its new resources and ordinary-user
@@ -554,7 +608,7 @@ and both cleanup reads showed PlaybackPositionTicks=1200000000, PlayCount=1,
 Played=false, IsFavorite=false, a LastPlayedDate, and a newly present
 PlayedPercentage=20. The percentage matches the observed 120/600-second ratio.
 
-The current PLAYBACK_FIELDS set contains only Played, PlayCount,
+The historical TOOL08 PLAYBACK_FIELDS set contained only Played, PlayCount,
 PlaybackPositionTicks, and LastPlayedDate. Its unrelated-field comparison
 therefore rejected PlayedPercentage both before the calibration DELETE and
 before the cleanup DELETE. The consumed run recorded 172 requests (115 normal
@@ -565,8 +619,10 @@ The separately scoped
 [independent recovery](nextup-preparation04-userdata-recovery-independent-terminal.json)
 subsequently confirmed one DELETE 200, exact full zero restoration, a new
 token's logout 204/same-token 401, and preservation of all 152 protected roots
-in six requests. That recovery does not change the frozen producer's four-field
-gate or supply its four missing calibrations. A further attempt requires a
-reviewed playback-field rule and a new complete public baseline for the enlarged
-population. No matrix fixture release, global-rule result, or original-client
+in six requests. That recovery does not rewrite TOOL08's failed result or supply
+its four missing calibrations. The current shared rule and once-per-lifecycle
+DELETE behavior address the observed contract gap under the completed guards.
+A further live attempt still requires the fresh 10-user/12-library/24-detail
+observer and release-v3 integration. The retained 8/10/12 release-v2 contract
+cannot authorize preparation05. No matrix fixture release, global-rule result, or original-client
 acceptance follows from these guard, grant, or recovery records.

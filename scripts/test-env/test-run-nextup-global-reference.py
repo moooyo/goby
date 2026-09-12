@@ -81,7 +81,7 @@ def descriptor(path):
 
 def zero_state(item):
     return {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0,
-            "LastPlayedDate": None, "IsFavorite": False, "Key": "synthetic-" + item}
+            "IsFavorite": False}
 
 
 def complete_preparation_inputs(fixture):
@@ -453,6 +453,10 @@ class MatrixWire:
                 date = datetime(2026, 9, 13, 1, tzinfo=timezone.utc) + timedelta(seconds=self.stop_count)
                 state.update(Played=position == RUNTIME_TICKS, PlayCount=state["PlayCount"] + 1,
                     PlaybackPositionTicks=0 if position == RUNTIME_TICKS else position, LastPlayedDate=date.isoformat())
+                if 0 < position < RUNTIME_TICKS:
+                    state["PlayedPercentage"] = 100 * position / RUNTIME_TICKS
+                else:
+                    state.pop("PlayedPercentage", None)
             return self.wire(204)
         if step.kind in ("reset", "cleanup-reset"):
             self.states[request.actor][step.item] = zero_state(step.item)
@@ -604,6 +608,17 @@ class AdmissionGuards(GuardCase):
         self.assertEqual(self.fixture.terminal["requestCount"], self.fixture.terminal["normalRequestCount"] + 6)
         self.assertEqual(admission.replay_count, self.fixture.terminal["requestCount"])
         self.assertEqual((admission.matrix.MAX_REQUESTS, admission.matrix.NORMAL_LIMIT, admission.matrix.CLEANUP_RESERVE), (300, 220, 80))
+        cleanup = read_json(admission.documents["draftExecution"]["receipts"]["cleanup"]["path"])["facts"]
+        self.assertEqual(cleanup["contractVersion"], 3)
+        receipts = {row["login"]["responseReceiptSha256"] for row in cleanup["actors"].values()}
+        for row in cleanup["calibrations"]:
+            for name in ("beforeZero", "playbackInfo", "started", "progress", "stopped", "beforeDelete", "delete", "afterDelete"):
+                receipts.add(row[name]["responseReceiptSha256"])
+            self.assertEqual(row["stopped"]["response"]["status"], 204)
+            if row["mode"] == "partial":
+                self.assertEqual(row["beforeDelete"]["response"]["body"]["UserData"]["PlayedPercentage"], 20)
+                self.assertNotIn("PlayedPercentage", row["afterDelete"]["response"]["body"]["UserData"])
+        self.assertEqual(len(receipts), 34)
 
     def test_source_plan_success_limits_require_integer_capacity_and_six_closures(self):
         plan = self.fixture.prepared.module.frozen_plan(self.fixture.prepared.manifest)

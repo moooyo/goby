@@ -32,6 +32,7 @@ TRANSPORT_SOURCE = None
 MATRIX_SOURCE = None
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 ACTORS = ("P", "Q")
+CALIBRATION_EVENTS = ("beforeZero", "playbackInfo", "started", "progress", "stopped", "beforeDelete", "delete", "afterDelete")
 RUNTIME_TICKS = 6_000_000_000
 STAMP = "2026-09-13T01:00:00Z"
 
@@ -54,8 +55,9 @@ def load_source(path, label):
 
 
 def zero_state(item):
-    return {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0,
-            "LastPlayedDate": None, "IsFavorite": False, "Key": item}
+    # The observed recovery returned these four fields, with no null placeholders.
+    # Fake reset behavior is test machinery, not proof of a real DELETE result.
+    return {"Played": False, "PlayCount": 0, "PlaybackPositionTicks": 0, "IsFavorite": False}
 
 
 class FakeClock:
@@ -207,7 +209,7 @@ class ExecutionFixture:
             "UserData": deepcopy(userdata)}
 
     def make_cleanup_facts(self):
-        facts = {"contractVersion": 2, "process": deepcopy(self.process), "serverId": self.matrix["serverId"],
+        facts = {"contractVersion": 3, "process": deepcopy(self.process), "serverId": self.matrix["serverId"],
                  "actors": {}, "calibrations": []}
         for actor in ACTORS:
             row = self.matrix["actors"][actor]
@@ -220,7 +222,7 @@ class ExecutionFixture:
             facts["actors"][actor] = {"credentialRef": row["credentialRef"], "deviceId": device,
                 "login": {"status": 200, "body": body, "responseReceiptSha256": digest(encoded(login_record))}}
         ordinal = 0
-        def event(actor, method, route, body):
+        def event(actor, method, route, body, *, request_body=None, status=200):
             nonlocal ordinal
             ordinal += 1
             prepared = facts["actors"][actor]
@@ -230,8 +232,10 @@ class ExecutionFixture:
                 "completedAt": (datetime(2026, 9, 13, 1, tzinfo=timezone.utc) + timedelta(seconds=ordinal)).isoformat(),
                 "request": {"method": method, "route": route,
                     "headers": [["Accept", "application/json"], ["Authorization", authorization],
-                                ["X-Emby-Token", prepared["login"]["body"]["AccessToken"]]], "body": None},
-                "response": {"status": 200, "body": deepcopy(body)}}
+                                ["X-Emby-Token", prepared["login"]["body"]["AccessToken"]]], "body": deepcopy(request_body)},
+                "response": {"status": status, "body": deepcopy(body)}}
+            if request_body is not None:
+                value["request"]["headers"].append(["Content-Type", "application/json"])
             value["responseReceiptSha256"] = digest(encoded(value))
             return value
         for actor, item in (("P", "A1"), ("Q", "B1")):
@@ -245,8 +249,23 @@ class ExecutionFixture:
                 changed["UserData"].update(Played=mode == "complete", PlayCount=1,
                     PlaybackPositionTicks=1_200_000_000 if mode == "partial" else 300_000_000,
                     LastPlayedDate=(datetime(2026, 9, 13, 1, tzinfo=timezone.utc) + timedelta(seconds=ordinal + 2)).isoformat())
+                if mode == "partial": changed["UserData"]["PlayedPercentage"] = 20
+                context = {"ItemId": item_id, "MediaSourceId": "synthetic-calibration-source-" + item,
+                    "PlaySessionId": "synthetic-calibration-play-" + actor + "-" + mode,
+                    "SessionId": facts["actors"][actor]["login"]["body"]["SessionInfo"]["Id"]}
+                target = 1_200_000_000 if mode == "partial" else RUNTIME_TICKS
+                started = {**context, "RunTimeTicks": RUNTIME_TICKS, "PositionTicks": 0, "CanSeek": True,
+                    "IsPaused": False, "IsMuted": False, "PlayMethod": "DirectStream", "PlaybackRate": 1}
                 facts["calibrations"].append({"actor": actor, "item": item, "mode": mode,
                     "beforeZero": event(actor, "GET", detail_route, baseline),
+                    "playbackInfo": event(actor, "POST", "/emby/Items/" + item_id + "/PlaybackInfo",
+                        {"PlaySessionId": context["PlaySessionId"], "MediaSources": [{"Id": context["MediaSourceId"], "RunTimeTicks": RUNTIME_TICKS}]},
+                        request_body={"UserId": user_id, "IsPlayback": True}),
+                    "started": event(actor, "POST", "/emby/Sessions/Playing", None, request_body=started, status=204),
+                    "progress": event(actor, "POST", "/emby/Sessions/Playing/Progress", None,
+                        request_body={**started, "PositionTicks": target, "EventName": "TimeUpdate"}, status=204),
+                    "stopped": event(actor, "POST", "/emby/Sessions/Playing/Stopped", None,
+                        request_body={**context, "PositionTicks": target, "Failed": False, "IsAutomated": False}, status=204),
                     "beforeDelete": event(actor, "GET", detail_route, changed),
                     "delete": event(actor, "DELETE", delete_route, None),
                     "afterDelete": event(actor, "GET", detail_route, baseline)})
@@ -368,6 +387,11 @@ class FakeTransport:
                 value.update(Played=position == RUNTIME_TICKS, PlayCount=value["PlayCount"] + 1,
                     PlaybackPositionTicks=0 if position == RUNTIME_TICKS else position,
                     LastPlayedDate=observed_date.isoformat())
+                if value["Played"]:
+                    value.pop("PlayedPercentage", None)
+                else:
+                    quotient, remainder = divmod(100 * position, RUNTIME_TICKS)
+                    value["PlayedPercentage"] = quotient if remainder == 0 else 100 * position / RUNTIME_TICKS
             return self.wire(204)
         if step.kind in ("reset", "cleanup-reset"):
             self.states[request.actor][step.item] = zero_state(step.item)
@@ -612,17 +636,17 @@ class CleanupCalibrationGuards(unittest.TestCase):
                          [("P", "A1", "partial"), ("P", "A1", "complete"), ("Q", "B1", "partial"), ("Q", "B1", "complete")])
         receipts = [facts["actors"][actor]["login"]["responseReceiptSha256"] for actor in ACTORS]
         receipts += [row[event]["responseReceiptSha256"] for row in facts["calibrations"]
-                     for event in ("beforeZero", "beforeDelete", "delete", "afterDelete")]
-        self.assertEqual(len(receipts), 18)
-        self.assertEqual(len(set(receipts)), 18)
+                     for event in CALIBRATION_EVENTS]
+        self.assertEqual(len(receipts), 34)
+        self.assertEqual(len(set(receipts)), 34)
         for actor in ACTORS:
             self.assertNotEqual(facts["actors"][actor]["deviceId"], self.fixture.matrix["actors"][actor]["deviceId"])
         for row in facts["calibrations"]:
             if row["mode"] == "complete":
                 self.assertGreater(row["beforeDelete"]["response"]["body"]["UserData"]["PlaybackPositionTicks"], 0)
 
-    def test_cleanup_requires_exact_integer_contract_version_two(self):
-        for version in (None, 1, True, 2.0):
+    def test_cleanup_requires_exact_integer_contract_version_three(self):
+        for version in (None, 1, 2, True, 3.0):
             with self.subTest(version=repr(version)):
                 self.reject(lambda facts: facts.update(contractVersion=version))
         self.reject(lambda facts: facts.pop("contractVersion"))
@@ -699,7 +723,7 @@ class CleanupCalibrationGuards(unittest.TestCase):
             token = facts["actors"]["P"]["login"]["body"]["AccessToken"]
             facts["actors"]["Q"]["login"]["body"]["AccessToken"] = token
             for index in (2, 3):
-                for event in ("beforeZero", "beforeDelete", "delete", "afterDelete"):
+                for event in CALIBRATION_EVENTS:
                     self.header(facts, "X-Emby-Token", token, index=index, event=event)
         self.reject(repeated_token)
         def repeated_device(facts):
@@ -708,7 +732,7 @@ class CleanupCalibrationGuards(unittest.TestCase):
             facts["actors"]["Q"]["deviceId"] = device
             facts["actors"]["Q"]["login"]["body"]["SessionInfo"]["DeviceId"] = device
             for index in (2, 3):
-                for event in ("beforeZero", "beforeDelete", "delete", "afterDelete"):
+                for event in CALIBRATION_EVENTS:
                     headers = facts["calibrations"][index][event]["request"]["headers"]
                     pair = next(pair for pair in headers if pair[0] == "Authorization")
                     pair[1] = pair[1].replace(previous, device)
@@ -730,6 +754,52 @@ class CleanupCalibrationGuards(unittest.TestCase):
                 self.reject(lambda facts: self.userdata(facts, index).update(PlayCount=0))
                 self.reject(lambda facts: self.userdata(facts, index).update(LastPlayedDate=None))
 
+    def test_cleanup_v3_requires_every_acknowledged_lifecycle_event(self):
+        for name in ("playbackInfo", "started", "progress", "stopped"):
+            with self.subTest(missing=name):
+                self.reject(lambda facts: facts["calibrations"][0].pop(name))
+        self.reject(lambda facts: facts["calibrations"][0]["stopped"]["response"].update(status=500))
+        self.reject(lambda facts: facts["calibrations"][0]["stopped"].update(ordinal=999))
+
+    def test_cleanup_stop_cannot_substitute_actor_session_source_or_item(self):
+        for field in ("SessionId", "PlaySessionId", "MediaSourceId", "ItemId"):
+            with self.subTest(field=field):
+                self.reject(lambda facts: facts["calibrations"][0]["stopped"]["request"]["body"].update({field: "foreign-context"}))
+        self.reject(lambda facts: facts["calibrations"][0]["started"]["request"]["body"].update(PlaybackRate=True))
+        self.reject(lambda facts: facts["calibrations"][0]["progress"]["request"]["body"].update(PositionTicks=0))
+        self.reject(lambda facts: facts["calibrations"][0]["stopped"]["request"]["body"].update(IsAutomated=0))
+
+    def test_cleanup_info_runtime_and_unique_play_session_are_actual_bound_facts(self):
+        for runtime in (0, True, float(RUNTIME_TICKS), RUNTIME_TICKS + 1):
+            with self.subTest(runtime=runtime):
+                self.reject(lambda facts: facts["calibrations"][0]["playbackInfo"]["response"]["body"]["MediaSources"][0].update(RunTimeTicks=runtime))
+        def reuse(facts):
+            value = facts["calibrations"][0]["playbackInfo"]["response"]["body"]["PlaySessionId"]
+            later = facts["calibrations"][1]
+            later["playbackInfo"]["response"]["body"]["PlaySessionId"] = value
+            for name in ("started", "progress", "stopped"):
+                later[name]["request"]["body"]["PlaySessionId"] = value
+        self.reject(reuse)
+
+    def test_cleanup_partial_percentage_matches_observed_position_and_runtime(self):
+        facts = deepcopy(self.fixture.cleanup_facts)
+        self.assertEqual(self.userdata(facts)["PlayedPercentage"], 20)
+        self.assertEqual(set(self.userdata(facts, event="beforeZero")), {"Played", "PlayCount", "PlaybackPositionTicks", "IsFavorite"})
+        self.authority._cleanup_proof(facts)
+        for percentage in (None, True, "20", float("nan"), float("inf"), -1, 19, 20.000000000000004, 101):
+            with self.subTest(percentage=repr(percentage)):
+                self.reject(lambda facts: self.userdata(facts).update(PlayedPercentage=percentage))
+
+    def test_completed_percentage_remains_unproven_in_cleanup_authority(self):
+        for percentage in (0, 100):
+            with self.subTest(percentage=percentage):
+                self.reject(lambda facts: self.userdata(facts, 1).update(PlayedPercentage=percentage))
+
+    def test_cleanup_after_delete_requires_exact_four_key_zero_not_null_or_percentage_zero(self):
+        self.reject(lambda facts: self.userdata(facts, event="afterDelete").update(PlayedPercentage=0))
+        self.reject(lambda facts: self.userdata(facts, event="afterDelete").update(LastPlayedDate=None))
+        self.reject(lambda facts: self.userdata(facts).update(UnexpectedProgressField=20))
+
     def test_cleanup_requires_zero_before_and_after_each_calibration(self):
         for index in range(4):
             for event in ("beforeZero", "afterDelete"):
@@ -742,7 +812,7 @@ class CleanupCalibrationGuards(unittest.TestCase):
             for event in ("beforeZero", "beforeDelete", "afterDelete"):
                 self.userdata(facts, 1, event)["Key"] = "changed-baseline-key"
         self.reject(changed_second_baseline)
-        self.reject(lambda facts: self.userdata(facts, 0, "afterDelete").pop("LastPlayedDate"))
+        self.reject(lambda facts: self.userdata(facts, 0, "afterDelete").update(LastPlayedDate=None))
         self.reject(lambda facts: self.userdata(facts, 0, "afterDelete").update(UnexpectedField=None))
 
     def test_cleanup_playback_and_delete_cannot_change_unrelated_userdata(self):
@@ -781,7 +851,7 @@ class CleanupCalibrationGuards(unittest.TestCase):
             with self.subTest(mode=mode, missing_field="RunTimeTicks"):
                 self.reject(lambda facts: facts["calibrations"][index]["beforeDelete"]["response"]["body"].pop("RunTimeTicks"))
 
-    def test_cleanup_requires_distinct_receipts_for_two_logins_and_sixteen_events(self):
+    def test_cleanup_requires_distinct_receipts_for_two_logins_and_thirty_two_events(self):
         with self.subTest(reused_records="login-and-login"):
             self.reject(lambda facts: facts["actors"]["Q"]["login"].update(
                 responseReceiptSha256=facts["actors"]["P"]["login"]["responseReceiptSha256"]))
@@ -897,6 +967,9 @@ class TransportGuards(unittest.TestCase):
         self.assertLessEqual(result["httpAttempts"], 242)
         self.assertTrue(self.clock.waits)
         self.assertTrue(all(0 < seconds <= 5 for seconds in self.clock.waits))
+        deletes = [call for call in transport.calls if call["request"].method == "DELETE"]
+        self.assertEqual(len(deletes), len(runner.matrix.delete_attempts))
+        self.assertEqual(len([row for row in runner.matrix.delete_attempts if row[:2] == ("P", "A2")]), 2)
 
     def test_logout_401_and_rejection_use_exact_original_actor_token(self):
         def fail_observation(server, request):
@@ -973,6 +1046,52 @@ class TransportGuards(unittest.TestCase):
         fact = next(fact for fact in runner.matrix.facts if fact["kind"] == "cleanup-reconcile")
         self.assertTrue(fact["ownedStopStateReconciled"])
         self.assertTrue(fact["cleanupResetRequired"])
+
+    def test_complete_non200_delete_retains_pending_and_never_retries_in_cleanup(self):
+        def reject_delete(server, request):
+            return server.wire(500, {"error": "synthetic unacknowledged DELETE"}) if request.method == "DELETE" else None
+        runner, transport = self.runner(positive=True, failure=reject_delete)
+        result = runner.run()
+        self.assertTrue(runner.blocked)
+        self.assertFalse(result["cleanupComplete"])
+        self.assertEqual(transport.calls[-1]["request"].method, "DELETE")
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in transport.calls), 1)
+        self.assertIsNotNone(runner.matrix.pending)
+        self.assertEqual(len(runner.matrix.delete_attempts), 1)
+        self.assertTrue(runner.matrix.failure["responseRetained"])
+        self.assertNotIn("responseLost", runner.matrix.failure)
+        self.assertIsNotNone(self.private_state()["matrix"]["pending"])
+        self.assert_no_resume(runner, transport)
+
+    def test_acknowledged_stage_delete_with_percentage_zero_residue_needs_independent_recovery(self):
+        def residue(server, request):
+            step = server.runner.matrix.queue[0]
+            if step.kind == "reset-proof":
+                body = server.fixture.full_detail(step.item, {**zero_state(step.item), "PlayedPercentage": 0})
+                return server.wire(200, body)
+            return None
+        runner, transport = self.runner(positive=True, failure=residue)
+        result = runner.run()
+        self.assertTrue(runner.matrix.restoration_failed)
+        self.assertTrue(runner.blocked)
+        self.assertFalse(result["cleanupComplete"])
+        self.assertFalse(any(call["request"].cleanup for call in transport.calls))
+        self.assertEqual(sum(call["request"].method == "DELETE" for call in transport.calls), 3)
+        self.assert_no_resume(runner, transport)
+
+    def test_acknowledged_cleanup_delete_with_null_date_residue_is_not_exact_zero(self):
+        def residue(server, request):
+            step = server.runner.matrix.queue[0]
+            if step.kind == "cleanup-proof":
+                return server.wire(200, server.fixture.full_detail(step.item, {**zero_state(step.item), "LastPlayedDate": None}))
+            return None
+        runner, transport = self.runner(failure=residue)
+        result = runner.run()
+        self.assertTrue(runner.blocked)
+        self.assertFalse(result["cleanupComplete"])
+        self.assertEqual(transport.calls[-1]["request"].label, "CLEAN-P-zero-A1")
+        self.assertEqual(len(runner.matrix.delete_attempts), sum(call["request"].method == "DELETE" for call in transport.calls))
+        self.assert_no_resume(runner, transport)
 
     def test_known_detail_failure_reconciles_acknowledged_stop_without_repeating_it(self):
         def reject_detail(server, request):

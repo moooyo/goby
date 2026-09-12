@@ -1,0 +1,32 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "blockedRealIOAttempts": {
+    "authority": 0,
+    "http": 0,
+    "originalRead": 0,
+    "process": 0
+  },
+  "classification": "synthetic source-bound admission, replay, transport, and persistence guards; not live acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "originalImplementationBytesRead": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "grant-worker": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971",
+    "guards": "2b9d5b76efcaf78af71f61ea606987a9ba2361a82a7885a4b2d3c4c488852371",
+    "matrix": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "operator": "e97667ac01541d2115d0df3d4062239895662d41140637e8030b410b1a05475a",
+    "preparation": "206d989702a22c6bb4034e479567b6cb9d45d8dfe8b153576216de5419263574",
+    "preparation-guards": "e153963810ed4b09085601e71aa6028a7ff4fcf0b8b6cd0b94ce17233508b74d",
+    "transport": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "suite": "run-nextup-global-reference-guards",
+  "testsRun": 65
+}

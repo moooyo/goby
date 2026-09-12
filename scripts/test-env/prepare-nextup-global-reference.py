@@ -35,7 +35,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit
 import uuid
 
 sys.dont_write_bytecode = True
-TRANSPORT_SHA256 = "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+TRANSPORT_SHA256 = "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 SUMMARIES = ("A", "AS1", "AS2", "B", "BS1", "BS2")
 CALIBRATIONS = (("P", "A1", "partial"), ("P", "A1", "complete"),
@@ -45,7 +45,6 @@ RUNTIME, PARTIAL = 6_000_000_000, 1_200_000_000
 MAX_REQUESTS, NORMAL_LIMIT, CLEANUP_RESERVE = 380, 280, 100
 PHASE_LIMITS = {"before": 44, "libraries": 42, "mapping": 6, "accounts": 8,
                 "baseline": 36, "calibration": 44, "zero": 28, "after": 49, "cleanup": 89}
-PLAYBACK_FIELDS = {"Played", "PlayCount", "PlaybackPositionTicks", "LastPlayedDate"}
 
 
 class PreparationError(ValueError):
@@ -914,6 +913,7 @@ class PreparationRunner:
         self.baselines, self.summaries = {"P": {}, "Q": {}}, {"P": {}, "Q": {}}
         self.plays, self.touched, self.calibrations, self.responses = {}, set(), [], {}
         self.play_session_ids = set()
+        self.delete_attempts = set()
         self.ownership_pending = None
         self.pending, self.failure, self.uncertain, self.journal_failed = None, None, False, False
         self.used, self.completed, self.outputs, self.before = False, False, {}, None
@@ -946,6 +946,7 @@ class PreparationRunner:
                 "sessions": self.sessions, "userIds": self.user_ids, "libraries": self.libraries, "items": self.items,
                 "baselines": self.baselines, "summaries": self.summaries, "plays": self.plays,
                 "playSessionIds": sorted(self.play_session_ids), "ownershipPending": self.ownership_pending,
+                "deleteAttempts": [list(row) for row in sorted(self.delete_attempts)],
                 "touched": [list(row) for row in sorted(self.touched)], "calibrations": self.calibrations,
                 "revoked": sorted(self.revoked), "failure": self.failure, "uncertain": self.uncertain}
 
@@ -1074,8 +1075,12 @@ class PreparationRunner:
                         all(len(self.baselines[key]) == 6 for key in ("P", "Q")), "Playback negotiation lacks all twelve zero baselines.")
                 return
             if path == "/emby/Users/" + user + "/PlayedItems/" + str(item):
+                play = self.plays.get(actor)
                 require(method == "DELETE" and body is None and not query and pair in self.touched and
-                        all(play["stopped"] for play in self.plays.values()), "Narrow DELETE requires a touched owned episode and all known sessions stopped.")
+                        play is not None and play["item"] == pair[1] and all(row["stopped"] for row in self.plays.values()),
+                        "Narrow DELETE requires a touched owned episode and all known sessions stopped.")
+                require((actor, pair[1], play["context"]["PlaySessionId"]) not in self.delete_attempts,
+                        "An owned stopped playback lifecycle cannot issue another DELETE attempt.")
                 return
             if method == "POST" and path in ("/emby/Sessions/Playing", "/emby/Sessions/Playing/Progress", "/emby/Sessions/Playing/Stopped"):
                 play = self.plays.get(actor)
@@ -1167,6 +1172,9 @@ class PreparationRunner:
             self.ownership_pending["followupUsed"] = True
         self.count += 1; self.normal_count += int(not cleanup); self.cleanup_count += int(cleanup)
         self.phase_counts[self.phase] += 1; self.labels.add(label)
+        if method == "DELETE":
+            play = self.plays[actor]
+            self.delete_attempts.add((actor, play["item"], play["context"]["PlaySessionId"]))
         self._save(stem + "-reserved.json", self._state())
         self._persist()
         self.authority.check(); self.journal.check()
@@ -1236,6 +1244,11 @@ class PreparationRunner:
         self._collect_secrets(decoded)
         event = {"ordinal": ordinal, "completedAt": response.completed_at, "responseReceiptSha256": response_sha,
                  "request": request, "response": {"status": response.status, "body": decoded}}
+        if method == "DELETE" and response.status != 200:
+            self.pending["responseReceiptSha256"] = response_sha
+            self.uncertain = True
+            self._persist()
+            raise PreparationError("The one owned DELETE was not acknowledged; its pending responsibility must remain.")
         self._save(stem + "-response.json", self._safe({"event": event, "responseHeaders": response_headers}), export=True)
         self.pending = None
         self.responses[label] = event
@@ -1606,6 +1619,7 @@ class PreparationRunner:
                     type(body.get("ParentIndexNumber")) is int and body["ParentIndexNumber"] == mapped["parentIndexNumber"] and
                     type(body.get("RunTimeTicks")) is int and body["RunTimeTicks"] == RUNTIME, "A full episode detail has different numbering, series, or runtime.")
             self.planner.userdata_fact(body)
+            self.planner.require_episode_percentage(body["UserData"], runtime_ticks=body["RunTimeTicks"])
         elif mapped["type"] == "Season":
             require(body.get("SeriesId") == mapped["seriesId"] and type(body.get("IndexNumber")) is int and body["IndexNumber"] == mapped["indexNumber"],
                     "A full season detail has different series or numbering.")
@@ -1649,6 +1663,7 @@ class PreparationRunner:
         event = self._post(prefix + "-info", actor, "/emby/Items/" + self.items[item]["id"] + "/PlaybackInfo",
                            {"UserId": self.user_ids[actor], "IsPlayback": True}, statuses=(200,), uncertain=True)
         info = event["response"]["body"]
+        record["playbackInfo"] = event
         require(isinstance(info, dict) and identifier(info.get("PlaySessionId")) and isinstance(info.get("MediaSources"), list) and len(info["MediaSources"]) == 1 and
                 isinstance(info["MediaSources"][0], dict) and identifier(info["MediaSources"][0].get("Id")) and
                 type(info["MediaSources"][0].get("RunTimeTicks")) is int and info["MediaSources"][0]["RunTimeTicks"] == RUNTIME,
@@ -1662,11 +1677,11 @@ class PreparationRunner:
         self._complete_ownership(event, kind="playback", actor=actor, owner={"item": item, "context": context})
         started = {**context, "RunTimeTicks": RUNTIME, "PositionTicks": 0, "CanSeek": True, "IsPaused": False,
                    "IsMuted": False, "PlayMethod": "DirectStream", "PlaybackRate": 1}
-        self._post(prefix + "-started", actor, "/emby/Sessions/Playing", started, statuses=(204,))
-        self._post(prefix + "-progress", actor, "/emby/Sessions/Playing/Progress", {**started, "PositionTicks": target, "EventName": "TimeUpdate"}, statuses=(204,))
+        record["started"] = self._post(prefix + "-started", actor, "/emby/Sessions/Playing", started, statuses=(204,))
+        record["progress"] = self._post(prefix + "-progress", actor, "/emby/Sessions/Playing/Progress", {**started, "PositionTicks": target, "EventName": "TimeUpdate"}, statuses=(204,))
         self.plays[actor]["position"] = target
         self._persist()
-        self._post(prefix + "-stopped", actor, "/emby/Sessions/Playing/Stopped", {**context, "PositionTicks": target, "Failed": False, "IsAutomated": False}, statuses=(204,))
+        record["stopped"] = self._post(prefix + "-stopped", actor, "/emby/Sessions/Playing/Stopped", {**context, "PositionTicks": target, "Failed": False, "IsAutomated": False}, statuses=(204,))
         self.plays[actor]["stopped"] = True
         self._persist()
         label = prefix + "-before-delete"
@@ -1676,8 +1691,7 @@ class PreparationRunner:
         require(data["PlayCount"] > 0 and (data["Played"] is False and data["PlaybackPositionTicks"] == PARTIAL if mode == "partial" else data["Played"] is True),
                 "The actual full detail did not establish the required partial/completion state.")
         instant(data.get("LastPlayedDate"))
-        require(same({key: value for key, value in self.baselines[actor][item].items() if key not in PLAYBACK_FIELDS},
-                     {key: value for key, value in data.items() if key not in PLAYBACK_FIELDS}), "Playback changed unrelated full UserData fields.")
+        self.planner.require_playback_userdata_change(self.baselines[actor][item], data, runtime_ticks=changed["RunTimeTicks"])
         deletion = self._dispatch(prefix + "-delete", actor, "DELETE", "/emby/Users/" + self.user_ids[actor] + "/PlayedItems/" + self.items[item]["id"])
         require(deletion["response"]["status"] == 200, "The narrow own-token DELETE did not return HTTP 200.")
         record["delete"] = deletion
@@ -1725,9 +1739,8 @@ class PreparationRunner:
                 try:
                     current = self._detail(actor, item, "cleanup-reconcile-" + actor)
                     if same(current["UserData"], self.baselines[actor][item]): continue
-                    require(same({key: value for key, value in current["UserData"].items() if key not in PLAYBACK_FIELDS},
-                                 {key: value for key, value in self.baselines[actor][item].items() if key not in PLAYBACK_FIELDS}),
-                            "Cleanup cannot accept unrelated UserData drift.")
+                    require(all(play["stopped"] for play in self.plays.values()), "Cleanup must first acknowledge every owned playback stop.")
+                    self.planner.require_playback_userdata_change(self.baselines[actor][item], current["UserData"], runtime_ticks=current["RunTimeTicks"])
                     event = self._dispatch("cleanup-delete-" + actor, actor, "DELETE", "/emby/Users/" + self.user_ids[actor] + "/PlayedItems/" + self.items[item]["id"])
                     require(event["response"]["status"] == 200, "The cleanup DELETE was not acknowledged.")
                 except BaseException as error:
@@ -1778,7 +1791,7 @@ class PreparationRunner:
             actors[actor] = {"userId": self.user_ids[actor], "username": row["username"], "deviceId": row["matrixDeviceId"],
                 "credentialRef": row["credentialRef"], "newOwnedOrdinaryAccount": True, "policyReceiptSha256": policy["sha256"],
                 "allowedFolderIds": sorted(value["policyFolderId"] for value in self.libraries.values())}
-        cleanup_facts = {"contractVersion": 2, "process": self.manifest["process"], "serverId": self.manifest["server"]["id"],
+        cleanup_facts = {"contractVersion": 3, "process": self.manifest["process"], "serverId": self.manifest["server"]["id"],
             "actors": {actor: {"credentialRef": self.manifest["actors"][actor]["credentialRef"], "deviceId": self.manifest["actors"][actor]["deviceId"],
                 "login": {"status": 200, "body": self.logins[actor]["response"]["body"], "responseReceiptSha256": self.logins[actor]["responseReceiptSha256"]}}
                 for actor in ("P", "Q")}, "calibrations": self.calibrations}
