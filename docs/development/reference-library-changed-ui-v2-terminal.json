@@ -1,0 +1,222 @@
+{
+  "administrator_cleanup_verified": true,
+  "artifacts": {
+    "browser_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v2/browser/report.json",
+      "sha256": "7229a3743c3b8e8e668537a162bafb90ded8d460e37b7da01d025aca69dde0c1"
+    },
+    "controller_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v2/report.json",
+      "sha256": "74d7811e77e7650411d398be61514f16327d6d59859d5bb7f181cdc615e55aed"
+    },
+    "diagnostic": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v2/browser/failure-diagnostic.json",
+      "sha256": "b684184638d8f6e5a68421822345385ced08c050895de4b90ba57ea4ce83092d"
+    },
+    "input": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v2/input.json",
+      "sha256": "49dab7534190abf06010197dcdee701375fbd19311b70865b28215c6e4da48a9"
+    },
+    "preflight_terminal": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-02/preflight-terminal.json",
+      "sha256": "a14ae5ba5a7218ee432c1baa636f94df305b3f3cac492370f155978e512e1f35"
+    },
+    "preservation": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-02/preservation-after-reference.json",
+      "sha256": "7fc2cef1534b89f40b287cf7237d78aa058444e20e4acd963bcbe65cc312de48"
+    },
+    "scope_files": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-02/failed-scope-files.json",
+      "sha256": "e578173ddcb486dd1e7a8acdbf083b1d6596860b65ed0955d3102191255910b9"
+    }
+  },
+  "automatic_cleanup_performed_by_sealer": false,
+  "captured_at": "2026-09-12T15:34:07.675313+00:00",
+  "css_public_read_completed": true,
+  "failure": "reference_ui_login_failed",
+  "goby_counts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "goby_state_equal_to_v7_except_capture_time": true,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-ui-failed-terminal-v2",
+  "metadata_posts": 0,
+  "node_cgroup_cross_layer_equal": true,
+  "observer_login_exchange": {
+    "frame": {
+      "completed": true,
+      "content_type": null,
+      "document_id": "document-1",
+      "failed": false,
+      "finished_elapsed_ms": 1895,
+      "from_service_worker": false,
+      "hidden_query": [
+        {
+          "key": "X-Emby-Client",
+          "value_sha256": "3e570b1d218b62a779112c02abe11b6f28521a802d3ffbfc2cebddd237ba51d4"
+        },
+        {
+          "key": "X-Emby-Client-Version",
+          "value_sha256": "6248b1cc0a5efc34e0b6672b2350be82455d24681e1358a4867294946fcfbb1c"
+        },
+        {
+          "key": "X-Emby-Device-Id",
+          "value_sha256": "7334ff04d48794f6c08d6ce2015d64aef2ad21e6b9030f52f876d103af3c73aa"
+        },
+        {
+          "key": "X-Emby-Device-Name",
+          "value_sha256": "c2edad05ff615921967a4d7316a41079b76c7cfc2d560a6bc5934215f58f62c0"
+        },
+        {
+          "key": "X-Emby-Language",
+          "value_sha256": "dcffad54438c35371beafd787121be619df6f17b21cee1002149cbdf558742fe"
+        }
+      ],
+      "id": "frame-208",
+      "index": 208,
+      "kind": "login",
+      "main_frame": true,
+      "method": "POST",
+      "outcome": "completed",
+      "page_route": "/web/index.html#!/startup/manuallogin.html?serverId=f56dec8ff7414847873064c4be9fba74",
+      "phase": "manual_login",
+      "projection": null,
+      "query": {},
+      "reason": null,
+      "request_bytes": null,
+      "request_sequence": 1253,
+      "request_sha256": "a07b456f9f4f4e1194580e71bb1b92b6f5f3712c310382de77a457ef9ed0f462",
+      "response_bytes": null,
+      "response_elapsed_ms": 1893,
+      "route": "/Users/authenticatebyname",
+      "shape_sha256": "31b5731ffaabba160d91884416fe1c6ddc97c0342db6a0a241801b2c5b2f74ad",
+      "sourceworker": false,
+      "start_elapsed_ms": 1883,
+      "status": 502,
+      "token_sha256": null
+    },
+    "physical": {
+      "completed": false,
+      "content_type": null,
+      "document_id": "document-1",
+      "failed": true,
+      "finished_elapsed_ms": 1886,
+      "from_service_worker": null,
+      "hidden_query": [
+        {
+          "key": "X-Emby-Client",
+          "value_sha256": "3e570b1d218b62a779112c02abe11b6f28521a802d3ffbfc2cebddd237ba51d4"
+        },
+        {
+          "key": "X-Emby-Client-Version",
+          "value_sha256": "6248b1cc0a5efc34e0b6672b2350be82455d24681e1358a4867294946fcfbb1c"
+        },
+        {
+          "key": "X-Emby-Device-Id",
+          "value_sha256": "7334ff04d48794f6c08d6ce2015d64aef2ad21e6b9030f52f876d103af3c73aa"
+        },
+        {
+          "key": "X-Emby-Device-Name",
+          "value_sha256": "c2edad05ff615921967a4d7316a41079b76c7cfc2d560a6bc5934215f58f62c0"
+        },
+        {
+          "key": "X-Emby-Language",
+          "value_sha256": "dcffad54438c35371beafd787121be619df6f17b21cee1002149cbdf558742fe"
+        }
+      ],
+      "id": "physical-208",
+      "index": 208,
+      "kind": "login",
+      "main_frame": null,
+      "method": "POST",
+      "outcome": "failed",
+      "page_route": "/web/index.html#!/startup/manuallogin.html?serverId=f56dec8ff7414847873064c4be9fba74",
+      "phase": "manual_login",
+      "projection": null,
+      "query": {},
+      "reason": "http_admission_or_request_failed",
+      "request_bytes": 106,
+      "request_sequence": 1254,
+      "request_sha256": "a07b456f9f4f4e1194580e71bb1b92b6f5f3712c310382de77a457ef9ed0f462",
+      "response_bytes": 0,
+      "response_elapsed_ms": null,
+      "route": "/Users/authenticatebyname",
+      "shape_sha256": "31b5731ffaabba160d91884416fe1c6ddc97c0342db6a0a241801b2c5b2f74ad",
+      "sourceworker": null,
+      "start_elapsed_ms": 1886,
+      "status": null,
+      "token_sha256": null
+    }
+  },
+  "preserved_roots": 61,
+  "protocol_observation_complete": false,
+  "reference_public_preservation": {
+    "authentication_effects_present": true,
+    "automatic_changes": [
+      {
+        "after": {
+          "present": true,
+          "value": "2026-09-12T15:29:16.1126378Z"
+        },
+        "before": {
+          "present": true,
+          "value": "2026-09-12T15:29:12.7554374Z"
+        },
+        "field": "LastActivityDate",
+        "kind": "owned-authentication-time",
+        "user_id": "efe2137dc3394ed4a23f9c337598f105"
+      }
+    ],
+    "passed": true,
+    "public_state_after_authentication": true
+  },
+  "restoration": "not_required",
+  "source_commit": "faf12f6fe7f3b3ff5e210a9c46a7b12d6c70ce75",
+  "status": "failed_scope_sealed_with_viewer_dispatch_uncertainty",
+  "units": {
+    "controller": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-controller-v2.service",
+        "InvocationID": "46583f6c810548ce85fe9dead4a1c18f",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    },
+    "worker": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-v2.service",
+        "InvocationID": "3949bfd863af4e0386df874f51dd1f3f",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    }
+  },
+  "viewer_cleanup_status": "unproven_no_token_received",
+  "viewer_device_registered_after": false,
+  "viewer_device_registered_before": false,
+  "viewer_device_sha256": "7334ff04d48794f6c08d6ce2015d64aef2ad21e6b9030f52f876d103af3c73aa",
+  "viewer_login_requests_received_by_observer": 1,
+  "viewer_logout_success_claimed": false,
+  "viewer_public_auth_and_item_state_unchanged": true,
+  "viewer_reference_response_observed": false,
+  "viewer_runtime_cleanup_failures": [
+    "ui_logout"
+  ],
+  "viewer_ui_login_attempted": true,
+  "viewer_upstream_dispatch": "not_recorded"
+}

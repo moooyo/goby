@@ -1,6 +1,6 @@
 # Storage binding live administrator UI acceptance
 
-Current checkpoint: `2026-09-12T15:18:32.120299+00:00`; reference UI v1 is independently sealed as failed; original-client v7 remains sealed.
+Current checkpoint: `2026-09-12T15:34:07.675313+00:00`; reference UI v2 is sealed with viewer dispatch uncertainty; original-client v7 remains sealed.
 
 Status: accepted. Run5, `20260912_083703_5a77d18d2ae0`, completed all
 [15 browser checks and 10 IPC stages](storage-binding-live-ui-accepted-browser.json)
@@ -31,12 +31,16 @@ the page, but neither complete request channel recorded HTTP in the forward
 window. Restoration and closed sessions are
 [independently sealed](client-library-changed-source55-v7-terminal.json).
 LibraryChanged acceptance remains false.
-The reference business-read preflight v1 passed; subsequent reference UI v1
-failed during discovery before viewer login and is
-[independently sealed](reference-library-changed-ui-v1-terminal.json). No
-WebSocket, metadata write or Name-only refresh outcome occurred. Both reference
-v1 scopes are consumed; a fresh v2 scope is being prepared for the exact anonymous
-CSS route, cgroup representation and safe diagnostic correlation gaps.
+The reference business-read preflight v2 passed; subsequent reference UI v2
+failed after a viewer login submission. Its
+[independent terminal](reference-library-changed-ui-v2-terminal.json) records
+`failed_scope_sealed_with_viewer_dispatch_uncertainty` and viewer cleanup
+`unproven_no_token_received`, with the `ui_logout` failure preserved. CSS and
+cgroup gaps are resolved, but the page received a tool HTTP 502 and upstream dispatch
+was not recorded. No metadata write or Name-only refresh outcome occurred.
+Reference v1/v2 and both preflights are consumed. A new v3 scope is being prepared
+for the observed form body, original-byte forwarding and explicit upstream
+phase evidence; it has not executed.
 The accepted UI gate retains its actual source54 frozen inputs below.
 
 | Scope | Observed outcome | Current disposition |
@@ -692,7 +696,7 @@ is not established, and no LibraryChanged pass is claimed.
 The retained reference Name+Overview event uses the same field shape, but there
 is no retained positive proof that original-client Movies metadata updates
 trigger automatic HTTP and UI refresh. The Name-only control remains missing.
-The new bounded reference UI control's four JavaScript sources are frozen and
+The v1 reference UI control's four JavaScript sources are frozen and
 passed remote tool-layer checks:
 [23 runtime guards](reference-library-changed-ui-runtime-verification-02.json),
 SHA-256 `ef7d1cf1155bc686ee3d1112c85b921b5eac7c2d1153a3aa0d1f64eee6764502`;
@@ -743,9 +747,67 @@ records the driver's `node_process.cgroup` as
 `0::/system.slice/goby-reference-library-changed-ui-v1.service\n`, while the
 controller records `/system.slice/goby-reference-library-changed-ui-v1.service`.
 These are tooling gaps, not evidence of reference metadata-refresh behavior.
-A fresh v2 scope is being prepared to repair the exact CSS route and cgroup
-contract and retain safe request/document diagnostic correlation. Verify its
-sources before a fresh business-read preflight and reference control run;
+V2 repaired those CSS/cgroup gaps and retained safe diagnostic correlation.
+Its six frozen sources and three tool reports were pushed as
+`faf12f6fe7f3b3ff5e210a9c46a7b12d6c70ce75`.
+Remote [JavaScript checks](reference-library-changed-ui-js-verification-02.json)
+passed 25 runtime guards and 25 driver guards;
+[Python checks](reference-library-changed-ui-python-verification-02.json)
+passed 47 guards and two compilations; and
+[13 isolated synthetic-HTML DOM cases](reference-library-changed-ui-dom-verification-02.json)
+passed with an independent terminal. These remain tool-layer results with
+`business_http: false`, not reference-client acceptance.
+
+The [actual reference preflight v2](reference-library-changed-ui-preflight-v2.json)
+passed with 65 HTTP requests, two authentication POSTs and zero metadata POSTs.
+Administrator logout returned HTTP 204 and the exact token returned HTTP 401.
+Its [independent terminal](reference-library-changed-ui-preflight-v2-terminal.json),
+captured at `2026-09-12T15:29:12.202122+00:00`, confirms exit0/MainPID0,
+an empty recursive cgroup and verified administrator cleanup.
+
+The [actual reference UI v2 report](reference-library-changed-ui-v2.json),
+[bound input](reference-library-changed-ui-v2-input.json) and
+[browser report](reference-library-changed-ui-v2-browser.json) then record
+`reference_ui_login_failed` after the viewer submitted login. Both HTTP channels
+received the public CSS response with HTTP 200 and opaque content, and the
+driver/controller cgroup values are equal. The physical channel contains
+209 requests: 208 GETs and one login POST. The frame channel contains
+210 observations including one login POST. The physical login entry records
+106 request bytes, zero response bytes and a null status; the page observed
+the tool's HTTP 502. Metadata POSTs remain zero. The controller's separate
+administrator flow contains 65 HTTP requests and two authentication POSTs,
+with logout204 and exact-token401. Metadata restoration is `not_required`.
+
+The [independent v2 terminal](reference-library-changed-ui-v2-terminal.json),
+captured at `2026-09-12T15:34:07.675313+00:00`, records the exact status
+`failed_scope_sealed_with_viewer_dispatch_uncertainty`. Both units exited1
+with MainPID0 and empty recursive cgroups. Viewer cleanup remains
+`unproven_no_token_received`: upstream dispatch was not recorded, no viewer
+token or reference login response was received, and the actor's
+`cleanup_failures: ["ui_logout"]` is retained. Neither zero upstream requests,
+viewer logout nor complete authentication cleanup is established. Public
+viewer roster and all item/detail projections remain unchanged, and the
+UI device is absent both before and after; those public observations do not
+resolve the dispatch uncertainty. All 61 history/tool roots are preserved.
+The full Goby snapshot equals the v7 after-state except capture time, retaining
+83 sessions/70 devices/185 audits. Reference v1/v2 and both preflights are
+terminal and consumed; none may be replayed. No metadata-refresh or Name-only
+outcome was obtained.
+
+The [safe v2 diagnostic](reference-library-changed-ui-v2-diagnostic.json)
+retains `http_admission_or_request_failed` for the physical login and the
+correlated frame failure. The [historical form-login record](client-acceptance-m3e.md#historical-form-login-compatibility)
+and [isolated reference capture](m3e-reference-client-login-isolated.json)
+already establish `application/x-www-form-urlencoded; charset=UTF-8` with
+`Username` and `Pw` fields. The frozen v2 runtime instead uses `JSON.parse`
+for that body. This is a source-contract mismatch; it does not supply the
+missing v2 upstream-dispatch evidence.
+
+A new v3 scope is being prepared to parse the observed form contract, forward
+the original request bytes, and record explicit physical phases including
+`upstream-created` and `end-called` with fixed reason codes and safe diagnostic
+correlation. V3 has not executed and needs independent source/tool verification
+before a fresh business-read preflight and reference control run;
 owned login/logout effects still require explicit cleanup. The control does not
 change Goby payloads or the acceptance target, replay v7, or establish a new
 accepted client run. The pure guard contract forbids external effects.
@@ -833,19 +895,24 @@ The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) was
 published in commit `37d2257`. It is planned and unexecuted, and requires a
 separate fresh scope after the active LibraryChanged work releases its fixture.
 
-1. Bind fresh v2 control preparation to the sealed reference v1 and preflight
-   terminals, complete H7 terminal, current independent 83/70/185 snapshot,
-   exact restored 2/1/6/+2 ledger and all 52 preserved history/tool roots.
-   Keep the consumed reference v1/preflight and Goby v1-v7 scopes immutable;
-   do not replay them or reuse the pre-v7 baseline.
-2. Prepare a new v2 scope correcting only the observed anonymous
-   `/Branding/Css.css` route, cross-layer cgroup representation and safe
-   request/document diagnostic correlation. Its source/tool verification must
-   be independent of the consumed v1 checkpoint's 23 runtime guards, 24 driver
-   guards, 13 synthetic-HTML DOM cases, and 45 Python guards/two compilation checks.
-   After verification, dispatch a fresh business-read preflight and reference
-   control run to obtain the still-missing metadata-refresh positive and Name-only
-   control; v1 failed before UI login and obtained neither outcome.
+1. Bind fresh v3 control preparation to the exact reference v2 terminal with
+   viewer dispatch uncertainty, both consumed reference runs and preflights,
+   complete H7 terminal, current independent 83/70/185 snapshot, exact restored
+   2/1/6/+2 ledger and all 61 preserved history/tool roots. Retain
+   `unproven_no_token_received` and the `ui_logout` failure; neither public
+   preservation nor closed process cgroups proves viewer logout. Keep all
+   consumed reference v1/v2/preflight and Goby v1-v7 scopes immutable; do not
+   replay them or reuse the pre-v7 baseline.
+2. Prepare a new v3 scope for the already observed form-login contract, original
+   request-byte forwarding, explicit physical phases including
+   `upstream-created` and `end-called`, and fixed reason codes. Source-contract
+   diagnosis must remain separate from the unrecorded v2 upstream-dispatch fact.
+   Preserve the completed CSS/cgroup corrections and safe diagnostic correlation.
+   V3 remains unexecuted and needs independent tool verification before a fresh
+   business-read preflight and reference control run. The v2 checkpoint passed
+   25 runtime guards, 25 driver guards, 47 Python guards, 13 synthetic-HTML DOM
+   cases and two compilation checks, but obtained no metadata-refresh or
+   Name-only outcome.
    Account for permitted owned login/logout records and HTTP during preflight;
    only the pure guards make a zero-external-effects claim.
    Preserve MessageId/document/token correlation, Goby payloads and the existing
