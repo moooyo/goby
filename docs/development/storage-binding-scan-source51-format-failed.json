@@ -1,0 +1,9 @@
+{
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-51",
+  "status": "failed_before_manifest",
+  "stage": "gofmt",
+  "file": "internal/library/scan_reconciliation_evidence_linux_test.go",
+  "error": "Missing closing brace in the owned-handle cleanup assertion loop at line524.",
+  "database_access": false,
+  "test_unit_launched": false
+}

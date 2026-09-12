@@ -1,0 +1,137 @@
+{
+  "counts": {
+    "fail": 2,
+    "pass": 2105
+  },
+  "failed_tests": [
+    "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+    "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback"
+  ],
+  "go_log_bytes": 9406631,
+  "go_log_sha256": "138e48ed7d890e3bd26203a31fdec8220c8a49d7d559d4846f96536d5a5d0f5c",
+  "inner_state": {
+    "ControlGroup": "",
+    "Description": "goby-client-backup-pair-m3e-v1:20260912_042841_89ef5954034a",
+    "ExecMainStatus": "1",
+    "InvocationID": "f9cf1ffaf283452ebf58d23e2b1a6b8c",
+    "MainPID": "0",
+    "Result": "exit-code",
+    "SubState": "failed"
+  },
+  "inner_unit": "goby-client-backup-20260912-042841-89ef5954034a.service",
+  "linux_build_artifact_exists": false,
+  "marker": "goby-source49-schema28-full-failed-terminal-v1",
+  "observed_at": "2026-09-12T05:05:53.465815+00:00",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/activity",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/config",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/events",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/playback",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "status": "fail"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverycontrol",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/settings",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "status": "pass"
+    }
+  ],
+  "pair_retained": true,
+  "recoverydb_executed": false,
+  "recursive_cgroup_empty": true,
+  "report_sha256": "4d61ae8737438ccf03a11b43983898cb23a60a0f3ec2b64781b7ea1fc49f03be",
+  "state": {
+    "ControlGroup": "",
+    "Description": "[systemd-run] /usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/source-attempt-49/scripts/test-env/run-client-backup-tests.py --source /opt/goby-test/exec-work-m3e/source-attempt-49 --manifest-sha256 a22a89b460a1bf5d4033336ea57fd7a8e69975c01bf883ad54fccf1cd5c6ee3a --schema 28 --mode full",
+    "ExecMainStatus": "1",
+    "InvocationID": "769e7b698560419d906a7df1838f8781",
+    "MainPID": "0",
+    "Result": "exit-code",
+    "SubState": "failed"
+  },
+  "unit": "goby-storage-binding-schema28-full-controller-v1.service"
+}

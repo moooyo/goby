@@ -4,12 +4,17 @@ Status: the identity/topology adapters, shared model and real isolated mount
 observations have bounded remote verification. Schema28 persistence, structural
 backup checks and audit fields are drafted; the actual PostgreSQL catalog was
 generated. Source48 feature/migration/archive acceptance passed all 143 targeted
-tests after two fixture corrections; source49 full regression is running.
+tests after two fixture corrections. Source49 full regression ended with 2,105
+passes and two historical recovery fixture failures; source50's fixture repair
+passed source preflight and awaits PostgreSQL rerun.
 Native binding/rebind, per-root
 anchor publication and administrator UI are drafted; source45 passed 36 selected
 non-database race checks and the UI passed 68 decoder/mocked-browser checks.
-New-registration automatic binding passed its selected non-database checks;
-ordinary missing-file deletion remains unimplemented. Source44's repair of the
+New-registration automatic binding passed its selected non-database checks.
+Source53's original-root recovery and directory-evidence helpers passed 20
+selected race checks without database access. The full scanner/delete path is
+drafted but unverified, with a shared music-completeness gate still in progress.
+Source44's repair of the
 source41 scan-throughput regression passed its 2,002-test full run and is published.
 
 The [first remote capability observation](root-binding-capability-v1.json)
@@ -182,6 +187,13 @@ An API that can only accept a replacement after a process restart is incomplete.
    only after its commit. Add affected audio parents to the music refresh set;
    run reconciliation before `refreshScannedMusicAlbums` so derived albums do
    not retain removed tracks.
+
+Music completeness must be checked before the deletion commits, including
+warnings that ordinary walking does not yet produce. Reuse the album aggregator's
+read-only rules against the proposed surviving member set, excluding every
+independently proven deletion member. A not-ready album prevents the whole delete
+pass. Actual album publication remains after deletion; do not make an absent
+legacy member permanently block its own otherwise proven removal.
 
 ## Backup, restore, and evidence
 

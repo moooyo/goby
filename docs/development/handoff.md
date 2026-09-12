@@ -7,13 +7,41 @@ Source41's failed staging was replaced only after its repair passed full
 verification. Source38 (`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`, 1,953 passes)
 is the previous product checkpoint. Schema28 binding code remains unpublished.
 Source48 passed all 143 targeted PostgreSQL checks after correcting source47's
-two fixture assertions. Source49 adds one remaining latest-schema test update
-and is running the full regression. The source44 candidate upgrade stopped
-before service dispatch; its old source32 process remains live, with its control
-state at the known staged phase pending a separately reviewed continuation.
-SSH is restored. Primary and candidate remain on source32/schema27; neither
-notification increment has been deployed, and original-client UI acceptance
-remains open.
+two fixture assertions. Source49 full regression is terminal: 2,105 top-level
+passes and two failures in the schema23/schema24 encrypted recovery transition
+tests, both at historical administrator bootstrap. The current audit INSERT
+uses schema28-only columns against the historical fixture. Source50 isolates
+the test adapter fix and passed source preflight, but has not run PostgreSQL
+verification. The exact failed pair remains retained pending independently
+reviewed disposal; do not overlap that pair or replay source49.
+
+The separately reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
+**passed** at 2026-09-12 04:42:59 UTC. Candidate now runs source44/schema27,
+PID1264063/start ticks11104222, service invocation
+`c0a5244ae25646c8bd92c3e3c1636575`, binary SHA-256
+`cd67f2e71ff1b63e3c138cdba1f9c9d1e584e2788b47964a332b38311cda0e2d`.
+Fixture state is ready/complete, SHA-256
+`d6b8872eab70848b834c50e26cc2b84e9d137dd68049a1be85d09afa811829d4`.
+Report SHA-256 is `4b426981fa6cc188ca0401c8b28005aeb871246390f1594ef66cd39ab550798e`;
+completed receipt SHA-256 is
+`5ade36722b8e2af81f71ae80006039c230b574ca54b8cf3c144a3ff2216fc596`.
+The [controller terminal](m3e-source44-candidate-continuation-terminal.json)
+confirms exit0/MainPID0 and an empty cgroup; SHA-256
+`08d91a6611b5d2f1cac425528c60054235770fde57a4950414416dcc92a362b0`.
+All business rows, sequences, catalog, credentials, recovery files and three
+media groups were preserved. The original failed upgrade evidence is immutable.
+Primary remains source32/schema27, PID762090; SSH is restored. Schema28 has
+not been published or deployed. Original-client automatic-refresh acceptance
+remains open; the two readiness GETs are not client acceptance.
+
+Later scan reconciliation work is separate from frozen source49. Source53's
+original-storage recovery and bounded directory-evidence helpers passed 20
+selected non-database race checks. All-roots scanner orchestration, cache-hit
+tracking, positive absence, cascade validation, transactional deletion and
+notification publication are now drafted but unverified. Review found that
+music completeness warnings can arise only during later album aggregation; a
+shared read-only music readiness gate is being added before deletion while
+actual album publication remains after it. Do not claim complete reconciliation.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -348,13 +376,47 @@ unbound root defaults while preserving schema20 data. Its
 [preflight](storage-binding-schema28-full-source.json) passed for 4,227 files,
 manifest `a22a89b460a1bf5d4033336ea57fd7a8e69975c01bf883ad54fccf1cd5c6ee3a`.
 Production source is unchanged from the targeted-accepted source48.
-Full regression is running under
+The [full regression](storage-binding-schema28-source49-full-failed.json) ended under
 `goby-storage-binding-schema28-full-controller-v1.service`, invocation
 `769e7b698560419d906a7df1838f8781`, execution directory
 `/opt/goby-test/exec-work-m3e/storage-binding-schema28-full-execution-01`.
-Run ID: `20260912_042841_89ef5954034a`; its current receipt has reached running.
-Recoverydb runtime tests remain its isolated final package step. Do not overlap
-another fixed-pair run and do not claim full success before its terminal report.
+Run ID: `20260912_042841_89ef5954034a`. It passed 2,105 top-level tests, failed
+the two historical encrypted recovery cases and had no skips. There were 23
+passing packages and one failing package. Recoverydb was not executed and the
+Linux build artifact does not exist. The [terminal receipt](storage-binding-schema28-source49-full-terminal.json)
+has SHA-256 `a6dde10cb27f1408a28faaaf12c7d0904f6fa72758bbaf68fe8777a808db92c5`;
+the report SHA-256 is
+`4d61ae8737438ccf03a11b43983898cb23a60a0f3ec2b64781b7ea1fc49f03be`.
+Both controllers have MainPID0, exit1 and empty cgroups; inner invocation is
+`f9cf1ffaf283452ebf58d23e2b1a6b8c`. HBA restoration passed; pair evidence remains.
+Do not infer that the retained databases are empty from the test names.
+
+Source50 changes only manager_schema23_transition_integration_test.go. A private
+fixture view and INSERT trigger route neutral current audit fields into the
+unchanged historical public table. The dedicated pool and adapter objects are
+removed before catalog inspection and encryption. The [preflight](storage-binding-schema28-source50-preflight.json)
+passed for 4,227 files, manifest
+`42ab2be14e56832f9af70d6c0abef2a6d033bb7d15254b46a7fb137f654d4e5c`;
+test-file SHA-256 `c6466aebd0e9dd32353fba6873c1a368962a6cceeb88fd920a78dcc8a174369a`.
+Production code is unchanged from source49. PostgreSQL rerun remains pending.
+
+Source51's [format failure](storage-binding-scan-source51-format-failed.json)
+occurred before manifest publication, tests or database access: one test loop
+was missing its closing brace. Source52 fixed it but its [pure run](storage-binding-scan-source52-pure-failed.json)
+passed 18 tests and failed two test assumptions about ctime advancing within a
+single kernel timestamp tick. Source53 adds a controlled 20ms test separation,
+retaining every production identity and timestamp check. Its [preflight](storage-binding-scan-source53-preflight.json)
+covers 4,235 files, manifest
+`b2135a8c8f4448e7ee5ad2d0366f1b76330b400a41649201c1f52c52e49a3078`.
+The [20 selected race tests](storage-binding-scan-source53-pure.json) passed,
+without failures or skips, in a private network namespace and without database
+access. Recovery test code compiled only. Report SHA-256:
+`658ff36e528e607147202264f9060d9e274ebf794c2dedf39493450e0859f88e`;
+[terminal](storage-binding-scan-source53-pure-terminal.json) SHA-256:
+`759259ebe8b93584cc6ab2b538d0d28ec5724f0861ba7538c2574c802c8d4c05`.
+The full scanner and deletion transaction are not part of frozen source53.
+Repeated stat observations do not reveal an intervening change if the final
+identity and timestamps are identical; they are not an atomic filesystem lock.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
@@ -377,9 +439,10 @@ from the preceding successful staged phase, SHA-256
 The original accepted before-state SHA-256 is
 `5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`.
 Do not replay or edit v1's tool/output/execution, and do not blindly reset the
-control state. A new one-shot continuation is being prepared against the exact
-failed artifacts and unchanged live candidate, with full phase-publication
-memory coverage. No source44 deployment success is claimed.
+control state. The subsequent continuation passed [22 memory guards](m3e-source44-candidate-continuation-guards.json),
+including actual phase-publication simulation, and completed the candidate
+upgrade as recorded at the top of this handoff. The first failed scope and its
+staged-state evidence remain historical and unchanged.
 
 Original-client automatic-refresh acceptance needs a fresh black-box candidate
 scope with a real catalog trigger; the older policy gate depended on reloads
@@ -387,15 +450,17 @@ and policy updates do not emit this catalog notification. Do not inspect origina
 Emby/client source, JavaScript handlers or reference databases, including frozen
 assets. Use existing public protocol/UI recordings and permitted black-box UI.
 
-The [storage binding plan](storage-root-bindings-plan.md) now distinguishes the
-implemented low-level adapter from unimplemented persistence and reconciliation.
+The [storage binding plan](storage-root-bindings-plan.md) distinguishes the
+verified adapter and targeted persistence acceptance from pending full scanner
+and deployment acceptance.
 The adapter passed [14 remote race tests](root-identity-go-verification.json),
 report SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
 The [actual Go helper](root-identity-go-unprivileged.json) also obtained the same
 identity as uid995 with empty capabilities and NoNewPrivileges, report SHA-256
 `0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
-Schema28 persistence and native rebind are drafted but unverified against
-PostgreSQL; missing-file deletion is not implemented. System reboot, other filesystems
+Schema28 persistence and native rebind passed targeted PostgreSQL checks, while
+full regression remains failed and missing-file deletion is a later unverified
+draft. System reboot, other filesystems
 and the complete service sandbox remain unverified. The user's untracked
 `scripts/test-env/upgrade-main-schema25.py` remains untouched and excluded.
 

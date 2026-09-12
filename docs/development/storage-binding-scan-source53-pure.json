@@ -1,0 +1,113 @@
+{
+  "compile_only_packages": [
+    "./internal/recovery"
+  ],
+  "counts": {
+    "pass": 20
+  },
+  "database_access": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T05:08:53Z",
+  "go_log_sha256": "a19ab51e2d7c9610be5f7092008ab574db23ae4cb74accc04661611241119e71",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "status": "pass"
+    }
+  ],
+  "private_network": true,
+  "scanner_integrated": false,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-53",
+  "source_manifest_sha256": "b2135a8c8f4448e7ee5ad2d0366f1b76330b400a41649201c1f52c52e49a3078",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T05:08:37Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestRootBindingScanFilesystemClonesObservedRegisteredRootAcrossTransientReplacement",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingScanObservationClassificationKeepsTransactionFailuresFatal",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingScanCaptureClosesIndependentRootAndRejectsUnverifiedEvidence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceStableCompleteMembershipAndAbsence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceOwnedClonesOutliveBorrowedWalkRoot",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRequiresEveryWalkToComplete",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRejectsUnobservedAndNonDirectoryAncestors",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceKeepsSpecialRawMembers",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidencePreviouslyPresentEntriesCannotBecomeAbsence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRevalidatesNamedDirectoryChain",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceDetectsEntryRewriteWithRestoredMtime",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRequiresCompleteStableInitialListing",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceDetectsChangesDuringFinalRead",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceCancellationAndUnavailableHandles",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceBudgetsAreSharedAcrossRoots",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceCannotReplaceAnEarlierObservation",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRejectsUnavailableChangeTime",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidencePhysicalPaths",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceInvalidBudgetsAndEmptyPass",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceSeenIDsAreDistinctAndIrreversible",
+      "status": "pass"
+    }
+  ],
+  "verification": "root-binding-scan-and-complete-directory-evidence-pure-race"
+}

@@ -1,0 +1,40 @@
+{
+  "candidate_binary_sha256": "cd67f2e71ff1b63e3c138cdba1f9c9d1e584e2788b47964a332b38311cda0e2d",
+  "candidate_schema": 27,
+  "candidate_service": {
+    "ActiveState": "active",
+    "InvocationID": "c0a5244ae25646c8bd92c3e3c1636575",
+    "MainPID": "1264063",
+    "SubState": "running"
+  },
+  "candidate_source": 44,
+  "client_acceptance": false,
+  "completed_sha256": "5ade36722b8e2af81f71ae80006039c230b574ca54b8cf3c144a3ff2216fc596",
+  "fixture_phase": "ready",
+  "fixture_stage": "complete",
+  "marker": "goby-client-notifications-source44-continuation-terminal-v1",
+  "observed_at": "2026-09-12T04:51:06.606748+00:00",
+  "primary_binary_sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+  "primary_service": {
+    "ActiveState": "active",
+    "InvocationID": "bb94d74b475f4382a6ec6f6df181dd74",
+    "MainPID": "762090",
+    "SubState": "running"
+  },
+  "recursive_cgroup_empty": true,
+  "report_path": "/opt/goby-test/exec-work-m3e/client-notifications-source44-continuation-v1/report.json",
+  "report_sha256": "4b426981fa6cc188ca0401c8b28005aeb871246390f1594ef66cd39ab550798e",
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "c3c9115bd8994d6584a5aac583d71884",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "state_sha256": "d6b8872eab70848b834c50e26cc2b84e9d137dd68049a1be85d09afa811829d4",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "a6a94b8daf2234268cf55406a61662f5423df5ae44cc89502b405cc2f8ef4315",
+  "unit": "goby-client-notifications-source44-continuation-controller-v1.service"
+}

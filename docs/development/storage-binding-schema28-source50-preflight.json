@@ -1,0 +1,12 @@
+{
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-49",
+  "changed_file_sha256": "c6466aebd0e9dd32353fba6873c1a368962a6cceeb88fd920a78dcc8a174369a",
+  "changed_test_file": "internal/recovery/manager_schema23_transition_integration_test.go",
+  "file_count": 4227,
+  "formatted_change": false,
+  "preflight": "passed",
+  "production_source_unchanged": true,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-50",
+  "source_manifest_sha256": "42ab2be14e56832f9af70d6c0abef2a6d033bb7d15254b46a7fb137f654d4e5c"
+}

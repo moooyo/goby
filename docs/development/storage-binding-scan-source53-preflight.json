@@ -1,0 +1,12 @@
+{
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-52",
+  "changed_file": "internal/library/scan_reconciliation_evidence_linux_test.go",
+  "changed_file_sha256": "2c40489a57a4c16c09da16bc57fd11ec841a8625a2d60ede384dd7b50006902d",
+  "file_count": 4235,
+  "formatted_change": false,
+  "preflight": "passed",
+  "scanner_integrated": false,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-53",
+  "source_manifest_sha256": "b2135a8c8f4448e7ee5ad2d0366f1b76330b400a41649201c1f52c52e49a3078"
+}

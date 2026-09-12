@@ -1,0 +1,16 @@
+{
+  "database_access": false,
+  "recursive_cgroup_empty": true,
+  "report_sha256": "658ff36e528e607147202264f9060d9e274ebf794c2dedf39493450e0859f88e",
+  "scanner_integrated": false,
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "f56c29ffcafc48c8b581bf4028d150bb",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "status": "passed",
+  "unit": "goby-scan-reconciliation-proof-pure-v2.service"
+}

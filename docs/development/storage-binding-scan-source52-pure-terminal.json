@@ -1,0 +1,16 @@
+{
+  "database_access": false,
+  "recursive_cgroup_empty": true,
+  "report_sha256": "bf82570524dcec477ca5f26a18805aec4251483ba99977ea203aef59002cc099",
+  "state": {
+    "ControlGroup": "",
+    "Description": "[systemd-run] /usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/scan-reconciliation-proof-pure-01/worker.py",
+    "ExecMainStatus": "1",
+    "InvocationID": "25c123a9b8904b3482da2b9f260380be",
+    "MainPID": "0",
+    "Result": "exit-code",
+    "SubState": "failed"
+  },
+  "status": "failed",
+  "unit": "goby-scan-reconciliation-proof-pure-v1.service"
+}
