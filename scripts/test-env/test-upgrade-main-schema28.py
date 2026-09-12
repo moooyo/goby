@@ -576,6 +576,8 @@ def main_product_fixture(changes=None, *, preparing=False):
     intent["helper"]["source"] = put(UPGRADE.TOOL / "migrate-main-schema28.go", b"package main\nfunc main() {}\n")
     helper_test = put(UPGRADE.TOOL / "migrate-main-schema28_test.go", b"package main\n// Synthetic overlay only.\n")
     intent["helper"]["binary"] = put(UPGRADE.TOOL / "migrate-main-schema28", b"Synthetic main migration helper.\n", 0o755)
+    helper_bytes = files[str(UPGRADE.TOOL / "migrate-main-schema28")][0]
+    put(UPGRADE.VERIFIED_HELPER_TOOL / "migrate-main-schema28", helper_bytes, 0o755)
     binary = b"M" * 29337989
     source["binary"] = put(UPGRADE.FULL_REPORT.parent / "tmp/goby-linux-amd64", binary, 0o755)
     source["binary"]["bytes"] = len(binary)
@@ -622,7 +624,7 @@ def main_product_fixture(changes=None, *, preparing=False):
         "source_manifest_sha256": source["manifest_sha256"], "build_root": str(build_root), "files": copy.deepcopy(build_files),
         "helper_source_sha256": intent["helper"]["source"]["sha256"], "binary_sha256": intent["helper"]["binary"]["sha256"], "go": go,
         "argv": [go["path"], "build", "-mod=readonly", "-trimpath", "-buildvcs=false", "-o",
-            str(UPGRADE.TOOL / "migrate-main-schema28"), "./cmd/main-schema28-migration/main.go"],
+            str(UPGRADE.VERIFIED_HELPER_TOOL / "migrate-main-schema28"), "./cmd/main-schema28-migration/main.go"],
         "environment": {"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0", "GOWORK": "off", "GOTOOLCHAIN": "local",
             "GOPROXY": "off", "GOSUMDB": "off"}, "exit_code": 0}
     verification = changed("verification", {"marker": "goby-main-schema28-helper-verification-v1", "status": "passed",
@@ -634,6 +636,7 @@ def main_product_fixture(changes=None, *, preparing=False):
     build["verification_report"] = verification_descriptor
     build = changed("build", build)
     intent["helper"]["build"] = put(UPGRADE.TOOL / "helper-build.json", build)
+    put(UPGRADE.VERIFIED_HELPER_TOOL / "helper-build.json", build)
     guards = changed("guards", {"suite": "main-schema28-upgrade-guards", "status": "passed", "operator_sha256": OPERATOR_SHA256,
         "guard_sha256": GUARD_SHA256, "test_count": 20, "actual_controller_flow": True, "failures": 0, "errors": 0,
         "skips": 0, "unexpected_effects": 0})
@@ -643,6 +646,7 @@ def main_product_fixture(changes=None, *, preparing=False):
         "guard_source_sha256": helper_test["sha256"], "verification_report": verification_descriptor,
         "tests": ["TestSyntheticMainGuard%d" % index for index in range(15)]})
     intent["go_guards"] = put(UPGRADE.TOOL / "helper-go-guards.json", go_guards)
+    put(UPGRADE.VERIFIED_HELPER_TOOL / "helper-go-guards.json", go_guards)
     intent["historical"] = [put(Path(item["path"]), {"marker": "synthetic-sealed-provenance", "index": index})
         for index, item in enumerate(intent["historical"])]
     intent["source_closure"] = {name: UPGRADE.sha(files[str(UPGRADE.TOOL / name)][0]) for name in UPGRADE.TOOL_FILES}
@@ -651,7 +655,9 @@ def main_product_fixture(changes=None, *, preparing=False):
         "patches": {"__file__": str(UPGRADE.TOOL / "upgrade-main-schema28.py"), "SOURCE_SHA": source["manifest_sha256"],
             "CATALOG27_SHA": catalog27_sha, "CATALOG28_SHA": catalog28_sha, "NEW_BINARY_SHA": source["binary"]["sha256"],
             "FULL_REPORT_SHA": source["full_report"]["sha256"], "FULL_TERMINAL_SHA": source["terminal"]["sha256"],
-            "WEB_REPORT_SHA": intent["web"]["report"]["sha256"], "HELPER_VERIFICATION_SHA": verification_descriptor["sha256"]}}
+            "WEB_REPORT_SHA": intent["web"]["report"]["sha256"], "HELPER_VERIFICATION_SHA": verification_descriptor["sha256"],
+            "VERIFIED_HELPER_BYTES": len(helper_bytes), "VERIFIED_BUILD_SHA": intent["helper"]["build"]["sha256"],
+            "VERIFIED_GO_GUARDS_SHA": intent["go_guards"]["sha256"]}}
 
 
 class MainIntentGuards(GuardCase):
@@ -669,6 +675,7 @@ class MainIntentGuards(GuardCase):
 
     def test_main_intent_rejects_candidate_scope_missing_publication_and_closure_gaps(self):
         changes = (lambda value: value.update(tool=str(UPGRADE.WORK / "client-schema28-source55-tool-05")),
+            lambda value: value.update(tool=str(UPGRADE.VERIFIED_HELPER_TOOL)),
             lambda value: value.update(output=str(UPGRADE.WORK / "candidate-output")),
             lambda value: value["source"].pop("publication"), lambda value: value["source"].update(publication=None),
             lambda value: value["source"]["binary"].update(bytes=29337988),
@@ -694,7 +701,7 @@ class MainIntentGuards(GuardCase):
 
 
 class MainProductInputsGuards(GuardCase):
-    def check_product(self, changes=None, *, preparing=False, member=None, damage=None):
+    def check_product(self, changes=None, *, preparing=False, member=None, damage=None, original_damage=None, helper_size=None):
         fixture, reads = main_product_fixture(changes, preparing=preparing), []
         members = sorted(UPGRADE.TOOL / name for name in UPGRADE.TOOL_FILES)
         metadata = {"st_mode": stat.S_IFREG | 0o600, "st_uid": 0, "st_gid": 0, "st_nlink": 1}
@@ -710,6 +717,12 @@ class MainProductInputsGuards(GuardCase):
             key = str(UPGRADE.TOOL / damage)
             raw, mode = fixture["files"][key]
             fixture["files"][key] = (raw + b"Synthetic input drift.\n", mode)
+        if original_damage is not None:
+            key = str(UPGRADE.VERIFIED_HELPER_TOOL / original_damage)
+            raw, mode = fixture["files"][key]
+            fixture["files"][key] = (raw + b"Synthetic original helper drift.\n", mode)
+        if helper_size is not None:
+            fixture["patches"]["VERIFIED_HELPER_BYTES"] = helper_size
 
         def protected(path, expected=None, **kwargs):
             key = str(path)
@@ -816,6 +829,17 @@ class MainProductInputsGuards(GuardCase):
             (('environment', 'GOTOOLCHAIN'), 'auto'), (('go', 'sha256'), synthetic_hash('foreign-go'))])
         for name in ("cmd/main-schema28-migration/main.go", "cmd/main-schema28-migration/main_test.go"):
             self.reject(lambda: self.check_product({"build": lambda value: value["files"].pop(name)}))
+
+    def test_tool02_copies_the_original_helper_and_receipts_without_rewriting_build_history(self):
+        result, fixture, reads = self.check_product(preparing=True)
+        self.assertNotEqual(UPGRADE.TOOL, UPGRADE.VERIFIED_HELPER_TOOL)
+        self.assertEqual(result["build"]["argv"][6], str(UPGRADE.VERIFIED_HELPER_TOOL / "migrate-main-schema28"))
+        for name in ("migrate-main-schema28", "helper-build.json", "helper-go-guards.json"):
+            self.assertIn(str(UPGRADE.VERIFIED_HELPER_TOOL / name), reads)
+            self.assertEqual(fixture["files"][str(UPGRADE.VERIFIED_HELPER_TOOL / name)], fixture["files"][str(UPGRADE.TOOL / name)])
+            self.reject(lambda: self.check_product(original_damage=name))
+        self.reject(lambda: self.check_product(helper_size=18357654))
+        self.reject(lambda: self.check_product({"build": main_field_change(("argv", 6), str(UPGRADE.TOOL / "migrate-main-schema28"))}))
 
     def test_python_and_go_guard_receipts_bind_actual_main_sources_without_database_access(self):
         self.reject_fields("guards", [(('suite',), 'client-schema28-upgrade-guards'), (('operator_sha256',), synthetic_hash('foreign-operator')),
@@ -1037,6 +1061,7 @@ class MainMemoryCase(GuardCase):
         self.memory.remove_targets.add(str(self.restart_path))
         self.memory.bind(self)
         self.events, self.sql_writes, self.actions, self.requests, self.connections = [], [], [], [], []
+        self.snapshot_statements = []
         self.routes, self.helper_changes, self.http_changes = {}, {}, {}
         self.after_rehearsal = self.after_stop = lambda: None
         self.fail_action = self.helper_failure = None
@@ -1159,7 +1184,7 @@ class MainMemoryCase(GuardCase):
             self.seed(Path(item["path"]), ("synthetic sealed provenance: " + item["path"]).encode(), item["sha256"])
         self.inputs = {"catalog": self.catalog28, "binary": self.new_binary, "publication": {"commit": "b" * 40},
             "selected": {UPGRADE.SELECTED[0]: b"package config\n",
-                UPGRADE.SELECTED[1]: b"const catalogObjectsSQL = `SELECT 'synthetic-main-catalog'::text`;\n",
+                UPGRADE.SELECTED[1]: b"const catalogObjectsSQL = `SELECT '[\"synthetic-main-catalog\"]'::text`;\n",
                 UPGRADE.SELECTED[2]: UPGRADE.canonical(self.catalog27), UPGRADE.SELECTED[3]: UPGRADE.canonical(self.catalog28)},
             "source_manifest": {"files": {UPGRADE.SELECTED[2]: UPGRADE.CATALOG27_SHA, UPGRADE.SELECTED[3]: UPGRADE.CATALOG28_SHA}},
             "web": {"files": {name: self.digest(raw) for name, raw in self.web_bytes.items()}},
@@ -1414,7 +1439,14 @@ class MainMemoryCase(GuardCase):
             return str(self.databases[database]["version"]).encode()
         if statement.startswith("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;"):
             value = self.databases[database]
-            rows = [{"section": name, "value": value[name]} for name in ("metadata", "catalog")]
+            self.snapshot_statements.append(statement)
+            text = UPGRADE.canonical(value["catalog"]).decode().strip()
+            expression = "SELECT jsonb_build_object('section','catalog','value',(SELECT '[\"synthetic-main-catalog\"]'::text)::jsonb);"
+            # PostgreSQL keeps the text-valued subquery as a JSON string unless
+            # the generated snapshot statement casts that value to jsonb.
+            catalog_value = UPGRADE.decode(text.encode()) if expression in statement else text
+            catalog_value = getattr(self, "catalog_transport_override", catalog_value)
+            rows = [{"section": "metadata", "value": value["metadata"]}, {"section": "catalog", "value": catalog_value}]
             rows += [{"section": "table", "name": name, "value": rows} for name, rows in value["tables"].items()]
             rows += [{"section": "sequence", "name": name, "value": rows} for name, rows in value["sequences"].items()]
             return b"".join(UPGRADE.canonical(row) for row in rows)
@@ -1531,6 +1563,29 @@ class MainMemoryCase(GuardCase):
 
 
 class MainReadOnlyFlowGuards(MainMemoryCase):
+    def test_actual_snapshot_casts_text_catalog_to_json_array_before_complete_comparison(self):
+        result = self.controller("prepare").run()
+        self.assertEqual(result["status"], "prepared")
+        self.assertTrue(self.snapshot_statements)
+        for statement in self.snapshot_statements:
+            self.assertIn("::text)::jsonb);", statement)
+        baseline = UPGRADE.decode(self.memory.raw(self.prepared / "baseline.json"))["captured"]
+        self.assertIsInstance(baseline["database"]["catalog"], list)
+        self.assertEqual(baseline["database"]["catalog"], self.catalog27["objects"])
+        self.assertEqual(self.sql_writes, [])
+        self.assertEqual(self.actions, [])
+
+    def test_actual_snapshot_rejects_string_null_object_and_changed_array_catalog(self):
+        values = (UPGRADE.canonical(self.catalog27["objects"]).decode().strip(), None, {}, ["changed-catalog-object"])
+        for value in values:
+            with self.subTest(catalog_type=type(value).__name__):
+                self.catalog_transport_override = value
+                self.reject(lambda: self.controller("prepare").run())
+                self.assertNotIn(str(self.prepared), self.memory.entries)
+                self.assertNotIn(str(self.output), self.memory.entries)
+        self.assertEqual(self.sql_writes, [])
+        self.assertEqual(self.actions, [])
+
     def test_actual_prepare_has_no_future_gate_and_writes_only_new_private_evidence(self):
         args = self.seed_input("prepare", self.prepare_intent)
         before = copy.deepcopy(self.memory.entries)

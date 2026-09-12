@@ -1,12 +1,17 @@
 # M3e real-client acceptance
 
-Latest state: **the original-client Home permission gate passed after explicit
+Current service identities, schemas, counts and open acceptance work are recorded
+in the [handoff](handoff.md) and [progress](progress.md). The records below are
+historical M3e checkpoints; their service identities and database totals must not
+be used as the current execution baseline.
+
+The original-client Home permission gate **passed after explicit
 reloads: four libraries, three while restricted, then four after restoration,
 using the same new B token.** Both ten-second passive windows retained stale
 cards and had no Views request. Policy and both owned-session cleanups passed.
-Current totals are 73 sessions, 62 devices and 163 audits, with B revision5.
+At that checkpoint, totals were 73 sessions, 62 devices and 163 audits, with B revision5.
 The failed scopes are preserved. Use the [current handoff](handoff.md)
-and [Home verification](verification-m3e-library-home.md) for current state;
+for current state and [Home verification](verification-m3e-library-home.md) for that gate;
 the API inspection below is historical. The completed UI claim is limited to
 Home after explicit reloads; complete M3/M4/M5/M6 acceptance remains open.
 

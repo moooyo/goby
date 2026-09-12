@@ -33,7 +33,11 @@ import urllib.parse
 sys.dont_write_bytecode = True
 MARKER = 'goby-main-schema28-source55-upgrade-v1'
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'main-schema28-source55-tool-01'
+TOOL = WORK / 'main-schema28-source55-tool-02'
+VERIFIED_HELPER_TOOL = WORK / 'main-schema28-source55-tool-01'
+VERIFIED_HELPER_BYTES = 18357655
+VERIFIED_BUILD_SHA = '8b362dd24137fdf2c37479fc28fd7a4c2b1f7736f805f30d11cca34003dceff0'
+VERIFIED_GO_GUARDS_SHA = 'd18e34d0c22119371974cf584f7ea0183fe8cf450742502838c9b960d08e1507'
 BACKUPS = Path('/opt/goby-test/backups/main-schema28-v1')
 SOURCE = WORK / 'source-attempt-55'
 SOURCE_SHA = '7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a'
@@ -525,7 +529,11 @@ def verify_inputs(intent):
     require(type(web_files) is dict and 1 < len(web_files) <= 256 and 'index.html' in web_files, 'The frontend inventory is incomplete.')
     web = verify_tree(WEB_SOURCE, web_files, maximum=64 << 20)
     routes = frontend_routes(protected(WEB_SOURCE / 'index.html', web_files['index.html']), web_files)
-    build = decode(protected(Path(intent['helper']['build']['path']), intent['helper']['build']['sha256']))
+    build_raw = protected(Path(intent['helper']['build']['path']), intent['helper']['build']['sha256'])
+    require(intent['helper']['build']['sha256'] == VERIFIED_BUILD_SHA and
+            build_raw == protected(VERIFIED_HELPER_TOOL / 'helper-build.json', VERIFIED_BUILD_SHA),
+            'The original helper build receipt was rewritten while copied.')
+    build = decode(build_raw)
     exact(build, {'marker', 'source', 'source_manifest_sha256', 'build_root', 'files', 'helper_source_sha256',
                   'binary_sha256', 'go', 'argv', 'environment', 'exit_code', 'verification_report'})
     descriptor(build['verification_report'], path=HELPER_VERIFICATION)
@@ -550,7 +558,7 @@ def verify_inputs(intent):
     descriptor(build['go'], path=Path('/opt/goby-toolchains/go1.27.1/bin/go'))
     require(build['go']['sha256'] == '30969f97169d7f43fe6a085873d75613adc21e30818a8c61d95bd27275df4624' and
             build['argv'] == [build['go']['path'], 'build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-o',
-                             str(TOOL / 'migrate-main-schema28'), './cmd/main-schema28-migration/main.go'] and
+                             str(VERIFIED_HELPER_TOOL / 'migrate-main-schema28'), './cmd/main-schema28-migration/main.go'] and
             build['environment'] == {'GOOS': 'linux', 'GOARCH': 'amd64', 'CGO_ENABLED': '0', 'GOWORK': 'off',
                                     'GOTOOLCHAIN': 'local', 'GOPROXY': 'off', 'GOSUMDB': 'off'},
             'The helper was not built with the declared offline product toolchain.')
@@ -559,7 +567,10 @@ def verify_inputs(intent):
             build_checks[0].get('argv') == build['argv'], 'The derived build command differs from actual remote execution.')
     protected(Path(build['go']['path']), build['go']['sha256'], modes=(0o755,))
     verify_tree(build_root, expected_files)
-    protected(TOOL / 'migrate-main-schema28', build['binary_sha256'], modes=(0o755,))
+    original_helper = protected(VERIFIED_HELPER_TOOL / 'migrate-main-schema28', build['binary_sha256'], modes=(0o755,))
+    copied_helper = protected(TOOL / 'migrate-main-schema28', build['binary_sha256'], modes=(0o755,))
+    require(len(original_helper) == len(copied_helper) == VERIFIED_HELPER_BYTES and copied_helper == original_helper,
+            'The new tool does not contain the exact already verified helper bytes.')
     guards = decode(protected(Path(intent['guards']['path']), intent['guards']['sha256']))
     require(guards.get('suite') == 'main-schema28-upgrade-guards' and guards.get('status') == 'passed' and
             guards.get('operator_sha256') == intent['source_closure']['upgrade-main-schema28.py'] and
@@ -567,7 +578,11 @@ def verify_inputs(intent):
             type(guards.get('test_count')) is int and guards['test_count'] >= 20 and
             guards.get('actual_controller_flow') is True and all(type(guards.get(key)) is int and guards[key] == 0
             for key in ('failures', 'errors', 'skips', 'unexpected_effects')), 'The exact operator guards have not passed.')
-    go_guards = decode(protected(Path(intent['go_guards']['path']), intent['go_guards']['sha256']))
+    go_guards_raw = protected(Path(intent['go_guards']['path']), intent['go_guards']['sha256'])
+    require(intent['go_guards']['sha256'] == VERIFIED_GO_GUARDS_SHA and
+            go_guards_raw == protected(VERIFIED_HELPER_TOOL / 'helper-go-guards.json', VERIFIED_GO_GUARDS_SHA),
+            'The original helper guard receipt was rewritten while copied.')
+    go_guards = decode(go_guards_raw)
     require(go_guards.get('marker') == 'goby-main-schema28-helper-go-guards-v1' and go_guards.get('status') == 'passed' and
             type(go_guards.get('exit_code')) is int and go_guards['exit_code'] == 0 and go_guards.get('database_access') is False and
             type(go_guards.get('failures_or_skips')) is int and go_guards['failures_or_skips'] == 0 and
@@ -934,7 +949,7 @@ SELECT jsonb_build_object('section','metadata','value',jsonb_build_object('captu
  'relations',(SELECT jsonb_object_agg(c.relname,jsonb_build_object('oid',c.oid::bigint,'owner',c.relowner::bigint,'acl',c.relacl,
               'column_acl',ARRAY(SELECT jsonb_build_object('name',attname,'acl',attacl) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped AND attacl IS NOT NULL ORDER BY attnum)))
               FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public')));
-SELECT jsonb_build_object('section','catalog','value',(""" + catalog_sql + """));
+SELECT jsonb_build_object('section','catalog','value',(""" + catalog_sql + """)::jsonb);
 SELECT format($q$SELECT jsonb_build_object('section','table','name',%L,'value',coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text COLLATE "C"),'[]'::jsonb)) FROM public.%I t;$q$,relname,relname)
 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND relkind='r' ORDER BY relname COLLATE "C"
 \gexec
@@ -954,6 +969,7 @@ COMMIT;
                 require(row['section'] not in value, 'A snapshot section repeats.')
                 value[row['section']] = row['value']
         require(self.sql(unsupported_sql(names['role_oid']), database) == b'f', 'The database contains unsupported objects or grants.')
+        require(type(value.get('catalog')) is list, 'The catalog section is not a JSON array.')
         if version:
             require(23 <= version <= 28, 'The database has an unsupported schema version.')
             path = 'internal/backuppg/catalogs/schema-%d-postgresql-17.json' % version
