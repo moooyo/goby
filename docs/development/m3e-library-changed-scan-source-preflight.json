@@ -1,0 +1,12 @@
+{
+  "all_source_members_and_bytes_unchanged": true,
+  "change": "The source inventory files field is now a JSON object, as required by the existing runner.",
+  "database_setup_performed": false,
+  "failed_controller_terminal_sha256": "2ef9070afbc617a6484fa6fc0e0ec2ad779d2e94ee6f0fdfc7df56229762b941",
+  "files": 4154,
+  "manifest_sha256": "153018fb7e0b5308d727dcc7b1794bc9769ba71e24c2b783a23941595291813a",
+  "previous_manifest_sha256": "4a58e675bce3c9b896b350c19fff9ee3c8ddf406c745443dd366f03740d5d26c",
+  "previous_source": "/opt/goby-test/exec-work-m3e/source-attempt-36",
+  "reviewed_runner_source_preflight": "passed",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-37"
+}

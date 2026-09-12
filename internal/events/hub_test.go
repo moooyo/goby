@@ -6,11 +6,221 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+	"unsafe"
 )
+
+func TestPublishAllSharesOnePublicationAcrossTypedScopes(t *testing.T) {
+	hub := newTestHub(t, Options{})
+	first := subscribeTestScope(t, hub, "user-a", "session-a", "shared-device")
+	second := subscribeTestScope(t, hub, "user-a", "session-b", "shared-device")
+	other := subscribeTestScope(t, hub, "user-b", "session-c", "shared-device")
+	applicationScope := Scope{SessionID: "application-a", CredentialID: "credential", ApplicationKey: true}
+	application, err := hub.Subscribe(applicationScope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sibling, err := hub.Subscribe(Scope{SessionID: "application-b", CredentialID: "credential", ApplicationKey: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	subscribers := []*Subscription{first, second, other, application, sibling}
+	if count, err := hub.PublishAll(Envelope{MessageType: "Changed", Data: json.RawMessage(`{"Value":1}`)}); err != nil || count != len(subscribers) {
+		t.Fatalf("broadcast = (%d, %v), want %d", count, err, len(subscribers))
+	}
+	want := nextTestEvent(t, first)
+	if want.MessageID() == "" {
+		t.Fatal("broadcast has no generated publication identity")
+	}
+	for _, sub := range subscribers[1:] {
+		got := nextTestEvent(t, sub)
+		if got.MessageID() != want.MessageID() || !bytes.Equal(got.Bytes(), want.Bytes()) {
+			t.Fatal("broadcast recipients did not share the same publication")
+		}
+	}
+
+	targeted := Envelope{MessageType: "Changed", MessageID: "targeted"}
+	if count, err := hub.PublishUser("user-a", targeted); err != nil || count != 2 {
+		t.Fatalf("user publication after broadcast = (%d, %v)", count, err)
+	}
+	_ = nextTestEvent(t, first)
+	_ = nextTestEvent(t, second)
+	if count, err := hub.PublishSession("user-b", "session-c", targeted); err != nil || count != 1 {
+		t.Fatalf("session publication after broadcast = (%d, %v)", count, err)
+	}
+	_ = nextTestEvent(t, other)
+	if count, err := hub.PublishScope(applicationScope, targeted); err != nil || count != 1 {
+		t.Fatalf("application publication after broadcast = (%d, %v)", count, err)
+	}
+	_ = nextTestEvent(t, application)
+	for _, sub := range subscribers {
+		assertNoTestEvent(t, sub)
+	}
+	if err := hub.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if count, err := hub.PublishAll(targeted); count != 0 || !errors.Is(err, ErrClosed) {
+		t.Fatalf("broadcast after close = (%d, %v)", count, err)
+	}
+}
+
+func TestPublishedCatalogScopesArePrivateImmutableSnapshots(t *testing.T) {
+	hub := newTestHub(t, Options{})
+	first := subscribeTestScope(t, hub, "user-a", "session-a", "")
+	second := subscribeTestScope(t, hub, "user-b", "session-b", "")
+	backing := strings.Repeat("x", 1<<20) + "private-itemprivate-library"
+	itemID := backing[1<<20 : (1<<20)+len("private-item")]
+	libraryID := backing[(1<<20)+len("private-item"):]
+	input := []CatalogScope{{ItemID: itemID, LibraryID: libraryID}, {ItemID: itemID, LibraryID: "prior-library"}}
+	want := append([]CatalogScope(nil), input...)
+	envelope := Envelope{MessageType: "Changed", MessageID: "snapshot", Data: json.RawMessage(`{"Value":1}`), CatalogScopes: input}
+	if count, err := hub.PublishAll(envelope); err != nil || count != 2 {
+		t.Fatalf("catalog publication = (%d, %v)", count, err)
+	}
+	input[0] = CatalogScope{ItemID: "replaced-item", LibraryID: "replaced-library"}
+	input[1].LibraryID = "changed-after-publication"
+	firstEvent := nextTestEvent(t, first)
+	got := firstEvent.CatalogScopes()
+	if !slices.Equal(got, want) {
+		t.Fatalf("published catalog scopes = %+v, want %+v", got, want)
+	}
+	// The event must own the identifier bytes, not keep a megabyte allocation
+	// alive through a short substring. No mutation through these pointers occurs.
+	if unsafe.StringData(got[0].ItemID) == unsafe.StringData(itemID) || unsafe.StringData(got[0].LibraryID) == unsafe.StringData(libraryID) {
+		t.Fatal("catalog identifiers retained the producer's large backing storage")
+	}
+	got[0] = CatalogScope{ItemID: "recipient-change", LibraryID: "recipient-change"}
+	secondEvent := nextTestEvent(t, second)
+	if !slices.Equal(firstEvent.CatalogScopes(), want) || !slices.Equal(secondEvent.CatalogScopes(), want) {
+		t.Fatal("a recipient changed the retained catalog snapshot")
+	}
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal(firstEvent.Bytes(), &decoded); err != nil || len(decoded) != 3 {
+		t.Fatalf("wire envelope = (%s, %v)", firstEvent.Bytes(), err)
+	}
+	if _, exists := decoded["CatalogScopes"]; exists || bytes.Contains(firstEvent.Bytes(), []byte("private-item")) || bytes.Contains(firstEvent.Bytes(), []byte("private-library")) {
+		t.Fatal("private catalog metadata entered the client message")
+	}
+	var injected Envelope
+	if err := json.Unmarshal([]byte(`{"MessageType":"Changed","CatalogScopes":[{"ItemID":"forged","LibraryID":"forged"}]}`), &injected); err != nil || len(injected.CatalogScopes) != 0 {
+		t.Fatalf("JSON supplied trusted catalog scopes: %+v, %v", injected, err)
+	}
+	if scopes := (Event{}).CatalogScopes(); scopes != nil {
+		t.Fatalf("zero event catalog scopes = %+v", scopes)
+	}
+}
+
+func TestCatalogScopeValidationAndMessageBudgetPreserveExistingQueues(t *testing.T) {
+	base := Envelope{MessageType: "Changed", MessageID: "id", Data: json.RawMessage(`{}`)}
+	payload, err := json.Marshal(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := base
+	valid.CatalogScopes = []CatalogScope{{ItemID: "item", LibraryID: "library"}}
+	limit := len(payload) + catalogScopeOverheadBytes + len("item") + len("library")
+	hub := newTestHub(t, Options{QueueBytes: 2 * limit, MaxMessageBytes: limit})
+	sub := subscribeTestScope(t, hub, "user", "session", "")
+	if count, err := hub.PublishAll(valid); err != nil || count != 1 {
+		t.Fatalf("exact catalog message boundary = (%d, %v)", count, err)
+	}
+	tests := []struct {
+		name   string
+		scopes []CatalogScope
+		want   error
+	}{
+		{"one extra retained byte", []CatalogScope{{ItemID: "item", LibraryID: "library!"}}, ErrMessageTooLarge},
+		{"empty item", []CatalogScope{{LibraryID: "library"}}, ErrInvalidEvent},
+		{"empty library", []CatalogScope{{ItemID: "item"}}, ErrInvalidEvent},
+		{"blank item", []CatalogScope{{ItemID: " ", LibraryID: "library"}}, ErrInvalidEvent},
+		{"padded library", []CatalogScope{{ItemID: "item", LibraryID: " library"}}, ErrInvalidEvent},
+		{"NUL item", []CatalogScope{{ItemID: "item\x00", LibraryID: "library"}}, ErrInvalidEvent},
+		{"invalid UTF-8 library", []CatalogScope{{ItemID: "item", LibraryID: string([]byte{0xff})}}, ErrInvalidEvent},
+		{"oversized item", []CatalogScope{{ItemID: strings.Repeat("x", maxScopeFieldBytes+1), LibraryID: "library"}}, ErrInvalidEvent},
+		{"oversized library", []CatalogScope{{ItemID: "item", LibraryID: strings.Repeat("x", maxScopeFieldBytes+1)}}, ErrInvalidEvent},
+		{"excessive count", make([]CatalogScope, maxCatalogScopes+1), ErrMessageTooLarge},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			envelope := base
+			envelope.CatalogScopes = test.scopes
+			if count, err := hub.PublishAll(envelope); count != 0 || !errors.Is(err, test.want) {
+				t.Fatalf("invalid catalog publication = (%d, %v), want %v", count, err, test.want)
+			}
+			if sub.Reason() != nil {
+				t.Fatalf("invalid catalog publication disconnected the subscriber: %v", sub.Reason())
+			}
+		})
+	}
+	event := nextTestEvent(t, sub)
+	if !bytes.Equal(event.Bytes(), payload) || !slices.Equal(event.CatalogScopes(), valid.CatalogScopes) || event.retainedBytes != limit {
+		t.Fatalf("the valid queued catalog event changed: %s, %+v, %d", event.Bytes(), event.CatalogScopes(), event.retainedBytes)
+	}
+	assertNoTestEvent(t, sub)
+	// The count bound remains finite even when byte limits approach MaxInt.
+	if _, err := encodeEvent(Envelope{MessageType: "Changed", CatalogScopes: make([]CatalogScope, maxCatalogScopes+1)}, int(^uint(0)>>1)); !errors.Is(err, ErrMessageTooLarge) {
+		t.Fatalf("excessive catalog scope count with a large byte limit = %v", err)
+	}
+}
+
+func TestCatalogScopeQueueBytesAccumulateAndAreReleasedByNext(t *testing.T) {
+	envelope := Envelope{MessageType: "Changed", MessageID: "id", Data: json.RawMessage(`{}`),
+		CatalogScopes: []CatalogScope{{ItemID: "item", LibraryID: "library"}}}
+	payload, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	size := len(payload) + catalogScopeOverheadBytes + len("item") + len("library")
+	hub := newTestHub(t, Options{QueueMessages: 16, QueueBytes: 2 * size, MaxMessageBytes: size})
+	slow := subscribeTestScope(t, hub, "slow-user", "slow", "")
+	fast := subscribeTestScope(t, hub, "fast-user", "fast", "")
+	for index := 0; index < 2; index++ {
+		if count, err := hub.PublishAll(envelope); err != nil || count != 2 {
+			t.Fatalf("broadcast to retained byte boundary = (%d, %v)", count, err)
+		}
+		_ = nextTestEvent(t, fast)
+	}
+	_ = nextTestEvent(t, slow)
+	if count, err := hub.PublishAll(envelope); err != nil || count != 2 {
+		t.Fatalf("broadcast after catalog byte dequeue = (%d, %v)", count, err)
+	}
+	_ = nextTestEvent(t, fast)
+	if count, err := hub.PublishAll(envelope); err != nil || count != 1 {
+		t.Fatalf("broadcast beyond retained byte boundary = (%d, %v)", count, err)
+	}
+	assertTestClosed(t, slow, ErrSlowConsumer)
+	if got := nextTestEvent(t, fast); !slices.Equal(got.CatalogScopes(), envelope.CatalogScopes) || fast.Reason() != nil {
+		t.Fatal("the slow consumer affected another user's catalog event")
+	}
+	if fast.bytes != 0 || slow.bytes != 0 {
+		t.Fatalf("catalog byte accounting after dequeue and removal = (%d, %d)", fast.bytes, slow.bytes)
+	}
+}
+
+func TestAbsentCatalogScopesPreserveLegacyWireAndByteBudget(t *testing.T) {
+	base := Envelope{MessageType: "Changed", MessageID: "id", Data: json.RawMessage(`{"Value":1}`)}
+	want, err := json.Marshal(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, scopes := range [][]CatalogScope{nil, {}} {
+		hub := newTestHub(t, Options{QueueBytes: len(want), MaxMessageBytes: len(want)})
+		sub := subscribeTestScope(t, hub, "user", "session", "")
+		envelope := base
+		envelope.CatalogScopes = scopes
+		if count, err := hub.PublishAll(envelope); err != nil || count != 1 {
+			t.Fatalf("scope-free event at legacy boundary = (%d, %v)", count, err)
+		}
+		got := nextTestEvent(t, sub)
+		if !bytes.Equal(got.Bytes(), want) || got.retainedBytes != len(want) || got.CatalogScopes() != nil {
+			t.Fatalf("scope-free event changed: %s, %d, %+v", got.Bytes(), got.retainedBytes, got.CatalogScopes())
+		}
+	}
+}
 
 func TestUserAndSessionIsolation(t *testing.T) {
 	hub := newTestHub(t, Options{})
@@ -348,7 +558,10 @@ func TestConcurrentPublishSubscribeDisconnectAndClose(t *testing.T) {
 			for index := 0; index < 200; index++ {
 				envelope := Envelope{MessageType: "Changed", Data: json.RawMessage(`{"Value":1}`)}
 				var err error
-				if index%2 == 0 {
+				if index%3 == 0 {
+					envelope.CatalogScopes = []CatalogScope{{ItemID: "item", LibraryID: "library"}, {ItemID: "item", LibraryID: "prior-library"}}
+					_, err = hub.PublishAll(envelope)
+				} else if index%3 == 1 {
 					_, err = hub.PublishUser("user", envelope)
 				} else {
 					_, err = hub.PublishSession("user", fmt.Sprintf("session-%d", index%4), envelope)

@@ -1,5 +1,12 @@
 # Controlled library change observation
 
+The separate controlled continuation completed metadata editing, directory
+removal and re-addition, with one LibraryChanged event in each isolated window.
+The [implementation and evidence](../development/library-change-notifications.md)
+record the exact arrays and authorization boundaries. The original attempt
+below remains failed. Product scan-triggered delivery and full client acceptance
+are still incomplete.
+
 The first controlled M3e attempt indexed the new movie, then stopped because
 an NFO edit and acknowledged refresh did not change the requested Name and
 Overview. Removal did not run. Keep this attempt as `retained_for_review`;
@@ -46,11 +53,14 @@ failed scope at `/opt/goby-test/exec-work-m3e/reference-library-changed-v1`.
 Any continuation must use new output paths and fresh sessions against this
 acknowledged library; it must not repeat setup or relabel the failure.
 
-The next controlled update uses the already captured administrator metadata
+The completed continuation used the already captured administrator metadata
 contract: a fresh full item detail, the `reference-metadata.py` `EDIT_FIELDS`
 whitelist with current values, `Id`, and only Name/Overview replacements, then
-`POST /emby/Items/98` and its observed204 result. Longer continuous windows are
-needed before proceeding to the separate removal and re-add actions.
+`POST /emby/Items/98` and its observed204 result. It then moved the owned directory
+out and back, preserving the media bytes and the initial failed evidence. Current
+reference identities are folder99/movie100 at the original owned paths; IDs97/98
+were absent from the scoped catalog after removal. Do not replay either consumed
+operator against this new state.
 
 ## Existing evidence
 

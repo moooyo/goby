@@ -1,0 +1,18 @@
+{
+  "binary_sha256": "1be8fc25d20b56ee078e8e8cf51692ae6a8e9f1aa9f7f75947b44251c01c8de6",
+  "capability_bounding_set_empty": true,
+  "captured_at": "2026-09-12T00:47:30.355609+00:00",
+  "directory_handle_available": true,
+  "directory_handle_errno": 0,
+  "filesystem_uuid_available": true,
+  "filesystem_uuid_errno": 0,
+  "fixture": "/opt/goby-root-binding-unprivileged-z6_7sba9",
+  "gid": 986,
+  "marker": "goby-root-binding-unprivileged-capability-v1",
+  "no_new_privileges": true,
+  "observer_exit": 0,
+  "same_filesystem_as_initial_fixture": true,
+  "scope": "One owned ext4 fixture under the actual service uid, with empty groups and capabilities and NoNewPrivileges. This is API availability evidence, not a service deployment, reboot, nested mount, network filesystem, or deletion test.",
+  "status": "observed",
+  "uid": 995
+}

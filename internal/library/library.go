@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -129,6 +130,9 @@ type Store struct {
 	scanUpdates chan struct{}
 	workers     sync.WaitGroup
 	done        chan struct{}
+
+	catalogListener      atomic.Pointer[catalogChangeListener]
+	catalogChangesClosed atomic.Bool
 }
 
 type rowScanner interface{ Scan(...any) error }

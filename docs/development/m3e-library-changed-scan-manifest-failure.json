@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-09-12T00:52:55.684241+00:00",
+  "cgroup_empty": true,
+  "database_setup_not_reached": true,
+  "pair_receipt_still_completed_source35": true,
+  "result": {
+    "error": "The source manifest does not have the reviewed format.",
+    "report": null,
+    "status": "failed"
+  },
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "1",
+    "InvocationID": "8e69a1ce6ab0445ebcdfdd82079e4fb6",
+    "MainPID": "0",
+    "Result": "exit-code",
+    "SubState": "failed"
+  },
+  "unit": "goby-library-changed-scan-controller-v1.service"
+}

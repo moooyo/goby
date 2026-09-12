@@ -23,6 +23,10 @@ const (
 	DefaultQueueBytes               = 256 * 1024
 	DefaultMaxMessageBytes          = 128 * 1024
 	maxScopeFieldBytes              = 256
+	maxCatalogScopes                = 4096
+	// Two string headers per retained scope, charged conservatively on both
+	// 32-bit and 64-bit builds in addition to the copied string contents.
+	catalogScopeOverheadBytes = 32
 )
 
 var (
@@ -31,6 +35,7 @@ var (
 	ErrSlowConsumer              = errors.New("event subscriber queue is full")
 	ErrSessionRevoked            = errors.New("event session was disconnected")
 	ErrUserRevoked               = errors.New("event user was disconnected")
+	ErrResyncRequired            = errors.New("event catalog requires a fresh snapshot")
 	ErrInvalidOptions            = errors.New("invalid event hub options")
 	ErrInvalidScope              = errors.New("invalid event scope")
 	ErrInvalidEvent              = errors.New("invalid event envelope")
@@ -41,8 +46,9 @@ var (
 	ErrMessageTooLarge           = errors.New("event exceeds message size limit")
 )
 
-// Options bounds both connection counts and the encoded data retained by each
+// Options bounds both connection counts and the event data retained by each
 // subscription. Zero values use the defaults. Negative values are invalid.
+// Byte limits include encoded JSON and private catalog scope metadata.
 // MaxMessageBytes must not exceed QueueBytes after applying defaults.
 type Options struct {
 	MaxConnections           int
@@ -74,29 +80,46 @@ type Authority struct {
 	ApplicationKeyID int64
 }
 
+// CatalogScope is trusted publication metadata for current resource permission
+// checks. It never appears in client JSON. Producers may retain multiple library
+// scopes for one item when a move or deletion changes its catalog membership.
+type CatalogScope struct {
+	ItemID    string
+	LibraryID string
+}
+
 // Envelope is encoded once per publish. An omitted MessageID is generated once
-// and shared by all recipients. Data is copied before encoding; callers must not
-// mutate it concurrently with a publish call but may reuse it after the call.
+// and shared by all recipients. Data and CatalogScopes are copied; callers must
+// not mutate them concurrently with a publish but may reuse them afterward.
 type Envelope struct {
-	MessageType string          `json:"MessageType"`
-	MessageID   string          `json:"MessageId"`
-	Data        json.RawMessage `json:"Data"`
-	Authority   Authority       `json:"-"`
+	MessageType   string          `json:"MessageType"`
+	MessageID     string          `json:"MessageId"`
+	Data          json.RawMessage `json:"Data"`
+	Authority     Authority       `json:"-"`
+	CatalogScopes []CatalogScope  `json:"-"`
 }
 
 // Event holds immutable JSON shared safely by recipient queues. Its zero value
 // is not a published event. Bytes returns an independent copy for the caller.
 type Event struct {
-	payload     string
-	messageType string
-	messageID   string
-	authority   Authority
+	payload       string
+	messageType   string
+	messageID     string
+	authority     Authority
+	catalogScopes []CatalogScope
+	retainedBytes int
 }
 
 func (e Event) Bytes() []byte        { return []byte(e.payload) }
 func (e Event) MessageType() string  { return e.messageType }
 func (e Event) MessageID() string    { return e.messageID }
 func (e Event) Authority() Authority { return e.authority }
+
+// CatalogScopes returns a separate slice containing the immutable publication
+// snapshot. Changing one recipient's result cannot change another event.
+func (e Event) CatalogScopes() []CatalogScope {
+	return append([]CatalogScope(nil), e.catalogScopes...)
+}
 
 // Hub owns subscriptions without starting background goroutines. The mutex
 // protects every queue and close transition; publishing never waits for readers.
@@ -110,7 +133,7 @@ type Hub struct {
 	sessionCounts    map[string]int
 }
 
-// Subscription receives a single user's events and exact-session messages.
+// Subscription receives broadcasts, its user's events, and exact-session messages.
 // Next, Close, and all Hub methods may be called concurrently. Concurrent Next
 // calls divide events between readers; each event is dequeued at most once.
 type Subscription struct {
@@ -201,7 +224,7 @@ func (h *Hub) PublishUser(userID string, envelope Envelope) (int, error) {
 	if !validScopeField(userID, true) {
 		return 0, ErrInvalidScope
 	}
-	return h.publish(Scope{UserID: userID}, true, envelope)
+	return h.publish(Scope{UserID: userID}, publicationUser, envelope)
 }
 
 // PublishSession requires both identifiers to match, preventing a session target
@@ -210,7 +233,7 @@ func (h *Hub) PublishSession(userID, sessionID string, envelope Envelope) (int, 
 	if !validScopeField(userID, true) || !validScopeField(sessionID, true) {
 		return 0, ErrInvalidScope
 	}
-	return h.publish(Scope{UserID: userID, SessionID: sessionID}, false, envelope)
+	return h.publish(Scope{UserID: userID, SessionID: sessionID}, publicationScope, envelope)
 }
 
 // PublishScope requires an exact typed client identity. An application's parent
@@ -219,10 +242,26 @@ func (h *Hub) PublishScope(scope Scope, envelope Envelope) (int, error) {
 	if !validScope(scope) {
 		return 0, ErrInvalidScope
 	}
-	return h.publish(scope, false, envelope)
+	return h.publish(scope, publicationScope, envelope)
 }
 
-func (h *Hub) publish(scope Scope, userBroadcast bool, envelope Envelope) (int, error) {
+// PublishAll queues one shared event for all current subscriptions, including
+// application clients. It does not authorize resource disclosure: transports
+// must revalidate each recipient and filter its payload before network delivery.
+// The result excludes subscribers disconnected by the existing queue limits.
+func (h *Hub) PublishAll(envelope Envelope) (int, error) {
+	return h.publish(Scope{}, publicationAll, envelope)
+}
+
+type publicationAudience uint8
+
+const (
+	publicationScope publicationAudience = iota
+	publicationUser
+	publicationAll
+)
+
+func (h *Hub) publish(scope Scope, audience publicationAudience, envelope Envelope) (int, error) {
 	event, err := encodeEvent(envelope, h.opts.MaxMessageBytes)
 	if err != nil {
 		return 0, err
@@ -234,17 +273,17 @@ func (h *Hub) publish(scope Scope, userBroadcast bool, envelope Envelope) (int, 
 	}
 	delivered := 0
 	for sub := range h.subscribers {
-		if sub.scope.ApplicationKey != scope.ApplicationKey || sub.scope.UserID != scope.UserID ||
-			sub.scope.CredentialID != scope.CredentialID || (!userBroadcast && sub.scope.SessionID != scope.SessionID) {
+		if audience != publicationAll && (sub.scope.ApplicationKey != scope.ApplicationKey || sub.scope.UserID != scope.UserID ||
+			sub.scope.CredentialID != scope.CredentialID || (audience != publicationUser && sub.scope.SessionID != scope.SessionID)) {
 			continue
 		}
-		if sub.count == len(sub.queue) || len(event.payload) > h.opts.QueueBytes-sub.bytes {
+		if sub.count == len(sub.queue) || event.retainedBytes > h.opts.QueueBytes-sub.bytes {
 			h.remove(sub, ErrSlowConsumer)
 			continue
 		}
 		sub.queue[(sub.head+sub.count)%len(sub.queue)] = event
 		sub.count++
-		sub.bytes += len(event.payload)
+		sub.bytes += event.retainedBytes
 		sub.signal()
 		delivered++
 	}
@@ -287,6 +326,17 @@ func (h *Hub) DisconnectUser(userID string) {
 		if !sub.scope.ApplicationKey && sub.scope.UserID == userID {
 			h.remove(sub, ErrUserRevoked)
 		}
+	}
+}
+
+// DisconnectAll discards every current subscription when a committed catalog
+// change cannot be delivered completely. It is not a permanent revocation or a
+// Hub shutdown: newly authenticated subscribers may obtain a fresh snapshot.
+func (h *Hub) DisconnectAll() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for sub := range h.subscribers {
+		h.remove(sub, ErrResyncRequired)
 	}
 }
 
@@ -343,7 +393,7 @@ func (s *Subscription) Next(ctx context.Context) (Event, error) {
 			s.queue[s.head] = Event{}
 			s.head = (s.head + 1) % len(s.queue)
 			s.count--
-			s.bytes -= len(event.payload)
+			s.bytes -= event.retainedBytes
 			if s.count > 0 {
 				s.signal()
 			}
@@ -419,12 +469,44 @@ func validScope(scope Scope) bool {
 	return scope.CredentialID == "" && validScopeField(scope.UserID, true)
 }
 
+func catalogScopesSize(scopes []CatalogScope, maxBytes int) (int, error) {
+	// Check the count before multiplication or copying, even when callers use
+	// an unusually large byte limit. Every subsequent addition uses subtraction.
+	if len(scopes) > maxCatalogScopes || len(scopes) > maxBytes/catalogScopeOverheadBytes {
+		return 0, ErrMessageTooLarge
+	}
+	size := len(scopes) * catalogScopeOverheadBytes
+	for _, scope := range scopes {
+		if !validScopeField(scope.ItemID, true) || strings.TrimSpace(scope.ItemID) != scope.ItemID ||
+			!validScopeField(scope.LibraryID, true) || strings.TrimSpace(scope.LibraryID) != scope.LibraryID {
+			return 0, ErrInvalidEvent
+		}
+		if len(scope.ItemID) > maxBytes-size {
+			return 0, ErrMessageTooLarge
+		}
+		size += len(scope.ItemID)
+		if len(scope.LibraryID) > maxBytes-size {
+			return 0, ErrMessageTooLarge
+		}
+		size += len(scope.LibraryID)
+	}
+	return size, nil
+}
+
 func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
 	if envelope.Authority != (Authority{}) && (envelope.Authority.ApplicationKeyID <= 0 ||
 		!validScopeField(envelope.Authority.CredentialID, true) || !validScopeField(envelope.Authority.ClientSessionID, true)) {
 		return Event{}, ErrInvalidEvent
 	}
 	if len(envelope.Data) > maxBytes || len(envelope.MessageType) > maxBytes || len(envelope.MessageID) > maxBytes {
+		return Event{}, ErrMessageTooLarge
+	}
+	scopeBytes, err := catalogScopesSize(envelope.CatalogScopes, maxBytes)
+	if err != nil {
+		return Event{}, err
+	}
+	maxPayloadBytes := maxBytes - scopeBytes
+	if len(envelope.Data) > maxPayloadBytes || len(envelope.MessageType) > maxPayloadBytes || len(envelope.MessageID) > maxPayloadBytes {
 		return Event{}, ErrMessageTooLarge
 	}
 	if strings.TrimSpace(envelope.MessageType) == "" || !utf8.ValidString(envelope.MessageType) ||
@@ -446,13 +528,24 @@ func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
 	if err != nil {
 		return Event{}, fmt.Errorf("%w: %v", ErrInvalidEvent, err)
 	}
-	if len(payload) > maxBytes {
+	if len(payload) > maxPayloadBytes {
 		return Event{}, ErrMessageTooLarge
 	}
+	var scopes []CatalogScope
+	if len(envelope.CatalogScopes) != 0 {
+		scopes = make([]CatalogScope, len(envelope.CatalogScopes))
+		for index, scope := range envelope.CatalogScopes {
+			// A short identifier may be a substring of a much larger request or
+			// snapshot. Retain only the bytes charged to this bounded event.
+			scopes[index] = CatalogScope{ItemID: strings.Clone(scope.ItemID), LibraryID: strings.Clone(scope.LibraryID)}
+		}
+	}
 	return Event{
-		payload:     string(payload),
-		messageType: envelope.MessageType,
-		messageID:   envelope.MessageID,
-		authority:   envelope.Authority,
+		payload:       string(payload),
+		messageType:   envelope.MessageType,
+		messageID:     envelope.MessageID,
+		authority:     envelope.Authority,
+		catalogScopes: scopes,
+		retainedBytes: len(payload) + scopeBytes,
 	}, nil
 }

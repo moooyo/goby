@@ -1,0 +1,21 @@
+{
+  "binary_sha256": "1be8fc25d20b56ee078e8e8cf51692ae6a8e9f1aa9f7f75947b44251c01c8de6",
+  "captured_at": "2026-09-12T00:44:03.069389+00:00",
+  "combined_identity_available": true,
+  "content_change_same_identity": true,
+  "directory": "/opt/goby-test/exec-work-m3e/root-binding-capability-01",
+  "directory_handle_available": true,
+  "directory_handle_errno": 0,
+  "filesystem_uuid_available": true,
+  "filesystem_uuid_errno": 0,
+  "kernel": "6.12.107+deb13-cloud-amd64",
+  "marker": "goby-root-binding-capability-v1",
+  "new_process_same_identity": true,
+  "original_directory_restored": true,
+  "private_observations_sha256": "2e101d7cc78c957284b932f1585b7886ff6c2e8dc87826bf4919e6972fcf8012",
+  "same_path_replacement_distinguished": true,
+  "scope": "One owned directory on the current test-env filesystem as uid 0. Separate observer processes and pathname replacement were exercised. No system reboot, nested mount, least-privilege service, network filesystem, or product integration was tested.",
+  "source_sha256": "707c1a2a5cb2d56e3bfdc9d71ef378c1181ee6fa78f37e3ba6bb00a235c1a20c",
+  "status": "observed",
+  "uid": 0
+}

@@ -308,6 +308,8 @@ func (s *Server) maintainSocket(ctx context.Context, conn *websocket.Conn, princ
 func (s *Server) socketEventPayload(ctx context.Context, principal identity.Principal, event events.Event) ([]byte, error) {
 	if event.MessageType() != "UserDataChanged" {
 		switch event.MessageType() {
+		case "LibraryChanged":
+			return s.libraryChangedSocketPayload(ctx, principal, event)
 		case "Play", "Playstate", "GeneralCommand":
 			allowed, err := s.authorizeRemoteSocketEvent(ctx, principal, event)
 			if err != nil || !allowed {

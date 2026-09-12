@@ -1,0 +1,13 @@
+{
+  "marker": "goby-library-changed-continuation-tool-v1",
+  "result": "passed",
+  "sources": {
+    "test_continue_client_library_changed_reference.py": "9161e8d97171a5d0f82ca8fb8d3b6e5377ab3f0c3a4b8770dbf64385a26b04d8",
+    "continue-client-library-changed-reference.py": "6b9e60a3e87a2a377839416106b3539d7da264c6469b60d2397781de02cea5fb"
+  },
+  "syntaxChecks": 2,
+  "testExitCode": 0,
+  "httpRequests": 0,
+  "catalogMutations": 0,
+  "testStderrSha256": "d44f6ee8488173e553ad851a7036382ddf742c0ef1e3134378156e111ab749b7"
+}

@@ -166,10 +166,11 @@ func (s *Store) beginOwnedTx(ctx context.Context) (pgx.Tx, error) {
 
 type ownedTx struct {
 	pgx.Tx
-	store    *Store
-	ctx      context.Context
-	cancel   context.CancelFunc
-	finished bool
+	store          *Store
+	ctx            context.Context
+	cancel         context.CancelFunc
+	finished       bool
+	catalogChanges catalogChangeBatch
 }
 
 func (tx *ownedTx) Exec(_ context.Context, statement string, args ...any) (pgconn.CommandTag, error) {
@@ -207,7 +208,11 @@ func (tx *ownedTx) Commit(_ context.Context) error {
 	tx.cancel()
 	err = tx.store.ownershipErrorLocked(err)
 	tx.finished = true
-	tx.store.ownership.mu.Unlock()
+	defer tx.store.ownership.mu.Unlock()
+	notification := tx.catalogChanges.take()
+	if err == nil {
+		tx.store.notifyCatalogChanges(notification)
+	}
 	return err
 }
 
@@ -221,6 +226,7 @@ func (tx *ownedTx) Rollback(_ context.Context) error {
 	tx.cancel()
 	err = tx.store.ownershipErrorLocked(err)
 	tx.finished = true
+	tx.catalogChanges = catalogChangeBatch{}
 	tx.store.ownership.mu.Unlock()
 	return err
 }

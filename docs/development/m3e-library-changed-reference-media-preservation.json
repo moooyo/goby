@@ -1,0 +1,8 @@
+{
+  "marker": "goby-library-changed-continuation-media-preservation-v1",
+  "beforeSnapshotSha256": "ecba10ca770ad5d021e98b2a8f6f1748eb06316833322376d1419b3f8a26a370",
+  "afterSnapshotSha256": "5937985a73433565ab9a14595af23e8d4cebb37ccec3b0449a41eb8c8989cbf2",
+  "regularFileCount": 5,
+  "exactRegularFileRecordsPreserved": true,
+  "boundary": "File bytes, inode/link identity, ownership, mode and timestamps match at all five final paths. Directory timestamps changed with the recorded moves."
+}

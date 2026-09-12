@@ -1,15 +1,98 @@
 # Implementation progress
 
-Current reference work: the first controlled LibraryChanged attempt indexed a
-new movie but stopped because an NFO edit and scoped FullRefresh did not change
-the requested Name/Overview. Removal was not executed. The old seven-library/
-five-user public state and old media were preserved; both recorder sessions
-were revoked. A separate four-minute tail completed with no events and its
-session revoked. The reference now retains one new library/user. See the
-[controlled study](../research/library-changed-reference.md) and current
-[handoff](handoff.md). The next step is the already observed metadata-write API
-and longer separate removal/re-add windows; product event implementation is
-still pending. Candidate source32/schema27 is unchanged.
+Current boundary: **source35 passed its full regression; the newer ordinary
+scan/move increment passed 80 PostgreSQL/HTTP/WebSocket checks and its own full
+regression is running. Original-client UI acceptance remains pending.**
+Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
+report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
+The subsequent [runner failure](m3e-library-changed-scan-manifest-failure.json)
+rejected a list-valued `files` manifest before database setup; it remains a
+failed scope. Source37 keeps identical source bytes and corrects the manifest
+to the required object, covering 4,154 files with SHA-256
+`153018fb7e0b5308d727dcc7b1794bc9769ba71e24c2b783a23941595291813a`.
+Its [formal source preflight](m3e-library-changed-scan-source-preflight.json)
+passed.
+
+The [source37 scan verification](m3e-library-changed-scan-verification.json)
+passed 80 top-level tests, zero failures, zero skips and all six cleanup checks.
+Report: `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005317_90f76937a793/report.json`,
+SHA-256 `60c5b3b69f234cb52201ed17531a8015a351f86bac9d00b08b59b03198ce911d`.
+Controller `goby-library-changed-scan-controller-v2.service`, invocation
+`b9f73f0231604d758bfaf6fd3c104dde`, exited0 with MainPID0; terminal SHA-256 is
+`962a578e7e5fae442e4ca2b1b9bf0d9613e3ba1c15d23fb7e5f42da85b9ea244`.
+Its former PID978105 and execution directory
+`/opt/goby-test/exec-work-m3e/library-changed-scan-execution-02` are historical.
+This is real HTTP/WebSocket integration evidence, not original-client UI acceptance.
+
+Source37 full regression is **running** under
+`goby-library-changed-scan-full-controller-v1.service`, PID979794, invocation
+`d477192e74604dd290af3e7d6c3d212a`, with execution records under
+`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
+Run ID: `20260912_005623_3e09ff8ff85d`; pending report:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005623_3e09ff8ff85d/report.json`.
+There is no source37 full-suite result yet.
+The ordinary Added/Updated, effective-folder, explicit-probe and
+`PreviousParentID` move edits remain unstaged and outside source35 coverage.
+SSH is restored; no current authentication blocker is recorded.
+
+Persistent root bindings and safe missing-file reconciliation remain at the
+[implementation-plan stage](storage-root-bindings-plan.md). The
+[root API observation](root-binding-capability-v1.json) and
+[unprivileged observation](root-binding-unprivileged-capability-v1.json) establish
+only bounded API feasibility. Schema28 binding is not implemented, and
+cross-system-reboot continuity is not verified.
+
+Current product work: **source35 passed 43 targeted notification tests, with
+zero failures, zero skips and all six cleanup checks true.** The
+[producer verification](m3e-library-changed-producer-verification.json) binds
+source manifest `3eadc5606b89c8ec7887bee760bb9309641d407638bb03d26c30344b250846eb`
+to the retained report at
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_001248_002cceaba1e8/report.json`,
+SHA-256 `9f0595a1d9fb9c97e03d8aed8cd7fcb2fdb33dcdd5ae23f29a8fa8a79c73ebe6`.
+Creation/deletion of library roots and changed native metadata edits now feed
+the bounded notifier only after successful transaction commit. Already
+committed writes still notify after request cancellation; rollback, failed
+commit and no-op edits do not. That source35 increment excludes ordinary scan
+production; the newer scan code passed pure and PostgreSQL/HTTP/WebSocket
+checks, while its full regression and original-client UI acceptance are pending.
+Auxiliary and derived scan producers remain unimplemented. See
+[implementation boundaries](library-change-notifications.md).
+
+The [full source35 regression](m3e-library-changed-full-verification.json)
+**passed 1,908 top-level tests across 24 packages, with zero failures, zero
+skips and all six PostgreSQL cleanup checks true**. Report path:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_002059_ab4a943fc81b/report.json`,
+SHA-256 `bb32b90b18b5c564f865734991d6cb50b4d17c023fe6687c9ee32181182fb808`.
+The 28,248,725-byte binary at that run's `tmp/goby-linux-amd64` has SHA-256
+`8c91a392d7e339e38a6fdb8be7ce41cc4fd8c20f1b5492ac38734871aa166377`.
+Controller `goby-library-changed-full-controller-v1.service`, invocation
+`7e3faf01d865410aa5799c3239105558`, exited0 with MainPID0 and an empty cgroup;
+terminal SHA-256 is
+`e1677db514cc6d3e8fb086ce9145ecf18753fc87bb353619bcbd215fbea87bb7`.
+Execution records remain under
+`/opt/goby-test/exec-work-m3e/library-changed-full-execution-01`.
+Primary and candidate remain on the accepted source32/schema27 deployment;
+this notification code has not been deployed.
+
+Current reference work: the [controlled continuation](m3e-library-changed-reference-continuation.json)
+completed metadata Movie98, removal folder97 and re-addition folder99/movie100,
+with one LibraryChanged notification in each window. The reference now has
+eight libraries and six users, with folder99/movie100 at the owned paths.
+The continuation report confirms the scoped original public state, all three
+old media trees and both session logout204/exact401 checks. The separate
+[controlled fixture five-file preservation](m3e-library-changed-reference-media-preservation.json)
+covers the new fixture across removal/re-addition. The initial unproven NFO
+update remains failed; its separate event-free four-minute tail remains a
+bounded negative observation. Neither old scope nor the continuation may be
+replayed. See the [study](../research/library-changed-reference.md) and
+[current handoff](handoff.md).
+
+Next work includes source37 full regression, original-client UI acceptance,
+auxiliary/derived notifications, persistent storage-root binding and safe
+missing-file reconciliation. Repeated empty scans must not
+authorize deletion of old catalog rows when a mount disappeared or changed
+across restart. These safeguards have not been implemented or verified.
+Complete M3/M4/M5/M6 remain open; M7 remains deferred.
 
 Latest state: **the original-client Home permission gate passed after explicit
 reloads: four libraries, three while restricted, then four after restoration,
@@ -453,11 +536,11 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source32 primary27 deployed; Movie A/B and restriction API/inspection passed; original-client permission changes and broader compatibility pending | [Active record](client-acceptance-m3e.md): source18/schema25 passed 19 targeted regressions, build, protected replacement, and the full race suite: 1,741 top-level tests across 24 packages, zero failures and zero skips. Both original-client audio core journeys passed with successful state reports, persisted history and logout. FLAC completed the full workflow including Home; MP3's original Home harness uniqueness failure remains preserved. Source18 auxiliary 404/page errors remain historical evidence; the later source28 candidate passed its scoped Similar/ThemeMedia/Home flow and 1,830-test complete suite. Source16's 1,739-test suite, source15 SRT/VTT, ordinary-TV and controlled Music scan evidence, and source11 movie/preferences evidence retain their historical scope. The schema25 tool03 passed 47 remote guards and build; fresh backup preparation, independent schema23-to-25 restore rehearsal, cleanup, preservation of old business columns/sequences and the primary schema25 deployment passed. Empty transcode-cache preparation passed seven guards and actual creation. The new main-schema26 attempt stopped the primary and failed at baseline ACL capture. Tool03 then completed a fresh baseline/dump but failed before rehearsal on pg_authid.rolconfig; tool04 completed rehearsal, migration, installation and start, but retained a post-start assertion failure before smoke. Later independent read-only verification and the separate 13-call native completion passed; the three failed trees remain preserved. Input05/input06 failures remain historical. Source32 passed the full 1,873-test race suite/build, candidate upgrade, input07 original-Movie dual-user flow and precise root extension; one console warning/error per user remains. Independent full/range finalization, inspection, positive A/B UI and repaired scoped comparison passed. DOM IDs and LocalTrailers UI were not observed; one console warning/error per user remains. Main consumer04 passed two syntax checks/27 guards/build, and primary schema27 subsequently passed its independent backup/rehearsal/native-smoke deployment. The restriction/restore API matrix and zero-HTTP persisted-state inspection passed; original-client permission changes and broader milestones remain open |
+| M3e real-client acceptance | In progress; source32/schema27 deployed; Movie A/B, restriction API and explicit-reload permission UI passed | [Active record](client-acceptance-m3e.md) and [handoff](handoff.md) retain scoped client, deployment and historical failure evidence. Source32 passed its 1,873-test full race suite. Home showed four/three/four libraries after explicit reloads; passive refresh was not observed in two ten-second windows. Source35's [notification increment](library-change-notifications.md) passed 43 targeted tests and the 1,908-test/24-package full run, but is not deployed. New ordinary scan/move code passed 14 pure tests and 80 PostgreSQL/HTTP/WebSocket checks; source37 full regression and original-client UI acceptance remain pending. Auxiliary/derived notifications, root binding, safe reconciliation and broader client acceptance remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
-| M2a media ingestion and browse | Complete | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md) |
+| M2a media ingestion and browse | Foundation increment complete; safe missing-file reconciliation pending | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md). Persistent root/storage binding and ordinary missing-file cleanup are not implemented; repeated empty scans must not authorize deletion after a lost or replaced mount |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |

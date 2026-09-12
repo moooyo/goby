@@ -355,6 +355,12 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 	if err != nil {
 		return ItemMetadataDetail{}, err
 	}
+	if changed {
+		if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogUpdated, ItemID: record.itemID, LibraryID: record.libraryID,
+			ParentID: record.parentID, IsFolder: record.isFolder, IsCollectionFolder: record.itemType == "CollectionFolder"}); err != nil {
+			return ItemMetadataDetail{}, err
+		}
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemMetadataDetail{}, fmt.Errorf("commit metadata edit: %w", err)
 	}

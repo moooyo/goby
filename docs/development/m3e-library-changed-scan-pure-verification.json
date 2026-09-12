@@ -1,0 +1,49 @@
+{
+  "captured_at": "2026-09-12T00:42:17.939679+00:00",
+  "cgroup_empty": true,
+  "log_sha256": "facce93b38abc78f50249c71710446870be9fcb186407449f6f73eabdd445446",
+  "marker": "goby-library-changed-scan-pure-v1",
+  "packages": [
+    "github.com/moooyo/goby/internal/library",
+    "github.com/moooyo/goby/internal/server"
+  ],
+  "scope": "Pure notification logic and package compilation. No PostgreSQL integration, scan execution, client acceptance, or deployment is established.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-36",
+  "source_files_unchanged": true,
+  "source_manifest_sha256": "4a58e675bce3c9b896b350c19fff9ee3c8ddf406c745443dd366f03740d5d26c",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "tests": {
+    "failures": 0,
+    "passed": [
+      "TestCatalogChangesRejectInvalidMoveParents",
+      "TestCatalogNotificationEnvelopeChecksEncodedAndScopeByteBudget",
+      "TestCatalogNotificationEnvelopePreservesMovedItemAndBothParentScopes",
+      "TestCatalogNotificationEnvelopePreservesOrderedFieldsAndTrustedScopes",
+      "TestCatalogNotificationEnvelopeRejectsAmbiguousFactsAndInvalidBounds",
+      "TestCatalogNotificationEnvelopeRejectsInvalidMoveFacts",
+      "TestCatalogNotificationEnvelopeSuppressesOnlyRemovedAncestorsInTheSameLibrary",
+      "TestLibraryNotifierAmbiguousBatchDisconnectsWithoutPublishingPartialData",
+      "TestLibraryNotifierCloseDetachesAndIgnoresCapturedCallbacks",
+      "TestLibraryNotifierCopiesInputsAndPublishesBatchesInOrder",
+      "TestLibraryNotifierExplicitResyncDiscardsPendingAndPartialBatches",
+      "TestLibraryNotifierMoveParentBytesAreIncludedInBatchBudget",
+      "TestLibraryNotifierPublicationFailureDisconnectsAndRecovers",
+      "TestLibraryNotifierQueueOverflowDisconnectsAllAndAcceptsFutureBatches"
+    ],
+    "race_detection": true,
+    "skips": 0,
+    "top_level_passes": 14
+  },
+  "unit": "goby-library-changed-scan-pure-v1.service",
+  "unit_terminal": {
+    "ControlGroup": "",
+    "ExecMainExitTimestampMonotonic": "96561615941",
+    "ExecMainStartTimestampMonotonic": "96539732990",
+    "ExecMainStatus": "0",
+    "InvocationID": "212f110652854cd799a6009d0313eaa7",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  }
+}

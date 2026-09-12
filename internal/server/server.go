@@ -22,29 +22,30 @@ import (
 )
 
 type Server struct {
-	cfg            config.Config
-	db             *pgxpool.Pool
-	identity       *identity.Store
-	log            *slog.Logger
-	version        string
-	serverID       string
-	limiter        *loginLimiter
-	library        *library.Store
-	images         *imageCache
-	streamSlots    chan struct{}
-	originals      *originalStreamRuntime
-	subtitleSlots  chan struct{}
-	eventHub       *events.Hub
-	sockets        *socketRuntime
-	notifier       *userDataNotifier
-	hls            *hlsRuntime
-	taskStore      *tasks.Store
-	taskManager    *tasks.Manager
-	settings       *settings.Store
-	diagnostics    *diagnostics.Store
-	recovery       adminRecoveryManager
-	activityCancel context.CancelFunc
-	activityDone   chan struct{}
+	cfg             config.Config
+	db              *pgxpool.Pool
+	identity        *identity.Store
+	log             *slog.Logger
+	version         string
+	serverID        string
+	limiter         *loginLimiter
+	library         *library.Store
+	images          *imageCache
+	streamSlots     chan struct{}
+	originals       *originalStreamRuntime
+	subtitleSlots   chan struct{}
+	eventHub        *events.Hub
+	sockets         *socketRuntime
+	notifier        *userDataNotifier
+	catalogNotifier *libraryNotifier
+	hls             *hlsRuntime
+	taskStore       *tasks.Store
+	taskManager     *tasks.Manager
+	settings        *settings.Store
+	diagnostics     *diagnostics.Store
+	recovery        adminRecoveryManager
+	activityCancel  context.CancelFunc
+	activityDone    chan struct{}
 }
 
 // Option attaches dependencies whose lifetime is owned by the process entry
@@ -89,6 +90,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.notifier = newUserDataNotifier(catalog, hub)
+	app.catalogNotifier = newLibraryNotifier(catalog, hub)
 	if err := app.initializeSettings(ctx); err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
@@ -147,6 +149,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.catalogNotifier.Close()
 	s.cancelActivityRetention()
 	return s.closeSockets(ctx)
 }

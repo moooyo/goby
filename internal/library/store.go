@@ -144,6 +144,10 @@ func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdminis
 	if err := administrator.check(ctx, tx, false); err != nil {
 		return Library{}, err
 	}
+	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogAdded, ItemID: id, LibraryID: id,
+		IsFolder: true, IsCollectionFolder: true}); err != nil {
+		return Library{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return Library{}, fmt.Errorf("commit library creation: %w", err)
 	}
@@ -225,6 +229,10 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 	if err := tx.QueryRow(ctx, "SELECT count(*) FROM library_roots WHERE library_id = $1", id).Scan(&paths); err != nil {
 		return fmt.Errorf("count removed library directories: %w", err)
 	}
+	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogRemoved, ItemID: exists, LibraryID: exists,
+		IsFolder: true, IsCollectionFolder: true}); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(ctx, "DELETE FROM libraries WHERE id = $1", id); err != nil {
 		return fmt.Errorf("delete library: %w", err)
 	}
@@ -250,6 +258,7 @@ func (s *Store) Close(ctx context.Context) error {
 		go func() {
 			s.workers.Wait()
 			ownershipErr := s.ownership.release()
+			s.closeCatalogChangeListener()
 			s.mu.Lock()
 			s.shutdownErr = errors.Join(s.shutdownErr, ownershipErr)
 			for _, root := range s.roots {

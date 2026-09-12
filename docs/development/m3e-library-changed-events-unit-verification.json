@@ -1,0 +1,42 @@
+{
+  "marker": "goby-library-changed-events-unit-v1",
+  "result": "passed",
+  "exitCode": 0,
+  "sources": {
+    "go.mod": "cd5137649ee15d846b70dc394b730efda87c325d31b7b947743dd8421c89e314",
+    "go.sum": "0e8b530d6f1ad5f697aee4bfdba09c2feeea84add0a1e70b13db47f97fa6cdb2",
+    "internal/events/application_key_test.go": "031b0e6b94265078d6f68f8fda4cf47579b3f51398f7c58ec89d428b45fc6896",
+    "internal/events/hub.go": "2a2ab9b52acb600cdd9d8c9341505998e43f5a12fe183260d35721d725744d7d",
+    "internal/events/hub_test.go": "2fd549de69640cfa35d68820c4c314863569ae8905fa2ea5c3bf2d778eb1433a"
+  },
+  "topLevelPassed": 20,
+  "tests": [
+    "TestApplicationClientScopesKeepTypedDeliveryAndParentRevocation",
+    "TestApplicationScopeRejectsFabricatedUsersAndInvalidParents",
+    "TestApplicationCredentialConnectionQuotaIsIndependentOfUsersAndOtherKeys",
+    "TestApplicationPublicationAuthorityRemainsImmutableAndOffWire",
+    "TestPublishAllSharesOnePublicationAcrossTypedScopes",
+    "TestPublishedCatalogScopesArePrivateImmutableSnapshots",
+    "TestCatalogScopeValidationAndMessageBudgetPreserveExistingQueues",
+    "TestCatalogScopeQueueBytesAccumulateAndAreReleasedByNext",
+    "TestAbsentCatalogScopesPreserveLegacyWireAndByteBudget",
+    "TestUserAndSessionIsolation",
+    "TestPublishedPayloadIsImmutable",
+    "TestConnectionLimitsAndReleasedCapacity",
+    "TestSlowConsumerDoesNotBlockOtherSubscribers",
+    "TestQueueByteBudgetAndDequeueAccounting",
+    "TestMessageSizeAndInvalidDataDoNotDisconnectSubscribers",
+    "TestDisconnectIsScopedIdempotentAndDiscardsQueuedEvents",
+    "TestCloseWakesReadersAndPermanentlyClosesHub",
+    "TestNextCancellationLeavesSubscriptionActive",
+    "TestConcurrentPublishSubscribeDisconnectAndClose",
+    "TestInvalidOptionsAndScopes"
+  ],
+  "failed": [],
+  "skipped": [],
+  "raceEnabled": true,
+  "formatting": "gofmt on test-env",
+  "stdoutSha256": "c44e03ea95e164b113719151f41a754090430fd122b17a28e84bb275bad73cb8",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "scope": "internal/events package only; no server or catalog integration claim"
+}

@@ -1,6 +1,118 @@
 # Development handoff
 
-Latest reference work: **the first controlled LibraryChanged attempt indexed
+Current verification boundary: **source35 completed its full regression;
+source37 passed the separate 80-test ordinary-scan/HTTP/WebSocket checks and
+its own full regression is now running.**
+SSH is restored. The transient signing-agent refusal did not end or restart
+the source35 run, whose completed result is recorded below.
+
+The working tree contains the next, unstaged ordinary-scan increment:
+transactional Added/Updated facts, effective folder comparisons, explicit probe
+invalidation, and same-library moves retaining both parent scopes through
+`PreviousParentID`. Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
+report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
+Its [PostgreSQL runner manifest failure](m3e-library-changed-scan-manifest-failure.json)
+occurred because `files` was a list instead of the required object; the runner
+stopped before database setup. Preserve that failed scope. Source37 retains
+identical source bytes and corrects only the manifest representation: 4,154
+files, manifest SHA-256
+`153018fb7e0b5308d727dcc7b1794bc9769ba71e24c2b783a23941595291813a`.
+The [formal source preflight](m3e-library-changed-scan-source-preflight.json)
+passed before its fresh PostgreSQL run.
+
+The [source37 scan verification](m3e-library-changed-scan-verification.json)
+passed 80 top-level tests, zero failures, zero skips and all six cleanup checks.
+Its report is
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005317_90f76937a793/report.json`,
+SHA-256 `60c5b3b69f234cb52201ed17531a8015a351f86bac9d00b08b59b03198ce911d`.
+Controller `goby-library-changed-scan-controller-v2.service`, invocation
+`b9f73f0231604d758bfaf6fd3c104dde`, exited0 with MainPID0; its former PID978105
+is historical. Execution records remain under
+`/opt/goby-test/exec-work-m3e/library-changed-scan-execution-02`.
+Terminal receipt SHA-256 is
+`962a578e7e5fae442e4ca2b1b9bf0d9613e3ba1c15d23fb7e5f42da85b9ea244`.
+These are ordinary-scan and real HTTP/WebSocket integration checks, not
+original-client UI acceptance or complete-suite verification.
+
+The source37 full regression is **running** under
+`goby-library-changed-scan-full-controller-v1.service`, PID979794, invocation
+`d477192e74604dd290af3e7d6c3d212a`, with execution records under
+`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
+Its run ID is `20260912_005623_3e09ff8ff85d`; the pending report is
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005623_3e09ff8ff85d/report.json`.
+No source37 full-suite result is available yet. Recheck this exact handle;
+an observation timeout does not authorize a replacement run.
+
+The source35 checkpoint contains its 18 changed Go files at their frozen,
+fully tested bytes; new scan/move edits are deliberately unstaged, including
+further changes to shared producer/notifier files. Do not combine these scopes
+or claim the newer code passed source35 verification. The
+[storage binding plan](storage-root-bindings-plan.md) describes the separate
+unimplemented root-identity/reconciliation dependency. Its
+[root capability observation](root-binding-capability-v1.json) and
+[unprivileged observation](root-binding-unprivileged-capability-v1.json) establish
+bounded API feasibility only: schema28 binding is not implemented, and identity
+continuity across a system reboot remains unverified. The user's untracked
+`scripts/test-env/upgrade-main-schema25.py` remains untouched and excluded.
+
+Accepted verification increment: **source35 passed the full 24-package run
+with 1,908 top-level tests, zero failures, zero skips and all six PostgreSQL
+cleanup checks true.** The earlier [producer verification](m3e-library-changed-producer-verification.json)
+records 43 passed tests, zero failures, zero skips and all six cleanup checks
+true. Source manifest SHA-256 is
+`3eadc5606b89c8ec7887bee760bb9309641d407638bb03d26c30344b250846eb`.
+The retained report is
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_001248_002cceaba1e8/report.json`,
+SHA-256 `9f0595a1d9fb9c97e03d8aed8cd7fcb2fdb33dcdd5ae23f29a8fa8a79c73ebe6`.
+
+Library creation, library deletion and changed native metadata edits now capture
+trusted facts inside their transactions and notify only after successful commit.
+Request cancellation does not suppress an already committed notification;
+rollback, failed commit and no-op edits do not publish. The bounded notifier
+feeds the existing broadcast and current-permission delivery path. Source35
+does not include ordinary scan production. The newer ordinary scan/move code
+has passed its pure and PostgreSQL/HTTP/WebSocket checks, while its full suite
+and original-client UI acceptance remain pending. Auxiliary and derived-metadata
+scan producers are still unimplemented. See
+[implementation boundaries](library-change-notifications.md).
+
+The [completed source35 full report](m3e-library-changed-full-verification.json)
+is retained at
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_002059_ab4a943fc81b/report.json`,
+SHA-256 `bb32b90b18b5c564f865734991d6cb50b4d17c023fe6687c9ee32181182fb808`.
+Its Linux executable is
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_002059_ab4a943fc81b/tmp/goby-linux-amd64`,
+28,248,725 bytes, SHA-256
+`8c91a392d7e339e38a6fdb8be7ce41cc4fd8c20f1b5492ac38734871aa166377`.
+The controller `goby-library-changed-full-controller-v1.service`, invocation
+`7e3faf01d865410aa5799c3239105558`, is terminal with exit0, MainPID0 and an empty
+cgroup. Its earlier PID947396 is historical. Execution records remain under
+`/opt/goby-test/exec-work-m3e/library-changed-full-execution-01`.
+Terminal receipt SHA-256 is
+`e1677db514cc6d3e8fb086ce9145ecf18753fc87bb353619bcbd215fbea87bb7`.
+This closes source35 verification, not deployment or the newer scan increment.
+Primary and candidate remain on source32/schema27.
+
+Latest reference work: **the separate continuation completed metadata editing,
+removal and re-addition, with one LibraryChanged event in each controlled
+window.** The [continuation report](m3e-library-changed-reference-continuation.json)
+and [research record](../research/library-changed-reference.md) retain metadata
+Movie98, removal folder97 and re-added folder99/movie100 observations. The
+[controlled fixture five-file preservation record](m3e-library-changed-reference-media-preservation.json)
+separately covers the new fixture across removal/re-addition. The continuation
+report confirms both fresh-session logout204/exact401 barriers, the scoped
+original seven-library/five-user public state and all three old media trees.
+These observations do not establish complete client compatibility.
+
+Reference PID332054 and its binary remain unchanged. Current reference state
+has eight libraries and six users: library93, root folder94, anchor
+folder95/movie96, re-added folder99/movie100 and ordinary user
+`c5f36699a54f4971a891682cd9de410f`. The owned media root remains
+`/opt/goby-fixtures/client-library-changed-v1`. IDs97/98 are historical and
+were absent from the scoped catalog after removal. The continuation, initial
+attempt and passive tail are all consumed scopes; none may be replayed.
+
+Historical initial reference attempt: **the first controlled LibraryChanged attempt indexed
 the new movie, then stopped at an unproven NFO metadata update. Removal did not
 run.** The [reference study](../research/library-changed-reference.md) and
 [initial report](m3e-library-changed-reference-initial.json) retain this failed
@@ -9,18 +121,15 @@ controlled add window had no event; the subsequent FullRefresh produced an
 ItemsUpdated message while all five requested catalog DTOs stayed equal.
 Do not assume that equal DTOs prohibit reference refresh notifications.
 
-Reference service PID332054 and its binary are unchanged. It now has eight
-libraries/six users: new library93, root folder94, anchor folder95/movie96,
-added folder97/movie98 and ordinary user `c5f36699a54f4971a891682cd9de410f`.
-The source media remains under `/opt/goby-fixtures/client-library-changed-v1`;
-the changed NFO did not produce the requested Name/Overview change. The initial
+At that historical checkpoint, the added identities were folder97/movie98.
+The changed NFO did not produce the requested Name/Overview change. The initial
 scope's 334 requests preserved the captured old seven-library/five-user public
 state and all three old media trees. Both new sessions completed logout204 and
 exact401. Its unit `goby-reference-library-changed-v1.service` is terminal with
 exit1, MainPID0 and an empty cgroup; terminal SHA-256 is
 `2586b86a3ea0087be67c397f3c3c3dca2e75b7210d90c969d72225f2a1171b2f`.
 
-Current reference continuation inputs under
+Historical inputs consumed by the completed continuation under
 `/opt/goby-test/exec-work-m3e/reference-library-changed-v1` are the export report
 SHA-256 `f502223df8e7de2afeb49b5a6285498d967f5c95e1435121b455d7e8ee8b0a33`,
 `private/final-old-state.json`
@@ -38,11 +147,15 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: use the already observed administrator `POST /emby/Items/98` metadata
-contract with current EDIT_FIELDS values and only Name/Overview changes, then
-separate remove and re-add observations with longer continuous windows. A new
-continuation operator is being prepared; none of those actions has run yet.
-LibraryChanged product implementation and complete M3/M4/M5/M6 remain open.
+Next: complete source37 full regression and original-client UI acceptance,
+then connect auxiliary and derived scan commits. Safe missing-file
+reconciliation requires durable
+root/storage binding, complete cross-root move matching and stable directory
+observations. That binding and reconciliation workflow is not implemented or
+verified yet. A legacy or changed root
+must not gain deletion authority from repeated empty scans after a restart;
+unproved storage continuity requires explicit binding/rebinding. Complete
+M3/M4/M5/M6 remain open and M7 remains deferred.
 The candidate's source32/schema27 and 73-session/62-device/163-audit authority
 below are unchanged by this independent reference work.
 
@@ -1649,7 +1762,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M3 / client acceptance | More events/subscriptions, broader subtitles, global NextUp parity and reproducible real-client flows. |
+| P1 — M2/M3 / catalog and client acceptance | Finish source37 full regression and original-client UI acceptance; implement auxiliary/derived notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |
