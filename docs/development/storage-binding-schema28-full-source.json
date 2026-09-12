@@ -1,0 +1,12 @@
+{
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-49",
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-48",
+  "schema": 28,
+  "file_count": 4227,
+  "source_manifest_sha256": "a22a89b460a1bf5d4033336ea57fd7a8e69975c01bf883ad54fccf1cd5c6ee3a",
+  "changed_test_file": "internal/settings/compatibility_migration_integration_test.go",
+  "changed_file_sha256": "d36b4e1119b25e1748724f87fa79c4e6d3fda27bf9cab7c012f448d97db1ba86",
+  "formatted_change": false,
+  "production_source_unchanged": true,
+  "preflight": "passed"
+}

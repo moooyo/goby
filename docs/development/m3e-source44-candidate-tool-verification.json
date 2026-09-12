@@ -1,0 +1,20 @@
+{
+  "files": {
+    "upgrade-client-notifications-source44.py": "92da604ba21390d4c861b47a3ff3d7a05e905a646ee3f894392b860ee4a705c1",
+    "test-upgrade-client-notifications-source44.py": "b4155ad60084c495c0deb58875bdc68813da287b602de53028ab1ab6259a7ed6"
+  },
+  "syntax_files": 2,
+  "exit_code": 0,
+  "guards": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "b4155ad60084c495c0deb58875bdc68813da287b602de53028ab1ab6259a7ed6",
+    "operator_sha256": "92da604ba21390d4c861b47a3ff3d7a05e905a646ee3f894392b860ee4a705c1",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-notifications-source44-upgrade-guards",
+    "test_count": 52
+  },
+  "guards_report_sha256": "7e11c575b6ba2c34b1f515f455090ac089860fcaa050e34e85d4ab0de8418128",
+  "status": "passed"
+}

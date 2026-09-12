@@ -1,0 +1,17 @@
+{
+  "unit": "goby-client-notifications-source44-controller-v1.service",
+  "state": {
+    "MainPID": "0",
+    "Result": "exit-code",
+    "ExecMainStatus": "1",
+    "ControlGroup": "",
+    "SubState": "failed",
+    "InvocationID": "29ee7565d2d1487bab232c8b0b5b0780"
+  },
+  "recursive_cgroup_empty": true,
+  "failed_report_sha256": "5dec5eb91b562184ad82e48f711a52dbc1d40c0093fc402ab7606be6a68583c4",
+  "failure_phase": "stop_requested",
+  "reserved_service_actions": [],
+  "last_state_sha256": "5d528680edffc64c4720d6024de0db3ad3bc0846eede6040302bef63941cc04a",
+  "failure": "The phase journal name contains an underscore rejected by its own filename guard after the state update and before service dispatch."
+}

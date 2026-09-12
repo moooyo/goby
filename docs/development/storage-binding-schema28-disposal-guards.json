@@ -1,0 +1,66 @@
+{
+  "files": {
+    "dispose-source47-binding-failed-pair.py": "13f4d319ff8d0fbb088773b38cb4b6f76432c08413a69a6924af0924d0dafe72",
+    "test-dispose-source47-binding-failed-pair.py": "208ba3c4f290be28eaa90e71e2c774a118ebcc0cd636132388d422657419f494"
+  },
+  "syntax_files": 2,
+  "exit_code": 0,
+  "guards": {
+    "suite": "source47-disposal-guards",
+    "status": "passed",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "operator_sha256": "13f4d319ff8d0fbb088773b38cb4b6f76432c08413a69a6924af0924d0dafe72",
+    "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+    "fixtures": "two-source-reads-then-audit-fenced-memory-only",
+    "initial_source_reads": 2,
+    "database_commands": 0,
+    "filesystem_mutations": 0,
+    "fence_self_test_blocks": 12,
+    "blocked_effect_details": [
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "os.stat"
+      },
+      {
+        "effect": "builtins.open"
+      },
+      {
+        "effect": "subprocess.run"
+      },
+      {
+        "effect": "socket.socket"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "json"
+      },
+      {
+        "effect": "importlib.import_module"
+      },
+      {
+        "effect": "builtins.exec"
+      },
+      {
+        "effect": "audit:open"
+      },
+      {
+        "effect": "audit:subprocess.Popen"
+      },
+      {
+        "effect": "audit:socket.connect"
+      }
+    ],
+    "summaries": []
+  },
+  "status": "passed"
+}

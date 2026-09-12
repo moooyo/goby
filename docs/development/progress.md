@@ -6,9 +6,10 @@ cleanup checks. Source41's two capacity failures were repaired and reverified.**
 Source40 passed 169 targeted checks; source42 passed 46 model/alias race tests
 and six real isolated mount phases. Source43 schema28 has passed 20 pure tests,
 frontend build/typecheck and 31 mocked API checks, plus 112 runner guards;
-Its actual catalog generation has subsequently passed. Source47 PostgreSQL
-acceptance passed 141 tests but failed two fixture assertions; source48 contains
-the corrections and awaits exact disposal of the retained test pair.
+Its actual catalog generation has subsequently passed. After source47's two
+fixture assertions were corrected and its exact retained pair disposed,
+source48 passed all 143 targeted PostgreSQL checks. Source49 full regression is
+running with the remaining settings latest-schema test expectation corrected.
 The later source45 binding read/write, native route and per-root anchor drafts
 passed [36 selected non-database race checks](storage-binding-workflow-pure-verification.json).
 Database write/HTTP/archive/reset-proof cases remain pending. The administrator
@@ -16,7 +17,9 @@ dialog passed typecheck/build and [68 decoder/browser checks](storage-binding-wo
 including long-path narrow-screen layout and complete accessible descriptions.
 These browser APIs are mocked. Source46 also passed 46 non-database race checks
 including initial registration capture and capability fallback. Missing-file
-reconciliation is not implemented. Neither source44 nor schema28 is deployed.
+reconciliation is not implemented. A source44 candidate upgrade attempt failed
+before service dispatch; the old candidate remains running with a staged control
+record pending reviewed continuation. Neither source44 nor schema28 is deployed.
 Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
 report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
 The subsequent [runner failure](m3e-library-changed-scan-manifest-failure.json)

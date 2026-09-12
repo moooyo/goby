@@ -3,8 +3,8 @@
 Status: the identity/topology adapters, shared model and real isolated mount
 observations have bounded remote verification. Schema28 persistence, structural
 backup checks and audit fields are drafted; the actual PostgreSQL catalog was
-generated. Source47 feature/migration/archive acceptance passed 141 tests and
-failed two fixture assertions; source48 corrects them and awaits a fresh run.
+generated. Source48 feature/migration/archive acceptance passed all 143 targeted
+tests after two fixture corrections; source49 full regression is running.
 Native binding/rebind, per-root
 anchor publication and administrator UI are drafted; source45 passed 36 selected
 non-database race checks and the UI passed 68 decoder/mocked-browser checks.

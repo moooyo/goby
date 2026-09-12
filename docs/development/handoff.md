@@ -6,8 +6,11 @@ increment is published on main as `35ae3d000f812fa18d234921cedb3c33d88190e0`.**
 Source41's failed staging was replaced only after its repair passed full
 verification. Source38 (`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`, 1,953 passes)
 is the previous product checkpoint. Schema28 binding code remains unpublished.
-Source47's PostgreSQL run passed 141 tests and failed two fixture assertions;
-source48 corrects those tests and awaits disposal of the retained test pair.
+Source48 passed all 143 targeted PostgreSQL checks after correcting source47's
+two fixture assertions. Source49 adds one remaining latest-schema test update
+and is running the full regression. The source44 candidate upgrade stopped
+before service dispatch; its old source32 process remains live, with its control
+state at the known staged phase pending a separately reviewed continuation.
 SSH is restored. Primary and candidate remain on source32/schema27; neither
 notification increment has been deployed, and original-client UI acceptance
 remains open.
@@ -313,7 +316,15 @@ report SHA-256 `9bcf5a32a626b1aea89216b6f809e859ac9e758032dc0db5bc63bf433ca2efe1
 terminal SHA-256 `8a76222c25bf9c6dfecbd34d070df25b30edc44cb790fc2239ebca291921bfb9`.
 The retained pair receipt SHA-256 is
 `57ade271512651ff8a9179f1453385f684c877e5a64febcf9c58f28e4c79b423`.
-Do not launch another fixed-pair run until the exact reviewed disposal completes.
+Its [reviewed disposal](storage-binding-schema28-disposal.json) subsequently
+completed after [14 memory guards](storage-binding-schema28-disposal-guards.json).
+Disposal report SHA-256:
+`ff4524bfdebc72f15ff507b88ccd665bafa1d565c9dc64f4929557e64b3697cd`;
+attestation SHA-256: `5b45ab5d2fb3f0e59ad0aa1e7338385c26c755e3b6ef2032031bc87134ef9ac0`;
+terminal SHA-256: `564fbbab5015372d9a7c3bd7ff15988725a69d11ec811f2c35b73f5116ba9b17`.
+Controller `goby-source47-disposal-v1.service`, invocation
+`704330898a7447d18d4f4bb9668f52e1`, exited0/MainPID0/empty cgroup.
+Original receipt and failure evidence were preserved. Do not replay disposal.
 
 Source48 changes only the two test fixtures: the historical migration comparison
 now expects schema28, preserves every old root field and checks the new unbound
@@ -322,14 +333,54 @@ record the current version and real file ctime. Production source is unchanged.
 Its [preflight](storage-binding-schema28-fixture-fix-source.json) passed for
 4,227 files, manifest
 `128201c5e098d0253c52566901a12d7461543f758b76b06f35d857b7b28a8e96`.
-Repeat the same targeted scope, then full regression. Recoverydb runtime tests
-remain reserved for that full run's isolated final package step.
+The [same targeted scope passed](storage-binding-schema28-targeted-verification.json)
+all 143 tests, zero failures/skips and all six cleanup checks. Run ID:
+`20260912_041811_d761451e139a`; report SHA-256:
+`9df8655cf130c78cc7b22dc4a62392a0e1d62c9b54849674afe77b46507938c9`.
+Controller `goby-storage-binding-schema28-controller-v2.service`, invocation
+`1d5f06c1194e44dfa24ea5cd8538c0ac`, exited0/MainPID0/empty cgroup;
+terminal SHA-256 `3da416ae32d84b50bacdef7ddcf8a4e70015e4be63ce01d7c1f0d0d08b6a47f5`.
+
+Before full regression, a static sweep found the same outdated latest-schema
+expectation in settings/compatibility_migration_integration_test.go. Source49
+updates that test's terminal version/history count and separately verifies new
+unbound root defaults while preserving schema20 data. Its
+[preflight](storage-binding-schema28-full-source.json) passed for 4,227 files,
+manifest `a22a89b460a1bf5d4033336ea57fd7a8e69975c01bf883ad54fccf1cd5c6ee3a`.
+Production source is unchanged from the targeted-accepted source48.
+Full regression is running under
+`goby-storage-binding-schema28-full-controller-v1.service`, invocation
+`769e7b698560419d906a7df1838f8781`, execution directory
+`/opt/goby-test/exec-work-m3e/storage-binding-schema28-full-execution-01`.
+Run ID: `20260912_042841_89ef5954034a`; its current receipt has reached running.
+Recoverydb runtime tests remain its isolated final package step. Do not overlap
+another fixed-pair run and do not claim full success before its terminal report.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
 those historical guards. A separate source44 candidate-only same-schema operator
 is being prepared for the existing positive Extras and the accepted 25-package
 report, retaining full database/media/credential/primary-state comparisons.
+That new tool passed [52 memory guards](m3e-source44-candidate-tool-verification.json)
+and a read-only live preflight, but its first
+[deployment attempt failed](m3e-source44-candidate-upgrade-failure.json) while
+saving stop_requested.json: the filename guard rejected the underscore.
+No stop/start action was reserved or dispatched. Candidate PID748513/invocation
+`b7a9ae3d00364e0993d2af2c7d3e1063` and primary PID762090/invocation
+`bb94d74b475f4382a6ec6f6df181dd74` remain running unchanged.
+The failed outer controller is terminal exit1/MainPID0/empty cgroup, invocation
+`29ee7565d2d1487bab232c8b0b5b0780`; terminal SHA-256:
+`33f875dc0aa69c00ab8928083f7f17da3deced3f33343d314bd10005a532ea12`.
+Its durable fixture state remains phase=upgrading/stage=notifications_staged
+from the preceding successful staged phase, SHA-256
+`5d528680edffc64c4720d6024de0db3ad3bc0846eede6040302bef63941cc04a`.
+The original accepted before-state SHA-256 is
+`5319bc49b2753b84ca04f279523f2482a49a94fabd9944dc369347b6d87224e1`.
+Do not replay or edit v1's tool/output/execution, and do not blindly reset the
+control state. A new one-shot continuation is being prepared against the exact
+failed artifacts and unchanged live candidate, with full phase-publication
+memory coverage. No source44 deployment success is claimed.
+
 Original-client automatic-refresh acceptance needs a fresh black-box candidate
 scope with a real catalog trigger; the older policy gate depended on reloads
 and policy updates do not emit this catalog notification. Do not inspect original
