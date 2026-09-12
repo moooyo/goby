@@ -46,8 +46,12 @@ The subsequent root topology observer is implemented in eight separate files,
 but [its first remote race run](root-topology-go-verification-failed.json) failed:
 15 tests passed and four real filesystem tests rejected a valid external nsfs
 mountinfo root name. Source39 and its failed test scope remain immutable; the
-parser fix must pass a fresh run before this observer is accepted. Persistent
-bindings, rebind, nested-mount loss acceptance and deletion remain unimplemented.
+parser fix subsequently passed [22 tests on source41](root-topology-go-verification.json),
+with zero failures/skips and unchanged source files. Report SHA-256:
+`52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
+External nsfs namespace names are parsed narrowly; related namespace dentries
+still fail explicitly. Combined source41 full regression is running. Persistent
+bindings, rebind, real nested-mount loss acceptance and deletion remain open.
 
 ## Problem and acceptance boundary
 

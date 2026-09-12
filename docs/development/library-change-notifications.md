@@ -6,7 +6,8 @@ passed its 80 targeted PostgreSQL/HTTP/WebSocket checks and full remote suite:
 24 packages, 1,920 top-level tests, zero failures, zero skips and all six cleanup
 checks true. Source38 adds image/subtitle and derived-album notifications; its
 95 targeted checks and full 1,953-test suite passed. Source40 adds theme/extra
-resource production and passed 12 pure race tests; its PostgreSQL run is running. Complete
+resource production and passed 12 pure race tests plus 169 PostgreSQL checks;
+combined source41 full regression is running. Complete
 theme/extra resource-change notifications, global entity projection invalidation,
 persistent root binding and safe missing-file reconciliation remain unfinished.
 Original-client UI acceptance remains open. Primary and candidate still run
@@ -259,7 +260,19 @@ SSH access is restored, with no current access blocker.
 
 ## Remaining integration
 
-Complete source40 PostgreSQL and full-suite verification, then original-client UI
+Source40 compares bounded before/after resource projections in marker,
+theme/extra publication, ordinary-owner update and native metadata transactions.
+Active resources use Added/Updated/Removed with independent owner invalidation;
+semantic Movie owners are not exposed as browse folders. Effective inherited
+Genres honor explicit empty native controls. Compatible folder membership facts
+merge with existing owner facts, while overflow requires whole-batch Resync.
+Cached no-ops and failed commits stay quiet; successful explicit probes and
+earlier commits in incomplete scans retain their notifications. Its
+[169 targeted checks](m3e-library-changed-resources-verification.json) passed with
+zero failures/skips and all cleanup checks true. Actual auxiliary HTTP/WebSocket
+and original-client acceptance remain separate gates.
+
+Complete source41 full-suite verification, then original-client UI
 acceptance of the implemented scan changes. Complete theme/extra resource-change
 notifications and global entity projection invalidation remain separate work.
 Preserve earlier committed changes when a later scan step fails, and distinguish

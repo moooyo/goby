@@ -2,8 +2,9 @@
 
 Current boundary: **source38 passed its full regression: 24 packages, 1,953
 top-level tests, zero failures, zero skips and all six PostgreSQL cleanup checks
-true. Source40 passed 12 pure race tests and its PostgreSQL targeted run is
-running. Original-client UI acceptance and deployment remain open.**
+true, published as `c3fb084d2740cbeebc3499bacc8513f5077cd5ea`. Source40 passed
+169 PostgreSQL checks; corrected topology passed 22 race tests. Combined
+source41 full regression is running. Client UI acceptance and deployment remain open.**
 Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
 report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
 The subsequent [runner failure](m3e-library-changed-scan-manifest-failure.json)
@@ -74,11 +75,19 @@ The 28,297,205-byte Linux binary SHA-256 is
 The separate source40 theme/extra producer passed [12 pure race tests](m3e-library-changed-resources-pure-verification.json).
 Its [source preflight](m3e-library-changed-resources-source-preflight.json) binds
 4,172 files to manifest `e4eb47609e273343850f799809f00142fa2f1bde31315ef01caaadf69d5e35a6`.
-Its PostgreSQL unit `goby-library-changed-resources-controller-v1.service` is
-running, invocation `88f2bf72b124444c9784ef228aa9e51f`.
+Its [PostgreSQL run](m3e-library-changed-resources-verification.json) passed 169
+tests, zero failures/skips and all six cleanup checks. Report SHA-256:
+`0b91c60e2649eddf2e9edf5afd692d4f4dd2a3256feae1d4561cf39d4f1dc106`.
+The targeted controller is exited0/MainPID0 with an empty cgroup.
 Source39 root topology observation instead [failed its first remote run](root-topology-go-verification-failed.json):
-15 passed, four failed on a valid external nsfs root name. Its parser repair
-requires a fresh frozen source and test run; source40 excludes topology files.
+15 passed, four failed on a valid external nsfs root name. The parser repair
+passed [22 race tests on source41](root-topology-go-verification.json), report
+SHA-256 `52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
+Source41 combines the notification and corrected topology files. Full run
+`20260912_021111_a558c977634d` is active under
+`goby-library-changed-resources-full-controller-v1.service`, invocation
+`ac1f59aa96004757acd921e1469241db`. Its staged 19-file increment awaits this
+full result; subsequent model extraction and acceptance helpers are separate.
 
 Persistent bindings, rebind and safe missing-file reconciliation remain at the
 [implementation-plan stage](storage-root-bindings-plan.md). The low-level

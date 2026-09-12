@@ -2,8 +2,10 @@
 
 Current verification boundary: **source38 passed its full 24-package regression
 with 1,953 top-level tests, zero failures, zero skips and all six PostgreSQL
-cleanup checks true. Source40's theme/extra notification increment passed 12
-pure race tests and has started its PostgreSQL targeted run.**
+cleanup checks true and is published as
+`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`. Source40 passed 169 PostgreSQL
+targeted tests. Corrected topology passed 22 race tests; combined source41 full
+regression is running.**
 SSH is restored. Primary and candidate remain on source32/schema27; neither
 notification increment has been deployed, and original-client UI acceptance
 remains open.
@@ -96,11 +98,15 @@ files, manifest `e4eb47609e273343850f799809f00142fa2f1bde31315ef01caaadf69d5e35a
 The [pure race checks](m3e-library-changed-resources-pure-verification.json) passed
 12 tests across library/server, report SHA-256
 `fd32af6957d67a57f85f26dedc296e69425b67bcf6bea5577a8529ac2a947732`.
-PostgreSQL verification is running under
-`goby-library-changed-resources-controller-v1.service`, PID1044627, invocation
+The [PostgreSQL targeted run](m3e-library-changed-resources-verification.json)
+passed 169 tests, zero failures/skips and all six cleanup checks true. Run ID:
+`20260912_020339_b6e473591059`; report SHA-256:
+`0b91c60e2649eddf2e9edf5afd692d4f4dd2a3256feae1d4561cf39d4f1dc106`.
+Controller `goby-library-changed-resources-controller-v1.service`, invocation
 `88f2bf72b124444c9784ef228aa9e51f`, execution directory
 `/opt/goby-test/exec-work-m3e/library-changed-resources-execution-01`.
-Read that exact handle; do not overlap the fixed disposable database pair.
+completed with exit0, MainPID0 and an empty cgroup. PID1044627 is historical.
+Terminal SHA-256: `9e79a456f6d63289786f0872cbff6ac04bc61de85d32558dd30314ebd0c1e212`.
 
 Source39 separately froze the eight root topology files on source38. Its
 [preflight](root-topology-source-preflight.json) passed, but its
@@ -109,8 +115,34 @@ four filesystem tests rejected a valid external nsfs mountinfo root name.
 Report SHA-256: `e0cd3435405b21fdd550980045d4e9ccbf38bd689029c83707ceff7f25572e0f`.
 The failed unit `goby-root-topology-go-v1.service`, invocation
 `1862792e16c6410fb0d234f09c647bf9`, is terminal with exit1, MainPID0 and empty
-cgroup. Keep its evidence at `root-topology-go-verification-01`; a parser fix
-and a fresh verification scope are required. Source40 excludes these files.
+cgroup. Keep its evidence at `root-topology-go-verification-01`. Source40
+excludes these files.
+
+The parser fix recognizes only canonical namespace dentry names for nsfs.
+External namespace mounts are excluded; related namespace dentries still fail
+explicitly. Source41 combines source40 with corrected topology: 4,180 files,
+[manifest](root-topology-retry-source-preflight.json)
+`7f43c30bcd7dcfb81523e9c683030f6d4a3c0e869d3dadfa6cef3bf2727cbc26`.
+The [fresh topology race run](root-topology-go-verification.json) passed 22 tests,
+zero failures/skips, report SHA-256
+`52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
+Unit `goby-root-topology-go-v2.service`, invocation
+`f0d224f5695148d88ce96ace4368f12b`, exited0/MainPID0 with an empty cgroup;
+terminal SHA-256 `311113cb569f57454904c7f4087186b0eaed11a38b83ff748e41f4dd5fe20e66`.
+Real nested-mount, system-reboot and binding acceptance remain open.
+
+The 19 source41 Go files are staged and their Git blobs match the frozen remote
+source. Its full regression is running under
+`goby-library-changed-resources-full-controller-v1.service`, PID1050857,
+invocation `ac1f59aa96004757acd921e1469241db`, execution directory
+`/opt/goby-test/exec-work-m3e/library-changed-resources-full-execution-01`.
+Run ID `20260912_021111_a558c977634d`; pending report:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_021111_a558c977634d/report.json`.
+Recheck this exact handle; it owns the fixed disposable pair. Do not restart on
+an observation timeout. No full-suite success or deployment is claimed.
+Keep subsequent working-tree changes out of this staged increment: shared
+storagebinding model extraction, a mount-namespace helper and real auxiliary
+HTTP/WebSocket acceptance are separate ongoing work, not verified source41.
 
 The [storage binding plan](storage-root-bindings-plan.md) now distinguishes the
 implemented low-level adapter from unimplemented persistence and reconciliation.
@@ -216,8 +248,8 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: complete source40's PostgreSQL and full regression, repair and verify root
-topology observation, then deploy and complete original-client UI acceptance.
+Next: finish source41 full regression, real nested-mount and auxiliary
+HTTP/WebSocket checks, then deploy and complete original-client UI acceptance.
 Finish complete theme/extra resource-change
 notifications and global entity projection invalidation. Safe missing-file
 reconciliation requires durable
@@ -1833,7 +1865,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Finish source40 verification and root topology repair; deploy the verified notification increment and complete original-client automatic refresh acceptance; implement global entity notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
+| P1 — M2/M3 / catalog and client acceptance | Finish source41 full regression and real mount/client checks; deploy and complete original-client automatic refresh acceptance; implement global entity notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

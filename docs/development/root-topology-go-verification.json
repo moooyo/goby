@@ -1,0 +1,111 @@
+{
+  "counts": {
+    "pass": 22
+  },
+  "database_setup_performed": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T02:06:21Z",
+  "go_log_sha256": "b19339b84fdbf9149c8b301d3ddd95f644a8563d64abc3503f5ae2a6f2575dbe",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    }
+  ],
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-41",
+  "source_manifest_sha256": "7f43c30bcd7dcfb81523e9c683030f6d4a3c0e869d3dadfa6cef3bf2727cbc26",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T02:06:12Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestRootTopologyFilesystemCaptureRetainsIndependentWitnesses",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemRejectsRegisteredReplacementWithoutRebinding",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemReopensApprovedAnchorInsteadOfTrustingLease",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemRejectsSymlinkAndChecksMappingAndCancellation",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyLiveComparisonDoesNotConfuseStableAndCurrentIdentity",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoDecodesEscapesOnceAndRetainsOptions",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoAcceptsObservedExternalNamespaceBindMounts",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoNamespaceRootsRemainStrictlyTyped",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsNamespaceDentriesWithinEveryRelevantRole",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoRejectsMalformedOrIncompleteRecords",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoEnforcesByteLineEntryAndDecodedPathBounds",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsUsesDescriptorIDsAndKeepsOnlyDeterministicRelevantRecords",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsExcludesStackedAncestorsBeforeTheApprovedPath",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsRelatedUnknownOptionalFields",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsMissingDescriptorsInvalidMappingsAndBrokenChains",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsStackedAndAncestorHiddenMounts",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsCannotAdoptCorridorMountThroughANestedParentChain",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsBoundsNestedMountsAndDirectRecordInputs",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintIsCanonicalAndExcludesLiveWitnesses",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintIncludesEveryApprovedIdentityAndBoundary",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintRejectsPartialOrUnboundedSnapshots",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyCaptureCopiesSnapshotsAndClosedWitnessesCannotRevalidate",
+      "status": "pass"
+    }
+  ],
+  "verification": "root-topology-go-race"
+}
