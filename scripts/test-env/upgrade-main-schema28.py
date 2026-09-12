@@ -33,7 +33,7 @@ import urllib.parse
 sys.dont_write_bytecode = True
 MARKER = 'goby-main-schema28-source55-upgrade-v1'
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'main-schema28-source55-tool-02'
+TOOL = WORK / 'main-schema28-source55-tool-03'
 VERIFIED_HELPER_TOOL = WORK / 'main-schema28-source55-tool-01'
 VERIFIED_HELPER_BYTES = 18357655
 VERIFIED_BUILD_SHA = '8b362dd24137fdf2c37479fc28fd7a4c2b1f7736f805f30d11cca34003dceff0'
@@ -1185,6 +1185,14 @@ COMMIT;
                     value.get('mode') == CLIENT_GATE_MODE and value.get('input_sha256') == artifacts['input']['sha256'] and
                     value.get('controller') == source.get('controller') and value.get('full_m3_complete') is False and
                     value.get('client_acceptance') is False, 'An original client report disagrees with its input or scope.')
+        report_authority = report.get('authority')
+        exact(report_authority, {'upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'history'})
+        require(type(report_authority['history']) is list, 'The client authority history is invalid.')
+        before_descriptor = report.get('evidence', {}).get('before-full.json')
+        descriptor(before_descriptor, path=scope / 'before-full.json')
+        require(canonical(source.get('authority')) == canonical({**report_authority, 'before_snapshot': before_descriptor}),
+                'The browser input authority differs from the controller authority and exact fresh baseline.')
+        before_snapshot = read(before_descriptor, scope / 'before-full.json')
         ledger = {'new_sessions': 2, 'new_devices': 1, 'new_audits': 6, 'metadata_revision_delta': 2,
                   'old_rows_sequences_private_preserved': True, 'owned_sessions_closed': True}
         require(report.get('status') == 'passed' and report.get('worker_chain_ledger_passed') is True and
@@ -1194,7 +1202,7 @@ COMMIT;
                 all(report.get(key) is False for key in ('automatic_retry', 'sql_business_writes', 'candidate_or_primary_service_writes',
                                                         'restoration_required', 'browser_fallback_used')) and
                 report.get('candidate_process') == candidate['process'] and report.get('candidate_invocation') == candidate['invocation_id'] and
-                report.get('state_sha256') == candidate.get('state_sha256') and report.get('authority') == source.get('authority') and
+                report.get('state_sha256') == candidate.get('state_sha256') and
                 report.get('evidence', {}).get('browser-report.json') == artifacts['browser'] and
                 report.get('evidence', {}).get('after-full.json') == artifacts['after_snapshot'],
                 'The actual client controller did not complete the exact edit, restoration and credential ledger.')
@@ -1248,7 +1256,7 @@ COMMIT;
                 state_doc.get('schema28_source', {}).get('source_manifest_sha256') == SOURCE_SHA and
                 state_doc['schema28_source'].get('catalog_sha256') == CATALOG28_SHA,
                 'The preserved candidate state no longer identifies its independently accepted upgrade.')
-        for snapshot in (original, after):
+        for snapshot in (original, before_snapshot, after):
             require(type(snapshot.get('schema')) is int and snapshot['schema'] == 28 and
                     type(snapshot.get('database', {}).get('tables')) is dict and type(snapshot['database'].get('sequences')) is dict and
                     snapshot['database'].get('unsupported') is False and snapshot['database'].get('catalog') == self.inputs['catalog']['objects'],

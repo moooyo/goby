@@ -676,6 +676,7 @@ class MainIntentGuards(GuardCase):
     def test_main_intent_rejects_candidate_scope_missing_publication_and_closure_gaps(self):
         changes = (lambda value: value.update(tool=str(UPGRADE.WORK / "client-schema28-source55-tool-05")),
             lambda value: value.update(tool=str(UPGRADE.VERIFIED_HELPER_TOOL)),
+            lambda value: value.update(tool=str(UPGRADE.WORK / "main-schema28-source55-tool-02")),
             lambda value: value.update(output=str(UPGRADE.WORK / "candidate-output")),
             lambda value: value["source"].pop("publication"), lambda value: value["source"].update(publication=None),
             lambda value: value["source"]["binary"].update(bytes=29337988),
@@ -830,7 +831,7 @@ class MainProductInputsGuards(GuardCase):
         for name in ("cmd/main-schema28-migration/main.go", "cmd/main-schema28-migration/main_test.go"):
             self.reject(lambda: self.check_product({"build": lambda value: value["files"].pop(name)}))
 
-    def test_tool02_copies_the_original_helper_and_receipts_without_rewriting_build_history(self):
+    def test_new_tool_copies_the_original_helper_and_receipts_without_rewriting_build_history(self):
         result, fixture, reads = self.check_product(preparing=True)
         self.assertNotEqual(UPGRADE.TOOL, UPGRADE.VERIFIED_HELPER_TOOL)
         self.assertEqual(result["build"]["argv"][6], str(UPGRADE.VERIFIED_HELPER_TOOL / "migrate-main-schema28"))
@@ -860,8 +861,8 @@ def main_client_gate_fixture(intent, catalog=None, changes=None):
     """Build a complete synthetic original-client and candidate-upgrade chain."""
     changes, files, aliases = changes or {}, {}, {}
     catalog = ["synthetic-main-catalog28"] if catalog is None else catalog
-    scope = UPGRADE.WORK / "client-library-changed-ui-source55-v1"
-    unit, invocation = "goby-client-library-changed-ui-source55-controller-v1.service", "a1" * 16
+    scope = UPGRADE.WORK / "client-library-changed-ui-source55-v7"
+    unit, invocation = "goby-client-library-changed-ui-source55-controller-v7.service", "a1" * 16
     state = {"MainPID": "0", "InvocationID": invocation, "ActiveState": "active", "SubState": "exited", "ExecMainStatus": "0",
              "Result": "success", "RemainAfterExit": "yes", "ControlGroup": ""}
     def put(name, path, value, fixed=None):
@@ -896,7 +897,21 @@ def main_client_gate_fixture(intent, catalog=None, changes=None):
     attested = put("upgrade_attestation", upgrade_root / "attestation.json", {"marker": "goby-client-schema28-source55-upgrade-v1",
         "status": "passed", "intent_sha256": upgrade_intent["sha256"], "report_sha256": upgraded["sha256"],
         "state_sha256": state_doc["sha256"], "recursive_cgroup_empty": True}, UPGRADE.CLIENT_UPGRADE_ATTEST_SHA)
-    authority = {"upgrade_intent": upgrade_intent, "upgrade_report": upgraded, "upgrade_attestation": attested, "current_snapshot": original}
+    history = []
+    for version in range(2, 7):
+        prior = UPGRADE.WORK / ("client-library-changed-ui-source55-v%d" % version)
+        entry = {"version": version, **{key: {"path": str(prior / filename), "sha256": synthetic_hash("prior-%d-%s" % (version, key))}
+            for key, filename in (("input", "input.json"), ("browser_report", "browser/report.json"),
+                ("controller_report", "report.json"), ("before_snapshot", "before-full.json"), ("after_snapshot", "after-full.json"))}}
+        entry["terminal"] = {"path": str(UPGRADE.WORK / ("client-library-changed-source55-execution-%02d/terminal.json" % version)),
+                             "sha256": synthetic_hash("prior-terminal-%d" % version)}
+        history.append(entry)
+    authority = {"upgrade_intent": upgrade_intent, "upgrade_report": upgraded, "upgrade_attestation": attested,
+                 "current_snapshot": original, "history": history}
+    before = put("before_snapshot", scope / "before-full.json", snapshot)
+    if "before_descriptor" in changes:
+        changes["before_descriptor"](before)
+    browser_authority = {**copy.deepcopy(authority), "before_snapshot": copy.deepcopy(before)}
     candidate = {"source": str(UPGRADE.SOURCE), "source_manifest_sha256": UPGRADE.SOURCE_SHA,
         "binary_sha256": UPGRADE.NEW_BINARY_SHA, "process": process, "invocation_id": "ca" * 16,
         "base_url": "http://127.0.0.1:18196", "direct_url": "http://127.0.0.1:18198", "state_sha256": state_doc["sha256"],
@@ -904,14 +919,14 @@ def main_client_gate_fixture(intent, catalog=None, changes=None):
     controller, target, node = {"unit": unit}, {"name": "Synthetic Movies"}, {"pid": 220001, "start_ticks": 220002}
     source = put("input", scope / "input.json", {"marker": "goby-client-library-changed-input-v1", "version": 1,
         "mode": UPGRADE.CLIENT_GATE_MODE, "root": str(scope), "output": str(scope / "browser"), "controller": controller,
-        "candidate": candidate, "authority": authority, "target": target})
+        "candidate": candidate, "authority": browser_authority, "target": target})
     origin = put("controller_intent", scope / "intent.json", {"marker": "goby-client-library-changed-observation-v1",
         "mode": UPGRADE.CLIENT_GATE_MODE, "root": str(scope), "controller": controller, "controller_invocation": invocation})
     common = {"version": 1, "mode": UPGRADE.CLIENT_GATE_MODE, "input_sha256": source["sha256"], "controller": controller,
               "full_m3_complete": False, "client_acceptance": False}
     browser = put("browser", scope / "browser/report.json", {**common, "marker": "goby-client-library-changed-report-v1",
         "result": "passed", "library_changed_client_acceptance": True, "failure": None, "restoration": "confirmed",
-        "candidate": candidate, "authority": authority, "target": target, "node_process": node, "actor": {"page_error_count": 0},
+        "candidate": candidate, "authority": browser_authority, "target": target, "node_process": node, "actor": {"page_error_count": 0},
         "closure": {"context_closed": True, "browser_closed": True, "proxy_closed": True}})
     after = put("after_snapshot", scope / "after-full.json", snapshot)
     report = put("report", scope / "report.json", {**common, "marker": "goby-client-library-changed-observation-v1", "status": "passed",
@@ -919,7 +934,8 @@ def main_client_gate_fixture(intent, catalog=None, changes=None):
         "library_changed_client_acceptance": False, "errors": [], "restoration": "confirmed", "automatic_retry": False,
         "sql_business_writes": False, "candidate_or_primary_service_writes": False, "restoration_required": False, "browser_fallback_used": False,
         "candidate_process": process, "candidate_invocation": candidate["invocation_id"], "state_sha256": state_doc["sha256"],
-        "authority": authority, "node_process": node, "evidence": {"intent.json": origin, "browser-report.json": browser, "after-full.json": after},
+        "authority": authority, "node_process": node, "evidence": {"intent.json": origin, "browser-report.json": browser,
+            "before-full.json": before, "after-full.json": after},
         "ledger": {"new_sessions": 2, "new_devices": 1, "new_audits": 6, "metadata_revision_delta": 2,
                    "old_rows_sequences_private_preserved": True, "owned_sessions_closed": True},
         "worker_terminal": {"MainPID": "0", "ExecMainStatus": "0", "Result": "success", "cgroup_empty": True}})
@@ -931,16 +947,22 @@ def main_client_gate_fixture(intent, catalog=None, changes=None):
 
 
 class MainClientGateGuards(GuardCase):
-    def gate(self, changes=None):
+    def gate(self, changes=None, *, damage_before=False):
         intent = main_intent_example()
         fixture = main_client_gate_fixture(intent, changes=changes)
         intent["client_gate"] = fixture["descriptor"]
         controller = object.__new__(UPGRADE.Controller)
         controller.intent, controller.inputs = intent, {"catalog": {"objects": fixture["catalog"]}}
+        reads = []
+        if damage_before:
+            name = str(UPGRADE.WORK / "client-library-changed-ui-source55-v7/before-full.json")
+            raw, fixed = fixture["files"][name]
+            fixture["files"][name] = (raw + b" ", fixed)
         def digest(raw):
             value = hashlib.sha256(raw).hexdigest()
             return fixture["aliases"].get(value, value)
         def protected(path, expected=None, **_kwargs):
+            reads.append(str(path))
             UPGRADE.require(str(path) in fixture["files"], "An undeclared client artifact was requested.")
             raw, fixed = fixture["files"][str(path)]
             UPGRADE.require(digest(raw) == expected == fixed, "Synthetic client receipt digest changed.")
@@ -952,6 +974,7 @@ class MainClientGateGuards(GuardCase):
         with patch.object(UPGRADE, "sha", digest), patch.object(UPGRADE, "protected", protected), patch.object(UPGRADE, "cgroup_empty",
                 side_effect=lambda unit: self.assertEqual(unit, fixture["unit"])) as empty:
             result = UPGRADE.Controller.validate_client_gate(controller)
+        self.client_gate_reads = reads
         return result, intent, empty.call_count
 
     def test_future_gate_is_not_invented_and_completed_gate_requires_independent_terminal(self):
@@ -966,6 +989,27 @@ class MainClientGateGuards(GuardCase):
         self.assertTrue(result["library_changed_client_acceptance"])
         self.assertFalse(result["full_m3_complete"])
         self.assertEqual(observations, 1)
+
+    def test_client_authority_binds_the_distinct_controller_and_browser_shapes_to_fresh_before_bytes(self):
+        result, _, _ = self.gate()
+        self.assertTrue(result["library_changed_client_acceptance"])
+        self.assertIn(str(UPGRADE.WORK / "client-library-changed-ui-source55-v7/before-full.json"), self.client_gate_reads)
+        changes = (
+            {"input": lambda value: value["authority"].pop("before_snapshot")},
+            {"input": lambda value: value["authority"].update(unknown_field=True)},
+            {"report": lambda value: value["authority"].update(unknown_field=True)},
+            {"report": lambda value: value["authority"].update(before_snapshot=value["evidence"]["before-full.json"])},
+            {"report": lambda value: value["authority"].pop("history")},
+            {"report": main_field_change(("authority", "history"), {})},
+            {"report": lambda value: value["evidence"].pop("before-full.json")},
+            {"report": main_field_change(("evidence", "before-full.json", "sha256"), synthetic_hash("other-before"))},
+            {"before_descriptor": main_field_change(("path",), str(UPGRADE.WORK / "other-scope/before-full.json"))},
+            {"before_snapshot": main_field_change(("schema",), 27)},
+        )
+        for index, change in enumerate(changes):
+            with self.subTest(authority_change=index):
+                self.reject(lambda: self.gate(change))
+        self.reject(lambda: self.gate(damage_before=True))
 
     def test_failed_or_resigned_client_receipts_cannot_supply_run_authority(self):
         cases = {"terminal": [(('marker',), 'foreign-terminal'), (('version',), True), (('status',), 'failed'),
