@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -182,7 +183,26 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 	if total != 1 || len(views) != 1 || views[0]["Id"] != libraryID || views[0]["Type"] != "CollectionFolder" || views[0]["CollectionType"] != "movies" {
 		t.Fatalf("views do not expose the scanned movie collection: %#v, total = %d", views, total)
 	}
+	if _, exists := views[0]["Subviews"]; exists {
+		t.Fatal("Views acquired a field observed only on direct Movies collection details")
+	}
 	assertNoItemPaths(t, views[0], root)
+	collections, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Users/"+adminID+"/Items", nil, headers))
+	if total != 1 || len(collections) != 1 || collections[0]["Id"] != libraryID {
+		t.Fatal("ordinary root listing lost the real scanned collection")
+	}
+	if _, exists := collections[0]["Subviews"]; exists {
+		t.Fatal("ordinary collection listing acquired the direct-detail Subviews field")
+	}
+	for _, suffix := range []string{"", "?Fields=LockedFields,DisplayPreferencesId,ItemCounts&EnableImages=false&EnableUserData=false"} {
+		response := f.request(t, http.MethodGet, "/emby/Users/"+adminID+"/Items/"+libraryID+suffix, nil, headers)
+		expectStatus(t, response, http.StatusOK)
+		collection := jsonObject(t, response)
+		if collection["Id"] != libraryID || collection["Type"] != "CollectionFolder" || collection["CollectionType"] != "movies" ||
+			!reflect.DeepEqual(collection["Subviews"], []any{"movies", "movies", "folders"}) {
+			t.Fatal("Movies detail differs from the recorded default or field/switch Subviews projection")
+		}
+	}
 	base := "/emby/Users/" + adminID + "/Items?ParentId=" + libraryID + "&IncludeItemTypes=Movie"
 	direct, total := responseItems(t, f.request(t, http.MethodGet, base, nil, headers))
 	if total != 1 || len(direct) != 1 || direct[0]["Name"] != "Alpha Movie" {
@@ -193,6 +213,9 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 	}
 	if _, exists := direct[0]["MediaSources"]; exists {
 		t.Error("listing returned MediaSources without requesting the field")
+	}
+	if _, exists := direct[0]["Subviews"]; exists {
+		t.Fatal("ordinary Movie listing acquired collection subviews")
 	}
 	assertNoItemPaths(t, direct[0], root)
 	recursive, total := responseItems(t, f.request(t, http.MethodGet, base+"&Recursive=true&MediaTypes=Video&SortBy=SortName", nil, headers))
@@ -218,6 +241,9 @@ func TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia(t *testing.T) {
 	detail := jsonObject(t, detailResponse)
 	if detail["Path"] != secondFile {
 		t.Errorf("item detail Path = %v, want %q", detail["Path"], secondFile)
+	}
+	if _, exists := detail["Subviews"]; exists {
+		t.Fatal("ordinary Movie detail acquired collection subviews")
 	}
 	streams, ok := detail["MediaStreams"].([]any)
 	if !ok || len(streams) != 3 {
@@ -295,6 +321,14 @@ func TestHTTPLibraryPermissionsCSRFAndLivePolicyRevocation(t *testing.T) {
 	login := f.embyLogin(t, viewer.Name, "viewer-password")
 	token := stringValue(t, login, "AccessToken")
 	headers := http.Header{"X-Emby-Token": {token}}
+	collectionPath := "/emby/Users/" + viewer.ID + "/Items/" + libraryID
+	expectStatus(t, f.request(t, http.MethodGet, collectionPath, nil, nil), http.StatusUnauthorized)
+	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Users/"+adminID+"/Items/"+libraryID, nil, headers), http.StatusForbidden, "access_denied", true)
+	collectionResponse := f.request(t, http.MethodGet, collectionPath, nil, headers)
+	expectStatus(t, collectionResponse, http.StatusOK)
+	if !reflect.DeepEqual(jsonObject(t, collectionResponse)["Subviews"], []any{"movies", "movies", "folders"}) {
+		t.Fatal("the authorized ordinary viewer lost recorded Movies collection subviews")
+	}
 	for _, path := range []string{"/admin/v1/libraries", "/admin/v1/jobs", "/admin/v1/storage/roots"} {
 		expectAPIError(t, f.request(t, http.MethodGet, path, nil, headers), http.StatusUnauthorized, "authentication_required", false)
 		expectAPIError(t, f.request(t, http.MethodGet, path, nil, nil, &http.Cookie{Name: "goby_session", Value: token}), http.StatusUnauthorized, "invalid_credentials", false)
@@ -325,6 +359,7 @@ func TestHTTPLibraryPermissionsCSRFAndLivePolicyRevocation(t *testing.T) {
 		t.Errorf("virtual root leaked a revoked library count: %#v", rootResponse)
 	}
 	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID+"/Items/"+itemID, nil, headers), http.StatusNotFound, "not_found", true)
+	expectAPIError(t, f.request(t, http.MethodGet, collectionPath, nil, headers), http.StatusNotFound, "not_found", true)
 	if latest := responseArray(t, f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID+"/Items/Latest", nil, headers)); len(latest) != 0 {
 		t.Errorf("latest items leaked a revoked library: %#v", latest)
 	}
@@ -336,6 +371,7 @@ func TestHTTPLibraryPermissionsCSRFAndLivePolicyRevocation(t *testing.T) {
 		t.Fatalf("grant explicit library access: %v", err)
 	}
 	expectStatus(t, f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID+"/Items/"+itemID, nil, headers), http.StatusOK)
+	expectStatus(t, f.request(t, http.MethodGet, collectionPath, nil, headers), http.StatusOK)
 }
 
 func TestHTTPLibraryRejectsTraversalOutsideAndUnavailableDirectories(t *testing.T) {

@@ -285,6 +285,11 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		} else {
 			dto["CollectionType"] = lib.CollectionType
 		}
+		if lib.CollectionType == "movies" {
+			// Recorded Movies details preserve this ordered list, including the
+			// repeated entry. Views and other collection types are separate contracts.
+			dto["Subviews"] = []string{"movies", "movies", "folders"}
+		}
 	}
 	if !s.applyIndexedImages(w, r, userID, []map[string]any{dto}, true) {
 		return
