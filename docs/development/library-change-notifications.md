@@ -6,12 +6,29 @@ passed its 80 targeted PostgreSQL/HTTP/WebSocket checks and full remote suite:
 24 packages, 1,920 top-level tests, zero failures, zero skips and all six cleanup
 checks true. Source38 adds image/subtitle and derived-album notifications; its
 95 targeted checks and full 1,953-test suite passed. Source40 adds theme/extra
-resource production and passed 12 pure race tests plus 169 PostgreSQL checks;
-combined source41 full regression is running. Complete
-theme/extra resource-change notifications, global entity projection invalidation,
-persistent root binding and safe missing-file reconciliation remain unfinished.
-Original-client UI acceptance remains open. Primary and candidate still run
-source32/schema27; this work is not deployed.
+resource production and passed 12 pure race tests plus 169 PostgreSQL checks.
+These are historical scoped checkpoints. The current source55
+[full verification](collection-folder-source55-full.json) passed 2,173 tests
+across 25 packages, the Linux build and six cleanup checks. Its
+[candidate schema28 upgrade](client-schema28-accepted-attestation.json) passed
+independent attestation; the primary remains source32/schema27. The broader
+unfinished work is tracked in [implementation progress](progress.md).
+
+The [actual v7 original-client run](client-library-changed-source55-v7.json)
+completed the native Name edit and controlled restoration but did not establish
+automatic refresh. The [independent request and DOM diagnosis](client-library-changed-source55-v7-refresh-diagnosis.json)
+binds one complete physical and page-received LibraryChanged message to the
+target. The following 120-second window contains no new HTTP request in either
+complete recording channel, and all 237 DOM samples retain the old title.
+The observer's filtered catalog list did not hide a recorded refresh request.
+Frame receipt does not prove how the original client's internal handler behaved.
+The [independent failed terminal](client-library-changed-source55-v7-terminal.json)
+confirms restoration of the original sparse and effective metadata values,
+closure of both owned sessions, and preservation of the protected state. The
+two legitimate metadata revisions remain recorded.
+Original-client acceptance remains open while a new bounded reference UI
+control is prepared; the existing reference metadata event below is not a
+positive Movies-page automatic-refresh observation.
 
 ## Reference observations
 
@@ -34,7 +51,7 @@ IsEmpty was false in all three messages. Removal left only IDs94–96 in the
 scoped catalog query: Movie98 disappeared from that query but was not separately
 listed in ItemsRemoved. Re-addition created folder99/movie100. These are public
 API observations, not claims about the reference database's physical deletion.
-The reference currently has eight libraries and six users, with the owned
+At continuation closeout, the reference had eight libraries and six users, with the owned
 re-added folder99/movie100 at the original paths. The observed delays are not a
 general protocol timing guarantee.
 

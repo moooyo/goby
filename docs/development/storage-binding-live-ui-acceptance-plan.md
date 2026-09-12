@@ -1,6 +1,6 @@
 # Storage binding live administrator UI acceptance
 
-Current checkpoint: 2026-09-12 13:35 UTC.
+Current checkpoint: `2026-09-12T22:16:17.694015+08:00`; original-client v7 is independently sealed as failed.
 
 Status: accepted. Run5, `20260912_083703_5a77d18d2ae0`, completed all
 [15 browser checks and 10 IPC stages](storage-binding-live-ui-accepted-browser.json)
@@ -26,10 +26,11 @@ The broader M2-M6 acceptance obligations and existing M7 deferred scope remain
 unchanged. Source55 verification, product publication and the independently
 [attested candidate schema28 deployment](client-schema28-accepted-attestation.json)
 are complete. Fresh original-client acceptance remains pending.
-Its v6 discovery passed, then a strict UTC validator rejected the native login's
-valid public `CreatedAt` with a `+08:00` offset. The
-[failed v6 scope is independently sealed](client-library-changed-source55-v6-terminal.json);
-no rename/metadata request or LibraryChanged window ran.
+V7 passed discovery and native login. The matching LibraryChanged frame reached
+the page, but neither complete request channel recorded HTTP in the forward
+window. Restoration and closed sessions are
+[independently sealed](client-library-changed-source55-v7-terminal.json).
+LibraryChanged acceptance remains false.
 The accepted UI gate retains its actual source54 frozen inputs below.
 
 | Scope | Observed outcome | Current disposition |
@@ -397,7 +398,7 @@ binding fields NULL; historical audit fields have their migration defaults.
 The absent master key remains absent with no application keys. The primary
 remains source32/schema27 at PID `762090`; shared web and proxy state are unchanged.
 
-| Current candidate authority | Value |
+| Candidate authority and last sealed baseline | Value |
 | --- | --- |
 | Process | PID `1458051`, start ticks `13067360`, invocation `d29ea64c63274346a79c7b3a7938f36e` |
 | Upgrade controller invocation | `3821d3052fc24aa0ad23a3194300cd6b` |
@@ -419,9 +420,14 @@ remains source32/schema27 at PID `762090`; shared web and proxy state are unchan
 | [Independent v5 failed terminal](client-library-changed-source55-v5-terminal.json) SHA256 | `348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d` |
 | V5 complete scope inventory SHA256 | `190b6ea5aaad2d4cb7ab8184623b5abfd42dc5493a6c640e5de4836399ae3970` |
 | Run-v6 `after-full.json` SHA256 | `185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3` |
-| Latest independent post-v6 full snapshot SHA256 | `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93` |
+| Sealed pre-v7 independent full snapshot SHA256 | `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93` |
 | [Independent v6 failed terminal](client-library-changed-source55-v6-terminal.json) SHA256 | `7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d` |
-| Latest candidate counts | 81 sessions, 69 devices, 179 audits |
+| Sealed pre-v7 counts; not current live totals | 81 sessions, 69 devices, 179 audits |
+| Run-v7 `after-full.json` SHA256 | `d89dd1a4446a35364d760fe5a303b05d7113375980e5bed067a27d49f071a0bd` |
+| Current independent post-v7 full snapshot SHA256 | `31d08d24047da101774db727f4ea6f0ec0e67ce15b0ce3df40ec7ea819555364` |
+| [Independent v7 failed terminal](client-library-changed-source55-v7-terminal.json) SHA256 | `daec6f02a1a611553a7312a4affb892c5defdbae760205bdd31431827f12118f` |
+| V7 complete scope inventory SHA256 | `32e3cdd5dc838114513eb2b117884b5d8522a25b5d734c951e5f83fba576d55c` |
+| Current independently verified post-v7 counts | 83 sessions, 70 devices, 185 audits |
 | [Upgrade report](client-schema28-accepted.json) SHA256 | `328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832` |
 | [Independent attestation](client-schema28-accepted-attestation.json) SHA256 | `ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032` |
 
@@ -616,20 +622,77 @@ confirmed that the returned representation denotes the same UTC instant.
 No rename or metadata request was sent, and LibraryChanged acceptance remains false.
 The [independent v6 terminal](client-library-changed-source55-v6-terminal.json)
 sealed two closed sessions, one new device, four audits and revision delta0.
-Current totals are 81 sessions, 69 devices and 179 audits. The current independent
+The sealed pre-v7 totals are 81 sessions, 69 devices and 179 audits. That independent
 snapshot is
 `WORK/client-library-changed-source55-execution-06/independent-after-full.json`,
 SHA256 `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93`;
 run-v6 `185ea8df...` differs only in `captured_at`. Earlier scopes, candidate,
 primary, media, old rows, sequences and private data were preserved.
 
-V7 is being implemented to compare only public `CreatedAt` by instant, accepting
+V7 compares only public `CreatedAt` by instant, accepting
 the valid offset while keeping generic UTC validation and `LastEditedAt` strict.
-It must bind H6's complete two-session failed history rather than reuse the
+It binds H6's complete two-session failed history rather than reusing the
 earlier one-session allowance. Read-only
 [native identity input preparation from sealed v6 material](client-library-changed-source55-v6-native-identity.json)
-is complete; this does not establish v7 verification. V7 remains unfrozen,
-remotely unverified and unrun. Complete wire and MessageId correlation remain required.
+was completed before the run. Its nine-source closure was frozen and passed
+[865 JavaScript guards](client-library-changed-source55-v7-js-guards.json)
+(127 actor, 66 driver, 672 loader) and
+[87 Python guards plus two compile checks](client-library-changed-source55-v7-python-guards.json),
+for 952 guards in total. All [13 owned-HTML browser cases](client-library-changed-source55-v7-dom.json)
+passed with an [independent DOM terminal](client-library-changed-source55-v7-dom-terminal.json),
+along with [fresh read-only preflight](client-library-changed-source55-v7-preflight.json)
+and [six actual-history document checks](client-library-changed-source55-v7-setup-diagnosis.json).
+Eight changed sources and six safe records were published as 14 files in commit
+`6eca52537d104e0108b97218339b2b4701f15c60`; the unchanged DOM guard remained in
+the frozen closure and was not counted as a changed file. Product authority
+remains `16d75c3...`.
+
+The [actual v7 controller report](client-library-changed-source55-v7.json) and
+[browser report](client-library-changed-source55-v7-browser.json), bound to the
+[frozen input](client-library-changed-source55-v7-input.json), record failure with
+`automatic_http_not_observed_within_window` at `restore-armed`. Real discovery
+and armed evidence, native login 200 validation and the forward PUT 200/readback
+had succeeded, but the first automatic refresh window did not capture client
+automatic HTTP. The controller then reported native-restore 200 complete,
+restoration confirmed and both sessions closed, with a 2/1/6/+2 ledger.
+Both units exited with status 1 and `MainPID=0`. The
+[independent H7 terminal](client-library-changed-source55-v7-terminal.json) now
+records `failed_scope_sealed` at `restore-armed`, with the exact closed 2/1/6/+2
+ledger and restoration of the original sparse/effective metadata confirmed.
+The current independent snapshot is
+`WORK/client-library-changed-source55-execution-07/independent-after-full.json`,
+SHA256 `31d08d24047da101774db727f4ea6f0ec0e67ce15b0ce3df40ec7ea819555364`,
+at 83 sessions, 70 devices and 185 audits. It differs from run-v7 `d89dd1a4...`
+only in `captured_at`; `b5d792af...` and 81/69/179 are historical pre-v7 evidence.
+The seal preserves 38 roots, 12 prior failed units, two old DOM units and the
+current DOM unit, along with candidate, main, media, old rows, sequences and
+private data. It confirms native validation, four safe native-identity fields,
+nine native requests and the two metadata PUTs with reconciliations. No further
+cleanup was needed or performed, and sealing made no new HTTP requests or business SQL
+writes. V1-v7 are consumed and must not be replayed; LibraryChanged acceptance
+remains false.
+
+The [read-only refresh diagnosis](client-library-changed-source55-v7-refresh-diagnosis.json)
+binds six original public artifacts. Physical WebSocket and page-frame evidence
+received the same MessageId, with `ItemsUpdated` containing only the target and
+the other item/folder arrays empty. Across all 252 actor and 251 proxy requests,
+both complete channels contain zero requests within the forward window; all 237
+DOM samples retain the old title. Page errors, overflow, observer errors and
+proxy rejects/failures are zero. This excludes an already recorded request being
+missed by the catalog matcher. Frame reception proves delivery to the page,
+not execution of its internal event handler. The protocol/implementation cause
+is not established, and no LibraryChanged pass is claimed.
+
+The retained reference Name+Overview event uses the same field shape, but there
+is no retained positive proof that original-client Movies metadata updates
+trigger automatic HTTP and UI refresh. The Name-only control remains missing.
+The new bounded reference UI control has six sources under implementation and
+has not been validated or executed. It does not change Goby payloads or the
+acceptance target, replay v7, or establish a new accepted client run. The pure
+guard contract forbids external effects. A business-read preflight may log in and out
+and produce owned authentication records; those records and HTTP requests must
+be bounded, retained and cleaned up. That preflight is not a zero-HTTP claim.
+Complete wire and MessageId correlation remain required.
 Observation windows retain the original same-library Items route or the exact
 target `/Users/{UserId}/Items/{TargetId}` route, bound to MessageId, route,
 document and token. This adds no detail-page navigation, PlaybackInfo, media or
@@ -691,9 +754,17 @@ The prepare input SHA256 is
 Its `main_baseline` and `client_gate` inputs were null, `client_gate_checked`
 remains false, and no deployment output exists. Its deadline was
 `2026-09-12T13:17:42Z`, with at least 900 seconds required to remain at admission.
-At the 13:35 UTC checkpoint that scope is expired. A new scope, input and
+The earlier 13:35 UTC checkpoint already confirmed that scope had expired. A new scope, input and
 read-only prepare are required; do not modify or reuse the expired input. Main remains
 source32/schema27 with no source55 deployment or schema28 upgrade.
+
+Main TOOL03 now keeps the controller's strict five-key authority separate from
+the browser/input authority that additionally carries `before_snapshot`, binding
+that value to the scope's original `before-full.json` bytes. Its
+[55 Python guards and two compile checks](main-schema28-tool03-python-verification.json)
+passed, and independent review found no blocker. The three files were published
+in commit `45ebb226a1b4315e5f51855ea6e6d797df76469b`. Old TOOL02 and its expired
+prepare remain preserved; TOOL03 verification did not execute prepare or upgrade.
 
 SSH access has been restored and confirmed with a fresh connection. The
 [GPU capability inventory](m4-gpu-test-env-capabilities.md), published in
@@ -701,17 +772,23 @@ commit `8604901`, records no exposed GPU suitable for hardware acceptance on
 `test-env`. The user has not supplied a GPU environment, so actual GPU acceptance
 remains outstanding.
 
-1. Bind v7's actual pins to the complete sealed v6 terminal, its two-session
-   ledger, current independent full snapshot and every history/scope/tool
-   inventory. Preserve earlier failures and do not replay consumed attempts.
-2. Finish and verify the narrowly scoped public `CreatedAt` instant comparison
-   and H6 history binding, preserving complete wire evidence, MessageId/document/token
-   correlation, both observation routes and the 2/1/6/+2 allowance. Complete
-   fresh preflight on `test-env` before a live run.
-3. Complete navigation and automatic-refresh acceptance in that fresh admitted
-   original-client scope with new owned sessions and independent cleanup/terminal
-   proof. Native administrator UI acceptance and deployment do not establish
-   those client outcomes.
+The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) was
+published in commit `37d2257`. It is planned and unexecuted, and requires a
+separate fresh scope after the active LibraryChanged work releases its fixture.
+
+1. Bind new control preparation to the complete H7 terminal, current independent
+   83/70/185 snapshot, exact restored 2/1/6/+2 ledger and preserved inventories.
+   Keep all consumed v1-v7 scopes immutable and do not reuse the pre-v7 baseline.
+2. Prepare the bounded original-client UI control and its pure guards plus
+   business-read preflight to fill the missing metadata-refresh positive and Name-only control.
+   Account for permitted owned login/logout records and HTTP during preflight;
+   only the pure guards make a zero-external-effects claim.
+   Preserve MessageId/document/token correlation, Goby payloads and the existing
+   acceptance target; do not replay the consumed v7 attempt.
+3. Obtain actual navigation and both automatic-refresh window proofs in a fresh
+   admitted client scope, with independent cleanup/terminal acceptance. The
+   successful PUT/readback and controlled restoration alone do not prove the
+   client outcome.
 4. Wait for an independent terminal proving actual Movies navigation and both
    LibraryChanged windows. The old main prepare has expired: create a fresh
    scope/input/prepare and recheck current state before backup/restore rehearsal,
