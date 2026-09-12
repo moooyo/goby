@@ -1,0 +1,115 @@
+{
+  "administrator_cleanup_verified": true,
+  "artifacts": {
+    "browser_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v1/browser/report.json",
+      "sha256": "9771d702098316f19a3c6ab93aa1add43455d1d00f0fed5d723c300783497fff"
+    },
+    "controller_report": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v1/report.json",
+      "sha256": "08a1bdbb522da97ed3ee798dcfc9a627ecef003e904fc0e6429bd7581f381744"
+    },
+    "input": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v1/input.json",
+      "sha256": "6427e0cec4504492d719c63bc4d6e174a1f4c7cdec9a0e7a00ba77d93e133f2b"
+    },
+    "preflight_terminal": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-01/preflight-terminal.json",
+      "sha256": "8bd52fd5965a62253787ce4ef719712f4cbdc8124c62fe79451e3b9fe808b870"
+    },
+    "preservation": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-01/preservation-after-reference.json",
+      "sha256": "956173c3a9cc404ab5fca9aab97b3b3470af79d844aa2846af3981ce0cfd4647"
+    },
+    "scope_files": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-01/failed-scope-files.json",
+      "sha256": "8d74d2953748950fa071ee1a38ad44a92b13233b557f897d765f0033441c758e"
+    }
+  },
+  "captured_at": "2026-09-12T15:18:32.120299+00:00",
+  "cleanup_needed": false,
+  "cleanup_performed_by_sealer": false,
+  "failure": "reference_ui_login_failed",
+  "goby_counts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "goby_state_equal_to_v7_except_capture_time": true,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-ui-failed-terminal-v1",
+  "metadata_posts": 0,
+  "node_cgroup_representations": {
+    "browser": "0::/system.slice/goby-reference-library-changed-ui-v1.service\n",
+    "controller": "/system.slice/goby-reference-library-changed-ui-v1.service"
+  },
+  "observed_public_css_request": {
+    "completed": false,
+    "finished_elapsed_ms": null,
+    "id": "frame-156",
+    "method": "GET",
+    "response_elapsed_ms": null,
+    "route": "/Branding/Css.css",
+    "start_elapsed_ms": 1265,
+    "token_sha256": null
+  },
+  "preserved_roots": 52,
+  "protocol_observation_complete": false,
+  "reference_public_preservation": {
+    "authentication_effects_present": true,
+    "automatic_changes": [
+      {
+        "after": {
+          "present": true,
+          "value": "2026-09-12T15:15:26.0561501Z"
+        },
+        "before": {
+          "present": true,
+          "value": "2026-09-12T15:15:09.2091516Z"
+        },
+        "field": "LastActivityDate",
+        "kind": "owned-authentication-time",
+        "user_id": "efe2137dc3394ed4a23f9c337598f105"
+      }
+    ],
+    "passed": true,
+    "public_state_after_authentication": true
+  },
+  "restoration": "not_required",
+  "source_commit": "c29ae33defaf30943ba20db7aa084ef078642856",
+  "status": "failed_scope_sealed",
+  "units": {
+    "controller": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-controller-v1.service",
+        "InvocationID": "a0e01443065e4c3fb162875e6fa554d1",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    },
+    "worker": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "1",
+        "Id": "goby-reference-library-changed-ui-v1.service",
+        "InvocationID": "e579625368064f2c9d0ae18f83f879ec",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "recursive_cgroup_members": []
+    }
+  },
+  "viewer_business_state_unchanged": true,
+  "viewer_login_physical_posts": 0,
+  "viewer_ui_login_attempted": false
+}

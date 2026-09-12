@@ -1,6 +1,6 @@
 # Implementation progress
 
-Execution state checkpoint: 2026-09-12 14:16 UTC, v7 failed scope independently sealed. Restored SSH authentication
+Execution state checkpoint: `2026-09-12T15:18:32.120299+00:00`, reference UI v1 failed scope independently sealed. Restored SSH authentication
 has been confirmed by a fresh `ssh test-env` connection.
 
 Current verification boundary: **source55 passed 2,173 full-suite tests across
@@ -31,9 +31,17 @@ original-client UI control has four frozen JavaScript sources with remote
 tool-layer verification: 23 runtime guards, 24 driver guards and 13 isolated
 synthetic-HTML browser DOM cases passed, all with `business_http: false`.
 The two Python controller/guard sources are also frozen and passed 45 guards
-and two compilation checks remotely. All six tool sources are verified;
-business-read preflight and the actual reference UI run remain
-unexecuted; protocol cause remains open.
+and two compilation checks remotely. The verified tools were pushed in the
+13-file checkpoint `c29ae33defaf30943ba20db7aa084ef078642856`.
+The actual reference business-read preflight v1 passed with 65 HTTP requests,
+two authentication POSTs, no metadata writes and verified administrator closure.
+The subsequent reference UI v1 failed during discovery before UI login and is
+[independently sealed](reference-library-changed-ui-v1-terminal.json). Its browser
+channels contain only GETs, with no viewer login, WebSocket or metadata write.
+The anonymous `/Branding/Css.css` route and cross-layer cgroup representation
+expose tool gaps; a fresh v2 scope is being prepared to repair them and retain
+safe diagnostic correlation. Both v1 scopes are consumed. No Name-only refresh
+outcome was obtained; the Goby protocol cause remains open.
 The main preparation has expired and requires a fresh scope/input/prepare.
 Full M2-M6 remain open; M7 remains deferred.
 The final real management UI gate is accepted and all four preceding failed
@@ -421,11 +429,47 @@ reference-client acceptance. The two Python controller/guard sources are also
 frozen and passed [45 guards and two compilation checks](reference-library-changed-ui-python-verification-01.json)
 with zero failures/errors, SHA-256
 `c2ce1c30cffe15b6f02bc0934140ce59701edfcb703ffa5f1967113be8142fce`.
-All six tool sources are verified. Assemble the verified sources and dispatch a
-fresh business-read preflight before a new reference UI control run; both remain
-unexecuted. Any owned login/logout in
-that preflight uses HTTP and creates authentication records requiring cleanup.
-The Goby payload and acceptance target remain unchanged, and v7 is not replayed.
+The verified tools and their evidence/documentation were pushed in the 13-file
+commit `c29ae33defaf30943ba20db7aa084ef078642856`; product authority is unchanged.
+
+The [actual reference business-read preflight v1](reference-library-changed-ui-preflight-v1.json)
+passed with 65 HTTP requests, two authentication POSTs and zero metadata POSTs.
+Its administrator logged out with HTTP 204 and the exact token was rejected with HTTP 401.
+The [independent preflight terminal](reference-library-changed-ui-preflight-v1-terminal.json),
+captured at `2026-09-12T15:15:08.617474+00:00`, confirms exit0/MainPID0, an empty
+recursive cgroup and verified authentication cleanup. This is a passed
+business-read preflight with authentication effects, not a zero-HTTP check or
+reference-client acceptance.
+
+The subsequent [reference UI v1 report](reference-library-changed-ui-v1.json),
+[bound input](reference-library-changed-ui-v1-input.json) and
+[browser report](reference-library-changed-ui-v1-browser.json) record discovery
+failure `reference_ui_login_failed` before any viewer UI login attempt. All 134
+physical and 162 page-frame HTTP observations are GETs; viewer login POSTs,
+WebSockets and metadata writes are zero. The controller separately recorded
+65 administrator HTTP requests and two authentication POSTs, ending in logout204
+and exact-token401. Restoration was `not_required`. The
+[independent failed terminal](reference-library-changed-ui-v1-terminal.json),
+captured at `2026-09-12T15:18:32.120299+00:00`, seals both units at
+exit1/MainPID0 with empty recursive cgroups, preserves all 52 history/tool roots,
+and confirms the full Goby snapshot equals the v7 after-state except capture
+time, retaining 83 sessions/70 devices/185 audits. No metadata-refresh or
+Name-only outcome was obtained. Both reference v1 and its preflight are terminal,
+consumed scopes and must not be replayed.
+
+The [safe v1 diagnostic](reference-library-changed-ui-v1-diagnostic.json) records
+the first `passive_observation_failed` at 1,273 ms. The retained `frame-156` is an
+anonymous GET for `/Branding/Css.css` at 1,265 ms; the frozen runtime's anonymous
+`publicRead` allowlist omitted the `.css` suffix. A separate tool-contract gap
+records the driver's `node_process.cgroup` as
+`0::/system.slice/goby-reference-library-changed-ui-v1.service\n`, while the
+controller records `/system.slice/goby-reference-library-changed-ui-v1.service`.
+These are tooling gaps, not evidence of reference metadata-refresh behavior.
+A fresh v2 scope is being prepared to repair the exact CSS route and cgroup
+contract and retain safe request/document diagnostic correlation. Verify its
+sources before a fresh business-read preflight and reference control run;
+owned login/logout effects still require explicit cleanup. The Goby payload
+and acceptance target remain unchanged, and v7 is not replayed.
 The reviewed [main schema28 upgrade plan](main-schema28-upgrade-plan.md) is
 published as `933257c913cd36a57c26c72bb324f73b57441ecd`. The two Go helper source
 files, plan and four safe reports were then pushed as
@@ -495,8 +539,11 @@ bounded original-client UI control's four JavaScript sources are frozen and
 passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM
 cases remotely, all with `business_http: false`. The two Python controller/guard
 sources are also frozen and passed 45 guards and two compilation checks remotely.
-All six tool sources are verified; business-read preflight and the actual
-reference UI run remain unexecuted.
+The actual reference preflight v1 passed, then reference UI v1 failed before
+viewer login and was independently sealed, with zero browser POSTs, WebSockets
+or metadata writes. Both scopes are consumed. A fresh v2 scope is being prepared
+to correct the exact anonymous CSS route, cgroup representation and safe
+diagnostic correlation. No Name-only refresh outcome was obtained.
 Main TOOL03 separates the controller's exact five-key authority from the
 browser/input shape with additional `before_snapshot`, binding the original
 scope `before-full.json` bytes. Its
@@ -1277,7 +1324,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v7 automatic-HTTP failure is independently sealed | Candidate remains PID1458051; primary stays source32/schema27. Current independently sealed counts are 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Its terminal confirms restored original sparse/effective metadata, ledger 2/1/6/+2, both credentials closed and full preservation. Both complete request channels contain zero window HTTP after receipt of the matching page frame; all 237 DOM samples retain the old title, excluding missed matching of an existing request. Protocol cause remains open and LibraryChanged acceptance false. The bounded original-client UI control's four JavaScript sources are frozen and passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM cases remotely, all with `business_http: false`. The two Python controller/guard sources are also frozen and passed 45 guards and two compilation checks remotely. All six tool sources are verified. Assemble them and dispatch a fresh business-read preflight before the new reference UI control run; both remain unexecuted. These tool checks do not establish reference-client acceptance; business-read preflight login/logout has authentication side effects. Keep the Goby payload/acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare still requires fresh scope/input/prepare before later upgrade after client acceptance. Main has not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); full M3 and broader M2-M6 remain open |
+| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v7 automatic-HTTP failure is independently sealed | Candidate remains PID1458051; primary stays source32/schema27. Current independently sealed counts are 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Its terminal confirms restored original sparse/effective metadata, ledger 2/1/6/+2, both credentials closed and full preservation. Both complete request channels contain zero window HTTP after receipt of the matching page frame; all 237 DOM samples retain the old title, excluding missed matching of an existing request. Protocol cause remains open and LibraryChanged acceptance false. The bounded original-client UI control's four JavaScript sources are frozen and passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM cases remotely, all with `business_http: false`. The two Python controller/guard sources are also frozen and passed 45 guards and two compilation checks remotely. The six verified tool sources were published in the 13-file checkpoint c29ae33defaf30943ba20db7aa084ef078642856. Reference preflight v1 passed; actual reference UI v1 failed before viewer login and was independently sealed with zero browser POSTs, WebSockets or metadata writes. Both scopes are consumed. Prepare and verify a fresh v2 scope for the exact anonymous CSS route, cgroup representation and safe diagnostic correlation, followed by a fresh preflight/control. No Name-only refresh outcome was obtained. These tool checks do not establish reference-client acceptance; business-read preflight login/logout has authentication side effects. Keep the Goby payload/acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare still requires fresh scope/input/prepare before later upgrade after client acceptance. Main has not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); full M3 and broader M2-M6 remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
