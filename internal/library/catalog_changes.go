@@ -20,6 +20,8 @@ const (
 // up after deletion. These facts are independent of any client wire protocol.
 // An updated item moved within its library retains PreviousParentID so both
 // containers can invalidate their membership without changing the item identity.
+// An updated folder can additionally invalidate its own child membership in
+// either direction without manufacturing added or removed item identities.
 type CatalogChange struct {
 	Kind               CatalogChangeKind
 	ItemID             string
@@ -28,6 +30,8 @@ type CatalogChange struct {
 	PreviousParentID   string
 	IsFolder           bool
 	IsCollectionFolder bool
+	ChildrenAdded      bool
+	ChildrenRemoved    bool
 }
 
 // CatalogNotification describes one successful commit. Resync replaces an
@@ -40,6 +44,8 @@ type CatalogNotification struct {
 const (
 	maxCatalogChanges     = 1024
 	maxCatalogChangeBytes = 256 * 1024
+	// Four string headers, the kind and four flags fit in 80 bytes on 64-bit
+	// targets. Only the retained string contents require additional charging.
 	catalogChangeOverhead = 80
 )
 
@@ -162,6 +168,7 @@ func validCatalogChange(change CatalogChange) bool {
 		(change.PreviousParentID == "" || change.Kind == CatalogUpdated && !change.IsCollectionFolder &&
 			validCatalogLibraryIdentifier(change.PreviousParentID) && change.ParentID != "" &&
 			change.PreviousParentID != change.ParentID && change.PreviousParentID != change.ItemID && change.ParentID != change.ItemID) &&
+		(!(change.ChildrenAdded || change.ChildrenRemoved) || change.Kind == CatalogUpdated && change.IsFolder) &&
 		(!change.IsCollectionFolder || change.IsFolder && change.ItemID == change.LibraryID && change.ParentID == "")
 }
 

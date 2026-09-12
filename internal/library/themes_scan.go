@@ -487,6 +487,10 @@ func (state *scanState) persistAuxiliaryMarkers(markers map[string]bool, extra b
 		ORDER BY i.id FOR UPDATE OF i) affected`, state.root.id, keys, directoryFlags).Scan(&changedOwners, &albums); err != nil {
 		return err
 	}
+	beforeAuxiliary, err := readAuxiliaryCatalogSnapshot(state.task.ctx, tx, changedOwners)
+	if err != nil {
+		return err
+	}
 	for _, relative := range keys {
 		var directory bool
 		err := tx.QueryRow(state.task.ctx, `INSERT INTO `+table+`(root_id,relative_path,is_directory)
@@ -499,6 +503,9 @@ func (state *scanState) persistAuxiliaryMarkers(markers map[string]bool, extra b
 		markers[relative] = directory
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, changedOwners); err != nil {
+		return err
+	}
+	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
@@ -1156,6 +1163,16 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 			return false, fmt.Errorf("%w: a retained theme identity changed owner or activity", ErrUnavailable)
 		}
 	}
+	var beforeAuxiliary auxiliaryCatalogSnapshot
+	// Every completed library visits its collection owner, including libraries
+	// with no themes. An empty publication changes no resources or visibility;
+	// avoid planning two complete projection queries while holding ownership.
+	if len(expected) != 0 || len(plan.retire) != 0 {
+		beforeAuxiliary, err = readAuxiliaryCatalogSnapshot(task.ctx, tx, append([]string{owner.id}, expected...))
+		if err != nil {
+			return false, err
+		}
+	}
 	if len(plan.retire) != 0 {
 		tag, err := tx.Exec(task.ctx, `UPDATE item_theme_resources SET active=false
 			WHERE owner_item_id=$1 AND active AND resource_item_id=ANY($2::text[])`, owner.id, plan.retire)
@@ -1192,6 +1209,15 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	}
 	if activeCount > MaxThemeResourcesPerOwner || invalidCount != 0 || expectedCount != len(expected) {
 		return false, fmt.Errorf("%w: the atomic theme publication does not have its complete valid active shape", ErrUnavailable)
+	}
+	var forcedIDs []string
+	if task.job.ForceProbe {
+		for _, file := range files {
+			forcedIDs = append(forcedIDs, file.id)
+		}
+	}
+	if err := beforeAuxiliary.record(task.ctx, tx, forcedIDs); err != nil {
+		return false, err
 	}
 	if err := task.ctx.Err(); err != nil {
 		return false, err

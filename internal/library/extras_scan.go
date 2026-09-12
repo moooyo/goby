@@ -316,6 +316,10 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	if invalidBefore != 0 {
 		return fmt.Errorf("%w: the existing active extra population has an invalid shape", ErrUnavailable)
 	}
+	beforeAuxiliary, err := readAuxiliaryCatalogSnapshot(state.task.ctx, tx, append([]string{ownerID}, expected...))
+	if err != nil {
+		return err
+	}
 	if len(retire) != 0 {
 		tag, err := tx.Exec(state.task.ctx, `UPDATE item_extra_resources SET active=false
 			WHERE owner_item_id=$1 AND active AND resource_item_id=ANY($2::text[])`, ownerID, retire)
@@ -351,6 +355,15 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	}
 	if count != len(expected) || invalid != 0 {
 		return fmt.Errorf("%w: atomic extra publication did not preserve its complete valid shape", ErrUnavailable)
+	}
+	var forcedIDs []string
+	if state.task.job.ForceProbe {
+		for _, file := range files {
+			forcedIDs = append(forcedIDs, file.id)
+		}
+	}
+	if err := beforeAuxiliary.record(state.task.ctx, tx, forcedIDs); err != nil {
+		return err
 	}
 	root, err := rootLease.Open()
 	if err != nil {

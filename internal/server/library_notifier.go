@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	libraryNotificationCapacity    = 64
-	libraryNotificationQueueBytes  = 256 * 1024
-	libraryNotificationBatchBytes  = 64 * 1024
-	libraryNotificationChanges     = 512
+	libraryNotificationCapacity   = 64
+	libraryNotificationQueueBytes = 256 * 1024
+	libraryNotificationBatchBytes = 64 * 1024
+	libraryNotificationChanges    = 512
+	// Kind, four string headers, and four boolean flags fit in 80 bytes on
+	// 64-bit builds; copied string contents are charged separately below.
 	libraryNotificationChangeBytes = 80
 )
 
@@ -105,6 +107,7 @@ func catalogNotificationSize(notification library.CatalogNotification) (int, boo
 			(change.PreviousParentID != "" && (change.Kind != library.CatalogUpdated || change.IsCollectionFolder ||
 				!validLibraryChangedID(change.PreviousParentID) || change.ParentID == "" ||
 				change.PreviousParentID == change.ParentID || change.PreviousParentID == change.ItemID)) ||
+			((change.ChildrenAdded || change.ChildrenRemoved) && (change.Kind != library.CatalogUpdated || !change.IsFolder)) ||
 			(change.IsCollectionFolder && (!change.IsFolder || change.ItemID != change.LibraryID || change.ParentID != "")) {
 			return 0, false
 		}
@@ -304,6 +307,12 @@ func catalogNotificationEnvelope(notification library.CatalogNotification) (even
 			if change.PreviousParentID != "" {
 				appendID(&data.FoldersRemovedFrom, change.PreviousParentID, change.LibraryID)
 				appendID(&data.FoldersAddedTo, change.ParentID, change.LibraryID)
+			}
+			if change.ChildrenAdded {
+				appendID(&data.FoldersAddedTo, change.ItemID, change.LibraryID)
+			}
+			if change.ChildrenRemoved {
+				appendID(&data.FoldersRemovedFrom, change.ItemID, change.LibraryID)
 			}
 		case library.CatalogRemoved:
 			appendID(&data.ItemsRemoved, change.ItemID, change.LibraryID)

@@ -508,6 +508,32 @@ func TestHTTPLibraryRefreshDurablyQueuesEveryLibraryBeyondScannerCapacity(t *tes
 	if run.TotalChildren != libraryCount || run.Source != "compatibility" {
 		t.Fatal("Library/Refresh returned before committing its complete library snapshot")
 	}
+	// Retain bounded state before fixture cleanup if capacity draining fails.
+	// The existing completion deadline and successful path remain unchanged.
+	t.Cleanup(func() {
+		if !t.Failed() {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		var diagnostic string
+		err := f.pool.QueryRow(ctx, `SELECT jsonb_build_object(
+			'State', r.state, 'Total', r.total_children, 'Terminal', r.terminal_children,
+			'Completed', r.completed_children, 'Error', r.error_message,
+			'ChildStates', (SELECT jsonb_object_agg(state, total) FROM (
+				SELECT state, count(*) total FROM task_run_children WHERE run_id=r.id GROUP BY state) counts),
+			'Active', (SELECT COALESCE(jsonb_agg(to_jsonb(active)), '[]'::jsonb) FROM (
+				SELECT c.id, c.state, c.scan_job_id, c.error_code, c.error_message,
+					s.status scan_status, s.scanned, s.added, s.updated, s.error scan_error
+				FROM task_run_children c LEFT JOIN scan_jobs s ON s.id=c.scan_job_id
+				WHERE c.run_id=r.id AND c.state IN ('waiting','queued','running') ORDER BY c.id LIMIT 8) active)
+			)::text FROM task_runs r WHERE r.id=$1`, run.ID).Scan(&diagnostic)
+		if err != nil {
+			t.Logf("capacity failure state could not be read: %v", err)
+			return
+		}
+		t.Logf("capacity failure state: %s", diagnostic)
+	})
 	for _, child := range scheduledTaskHTTPChildren(t, f, run.ID, libraryCount) {
 		if !libraries[child.LibraryID] || child.RunID != run.ID {
 			t.Fatal("Library/Refresh snapshot does not cover the registered libraries")

@@ -320,7 +320,12 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		itemID, overridesJSON, lockedJSON).Scan(&changed); err != nil {
 		return ItemMetadataDetail{}, fmt.Errorf("compare metadata edit: %w", err)
 	}
+	var beforeAuxiliary auxiliaryCatalogSnapshot
 	if changed {
+		beforeAuxiliary, err = readAuxiliaryCatalogSnapshot(ctx, tx, []string{itemID})
+		if err != nil {
+			return ItemMetadataDetail{}, err
+		}
 		projection, err := buildMetadataProjection(record.localSource, activeOverrides, activeMetadataControls(record.itemType, locked), effective)
 		if err != nil {
 			return ItemMetadataDetail{}, err
@@ -356,8 +361,15 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		return ItemMetadataDetail{}, err
 	}
 	if changed {
-		if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogUpdated, ItemID: record.itemID, LibraryID: record.libraryID,
-			ParentID: record.parentID, IsFolder: record.isFolder, IsCollectionFolder: record.itemType == "CollectionFolder"}); err != nil {
+		change := CatalogChange{Kind: CatalogUpdated, ItemID: record.itemID, LibraryID: record.libraryID,
+			ParentID: record.parentID, IsFolder: record.isFolder, IsCollectionFolder: record.itemType == "CollectionFolder"}
+		if item, exists := beforeAuxiliary.items[itemID]; exists && !item.ordinary {
+			change.ParentID = ""
+		}
+		if err := recordCatalogChanges(tx, change); err != nil {
+			return ItemMetadataDetail{}, err
+		}
+		if err := beforeAuxiliary.record(ctx, tx, nil); err != nil {
 			return ItemMetadataDetail{}, err
 		}
 	}
