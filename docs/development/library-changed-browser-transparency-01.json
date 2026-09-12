@@ -1,0 +1,154 @@
+{
+  "marker": "goby-library-changed-browser-transparency-v1",
+  "result": "failed",
+  "started_at": "2026-09-12T17:20:19.933Z",
+  "isolation": {
+    "unit": "goby-library-changed-browser-transparency-01.service",
+    "invocation_id": "18b4684094764d8a904af30c8ea354f4",
+    "pid": 1501239,
+    "cgroup": "0::/system.slice/goby-library-changed-browser-transparency-01.service",
+    "network_namespace": "net:[4026533402]",
+    "host_network_namespace": "net:[4026531840]",
+    "private_network": true
+  },
+  "manifest_sha256": "585ba770f6132643a44f7e040fbaf9d7f0f3ff70df03fd94a0cd85a59a53d8be",
+  "sources": {
+    "client-browser-cross-user.mjs": "60dea05efc3091cc8574f08867d92eff8472a256747fb9a521cb667190197d4e",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-library-changed-reference.mjs": "965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c",
+    "client-browser-library-changed-source55.mjs": "39e4aa077c6007b3964469f4791174875b280d99659282a6656d77846bf485d0",
+    "client-library-changed-source55-fixture.mjs": "9477e1ccf216768fbad453d398eaf7746dcaae6dd60d695ee556bfe04b63823e",
+    "test-library-changed-browser-transparency.mjs": "da69dc98d9c7961051aeb1ffa9e75d6422a9391fc81879244701c3b72f87b84b",
+    "client-browser-goby-fixture.mjs": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3",
+    "client-browser-library-changed-reference-runtime.mjs": "209f72fa812647742003b50c311ee358ffc6f1279e29a2e142eec506245fed7c",
+    "client-browser-library-home.mjs": "6041b19eb719a829e4b8235fd5c168fc98f3e80f17b032be126202a70ada125c",
+    "client-browser-special-features-fixture.mjs": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7"
+  },
+  "owned_page_logic_sha256": "7ad47bdf1001e3770abd44289d25a71dda346c96125fd21a656ec7c4129b3b8a",
+  "limits": {
+    "cases": 4,
+    "case_ms": 60000,
+    "total_ms": 300000,
+    "outer_ms": 360000
+  },
+  "original_client_used": false,
+  "business_http": false,
+  "fixture_http": true,
+  "acceptance_workflow_executed": false,
+  "library_changed_client_acceptance": false,
+  "cases": [
+    {
+      "name": "baseline",
+      "mode": "baseline",
+      "sampler_active": false,
+      "result": "failed",
+      "started_at": "2026-09-12T17:20:20.623Z",
+      "events": [
+        {
+          "message_id": "00000000000000000000000000000001",
+          "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+          "body_bytes": 228,
+          "name": "Owned Movie After"
+        },
+        {
+          "message_id": "00000000000000000000000000000002",
+          "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+          "body_bytes": 228,
+          "name": "Owned Movie Before"
+        }
+      ],
+      "samples": [],
+      "cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": false
+      },
+      "failure": "transparency_page_noninterference",
+      "html_sha256": "fd9724db67b42e4b28b4733084d03b20d5b53c5d3d3a880cb76567878750af7c",
+      "observation_started_at": "2026-09-12T17:20:20.857Z",
+      "pending_resource_factories": 0,
+      "upstream": {
+        "requests": [
+          {
+            "index": 1,
+            "method": "GET",
+            "route": "/web/index.html",
+            "kind": "owned_html",
+            "status": 200
+          },
+          {
+            "index": 2,
+            "method": "POST",
+            "route": "/Users/AuthenticateByName",
+            "kind": "login",
+            "status": 200
+          },
+          {
+            "index": 3,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Views",
+            "kind": "views",
+            "status": 200
+          },
+          {
+            "index": 4,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000001",
+            "handler": "property",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie After",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000001"
+            },
+            "response_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9"
+          },
+          {
+            "index": 5,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000002",
+            "handler": "listener",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie Before",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000002"
+            },
+            "response_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f"
+          }
+        ],
+        "websockets": [
+          {
+            "opened": true,
+            "received_close": false,
+            "sent_close": false,
+            "closed": true,
+            "errors": [
+              "transparency_fixture_close"
+            ]
+          }
+        ]
+      },
+      "elapsed_ms": 2833,
+      "completed_at": "2026-09-12T17:20:23.456Z",
+      "artifact": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-01/baseline.json",
+        "sha256": "1035a9be5eabefe838b2d89ff1ae3c38f3f11141981519cb12e8e7e5330c6b98"
+      }
+    }
+  ],
+  "failure": "transparency_case_failed",
+  "completed_at": "2026-09-12T17:20:23.461Z",
+  "elapsed_ms": 3528
+}

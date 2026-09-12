@@ -16,11 +16,13 @@ of `onmessage`, `addEventListener`, `this`, `target`, or `currentTarget` that ex
 the sealed results. This is a source-level finding, not proof that the complete
 instrumented browser behaves identically to an uninstrumented browser.
 
-The existing guards do not establish the missing end-to-end property: a native
+At the time of this static review, the existing guards did not establish the
+end-to-end property: a native
 page message callback runs, initiates its own HTTP request, consumes the response,
 and updates visible DOM while the actual production transport and repeated DOM
-sampling are active. A focused owned-HTML control can establish that property
-without reading or rerunning the reference client.
+sampling are active. The subsequent [owned-HTML control](library-changed-browser-transparency.md)
+passed four cases, establishing this bounded functional chain without reading
+or rerunning the reference client. It does not establish universal transparency.
 
 One concrete transport concern was found in the frozen reference runtime: an interleaved
 control frame is held behind an incomplete data message. It is not shared with
@@ -33,8 +35,10 @@ review of the runtime and guard diff found no issue within that correction's
 scope. The original finding still describes runtime `b720d7bb...`; reference v4's
 frozen sources, tools, and consumed actual scope remain unchanged and were not
 replayed. The correction does not establish the cause of v4's negative
-observation. Full owned-HTML callback transparency verification remains a
-separate future task.
+observation. The subsequent four-case owned-HTML control passed for the native
+baseline, reference actor, reference actor with repeated production sampling,
+and Goby v7 actor/collectors. It establishes the exercised functional chain,
+not zero side effects on every aspect of page state.
 
 ## Source identity and boundary
 
@@ -243,9 +247,9 @@ Passing these guards supports their stated byte/capture/DOM properties. It does
 not prove handler invocation, native listener receiver identity, unrestricted
 client behavior, or complete runtime transparency.
 
-## Smallest meaningful next verification
+## Follow-up verification plan and current coverage
 
-The next verification should use only newly authored HTML and a synthetic server
+The original follow-up plan uses only newly authored HTML and a synthetic server
 in a fresh isolated remote scope. It must not use the reference application,
 real credentials, consumed execution roots, or existing service listeners. If
 the unchanged production transports require fixed loopback origins, provide
@@ -278,6 +282,11 @@ Do not silently change the frozen production scope constants to obtain a pass.
    review. Keep any browser result separate from the already delivered
    LibraryChanged cases.
 
-No owned-HTML end-to-end verification in this section has been executed. Any future successful owned-HTML result
-would close an instrumentation evidence gap; it would not establish reference
-client refresh behavior, Goby LibraryChanged acceptance, or deployment admission.
+The subsequent [attempt 02](library-changed-browser-transparency-02-summary.json)
+completed the steady-state callback, real HTTP, visible transition, reference
+sampler, and resource-closure controls in four cases. Focus, selection, scroll,
+and timer counts are retained as diagnostics rather than assumed to be zero.
+Early handshake-head delivery, browser-level fragmented-message/ping ordering,
+and universal page-state noninterference remain outside that result. The
+completed functional control does not establish reference-client refresh
+behavior, Goby LibraryChanged acceptance, or deployment admission.

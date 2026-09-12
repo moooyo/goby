@@ -1,0 +1,2644 @@
+{
+  "marker": "goby-library-changed-browser-transparency-v1",
+  "result": "passed",
+  "started_at": "2026-09-12T17:25:40.583Z",
+  "isolation": {
+    "unit": "goby-library-changed-browser-transparency-02.service",
+    "invocation_id": "e0374f7c53204acc9380aea576e49d8c",
+    "pid": 1501658,
+    "cgroup": "0::/system.slice/goby-library-changed-browser-transparency-02.service",
+    "network_namespace": "net:[4026533402]",
+    "host_network_namespace": "net:[4026531840]",
+    "private_network": true
+  },
+  "manifest_sha256": "f9dfc3c8a05b5787a8b134565ddac0d6d82583a42a39aad3a6da67c5f8eabbf6",
+  "sources": {
+    "client-library-changed-source55-fixture.mjs": "9477e1ccf216768fbad453d398eaf7746dcaae6dd60d695ee556bfe04b63823e",
+    "client-browser-library-changed-source55.mjs": "39e4aa077c6007b3964469f4791174875b280d99659282a6656d77846bf485d0",
+    "client-browser-cross-user.mjs": "60dea05efc3091cc8574f08867d92eff8472a256747fb9a521cb667190197d4e",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-library-changed-reference.mjs": "965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c",
+    "client-browser-special-features-fixture.mjs": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7",
+    "test-library-changed-browser-transparency.mjs": "b1d01d539b1cc5446000130983e046facb64fde12e16957d46771b758853fe03",
+    "client-browser-library-home.mjs": "6041b19eb719a829e4b8235fd5c168fc98f3e80f17b032be126202a70ada125c",
+    "client-browser-library-changed-reference-runtime.mjs": "209f72fa812647742003b50c311ee358ffc6f1279e29a2e142eec506245fed7c",
+    "client-browser-goby-fixture.mjs": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3"
+  },
+  "owned_page_logic_sha256": "7ad47bdf1001e3770abd44289d25a71dda346c96125fd21a656ec7c4129b3b8a",
+  "limits": {
+    "cases": 4,
+    "case_ms": 60000,
+    "total_ms": 300000,
+    "outer_ms": 360000
+  },
+  "original_client_used": false,
+  "business_http": false,
+  "fixture_http": true,
+  "acceptance_workflow_executed": false,
+  "library_changed_client_acceptance": false,
+  "cases": [
+    {
+      "name": "baseline",
+      "mode": "baseline",
+      "sampler_active": false,
+      "result": "passed",
+      "started_at": "2026-09-12T17:25:41.011Z",
+      "events": [
+        {
+          "message_id": "00000000000000000000000000000001",
+          "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+          "body_bytes": 228,
+          "name": "Owned Movie After"
+        },
+        {
+          "message_id": "00000000000000000000000000000002",
+          "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+          "body_bytes": 228,
+          "name": "Owned Movie Before"
+        }
+      ],
+      "samples": [],
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-before.json",
+          "sha256": "e785e067fc71896c6034d3787fb208e19d72c6b7813fa278cf669a42730f8c9f"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-forward.json",
+          "sha256": "ba8f922b4f732ee836717b2a0f025570690542cdbb59cef00b98fa315375b7e9"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-restored.json",
+          "sha256": "2f80b9b57f975a14555e62643bddb9dcbbe96d2eec1819fd534ba1e41f220635"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-observed.json",
+          "sha256": "4c42ece61fb6e985700771bfb86240b525943a52e8b984f31c31484fbce38377"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-closed.json",
+          "sha256": "39149dbb52e9bfe616c62de446f5f0c5901023417621dc11b9b26cfa8fa0f819"
+        }
+      ],
+      "current_phase": "logout",
+      "cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "failure": null,
+      "html_sha256": "407e019c481efd911a5c8eb16a6f6121c429fd3fc1128406ab73edf4ea2d2921",
+      "page": {
+        "ready": true,
+        "events": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          }
+        ],
+        "updates": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "name": "Owned Movie After",
+            "response_consumed": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "name": "Owned Movie Before",
+            "response_consumed": true
+          }
+        ],
+        "errors": [],
+        "closed": null,
+        "pending": 0,
+        "ticks": 52,
+        "mutations": [
+          {
+            "type": "childList",
+            "target": "target-title"
+          },
+          {
+            "type": "childList",
+            "target": "target-title"
+          }
+        ],
+        "focus_events": 1,
+        "selection_events": 0,
+        "scroll_events": 0
+      },
+      "observation_started_at": "2026-09-12T17:25:41.253Z",
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "pending_resource_factories": 0,
+      "upstream": {
+        "requests": [
+          {
+            "index": 1,
+            "method": "GET",
+            "route": "/web/index.html",
+            "kind": "owned_html",
+            "status": 200
+          },
+          {
+            "index": 2,
+            "method": "POST",
+            "route": "/Users/AuthenticateByName",
+            "kind": "login",
+            "status": 200
+          },
+          {
+            "index": 3,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Views",
+            "kind": "views",
+            "status": 200
+          },
+          {
+            "index": 4,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000001",
+            "handler": "property",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie After",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000001"
+            },
+            "response_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9"
+          },
+          {
+            "index": 5,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000002",
+            "handler": "listener",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie Before",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000002"
+            },
+            "response_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f"
+          },
+          {
+            "index": 6,
+            "method": "POST",
+            "route": "/Sessions/Logout",
+            "kind": "logout",
+            "status": 204
+          }
+        ],
+        "websockets": [
+          {
+            "opened": true,
+            "received_close": true,
+            "sent_close": true,
+            "closed": true,
+            "errors": []
+          }
+        ]
+      },
+      "elapsed_ms": 5188,
+      "completed_at": "2026-09-12T17:25:46.199Z",
+      "artifact": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline.json",
+        "sha256": "f8fb4e1a69f16bec2411c9ea0168a7f005643765bb69731f8aa684884e251e7d"
+      }
+    },
+    {
+      "name": "reference",
+      "mode": "reference",
+      "sampler_active": false,
+      "result": "passed",
+      "started_at": "2026-09-12T17:25:46.202Z",
+      "events": [
+        {
+          "message_id": "00000000000000000000000000000001",
+          "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+          "body_bytes": 228,
+          "name": "Owned Movie After"
+        },
+        {
+          "message_id": "00000000000000000000000000000002",
+          "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+          "body_bytes": 228,
+          "name": "Owned Movie Before"
+        }
+      ],
+      "samples": [],
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-before.json",
+          "sha256": "8dfa8405dcbc13625a5b6a9e2e94934b1619f67a55d1c492b834fe65b429d8d1"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-forward.json",
+          "sha256": "23ff1f0b29691f189d735156cf6ff54ada1ecde5ca00561438ac8ca0bf39c12f"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-restored.json",
+          "sha256": "dbf66413c81f3651e3207affeef20f47160768a834db454ced90cc1528b28cc5"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-observed.json",
+          "sha256": "864dd71013631618760ec51a8cdcfd5598b5eba3413cdceaf2c3dafd0aceb246"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-closed.json",
+          "sha256": "cd305bfa909683f3f369235ef2964362a323cf7ab156746157834dc7dbab50ba"
+        }
+      ],
+      "current_phase": "logout",
+      "cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "failure": null,
+      "html_sha256": "860cf82c77517094cea2a2f376ba135e79127a036c6c9b899d2d2e5fd3136c55",
+      "page": {
+        "ready": true,
+        "events": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          }
+        ],
+        "updates": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "name": "Owned Movie After",
+            "response_consumed": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "name": "Owned Movie Before",
+            "response_consumed": true
+          }
+        ],
+        "errors": [],
+        "closed": null,
+        "pending": 0,
+        "ticks": 52,
+        "mutations": [
+          {
+            "type": "childList",
+            "target": "target-title"
+          },
+          {
+            "type": "childList",
+            "target": "target-title"
+          }
+        ],
+        "focus_events": 1,
+        "selection_events": 0,
+        "scroll_events": 0
+      },
+      "observation_started_at": "2026-09-12T17:25:46.420Z",
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "production_evidence": {
+        "physical_http": [
+          {
+            "id": "physical-3",
+            "index": 3,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "fc9184134ae5672878413fff088dd0a1db30d18dc2a855da6345c7ab592ac46f"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "e0cca2965509df678c8064f5e0b9076016fa752f88a6c749768db83479450cc5"
+              }
+            ],
+            "shape_sha256": "ab5aaac759490c5e03b62b592eadca4983c4a8e7f3f06d7250b0a8158be55b15",
+            "request_sha256": "a64ca99eef282a2c4b9e3d2548f1356046e07410101d4beaa191e6583d5cc4e2",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "capture": true,
+            "scope": "physical",
+            "sequence": 37,
+            "elapsed_ms": 973,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 35,
+            "start_elapsed_ms": 971,
+            "response_elapsed_ms": 972,
+            "finished_elapsed_ms": 973,
+            "sourceworker": null,
+            "main_frame": null,
+            "from_service_worker": null,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "transport_phase": "completed",
+            "error_code": null,
+            "request_content_type": null,
+            "request_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "upstream_create_attempted": true,
+            "upstream_created": true,
+            "upstream_end_attempted": true,
+            "upstream_end_returned": true,
+            "upstream_response_received": true,
+            "response": {
+              "body_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9",
+              "bytes": 146,
+              "decoded_bytes": 146,
+              "content_encoding": "identity",
+              "json": {
+                "Id": "100",
+                "Name": "Owned Movie After",
+                "Type": "Movie",
+                "IsFolder": false,
+                "ParentId": "93"
+              },
+              "projection": "public_item_identity_fields"
+            },
+            "outcome": "completed",
+            "reason": null,
+            "failed": false,
+            "request_bytes": 0,
+            "response_bytes": 146
+          },
+          {
+            "id": "physical-4",
+            "index": 4,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "c4c05d40a8c3ebc0eb0c4edcff5d4e9964a5fbb5e24860711a92aa16668bfbd7"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "d2b1f1d83f0ad4f52dec8a1e2091f5c94ffad00ed3528362353fbe97aacd0187"
+              }
+            ],
+            "shape_sha256": "6f6bbeca61e94434e39f43406fb1c72813461961904bb170c710f0dccae3dc86",
+            "request_sha256": "46b9f4f95f8f7d1677babd4b508778ae4ad4cb8fbdbaac0d824783cbe83d5a19",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "capture": true,
+            "scope": "physical",
+            "sequence": 45,
+            "elapsed_ms": 2011,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 43,
+            "start_elapsed_ms": 2010,
+            "response_elapsed_ms": 2011,
+            "finished_elapsed_ms": 2011,
+            "sourceworker": null,
+            "main_frame": null,
+            "from_service_worker": null,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "transport_phase": "completed",
+            "error_code": null,
+            "request_content_type": null,
+            "request_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "upstream_create_attempted": true,
+            "upstream_created": true,
+            "upstream_end_attempted": true,
+            "upstream_end_returned": true,
+            "upstream_response_received": true,
+            "response": {
+              "body_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f",
+              "bytes": 147,
+              "decoded_bytes": 147,
+              "content_encoding": "identity",
+              "json": {
+                "Id": "100",
+                "Name": "Owned Movie Before",
+                "Type": "Movie",
+                "IsFolder": false,
+                "ParentId": "93"
+              },
+              "projection": "public_item_identity_fields"
+            },
+            "outcome": "completed",
+            "reason": null,
+            "failed": false,
+            "request_bytes": 0,
+            "response_bytes": 147
+          }
+        ],
+        "frame_http": [
+          {
+            "id": "frame-3",
+            "index": 3,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "fc9184134ae5672878413fff088dd0a1db30d18dc2a855da6345c7ab592ac46f"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "e0cca2965509df678c8064f5e0b9076016fa752f88a6c749768db83479450cc5"
+              }
+            ],
+            "shape_sha256": "ab5aaac759490c5e03b62b592eadca4983c4a8e7f3f06d7250b0a8158be55b15",
+            "request_sha256": "a64ca99eef282a2c4b9e3d2548f1356046e07410101d4beaa191e6583d5cc4e2",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "capture": true,
+            "scope": "frame",
+            "sequence": 39,
+            "elapsed_ms": 975,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 34,
+            "start_elapsed_ms": 969,
+            "response_elapsed_ms": 975,
+            "finished_elapsed_ms": 975,
+            "sourceworker": false,
+            "main_frame": true,
+            "from_service_worker": false,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "resource_type": "fetch",
+            "cleanup": false,
+            "failed": false
+          },
+          {
+            "id": "frame-4",
+            "index": 4,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "c4c05d40a8c3ebc0eb0c4edcff5d4e9964a5fbb5e24860711a92aa16668bfbd7"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "d2b1f1d83f0ad4f52dec8a1e2091f5c94ffad00ed3528362353fbe97aacd0187"
+              }
+            ],
+            "shape_sha256": "6f6bbeca61e94434e39f43406fb1c72813461961904bb170c710f0dccae3dc86",
+            "request_sha256": "46b9f4f95f8f7d1677babd4b508778ae4ad4cb8fbdbaac0d824783cbe83d5a19",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "capture": true,
+            "scope": "frame",
+            "sequence": 47,
+            "elapsed_ms": 2013,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 42,
+            "start_elapsed_ms": 2008,
+            "response_elapsed_ms": 2013,
+            "finished_elapsed_ms": 2013,
+            "sourceworker": false,
+            "main_frame": true,
+            "from_service_worker": false,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "resource_type": "fetch",
+            "cleanup": false,
+            "failed": false
+          }
+        ],
+        "physical_messages": [
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "received_elapsed_ms": 967,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "index": 1,
+            "direction": "server",
+            "frame_number": 1,
+            "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000001\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000001",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "physical_websocket",
+            "forwarded": true,
+            "forwarded_elapsed_ms": 967,
+            "sequence": 32,
+            "elapsed_ms": 967
+          },
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "received_elapsed_ms": 2004,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "index": 2,
+            "direction": "server",
+            "frame_number": 2,
+            "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000002\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000002",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "physical_websocket",
+            "forwarded": true,
+            "forwarded_elapsed_ms": 2005,
+            "sequence": 40,
+            "elapsed_ms": 2005
+          }
+        ],
+        "browser_messages": [
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "browser_socket_id": "browser-ws-0",
+            "pending_binding": false,
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "sequence": 33,
+            "elapsed_ms": 968,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "received_elapsed_ms": 968,
+            "index": 1,
+            "direction": "server",
+            "frame_number": null,
+            "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000001\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000001",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "browser_page_websocket",
+            "bound_elapsed_ms": 969
+          },
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "browser_socket_id": "browser-ws-0",
+            "pending_binding": false,
+            "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+            "sequence": 41,
+            "elapsed_ms": 2007,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "received_elapsed_ms": 2007,
+            "index": 2,
+            "direction": "server",
+            "frame_number": null,
+            "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000002\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000002",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "browser_page_websocket",
+            "bound_elapsed_ms": 2007
+          }
+        ]
+      },
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "actor_cleanup": {
+        "closed": true,
+        "failures": [],
+        "proof": {
+          "format": 1,
+          "outcome": "all_observed_logout_tokens_rejected",
+          "entries": [
+            {
+              "index": 0,
+              "ui_request": {
+                "method": "POST",
+                "route": "/Sessions/Logout",
+                "elapsed_ms": 2806,
+                "response_status": 204,
+                "client_request_finished": false,
+                "client_request_failed": true,
+                "response_elapsed_ms": 2806,
+                "failure_elapsed_ms": 2807
+              },
+              "token_fingerprint": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+              "token_sources": [
+                "header:x-emby-token"
+              ],
+              "verification": {
+                "source": "independent-node-http-post-logout-verification",
+                "is_ui_request": false,
+                "method": "GET",
+                "route": "/emby/System/Info",
+                "status": 401,
+                "eligible_at_request_start": true,
+                "result": "token_rejected",
+                "trigger": "ui_logout_response",
+                "started_elapsed_ms": 2806,
+                "response_bytes": 0,
+                "finished_elapsed_ms": 2809
+              },
+              "result": "logout_token_rejected"
+            }
+          ],
+          "logout_overflow": 0,
+          "observer_errors": 0,
+          "policy": {
+            "source": "original-client-request-events",
+            "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+            "token_fingerprint": "SHA-256 of the decoded observed token",
+            "token_response_body_read": false,
+            "client_internal_state_read": false,
+            "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+            "browser_network_requirement": "Caller-enforced selected loopback origin only",
+            "verification_source": "independent-node-http-post-logout-verification",
+            "verification_is_ui_request": false,
+            "verification_method": "GET",
+            "verification_route": "/emby/System/Info",
+            "verification_expected_status": 401,
+            "redirects": "Rejected without following",
+            "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+            "payload_logging": false,
+            "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+            "max_request_bytes": 16384,
+            "max_logout_requests": 16,
+            "limits": {
+              "captureTimeoutMs": 1500,
+              "logoutWaitMs": 12000,
+              "httpTimeoutMs": 8000,
+              "httpIdleTimeoutMs": 3000,
+              "responseByteLimit": 65536,
+              "responseHeaderByteLimit": 16384
+            }
+          }
+        },
+        "websocket": {
+          "seen": 1,
+          "admitted": 1,
+          "opened": 1,
+          "closed": 1,
+          "failed": 0,
+          "active": 0,
+          "control_attempts": 0,
+          "browser_seen": 1,
+          "browser_observations": [
+            {
+              "id": "browser-ws-0",
+              "index": 0,
+              "sequence": 27,
+              "elapsed_ms": 181,
+              "phase": "transparency",
+              "document_id": "document-1",
+              "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+              "request_sequence": 27,
+              "request_sha256": "cdf6c76de4ab677179d7d501fb9355a428d8bc740ba95daa0118d6480b6df832",
+              "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+              "connection_id": "ws-0",
+              "bound": true,
+              "closed": true,
+              "reason": null,
+              "bound_elapsed_ms": 183,
+              "closed_elapsed_ms": 4841,
+              "unbound_message_count": 0
+            }
+          ],
+          "entries": [
+            {
+              "id": "ws-0",
+              "index": 0,
+              "token_sha256": "3449805b433358a726f9a6d5f0070614c82bfd7077356d23eece73dc00a7fa11",
+              "opened": true,
+              "closed": true,
+              "connect_transport": true,
+              "handshake_id": "handshake-1",
+              "handshake_delivered": true,
+              "browser_opened": true,
+              "physical_messages": 2,
+              "browser_messages": 2,
+              "start_elapsed_ms": 180,
+              "opened_elapsed_ms": 182,
+              "sequence": 56,
+              "elapsed_ms": 5171,
+              "phase": "closed",
+              "document_id": "document-1",
+              "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+              "browser_opened_elapsed_ms": 183,
+              "browser_observation_id": "browser-ws-0",
+              "finished_elapsed_ms": 5171,
+              "reason": null
+            }
+          ]
+        },
+        "home_closure": null
+      },
+      "pending_resource_factories": 0,
+      "upstream": {
+        "requests": [
+          {
+            "index": 1,
+            "method": "GET",
+            "route": "/web/index.html",
+            "kind": "owned_html",
+            "status": 200
+          },
+          {
+            "index": 2,
+            "method": "POST",
+            "route": "/Users/AuthenticateByName",
+            "kind": "login",
+            "status": 200
+          },
+          {
+            "index": 3,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Views",
+            "kind": "views",
+            "status": 200
+          },
+          {
+            "index": 4,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000001",
+            "handler": "property",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie After",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000001"
+            },
+            "response_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9"
+          },
+          {
+            "index": 5,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000002",
+            "handler": "listener",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie Before",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000002"
+            },
+            "response_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f"
+          },
+          {
+            "index": 6,
+            "method": "POST",
+            "route": "/Sessions/Logout",
+            "kind": "logout",
+            "status": 204
+          },
+          {
+            "index": 7,
+            "method": "GET",
+            "route": "/System/Info",
+            "kind": "logout_proof",
+            "status": 401
+          }
+        ],
+        "websockets": [
+          {
+            "opened": true,
+            "received_close": true,
+            "sent_close": true,
+            "closed": true,
+            "errors": []
+          }
+        ]
+      },
+      "elapsed_ms": 5176,
+      "completed_at": "2026-09-12T17:25:51.378Z",
+      "artifact": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference.json",
+        "sha256": "c7aa4997ff8df4e7c9a20c086c1b1ae15dd83e3ca8c88c2e66d5da7c457395bf"
+      }
+    },
+    {
+      "name": "reference-sampled",
+      "mode": "reference",
+      "sampler_active": true,
+      "result": "passed",
+      "started_at": "2026-09-12T17:25:51.383Z",
+      "events": [
+        {
+          "message_id": "00000000000000000000000000000001",
+          "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+          "body_bytes": 228,
+          "name": "Owned Movie After"
+        },
+        {
+          "message_id": "00000000000000000000000000000002",
+          "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+          "body_bytes": 228,
+          "name": "Owned Movie Before"
+        }
+      ],
+      "samples": [
+        {
+          "elapsed_ms": 215,
+          "title": "Owned Movie Before",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        },
+        {
+          "elapsed_ms": 722,
+          "title": "Owned Movie Before",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        },
+        {
+          "elapsed_ms": 1228,
+          "title": "Owned Movie After",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        },
+        {
+          "elapsed_ms": 1737,
+          "title": "Owned Movie After",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        },
+        {
+          "elapsed_ms": 2244,
+          "title": "Owned Movie Before",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        },
+        {
+          "elapsed_ms": 2751,
+          "title": "Owned Movie Before",
+          "anchor": "Owned Movie Anchor",
+          "structural_match": true,
+          "cards": 2,
+          "owners": 1
+        }
+      ],
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-before.json",
+          "sha256": "e15496799939cc55507c245c3f30ea3194a2533ae90175fa4b45576b13c6adb4"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-forward.json",
+          "sha256": "d50516b11e91b3300b14a127f09d4d75e4d85b881c0f84b98c1568e144bbb22b"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-restored.json",
+          "sha256": "1d4ed50961e4282c20e345fddb304a312e4d6b5d62bd8abe764ae00313e1b7a8"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-observed.json",
+          "sha256": "7f64f68ed24cd1f7cf3c9565c805b8f27e0cb4fa76e635558b77215e1fd31687"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-closed.json",
+          "sha256": "15f63485311ab9b904c3e70cc95c55a1cdb5d834632d4b1721e0c5a164fea906"
+        }
+      ],
+      "current_phase": "logout",
+      "cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "failure": null,
+      "html_sha256": "86124949d61a5c0226f82b22a2882ae4ef3d318ae501fb8a29d7ff375486964d",
+      "page": {
+        "ready": true,
+        "events": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          }
+        ],
+        "updates": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "name": "Owned Movie After",
+            "response_consumed": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "name": "Owned Movie Before",
+            "response_consumed": true
+          }
+        ],
+        "errors": [],
+        "closed": null,
+        "pending": 0,
+        "ticks": 61,
+        "mutations": [
+          {
+            "type": "childList",
+            "target": "target-title"
+          },
+          {
+            "type": "childList",
+            "target": "target-title"
+          }
+        ],
+        "focus_events": 1,
+        "selection_events": 0,
+        "scroll_events": 0
+      },
+      "observation_started_at": "2026-09-12T17:25:51.584Z",
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "production_evidence": {
+        "physical_http": [
+          {
+            "id": "physical-3",
+            "index": 3,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "fc9184134ae5672878413fff088dd0a1db30d18dc2a855da6345c7ab592ac46f"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "e0cca2965509df678c8064f5e0b9076016fa752f88a6c749768db83479450cc5"
+              }
+            ],
+            "shape_sha256": "ab5aaac759490c5e03b62b592eadca4983c4a8e7f3f06d7250b0a8158be55b15",
+            "request_sha256": "a64ca99eef282a2c4b9e3d2548f1356046e07410101d4beaa191e6583d5cc4e2",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "capture": true,
+            "scope": "physical",
+            "sequence": 37,
+            "elapsed_ms": 958,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 35,
+            "start_elapsed_ms": 957,
+            "response_elapsed_ms": 958,
+            "finished_elapsed_ms": 958,
+            "sourceworker": null,
+            "main_frame": null,
+            "from_service_worker": null,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "transport_phase": "completed",
+            "error_code": null,
+            "request_content_type": null,
+            "request_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "upstream_create_attempted": true,
+            "upstream_created": true,
+            "upstream_end_attempted": true,
+            "upstream_end_returned": true,
+            "upstream_response_received": true,
+            "response": {
+              "body_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9",
+              "bytes": 146,
+              "decoded_bytes": 146,
+              "content_encoding": "identity",
+              "json": {
+                "Id": "100",
+                "Name": "Owned Movie After",
+                "Type": "Movie",
+                "IsFolder": false,
+                "ParentId": "93"
+              },
+              "projection": "public_item_identity_fields"
+            },
+            "outcome": "completed",
+            "reason": null,
+            "failed": false,
+            "request_bytes": 0,
+            "response_bytes": 146
+          },
+          {
+            "id": "physical-4",
+            "index": 4,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "c4c05d40a8c3ebc0eb0c4edcff5d4e9964a5fbb5e24860711a92aa16668bfbd7"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "d2b1f1d83f0ad4f52dec8a1e2091f5c94ffad00ed3528362353fbe97aacd0187"
+              }
+            ],
+            "shape_sha256": "6f6bbeca61e94434e39f43406fb1c72813461961904bb170c710f0dccae3dc86",
+            "request_sha256": "46b9f4f95f8f7d1677babd4b508778ae4ad4cb8fbdbaac0d824783cbe83d5a19",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "capture": true,
+            "scope": "physical",
+            "sequence": 45,
+            "elapsed_ms": 2001,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 43,
+            "start_elapsed_ms": 2000,
+            "response_elapsed_ms": 2001,
+            "finished_elapsed_ms": 2001,
+            "sourceworker": null,
+            "main_frame": null,
+            "from_service_worker": null,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "transport_phase": "completed",
+            "error_code": null,
+            "request_content_type": null,
+            "request_body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "upstream_create_attempted": true,
+            "upstream_created": true,
+            "upstream_end_attempted": true,
+            "upstream_end_returned": true,
+            "upstream_response_received": true,
+            "response": {
+              "body_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f",
+              "bytes": 147,
+              "decoded_bytes": 147,
+              "content_encoding": "identity",
+              "json": {
+                "Id": "100",
+                "Name": "Owned Movie Before",
+                "Type": "Movie",
+                "IsFolder": false,
+                "ParentId": "93"
+              },
+              "projection": "public_item_identity_fields"
+            },
+            "outcome": "completed",
+            "reason": null,
+            "failed": false,
+            "request_bytes": 0,
+            "response_bytes": 147
+          }
+        ],
+        "frame_http": [
+          {
+            "id": "frame-3",
+            "index": 3,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "fc9184134ae5672878413fff088dd0a1db30d18dc2a855da6345c7ab592ac46f"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "e0cca2965509df678c8064f5e0b9076016fa752f88a6c749768db83479450cc5"
+              }
+            ],
+            "shape_sha256": "ab5aaac759490c5e03b62b592eadca4983c4a8e7f3f06d7250b0a8158be55b15",
+            "request_sha256": "a64ca99eef282a2c4b9e3d2548f1356046e07410101d4beaa191e6583d5cc4e2",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "capture": true,
+            "scope": "frame",
+            "sequence": 39,
+            "elapsed_ms": 960,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 34,
+            "start_elapsed_ms": 955,
+            "response_elapsed_ms": 960,
+            "finished_elapsed_ms": 960,
+            "sourceworker": false,
+            "main_frame": true,
+            "from_service_worker": false,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "resource_type": "fetch",
+            "cleanup": false,
+            "failed": false
+          },
+          {
+            "id": "frame-4",
+            "index": 4,
+            "method": "GET",
+            "kind": "read",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "query": {},
+            "hidden_query": [
+              {
+                "key": "Handler",
+                "value_sha256": "c4c05d40a8c3ebc0eb0c4edcff5d4e9964a5fbb5e24860711a92aa16668bfbd7"
+              },
+              {
+                "key": "MessageId",
+                "value_sha256": "d2b1f1d83f0ad4f52dec8a1e2091f5c94ffad00ed3528362353fbe97aacd0187"
+              }
+            ],
+            "shape_sha256": "6f6bbeca61e94434e39f43406fb1c72813461961904bb170c710f0dccae3dc86",
+            "request_sha256": "46b9f4f95f8f7d1677babd4b508778ae4ad4cb8fbdbaac0d824783cbe83d5a19",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "capture": true,
+            "scope": "frame",
+            "sequence": 47,
+            "elapsed_ms": 2003,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "request_sequence": 42,
+            "start_elapsed_ms": 1997,
+            "response_elapsed_ms": 2003,
+            "finished_elapsed_ms": 2003,
+            "sourceworker": false,
+            "main_frame": true,
+            "from_service_worker": false,
+            "content_type": "application/json",
+            "status": 200,
+            "completed": true,
+            "resource_type": "fetch",
+            "cleanup": false,
+            "failed": false
+          }
+        ],
+        "physical_messages": [
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "received_elapsed_ms": 952,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "index": 1,
+            "direction": "server",
+            "frame_number": 1,
+            "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000001\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000001",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "physical_websocket",
+            "forwarded": true,
+            "forwarded_elapsed_ms": 952,
+            "sequence": 32,
+            "elapsed_ms": 952
+          },
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "received_elapsed_ms": 1994,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "index": 2,
+            "direction": "server",
+            "frame_number": 2,
+            "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000002\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000002",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "physical_websocket",
+            "forwarded": true,
+            "forwarded_elapsed_ms": 1994,
+            "sequence": 40,
+            "elapsed_ms": 1994
+          }
+        ],
+        "browser_messages": [
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "browser_socket_id": "browser-ws-0",
+            "pending_binding": false,
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "sequence": 33,
+            "elapsed_ms": 954,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "received_elapsed_ms": 954,
+            "index": 1,
+            "direction": "server",
+            "frame_number": null,
+            "body_sha256": "554a5de1faf6c52336f8621a30b41ca272fa30d0a5453b3f423f73007eed6e49",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000001\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000001",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "browser_page_websocket",
+            "bound_elapsed_ms": 954
+          },
+          {
+            "socket_id": "ws-0",
+            "connection_id": "ws-0",
+            "browser_socket_id": "browser-ws-0",
+            "pending_binding": false,
+            "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+            "sequence": 41,
+            "elapsed_ms": 1996,
+            "phase": "transparency",
+            "document_id": "document-1",
+            "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+            "received_elapsed_ms": 1996,
+            "index": 2,
+            "direction": "server",
+            "frame_number": null,
+            "body_sha256": "56d54e9c4e82029733b4ba0fd07e627becb37ee26e74e1d751ca679b5f532886",
+            "bytes": 228,
+            "original_message": true,
+            "payload_retained": true,
+            "json": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "100"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              }
+            },
+            "json_text": "{\"MessageType\":\"LibraryChanged\",\"MessageId\":\"00000000000000000000000000000002\",\"Data\":{\"FoldersAddedTo\":[],\"FoldersRemovedFrom\":[],\"ItemsAdded\":[],\"ItemsRemoved\":[],\"ItemsUpdated\":[\"100\"],\"CollectionFolders\":[],\"IsEmpty\":false}}",
+            "MessageType": "LibraryChanged",
+            "MessageId": "00000000000000000000000000000002",
+            "Data": {
+              "FoldersAddedTo": [],
+              "FoldersRemovedFrom": [],
+              "ItemsAdded": [],
+              "ItemsRemoved": [],
+              "ItemsUpdated": [
+                "100"
+              ],
+              "CollectionFolders": [],
+              "IsEmpty": false
+            },
+            "source": "browser_page_websocket",
+            "bound_elapsed_ms": 1997
+          }
+        ]
+      },
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "actor_cleanup": {
+        "closed": true,
+        "failures": [],
+        "proof": {
+          "format": 1,
+          "outcome": "all_observed_logout_tokens_rejected",
+          "entries": [
+            {
+              "index": 0,
+              "ui_request": {
+                "method": "POST",
+                "route": "/Sessions/Logout",
+                "elapsed_ms": 3259,
+                "response_status": 204,
+                "client_request_finished": false,
+                "client_request_failed": true,
+                "response_elapsed_ms": 3259,
+                "failure_elapsed_ms": 3260
+              },
+              "token_fingerprint": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+              "token_sources": [
+                "header:x-emby-token"
+              ],
+              "verification": {
+                "source": "independent-node-http-post-logout-verification",
+                "is_ui_request": false,
+                "method": "GET",
+                "route": "/emby/System/Info",
+                "status": 401,
+                "eligible_at_request_start": true,
+                "result": "token_rejected",
+                "trigger": "ui_logout_response",
+                "started_elapsed_ms": 3259,
+                "response_bytes": 0,
+                "finished_elapsed_ms": 3263
+              },
+              "result": "logout_token_rejected"
+            }
+          ],
+          "logout_overflow": 0,
+          "observer_errors": 0,
+          "policy": {
+            "source": "original-client-request-events",
+            "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+            "token_fingerprint": "SHA-256 of the decoded observed token",
+            "token_response_body_read": false,
+            "client_internal_state_read": false,
+            "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+            "browser_network_requirement": "Caller-enforced selected loopback origin only",
+            "verification_source": "independent-node-http-post-logout-verification",
+            "verification_is_ui_request": false,
+            "verification_method": "GET",
+            "verification_route": "/emby/System/Info",
+            "verification_expected_status": 401,
+            "redirects": "Rejected without following",
+            "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+            "payload_logging": false,
+            "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+            "max_request_bytes": 16384,
+            "max_logout_requests": 16,
+            "limits": {
+              "captureTimeoutMs": 1500,
+              "logoutWaitMs": 12000,
+              "httpTimeoutMs": 8000,
+              "httpIdleTimeoutMs": 3000,
+              "responseByteLimit": 65536,
+              "responseHeaderByteLimit": 16384
+            }
+          }
+        },
+        "websocket": {
+          "seen": 1,
+          "admitted": 1,
+          "opened": 1,
+          "closed": 1,
+          "failed": 0,
+          "active": 0,
+          "control_attempts": 0,
+          "browser_seen": 1,
+          "browser_observations": [
+            {
+              "id": "browser-ws-0",
+              "index": 0,
+              "sequence": 27,
+              "elapsed_ms": 166,
+              "phase": "transparency",
+              "document_id": "document-1",
+              "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+              "request_sequence": 27,
+              "request_sha256": "8754c386f73ef0f7101faaead48227e93a9dfc9c11f2ad9750ea09726b994cbc",
+              "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+              "connection_id": "ws-0",
+              "bound": true,
+              "closed": true,
+              "reason": null,
+              "bound_elapsed_ms": 167,
+              "closed_elapsed_ms": 5292,
+              "unbound_message_count": 0
+            }
+          ],
+          "entries": [
+            {
+              "id": "ws-0",
+              "index": 0,
+              "token_sha256": "3288ec553a73d546c52b171222e33e5b58927257e0acc5b49474e9dd4fe593f5",
+              "opened": true,
+              "closed": true,
+              "connect_transport": true,
+              "handshake_id": "handshake-1",
+              "handshake_delivered": true,
+              "browser_opened": true,
+              "physical_messages": 2,
+              "browser_messages": 2,
+              "start_elapsed_ms": 166,
+              "opened_elapsed_ms": 167,
+              "sequence": 56,
+              "elapsed_ms": 5618,
+              "phase": "closed",
+              "document_id": "document-1",
+              "page_route": "/web/index.html#!/videos?serverId=f56dec8ff7414847873064c4be9fba74&parentId=93",
+              "browser_opened_elapsed_ms": 167,
+              "browser_observation_id": "browser-ws-0",
+              "finished_elapsed_ms": 5618,
+              "reason": null
+            }
+          ]
+        },
+        "home_closure": null
+      },
+      "pending_resource_factories": 0,
+      "upstream": {
+        "requests": [
+          {
+            "index": 1,
+            "method": "GET",
+            "route": "/web/index.html",
+            "kind": "owned_html",
+            "status": 200
+          },
+          {
+            "index": 2,
+            "method": "POST",
+            "route": "/Users/AuthenticateByName",
+            "kind": "login",
+            "status": 200
+          },
+          {
+            "index": 3,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Views",
+            "kind": "views",
+            "status": 200
+          },
+          {
+            "index": 4,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000001",
+            "handler": "property",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie After",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000001"
+            },
+            "response_sha256": "79ca0e3bef618bb84a0dae5b55853213f0e9f4319d14c3a28e7b50e0771e6cf9"
+          },
+          {
+            "index": 5,
+            "method": "GET",
+            "route": "/Users/c5f36699a54f4971a891682cd9de410f/Items/100",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000002",
+            "handler": "listener",
+            "response": {
+              "Id": "100",
+              "Name": "Owned Movie Before",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "93",
+              "TransparencyMessageId": "00000000000000000000000000000002"
+            },
+            "response_sha256": "63b008376e25415b055397f4e0c2fa0d38be8165ff3e78a770212b19217a0e7f"
+          },
+          {
+            "index": 6,
+            "method": "POST",
+            "route": "/Sessions/Logout",
+            "kind": "logout",
+            "status": 204
+          },
+          {
+            "index": 7,
+            "method": "GET",
+            "route": "/System/Info",
+            "kind": "logout_proof",
+            "status": 401
+          }
+        ],
+        "websockets": [
+          {
+            "opened": true,
+            "received_close": true,
+            "sent_close": true,
+            "closed": true,
+            "errors": []
+          }
+        ]
+      },
+      "elapsed_ms": 5624,
+      "completed_at": "2026-09-12T17:25:57.007Z",
+      "artifact": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled.json",
+        "sha256": "6cf014393624c64c6c92fb9fc19ba9c83913af863632965d927481793af9686c"
+      }
+    },
+    {
+      "name": "goby-v7-actor",
+      "mode": "goby",
+      "sampler_active": false,
+      "result": "passed",
+      "started_at": "2026-09-12T17:25:57.010Z",
+      "events": [
+        {
+          "message_id": "00000000000000000000000000000001",
+          "body_sha256": "703730a9077dcaaff0c9f0cab12b9e5ac6ae7233095c1dfdca1c4b8f43696e9e",
+          "body_bytes": 257,
+          "name": "Owned Movie After"
+        },
+        {
+          "message_id": "00000000000000000000000000000002",
+          "body_sha256": "748071d6d69984690d8e44d7bcb62ae9ae4a06e8b4df30559020d467b769fba1",
+          "body_bytes": 257,
+          "name": "Owned Movie Before"
+        }
+      ],
+      "samples": [],
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-before.json",
+          "sha256": "ffba90f38e6d3d6d69760c21d60caf7ec611f52225bfe91106274d0a1e4194be"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-forward.json",
+          "sha256": "684ed05e1bed691632bc7125ad51270c6ac3dc3ab2269ba2ff5eb6f435b2b3c9"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-restored.json",
+          "sha256": "a486589d03ce1d146721dbd0673d39b7d48a3816d7b3e28ec5a4e11f385d723e"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-observed.json",
+          "sha256": "a2cf1aad98f79a7890801cc32b0d7403c82984519b99ef33e5792428cd39e6ff"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-closed.json",
+          "sha256": "300479f26fd892e3f237e9511c74454b237f494677da49f1d87979c41aee2504"
+        }
+      ],
+      "current_phase": "logout",
+      "cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "failure": null,
+      "html_sha256": "35ef5a333fb939174104f0207e44c57662d46cf3730baa74934bc46e1369c86d",
+      "page": {
+        "ready": true,
+        "events": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000001",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "data_type": "string",
+            "native_message_event": true,
+            "constructor_matches": true,
+            "trusted": true,
+            "type": "message",
+            "this_is_socket": true,
+            "target_is_socket": true,
+            "current_target_is_socket": true,
+            "native_socket": true,
+            "origin_matches": true,
+            "bubbles": false,
+            "cancelable": false,
+            "default_prevented": false,
+            "data_matches": true
+          }
+        ],
+        "updates": [
+          {
+            "handler": "property",
+            "message_id": "00000000000000000000000000000001",
+            "name": "Owned Movie After",
+            "response_consumed": true
+          },
+          {
+            "handler": "listener",
+            "message_id": "00000000000000000000000000000002",
+            "name": "Owned Movie Before",
+            "response_consumed": true
+          }
+        ],
+        "errors": [],
+        "closed": null,
+        "pending": 0,
+        "ticks": 52,
+        "mutations": [
+          {
+            "type": "childList",
+            "target": "target-title"
+          },
+          {
+            "type": "childList",
+            "target": "target-title"
+          }
+        ],
+        "focus_events": 0,
+        "selection_events": 0,
+        "scroll_events": 0
+      },
+      "observation_started_at": "2026-09-12T17:25:57.250Z",
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "production_evidence": {
+        "physical_http": [
+          {
+            "id": 1,
+            "kind": "target",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "query": [
+              [
+                "Handler",
+                "property"
+              ],
+              [
+                "MessageId",
+                "00000000000000000000000000000001"
+              ]
+            ],
+            "shape_sha256": "1bab2141b37a792069a4e32590d283e2e81383db6c8ee5629a05bce34891204a",
+            "request_sha256": "cf8533846029e0eb7473a67e0131e0e934cd1da1753990750e1465ee9055154b",
+            "phase": "transparency",
+            "method": "GET",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "request_elapsed_ms": 1001.0790590047836,
+            "request_sequence": 5,
+            "status": 200,
+            "completed": true,
+            "terminal": "completed",
+            "response_elapsed_ms": 1002.1309249997139,
+            "projection": {
+              "target": {
+                "Id": "268051d3ca734aefcf94e245fb25ad55",
+                "Name": "Owned Movie After",
+                "Type": "Movie"
+              },
+              "count": 1,
+              "body_sha256": "38ab7356f8ab3766314f35c6f2b3e8c0926357b22db5930f26534bd249b94fd7",
+              "body_bytes": 205
+            },
+            "finished_elapsed_ms": 1006.0975329875946,
+            "terminal_status": 200,
+            "response_bytes": 205
+          },
+          {
+            "id": 2,
+            "kind": "target",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "query": [
+              [
+                "Handler",
+                "listener"
+              ],
+              [
+                "MessageId",
+                "00000000000000000000000000000002"
+              ]
+            ],
+            "shape_sha256": "1e8a91d35e8fe4ac707cd725ad01c40591bfb21a014bf81a16d1d527635e9476",
+            "request_sha256": "02dd945d76e9b7442077c65f5a7b49a99e9b513e67bae712ef06498f33089ae9",
+            "phase": "transparency",
+            "method": "GET",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "request_elapsed_ms": 2043.5193809866905,
+            "request_sequence": 13,
+            "status": 200,
+            "completed": true,
+            "terminal": "completed",
+            "response_elapsed_ms": 2044.678472995758,
+            "projection": {
+              "target": {
+                "Id": "268051d3ca734aefcf94e245fb25ad55",
+                "Name": "Owned Movie Before",
+                "Type": "Movie"
+              },
+              "count": 1,
+              "body_sha256": "25370ce486282ef6d05de9006a0bca210ad0624ed84b0f5b245549e94f35407f",
+              "body_bytes": 206
+            },
+            "finished_elapsed_ms": 2045.979683995247,
+            "terminal_status": 200,
+            "response_bytes": 206
+          }
+        ],
+        "frame_http": [
+          {
+            "index": 3,
+            "kind": "target",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "shape_sha256": "1bab2141b37a792069a4e32590d283e2e81383db6c8ee5629a05bce34891204a",
+            "request_sha256": "cf8533846029e0eb7473a67e0131e0e934cd1da1753990750e1465ee9055154b",
+            "phase": "transparency",
+            "source": "page",
+            "worker_id": null,
+            "main_frame": true,
+            "request_elapsed_ms": 997.4153439998627,
+            "request_sequence": 4,
+            "document_id": "document-2",
+            "page_route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+            "status": 200,
+            "finished": true,
+            "failed": false,
+            "from_service_worker": false,
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "content_type": "application/json",
+            "response_elapsed_ms": 1007.6828959882259,
+            "finished_elapsed_ms": 1007.8416529893875
+          },
+          {
+            "index": 4,
+            "kind": "target",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "shape_sha256": "1e8a91d35e8fe4ac707cd725ad01c40591bfb21a014bf81a16d1d527635e9476",
+            "request_sha256": "02dd945d76e9b7442077c65f5a7b49a99e9b513e67bae712ef06498f33089ae9",
+            "phase": "transparency",
+            "source": "page",
+            "worker_id": null,
+            "main_frame": true,
+            "request_elapsed_ms": 2041.1188459992409,
+            "request_sequence": 12,
+            "document_id": "document-2",
+            "page_route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790",
+            "status": 200,
+            "finished": true,
+            "failed": false,
+            "from_service_worker": false,
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "content_type": "application/json",
+            "response_elapsed_ms": 2048.353527992964,
+            "finished_elapsed_ms": 2048.489035010338
+          }
+        ],
+        "physical_messages": [
+          {
+            "sequence": 2,
+            "elapsed_ms": 989,
+            "connection_id": "library-changed-ws-0",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "complete": true,
+            "received": true,
+            "message": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "268051d3ca734aefcf94e245fb25ad55"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              },
+              "body_sha256": "703730a9077dcaaff0c9f0cab12b9e5ac6ae7233095c1dfdca1c4b8f43696e9e",
+              "body_bytes": 257,
+              "projection_sha256": "f73f81b623eed8ababc0af66df1b58f724eb663406198ca4c5fec21b1c86b1ba"
+            },
+            "forwarded": true,
+            "forwarded_elapsed_ms": 989
+          },
+          {
+            "sequence": 10,
+            "elapsed_ms": 2038,
+            "connection_id": "library-changed-ws-0",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "complete": true,
+            "received": true,
+            "message": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "268051d3ca734aefcf94e245fb25ad55"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              },
+              "body_sha256": "748071d6d69984690d8e44d7bcb62ae9ae4a06e8b4df30559020d467b769fba1",
+              "body_bytes": 257,
+              "projection_sha256": "1e3bc92a4a2a44c567d7fbd299d665d8b7e6140f4468da16fca0526d8a1d29c8"
+            },
+            "forwarded": true,
+            "forwarded_elapsed_ms": 2038
+          }
+        ],
+        "browser_messages": [
+          {
+            "sequence": 3,
+            "elapsed_ms": 992.0646679997444,
+            "connection_id": "library-changed-ws-0",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "complete": true,
+            "received": true,
+            "message": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000001",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "268051d3ca734aefcf94e245fb25ad55"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              },
+              "body_sha256": "703730a9077dcaaff0c9f0cab12b9e5ac6ae7233095c1dfdca1c4b8f43696e9e",
+              "body_bytes": 257,
+              "projection_sha256": "f73f81b623eed8ababc0af66df1b58f724eb663406198ca4c5fec21b1c86b1ba"
+            },
+            "forwarded": true,
+            "document_id": "document-2",
+            "route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790"
+          },
+          {
+            "sequence": 11,
+            "elapsed_ms": 2039.9705519974232,
+            "connection_id": "library-changed-ws-0",
+            "token_sha256": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+            "complete": true,
+            "received": true,
+            "message": {
+              "MessageType": "LibraryChanged",
+              "MessageId": "00000000000000000000000000000002",
+              "Data": {
+                "FoldersAddedTo": [],
+                "FoldersRemovedFrom": [],
+                "ItemsAdded": [],
+                "ItemsRemoved": [],
+                "ItemsUpdated": [
+                  "268051d3ca734aefcf94e245fb25ad55"
+                ],
+                "CollectionFolders": [],
+                "IsEmpty": false
+              },
+              "body_sha256": "748071d6d69984690d8e44d7bcb62ae9ae4a06e8b4df30559020d467b769fba1",
+              "body_bytes": 257,
+              "projection_sha256": "1e3bc92a4a2a44c567d7fbd299d665d8b7e6140f4468da16fca0526d8a1d29c8"
+            },
+            "forwarded": true,
+            "document_id": "document-2",
+            "route": "/web/index.html#!/videos?serverId=c7cfd76b1dee728b2bad523793a37ccb&parentId=a9993591e72f0f2e7babcbf8b9c50790"
+          }
+        ]
+      },
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "actor_cleanup": {
+        "closed": true,
+        "failures": [],
+        "proof": {
+          "format": 1,
+          "outcome": "all_observed_logout_tokens_rejected",
+          "entries": [
+            {
+              "index": 0,
+              "ui_request": {
+                "method": "POST",
+                "route": "/Sessions/Logout",
+                "elapsed_ms": 3031,
+                "response_status": 204,
+                "client_request_finished": false,
+                "client_request_failed": true,
+                "response_elapsed_ms": 3046,
+                "failure_elapsed_ms": 3047
+              },
+              "token_fingerprint": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+              "token_sources": [
+                "header:x-emby-token"
+              ],
+              "verification": {
+                "source": "independent-node-http-post-logout-verification",
+                "is_ui_request": false,
+                "method": "GET",
+                "route": "/emby/System/Info",
+                "status": 401,
+                "eligible_at_request_start": true,
+                "result": "token_rejected",
+                "trigger": "ui_logout_response",
+                "started_elapsed_ms": 3046,
+                "response_bytes": 0,
+                "finished_elapsed_ms": 3048
+              },
+              "result": "logout_token_rejected"
+            }
+          ],
+          "logout_overflow": 0,
+          "observer_errors": 0,
+          "policy": {
+            "source": "original-client-request-events",
+            "token_source": "Exact observed logout request headers or query fields, retained only in memory",
+            "token_fingerprint": "SHA-256 of the decoded observed token",
+            "token_response_body_read": false,
+            "client_internal_state_read": false,
+            "browser_context_requirement": "Fresh context, no storageState, attached before first page",
+            "browser_network_requirement": "Caller-enforced selected loopback origin only",
+            "verification_source": "independent-node-http-post-logout-verification",
+            "verification_is_ui_request": false,
+            "verification_method": "GET",
+            "verification_route": "/emby/System/Info",
+            "verification_expected_status": 401,
+            "redirects": "Rejected without following",
+            "localhost_resolution": "Pinned to 127.0.0.1 without DNS",
+            "payload_logging": false,
+            "metadata_policy": "Only observed authorization and allowlisted Emby client metadata are replayed",
+            "max_request_bytes": 16384,
+            "max_logout_requests": 16,
+            "limits": {
+              "captureTimeoutMs": 1500,
+              "logoutWaitMs": 12000,
+              "httpTimeoutMs": 8000,
+              "httpIdleTimeoutMs": 3000,
+              "responseByteLimit": 65536,
+              "responseHeaderByteLimit": 16384
+            }
+          }
+        },
+        "websocket": {
+          "seen": 1,
+          "admitted": 1,
+          "opened": 1,
+          "closed": 1,
+          "failed": 0,
+          "active": 0,
+          "control_attempts": 0,
+          "entries": [
+            {
+              "index": 0,
+              "connect_transport": true,
+              "proxy_connect_status": 200,
+              "outcome": "closed",
+              "upstream_status": 101,
+              "handshake_delivered": true,
+              "closed": true,
+              "token_fingerprint": "473360e408ebe085fc69e8dd58dfa3be75c8323467c00c82154e28bf9670d290",
+              "connection_id": "library-changed-ws-0",
+              "client_wire_bytes": 20,
+              "server_wire_bytes": 538,
+              "client_frames": 1,
+              "server_frames": 3,
+              "client_messages": 0,
+              "server_messages": 2,
+              "server_message_kinds": {
+                "other": 2,
+                "user_data_changed": 0
+              },
+              "server_control_attempted": false,
+              "browser_observation_id": 0,
+              "browser_handshake_observed": true,
+              "reason": "client_end",
+              "browser_closed": true
+            }
+          ]
+        },
+        "home_closure": {
+          "context_closed": true,
+          "browser_closed": true,
+          "proxy_closed": true,
+          "http_pending": 0,
+          "websocket_pending": 0,
+          "websocket_active": 0,
+          "websocket_opened": 1,
+          "websocket_closed": 1,
+          "sockets_remaining": 0,
+          "cleanup_failures": []
+        }
+      },
+      "pending_resource_factories": 0,
+      "upstream": {
+        "requests": [
+          {
+            "index": 1,
+            "method": "GET",
+            "route": "/web/index.html",
+            "kind": "owned_html",
+            "status": 200
+          },
+          {
+            "index": 2,
+            "method": "POST",
+            "route": "/Users/AuthenticateByName",
+            "kind": "login",
+            "status": 200
+          },
+          {
+            "index": 3,
+            "method": "GET",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Views",
+            "kind": "views",
+            "status": 200
+          },
+          {
+            "index": 4,
+            "method": "GET",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000001",
+            "handler": "property",
+            "response": {
+              "Id": "268051d3ca734aefcf94e245fb25ad55",
+              "Name": "Owned Movie After",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "a9993591e72f0f2e7babcbf8b9c50790",
+              "TransparencyMessageId": "00000000000000000000000000000001"
+            },
+            "response_sha256": "38ab7356f8ab3766314f35c6f2b3e8c0926357b22db5930f26534bd249b94fd7"
+          },
+          {
+            "index": 5,
+            "method": "GET",
+            "route": "/Users/ecbbe4cb82403879bc4b4f78894c5738/Items/268051d3ca734aefcf94e245fb25ad55",
+            "kind": "callback_get",
+            "status": 200,
+            "message_id": "00000000000000000000000000000002",
+            "handler": "listener",
+            "response": {
+              "Id": "268051d3ca734aefcf94e245fb25ad55",
+              "Name": "Owned Movie Before",
+              "Type": "Movie",
+              "IsFolder": false,
+              "ParentId": "a9993591e72f0f2e7babcbf8b9c50790",
+              "TransparencyMessageId": "00000000000000000000000000000002"
+            },
+            "response_sha256": "25370ce486282ef6d05de9006a0bca210ad0624ed84b0f5b245549e94f35407f"
+          },
+          {
+            "index": 6,
+            "method": "POST",
+            "route": "/Sessions/Logout",
+            "kind": "logout",
+            "status": 204
+          },
+          {
+            "index": 7,
+            "method": "GET",
+            "route": "/System/Info",
+            "kind": "logout_proof",
+            "status": 401
+          }
+        ],
+        "websockets": [
+          {
+            "opened": true,
+            "received_close": true,
+            "sent_close": true,
+            "closed": true,
+            "errors": []
+          }
+        ]
+      },
+      "elapsed_ms": 5611,
+      "completed_at": "2026-09-12T17:26:02.621Z",
+      "artifact": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor.json",
+        "sha256": "9235d3555aa96c51309bd9dcc701aa00f622213d9040343729bdf45b15859337"
+      }
+    }
+  ],
+  "failure": null,
+  "baseline_equivalence": true,
+  "baseline_equivalence_scope": "Synchronous native message semantics, listener order, callback response consumption, visible title transitions, and application DOM mutations",
+  "incidental_page_telemetry": [
+    {
+      "name": "baseline",
+      "ticks": 52,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0
+    },
+    {
+      "name": "reference",
+      "ticks": 52,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0
+    },
+    {
+      "name": "reference-sampled",
+      "ticks": 61,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0
+    },
+    {
+      "name": "goby-v7-actor",
+      "ticks": 52,
+      "focus_events": 0,
+      "selection_events": 0,
+      "scroll_events": 0
+    }
+  ],
+  "completed_at": "2026-09-12T17:26:02.627Z",
+  "elapsed_ms": 22044
+}

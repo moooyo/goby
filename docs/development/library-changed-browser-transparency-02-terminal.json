@@ -1,0 +1,54 @@
+{
+  "marker": "owned-browser-transparency-terminal-v2",
+  "result": "completed_scope_sealed",
+  "captured_at": "2026-09-12T17:28:13.620855+00:00",
+  "unit": "goby-library-changed-browser-transparency-02.service",
+  "invocation_id": "e0374f7c53204acc9380aea576e49d8c",
+  "original_main_pid": 1501658,
+  "original_pid_present": false,
+  "unit_final": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/unit-final.json",
+    "sha256": "7d06fbaa69092ac4b0d4610094f11d1a1513320876ec54704d8ee2436bdb32b8"
+  },
+  "exit_outcome": "success",
+  "exit_outcome_source": "systemd_manager_deactivated_successfully_for_exact_invocation",
+  "numeric_exec_main_status_retained": false,
+  "journal": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/unit-journal.jsonl",
+    "sha256": "195fdccc527bdc2fd4b1e3814c4979abb4d538898e9322af789831d0b7768075"
+  },
+  "lifecycle": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/unit-lifecycle.json",
+    "sha256": "6246e53ccfc25f9a719cf2d785ddb712290bca467c0bf7c12eb62ec5ef918169"
+  },
+  "isolation": {
+    "unit": "goby-library-changed-browser-transparency-02.service",
+    "invocation_id": "e0374f7c53204acc9380aea576e49d8c",
+    "pid": 1501658,
+    "cgroup": "0::/system.slice/goby-library-changed-browser-transparency-02.service",
+    "network_namespace": "net:[4026533402]",
+    "host_network_namespace": "net:[4026531840]",
+    "private_network": true
+  },
+  "cgroup_exists": false,
+  "recursive_pids": [],
+  "report_sha256": "71ed4172734e87da88239ff4125b5231a406c3c8307ac1c1218191d6ecce874f",
+  "harness_sha256": "b1d01d539b1cc5446000130983e046facb64fde12e16957d46771b758853fe03",
+  "inventory": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/evidence-inventory.json",
+    "sha256": "575eb103bc7b609013c082cc2bc163f0661b2ebc2b42847f747a11d00dfa1db4"
+  },
+  "safe_summary": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/safe-summary.json",
+    "sha256": "13934a636d0a5395b03d25c561d0630e76de84acaac86ebb71af5b723250d638"
+  },
+  "cases_passed": 4,
+  "synthetic_http_requests": 27,
+  "business_http_requests": 0,
+  "prior01_files_preserved": 22,
+  "prior01_terminal_sha256": "9b7e240a106789c13f9dd8d6e4edaf3b5146754d28b74c2a9b88727d7bc55aff",
+  "original_client_used": false,
+  "library_changed_client_acceptance": false,
+  "consumed_scope": true,
+  "replayed": false
+}

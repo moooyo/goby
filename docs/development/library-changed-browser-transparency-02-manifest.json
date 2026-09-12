@@ -1,0 +1,32 @@
+{
+  "marker": "owned-browser-transparency-input-v1",
+  "tool": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-tool-02",
+  "output": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02",
+  "unit": "goby-library-changed-browser-transparency-02.service",
+  "sources": {
+    "client-library-changed-source55-fixture.mjs": "9477e1ccf216768fbad453d398eaf7746dcaae6dd60d695ee556bfe04b63823e",
+    "client-browser-library-changed-source55.mjs": "39e4aa077c6007b3964469f4791174875b280d99659282a6656d77846bf485d0",
+    "client-browser-cross-user.mjs": "60dea05efc3091cc8574f08867d92eff8472a256747fb9a521cb667190197d4e",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-library-changed-reference.mjs": "965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c",
+    "client-browser-special-features-fixture.mjs": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7",
+    "test-library-changed-browser-transparency.mjs": "b1d01d539b1cc5446000130983e046facb64fde12e16957d46771b758853fe03",
+    "client-browser-library-home.mjs": "6041b19eb719a829e4b8235fd5c168fc98f3e80f17b032be126202a70ada125c",
+    "client-browser-library-changed-reference-runtime.mjs": "209f72fa812647742003b50c311ee358ffc6f1279e29a2e142eec506245fed7c",
+    "client-browser-goby-fixture.mjs": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3"
+  },
+  "node": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+    "sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327"
+  },
+  "browser": {
+    "path": "/root/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell",
+    "sha256": "ded93a9c9a53a1ae040f08124badcca95c938e9d5015ff340c3b5538c41bf39e"
+  },
+  "playwright": {
+    "path": "/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright/package.json",
+    "sha256": "8bc2ddebe8d9b051b9ecb87d62c6c63877e59d08617f32c3215681ca8bb70998",
+    "version": "1.63.0"
+  },
+  "frozen_at": "2026-09-12T17:25:30.370141+00:00"
+}

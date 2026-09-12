@@ -1,0 +1,55 @@
+{
+  "selector": [
+    "journalctl",
+    "--unit=goby-library-changed-browser-transparency-02.service",
+    "--no-pager",
+    "--output=json"
+  ],
+  "association_fields": [
+    "UNIT",
+    "INVOCATION_ID",
+    "_PID"
+  ],
+  "unit": "goby-library-changed-browser-transparency-02.service",
+  "invocation_id": "e0374f7c53204acc9380aea576e49d8c",
+  "manager_pid": "1",
+  "events": [
+    {
+      "UNIT": "goby-library-changed-browser-transparency-02.service",
+      "INVOCATION_ID": "e0374f7c53204acc9380aea576e49d8c",
+      "_PID": "1",
+      "__REALTIME_TIMESTAMP": "1789233940472485",
+      "MESSAGE_ID": "7d4958e842da4a758f6c1cdc7b36dcc5",
+      "MESSAGE": "Starting goby-library-changed-browser-transparency-02.service - Owned LibraryChanged native browser transparency 02..."
+    },
+    {
+      "UNIT": "goby-library-changed-browser-transparency-02.service",
+      "INVOCATION_ID": "e0374f7c53204acc9380aea576e49d8c",
+      "_PID": "1",
+      "__REALTIME_TIMESTAMP": "1789233940555872",
+      "MESSAGE_ID": "39f53479d3a045ac8e11786248231fbf",
+      "MESSAGE": "Started goby-library-changed-browser-transparency-02.service - Owned LibraryChanged native browser transparency 02.",
+      "JOB_RESULT": "done"
+    },
+    {
+      "UNIT": "goby-library-changed-browser-transparency-02.service",
+      "INVOCATION_ID": "e0374f7c53204acc9380aea576e49d8c",
+      "_PID": "1",
+      "__REALTIME_TIMESTAMP": "1789233962636927",
+      "MESSAGE_ID": "7ad2d189f7e94e70a38c781354912448",
+      "MESSAGE": "goby-library-changed-browser-transparency-02.service: Deactivated successfully."
+    },
+    {
+      "UNIT": "goby-library-changed-browser-transparency-02.service",
+      "INVOCATION_ID": "e0374f7c53204acc9380aea576e49d8c",
+      "_PID": "1",
+      "__REALTIME_TIMESTAMP": "1789233962637223",
+      "MESSAGE_ID": "ae8f7b866b0347b9af31fe1c80b127c0",
+      "MESSAGE": "goby-library-changed-browser-transparency-02.service: Consumed 2.939s CPU time, 243.5M memory peak."
+    }
+  ],
+  "journal": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/unit-journal.jsonl",
+    "sha256": "195fdccc527bdc2fd4b1e3814c4979abb4d538898e9322af789831d0b7768075"
+  }
+}

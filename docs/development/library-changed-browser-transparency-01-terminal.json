@@ -1,0 +1,58 @@
+{
+  "marker": "owned-browser-transparency-terminal-v1",
+  "result": "failed_scope_sealed",
+  "captured_at": "2026-09-12T17:21:32.537291+00:00",
+  "unit": {
+    "MainPID": "0",
+    "Result": "exit-code",
+    "ExecMainStartTimestamp": "Sun 2026-09-13 01:20:19 CST",
+    "ExecMainExitTimestamp": "Sun 2026-09-13 01:20:23 CST",
+    "ExecMainPID": "1501239",
+    "ExecMainCode": "1",
+    "ExecMainStatus": "1",
+    "ControlGroup": "",
+    "PrivateNetwork": "yes",
+    "Id": "goby-library-changed-browser-transparency-01.service",
+    "LoadState": "loaded",
+    "ActiveState": "failed",
+    "SubState": "failed",
+    "InvocationID": "18b4684094764d8a904af30c8ea354f4"
+  },
+  "isolation": {
+    "unit": "goby-library-changed-browser-transparency-01.service",
+    "invocation_id": "18b4684094764d8a904af30c8ea354f4",
+    "pid": 1501239,
+    "cgroup": "0::/system.slice/goby-library-changed-browser-transparency-01.service",
+    "network_namespace": "net:[4026533402]",
+    "host_network_namespace": "net:[4026531840]",
+    "private_network": true
+  },
+  "cgroup_exists": false,
+  "recursive_pids": [],
+  "inventory": {
+    "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-01/evidence-inventory.json",
+    "sha256": "4f3e55f1ec9abf341185f37fef6127cddccefbcfdf183930fc4b2f98794e6e66"
+  },
+  "report_sha256": "ea7b8e6f5f7c9c4ad4ed4013457fe8a83b2fbecf9122c61118ee16209ed14fc9",
+  "harness_sha256": "da69dc98d9c7961051aeb1ffa9e75d6422a9391fc81879244701c3b72f87b84b",
+  "completed_cases": 1,
+  "failed_case": "baseline",
+  "failure": "transparency_page_noninterference",
+  "remaining_cases_not_run": [
+    "reference",
+    "reference-sampled",
+    "goby-v7-actor"
+  ],
+  "fixture_cleanup": {
+    "server_listening": false,
+    "sockets_remaining": 0,
+    "websocket_remaining": 0,
+    "session_revoked": false
+  },
+  "synthetic_logout_proof_obtained": false,
+  "fixture_server_absent": true,
+  "business_http": false,
+  "synthetic_http_occurred": true,
+  "consumed_scope": true,
+  "replayed": false
+}

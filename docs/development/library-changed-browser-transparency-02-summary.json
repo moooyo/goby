@@ -1,0 +1,246 @@
+{
+  "result": "passed",
+  "cases": [
+    {
+      "name": "baseline",
+      "elapsed_ms": 5188,
+      "result": "passed",
+      "http_requests": 6,
+      "callback_gets": 2,
+      "native_callback_records": 4,
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "sampler_samples": 0,
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "fixture_cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "ticks": 52,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0,
+      "case_report": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline.json",
+        "sha256": "f8fb4e1a69f16bec2411c9ea0168a7f005643765bb69731f8aa684884e251e7d"
+      },
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-before.json",
+          "sha256": "e785e067fc71896c6034d3787fb208e19d72c6b7813fa278cf669a42730f8c9f"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-forward.json",
+          "sha256": "ba8f922b4f732ee836717b2a0f025570690542cdbb59cef00b98fa315375b7e9"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-restored.json",
+          "sha256": "2f80b9b57f975a14555e62643bddb9dcbbe96d2eec1819fd534ba1e41f220635"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-observed.json",
+          "sha256": "4c42ece61fb6e985700771bfb86240b525943a52e8b984f31c31484fbce38377"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/baseline-closed.json",
+          "sha256": "39149dbb52e9bfe616c62de446f5f0c5901023417621dc11b9b26cfa8fa0f819"
+        }
+      ],
+      "production_physical_http": 0,
+      "production_frame_http": 0
+    },
+    {
+      "name": "reference",
+      "elapsed_ms": 5176,
+      "result": "passed",
+      "http_requests": 7,
+      "callback_gets": 2,
+      "native_callback_records": 4,
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "sampler_samples": 0,
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "fixture_cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "ticks": 52,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0,
+      "case_report": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference.json",
+        "sha256": "c7aa4997ff8df4e7c9a20c086c1b1ae15dd83e3ca8c88c2e66d5da7c457395bf"
+      },
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-before.json",
+          "sha256": "8dfa8405dcbc13625a5b6a9e2e94934b1619f67a55d1c492b834fe65b429d8d1"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-forward.json",
+          "sha256": "23ff1f0b29691f189d735156cf6ff54ada1ecde5ca00561438ac8ca0bf39c12f"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-restored.json",
+          "sha256": "dbf66413c81f3651e3207affeef20f47160768a834db454ced90cc1528b28cc5"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-observed.json",
+          "sha256": "864dd71013631618760ec51a8cdcfd5598b5eba3413cdceaf2c3dafd0aceb246"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-closed.json",
+          "sha256": "cd305bfa909683f3f369235ef2964362a323cf7ab156746157834dc7dbab50ba"
+        }
+      ],
+      "production_physical_http": 2,
+      "production_frame_http": 2
+    },
+    {
+      "name": "reference-sampled",
+      "elapsed_ms": 5624,
+      "result": "passed",
+      "http_requests": 7,
+      "callback_gets": 2,
+      "native_callback_records": 4,
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "sampler_samples": 6,
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "fixture_cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "ticks": 61,
+      "focus_events": 1,
+      "selection_events": 0,
+      "scroll_events": 0,
+      "case_report": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled.json",
+        "sha256": "6cf014393624c64c6c92fb9fc19ba9c83913af863632965d927481793af9686c"
+      },
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-before.json",
+          "sha256": "e15496799939cc55507c245c3f30ea3194a2533ae90175fa4b45576b13c6adb4"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-forward.json",
+          "sha256": "d50516b11e91b3300b14a127f09d4d75e4d85b881c0f84b98c1568e144bbb22b"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-restored.json",
+          "sha256": "1d4ed50961e4282c20e345fddb304a312e4d6b5d62bd8abe764ae00313e1b7a8"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-observed.json",
+          "sha256": "7f64f68ed24cd1f7cf3c9565c805b8f27e0cb4fa76e635558b77215e1fd31687"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/reference-sampled-closed.json",
+          "sha256": "15f63485311ab9b904c3e70cc95c55a1cdb5d834632d4b1721e0c5a164fea906"
+        }
+      ],
+      "production_physical_http": 2,
+      "production_frame_http": 2
+    },
+    {
+      "name": "goby-v7-actor",
+      "elapsed_ms": 5611,
+      "result": "passed",
+      "http_requests": 7,
+      "callback_gets": 2,
+      "native_callback_records": 4,
+      "visible_titles": [
+        "Owned Movie After",
+        "Owned Movie Before"
+      ],
+      "sampler_samples": 0,
+      "native_close": {
+        "code": 1000,
+        "clean": true,
+        "native_close_event": true
+      },
+      "fixture_cleanup": {
+        "server_listening": false,
+        "sockets_remaining": 0,
+        "websocket_remaining": 0,
+        "session_revoked": true
+      },
+      "ticks": 52,
+      "focus_events": 0,
+      "selection_events": 0,
+      "scroll_events": 0,
+      "case_report": {
+        "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor.json",
+        "sha256": "9235d3555aa96c51309bd9dcc701aa00f622213d9040343729bdf45b15859337"
+      },
+      "checkpoints": [
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-before.json",
+          "sha256": "ffba90f38e6d3d6d69760c21d60caf7ec611f52225bfe91106274d0a1e4194be"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-forward.json",
+          "sha256": "684ed05e1bed691632bc7125ad51270c6ac3dc3ab2269ba2ff5eb6f435b2b3c9"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-restored.json",
+          "sha256": "a486589d03ce1d146721dbd0673d39b7d48a3816d7b3e28ec5a4e11f385d723e"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-observed.json",
+          "sha256": "a2cf1aad98f79a7890801cc32b0d7403c82984519b99ef33e5792428cd39e6ff"
+        },
+        {
+          "path": "/opt/goby-test/exec-work-m3e/library-changed-browser-transparency-execution-02/goby-v7-actor-closed.json",
+          "sha256": "300479f26fd892e3f237e9511c74454b237f494677da49f1d87979c41aee2504"
+        }
+      ],
+      "production_physical_http": 2,
+      "production_frame_http": 2
+    }
+  ],
+  "elapsed_ms": 22044,
+  "isolation": {
+    "unit": "goby-library-changed-browser-transparency-02.service",
+    "invocation_id": "e0374f7c53204acc9380aea576e49d8c",
+    "pid": 1501658,
+    "cgroup": "0::/system.slice/goby-library-changed-browser-transparency-02.service",
+    "network_namespace": "net:[4026533402]",
+    "host_network_namespace": "net:[4026531840]",
+    "private_network": true
+  },
+  "synthetic_http_requests": 27,
+  "business_http_requests": 0,
+  "baseline_equivalence_scope": "Synchronous native message semantics, listener order, callback response consumption, visible title transitions, and application DOM mutations",
+  "original_client_used": false,
+  "acceptance_workflow_executed": false,
+  "library_changed_client_acceptance": false,
+  "prior01_preserved_files": 22
+}
