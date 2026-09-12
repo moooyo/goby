@@ -1,0 +1,35 @@
+{
+  "authority_sha256": "afa68e35f630de1b5b0a27a86b141d07b0a40e7a6c213cb0ff5f452c8f0779c0",
+  "exit_code": 0,
+  "marker": "goby-client-library-changed-source55-preflight-v1",
+  "node_sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
+  "result": {
+    "candidate_process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 1458051,
+      "start_ticks": 13067360
+    },
+    "current_authority": {
+      "path": "/opt/goby-test/exec-work-m3e/client-schema28-source55-upgrade-20260912_100845_47bff13c329b/after-full.json",
+      "sha256": "7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d"
+    },
+    "evidence_writes": 0,
+    "http_requests": 0,
+    "library_changed_client_acceptance": false,
+    "marker": "goby-client-library-changed-observation-v1",
+    "service_writes": 0,
+    "state_sha256": "bb78a846d2d4b69b7e2550ed9e367549cbe2d0b763e2b69270ea98bed6570d82",
+    "status": "preflight_passed",
+    "target": {
+      "id": "268051d3ca734aefcf94e245fb25ad55",
+      "library_id": "a9993591e72f0f2e7babcbf8b9c50790",
+      "name": "M3e Client Movie",
+      "parent_id": "a9993591e72f0f2e7babcbf8b9c50790",
+      "relative_path": "M3e Client Movie.mp4",
+      "root_id": "ba1501cff993a630b8d6a41f925cd37f",
+      "type": "Movie"
+    }
+  },
+  "script_sha256": "d849827821c99e4a61543544b8bbd64b6261e309f76e03c0e4c7413a248aeafa",
+  "source_closure_sha256": "23fcbe02a188d5313c260957ae1dca58aefc4a4459c639fa26dd65117c25a501"
+}

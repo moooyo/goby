@@ -1,0 +1,24 @@
+{
+  "browser_access": false,
+  "database_access": false,
+  "exit_code": 0,
+  "files": {
+    "observe-client-library-changed-source55.py": "f794a1d1e4eb7c0ed176d73f8308689d1942dfd49d4a80678ef98cf679d8e5ee",
+    "test-observe-client-library-changed-source55.py": "d2919934d1c46c287b7abbe1cfeae1d625c721783713e142a154e0e52ed717c5"
+  },
+  "marker": "goby-client-library-changed-source55-controller-verification-v1",
+  "result": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "d2919934d1c46c287b7abbe1cfeae1d625c721783713e142a154e0e52ed717c5",
+    "operator_sha256": "f794a1d1e4eb7c0ed176d73f8308689d1942dfd49d4a80678ef98cf679d8e5ee",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-source55-controller-guards",
+    "test_count": 59
+  },
+  "status": "passed",
+  "stderr_sha256": "07330d158ebea935a9af198c2080674861f0c8a7cfe6b11908c0c4451c1c7c33",
+  "stdout_sha256": "d922bd3d9a2a2f13b5c40b894e4e5fd2e216839eb01dbf94cc087b998a7fa2dc",
+  "upgrade_tool_binding": "TOOL02; not final live authority"
+}

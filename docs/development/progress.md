@@ -2,8 +2,9 @@
 
 Current verification boundary: **source55 passed 2,173 full-suite tests across
 25 packages, zero failures/skips, the Linux build and six cleanup checks. Its
-98 product-file changes are committed and pushed to `origin/main`; deployment
-remains pending.** The real storage-binding management UI gate passed its fifth
+98 product-file changes are committed and pushed to `origin/main`, and the
+candidate upgrade to source55/schema28 passed independent attestation. The
+primary remains source32/schema27.** The real storage-binding management UI gate passed its fifth
 run, all 15 checks, ten IPC stages and complete cleanup. Source55 adds
 the two-file Movies CollectionFolder direct-detail `Subviews` repair. Remote
 gofmt made no changes and source preflight passed. Its
@@ -12,7 +13,11 @@ binds 4,243 files to manifest
 `7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a`.
 The preceding source54 full verification checkpoint passed 2,173 tests across
 25 packages, the Linux build, six cleanup checks and actual private-mount
-recovery. Schema28 and the scanner are now published, but remain undeployed.
+recovery. Schema28 and the scanner are now published and deployed to the candidate.
+The latest original-client v1 run stopped during setup before `browser/`
+creation or login, with zero business writes. Its failed scope is independently
+sealed. TOOL02/v2 passed 59 controller guards remotely, but its JavaScript
+repairs and remaining verification are incomplete; client acceptance is open.
 The final real management UI gate is accepted and all four preceding failed
 scopes have independent ordinary disposal evidence. The
 [source55 targeted result](collection-folder-source55-target.json), SHA-256
@@ -45,7 +50,51 @@ remote copy containing 807 Go inputs. This is additional compatibility evidence,
 not an increase to the 2,173 count or a claim that all 849 raw files match.
 
 The accepted live-verification tooling and evidence were pushed in
-`ec186aa46291125d2f5d9839019d5bf232b88fb2`. Candidate upgrade TOOL02 passed
+`ec186aa46291125d2f5d9839019d5bf232b88fb2`. The four final TOOL05 upgrade tools
+and 13 safe upgrade evidence files were subsequently pushed as
+`212dc387581d9fffddfc7337bbfee1e77c2d04f4`, with all 17 index files matching
+their frozen raw bytes. This tools/evidence publication does not replace
+product authority `16d75c38064008680fa60839c637efee2f12f2ae`.
+The final candidate upgrade passed
+TOOL05 run `20260912_100845_47bff13c329b`. Its
+[controller report](client-schema28-accepted.json), SHA-256
+`328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832`,
+retains `awaiting_outer_attestation`; the independent
+[passed attestation](client-schema28-accepted-attestation.json), SHA-256
+`ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032`,
+is the final acceptance authority. Controller invocation
+`3821d3052fc24aa0ad23a3194300cd6b` ended exit0/MainPID0 with an empty cgroup.
+
+The current candidate is source55/schema28, PID1458051/start ticks13067360,
+invocation `d29ea64c63274346a79c7b3a7938f36e`, using the verified binary
+`6a8c46cdd0dcff56af28f11084eabcf2497daf5ce11ac072eaad7a5dbf486e81`.
+Fixture-state SHA-256 is
+`bb78a846d2d4b69b7e2550ed9e367549cbe2d0b763e2b69270ea98bed6570d82`;
+runtime SHA-256 is
+`1f245cd8f8c19dbe0b96b803dc8c60dd0cd4b7b7e2a8d99ccc2541e9430c4a7b`.
+Accepted upgrade authority is
+`/opt/goby-test/exec-work-m3e/client-schema28-source55-upgrade-20260912_100845_47bff13c329b/after-full.json`,
+SHA-256 `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d`.
+The 75-session/64-device/167-audit population is unchanged. The old `2659...`
+schema27 snapshot is pre-upgrade history and cannot supply current schema28 authority.
+
+After [94 Python guards](client-schema28-tool05-guards.json),
+[seven Go guards](client-schema28-tool05-go-guards.json),
+[helper build](client-schema28-tool05-helper-build.json) and
+[preflight](client-schema28-tool05-preflight.json), the actual
+[backup](client-schema28-accepted-backup.json) and independent
+[schema27-to28 restore rehearsal](client-schema28-accepted-rehearsal.json) passed.
+The rehearsal pair was ordinarily dropped and the backup baseline rechecked
+before one stop, the [transactional migration](client-schema28-accepted-migration.json),
+independent candidate web installation at `/opt/goby-client-m3e/admin` (58 assets)
+and one start. Five anonymous direct GETs verified ready/public-info/index/entry-JS/CSS.
+Existing columns of all 35 old tables, five sequences, ACLs, credentials and
+recovery state were preserved. Four roots start at revision1 with other new
+binding values NULL; old audits retain new-column defaults. The absent-master /
+zero-application-key state remains intact. Primary source32/schema27/PID762090,
+shared web and proxy are unchanged. Deployment alone is not client acceptance.
+
+Historical upgrade TOOL02 passed
 [64 guards](client-schema28-tool02-guards.json), the
 [helper build](client-schema28-tool02-helper-build.json) and
 [read-only preflight](client-schema28-tool02-preflight.json), after TOOL01's
@@ -62,10 +111,52 @@ helper, which supplied an unsupported custom writer to `Snapshot.Dump`.
 The [second failed terminal](client-schema28-attempt2-terminal.json) proves
 complete old-state preservation and no rehearsal pair or service action.
 Its zero-byte dump and pending helper report remain failed private evidence.
-TOOL04 is being implemented to use the accepted owned-file sink and compute
-the bounded digest afterward, without changing the product writer contract.
-Candidate source44/schema27 and primary source32/schema27 remain running.
-Fresh client tooling awaits a successful upgrade and its final authority pins.
+TOOL04 adopted the owned-file sink and passed its
+[guards](client-schema28-tool04-guards.json) and
+[preflight](client-schema28-tool04-preflight.json). Its
+[third actual attempt](client-schema28-attempt3.json) completed backup and
+rehearsal but falsely rejected unchanged role-property values after
+`RawMessage` whitespace changed during report serialization. The
+[failed terminal](client-schema28-attempt3-terminal.json) records no service
+actions, removed rehearsal resources and preserved previous failures. TOOL05
+canonicalizes the exact ten `RoleProperties` fields without discarding data.
+All three actual failures and their retained private evidence remain immutable.
+Source55 original-client v1 completed final TOOL05 authority binding and passed
+[315 loader / 52 driver / 59 controller guards](client-library-changed-source55-v1-guards.json),
+SHA-256 `07e7474a223940e9e46083f6616a72ea7a68598c4080afa3277d0231db53e036`.
+The 127 shared-actor checks are earlier prerequisite evidence. Its
+[Python preflight](client-library-changed-source55-v1-preflight.json), SHA-256
+`7191f43ee8f1a70fe6cfc90667a848d3b3cf918c7c834bd99b71a73e6f22f4a7`,
+also passed, with no HTTP or service writes.
+The [actual v1 run](client-library-changed-source55-v1.json), SHA-256
+`d436def998f500903ebc92ff48e20af2616257cfc8ab61f332bb7449583e3daf`,
+then failed in discovery before creating `browser/` or logging in. The reported
+ledger is zero sessions/devices/audits and zero metadata revision delta;
+restoration was not required. The
+[independent terminal](client-library-changed-source55-v1-terminal.json), SHA-256
+`ecdc5fdf48bf7d471676e6786d52ed61ce1be3053537ce36fde5d44a3d1552a6`,
+records `failed_scope_sealed` and `client_acceptance: false`. Both exact
+controller/worker invocations exited with status1, MainPID0 and empty recursive
+cgroups; `browser/` is absent and cleanup was not required. Old rows, sequences,
+private state, media, candidate and primary are preserved with all four business
+deltas zero. The failed-file inventory SHA-256 is
+`62cc954df4141a3ddb3faf9e99772a9055f7c5f864f68ee1d30728ae00144872`;
+the independent private snapshot SHA-256 is
+`569bb3779cc634e22b0af29994231105fb6d23f296106cbf1ef30255a7d689bd`.
+Only capture timestamps differ from the logical upgrade state; `7b61f5c9...`
+remains the accepted upgrade authority. The failed scope is closed and consumed.
+
+The [setup diagnosis](client-library-changed-source55-v1-setup-diagnosis.json),
+SHA-256 `614ab4a5839426a33ca4db287202f10bf0417dca866d271addc2c88360c9a905`,
+found incorrect `0644` expectations for `0600` catalog/manifest files and
+ordinary-table treatment of valid index/sequence columns. The actual driver
+uses `JSON.parse` in `checkedHomeFile`, losing large-integer precision; a separate
+lossless diagnostic revealed incompatible BigInt cloning. The latter is not
+the actual v1 exception. TOOL02/v2 has passed
+[59 controller guards](client-library-changed-source55-v2-controller-guards.json)
+remotely, SHA-256 `3029eedce04297c4a10a2ec1a786a9168a4dccd00fbfdecb94c6f8417a75ad10`,
+but its JavaScript repairs and remaining verification are incomplete. No live
+client acceptance is claimed. The consumed v1 must not be replayed.
 
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
@@ -134,21 +225,20 @@ the later source55 Go runs, which may legitimately advance shared HISTORY.
 The earlier `78cb...` history is retained in `history-before.json` in the source55
 target execution evidence; rerunning the old attestation against new HISTORY
 would apply a consumed scope to a different state. Product publication is now
-complete; deployment and broader M2-M6 acceptance remain open, with M7 deferred.
+complete, as is the candidate deployment; broader M2-M6 acceptance remains open,
+with M7 deferred.
 
 The latest published product is source55 at the two commits above. The preceding
 source44 checkpoint is
 `35ae3d000f812fa18d234921cedb3c33d88190e0`, after 2,002 full-suite passes across
 25 packages, a Linux build and all six cleanup checks. Its reviewed
 [candidate continuation](m3e-source44-candidate-continuation.json) passed at
-2026-09-12 04:42:59 UTC, preserving business data and media. The latest recorded
-candidate is source44/schema27, PID1264063, ready/complete; primary remains
-source32/schema27, PID762090. The original failed upgrade evidence is retained.
-The schema28 candidate upgrade tooling has completed independent static review;
-remote helper-build and guard verification is in progress, with no runtime
-admission or upgrade yet. Fresh source55 original-client tooling is being
-implemented in parallel and is not yet verified. Deployment and the subsequent
-fresh client run require their own actual upgrade/after-state authority.
+2026-09-12 04:42:59 UTC, preserving business data and media. That historical
+candidate was source44/schema27, PID1264063. It has been superseded by the
+accepted source55/schema28 deployment above; primary remains source32/schema27,
+PID762090. Failed upgrade evidence is retained. Client v1 used the actual final
+TOOL05 attestation and schema28 after-state but failed its setup; v2 needs its
+own corrected closure, final verification and independent execution evidence.
 
 Real original-client automatic-refresh acceptance remains open. Its first
 [live attempt](m3e-library-changed-client-attempt1.json) is a consumed failure:
@@ -175,12 +265,13 @@ confirms passed/exit0/MainPID0 and an empty recursive cgroup under invocation
 `ee935d93ff98437f8f392ef450a2fbe2`. Both ordinary owned sessions completed
 logout204 and exact-token401. Candidate old rows, sequences and private state,
 media and primary were preserved. The candidate ledger added exactly one
-closed session, one device and two audits; current totals are 75 sessions,
-64 devices and 167 audits. Current authority is
+closed session, one device and two audits, reaching 75 sessions, 64 devices
+and 167 audits. Its historical pre-upgrade authority is
 `collection-folder-contract-v1/after-full.json`, SHA-256
 `2659f45dfa82d8568b07375d04c08cd4ba216defcfa2a4a1c269867b176573be`.
 Both `client-library-changed-ui-source44-v1` and `collection-folder-contract-v1`
-are consumed; any new scope must follow the proven transition to this baseline.
+are consumed. The schema28 upgrade preserved those counts; new scopes must use
+its current `7b61f5c9...` after-state, not this older schema27 baseline.
 
 The directly captured [reference DTO](collection-folder-contract-reference.json)
 contains `Subviews: ["movies", "movies", "folders"]` in both default and
@@ -192,11 +283,11 @@ minimal Movies direct-detail repair, preserving array order and the duplicate
 entry; Views, ordinary lists, other collection types and generic switches are
 unchanged. Formatting, source preflight and the two targeted real PostgreSQL
 HTTP tests and the full regression/build passed; both product increments are
-published.
+published and deployed to the candidate.
 The reference capture used only its existing public proxy; it makes
 no reference-database preservation or complete original-browser-profile
-equivalence claim. Deployment, other DTO differences and fresh original-client
-navigation / automatic-refresh acceptance remain open.
+equivalence claim. Corrected TOOL02/v2 admission, other DTO differences and
+original-client navigation / automatic-refresh acceptance remain open.
 
 The following records describe earlier verification and deployment checkpoints.
 Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
@@ -320,7 +411,7 @@ root recovery and directory evidence. Source54 now supplies the integrated
 scanner and transaction implementation, with full regression/build and actual
 private-mount recovery passed as recorded above. Its scoped real management UI
 gate has now passed. Remaining [implementation-plan](storage-root-bindings-plan.md)
-work includes deployment and broader recovery coverage; system
+work includes primary deployment and broader recovery coverage; system
 reboot, other filesystems and the complete deployed service sandbox remain
 unverified.
 
@@ -831,11 +922,11 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source55 verified and published, candidate still source44/schema27 and primary source32/schema27 | [Active record](client-acceptance-m3e.md) and [handoff](handoff.md) retain candidate baseline `2659f45d...` at 75 sessions/64 devices/167 audits. Source55's exact Movies Subviews repair passed targeted HTTP tests, full regression, Linux build and cleanup; both product increments are pushed. Upgrade tooling is under remote verification after static review, without runtime admission; fresh-client tooling is being implemented in parallel and remains unverified. Deployment, causal original-client follow-up, other DTO differences and complete automatic-refresh acceptance remain open |
+| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; fresh client v1 failed before browser/login and its scope is independently sealed | [Accepted upgrade](client-schema28-accepted-attestation.json) establishes PID1458051 and schema28 upgrade authority `7b61f5c9...`, preserving 75 sessions/64 devices/167 audits; primary stays source32/schema27. Client v1 passed final TOOL05 bindings, loader315/driver52/controller59 guards and Python preflight, then failed setup with zero session/device/audit/revision delta and no required restoration. Its [independent terminal](client-library-changed-source55-v1-terminal.json) seals the failed scope with complete preservation and no client acceptance. TOOL02/v2 passed 59 controller guards remotely, but JavaScript repairs and remaining verification are incomplete; navigation/automatic-refresh, other DTO differences and broader M3 acceptance remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
-| M2a media ingestion and browse | Foundation increment complete; binding/scanner and scoped real management UI acceptance passed; source55 published, deployment pending | Source54 passed [full regression/build](storage-binding-scan-source54-full.json) and [real private-mount recovery](storage-binding-scan-mount-v2.json); source55 subsequently passed its own 2,173-test full run/build and is published. Final live UI run `20260912_083703_5a77d18d2ae0` passed 15 checks/ten IPC stages, one real Playwright test, session cleanup and all preservation gates; [independent terminal](storage-binding-live-ui-accepted-terminal.json). All four failed predecessors were independently disposed and preserved. These gates are consumed. Schema28 deployment, reboot and other filesystem recovery remain unverified |
+| M2a media ingestion and browse | Foundation increment complete; binding/scanner and scoped real management UI acceptance passed; source55 published and deployed to the candidate | Source54 passed [full regression/build](storage-binding-scan-source54-full.json) and [private-mount recovery](storage-binding-scan-mount-v2.json); source55 passed its full run/build and [schema28 candidate upgrade](client-schema28-accepted-attestation.json). Four roots retain revision1 with binding fields NULL; migration grants no automatic storage approval. Final live UI run `20260912_083703_5a77d18d2ae0` passed 15 checks/ten IPC stages and all cleanup; [terminal](storage-binding-live-ui-accepted-terminal.json). The four failed UI predecessors are disposed and preserved. Consumed gates are not replayable. Primary deployment, reboot and other filesystem recovery remain unverified |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |
@@ -1174,12 +1265,15 @@ The current primary service is **active/running** at source32/schema27,
 PID762090/start ticks7637121, executable SHA-256
 `af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`.
 The [primary schema27 upgrade](m3e-main-schema27-completed.json) passed in one
-attempt; its new Extra tables are empty. The separate candidate subsequently
+attempt; its new Extra tables are empty. The separate candidate historically
 passed the [source44 continuation](m3e-source44-candidate-continuation.json):
 PID1264063/start ticks11104222, source44/schema27, executable SHA-256
 `cd67f2e71ff1b63e3c138cdba1f9c9d1e584e2788b47964a332b38311cda0e2d`.
-The failed automatic-refresh attempt preserved both services; its current
-candidate state baseline is recorded at the top of this document.
+The failed automatic-refresh attempt preserved both services. The later
+[accepted schema28 upgrade](client-schema28-accepted-attestation.json) now runs
+source55 at PID1458051/start ticks13067360, invocation
+`d29ea64c63274346a79c7b3a7938f36e`. Its current `7b61f5c9...` after-state,
+fixture-state hash and runtime hash are recorded at the top of this document.
 
 The historical source28 primary was active/running at source28/schema26,
 PID688833/start ticks5620918, executable SHA-256

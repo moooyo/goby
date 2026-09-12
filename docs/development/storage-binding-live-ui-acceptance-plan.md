@@ -21,8 +21,11 @@ backend prerequisite remains source54's 2,173
 full-suite passes across 25 packages, Linux build, and subsequent real private
 mount acceptance. The existing 68 frontend checks use mocked binding APIs.
 The broader M2-M6 acceptance obligations and existing M7 deferred scope remain
-unchanged. Source55 verification and product publication are now complete;
-candidate upgrade/deployment and fresh original-client acceptance remain pending.
+unchanged. Source55 verification, product publication and the independently
+[attested candidate schema28 deployment](client-schema28-accepted-attestation.json)
+are complete. Fresh original-client acceptance remains pending.
+Its v1 attempt failed during discovery before browser creation or login;
+the [failed scope is now independently sealed](client-library-changed-source55-v1-terminal.json).
 The accepted UI gate retains its actual source54 frozen inputs below.
 
 | Scope | Observed outcome | Current disposition |
@@ -365,20 +368,84 @@ passed `TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility`
 on an 807-input remote Go source copy without database access. This independent
 single test is not added to the 2,173 full-suite count.
 
-Source55 is not deployed. The candidate remains source44/schema27 at baseline
-`2659...` with 75 sessions, 64 devices and 167 audits; the primary remains
-source32/schema27. The candidate schema28 upgrade tool has completed static
-review and is undergoing remote build/guard verification, without runtime
-admission. Fresh source55 original-client tooling is being implemented and has
-not yet been verified.
+The candidate is now source55/schema28. Upgrade run
+`20260912_100845_47bff13c329b` passed its
+[independent attestation](client-schema28-accepted-attestation.json); the
+[upgrade report](client-schema28-accepted.json) retains
+`awaiting_outer_attestation` by design. Its final TOOL05 closure passed
+[94 Python guards](client-schema28-tool05-guards.json),
+[seven Go guards](client-schema28-tool05-go-guards.json), the
+[helper build](client-schema28-tool05-helper-build.json) and
+[preflight](client-schema28-tool05-preflight.json).
+The four TOOL05 upgrade sources and 13 safe evidence files were published as
+commit `212dc387581d9fffddfc7337bbfee1e77c2d04f4`; this 17-file tools/evidence
+publication leaves product authority at `16d75c38064008680fa60839c637efee2f12f2ae`.
 
-1. Finish the upgrade tool's remote build and guard verification, then establish
-   current runtime admission for the candidate schema28 upgrade and source55
-   deployment. Keep the protected primary and the consumed acceptance evidence
-   separate from this new deployment scope.
-2. Verify the fresh original-client tooling and, after deployment, complete
-   navigation and automatic-refresh acceptance with new owned sessions, a
-   current candidate baseline and independent cleanup/terminal proof. Native
-   administrator UI acceptance does not establish those client outcomes.
+The executed sequence was a [real backup](client-schema28-accepted-backup.json),
+an [independent schema27 to schema28 rehearsal](client-schema28-accepted-rehearsal.json)
+and ordinary rehearsal disposal, baseline revalidation before shutdown, one
+stop, [transactional migration](client-schema28-accepted-migration.json), an
+independent 58-asset web copy at `/opt/goby-client-m3e/admin`, one start and five
+anonymous GETs before attestation. All old columns in 35 tables, five sequences,
+ACLs, credentials and recovery state were preserved. Counts remain 75 sessions,
+64 devices and 167 audits. The four roots remain at revision 1 with the new
+binding fields NULL; historical audit fields have their migration defaults.
+The absent master key remains absent with no application keys. The primary
+remains source32/schema27 at PID `762090`; shared web and proxy state are unchanged.
+
+| Current candidate authority | Value |
+| --- | --- |
+| Process | PID `1458051`, start ticks `13067360`, invocation `d29ea64c63274346a79c7b3a7938f36e` |
+| Upgrade controller invocation | `3821d3052fc24aa0ad23a3194300cd6b` |
+| STATE SHA256 | `bb78a846d2d4b69b7e2550ed9e367549cbe2d0b763e2b69270ea98bed6570d82` |
+| Runtime SHA256 | `1f245cd8f8c19dbe0b96b803dc8c60dd0cd4b7b7e2a8d99ccc2541e9430c4a7b` |
+| `after-full.json` SHA256 | `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d` |
+| [Upgrade report](client-schema28-accepted.json) SHA256 | `328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832` |
+| [Independent attestation](client-schema28-accepted-attestation.json) SHA256 | `ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032` |
+
+The old `2659...` baseline is historical pre-upgrade evidence only. The three
+failed upgrade scopes remain retained with their independent
+[first](client-schema28-attempt1-terminal.json),
+[second](client-schema28-attempt2-terminal.json) and
+[third](client-schema28-attempt3-terminal.json) terminals. The third had completed
+backup and rehearsal before a `RawMessage` whitespace difference caused a false
+mismatch. Final TOOL05 compares a canonical, exact ten-field `RoleProperties`
+structure without discarding values or normalizing unrelated state.
+
+Original-client v1 completed the final TOOL05 upgrade-authority binding and
+passed [315 loader, 52 driver and 59 controller guards](client-library-changed-source55-v1-guards.json).
+The 127 actor guards remain earlier verification. Its
+[Python preflight](client-library-changed-source55-v1-preflight.json) also passed.
+The [actual v1 attempt](client-library-changed-source55-v1.json) then failed at
+discovery before browser creation or login. Its complete ledger records zero
+new sessions, devices and audits, zero metadata revision change, preserved old
+state, and restoration `not_required`. The
+[independent failed terminal](client-library-changed-source55-v1-terminal.json)
+now records `failed_scope_sealed`: both exact unit invocations exited with status 1 with
+MainPID0 and empty recursive cgroups, the browser directory is absent, and
+cleanup was `not_required`. Old rows, sequences, private files, media, candidate
+and primary were preserved. Its independent snapshot `569bb377...` has the same
+logical state apart from `captured_at`; `7b61f5...` remains the upgrade authority.
+V1 is consumed and must not be replayed. Candidate source55/schema28 and primary
+source32/schema27 remain unchanged, and no original-client acceptance is established.
+
+The [setup diagnosis](client-library-changed-source55-v1-setup-diagnosis.json)
+identified loader assumptions that rejected frozen catalog/manifest files with
+mode `0600` while expecting `0644`, and misclassified legitimate index/sequence
+columns as ordinary table columns. The actual driver's `checkedHomeFile` path
+uses ordinary `JSON.parse`, which can round large integers. A separate pure
+diagnostic using lossless JSON exposed an incompatible BigInt clone path; that
+is not an actual v1 BigInt exception. The replacement original-client TOOL02/v2
+controller [passed 59 remote guards](client-library-changed-source55-v2-controller-guards.json), while its JavaScript repairs and remaining
+verification are unfinished. No v2 live acceptance is established.
+
+1. Complete the file-mode, catalog-column and lossless-integer JavaScript fixes in the
+   new TOOL02/v2 scope. Bind its complete tool/input closure to the accepted
+   TOOL05 upgrade and current candidate authority, then complete remaining guards
+   and preflight on `test-env` before live admission.
+2. Complete navigation and automatic-refresh acceptance in that fresh admitted
+   original-client scope with new owned sessions and independent cleanup/terminal
+   proof. Native administrator UI acceptance and deployment do not establish
+   those client outcomes.
 3. Keep broader M2-M6 acceptance open and retain the existing M7 deferred scope;
    this accepted storage-binding gate does not reduce either scope.
