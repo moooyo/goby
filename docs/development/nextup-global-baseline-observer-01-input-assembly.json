@@ -1,0 +1,41 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "capturedAt": "2026-09-12T18:38:53.911017+00:00",
+  "inputs": {
+    "credentials": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-01/credentials.json",
+      "sha256": "424608554e796163bb7f21ef98050ab138ae29341302b911ab4169b87ffa0424"
+    },
+    "predecessor": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-02/independent-terminal.json",
+      "sha256": "588c4f09fc817ed555d7f2711f692f94e35f1f41bd288748626fffca12546111"
+    },
+    "publicBaseline": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/after-public.json",
+      "sha256": "48b3acb509b8318481c2d9c4e35ce534a69bb6deaaf31246a1bd78b3cc3bab32"
+    }
+  },
+  "kind": "nextup-global-baseline-input-assembly",
+  "manifest": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-01/input.json",
+    "sha256": "5f9283cd4a9e58cd1293e830bcffc8d11329078c2a50784371a907aa109668b9"
+  },
+  "observerExecuted": false,
+  "runId": "nextup-global-reference-baseline-20260913-01",
+  "schemaVersion": 1,
+  "sealedRootCount": 117,
+  "sources": {
+    "observer": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-observer-tool-02/observe-nextup-global-reference-baseline.py",
+      "sha256": "89bc2841a3217cecbdb1815bb74ebef6e79f5e3ad951ed2dbd5d755f1d0fb7ee"
+    },
+    "proxy": {
+      "path": "/opt/goby-test/exec-work-m3e/client-acceptance-proxy.py",
+      "sha256": "256017d62eb98b39a1e026516e6c29ced0a3f599fd961a3c9e0ee9b4d878d99b"
+    },
+    "transport": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-observer-tool-02/nextup-global-transport.py",
+      "sha256": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+    }
+  }
+}

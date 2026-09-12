@@ -1,5 +1,10 @@
 # Bounded reference public-baseline observer
 
+The [actual observer02](nextup-global-baseline-observer-02.md) completed all 34
+requests and independent attestation. Its complete baseline is usable for fresh
+preparation, with 88 device rows, exact-token closure and all 129 old roots
+preserved. It does not release a matrix fixture or establish client acceptance.
+
 The reference preparation attempt `nextup-global-reference-20260913-02`
 completed one administrator login, 30 reads, logout HTTP 204, and an exact-token
 HTTP 401. Its actual Devices response contained 86 rows with

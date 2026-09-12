@@ -1,14 +1,17 @@
 # Global NextUp preparation and cleanup contract design
 
-Status: **the producer passed 114 remote fake guards; no live preparation executed**.
+Status: **the corrected producer passed 140 remote guards; preparation02 stopped
+and was independently sealed after known cleanup. A later complete baseline is accepted.**
 Its [implementation contract](nextup-global-preparation-implementation.md) and
-[current verification](nextup-global-preparation-verification-02.json) retain
+[current verification](nextup-global-preparation-verification-03.json) retain
 the separate code and evidence boundary.
 The owned source-media prerequisite was subsequently checked remotely. Written on
 2026-09-13 from owned scripts and retained public-response receipts, this is the
 preparation producer design for the [acceptance plan](nextup-global-acceptance-plan.md),
-[matrix](../../scripts/test-env/nextup-global-matrix.py), and transport under
-development. It is not a live authorization receipt. No ID, process identity,
+[matrix](../../scripts/test-env/nextup-global-matrix.py), verified transport and
+reviewed outer operator. The [accepted observer02 baseline](nextup-global-baseline-observer-02.md)
+supports a new preparation scope; no successful matrix fixture has been released.
+This design is not a live authorization receipt. No ID, process identity,
 source digest, or historical state below may be copied into a new live manifest
 without the corresponding fresh observation.
 

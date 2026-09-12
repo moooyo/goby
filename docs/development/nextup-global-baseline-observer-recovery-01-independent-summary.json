@@ -1,0 +1,96 @@
+{
+  "baselineReleased": false,
+  "businessHttpByIndependentAudit": 0,
+  "capturedAt": "2026-09-12T18:57:21.797216+00:00",
+  "exactTokenClosed": true,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "gobyPreserved": true,
+  "independentTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/independent-terminal.json",
+    "sha256": "41392c5ff86192dce4e90eee8026b188aa6def14cf90a92aa0920edb4c8eb8f1"
+  },
+  "kind": "nextup-baseline-observer-recovery-terminal",
+  "newClosedObserverDevices": 1,
+  "noLibraryCreation": true,
+  "noMetadataMutation": true,
+  "noNewLogin": true,
+  "noPlayback": true,
+  "noUserCreation": true,
+  "observerRequestCount": 1,
+  "observerRunId": "nextup-global-reference-baseline-20260913-01",
+  "old117RootsPreserved": true,
+  "originalImplementationBytesRead": false,
+  "preservation": {
+    "after": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-execution-01/preservation-after.json",
+      "sha256": "2e585b351306393240affbf83ddcaeebc45c2310b0827e33a61ce5542053b026"
+    },
+    "before": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-execution-01/preservation-before.json",
+      "sha256": "7f48f334bf0dd5ee1a79af785a55849c712db3f6c07abc64881a3e70cc13dadf"
+    }
+  },
+  "publicDeviceCountAfterLogin": 87,
+  "recursiveCgroupsEmpty": true,
+  "referenceDatabaseRead": false,
+  "requestCount": 3,
+  "runId": "nextup-global-reference-baseline-recovery-20260913-01",
+  "schemaVersion": 1,
+  "scopeInventory": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/completed-scope-files.json",
+    "sha256": "cce8eb5bf809282d7111525231989573883c7e7f533d97099a866f05e3dc3eab"
+  },
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/recover.py",
+    "sha256": "96955e6254514a690c980e29b69b72b0b03d40f0b8e6eae326a5ebb5d9074e13"
+  },
+  "status": "observer_login_independently_recovered_and_closed",
+  "units": [
+    {
+      "cgroupPath": "/sys/fs/cgroup/system.slice/goby-nextup-global-reference-baseline-01.service",
+      "invocationId": "110a814f22ff4d4b83df233b14c22b49",
+      "name": "goby-nextup-global-reference-baseline-01.service",
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "2",
+        "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-observer-tool-02/observe-nextup-global-reference-baseline.py observe --manifest /opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-01/input.json --manifest-sha256 5f9283cd4a9e58cd1293e830bcffc8d11329078c2a50784371a907aa109668b9 --plan-sha256 79c11de96ca7c6a5f432ca703b33868e99f0cf2fb2500b9f6f290777c873aac5 ; ignore_errors=no ; start_time=[Sun 2026-09-13 02:43:18 CST] ; stop_time=[Sun 2026-09-13 02:43:18 CST] ; pid=1505332 ; code=exited ; status=2 }",
+        "Id": "goby-nextup-global-reference-baseline-01.service",
+        "InvocationID": "110a814f22ff4d4b83df233b14c22b49",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "RemainAfterExit": "yes",
+        "Result": "exit-code",
+        "SubState": "failed",
+        "TimeoutStartUSec": "12min 40s",
+        "Type": "oneshot"
+      }
+    },
+    {
+      "cgroupPath": "/sys/fs/cgroup/system.slice/goby-nextup-global-reference-baseline-recovery-01.service",
+      "invocationId": "19802d574a4f4685bd5d7bd7ebac63ef",
+      "name": "goby-nextup-global-reference-baseline-recovery-01.service",
+      "properties": {
+        "ActiveState": "active",
+        "ControlGroup": "",
+        "ExecMainCode": "1",
+        "ExecMainStatus": "0",
+        "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/recover.py --manifest /opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/input.json --manifest-sha256 d9157f061e0a94b39eb0c3da4a80c6ad2f6660f34ed76e230cd96b62ca37efca --source-sha256 96955e6254514a690c980e29b69b72b0b03d40f0b8e6eae326a5ebb5d9074e13 ; ignore_errors=no ; start_time=[Sun 2026-09-13 02:52:28 CST] ; stop_time=[Sun 2026-09-13 02:52:28 CST] ; pid=1505703 ; code=exited ; status=0 }",
+        "Id": "goby-nextup-global-reference-baseline-recovery-01.service",
+        "InvocationID": "19802d574a4f4685bd5d7bd7ebac63ef",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "RemainAfterExit": "yes",
+        "Result": "success",
+        "SubState": "exited",
+        "TimeoutStartUSec": "2min",
+        "Type": "oneshot"
+      }
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "plan": {
+    "automaticRetryOrResume": false,
+    "cleanupLimit": 2,
+    "createsMediaLibrariesUsersOrPlayback": false,
+    "independentAttestationRequired": true,
+    "manifestSha256": "695b9decef16f7255f404c9805b7b36f01f39ecda74ea80dbfa464bafc4795bd",
+    "normalLimit": 32,
+    "requests": [
+      {
+        "label": "login",
+        "method": "POST",
+        "route": "/emby/Users/AuthenticateByName"
+      },
+      {
+        "label": "server",
+        "method": "GET",
+        "route": "/emby/System/Info/Public"
+      },
+      {
+        "label": "users",
+        "method": "GET",
+        "route": "/emby/Users"
+      },
+      {
+        "label": "libraries",
+        "method": "GET",
+        "route": "/emby/Library/VirtualFolders/Query"
+      },
+      {
+        "label": "catalog-0",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=20"
+      },
+      {
+        "label": "catalog-1",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=3"
+      },
+      {
+        "label": "catalog-2",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=5"
+      },
+      {
+        "label": "catalog-3",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=57"
+      },
+      {
+        "label": "catalog-4",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=66"
+      },
+      {
+        "label": "catalog-5",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=7"
+      },
+      {
+        "label": "catalog-6",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=83"
+      },
+      {
+        "label": "catalog-7",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&ParentId=93"
+      },
+      {
+        "label": "items-0",
+        "method": "GET",
+        "route": "/emby/Users/38431ababffb4705b447fe23833d36b8/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-0",
+        "method": "GET",
+        "route": "/emby/UserSettings/38431ababffb4705b447fe23833d36b8"
+      },
+      {
+        "label": "items-1",
+        "method": "GET",
+        "route": "/emby/Users/46c1e1006a2c47ada1b482a96e89c549/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-1",
+        "method": "GET",
+        "route": "/emby/UserSettings/46c1e1006a2c47ada1b482a96e89c549"
+      },
+      {
+        "label": "items-2",
+        "method": "GET",
+        "route": "/emby/Users/7d777e79b35541889f738bb5f5a8da23/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-2",
+        "method": "GET",
+        "route": "/emby/UserSettings/7d777e79b35541889f738bb5f5a8da23"
+      },
+      {
+        "label": "items-3",
+        "method": "GET",
+        "route": "/emby/Users/bd655b2117fc468aa37780b1e8bbf532/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-3",
+        "method": "GET",
+        "route": "/emby/UserSettings/bd655b2117fc468aa37780b1e8bbf532"
+      },
+      {
+        "label": "items-4",
+        "method": "GET",
+        "route": "/emby/Users/c5f36699a54f4971a891682cd9de410f/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-4",
+        "method": "GET",
+        "route": "/emby/UserSettings/c5f36699a54f4971a891682cd9de410f"
+      },
+      {
+        "label": "items-5",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items?Recursive=true&Fields=Path%2CParentId%2CSortName%2CMediaSources%2CMediaStreams%2COverview%2CGenres%2CTags%2CPeople%2CStudios%2CProviderIds%2CDateCreated%2CProductionYear&EnableUserData=true&EnableTotalRecordCount=true&Limit=256&Ids=10%2C100%2C11%2C14%2C15%2C16%2C17%2C18%2C19%2C21%2C22%2C23%2C24%2C25%2C26%2C27%2C28%2C29%2C30%2C31%2C32%2C33%2C34%2C35%2C37%2C38%2C4%2C40%2C41%2C42%2C43%2C44%2C47%2C48%2C49%2C58%2C59%2C6%2C60%2C61%2C63%2C64%2C67%2C68%2C69%2C70%2C71%2C72%2C73%2C74%2C75%2C76%2C8%2C84%2C85%2C86%2C87%2C88%2C9%2C94%2C95%2C96%2C99"
+      },
+      {
+        "label": "prefs-5",
+        "method": "GET",
+        "route": "/emby/UserSettings/efe2137dc3394ed4a23f9c337598f105"
+      },
+      {
+        "label": "detail-0",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items/100"
+      },
+      {
+        "label": "detail-1",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items/93"
+      },
+      {
+        "label": "detail-2",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items/96"
+      },
+      {
+        "label": "detail-3",
+        "method": "GET",
+        "route": "/emby/Users/efe2137dc3394ed4a23f9c337598f105/Items/99"
+      },
+      {
+        "label": "detail-4",
+        "method": "GET",
+        "route": "/emby/Users/c5f36699a54f4971a891682cd9de410f/Items/100"
+      },
+      {
+        "label": "detail-5",
+        "method": "GET",
+        "route": "/emby/Users/c5f36699a54f4971a891682cd9de410f/Items/96"
+      },
+      {
+        "label": "devices",
+        "method": "GET",
+        "route": "/emby/Devices"
+      },
+      {
+        "label": "configuration",
+        "method": "GET",
+        "route": "/emby/System/Configuration"
+      },
+      {
+        "label": "logout",
+        "method": "POST",
+        "route": "/emby/Sessions/Logout"
+      },
+      {
+        "label": "rejection",
+        "method": "GET",
+        "route": "/emby/Sessions"
+      }
+    ],
+    "runId": "nextup-global-reference-baseline-20260913-01",
+    "schemaVersion": 1,
+    "totalLimit": 34
+  },
+  "planSha256": "79c11de96ca7c6a5f432ca703b33868e99f0cf2fb2500b9f6f290777c873aac5"
+}

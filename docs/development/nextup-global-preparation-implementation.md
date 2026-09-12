@@ -397,9 +397,11 @@ observer's own device. A snapshot captured before observer logout retains its
 own token attribution and is accompanied by that observer's actual closure
 window, intent, and response receipts.
 
-The root task is implementing this observer separately and owns its execution.
-It also checks the stopped preparation and observer units are closed in the
-new outer admission record. The producer's release contract may continue to
+The [separate observer02](nextup-global-baseline-observer-02.md) completed all
+34 requests and independent attestation, including configuration, 88 device rows
+and exact-token closure. Its baseline is now available for fresh preparation.
+The root task checks the stopped preparation and observer units are closed in
+the new outer admission record. The producer's release contract may continue to
 bind the genuine sealed v4 terminal/inventory anchor, with the new observer's
 actual controller_api logout/401 evidence supplied to closedAuthentication.
 No release-schema expansion or fabricated composite snapshot is required.

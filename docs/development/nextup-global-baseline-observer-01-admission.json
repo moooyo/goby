@@ -1,0 +1,81 @@
+{
+  "businessHttpRequests": 0,
+  "completedAt": "2026-09-12T18:39:21.667221+00:00",
+  "inputsVerified": true,
+  "kind": "nextup-global-baseline-read-only-admission",
+  "lock": {
+    "device": 2049,
+    "inode": 2424193,
+    "path": "/opt/goby-test/exec-work-m3e/reference.lock"
+  },
+  "lockHeldAfterCheck": false,
+  "manifest": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-01/input.json",
+    "sha256": "5f9283cd4a9e58cd1293e830bcffc8d11329078c2a50784371a907aa109668b9"
+  },
+  "observerRunnerConstructed": false,
+  "originalImplementationBytesRead": false,
+  "outputRootAbsent": true,
+  "planSha256": "79c11de96ca7c6a5f432ca703b33868e99f0cf2fb2500b9f6f290777c873aac5",
+  "predecessorVerified": true,
+  "process": {
+    "application": {
+      "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cgroup": "0::/system.slice/goby-emby-client-m3e.service\n",
+      "cmdline": [
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+        "-programdata",
+        "/opt/goby-test/exec-work-m3e/reference-data",
+        "-ffdetect",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffdetect",
+        "-ffmpeg",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffmpeg",
+        "-ffprobe",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffprobe",
+        "-restartexitcode",
+        "3",
+        "-updatepackage",
+        "emby-server-deb_{version}_amd64.deb"
+      ],
+      "exe": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "exeDevice": 26,
+      "exeInode": 332,
+      "networkNamespace": "net:[4026532602]",
+      "pid": 332054,
+      "startTicks": "357218",
+      "uid": 0
+    },
+    "endpoint": {
+      "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cgroup": "0::/system.slice/goby-client-proxy-m3e-fresh.service\n",
+      "cmdline": [
+        "/usr/bin/python3",
+        "/opt/goby-test/exec-work-m3e/client-acceptance-proxy.py",
+        "--reference-pid",
+        "332054",
+        "--reference-start-ticks",
+        "357218",
+        "--reference-sha256",
+        "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+        "--status-file",
+        "/opt/goby-test/exec-work-m3e/dual-proxy-status-02.json"
+      ],
+      "exe": "/usr/bin/python3.13",
+      "exeDevice": 2049,
+      "exeInode": 397,
+      "listener": {
+        "port": 18197,
+        "socketInode": "296864"
+      },
+      "networkNamespace": "net:[4026531840]",
+      "pid": 334022,
+      "startTicks": "378464",
+      "uid": 0
+    },
+    "workerNetworkNamespace": "net:[4026531840]"
+  },
+  "referenceDatabaseRead": false,
+  "schemaVersion": 1,
+  "startedAt": "2026-09-12T18:39:21.597991+00:00",
+  "status": "passed"
+}
