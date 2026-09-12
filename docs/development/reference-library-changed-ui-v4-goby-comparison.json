@@ -1,0 +1,183 @@
+{
+  "acceptance_target_changed": false,
+  "automatic_refresh_positive_evidence": false,
+  "business_http_issued": false,
+  "captured_at": "2026-09-12T16:45:33.301790+00:00",
+  "complete_reference_negative_control": true,
+  "goby_browser": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v7/browser/report.json",
+    "sha256": "805135c8ca008be5f7841686e29916ca9ef71a8a1b75839df1c098f442e4af33"
+  },
+  "goby_forward": {
+    "browser_event_delay_from_post_response_ms": 2.0664030015468597,
+    "collector_only_fields": [
+      "body_sha256",
+      "body_bytes",
+      "projection_sha256"
+    ],
+    "dom_samples": 237,
+    "duration_ms": 120000,
+    "events_browser": 1,
+    "events_physical": 1,
+    "http_frames": 0,
+    "http_physical": 0,
+    "normalized_message": {
+      "Data": {
+        "CollectionFolders": [],
+        "FoldersAddedTo": [],
+        "FoldersRemovedFrom": [],
+        "IsEmpty": false,
+        "ItemsAdded": [],
+        "ItemsRemoved": [],
+        "ItemsUpdated": [
+          "<target>"
+        ]
+      },
+      "MessageId": "<message-id>",
+      "MessageType": "LibraryChanged"
+    },
+    "observed_titles": [
+      "M3e Client Movie"
+    ],
+    "public_message": {
+      "Data": {
+        "CollectionFolders": [],
+        "FoldersAddedTo": [],
+        "FoldersRemovedFrom": [],
+        "IsEmpty": false,
+        "ItemsAdded": [],
+        "ItemsRemoved": [],
+        "ItemsUpdated": [
+          "268051d3ca734aefcf94e245fb25ad55"
+        ]
+      },
+      "MessageId": "b33c1523d8a4ef02c44408f1ea2e2845",
+      "MessageType": "LibraryChanged"
+    },
+    "wire_bytes": 257,
+    "wire_sha256": "c3f5b347ef1df7e0b294079287c27b45f12dc53cdf2f6bc88db5ed11185ab0d8"
+  },
+  "goby_specific_protocol_defect_established": false,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-name-only-public-comparison-v1",
+  "normalized_public_envelope_and_data_equal": true,
+  "observed_timing_difference_is_causal_evidence": false,
+  "original_implementation_bytes_read": false,
+  "reference_browser": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/browser/report.json",
+    "sha256": "09afbb6fdca64fb517b2760ee447d03d7d030264ed243b1dcec7786525a2edef"
+  },
+  "reference_database_read": false,
+  "reference_internal_handler_execution_proven": false,
+  "reference_terminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-04/completed-terminal.json",
+    "sha256": "90f6f197e00ab48e9bedf252e5f0534a7e5d8c23a326a33d490e56d446ffa64a"
+  },
+  "reference_windows": {
+    "forward": {
+      "browser_event_delay_from_post_response_ms": 40003,
+      "dom_samples": 225,
+      "duration_ms": 120000,
+      "events_browser": 1,
+      "events_physical": 1,
+      "http_frames": 0,
+      "http_physical": 0,
+      "normalized_message": {
+        "Data": {
+          "CollectionFolders": [],
+          "FoldersAddedTo": [],
+          "FoldersRemovedFrom": [],
+          "IsEmpty": false,
+          "ItemsAdded": [],
+          "ItemsRemoved": [],
+          "ItemsUpdated": [
+            "<target>"
+          ]
+        },
+        "MessageId": "<message-id>",
+        "MessageType": "LibraryChanged"
+      },
+      "observed_titles": [
+        "LibraryChanged Observed"
+      ],
+      "outcome": "automatic_refresh_not_observed_within_window",
+      "public_message": {
+        "Data": {
+          "CollectionFolders": [],
+          "FoldersAddedTo": [],
+          "FoldersRemovedFrom": [],
+          "IsEmpty": false,
+          "ItemsAdded": [],
+          "ItemsRemoved": [],
+          "ItemsUpdated": [
+            "100"
+          ]
+        },
+        "MessageId": "ae4c5d4135ce43239d5aa9a833f44739",
+        "MessageType": "LibraryChanged"
+      },
+      "status": {
+        "dom_matches_expected": false,
+        "http_observed": false,
+        "message_observed": true,
+        "visible_transition_observed": false
+      },
+      "wire_bytes": 228,
+      "wire_sha256": "b3520f8a257259cd1f2c7a3cb09c79316f66be012bcf80dae05c42e955dd4fb5"
+    },
+    "restored": {
+      "browser_event_delay_from_post_response_ms": 40005,
+      "dom_samples": 225,
+      "duration_ms": 120000,
+      "events_browser": 1,
+      "events_physical": 1,
+      "http_frames": 0,
+      "http_physical": 0,
+      "normalized_message": {
+        "Data": {
+          "CollectionFolders": [],
+          "FoldersAddedTo": [],
+          "FoldersRemovedFrom": [],
+          "IsEmpty": false,
+          "ItemsAdded": [],
+          "ItemsRemoved": [],
+          "ItemsUpdated": [
+            "<target>"
+          ]
+        },
+        "MessageId": "<message-id>",
+        "MessageType": "LibraryChanged"
+      },
+      "observed_titles": [
+        "LibraryChanged Observed"
+      ],
+      "outcome": "matches_expected_without_proven_transition",
+      "public_message": {
+        "Data": {
+          "CollectionFolders": [],
+          "FoldersAddedTo": [],
+          "FoldersRemovedFrom": [],
+          "IsEmpty": false,
+          "ItemsAdded": [],
+          "ItemsRemoved": [],
+          "ItemsUpdated": [
+            "100"
+          ]
+        },
+        "MessageId": "964f58d0e4854164938c83f15c28320a",
+        "MessageType": "LibraryChanged"
+      },
+      "status": {
+        "dom_matches_expected": true,
+        "http_observed": false,
+        "message_observed": true,
+        "visible_transition_observed": false
+      },
+      "wire_bytes": 228,
+      "wire_sha256": "caece0d02029e6c71d5f5e7bf51debdc25394729c6fc1d53b7f8f909002f6997"
+    }
+  },
+  "status": "comparison_complete",
+  "wire_size_difference_explained_by_target_id_length": true
+}

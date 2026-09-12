@@ -1,7 +1,53 @@
 # Development handoff
 
-Execution state checkpoint: `2026-09-12T15:34:07.675313+00:00`, reference UI v2 sealed with viewer dispatch uncertainty. SSH authentication has been
-restored and a fresh `ssh test-env` connection succeeded.
+Execution state checkpoint: `2026-09-12T16:45:33.301790+00:00`, reference UI v4 completed with independent restoration and cleanup confirmation. The positive automatic-refresh gate remains unmet.
+
+SSH access is available. V4 passed [57 Python guards and two compilation checks](reference-library-changed-ui-python-verification-04b.json),
+[29 driver guards](reference-library-changed-ui-js-verification-04.json), and
+[13 isolated Chromium DOM cases using synthetic HTML](reference-library-changed-ui-dom-verification-04.json).
+The unchanged runtime reuses its 28 verified v3 guards without a rerun. The
+initial Python04 fixture failure remains retained; guard-only04b corrected it.
+The four changed sources and four tool reports were published as
+`7568275018b6c07388ed80d4a514dad8d0ae7b73`; nine safe v3 reports were published as
+`a6a7c58c7b3ac91a19db86521994cee857816290`.
+
+V4's [business preflight](reference-library-changed-ui-preflight-v4.json) and
+[independent preflight terminal](reference-library-changed-ui-preflight-v4-terminal.json)
+passed with 65 HTTP requests, two authentication POSTs, zero metadata POSTs and
+administrator logout204/same-token401. The actual [v4 report](reference-library-changed-ui-v4.json)
+and [browser report](reference-library-changed-ui-v4-browser.json) complete the
+reference observation: 78 API HTTP requests, two authentication POSTs, two
+metadata POSTs and seven actual-viewer GETs. Forward and restoration POSTs both
+returned204. Each 120-second window contains 225 DOM samples, one physical and
+one browser LibraryChanged event, and zero HTTP in both complete request
+channels. Every sampled title remains `LibraryChanged Observed`. Forward is
+`automatic_refresh_not_observed_within_window`; restoration is
+`matches_expected_without_proven_transition`, which is not a positive transition.
+
+The [independent v4 terminal](reference-library-changed-ui-v4-terminal.json)
+records `protocol_observation_complete_independently_confirmed`. The complete
+target, including `MediaSources[0].Name`, is restored except Etag; anchor and
+media are unchanged. Administrator and viewer both have logout204/exact-token401
+closure. Both original unit invocations exited0 with MainPID0 and empty recursive
+cgroups. All 87 history/tool roots and the complete Goby v7 state at
+83 sessions/70 devices/185 audits are preserved. V4 is complete and consumed.
+
+The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json)
+finds equal reference v4 and Goby v7 public envelopes/Data after normalizing only
+target ID and MessageId. The 29-byte wire-length difference matches the target-ID
+length difference; three extra v7 summary fields are absent from the wire.
+Reference events arrived 40003ms/40005ms after POST completion, versus 2.0664ms
+for Goby. The timing difference has no established causal explanation.
+
+This completed negative control closes the missing-reference-observation gap.
+It does not establish a Goby-specific protocol defect or satisfy the existing
+positive automatic-HTTP-and-DOM gate. That acceptance target is unchanged;
+LibraryChanged client acceptance remains false, the main service is not upgraded,
+and consumed scopes must not be replayed. V3's original failed report and its
+separate recovery/seal, plus v2 dispatch uncertainty, remain unchanged. Full
+M2-M6 remain open; M7 remains deferred. NextUp transport implementation and its
+verification are in progress; no live business request has been made for that
+work. Local verification remains prohibited.
 
 Current verified and published source: **source55 passed 2,173 full-suite tests
 across 25 packages, zero failures/skips, the Linux build and all six cleanup
@@ -18,23 +64,31 @@ effective metadata, two closed sessions, one device, six audits and revision
 delta2. Current counts are 83 sessions/70 devices/185 audits. LibraryChanged
 acceptance remains false; V1-v7 are independently sealed and consumed.
 Read-only diagnosis found zero HTTP in both complete request channels during
-the window despite page-frame receipt of the matching event. The reference UI
-v2 tools passed 25 runtime guards, 25 driver guards, 47 Python guards, 13 isolated
-synthetic-HTML DOM cases and two compilation checks remotely. Six sources and
-three tool reports were pushed as `faf12f6fe7f3b3ff5e210a9c46a7b12d6c70ce75`.
-The actual reference preflight v2 passed with 65 HTTP requests, two authentication
-POSTs, no metadata writes and verified administrator closure. Reference UI v2
-then failed after a viewer login submission. CSS now returned HTTP 200 in both channels
-with opaque content, and cgroup values matched. The page received a tool HTTP 502;
-upstream dispatch was not recorded and no viewer token was received. Its
-[independent terminal](reference-library-changed-ui-v2-terminal.json) records
-`failed_scope_sealed_with_viewer_dispatch_uncertainty` and viewer cleanup
-`unproven_no_token_received`; the `ui_logout` failure remains. No metadata write
-or Name-only refresh outcome occurred. A new v3 scope is being prepared for the
-observed form-login contract, original-byte forwarding and explicit upstream
-phase evidence; it has not executed. Reference v1/v2 and both preflights are
-consumed. The Goby snapshot still equals the v7 after-state except capture time;
-the Goby protocol cause remains open.
+the window despite page-frame receipt of the matching event. Reference UI v3
+passed 104 pure guards (49 Python, 27 driver, 28 runtime), 13 isolated DOM cases
+and two compilation checks; its tools were published as
+`7b07a468811352514c21d60b5683f4268f14e8c1`. Its actual preflight passed with
+65 HTTP requests, two authentication POSTs and zero metadata POSTs. Actual v3
+then passed viewer login, discovery and armed stages and sent one forward
+metadata POST with HTTP 204. Unmodeled `MediaSources[0].Name` derivation and a
+mixed administrator/viewer credential baseline stopped complete observation.
+The original failed report still says `restoration_required`; a separate
+[recovery terminal](reference-library-changed-ui-v3-recovery-terminal.json)
+confirms the full target restored except Etag, including the media-source name,
+with anchor/media preserved. Both original sessions and the recovery administrator
+have HTTP 204/exact-token401 closure evidence. The
+[v3 terminal](reference-library-changed-ui-v3-terminal.json) records
+`failed_scope_sealed_after_independent_restoration`; 74 history/tool roots and
+the full post-v7 Goby state at 83/70/185 are preserved. No complete Name-only
+automatic-refresh result was obtained. V4's derived-name contract and actual
+same-UI-token baseline have four frozen, remotely verified changed sources.
+Reference v4 subsequently completed both 120-second observation windows,
+restoration and independent cleanup. Both windows retain the original title and
+contain zero automatic HTTP despite one matched LibraryChanged event in each
+observation channel. The restoration title matches the expected baseline without a
+proven transition. This complete negative control does not satisfy the positive
+client gate or establish a Goby-specific protocol defect. V1/v2 history and v2
+dispatch uncertainty are unchanged. The public automatic-refresh triggering conditions remain unresolved.
 The main preparation has expired and requires a fresh scope/input/prepare.
 Full M2-M6 remain open; M7 remains deferred.
 Source55 adds the two-file Movies CollectionFolder direct-detail `Subviews`
@@ -588,13 +642,192 @@ already establish `application/x-www-form-urlencoded; charset=UTF-8` with
 for that body. This is a source-contract mismatch; it does not supply the
 missing v2 upstream-dispatch evidence.
 
-A new v3 scope is being prepared to parse the observed form contract, forward
-the original request bytes, and record explicit physical phases including
-`upstream-created` and `end-called` with fixed reason codes and safe diagnostic
-correlation. V3 has not executed and needs independent source/tool verification
-before a fresh business-read preflight and reference control run;
-owned login/logout effects still require explicit cleanup. The Goby payload
-and acceptance target remain unchanged, and v7 will not be replayed.
+V3 implemented the observed form-login contract, original-byte forwarding and
+explicit physical phases. Its tools were published as
+`7b07a468811352514c21d60b5683f4268f14e8c1`. Remote
+[JavaScript checks](reference-library-changed-ui-js-verification-03.json)
+passed 28 runtime and 27 driver guards, and
+[Python checks](reference-library-changed-ui-python-verification-03.json)
+passed 49 guards: 104 pure guards in total. Two compilation checks and
+[13 isolated synthetic-HTML DOM cases](reference-library-changed-ui-dom-verification-03.json)
+also passed. These tool results do not establish complete reference-client
+acceptance or resolve v2's unrecorded dispatch and cleanup uncertainty.
+
+The [actual reference preflight v3](reference-library-changed-ui-preflight-v3.json)
+passed with 65 HTTP requests, two authentication POSTs and zero metadata POSTs.
+Administrator logout204 and exact-token401 are verified by its
+[independent terminal](reference-library-changed-ui-preflight-v3-terminal.json),
+captured at `2026-09-12T15:53:19.306648+00:00`, with exit0/MainPID0 and an empty
+recursive cgroup.
+
+The [actual reference UI v3 report](reference-library-changed-ui-v3.json),
+[bound input](reference-library-changed-ui-v3-input.json) and
+[browser report](reference-library-changed-ui-v3-browser.json) establish real
+viewer login, discovery and armed completion, followed by one forward metadata
+POST returning HTTP 204. The Name readback also changed the sole
+`MediaSources[0].Name`, while its identity and technical fields stayed exact.
+That derived change was not modeled. Separately, `before.details.viewer` used
+an administrator token with a viewer `UserId` projection, but the later
+readback used the actual viewer token. These authentication contexts cannot
+be compared by ignoring `CanDelete`, `CanDownload` or `SupportsSync`.
+The [retained diagnostic](reference-library-changed-ui-v3-diagnostic.json)
+records the controller abort at the armed stage. Neither forward nor restoration
+observation window completed, and no complete Name-only automatic-refresh
+result was obtained. The original report remains failed with
+`restoration_required`; it must never be rewritten as restored or passed.
+
+The first separate `recovery-v3` helper stopped before HTTP with an
+`AttributeError` for `op.command`; that failed attempt remains preserved.
+The independent `recovery-v3b` scope then made nine HTTP requests, including
+exactly one restoration POST returning HTTP 204. Its
+[recovery report](reference-library-changed-ui-v3-recovery.json), SHA-256
+`3e9a555f0a91e42df63657652a5a2f84b3104db76871a340ffca7001ebf67e3e`,
+and [independent recovery terminal](reference-library-changed-ui-v3-recovery-terminal.json),
+SHA-256 `8bed884bc76dfe2277f0a9f116195a5db28cabfacf40a45bdf0d1886385fbc6e`,
+confirm the complete target restored, including the media-source name, with
+only Etag allowed to differ. Anchor and media are unchanged. The recovery
+administrator completed logout204/exact-token401, and its unit exited0 with
+MainPID0 and an empty recursive cgroup. Its viewer-context projection is
+explicitly administrator-authenticated; it is not a new viewer UI baseline.
+
+The [overall v3 terminal](reference-library-changed-ui-v3-terminal.json),
+captured at `2026-09-12T16:12:04.708469+00:00`, records
+`failed_scope_sealed_after_independent_restoration`. Current restoration is
+independently confirmed by the separate recovery, while the original failed
+report remains byte-exact. The original viewer closed through UI logout204
+and same-token401; the original administrator has native logout204/exact-token401
+evidence. Both original units exited1 with MainPID0 and empty recursive cgroups.
+All 74 history/tool roots are preserved. The complete Goby snapshot still equals
+the v7 after-state except capture time, retaining 83 sessions/70 devices/185 audits.
+Reference v1-v3, their preflights and the completed recovery scopes are consumed.
+V1/v2 history, including v2 dispatch uncertainty, remains unchanged.
+
+The completed v4 scope allowed only the proven Name derivation for
+the sole media source while preserving complete `Id`, string `ItemId: "100"`,
+`Path` and technical fields. After discovery and before any write, it captured
+target and anchor baselines with the actual UI token and the metadata contract
+used by subsequent readback. Administrator snapshots label their
+`credential_context`; permission fields remained exact within matching contexts.
+The restoration sidecar used fixed authority. V4's four changed source files
+are frozen and remotely verified: 57 Python guards with two compilation checks,
+29 driver guards, and 13 isolated Chromium DOM cases using synthetic HTML passed.
+The unchanged 28-case runtime source/guard bytes reuse their v3 verification;
+those guards were not rerun. The initial Python04 fixture failure is retained,
+and guard-only04b supplies the corrected successful result. TOOL04 assembly and
+execution04 before-state preservation passed without business HTTP, preserving
+87 history/tool roots and the full Goby v7 state at 83/70/185. The four changed
+sources and four tool reports were published as
+`7568275018b6c07388ed80d4a514dad8d0ae7b73`. The v4 business preflight passed
+independently, including administrator cleanup and after-state preservation.
+Actual ui-v4 completed viewer login, discovery, actual-UI-token target/anchor
+baselines, both 120-second observation windows and forward/restoration POST204
+with matching-context readback. The independent terminal confirms full target
+restoration except Etag, unchanged anchor/media, administrator/viewer
+logout204/exact-token401, both original unit invocations exited0/MainPID0 with
+empty recursive cgroups, and all 87 roots plus the Goby v7 state preserved.
+Both windows contain zero automatic HTTP and no visible title transition. The
+complete negative observation does not satisfy the positive client gate or
+establish a Goby-specific protocol defect. Goby payloads and the acceptance
+target are unchanged. V4 and all prior consumed scopes must not be replayed.
+
+| V4 tool verification | SHA-256 |
+| --- | --- |
+| [Python04b: 57 guards and two compilation checks](reference-library-changed-ui-python-verification-04b.json) | `3964020055e29180f60295f4b6064c303234f7c46e7220424139e97aedd0f58c` |
+| [Driver04: 29 guards](reference-library-changed-ui-js-verification-04.json) | `46c518a7edd2102e95f69449d561d5ae2ab1f8476b32f00789bcddbd9ad8fb31` |
+| [DOM04: 13 isolated Chromium cases](reference-library-changed-ui-dom-verification-04.json) | `d2406d2a7a001e709fae9f117289704a8bc77a1e40512ed7af429b7a5c906b6f` |
+| [Reused v3 runtime verification: 28 guards](reference-library-changed-ui-js-verification-03.json) | `228f9f4ecfa262f0ffb25cd9a83e4a5b437f515de62943a02ec1ff585bbcb187` |
+
+| Frozen changed v4 source | SHA-256 |
+| --- | --- |
+| `observe-client-library-changed-reference-ui.py` | `5e021df408e287695c243ab4ec14bd4519e4ca5e3660234605339b030a22105c` |
+| `test-observe-client-library-changed-reference-ui.py` | `f892d20345679197db4625472c2261ecd1ab00355c22382264dc292472dcefab` |
+| `client-browser-library-changed-reference.mjs` | `965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c` |
+| `test-client-browser-library-changed-reference.mjs` | `dc5ea5be7c79afa35540caf954638d941c0e84a94e49ffdf747b84cdb72bb029` |
+
+The remote assembly is retained under
+`/opt/goby-test/exec-work-m3e/reference-library-changed-ui-tool-04`:
+`assembly.json` SHA-256
+`5353a2544e55a67042cf9d38b6e6c1c27367ad18827e28572ab681c4fcbf040f`,
+and `source-closure.json` SHA-256
+`27ab83707db725f200f85f22e84c699fd85035170c975ab9ff65392cb3c6fd2c`.
+The private before-state evidence remains under
+`/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-04`:
+`capture-preservation.py` SHA-256
+`468417ffc87db29ea6bba3c33e8c5e0f46180c67d75f74f2e044a7be03305a9d`,
+`preservation-before.json` SHA-256
+`0135f5d39face01900f78402df55f6a0e3d352e63af9ec03f7a6b3d00b0c4aff`,
+and `goby-before.json` SHA-256
+`e52295a97810b1591a845c493f7504e54cf5f88d985651cc795f63e91e135db6`.
+These preparation records do not establish business preflight or actual UI
+acceptance. The private state records are not imported into Git.
+
+The [v4 business preflight report](reference-library-changed-ui-preflight-v4.json),
+SHA-256 `b9af923afb485c78cb2fb8659ac4d733228c2fa4565eb6a3289e27626fd33e4b`,
+and [independent terminal](reference-library-changed-ui-preflight-v4-terminal.json),
+SHA-256 `7bfdae06ca09cf3b1eeb1e66718eda01ec28f954a0b0498045fe9a6b2a19ad38`,
+record 65 HTTP requests, two authentication POSTs, zero metadata POSTs and
+administrator logout204/same-token401. Invocation
+`f696c0b6c36a4c8fa0cdeb00b1d29d4b` exited0 with MainPID0 and an empty recursive
+cgroup. Under execution04, `preservation-after-preflight.json` SHA-256
+`a80934e8599e85afb75f07c7f86754971997a0dcfcd2282fb06b7393f65fd0e0`
+confirms all 87 roots unchanged; `goby-after-preflight.json` SHA-256
+`642eba2beabed009797025d07025bdec44cc75bfec5a592cd22fbb4b164e8253`
+retains the full v7 state at 83 sessions/70 devices/185 audits.
+
+The [independent v4 terminal](reference-library-changed-ui-v4-terminal.json),
+captured at `2026-09-12T16:43:45.386028+00:00`, records
+`protocol_observation_complete_independently_confirmed`. Controller invocation
+`2507f713aa6d47c58f2ac067cb306b19` and worker invocation
+`1c804ccfe84b45c9a5d5d1531615ebae` both exited0 with MainPID0 and empty recursive
+cgroups. The actual scope issued 78 API HTTP requests: two authentication
+POSTs, two metadata POSTs and seven actual-viewer GETs are explicitly counted.
+Forward and restoration each returned POST204. Matching-context readback
+confirms the complete target restored except Etag, including
+`MediaSources[0].Name`; anchor and media remain unchanged. Administrator and
+viewer both completed logout204 with independent rejection of the exact token
+by401. V4 is complete and consumed; do not replay it.
+
+| Actual v4 evidence | SHA-256 |
+| --- | --- |
+| [Controller report](reference-library-changed-ui-v4.json) | `100d9d314152daa5cd61985719b81f2cea427c7505d0e2370fb32056ff96550c` |
+| [Browser report](reference-library-changed-ui-v4-browser.json) | `09afbb6fdca64fb517b2760ee447d03d7d030264ed243b1dcec7786525a2edef` |
+| [Bound input](reference-library-changed-ui-v4-input.json) | `d0ce55bf9254ddb3e82271aa5f8defcd921a2f50d9b1704cbc1907f418632a00` |
+| [Independent terminal](reference-library-changed-ui-v4-terminal.json) | `90f6f197e00ab48e9bedf252e5f0534a7e5d8c23a326a33d490e56d446ffa64a` |
+
+Each 120-second observation window contains 225 DOM samples, one physical
+LibraryChanged event and one matching browser event. Both complete HTTP
+channels contain zero requests throughout each window, and every sampled title
+remains `LibraryChanged Observed`. Forward records
+`automatic_refresh_not_observed_within_window`. Restoration records
+`matches_expected_without_proven_transition`: the unchanged title matches the
+restored baseline, so this is not a positive DOM transition.
+
+Execution04 retains `completed-scope-files.json` SHA-256
+`7e246418ddf69f40571ee641f15be4884a424786c4965df63b26feee45cc3e32`,
+`preservation-after-reference.json` SHA-256
+`50914b840c2c8492223009a0c8fa9fb4d4f5d9426ce11eb57a124c8c4db1781d`,
+and `goby-after-reference.json` SHA-256
+`14aae24782efaea6ef594cb7cb18bf5fdbfb271b2159873c914632036a02fcb3`.
+All 87 history/tool roots and the complete Goby v7 state at
+83 sessions/70 devices/185 audits remain unchanged.
+
+The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json),
+captured at `2026-09-12T16:45:33.301790+00:00`, has SHA-256
+`e8d872896580f965c49b032318b1f5e3309b1ccb96d68760928eaf330f151f36`.
+After normalizing only target ID and MessageId, reference v4 and Goby v7 have
+identical public envelopes and Data: the envelope contains only `MessageType`,
+`MessageId` and `Data`; `ItemsUpdated` contains only the target, the other five
+arrays are empty, and `IsEmpty` is false. The 228-versus-257-byte wire difference
+is exactly the 29-byte target-ID length difference. V7's three additional summary
+fields are absent from the wire; reconstruction matches the original wire hash.
+The reference events reached the page 40003ms and 40005ms after POST completion,
+compared with 2.0664ms for Goby. This timing difference has no established causal
+explanation. The completed negative control closes the missing complete
+reference observation, but neither proves a Goby-specific protocol defect nor
+substitutes for the positive automatic-HTTP-and-DOM gate. The acceptance target
+is unchanged; LibraryChanged client acceptance remains false and the main
+service remains unupgraded.
+
 The [main schema28 upgrade plan](main-schema28-upgrade-plan.md) was reviewed and
 published as `933257c913cd36a57c26c72bb324f73b57441ecd`. The two Go helper source
 files, plan and four safe reports were then published as
@@ -674,14 +907,17 @@ FFmpeg hardware interfaces do not establish execution. A GPU-capable remote
 environment has not yet been supplied, so actual decode and encode acceptance
 remain outstanding alongside the broader M2-M6 work. M7 remains deferred.
 The [global NextUp acceptance plan](nextup-global-acceptance-plan.md), published
-as `37d2257`, is a plan only and has not been executed. Its reference and client
-gates remain future work after the current LibraryChanged fixture is released.
+as `37d2257`, has not executed its actual reference or client gates; both require
+a fresh scope. NextUp transport implementation and verification are in progress,
+and that work has made no live business request.
 The [NextUp matrix planner](nextup-global-matrix-implementation.md) now implements
 the bounded two-account request/state contract and passed 33 remote guards plus
 two compilation checks. Its post-stop cleanup reconciliation preserves unrelated
 UserData and selects an enumerated reset from fresh details. This is a verified
-pure module; fixture preparation, recorder transport, actual reference responses
-and client playback acceptance remain unexecuted.
+pure module; the recorder transport is being implemented, while fixture
+preparation, actual reference responses and client playback acceptance remain
+unexecuted. The pure module and its
+evidence were published as `7d75a3d634a7f783f3abfa80221cfe6f19110d38`.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.
 The preceding source44 product checkpoint passed 2,002 tests;
@@ -774,16 +1010,21 @@ independently sealed. V7's corrected tools passed their prerequisites and the
 actual run passed login and forward PUT/readback, then failed to capture an
 automatic HTTP request within the first window. Native restoration and session
 closure are independently confirmed. Complete request channels contain zero HTTP
-within the window. Reference UI v2 passed its tool checks and actual preflight,
-then failed after submitting viewer login. CSS and cgroup gaps are resolved;
-the login received a tool HTTP 502, while upstream dispatch and viewer cleanup remain
-unproven. The independent terminal retains
-`failed_scope_sealed_with_viewer_dispatch_uncertainty` and
-`unproven_no_token_received`, with `ui_logout` cleanup failure. A new v3 scope
-is being prepared for the observed form body and explicit dispatch evidence;
-it has not executed. Reference v1/v2 and both preflights are consumed. No
-Name-only refresh outcome was obtained. Complete LibraryChanged acceptance
-remains false.
+within the window. Reference UI v3 passed its tool checks, actual preflight,
+viewer login, discovery and armed stages, then sent one forward metadata POST204.
+The unmodeled derived media-source name and mixed authentication baseline stopped
+complete observation. Independent recovery restored the full target except Etag
+and preserved anchor/media; the original failed report remains unchanged.
+Both original sessions and the recovery administrator have verified closure.
+The v3 terminal is `failed_scope_sealed_after_independent_restoration`,
+with 74 preserved roots and unchanged post-v7 Goby state. V4 subsequently passed
+remote tool verification and independent preflight, then completed both
+observation windows, restoration and independent cleanup. Its terminal records
+`protocol_observation_complete_independently_confirmed`, with 87 roots and the
+complete Goby v7 state preserved. Both windows have zero automatic HTTP and no
+title transition. This complete negative control does not satisfy the positive
+client gate or establish a Goby-specific defect. V2's historical dispatch
+uncertainty remains intact. Complete LibraryChanged acceptance remains false.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -3161,7 +3402,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051; primary stays source32/schema27. Current independently sealed v7 state is 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Native restoration of original sparse/effective metadata, ledger 2/1/6/+2, dual-session closure and preservation are independently confirmed. The matching event reached the page, but both complete request channels contain zero window HTTP and all 237 DOM samples retain the old title; no existing request was missed by matching. Reference UI v2 passed 25 runtime guards, 25 driver guards, 47 Python guards, 13 synthetic-HTML DOM cases and two compilation checks; six sources and three tool reports were published as `faf12f6fe7f3b3ff5e210a9c46a7b12d6c70ce75`. Its actual preflight passed with administrator cleanup. Actual UI v2 then submitted one viewer login POST and observed a tool HTTP 502; CSS and cgroup gaps are resolved, but upstream dispatch was not recorded. Its terminal is `failed_scope_sealed_with_viewer_dispatch_uncertainty`, viewer cleanup remains `unproven_no_token_received`, and `ui_logout` failure is preserved. Metadata writes are zero; all 61 history/tool roots and the post-v7 Goby state are preserved. Reference v1/v2 and both preflights are consumed. Prepare and verify a new, unexecuted v3 scope for observed form parsing, original-byte forwarding and explicit upstream phase/reason evidence. The JSON/form source-contract mismatch does not establish the missing dispatch fact. No Name-only refresh outcome was obtained. These tool checks do not establish reference-client acceptance. Business-read preflight login/logout must account for authentication side effects. Keep the Goby payload and acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare requires fresh scope/input/prepare before later upgrade after client acceptance. Main is not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); broader M2-M6 remain open. |
+| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051; primary remains source32/schema27. Goby v7 is independently restored and sealed at 83 sessions/70 devices/185 audits after its automatic-HTTP failure. Reference v4 now has a [complete independently confirmed observation](reference-library-changed-ui-v4-terminal.json): both 120-second windows contain 225 DOM samples, one physical/browser LibraryChanged event and zero HTTP in both complete channels; every title remains `LibraryChanged Observed`. Forward records `automatic_refresh_not_observed_within_window`; restoration records `matches_expected_without_proven_transition`, not a positive transition. Full target restoration except Etag, unchanged anchor/media, both exact-token closures, both original unit invocations exited0/MainPID0 with empty cgroups, all 87 preserved roots and the unchanged Goby v7 state are confirmed. The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json) finds equal wire payloads after target-ID/MessageId normalization; event timing differs but causality is unproven. This complete negative control does not prove a Goby-specific defect or satisfy the positive client gate. V1-v4 reference history is consumed; v3 retains its original failed report and separate recovery/seal, and v2 dispatch uncertainty remains unresolved. Goby payloads and the acceptance target remain unchanged. Main is not upgraded; its expired prepare still requires a fresh scope/input/prepare after the required client acceptance. NextUp transport implementation and verification are in progress without live business requests; actual global NextUp/client acceptance remains unexecuted. Full M2-M6 remain open; M7 remains deferred. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. The [published inventory](m4-gpu-test-env-capabilities.md) confirms no usable exposed GPU on `test-env`; a suitable remote GPU environment is still required. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |
@@ -3169,7 +3410,8 @@ each increment still needs its own source, runtime and publication evidence.
 Other DTO fields, global projections, events, subtitles and NextUp remain open.
 The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) defines
 the next bounded public-reference matrix, ordered durable regressions and
-real-client playback/refresh gate. It is planned and has not been executed.
+real-client playback/refresh gate. Actual acceptance has not executed; transport
+implementation and verification are in progress without live business requests.
 
 M7 remains deferred. Software success is not GPU verification; matching routes
 alone is not third-party playback compatibility. These priorities remain open
