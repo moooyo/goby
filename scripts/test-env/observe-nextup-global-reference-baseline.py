@@ -138,9 +138,9 @@ def load_transport(source):
 
 def validate_manifest(value):
     require(isinstance(value, dict) and set(value) == {"schemaVersion", "runId", "server", "endpoint", "process", "lock", "sources", "inputs",
-            "scope", "sealedRoots", "forbiddenOriginalRoots", "admin", "preservation", "budgets"}, "The exact observer manifest is required.")
+            "scope", "sealedRoots", "forbiddenOriginalRoots", "admin", "preservation", "budgets", "closedObservers"}, "The exact observer manifest is required.")
     value = deepcopy(value)
-    require(type(value["schemaVersion"]) is int and value["schemaVersion"] == 1 and identifier(value["runId"]), "The observer version or run ID differs.")
+    require(type(value["schemaVersion"]) is int and value["schemaVersion"] == 2 and identifier(value["runId"]), "The version-two observer manifest and run ID are required.")
     require(isinstance(value["server"], dict) and set(value["server"]) == {"id", "version"} and identifier(value["server"]["id"]) and
             isinstance(value["server"]["version"], str) and value["server"]["version"], "A public server binding is required.")
     require(value["endpoint"] == {"scheme": "http", "host": "127.0.0.1", "port": 18197}, "Only the existing host proxy on port 18197 is allowed.")
@@ -166,6 +166,10 @@ def validate_manifest(value):
     require(set(value["sources"]) == {"observer", "transport", "proxy"} and set(value["inputs"]) == {"credentials", "publicBaseline", "predecessor"},
             "The exact owned sources and actual private evidence inputs are required.")
     for row in (*value["sources"].values(), *value["inputs"].values()): descriptor(row)
+    require(isinstance(value["closedObservers"], list) and len(value["closedObservers"]) <= 8, "An explicit bounded ordered closed-observer list is required.")
+    for row in value["closedObservers"]: descriptor(row)
+    require(len({row["path"] for row in value["closedObservers"]}) == len(value["closedObservers"]) and
+            len({row["sha256"] for row in value["closedObservers"]}) == len(value["closedObservers"]), "A closed observer recovery cannot be consumed twice.")
     require(Path(value["sources"]["observer"]["path"]).name == "observe-nextup-global-reference-baseline.py" and
             Path(value["sources"]["transport"]["path"]).name == "nextup-global-transport.py" and
             value["sources"]["transport"]["sha256"] == TRANSPORT_SHA256, "Only the reviewed observer and transport may be loaded.")
@@ -190,9 +194,9 @@ def validate_manifest(value):
         root = Path(value["scope"]["proxySourceRoot" if name == "proxy" else "sourceRoot"])
         require(root in Path(row["path"]).parents, "An owned source escaped its explicit root.")
     allowed_inputs = [Path(value["scope"]["inputRoot"]), *map(Path, value["sealedRoots"])]
-    for row in value["inputs"].values():
+    for row in [*value["inputs"].values(), *value["closedObservers"]]:
         require(any(root in Path(row["path"]).parents for root in allowed_inputs), "An input escaped its owned input or sealed root.")
-    for path in [*value["scope"].values(), value["lock"]["path"], *(row["path"] for row in (*value["sources"].values(), *value["inputs"].values()))]:
+    for path in [*value["scope"].values(), value["lock"]["path"], *(row["path"] for row in (*value["sources"].values(), *value["inputs"].values(), *value["closedObservers"]))]:
         require(all(Path(path) != root and root not in Path(path).parents for root in forbidden), "A byte-reading or writing path entered original implementation/data authority.")
     admin = value["admin"]
     require(isinstance(admin, dict) and set(admin) == {"userId", "username", "credentialRef", "deviceId"} and
@@ -343,24 +347,62 @@ def owned_device(row, admin, client, device_name):
     instant(row.get("DateLastActivity"))
 
 
-def device_time_within(value, request_at, completed_at):
-    """Account only for the Devices DTO's observed whole-second precision.
+def precise_timestamp(text):
+    """Return exact 100ns UTC ticks and the retained fractional spelling."""
+    require(isinstance(text, str), "An exact timestamp string is required.")
+    match = re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.(\d{1,7}))?(?:Z|[+-]\d{2}:\d{2})", text)
+    require(match is not None, "An authority timestamp must retain its exact supported precision.")
+    fraction = match.group(1) or ""
+    delta = instant(text).astimezone(timezone.utc) - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 10_000_000 + delta.microseconds * 10 + int((fraction + "0000000")[6]), fraction
 
-    A whole-second value denotes the request's UTC second bucket. A timestamp
-    with a nonzero fractional second receives no quantization allowance.
-    """
-    def ticks(text):
-        match = re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.(\d{1,7}))?(?:Z|[+-]\d{2}:\d{2})", text)
-        require(match is not None, "A device interval timestamp must retain its exact supported precision.")
-        fraction = match.group(1) or ""
-        delta = instant(text).astimezone(timezone.utc) - datetime(1970, 1, 1, tzinfo=timezone.utc)
-        return (delta.days * 86400 + delta.seconds) * 10_000_000 + delta.microseconds * 10 + int((fraction + "0000000")[6]), fraction
-    observed, fraction = ticks(value)
-    lower, _ = ticks(request_at)
-    upper, _ = ticks(completed_at)
+
+def device_time_within(value, request_at, completed_at):
+    """Allow only the Devices DTO's observed whole-second quantization."""
+    observed, fraction = precise_timestamp(value)
+    lower, _ = precise_timestamp(request_at)
+    upper, _ = precise_timestamp(completed_at)
     if not fraction or set(fraction) <= {"0"}:
         lower = lower // 10_000_000 * 10_000_000
     require(lower <= observed <= upper, "Device activity escaped its actual request interval and observed second precision.")
+
+
+def preserve_closed_devices(before, after, windows):
+    """Retain complete device rows with only proven closed-token date updates."""
+    require(set(before) <= set(after), "A previously observed device disappeared.")
+    changes = []
+    for key, old in before.items():
+        current, window = after[key], windows.get(key)
+        if window is None:
+            require(same(old, current), "An unowned existing device changed.")
+            continue
+        require(same({name: value for name, value in old.items() if name != "DateLastActivity"},
+                     {name: value for name, value in current.items() if name != "DateLastActivity"}) and
+                current.get("LastUserId") == window["userId"] and current.get("ReportedDeviceId") == window["reportedDeviceId"],
+                "A prior closed device changed structure or owner.")
+        if old.get("DateLastActivity") != current.get("DateLastActivity"):
+            require(precise_timestamp(current["DateLastActivity"])[0] >= precise_timestamp(old["DateLastActivity"])[0], "A closed device activity timestamp moved backwards.")
+            device_time_within(current["DateLastActivity"], window["from"], window["through"])
+            changes.append({"kind": "prior-closed-device-time", "deviceId": key})
+    return changes
+
+
+def validate_closed_unit(unit, *, failed):
+    require(isinstance(unit, dict) and set(unit) == {"name", "invocationId", "properties", "cgroupPath"} and
+            isinstance(unit["name"], str) and re.fullmatch(r"[A-Za-z0-9_.@-]+\.service", unit["name"]) and
+            isinstance(unit["invocationId"], str) and re.fullmatch(r"[0-9a-f]{32}", unit["invocationId"]) and isinstance(unit["properties"], dict),
+            "A closed observer/recovery requires its exact concrete unit record.")
+    properties = unit["properties"]
+    require({"InvocationID", "MainPID", "ActiveState", "SubState", "Result", "ExecMainStatus", "ControlGroup"} <= set(properties) and
+            all(isinstance(key, str) and isinstance(value, str) for key, value in properties.items()),
+            "Closed units must explicitly include actual ControlGroup and terminal properties.")
+    state = (properties.get("ActiveState"), properties.get("SubState"))
+    require(properties.get("InvocationID") == unit["invocationId"] and properties.get("MainPID") == "0" and
+            properties.get("Result") == ("exit-code" if failed else "success") and properties.get("ExecMainStatus") == ("2" if failed else "0") and
+            (state == ("failed", "failed") if failed else state in (("active", "exited"), ("inactive", "dead"))) and
+            properties["ControlGroup"] in ("", "/system.slice/" + unit["name"]) and
+            unit["cgroupPath"] == "/sys/fs/cgroup/system.slice/" + unit["name"], "A closed observer/recovery unit has another invocation or terminal state.")
+    return deepcopy(unit)
 
 
 class Authority:
@@ -387,6 +429,8 @@ class Authority:
         self.credentials = record["admin"]
         self.predecessor = self._record(self.manifest["inputs"]["predecessor"])
         self._predecessor()
+        self._closed_observers()
+        self.units_frozen = canonical(self.units)
         for name in ("fixtureRoot", "inputRoot", "sourceRoot", "proxySourceRoot"):
             protected(self.manifest["scope"][name], directory=True)
         require(not os.path.lexists(self.manifest["scope"]["outputRoot"]), "An existing observer output can never resume.")
@@ -485,13 +529,137 @@ class Authority:
         require(admin["deviceId"] not in {row["ReportedDeviceId"] for row in devices.values()}, "The new observer device already exists.")
         require(instant(closure["from"]) <= instant(closure["ownedDevice"]["DateLastActivity"]) <= instant(observed["deviceObservation"]["wire"]["completedAt"]), "The prior device activity escaped its actual observation interval.")
         self.closure, self.previous_devices = closure, devices
-        self.unit = terminal["unit"]
-        require(isinstance(self.unit, dict) and set(self.unit) == {"name", "invocationId", "properties", "cgroupPath"} and
-                re.fullmatch(r"[A-Za-z0-9_.@-]+\.service", self.unit["name"]) and re.fullmatch(r"[0-9a-f]{32}", self.unit["invocationId"]), "A concrete predecessor unit is required.")
-        require(self.unit["properties"].get("MainPID") == "0" and self.unit["properties"].get("InvocationID") == self.unit["invocationId"] and
-                self.unit["properties"].get("ActiveState") == "failed" and self.unit["properties"].get("SubState") == "failed" and
-                self.unit["properties"].get("Result") == "exit-code" and self.unit["properties"].get("ExecMainStatus") == "2" and
-                self.unit["cgroupPath"] == "/sys/fs/cgroup/system.slice/" + self.unit["name"], "The predecessor unit is not tied to its exact empty-cgroup identity.")
+        self.closed_device_windows = {closure["ownedDevice"]["Id"]: {"from": closure["from"], "through": closure["through"],
+            "userId": closure["userId"], "reportedDeviceId": closure["reportedDeviceId"]}}
+        self.closed_token_hashes = {closure["tokenSha256"]}
+        self.closed_session_ids = {observed["login"]["body"]["SessionInfo"]["Id"]}
+        self.unit = validate_closed_unit(terminal["unit"], failed=True)
+        self.units = [deepcopy(self.unit)]
+
+    def _history_step(self, proof, *, ordinal, method, route, status, token, admin, plan_sha=None, login=False):
+        require(isinstance(proof, dict) and set(proof) == {"intent", "response"}, "A recovered request needs distinct actual intent and wire descriptors.")
+        intent, wire = self._record(proof["intent"]), self._record(proof["response"])
+        require(type(intent.get("ordinal")) is int and type(wire.get("ordinal")) is int and intent.get("ordinal") == wire.get("ordinal") == ordinal and intent.get("actor") == wire.get("actor") == "admin" and
+                identifier(intent.get("label")) and intent["label"] == wire.get("label") and wire.get("status") == status and
+                same(intent.get("request"), wire.get("request")) and wire["request"].get("method") == method and wire["request"].get("route") == route and
+                wire.get("payloadBase64") == intent.get("payloadBase64"), "An actual recovered response differs from its ordered request intent.")
+        if plan_sha is not None: require(intent.get("planSha256") == plan_sha, "A retained observer login differs from its frozen plan.")
+        rows = wire["request"]["headers"]
+        require(isinstance(rows, list) and all(isinstance(pair, list) and len(pair) == 2 and all(isinstance(part, str) and "\r" not in part and "\n" not in part for part in pair)
+                for pair in rows) and len({key.lower() for key, _ in rows}) == len(rows), "Recovered requests must retain distinct actual header pairs.")
+        headers = {key.lower(): value for key, value in rows}
+        authorization = 'Emby Client="' + CLIENT + '", Device="' + DEVICE_NAME + '", DeviceId="' + admin["deviceId"] + '", Version="' + VERSION + '"'
+        require(set(headers) == {"accept", "authorization", "content-type" if login else "x-emby-token"} and
+                headers["accept"] == "application/json" and headers["authorization"] == authorization,
+                "A recovered request substituted the original observer client/device metadata.")
+        if login:
+            body = {"Username": admin["username"], "Pw": self.credentials["password"]}
+            require(intent.get("tokenSha256") is None and wire["request"].get("body") == body and
+                    wire.get("payloadBase64") == base64.b64encode(urlencode(body).encode("utf-8")).decode() and
+                    headers["content-type"] == "application/x-www-form-urlencoded; charset=utf-8", "The retained observer login is not its actual existing-administrator form.")
+        else:
+            require(headers["x-emby-token"] == token and intent.get("tokenSha256") == digest(token.encode()) and
+                    wire["request"].get("body") is None and wire.get("payloadBase64") is None,
+                    "The recovery request did not use the original exact token with an empty body.")
+        decoded = decode_wire(wire)
+        require(precise_timestamp(intent.get("createdAt"))[0] <= precise_timestamp(wire["completedAt"])[0],
+                "An original or recovery response precedes its actual request intent.")
+        return {"intent": intent, "wire": wire, "body": decoded, "responseDescriptor": proof["response"]}
+
+    def _closed_observers(self):
+        """Advance only through independently closed failed-login recoveries."""
+        accepted, seen_runs = [], {self.manifest["runId"], self.predecessor["runId"]}
+        previous_completed = precise_timestamp(self.predecessor["capturedAt"])[0]
+        for descriptor_row in self.manifest["closedObservers"]:
+            record = self._record(descriptor_row)
+            require(isinstance(record, dict) and type(record.get("schemaVersion")) is int and record.get("schemaVersion") == 1 and record.get("kind") == "nextup-baseline-observer-recovery-terminal" and
+                    record.get("status") == "observer_login_independently_recovered_and_closed" and identifier(record.get("runId")) and
+                    identifier(record.get("observerRunId")) and record["runId"] != record["observerRunId"] and
+                    record["runId"] not in seen_runs and record["observerRunId"] not in seen_runs and
+                    type(record.get("requestCount")) is int and record.get("requestCount") == 3 and type(record.get("observerRequestCount")) is int and record.get("observerRequestCount") == 1 and
+                    all(record.get(key) is True for key in ("exactTokenClosed", "recursiveCgroupsEmpty", "noNewLogin", "noMetadataMutation", "noLibraryCreation", "noUserCreation", "noPlayback")) and
+                    record.get("referenceDatabaseRead") is False and record.get("originalImplementationBytesRead") is False,
+                    "A recovered observer lacks its exact independently closed three-request terminal.")
+            observer, recovery = record.get("observer"), record.get("recovery")
+            require(isinstance(observer, dict) and set(observer) == {"manifest", "state", "terminal", "login", "unit"} and isinstance(recovery, dict) and
+                    set(recovery) == {"manifest", "deviceObservation", "logout", "rejection", "unit"}, "The original failed observer and independent recovery evidence must be explicit.")
+            previous, state, terminal = self._record(observer["manifest"]), self._record(observer["state"]), self._record(observer["terminal"])
+            recovered = self._record(recovery["manifest"])
+            require(previous.get("runId") == state.get("runId") == terminal.get("runId") == record["observerRunId"] and
+                    type(previous.get("schemaVersion")) is int and previous.get("schemaVersion") in (1, 2) and same(previous.get("server"), self.manifest["server"]) and
+                    same(previous.get("process"), self.manifest["process"]) and same(previous.get("lock"), self.manifest["lock"]) and
+                    previous.get("inputs", {}).get("publicBaseline") == self.manifest["inputs"]["publicBaseline"] and
+                    previous.get("inputs", {}).get("predecessor") == self.manifest["inputs"]["predecessor"] and
+                    previous.get("sources", {}).get("transport", {}).get("sha256") == TRANSPORT_SHA256 and
+                    previous.get("sources", {}).get("proxy") == self.manifest["sources"]["proxy"], "A recovered observer identifies another baseline, process, server, proxy, or lock.")
+            if previous["schemaVersion"] == 2:
+                require(previous.get("closedObservers") == accepted, "A recovered version-two observer skipped or substituted its closed predecessor chain.")
+            admin = previous.get("admin")
+            require(isinstance(admin, dict) and set(admin) == {"userId", "username", "credentialRef", "deviceId"} and
+                    admin["userId"] == self.manifest["admin"]["userId"] == record.get("userId") and
+                    admin["username"] == self.manifest["admin"]["username"] == record.get("username") and identifier(admin["deviceId"]) and
+                    admin["deviceId"] == record.get("reportedDeviceId") and admin["deviceId"] != self.manifest["admin"]["deviceId"] and
+                    admin["deviceId"] not in {row["ReportedDeviceId"] for row in self.previous_devices.values()}, "A recovered observer device is not one unique existing-administrator login.")
+            require(recovered.get("runId") == record["runId"] and recovered.get("observerRunId") == record["observerRunId"] and
+                    same(recovered.get("server"), self.manifest["server"]) and same(recovered.get("process"), self.manifest["process"]) and
+                    same(recovered.get("lock"), self.manifest["lock"]) and isinstance(recovered.get("admin"), dict) and
+                    all(recovered["admin"].get(key) == admin[key] for key in ("userId", "username", "deviceId")) and
+                    same(recovered.get("observer"), observer) and recovered.get("preparationAnchor") == self.manifest["inputs"]["predecessor"],
+                    "The actual recovery manifest does not bind the failed observer's exact authority and original evidence.")
+            expected_plan = digest(canonical(frozen_plan(previous, self.baseline)).encode())
+            require(state.get("manifestSha256") == digest(canonical(previous).encode()) and state.get("planSha256") == expected_plan and
+                    all(type(state.get(key)) is int for key in ("requestCount", "normalRequestCount", "cleanupRequestCount", "readIndex")) and
+                    state.get("requestCount") == state.get("normalRequestCount") == 1 and state.get("cleanupRequestCount") == state.get("readIndex") == 0 and
+                    state.get("uncertain") is True and state.get("token") is None and state.get("session") is None and state.get("closedToken") is False and
+                    isinstance(state.get("pending"), dict) and isinstance(state.get("ownershipPending"), dict), "The original failed observer's unknown-login responsibility must remain unmodified.")
+            require(terminal.get("status") == "recovery_required" and all(type(terminal.get(key)) is int for key in ("requestCount", "normalRequestCount", "cleanupRequestCount")) and terminal.get("requestCount") == terminal.get("normalRequestCount") == 1 and
+                    terminal.get("cleanupRequestCount") == 0 and terminal.get("uncertain") is True and terminal.get("cleanupComplete") is False and
+                    terminal.get("completeSnapshotObserved") is False and terminal.get("baselineReleased") is False and terminal.get("outputs") == {},
+                    "The original observer terminal was changed into a success or contains another completed scope.")
+            login = self._history_step(observer["login"], ordinal=1, method="POST", route="/emby/Users/AuthenticateByName", status=200,
+                    token=None, admin=admin, plan_sha=expected_plan, login=True)
+            token, session = verify_login(login["body"], admin=admin, server_id=self.manifest["server"]["id"], client=CLIENT, device_name=DEVICE_NAME)
+            token_sha = digest(token.encode())
+            require(token_sha == record.get("tokenSha256") and token_sha not in self.closed_token_hashes and session not in self.closed_session_ids and
+                    state["pending"].get("ordinal") == state["ownershipPending"].get("ordinal") == 1 and state["pending"].get("label") == "login" and
+                    state["pending"].get("intentSha256") == observer["login"]["intent"]["sha256"] and same(state["pending"].get("request"), login["intent"]["request"]) and
+                    state["ownershipPending"].get("responseReceiptSha256") == observer["login"]["response"]["sha256"] and
+                    state["ownershipPending"].get("stage") == "response-awaiting-owner", "The independent recovery does not claim the exact retained failed-login response.")
+            require(record.get("from") == login["intent"].get("createdAt") and previous_completed <= precise_timestamp(record["from"])[0] <= precise_timestamp(login["wire"]["completedAt"])[0],
+                    "The recovery interval must begin at the original actual login intent.")
+            steps = {"login": login}
+            for name, ordinal, method, route, status in (("deviceObservation", 1, "GET", "/emby/Devices", 200),
+                    ("logout", 2, "POST", "/emby/Sessions/Logout", 204), ("rejection", 3, "GET", "/emby/Sessions", 401)):
+                steps[name] = self._history_step(recovery[name], ordinal=ordinal, method=method, route=route, status=status, token=token, admin=admin,
+                        plan_sha=digest(canonical(recovered).encode()))
+                require(steps[name]["intent"].get("manifestSha256") == recovery["manifest"]["sha256"], "A recovery request is not bound to its exact actual input file.")
+            pins = [step["responseDescriptor"]["sha256"] for step in steps.values()]
+            require(len(set(pins)) == 4, "Four distinct original/recovery responses are required.")
+            times = [previous_completed, *(precise_timestamp(value)[0] for step in steps.values() for value in (step["intent"]["createdAt"], step["wire"]["completedAt"])),
+                     precise_timestamp(record["capturedAt"])[0]]
+            require(times == sorted(times) and record.get("through") == steps["rejection"]["wire"]["completedAt"] and steps["logout"]["body"] is None,
+                    "The completed recovery must end at its exact ordered logout 204 and same-token 401.")
+            devices = page(steps["deviceObservation"]["body"], devices=True)
+            require(len(devices) == len(self.previous_devices) + 1, "A recovery snapshot must add exactly its one original failed-login device.")
+            preserve_closed_devices(self.previous_devices, devices, self.closed_device_windows)
+            new = set(devices) - set(self.previous_devices)
+            require(len(new) == 1, "The recovery Devices snapshot contains an unowned new population.")
+            row = devices[next(iter(new))]
+            require(same(row, record.get("ownedDevice")) and str(login["body"]["SessionInfo"]["InternalDeviceId"]) == row["Id"],
+                    "The recovery's actual owned device differs from its original login internal device identity.")
+            owned_device(row, admin, CLIENT, DEVICE_NAME)
+            device_time_within(row["DateLastActivity"], record["from"], steps["deviceObservation"]["wire"]["completedAt"])
+            require(self.manifest["admin"]["deviceId"] not in {item["ReportedDeviceId"] for item in devices.values()}, "The new observer device already exists in its recovered predecessor chain.")
+            for unit, failed in ((observer["unit"], True), (recovery["unit"], False)):
+                validated = validate_closed_unit(unit, failed=failed)
+                require(validated["name"] not in {item["name"] for item in self.units} and validated["invocationId"] not in {item["invocationId"] for item in self.units},
+                        "An observer/recovery unit cannot substitute a prior unit or invocation.")
+                self.units.append(validated)
+            self.previous_devices = devices
+            self.closed_device_windows[row["Id"]] = {"from": record["from"], "through": record["through"], "userId": admin["userId"], "reportedDeviceId": admin["deviceId"]}
+            self.closed_token_hashes.add(token_sha); self.closed_session_ids.add(session)
+            accepted.append(descriptor_row); seen_runs.update((record["observerRunId"], record["runId"]))
+            previous_completed = precise_timestamp(record["capturedAt"])[0]
 
     def acquire(self):
         require(self.lock_fd is None and not self.closed, "An authority cannot reacquire or resume.")
@@ -505,6 +673,7 @@ class Authority:
 
     def check(self):
         require(not self.closed and self.lock_fd is not None and canonical(self.manifest) == self.frozen, "The observer authority is unavailable or changed.")
+        require(canonical(self.units) == self.units_frozen, "The complete closed-unit authority changed in memory.")
         lock = self.manifest["lock"]
         info = protected(lock["path"], private=True)
         opened = os.fstat(self.lock_fd)
@@ -514,14 +683,15 @@ class Authority:
         for path, expected in self.pins.items():
             require(digest(read_owned(path, private=True)) == expected, "A pinned input or sealed proof changed during observation.")
         require(same(self.support.process_identity(self.manifest["process"]), self.manifest["process"]), "Application, proxy, namespace, or listener metadata changed.")
-        keys = tuple(self.unit["properties"])
-        require(keys and all(re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", key) for key in keys), "Invalid systemd property metadata.")
-        result = subprocess.run(["systemctl", "show", self.unit["name"], *["--property=" + key for key in keys]], check=True, capture_output=True, text=True, timeout=10)
-        observed = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
-        require(observed == self.unit["properties"], "The closed predecessor invocation/state changed.")
-        root = Path(self.unit["cgroupPath"])
-        if root.exists():
-            require(all(not entry.read_text().strip() for entry in [root / "cgroup.procs", *root.glob("**/cgroup.procs")]), "The predecessor cgroup is no longer recursively empty.")
+        for unit in self.units:
+            keys = tuple(unit["properties"])
+            require(keys and all(re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", key) for key in keys), "Invalid systemd property metadata.")
+            result = subprocess.run(["systemctl", "show", unit["name"], *["--property=" + key for key in keys]], check=True, capture_output=True, text=True, timeout=10)
+            observed = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+            require(observed == unit["properties"], "A closed predecessor invocation/state changed.")
+            root = Path(unit["cgroupPath"])
+            if root.exists():
+                require(all(not entry.read_text().strip() for entry in [root / "cgroup.procs", *root.glob("**/cgroup.procs")]), "A predecessor cgroup is no longer recursively empty.")
 
     def close(self):
         if self.lock_fd is not None:
@@ -628,7 +798,7 @@ class ObserverRunner:
                     timeout_seconds=min(budgets["requestSeconds"], remaining), max_bytes=budgets["responseBytes"] + 1)
             require(isinstance(response.raw, bytes), "The transport did not retain raw response bytes.")
             raw = response.raw[:budgets["responseBytes"] + 1]
-            response_headers = self.support.bounded_header_prefix(response.headers)
+            response_headers = [[key, value] for key, value in self.support.bounded_header_prefix(response.headers)]
             wire = {"ordinal": ordinal, "label": label, "actor": "admin", "completedAt": response.completed_at, "request": request,
                     "payloadBase64": intent["payloadBase64"], "status": response.status, "headers": response_headers, "rawBase64": base64.b64encode(raw).decode(),
                     "completeHttp": response.complete_http, "failure": response.failure, "observedRawBytes": len(response.raw), "retainedRawTruncated": len(raw) != len(response.raw)}
@@ -668,7 +838,8 @@ class ObserverRunner:
         event = self._dispatch("login", "POST", "/emby/Users/AuthenticateByName", {"Username": self.authority.credentials["username"], "Pw": self.authority.credentials["password"]})
         require(event["status"] == 200, "The single login attempt was not acknowledged.")
         token, session = verify_login(event["body"], admin=self.manifest["admin"], server_id=self.manifest["server"]["id"], client=CLIENT, device_name=DEVICE_NAME)
-        require(digest(token.encode()) != self.authority.closure["tokenSha256"], "The new login reused the retained closed predecessor token.")
+        require(digest(token.encode()) not in self.authority.closed_token_hashes and session not in self.authority.closed_session_ids,
+                "The new login reused a retained closed predecessor token or session.")
         self.token, self.session, self.login = token, session, event
         self.ownership_pending.update(stage="owner-registered", userId=self.manifest["admin"]["userId"], sessionId=session, tokenSha256=digest(token.encode()))
         self._persist()
@@ -723,14 +894,9 @@ class ObserverRunner:
                 require(instant(before["captured_at"]) <= instant(current[key]) <= instant(after["captured_at"]), "An administrator activity date escaped the retained observation interval.")
                 changes.append({"kind": "administrator-authentication-time", "field": key})
         devices, previous = after["devices"], self.authority.previous_devices
-        require(len(devices) == 87 and set(previous) <= set(devices), "The snapshot must preserve 86 retained devices and exactly one new observer device.")
+        require(len(devices) == len(previous) + 1 and set(previous) <= set(devices), "The snapshot must preserve every acknowledged predecessor device and exactly one new observer device.")
         require(all(same(row, devices[key]) for key, row in before["devices"].items()), "An original device row changed or disappeared.")
-        prior_id = self.authority.closure["ownedDevice"]["Id"]
-        old, current = previous[prior_id], devices[prior_id]
-        require(same({key: value for key, value in old.items() if key != "DateLastActivity"}, {key: value for key, value in current.items() if key != "DateLastActivity"}), "The prior closed device changed structural fields.")
-        if old.get("DateLastActivity") != current.get("DateLastActivity"):
-            require(instant(self.authority.closure["from"]) <= instant(current["DateLastActivity"]) <= instant(self.authority.closure["through"]), "Prior-device activity escaped its proven logout/401 interval.")
-            changes.append({"kind": "prior-closed-device-time", "deviceId": prior_id})
+        changes.extend(preserve_closed_devices(previous, devices, self.authority.closed_device_windows))
         new = set(devices) - set(previous)
         require(len(new) == 1, "An unowned new device appeared.")
         row = devices[next(iter(new))]
@@ -738,9 +904,11 @@ class ObserverRunner:
         require(str(self.login["body"]["SessionInfo"]["InternalDeviceId"]) == row["Id"], "The observed device differs from the login's actual internal device ID.")
         device_time_within(row["DateLastActivity"], self.login["requestAt"], self.responses["devices"]["completedAt"])
         self.observed_device = deepcopy(row)
-        return {"completePublicDocumentsPreserved": True, "oldDevicesExactlyPreserved": 85, "previousClosedDevicesPreserved": 1, "newOwnedObserverDevices": 1,
+        return {"completePublicDocumentsPreserved": True, "oldDevicesExactlyPreserved": 85,
+                "previousClosedDevicesPreserved": len(self.authority.closed_device_windows), "newOwnedObserverDevices": 1,
                 "allowedAuthenticationChanges": changes, "referenceDatabaseRead": False, "originalImplementationBytesRead": False,
-                "priorBaseline": self.manifest["inputs"]["publicBaseline"], "predecessorTerminal": self.manifest["inputs"]["predecessor"]}
+                "priorBaseline": self.manifest["inputs"]["publicBaseline"], "predecessorTerminal": self.manifest["inputs"]["predecessor"],
+                "closedObservers": self.manifest["closedObservers"]}
 
     def _cleanup(self):
         require(self.cleanup_started is None and not self.uncertain and not self.journal_failed and self.pending is None and self.ownership_pending is None and self.token is not None,

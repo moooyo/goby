@@ -8,6 +8,15 @@ reading System/Configuration. The failed attempt therefore cannot supply a
 complete new baseline. Its six media copies and its closed authentication
 history remain retained; it created no libraries, users, or playback sessions.
 
+The initial real observer then completed its one administrator login but
+stopped before any GET or cleanup. The frozen HTTP transport returns ordered
+header tuples; the observer incorrectly passed those in-memory tuples to a
+decoder requiring JSON-style lists. Its durable raw JSON had already
+converted the tuples to lists, so reading the saved response later did not
+reproduce the in-memory failure. That consumed observer state and terminal
+remain `recovery_required`. A subsequent observation must admit an independent
+exact-token recovery; it never rewrites the failed observer as a success.
+
 `scripts/test-env/observe-nextup-global-reference-baseline.py` implements a new,
 single-use observation with a complete 31-read snapshot. It never constructs a
 preparation runner, copies media, creates a library or user, updates metadata,
@@ -19,22 +28,31 @@ attestation before releasing the resulting baseline.
 ## Frozen implementation and verification
 
 The current observer source is
-`89bc2841a3217cecbdb1815bb74ebef6e79f5e3ad951ed2dbd5d755f1d0fb7ee`;
+`5436668b824c3432fe52b6f250faea6626f4fa6dc13fc33955fa152337487228`;
 its guard source is
-`9d1de23e8dbd85388cfb5e449d7f5773874447a34fce5aa2376dd8eb6d008ced`.
+`a7fcffa4f55de3c9dfe04e050daf06384d04b5f38473d6b9506a6babb6ecadf4`.
 It reuses the reviewed `HTTPTransport`, `Journal`, and metadata-only
 `process_identity` from transport source
 `d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1`.
 
 The immutable remote source scope is
-`/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-observer-tool-02`.
+`/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-observer-tool-04`.
 All verification ran through `ssh test-env` with `/usr/bin/python3 -I -B`.
-No local test, business HTTP, original implementation read, or reference
-database read was performed.
+These guard, compilation, regression, and proof-chain checks performed no
+local testing, business HTTP, original implementation read, or reference
+database read. The separately retained real observer and recovery attempts
+have their own actual HTTP evidence.
 
 | Evidence | Result | SHA-256 |
 | --- | --- | --- |
-| `nextup-global-baseline-observer-verification-01.json` | 95 guards, zero failures/errors/skips; synthetic HTTP and process observations | `ef2d70662418efc8c3bc6de3464a569d29810742aadfce7bb749fc1ba571fdb0` |
+| `nextup-global-baseline-observer-verification-03.json` | 149 guards, zero failures/errors/skips; includes frozen HTTPTransport with fake sockets and all closed-chain authority guards | `354b3931a2c0df7b87b66a17cfa792b785a11422db1dc8ad2c49c6f4ec517ff6` |
+| `nextup-global-baseline-observer-compile-03.json` | Both final owned Python files compiled remotely | `184cfc7d0d58ec520393563bab300d8ddb16dffa47873cb60eaa76b411e40687` |
+| `nextup-global-baseline-observer-regression-03.json` | Six negative tests with eight expected failures against the previous chain implementation, including three ControlGroup subcases | `e8f7f2cf8ca9828adeea3584a6cb11e53a7afcd0be749d46c7031d15cfa20481` |
+| `nextup-global-baseline-observer-recovery-chain-observation-01.json` | Final source accepted 25 actual predecessor/recovery proof pins, 87 retained devices, two closed token/device windows, and three unit records; no HTTP or process probe | `ff948e8c93585d223c6ec38092cb7cb8bfbb43f626cedf94ad937cd1e9ed5ea9` |
+| `nextup-global-baseline-observer-verification-02.json` | Earlier 137 guards passed before the final closed-proof consistency refinements | `33c75716c81a7f0ab6d1f11b80fccec2f0316629d81f8f5509e475d807158ee2` |
+| `nextup-global-baseline-observer-compile-02.json` | Both current owned Python files compiled remotely | `99480681011ed366ef7df231df15ef873e18181f4c5589170e1a4d8d4a1668f9` |
+| `nextup-global-baseline-observer-regression-02.json` | Two expected tuple-header failures against the retained version-one source; one uses frozen HTTPTransport with fake sockets | `ffbe66083a6d82ac6adac3893e65b9ada937d2b44b42acee6939b317e3f3d901` |
+| `nextup-global-baseline-observer-verification-01.json` | Earlier 95 guards passed with list-based fake headers; this did not exercise the real tuple-header boundary | `ef2d70662418efc8c3bc6de3464a569d29810742aadfce7bb749fc1ba571fdb0` |
 | `nextup-global-baseline-observer-compile-01.json` | Both owned Python files compiled remotely | `f6d748b2be19b757a66334cee201e869b8c743fe29c16d9d0766512d6a35e98d` |
 | `nextup-global-baseline-observer-regression-01.json` | One expected failure against the retained previous source | `82fda0c0213b9c043be8c585fb90a02f9e0d2e596fb7ba94e2b25378486acc14` |
 | `nextup-global-baseline-observer-predecessor-observation-01.json` | Actual predecessor chain accepted; 12 actual proof files repinned; no process probe or business HTTP | `87a60954ec80c3785180064960ca29e186b1694be57068ccd59bbe54d717a73d` |
@@ -48,6 +66,25 @@ device timestamp before that acknowledgment. A fresh regression scope proved
 that the earlier source rejects a legitimate same-second timestamp. The new
 source accepts it and rejects the preceding second, nonzero fractional times
 before the actual request, and values beyond the actual Devices read.
+
+The next source,
+`89bc2841a3217cecbdb1815bb74ebef6e79f5e3ad951ed2dbd5d755f1d0fb7ee`,
+fixed time precision but still had the tuple-header failure. The current source
+normalizes each actual header pair to a list before constructing and decoding
+the wire document. Values, duplicate fields, and order remain unchanged.
+The default fake transport now uses tuple pairs, and a separate guard sends
+all 34 synthetic requests through the actual frozen transport and Python's
+HTTPResponse parser. That guard verifies both repeated header positions and
+the exact saved wire projection.
+
+The intermediate chain source
+`db3b089113d9c705aca91064c449ad91caf5ad3f31a70d6af2f0113c0ca744e5`
+retains its successful 137-guard receipt. Independent review then identified
+four remaining consistency gaps: omitted live ControlGroup authority,
+unbound recovery-manifest evidence, incomplete request/cross-record time
+ordering, and seventh-digit activity rollback. Six negative tests reproduced
+those gaps against its retained bytes. The final source resolves all four;
+the same reviewer confirmed the specific fixes, and all 149 guards passed.
 
 The actual predecessor-chain observation is a read-only schema and evidence
 check. It is explicitly not a full Authority admission, a lock acquisition,
@@ -93,10 +130,11 @@ The top-level JSON keys are exactly:
 
 ```text
 schemaVersion, runId, server, endpoint, process, lock, sources, inputs,
-scope, sealedRoots, forbiddenOriginalRoots, admin, preservation, budgets
+scope, sealedRoots, forbiddenOriginalRoots, admin, preservation, budgets,
+closedObservers
 ```
 
-`schemaVersion` is integer `1`. `runId` and identity references are bounded
+`schemaVersion` is integer `2`. `runId` and identity references are bounded
 ASCII identifiers. The manifest is a root-owned, owner-only JSON file under
 the explicit input root. The CLI requires its byte-exact SHA-256.
 
@@ -108,6 +146,7 @@ the explicit input root. The CLI requires its byte-exact SHA-256.
 | `lock` | `{path, device, inode}` for the existing reference lock; never creates a replacement |
 | `sources` | Exact `{observer, transport, proxy}` descriptors, each `{path, sha256}` |
 | `inputs` | Exact `{credentials, publicBaseline, predecessor}` descriptors |
+| `closedObservers` | Explicit ordered list of zero to eight distinct independent observer-recovery terminal descriptors |
 | `scope` | Exact `{fixtureRoot, inputRoot, sourceRoot, proxySourceRoot, outputRoot}` absolute Linux paths |
 | `sealedRoots` | Explicit unique historical roots that may be read and must never overlap the new output |
 | `forbiddenOriginalRoots` | Explicit exclusions containing both the original executable/package root and its `-programdata` root |
@@ -193,6 +232,105 @@ worker namespace, and the exclusive existing lock. The observer never reads
 the original executable contents or database and never loads predecessor
 operator code.
 
+## Closed observer recovery chain
+
+`inputs.predecessor` remains the original failed-preparation anchor. The new
+`closedObservers` list separately names each independently closed observer
+recovery in chronological order. No recovered device is deleted, hidden, or
+folded into an invented baseline. For the next real observation following
+the initial failed observer, this list must contain its actual independent
+recovery terminal; an empty list cannot justify that additional device.
+
+The actual closed recovery terminal for the initial failed observer is
+`/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-recovery-execution-01/independent-terminal.json`,
+SHA-256 `41392c5ff86192dce4e90eee8026b188aa6def14cf90a92aa0920edb4c8eb8f1`.
+The final observer source accepted its actual 25-file predecessor/recovery
+chain in a separate read-only observation. This established 87 retained
+device rows and two closed administrator-token/device windows. The original
+failed observer state remained byte-identical at
+`3f4df82c27a851973f5578eb19a7ecf164d0840c000e23bb237fd6ab0382729b`.
+That check did not construct an observer runner, acquire the live lock,
+probe live processes, or release a new full baseline.
+
+Each terminal has `schemaVersion: 1`, kind
+`nextup-baseline-observer-recovery-terminal`, and status
+`observer_login_independently_recovered_and_closed`. It contains:
+
+| Field | Actual evidence |
+| --- | --- |
+| `runId`, `observerRunId`, `capturedAt` | Independent recovery run, original failed observer run, and terminal capture time |
+| `observer` | Exact `{manifest, state, terminal, login: {intent, response}, unit}` |
+| `recovery` | Exact `{manifest, deviceObservation: {intent, response}, logout: {intent, response}, rejection: {intent, response}, unit}` |
+| `userId`, `username`, `reportedDeviceId`, `tokenSha256` | The original acknowledged observer administrator, device, and exact token |
+| `from`, `through` | Original login intent's real `createdAt`, and actual recovery rejection completion |
+| `ownedDevice` | The complete actual row from the recovery Devices response |
+| `requestCount`, `observerRequestCount` | Exactly three recovery requests and one original observer request |
+| Closure and scope facts | `exactTokenClosed`, `recursiveCgroupsEmpty`, `noNewLogin`, `noMetadataMutation`, `noLibraryCreation`, `noUserCreation`, and `noPlayback` are true; original implementation and database reads are false |
+
+Every nested evidence reference is a byte-exact `{path, sha256}` descriptor.
+Each `unit` retains `{name, invocationId, properties, cgroupPath}`. The original
+observer unit must still be the failed invocation with MainPID zero and exit
+status two; the independent recovery unit must be a distinct successful
+invocation with MainPID zero and exit status zero. Current unit properties
+and recursively empty cgroups are rechecked with all other authority before
+and after subsequent requests. `ControlGroup` is a mandatory retained and
+live-queried property, including for the preparation anchor. It must bind
+the expected system.slice path or the actual empty value of the exact
+completed invocation. The complete unit authority is also frozen in memory;
+omitting ControlGroup cannot bypass a different live Slice or residual group.
+
+The recovery manifest binds `runId`, `observerRunId`, `server`, `process`,
+`lock`, and the original administrator's user/name/device fields. Its
+`observer` and `preparationAnchor` references must exactly match the terminal's
+original evidence. Every actual recovery intent must bind the raw manifest
+file SHA-256 and the canonical recovery manifest's plan SHA-256. The original
+observer manifest still pins the same complete v4 baseline, failed-preparation
+anchor, proxy, process, and lock. A recovered version-two observer must name
+exactly the already accepted earlier recovery descriptors. Duplicate records,
+run IDs, device IDs, unit names, or invocation IDs cannot be substituted.
+
+The original observer state remains unknown: one normal request, zero reads,
+zero cleanup requests, no committed token/session, a pending login intent,
+and `ownershipPending.stage: response-awaiting-owner`. Its state must bind
+the actual original manifest, frozen plan, login intent, and raw login
+response. Its terminal remains `recovery_required`, with no released
+baseline or complete snapshot. The recovered terminal provides a separate
+disposition instead of altering those original records.
+
+The original login's actual principal, server, session, internal device ID,
+reported device ID, client metadata, form bytes, and token are revalidated.
+The three recovery requests must then be exactly GET `/emby/Devices`, POST
+`/emby/Sessions/Logout`, and GET `/emby/Sessions`, using that same token and
+original client/device metadata. Distinct complete raw responses must prove
+HTTP 200, 204, and 401 in that order. A separate login or a summary flag cannot
+substitute for any response.
+
+Every actual intent `createdAt` must precede its own response, and every
+following request must start at or after the preceding response completion.
+The original failed observer login must also follow the preceding independent
+terminal's `capturedAt`. This cursor advances through each accepted recovery
+record, so a later chain entry cannot precede the preparation anchor or an
+earlier recovered observer. These comparisons preserve all seven fractional
+digits instead of discarding submicrosecond ordering.
+
+Each actual recovery Devices snapshot must preserve every previously
+observed row and add exactly its own failed-login device. All original 85
+device rows remain exact. Already closed devices may advance only
+DateLastActivity, within their own proven authentication windows and observed
+whole-second precision; activity may not move backwards even at 100ns
+precision. Each newly
+recovered row must match its original login's internal device ID and all
+administrator/client metadata. Its timestamp is bound to the real original
+login request through the real recovery Devices response. The resulting
+device map, token hashes, session IDs, and closed windows are carried into
+the next chain step and final snapshot comparison.
+
+With one recovered observer, the complete new observer must therefore
+actually observe 88 Devices rows: 85 original rows, one preparation device,
+one recovered observer device, and its own new device. Two recovered
+observers require 89 rows. This evidence growth does not add any new business
+request: the complete observer remains bounded to 34 attempts.
+
 ## Snapshot preservation and authentication responsibility
 
 Every request writes an exclusive intent, a reserved state, and an fsynced
@@ -220,14 +358,16 @@ Account profiles must be equal except for bounded administrator
 `LastLoginDate` and `LastActivityDate` changes.
 
 All 85 original device rows must still match exactly. The prior preparation
-device may change only `DateLastActivity` inside its proven logout/401 window.
+device and each explicitly recovered observer device may change only
+`DateLastActivity` inside their own proven closed authentication windows.
 Exactly one new observer device must match the acknowledged login's internal
 and reported device IDs, administrator, and request client metadata. Thus
-success proves an actual 87-row Devices observation; it never synthesizes a
-missing row or admits an unexplained device.
+success proves the exact actual Devices population derived from the retained
+recovery chain plus one new device; it never synthesizes a missing row or
+admits an unexplained device.
 
-The actual Devices DTO has observed whole-second activity precision. For the
-new observer device only, a timestamp whose fractional digits are all zero
+The actual Devices DTO has observed whole-second activity precision. For an
+owned observer or a bounded closed-device update, a timestamp whose fractional digits are all zero
 uses the floor of the actual login request's UTC second as its lower bound.
 A nonzero fractional timestamp uses the exact request start. Both must be no
 later than the actual Devices response completion. Comparisons preserve

@@ -13,6 +13,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -58,6 +59,9 @@ class FakeAuthority:
         self.fixture, self.support = fixture, fixture.support
         self.baseline, self.credentials = deepcopy(fixture.baseline), deepcopy(fixture.credentials)
         self.closure, self.previous_devices = deepcopy(fixture.closure), deepcopy(fixture.previous_devices)
+        self.closed_device_windows = deepcopy(fixture.closed_device_windows)
+        self.closed_token_hashes = set(fixture.closed_token_hashes)
+        self.closed_session_ids = set(fixture.closed_session_ids)
         self.checks, self.failure_at = 0, None
         self.acquired = self.closed = False
 
@@ -110,7 +114,7 @@ class Fixture:
                      cmdline=["synthetic-python", source["proxy"]["path"]], cgroup="0::/synthetic-proxy\n", listener={"port": 18197, "socketInode": "54322"})
         lock = Path(scope["fixtureRoot"]) / "reference.lock"
         lock.write_bytes(b""); lock.chmod(0o600)
-        self.manifest = {"schemaVersion": 1, "runId": "synthetic-observation", "server": {"id": "synthetic-server", "version": "synthetic-v1"},
+        self.manifest = {"schemaVersion": 2, "runId": "synthetic-observation", "server": {"id": "synthetic-server", "version": "synthetic-v1"}, "closedObservers": [],
             "endpoint": {"scheme": "http", "host": "127.0.0.1", "port": 18197},
             "process": {"application": app, "endpoint": proxy, "workerNetworkNamespace": "net:[54322]"},
             "lock": {"path": str(lock), "device": lock.stat().st_dev, "inode": lock.stat().st_ino}, "sources": source,
@@ -137,6 +141,11 @@ class Fixture:
         previous = self.device(old_admin, "986", "Goby NextUp Preparation", "Linux Fixture Recorder", "2026-09-13T00:00:30+00:00")
         self.previous_devices = {**deepcopy(self.baseline["devices"]), previous["Id"]: previous}
         self.closure = {"from": "2026-09-13T00:00:10+00:00", "through": "2026-09-13T00:00:40+00:00", "tokenSha256": self.module.digest(b"previous-token"), "ownedDevice": previous}
+        self.closed_device_windows = {"986": {"from": self.closure["from"], "through": self.closure["through"], "userId": self.admin["userId"], "reportedDeviceId": old_admin["deviceId"]}}
+        self.closed_token_hashes, self.closed_session_ids = {self.closure["tokenSha256"]}, {"previous-session"}
+        if not hasattr(self.module.Authority, "_closed_observers"):
+            self.manifest["schemaVersion"] = 1
+            self.manifest.pop("closedObservers")
         self.authority = FakeAuthority(self)
         self.calls, self.response_mutator, self.journal_mutator = [], None, None
         self.bodies = self.make_bodies()
@@ -180,7 +189,7 @@ class Fixture:
             if request.label == "users":
                 body[0]["LastLoginDate"] = body[0]["LastActivityDate"] = self.clock.utc()
         raw = b"" if body is None else encoded(body)
-        response = {"status": status, "headers": [["Content-Type", "application/json; charset=utf-8"], ["Content-Length", str(len(raw))]], "raw": raw,
+        response = {"status": status, "headers": [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(raw)))], "raw": raw,
                     "complete_http": True, "completed_at": self.clock.utc(), "failure": None}
         if self.response_mutator: self.response_mutator(request, response)
         return SimpleNamespace(**response)
@@ -203,7 +212,7 @@ class Fixture:
                 value = json.loads(response["raw"])
                 mutate(value)
                 response["raw"] = encoded(value)
-                response["headers"][-1][1] = str(len(response["raw"]))
+                response["headers"][-1] = (response["headers"][-1][0], str(len(response["raw"])))
         self.response_mutator = change
 
     def history(self):
@@ -245,7 +254,7 @@ class Fixture:
                     "completeHttp": True, "failure": None, "observedRawBytes": len(raw), "retainedRawTruncated": False}
             closure[name] = {"intent": write(name + "-intent", intent), "response": write(name + "-response", wire)}
         unit = {"name": "goby-synthetic-closed-preparation.service", "invocationId": "d" * 32,
-                "properties": {"InvocationID": "d" * 32, "MainPID": "0", "ActiveState": "failed", "SubState": "failed", "Result": "exit-code", "ExecMainStatus": "2"},
+                "properties": {"InvocationID": "d" * 32, "MainPID": "0", "ActiveState": "failed", "SubState": "failed", "Result": "exit-code", "ExecMainStatus": "2", "ControlGroup": ""},
                 "cgroupPath": "/sys/fs/cgroup/system.slice/goby-synthetic-closed-preparation.service"}
         terminal = {"schemaVersion": 1, "kind": "nextup-global-failed-preparation-terminal", "status": "failed_preparation_independently_sealed_after_known_cleanup",
             "runId": prior["runId"], "capturedAt": "2026-09-13T00:00:50+00:00", "unit": unit,
@@ -270,6 +279,111 @@ class Fixture:
         authority.predecessor = deepcopy(self.history_terminal)
         authority._record = lambda row: deepcopy(self.history_records[row["path"]])
         return authority
+
+    def recovery_history(self, count=1):
+        """Append private synthetic failed-login and exact-token recovery chains."""
+        self.history()
+        accumulated = deepcopy(self.previous_devices)
+        windows = deepcopy(self.closed_device_windows)
+        self.recovery_terminals, self.recovery_descriptors = [], []
+
+        def write(name, value):
+            path = self.sealed / (name + ".json")
+            raw = encoded(value); path.write_bytes(raw); path.chmod(0o600)
+            self.history_records[str(path)] = deepcopy(value)
+            return {"path": str(path), "sha256": self.module.digest(raw)}
+
+        for index in range(count):
+            prefix = "recovered-" + str(index)
+            second = 60 + index * 12
+            base = datetime(2026, 9, 13, tzinfo=timezone.utc)
+            stamp = lambda offset, micros=0: (base + timedelta(seconds=second + offset, microseconds=micros)).isoformat()
+            metadata = {**self.admin, "deviceId": "recovered-observer-device-" + str(index)}
+            token, session, internal_id = "recovered-token-" + str(index), "recovered-session-" + str(index), 990 + index
+            previous = deepcopy(self.manifest)
+            previous.update(runId=prefix + "-observer", admin=metadata)
+            if index == 0:
+                previous["schemaVersion"] = 1; previous.pop("closedObservers")
+            else: previous["closedObservers"] = deepcopy(self.recovery_descriptors)
+            previous["scope"]["outputRoot"] = str(self.sealed / (prefix + "-output"))
+            plan_sha = self.module.digest(self.module.canonical(self.module.frozen_plan(previous, self.baseline)).encode())
+            login = self.login()
+            login.update(AccessToken=token)
+            login["SessionInfo"].update(Id=session, DeviceId=metadata["deviceId"], InternalDeviceId=internal_id)
+            authorization = 'Emby Client="' + self.module.CLIENT + '", Device="' + self.module.DEVICE_NAME + '", DeviceId="' + metadata["deviceId"] + '", Version="1.0"'
+
+            def step(name, ordinal, method, route, status, body, completed, created, *, is_login=False):
+                headers = {"Accept": "application/json", "Authorization": authorization}
+                request_body = None
+                if is_login:
+                    headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+                    request_body = {"Username": metadata["username"], "Pw": self.credentials["password"]}
+                else: headers["X-Emby-Token"] = token
+                request = {"method": method, "route": route, "headers": [[key, value] for key, value in headers.items()], "body": request_body}
+                payload = None if request_body is None else base64.b64encode(urlencode(request_body).encode()).decode()
+                intent = {"ordinal": ordinal, "label": name, "actor": "admin", "planSha256": plan_sha, "request": request, "createdAt": created,
+                          "payloadBase64": payload, "tokenSha256": None if is_login else self.module.digest(token.encode())}
+                if not is_login:
+                    intent.update(planSha256=recovery_plan_sha, manifestSha256=recovery_manifest_descriptor["sha256"])
+                raw = b"" if body is None else encoded(body)
+                wire = {"ordinal": ordinal, "label": name, "actor": "admin", "completedAt": completed, "request": request, "payloadBase64": payload, "status": status,
+                        "headers": [["Content-Type", "application/json"], ["Content-Length", str(len(raw))]], "rawBase64": base64.b64encode(raw).decode(),
+                        "completeHttp": True, "failure": None, "observedRawBytes": len(raw), "retainedRawTruncated": False}
+                return {"intent": write(prefix + "-" + name + "-intent", intent), "response": write(prefix + "-" + name + "-response", wire)}, intent
+
+            login_proof, login_intent = step("login", 1, "POST", "/emby/Users/AuthenticateByName", 200, login, stamp(0, 28000), stamp(0, 10000), is_login=True)
+            pending = {"ordinal": 1, "label": "login", "intentSha256": login_proof["intent"]["sha256"], "request": login_intent["request"]}
+            state = {"schemaVersion": 1, "runId": previous["runId"], "manifestSha256": self.module.digest(self.module.canonical(previous).encode()), "planSha256": plan_sha,
+                     "requestCount": 1, "normalRequestCount": 1, "cleanupRequestCount": 0, "readIndex": 0, "uncertain": True, "token": None, "session": None, "closedToken": False,
+                     "pending": pending, "ownershipPending": {"ordinal": 1, "responseReceiptSha256": login_proof["response"]["sha256"], "stage": "response-awaiting-owner"}}
+            failed = {"runId": previous["runId"], "status": "recovery_required", "requestCount": 1, "normalRequestCount": 1, "cleanupRequestCount": 0, "uncertain": True,
+                      "cleanupComplete": False, "completeSnapshotObserved": False, "baselineReleased": False, "outputs": {}}
+            def unit(name, failed):
+                invocation = (str(index + 1) + ("a" if failed else "b")) * 16
+                return {"name": name, "invocationId": invocation, "properties": {"InvocationID": invocation, "MainPID": "0", "ActiveState": "failed" if failed else "active",
+                        "SubState": "failed" if failed else "exited", "Result": "exit-code" if failed else "success", "ExecMainStatus": "2" if failed else "0", "ControlGroup": ""},
+                        "cgroupPath": "/sys/fs/cgroup/system.slice/" + name}
+            observer = {"manifest": write(prefix + "-manifest", previous), "state": write(prefix + "-state", state), "terminal": write(prefix + "-terminal", failed),
+                        "login": login_proof, "unit": unit(prefix + "-observer.service", True)}
+            recovery_manifest = {"schemaVersion": 1, "runId": prefix + "-recovery", "observerRunId": previous["runId"], "server": previous["server"],
+                                 "process": previous["process"], "lock": previous["lock"], "admin": metadata, "observer": observer,
+                                 "preparationAnchor": self.manifest["inputs"]["predecessor"]}
+            recovery_manifest_descriptor = write(prefix + "-recovery-manifest", recovery_manifest)
+            recovery_plan_sha = self.module.digest(self.module.canonical(recovery_manifest).encode())
+            for device_id, window in windows.items():
+                accumulated[device_id]["DateLastActivity"] = self.module.instant(window["through"]).replace(microsecond=0).isoformat()
+            owned = self.device(metadata, str(internal_id), self.module.CLIENT, self.module.DEVICE_NAME, stamp(0))
+            accumulated[owned["Id"]] = owned
+            device_proof, _ = step("devices", 1, "GET", "/emby/Devices", 200, {"Items": list(deepcopy(accumulated).values()), "TotalRecordCount": 0}, stamp(5, 100000), stamp(5, 10000))
+            logout_proof, _ = step("logout", 2, "POST", "/emby/Sessions/Logout", 204, None, stamp(6, 100000), stamp(6, 10000))
+            rejection_proof, _ = step("rejection", 3, "GET", "/emby/Sessions", 401, "Unauthorized", stamp(7, 100000), stamp(7, 10000))
+            recovery = {"manifest": recovery_manifest_descriptor, "deviceObservation": device_proof, "logout": logout_proof,
+                        "rejection": rejection_proof, "unit": unit(prefix + "-recovery.service", False)}
+            record = {"schemaVersion": 1, "kind": "nextup-baseline-observer-recovery-terminal", "status": "observer_login_independently_recovered_and_closed",
+                "runId": recovery_manifest["runId"], "observerRunId": previous["runId"], "capturedAt": stamp(8), "observer": observer, "recovery": recovery,
+                "userId": metadata["userId"], "username": metadata["username"], "reportedDeviceId": metadata["deviceId"], "tokenSha256": self.module.digest(token.encode()),
+                "from": stamp(0, 10000), "through": stamp(7, 100000), "ownedDevice": deepcopy(owned), "requestCount": 3, "observerRequestCount": 1,
+                "exactTokenClosed": True, "recursiveCgroupsEmpty": True, "referenceDatabaseRead": False, "originalImplementationBytesRead": False,
+                "noNewLogin": True, "noMetadataMutation": True, "noLibraryCreation": True, "noUserCreation": True, "noPlayback": True}
+            desc = write(prefix + "-independent-recovery", record)
+            self.recovery_descriptors.append(desc); self.recovery_terminals.append(record)
+            windows[owned["Id"]] = {"from": record["from"], "through": record["through"], "userId": metadata["userId"], "reportedDeviceId": metadata["deviceId"]}
+        self.manifest["closedObservers"] = deepcopy(self.recovery_descriptors)
+        input_path = Path(self.input_descriptor["path"])
+        raw = encoded(self.manifest); input_path.write_bytes(raw)
+        self.input_descriptor["sha256"] = self.module.digest(raw)
+        return self.recovery_descriptors
+
+    def recovered_authority(self):
+        authority = self.historical_authority()
+        authority._predecessor(); authority._closed_observers()
+        return authority
+
+    def use_recovered_authority(self, authority):
+        self.previous_devices = deepcopy(authority.previous_devices)
+        self.closed_device_windows = deepcopy(authority.closed_device_windows)
+        self.closed_token_hashes, self.closed_session_ids = set(authority.closed_token_hashes), set(authority.closed_session_ids)
+        self.authority = FakeAuthority(self)
 
 
 class ObserverGuards(unittest.TestCase):
@@ -299,6 +413,78 @@ class ObserverGuards(unittest.TestCase):
         self.assertEqual(closure["through"], f.runner.responses["rejection"]["completedAt"])
         self.assertEqual([call["method"] for call in f.calls].count("POST"), 2)
         self.assertTrue(f.authority.closed)
+
+    def test_frozen_transport_tuple_headers_are_normalized_without_loss(self):
+        f = self.fixture()
+        runner = f.make_runner()
+        runner.transport = f.support.HTTPTransport(f.manifest["endpoint"])
+        connections, expected_headers, parsed_headers = [], [], []
+        plan, case = runner.plan["requests"], self
+
+        class ResponseSocket:
+            def __init__(self, connection, planned):
+                self.connection, self.planned = connection, planned
+                self.request_bytes, self.closed = bytearray(), False
+
+            def sendall(self, data):
+                self.request_bytes.extend(data)
+
+            def makefile(self, mode):
+                case.assertEqual(mode, "rb")
+                head, separator, payload = bytes(self.request_bytes).partition(b"\r\n\r\n")
+                case.assertEqual(separator, b"\r\n\r\n")
+                lines = head.decode("iso-8859-1").split("\r\n")
+                method, route, version = lines[0].split(" ", 2)
+                case.assertEqual(version, "HTTP/1.1")
+                case.assertEqual((method, route), (self.planned["method"], self.planned["route"]))
+                headers = {}
+                for line in lines[1:]:
+                    key, separator, value = line.partition(":")
+                    case.assertEqual(separator, ":")
+                    headers[key] = value.strip()
+                if "Content-Length" in headers: case.assertEqual(int(headers["Content-Length"]), len(payload))
+                request = SimpleNamespace(method=method, route=route, label=self.planned["label"], actor="admin", cleanup=self.planned["label"] in ("logout", "rejection"))
+                response = f.send(request, headers, payload or None, timeout_seconds=self.connection.timeout, max_bytes=f.manifest["budgets"]["responseBytes"] + 1)
+                pairs = [("X-Observer-Order", "first"), *(tuple(pair) for pair in response.headers), ("X-Observer-Order", "second")]
+                expected_headers.append(pairs)
+                reason = {200: "OK", 204: "No Content", 401: "Unauthorized"}[response.status]
+                response_head = f"HTTP/1.1 {response.status} {reason}\r\n" + "".join(f"{key}: {value}\r\n" for key, value in pairs) + "\r\n"
+                return io.BytesIO(response_head.encode("iso-8859-1") + response.raw)
+
+            def close(self):
+                self.closed = True
+
+        class ObservedHTTPResponse(f.support.http.client.HTTPResponse):
+            def getheaders(self):
+                pairs = super().getheaders()
+                parsed_headers.append(pairs)
+                return pairs
+
+        def connect(connection):
+            case.assertLess(len(connections), len(plan))
+            synthetic_socket = ResponseSocket(connection, plan[len(connections)])
+            connections.append(synthetic_socket)
+            connection.sock = synthetic_socket
+
+        with patch.object(socket.socket, "connect", side_effect=AssertionError("Real HTTP is forbidden.")), \
+             patch.object(f.support.http.client.HTTPConnection, "connect", connect), \
+             patch.object(f.support.http.client.HTTPConnection, "response_class", ObservedHTTPResponse), \
+             patch.object(f.support, "utc_now", f.clock.utc):
+            terminal = runner.run()
+        self.assertEqual(terminal["status"], "awaiting_independent_attestation")
+        self.assertEqual((terminal["requestCount"], terminal["normalRequestCount"], terminal["cleanupRequestCount"]), (34, 32, 2))
+        self.assertTrue(terminal["cleanupComplete"]); self.assertFalse(terminal["baselineReleased"])
+        self.assertEqual(len(connections), 34); self.assertEqual(len(parsed_headers), 34)
+        self.assertEqual(parsed_headers, expected_headers)
+        self.assertTrue(all(connection.closed for connection in connections))
+        for ordinal, (planned, pairs) in enumerate(zip(plan, parsed_headers), start=1):
+            self.assertIs(type(pairs), list)
+            self.assertTrue(all(type(pair) is tuple for pair in pairs))
+            self.assertEqual(pairs[0], ("X-Observer-Order", "first")); self.assertEqual(pairs[-1], ("X-Observer-Order", "second"))
+            label = planned["label"]
+            wire = json.loads((f.output / "private" / f"{ordinal:04d}-{label}-response.json").read_bytes())
+            self.assertEqual(wire["headers"], [[key, value] for key, value in pairs])
+            self.assertEqual(f.module.decode_wire(wire), runner.responses[label]["body"])
 
     def test_same_runner_cannot_resume(self):
         f = self.fixture(); f.run()
@@ -461,6 +647,154 @@ class ObserverGuards(unittest.TestCase):
             wire = deepcopy(original); wire["headers"] = headers
             with self.subTest(headers=headers), self.assertRaises(f.module.ObservationError): f.module.decode_wire(wire)
 
+    def test_default_fake_wire_uses_real_transport_tuple_pairs(self):
+        f = self.fixture()
+        response = f.send(SimpleNamespace(label="login", method="POST", route="/emby/Users/AuthenticateByName"), {}, None)
+        self.assertTrue(all(type(pair) is tuple for pair in response.headers))
+
+    def test_one_recovered_observer_yields_88_actual_devices_with_34_requests(self):
+        f = self.fixture(); f.recovery_history(1)
+        authority = f.recovered_authority()
+        self.assertEqual(len(authority.previous_devices), 87)
+        self.assertEqual(len(authority.closed_device_windows), 2)
+        self.assertEqual(len(authority.units), 3)
+        f.use_recovered_authority(authority)
+        terminal = f.run()
+        self.assertEqual(terminal["status"], "awaiting_independent_attestation")
+        self.assertEqual(terminal["requestCount"], 34)
+        baseline = json.loads((f.output / "private/public-baseline.json").read_bytes())
+        self.assertEqual(len(baseline["devices"]), 88)
+        self.assertEqual(baseline["devices"]["990"]["ReportedDeviceId"], "recovered-observer-device-0")
+        self.assertFalse(terminal["baselineReleased"])
+
+    def test_two_recovered_observers_preserve_ordered_device_chain(self):
+        f = self.fixture(); f.recovery_history(2)
+        authority = f.recovered_authority()
+        self.assertEqual(len(authority.previous_devices), 88)
+        self.assertEqual(len(authority.closed_device_windows), 3)
+        self.assertEqual(len(authority.units), 5)
+        f.use_recovered_authority(authority)
+        terminal = f.run()
+        self.assertEqual(terminal["status"], "awaiting_independent_attestation")
+        self.assertEqual(terminal["requestCount"], 34)
+        self.assertEqual(len(json.loads((f.output / "private/public-baseline.json").read_bytes())["devices"]), 89)
+
+    def test_recovery_chain_rejects_reordered_records(self):
+        f = self.fixture(); f.recovery_history(2)
+        f.manifest["closedObservers"].reverse()
+        with self.assertRaises(f.module.ObservationError): f.recovered_authority()
+
+    def test_recovery_chain_rejects_duplicate_manifest_records(self):
+        f = self.fixture(); f.recovery_history(1)
+        f.manifest["closedObservers"] *= 2
+        with self.assertRaises(f.module.ObservationError): f.module.validate_manifest(f.manifest)
+
+    def test_recovery_chain_retains_original_failed_state(self):
+        f = self.fixture(); f.recovery_history(1)
+        source = f.recovery_terminals[0]["observer"]["state"]["path"]
+        retained = Path(source).read_bytes()
+        f.recovered_authority()
+        self.assertEqual(Path(source).read_bytes(), retained)
+        self.assertIsNone(json.loads(retained)["token"])
+        self.assertTrue(json.loads(retained)["uncertain"])
+
+    def test_recovered_observer_timestamp_uses_original_request_second(self):
+        f = self.fixture(); f.recovery_history(1)
+        authority = f.recovered_authority()
+        row = authority.previous_devices["990"]
+        self.assertLess(f.module.instant(row["DateLastActivity"]), f.module.instant(authority.closed_device_windows["990"]["from"]))
+
+    def test_recovered_device_followup_activity_cannot_exceed_proven_close(self):
+        f = self.fixture(); f.recovery_history(1); f.use_recovered_authority(f.recovered_authority())
+        f.mutate_body("devices", lambda body: next(row for row in body["Items"] if row["Id"] == "990").update(DateLastActivity="2026-09-13T00:01:39Z"))
+        terminal = f.run()
+        self.assertEqual(terminal["status"], "stopped_with_known_cleanup")
+        self.assertTrue(terminal["cleanupComplete"])
+
+    def test_recovered_token_cannot_be_reused_by_new_observer(self):
+        f = self.fixture(); f.recovery_history(1); f.use_recovered_authority(f.recovered_authority())
+        f.mutate_body("login", lambda body: body.update(AccessToken="recovered-token-0"))
+        terminal = f.run()
+        self.assertEqual(terminal["status"], "recovery_required")
+        self.assertEqual(terminal["requestCount"], 1)
+
+    def test_recovered_session_cannot_be_reused_by_new_observer(self):
+        f = self.fixture(); f.recovery_history(1); f.use_recovered_authority(f.recovered_authority())
+        f.mutate_body("login", lambda body: body["SessionInfo"].update(Id="recovered-session-0"))
+        terminal = f.run()
+        self.assertEqual(terminal["status"], "recovery_required")
+        self.assertEqual(terminal["requestCount"], 1)
+
+    def test_actual_authority_pins_all_recovery_inputs_and_both_closed_units(self):
+        f = self.fixture(); f.recovery_history(1)
+        with patch.object(f.module, "__file__", f.manifest["sources"]["observer"]["path"]):
+            authority = f.module.Authority(f.manifest, f.input_descriptor)
+        self.assertEqual(len(authority.units), 3)
+        self.assertEqual(len(authority.previous_devices), 87)
+        expected_units = {unit["name"]: unit for unit in authority.units}
+        def show(arguments, **kwargs):
+            self.assertEqual(arguments[:2], ["systemctl", "show"])
+            return SimpleNamespace(stdout="".join(key + "=" + value + "\n" for key, value in expected_units[arguments[2]]["properties"].items()))
+        with patch.object(authority.support, "process_identity", return_value=f.manifest["process"]), patch.object(f.module.subprocess, "run", side_effect=show) as run:
+            authority.acquire()
+            self.assertEqual(run.call_count, 3)
+            record = f.recovery_terminals[0]["recovery"]["rejection"]["response"]
+            path = Path(record["path"]); path.write_bytes(path.read_bytes() + b" ")
+            with self.assertRaises(f.module.ObservationError): authority.check()
+        authority.close()
+
+    def test_closed_unit_requires_explicit_live_control_group(self):
+        f = self.fixture(); f.recovery_history(1)
+        for failed, source in ((True, f.history_terminal["unit"]), (True, f.recovery_terminals[0]["observer"]["unit"]),
+                               (False, f.recovery_terminals[0]["recovery"]["unit"])):
+            unit = deepcopy(source); unit["properties"].pop("ControlGroup")
+            with self.subTest(failed=failed, name=unit["name"]), self.assertRaises(f.module.ObservationError):
+                f.module.validate_closed_unit(unit, failed=failed)
+
+    def test_closed_unit_rejects_another_slice(self):
+        f = self.fixture(); f.recovery_history(1)
+        unit = deepcopy(f.recovery_terminals[0]["recovery"]["unit"])
+        unit["properties"]["ControlGroup"] = "/another.slice/" + unit["name"]
+        with self.assertRaises(f.module.ObservationError): f.module.validate_closed_unit(unit, failed=False)
+
+    def test_closed_device_rejects_submicrosecond_activity_rollback(self):
+        f = self.fixture()
+        old = {"device": {"Id": "device", "ReportedDeviceId": "reported", "LastUserId": "admin", "DateLastActivity": "2026-09-13T00:00:45.1234567Z"}}
+        current = deepcopy(old); current["device"]["DateLastActivity"] = "2026-09-13T00:00:45.1234561Z"
+        windows = {"device": {"userId": "admin", "reportedDeviceId": "reported", "from": "2026-09-13T00:00:40Z", "through": "2026-09-13T00:00:50Z"}}
+        with self.assertRaises(f.module.ObservationError): f.module.preserve_closed_devices(old, current, windows)
+
+    def test_closed_device_accepts_exact_submicrosecond_forward_activity(self):
+        f = self.fixture()
+        old = {"device": {"Id": "device", "ReportedDeviceId": "reported", "LastUserId": "admin", "DateLastActivity": "2026-09-13T00:00:45.1234561Z"}}
+        current = deepcopy(old); current["device"]["DateLastActivity"] = "2026-09-13T00:00:45.1234567Z"
+        windows = {"device": {"userId": "admin", "reportedDeviceId": "reported", "from": "2026-09-13T00:00:40Z", "through": "2026-09-13T00:00:50Z"}}
+        self.assertEqual(len(f.module.preserve_closed_devices(old, current, windows)), 1)
+
+    def test_recovery_chain_cannot_precede_predecessor_seal(self):
+        f = self.fixture(); f.recovery_history(1)
+        f.history_terminal["capturedAt"] = "2026-09-13T00:01:01Z"
+        with self.assertRaises(f.module.ObservationError): f.recovered_authority()
+
+    def test_recovery_request_cannot_precede_previous_response(self):
+        f = self.fixture(); f.recovery_history(1)
+        desc = f.recovery_terminals[0]["recovery"]["logout"]["intent"]
+        f.history_records[desc["path"]]["createdAt"] = "2026-09-13T00:01:05.000000Z"
+        with self.assertRaises(f.module.ObservationError): f.recovered_authority()
+
+    def test_actual_authority_queries_control_group_and_rejects_live_drift(self):
+        f = self.fixture(); descriptor = f.history()
+        with patch.object(f.module, "__file__", f.manifest["sources"]["observer"]["path"]):
+            authority = f.module.Authority(f.manifest, descriptor)
+        properties = deepcopy(authority.unit["properties"])
+        properties["ControlGroup"] = "/another.slice/" + authority.unit["name"]
+        def show(arguments, **kwargs):
+            self.assertIn("--property=ControlGroup", arguments)
+            return SimpleNamespace(stdout="".join(key + "=" + value + "\n" for key, value in properties.items()))
+        with patch.object(authority.support, "process_identity", return_value=f.manifest["process"]), patch.object(f.module.subprocess, "run", side_effect=show):
+            with self.assertRaises(f.module.ObservationError): authority.acquire()
+        authority.close()
+
 
 def body_mutation_test(label, mutate, expected_calls=34, uncertain=False):
     def test(self):
@@ -574,6 +908,67 @@ for name, (target, mutate) in HISTORICAL_MUTATIONS.items():
     setattr(ObserverGuards, "test_predecessor_" + name, historical_mutation_test(target, mutate))
 
 
+def recovered_mutation_test(target, mutate):
+    def test(self):
+        f = self.fixture(); f.recovery_history(1)
+        record = f.history_records[f.recovery_descriptors[0]["path"]]
+        if target == "record": mutate(record)
+        elif target.startswith("observer/"):
+            keys = target.split("/")[1:]
+            descriptor = record["observer"]
+            for key in keys: descriptor = descriptor[key]
+            mutate(f.history_records[descriptor["path"]])
+        else:
+            keys = target.split("/")[1:]
+            descriptor = record["recovery"]
+            for key in keys: descriptor = descriptor[key]
+            mutate(f.history_records[descriptor["path"]])
+        with self.assertRaises((f.module.ObservationError, KeyError, TypeError, ValueError)):
+            f.recovered_authority()
+    return test
+
+
+RECOVERED_MUTATIONS = {
+    "not_closed": ("record", lambda row: row.update(exactTokenClosed=False)),
+    "wrong_request_budget": ("record", lambda row: row.update(requestCount=4)),
+    "bool_observer_count": ("record", lambda row: row.update(observerRequestCount=True)),
+    "new_login_allowed": ("record", lambda row: row.update(noNewLogin=False)),
+    "wrong_reported_device": ("record", lambda row: row.update(reportedDeviceId="another-device")),
+    "wrong_token_hash": ("record", lambda row: row.update(tokenSha256="f" * 64)),
+    "wrong_start": ("record", lambda row: row.update(**{"from": "2026-09-13T00:00:45Z"})),
+    "wrong_end": ("record", lambda row: row.update(through="2026-09-13T00:00:51Z")),
+    "wrong_original_unit": ("record", lambda row: row["observer"]["unit"]["properties"].update(MainPID="123")),
+    "wrong_recovery_unit": ("record", lambda row: row["recovery"]["unit"]["properties"].update(ExecMainStatus="1")),
+    "duplicate_unit": ("record", lambda row: row["recovery"].update(unit=deepcopy(row["observer"]["unit"]))),
+    "old_state_marked_clean": ("observer/state", lambda row: row.update(uncertain=False)),
+    "old_state_changed_owner": ("observer/state", lambda row: row.update(token="claimed-token")),
+    "old_state_lost_pending": ("observer/state", lambda row: row.update(pending=None)),
+    "old_state_wrong_plan": ("observer/state", lambda row: row.update(planSha256="e" * 64)),
+    "old_state_bool_count": ("observer/state", lambda row: row.update(requestCount=True)),
+    "old_terminal_changed_success": ("observer/terminal", lambda row: row.update(status="awaiting_independent_attestation")),
+    "old_manifest_other_proxy": ("observer/manifest", lambda row: row["sources"]["proxy"].update(sha256="f" * 64)),
+    "old_login_wrong_principal": ("observer/login/response", lambda row: mutate_historical_body(row, lambda body: body["User"].update(Id="another-user"))),
+    "old_login_wrong_internal_device": ("observer/login/response", lambda row: mutate_historical_body(row, lambda body: body["SessionInfo"].update(InternalDeviceId=999))),
+    "recovery_manifest_other_actor": ("recovery/manifest", lambda row: row["admin"].update(deviceId="another-device")),
+    "recovery_manifest_other_observer": ("recovery/manifest", lambda row: row["observer"]["state"].update(sha256="e" * 64)),
+    "recovery_manifest_other_anchor": ("recovery/manifest", lambda row: row["preparationAnchor"].update(sha256="e" * 64)),
+    "recovery_manifest_other_process": ("recovery/manifest", lambda row: row["process"]["application"].update(pid=55555)),
+    "recovery_devices_other_token": ("recovery/deviceObservation/response", lambda row: row["request"]["headers"][-1].__setitem__(1, "another-token")),
+    "recovery_old_device_changed": ("recovery/deviceObservation/response", lambda row: mutate_historical_body(row, lambda body: body["Items"][0].update(OldCompleteDocument="changed"))),
+    "recovery_old_device_missing": ("recovery/deviceObservation/response", lambda row: mutate_historical_body(row, lambda body: body["Items"].pop(0))),
+    "recovery_extra_device": ("recovery/deviceObservation/response", lambda row: mutate_historical_body(row, lambda body: body["Items"].append({"Id": "unowned", "ReportedDeviceId": "unowned-reported"}))),
+    "recovery_owned_device_future": ("recovery/deviceObservation/response", lambda row: mutate_historical_body(row, lambda body: body["Items"][-1].update(DateLastActivity="2099-01-01T00:00:00Z"))),
+    "recovery_logout_failed": ("recovery/logout/response", lambda row: row.update(status=500)),
+    "recovery_logout_intent_after_response": ("recovery/logout/intent", lambda row: row.update(createdAt="2026-09-13T00:01:07Z")),
+    "recovery_rejection_wrong_input_pin": ("recovery/rejection/intent", lambda row: row.update(manifestSha256="e" * 64)),
+    "recovery_rejection_wrong_plan_pin": ("recovery/rejection/intent", lambda row: row.update(planSha256="e" * 64)),
+    "recovery_rejection_not401": ("recovery/rejection/response", lambda row: row.update(status=200)),
+    "recovery_rejection_incomplete": ("recovery/rejection/response", lambda row: row.update(completeHttp=False)),
+}
+for name, (target, mutate) in RECOVERED_MUTATIONS.items():
+    setattr(ObserverGuards, "test_recovered_chain_" + name, recovered_mutation_test(target, mutate))
+
+
 def persistence_failure_test(stage):
     def test(self):
         f = self.fixture()
@@ -616,7 +1011,7 @@ def transport_failure_test(name, mutate):
 for name, mutate in {
     "incomplete": lambda response: response.update(complete_http=False),
     "failure": lambda response: response.update(failure="TimeoutError"),
-    "framing": lambda response: response["headers"][-1].__setitem__(1, "1"),
+    "framing": lambda response: response["headers"].__setitem__(-1, (response["headers"][-1][0], "1")),
     "oversized": lambda response: response.update(raw=b"x" * 262145),
     "malformed_json": lambda response: response.update(raw=b"{", headers=[["Content-Length", "1"]]),
     "backwards_time": lambda response: response.update(completed_at="2026-09-12T00:00:00Z"),

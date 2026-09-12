@@ -1,0 +1,31 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "blockedRealIOAttempts": {
+    "authority": 0,
+    "http": 0,
+    "originalRead": 0,
+    "process": 0
+  },
+  "classification": "synthetic source-bound admission, replay, transport, and persistence guards; not live acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "originalImplementationBytesRead": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "d976f0bb0796222fec616ba9e89430ae51cc26c88f80e5240beda14d8b24213e",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "operator": "4471154408ed09f4c12434e12928c8f37fd37f7ee231207615089f2529ccd01e",
+    "preparation": "2c1d4d31fd2dfaf01fac0969d89acc881774aa2005b97b647442e625e634c98d",
+    "preparation-guards": "dcafaf8ff644ab4cccb2686a0f15c808b095de62672ba2449942757a9ab1dc70",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "suite": "run-nextup-global-reference-guards",
+  "testsRun": 43
+}
