@@ -1,0 +1,219 @@
+{
+  "captured_at": "2026-09-12T11:08:28.997809+00:00",
+  "client_gate_checked": false,
+  "cluster": {
+    "data_directory": "/var/lib/postgresql/17/main",
+    "databases": [
+      {
+        "name": "goby_recovery_m5j",
+        "oid": "994944",
+        "owner_oid": "994943"
+      },
+      {
+        "name": "goby_test",
+        "oid": "16385",
+        "owner_oid": "16384"
+      }
+    ],
+    "hba_file": "/etc/postgresql/17/main/pg_hba.conf",
+    "port": 5432,
+    "roles": [
+      {
+        "bypass_rls": false,
+        "create_db": false,
+        "create_role": false,
+        "login": true,
+        "name": "goby_recovery_m5j",
+        "oid": "994943",
+        "replication": false,
+        "superuser": false
+      },
+      {
+        "bypass_rls": false,
+        "create_db": false,
+        "create_role": false,
+        "login": true,
+        "name": "goby_test",
+        "oid": "16384",
+        "replication": false,
+        "superuser": false
+      }
+    ],
+    "socket_directories": "/var/run/postgresql",
+    "start_microseconds": 1789077142072645,
+    "system_identifier": "7683277964552005578",
+    "version": 170011
+  },
+  "deployment_admission": false,
+  "files": {
+    "/opt/goby-test/browser.env": {
+      "identity": {
+        "bytes": 224,
+        "ctime_ns": 1788904592501434707,
+        "device": 2049,
+        "gid": 0,
+        "inode": 366975,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1788904592501434707,
+        "uid": 0
+      },
+      "path": "/opt/goby-test/browser.env",
+      "sha256": "ddcd9596a55881915531510a458f9ede5eea08b49a41f1e2bc9c559808b1905b"
+    },
+    "/opt/goby-test/recovery-m5j.env": {
+      "identity": {
+        "bytes": 172,
+        "ctime_ns": 1789055951298086791,
+        "device": 2049,
+        "gid": 0,
+        "inode": 367838,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1789055951298086791,
+        "uid": 0
+      },
+      "path": "/opt/goby-test/recovery-m5j.env",
+      "sha256": "6847d34cfd9af7c53a8b16406db6f341f418b6ffdacb83bfe8c1f9bfd36b4c7c"
+    },
+    "/opt/goby-test/runtime.env": {
+      "identity": {
+        "bytes": 1346,
+        "ctime_ns": 1788990517097695323,
+        "device": 2049,
+        "gid": 0,
+        "inode": 367817,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1788990517093695474,
+        "uid": 0
+      },
+      "path": "/opt/goby-test/runtime.env",
+      "sha256": "2043e72115338d04775485dd63702c6084d36d09331ca5cdac66819152619607"
+    },
+    "/var/lib/goby-test/application-key-vault/master.key": {
+      "identity": {
+        "bytes": 32,
+        "ctime_ns": 1788990517093695474,
+        "device": 2049,
+        "gid": 995,
+        "inode": 400975,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1788990517093695474,
+        "uid": 995
+      },
+      "path": "/var/lib/goby-test/application-key-vault/master.key",
+      "sha256": "b59d6e4cc5a8bbd50f84e227497934b7b248a9948c33cb28fbea82625ff603f1"
+    }
+  },
+  "full_row_comparison": false,
+  "historical_m5j_lock_absent": true,
+  "http_requests": 0,
+  "inputs_stable_during_read": true,
+  "lifecycle_files": {
+    ".goby-lifecycle.json": {
+      "identity": {
+        "bytes": 103,
+        "ctime_ns": 1789055954117973755,
+        "device": 2049,
+        "gid": 986,
+        "inode": 2633759,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1789055954117973755,
+        "uid": 995
+      },
+      "path": "/var/lib/goby-test/recovery-m5j/.goby-lifecycle.json",
+      "present": true,
+      "sha256": "20c1d7a9e1952f1dd5d9444a7f4d60d4a56741cf0cd0052a3c9e49ab05c4e111"
+    },
+    "activation-journal.json": {
+      "present": false
+    },
+    "active-generation.json": {
+      "present": false
+    },
+    "generation-registry.json": {
+      "identity": {
+        "bytes": 165,
+        "ctime_ns": 1789055954121973594,
+        "device": 2049,
+        "gid": 986,
+        "inode": 2633760,
+        "links": 1,
+        "mode": 384,
+        "mtime_ns": 1789055954117973755,
+        "uid": 995
+      },
+      "path": "/var/lib/goby-test/recovery-m5j/generation-registry.json",
+      "present": true,
+      "sha256": "ba208e83d4116dd92884bf6c794ae9e253226683f11031752c391127f612744e"
+    }
+  },
+  "lifecycle_headers": {
+    ".goby-lifecycle.json": {
+      "deploymentId": "f58d5e0c8ff49fca916499e666bffd9f",
+      "lock": {
+        "device": 2049,
+        "inode": 2633758
+      },
+      "version": 1
+    },
+    "generation-registry.json": {
+      "baselineDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "deploymentId": "f58d5e0c8ff49fca916499e666bffd9f",
+      "generation_count": 0,
+      "version": 1
+    }
+  },
+  "lock": {
+    "identity": {
+      "bytes": 35,
+      "ctime_ns": 1789106197758387601,
+      "device": 2049,
+      "gid": 0,
+      "inode": 2425854,
+      "links": 1,
+      "mode": 384,
+      "mtime_ns": 1789106197758387601,
+      "uid": 0
+    },
+    "path": "/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock",
+    "sha256": "8fe9514394aab4ac502071499d0db83a7360b1ddd1200e6a2823b72443d4a679"
+  },
+  "main": {
+    "application_keys": 4,
+    "audits": 19,
+    "database": "goby_test",
+    "devices": 14,
+    "libraries": 5,
+    "migration_count": 27,
+    "ordinary_tables": 35,
+    "roots": 5,
+    "schema_version": 27,
+    "sequences": 5,
+    "sessions": 102
+  },
+  "marker": "goby-main-schema28-preliminary-readiness-v1",
+  "private_contents_exported": false,
+  "service": {
+    "ActiveState": "active",
+    "DropInPaths": "/etc/systemd/system/goby-foundation-test.service.d/20-application-keys.conf /etc/systemd/system/goby-foundation-test.service.d/30-observability.conf /etc/systemd/system/goby-foundation-test.service.d/40-backup-recovery.conf",
+    "EnvironmentFiles": "/opt/goby-test/recovery-m5j.env (ignore_errors=no)",
+    "FragmentPath": "/etc/systemd/system/goby-foundation-test.service",
+    "Group": "goby",
+    "Id": "goby-foundation-test.service",
+    "InvocationID": "bb94d74b475f4382a6ec6f6df181dd74",
+    "MainPID": "762090",
+    "Restart": "on-failure",
+    "RestartUSec": "3s",
+    "SubState": "running",
+    "TimeoutStopUSec": "1min 30s",
+    "User": "goby",
+    "WorkingDirectory": "/var/lib/goby-test"
+  },
+  "service_writes": 0,
+  "sql_business_writes": false,
+  "status": "observed"
+}

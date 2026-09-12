@@ -1,0 +1,9 @@
+{
+  "after_mode": "0755",
+  "before_mode": "0700",
+  "binary_sha256": "e4b355367cd95d91de8876bc62171decd70803723050506f0ba1c33df09d8b1f",
+  "marker": "goby-main-schema28-owned-helper-mode-v1",
+  "path": "/opt/goby-test/exec-work-m3e/main-schema28-source55-tool-01/migrate-main-schema28",
+  "reason": "Publish the newly built owned helper with the reviewed executable mode after umask0077.",
+  "same_file_bytes_inode_size": true
+}

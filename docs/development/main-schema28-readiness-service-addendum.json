@@ -1,0 +1,24 @@
+{
+  "captured_at": "2026-09-12T11:09:24.157359+00:00",
+  "deployment_admission": false,
+  "marker": "goby-main-schema28-readiness-service-addendum-v1",
+  "reason": "systemctl emits one EnvironmentFiles property line per file; the initial scalar map retained only the final line. Both private files were already independently hashed in the original observation.",
+  "service": {
+    "ActiveState": "active",
+    "EnvironmentFiles": [
+      "/opt/goby-test/runtime.env (ignore_errors=no)",
+      "/opt/goby-test/recovery-m5j.env (ignore_errors=no)"
+    ],
+    "InvocationID": "bb94d74b475f4382a6ec6f6df181dd74",
+    "MainPID": "762090",
+    "SubState": "running"
+  },
+  "service_writes": 0,
+  "source_report": {
+    "path": "/opt/goby-test/main-schema28-source55-readiness-01/report.json",
+    "sha256": "853c94a28b689d2f2bc683f7bd24eb0f06c6c05f2a1289f5b0333ae4248b99d8"
+  },
+  "supersedes": [
+    "service.EnvironmentFiles"
+  ]
+}

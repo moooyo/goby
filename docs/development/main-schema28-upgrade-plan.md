@@ -2,10 +2,12 @@
 
 Status: design only, 2026-09-12. This document does not authorize replay of an
 existing execution directory and does not report a main-service deployment.
-It was prepared from local source and recorded evidence; no live inspection,
-test, build, SSH command, service action, or database operation was performed
-for this plan. Existing authorization covers the necessary subsequent remote
-verification and deployment; the remaining gates are concrete evidence gates.
+The original design was prepared from local source and recorded evidence.
+Root subsequently performed the preliminary read-only remote inspection below;
+it made no business SQL, service, HBA, or deployment change. No test, build, or
+migration was performed for this plan. Existing authorization covers the
+necessary subsequent remote verification and deployment; the remaining gates
+are concrete evidence gates.
 
 ## Outcome and release authority
 
@@ -62,6 +64,18 @@ path/hash, source, schema, binary, candidate process, and upgrade-attestation
 chain; do not fill future receipt fields with placeholders.
 
 ## Main identity must be independently established
+
+The [preliminary readiness observation](main-schema28-readiness.json), SHA256
+`853c94a28b689d2f2bc683f7bd24eb0f06c6c05f2a1289f5b0333ae4248b99d8`,
+records fresh main lock, process, cluster, file and limited count observations.
+Its scalar `service.EnvironmentFiles` omitted the first of two repeated systemd
+property lines. The [service addendum](main-schema28-readiness-service-addendum.json),
+SHA256 `74ac9337f9f6ae6bdcf219ae0b3a940e4ce8959cfe011ad942769b551dc501ab`,
+corrects that field to the ordered runtime and recovery environment-file list.
+The original observation must not be used alone as a complete service pin.
+Both are preliminary evidence: full-row comparison, client-gate validation and
+deployment admission remain false, and the complete private `prepare` baseline
+is still required.
 
 The provided current service identity and historical database anchors are:
 
@@ -206,12 +220,15 @@ historical 30-day observation or its expired deadline. Do not disable tasks,
 delete history, or edit retention settings to manufacture a passing gate.
 
 Use a fresh main-operation lock and the existing main deployment lock with
-verified ownership. The M5j lock is recorded at
-`/opt/goby-test/exec-scratch/.m5j-deployment.lock`; verify its marker/inode and
-any additional currently accepted main lock identity before choosing a fixed,
-nonblocking acquisition order. Do not substitute `client-fixture.lock` or the
-workspace15432 operator lock. Unknown/missing lock provenance is a read-only
-preparation failure, not permission to recreate a historical lock.
+verified ownership. The successful main27 controller actually delegated to the
+existing `/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock`, whose
+fixed owner bytes are `goby-client-schema25-deployment-v1\n`. The older M5j
+lock path does not exist and must not be recreated or used as a substitute.
+Verify the existing marker/inode before private application reads, SQL,
+service operations, or new evidence creation, and take its nonblocking lock.
+Do not substitute `client-fixture.lock` or the workspace15432 operator lock.
+Unknown/missing lock provenance is a read-only preparation failure, not
+permission to recreate a historical lock.
 
 While the service is live, observe lifecycle/generation files without invoking
 an API that may initialize or repair them. After the sole stop and complete
