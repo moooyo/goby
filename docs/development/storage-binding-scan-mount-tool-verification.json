@@ -1,0 +1,13 @@
+{
+  "effects": "memory-only import/guard fences; no live namespace or database validation",
+  "exit_code": 0,
+  "files": {
+    "test-verify-bound-scan-root-mount.py": "b27decd44a2db8fe3664e15db150757fb216a6c03308926f79bca1f143e0bbc7",
+    "verify-bound-scan-root-mount.py": "a605cc2f3bd64c5258b261d4ead54e6d67ee691d84c12f36c6cb62028782f11c"
+  },
+  "status": "passed",
+  "stderr_sha256": "0c62aee58d5bf518b2afb64b57b07372170254be858fe8553c3c1130cea6e077",
+  "stdout_sha256": "ce8f2cb8078cf000837355aa1455c749cc681755136421888cd61afda2e52e6e",
+  "syntax_files": 2,
+  "tests": 65
+}

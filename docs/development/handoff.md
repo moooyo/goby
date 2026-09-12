@@ -1,8 +1,11 @@
 # Development handoff
 
-Current verification boundary: **source44 passed 2,002 full-suite tests across
-25 packages, the Linux build and all six cleanup checks. Its exact 27-file
-increment is published on main as `35ae3d000f812fa18d234921cedb3c33d88190e0`.**
+Current verification boundary: **source54 passed 2,173 full-suite tests across
+25 packages, the Linux build and all six cleanup checks. Schema28 and the new
+scanner remain unpublished pending actual mount and live UI acceptance.**
+The latest published product checkpoint is source44, which passed 2,002 tests;
+its exact 27-file increment is on main as
+`35ae3d000f812fa18d234921cedb3c33d88190e0`.
 Source41's failed staging was replaced only after its repair passed full
 verification. Source38 (`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`, 1,953 passes)
 is the previous product checkpoint. Schema28 binding code remains unpublished.
@@ -14,8 +17,11 @@ uses schema28-only columns against the historical fixture. Source50 isolates
 the test adapter fix and passed source preflight. The exact failed pair has
 subsequently been disposed with original evidence preserved. A combined
 source54 PostgreSQL target passed all 74 tests; it includes that fixture fix and
-the new scanner implementation. Source54 full regression/build is now running.
-Do not overlap its pair or replay source49.
+the new scanner implementation. Source54 full regression/build subsequently
+passed, with its exact pair removed. A separate actual mount attempt stopped
+before namespace dispatch because its host-witness reader assumed a missing
+sysfs block directory. That new failed pair is retained; do not overlap it or
+replay either consumed run.
 
 The separately reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 **passed** at 2026-09-12 04:42:59 UTC. Candidate now runs source44/schema27,
@@ -43,8 +49,14 @@ cache-hit tracking, positive absence, cascade validation, transactional deletion
 and notifications. A shared music-readiness gate checks proposed surviving
 members before deletion; actual album publication remains afterward. Its 28
 selected race checks and related test-package compilation passed without
-database access, followed by 74 passing PostgreSQL checks. Actual private-mount
-scan recovery, full regression/build, publication and live UI gates remain open.
+database access, followed by 74 passing PostgreSQL checks and the complete
+2,173-test regression/build. Actual private-mount scan recovery, publication
+and live UI gates remain open.
+
+The source44 automatic-refresh tooling is still under implementation/review.
+The shared transport passed 124 remote pure guards (114 existing plus 10 new),
+and the new source44 fixture loader passed 248 remote pure guards. These checks
+used no live browser or HTTP and do not establish automatic-refresh acceptance.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -474,15 +486,50 @@ The [report](storage-binding-scan-source54-postgresql.json) SHA-256 is
 The controller exited0/MainPID0 with an empty cgroup. The inert mount helper was
 excluded; this is not actual private mount-namespace scan acceptance.
 
-Full regression and Linux build are now running from the same immutable source54.
+Full regression and Linux build passed from the same immutable source54:
+2,173 top-level tests across 25 packages, zero failures, zero skips, and all six
+cleanup checks true. The [full report](storage-binding-scan-source54-full.json)
+SHA-256 is `50f8543b1b11cf7a3e00d3a0a83684080835fdad0f54ca4c983650f0f1e8892e`.
+The 29,338,037-byte Linux binary has SHA-256
+`5f88c432d96825d5c3f8c2faccc64be673dab85849670707571c20fddd71594e`.
 Controller `goby-scan-reconciliation-full-controller-v1.service`, invocation
-`c8641f6597f0411ca832d052b885499d`, PID1294649/start monotonic114182310421;
+`c8641f6597f0411ca832d052b885499d`, exited0/MainPID0 with an empty recursive
+cgroup; PID1294649/start monotonic114182310421 is historical. The
+[terminal receipt](storage-binding-scan-source54-full-terminal.json) SHA-256 is
+`afd29fa99b10f2c4333e8482926d52cc0005cd4143c04bf1e7de360c189d235c`;
 execution directory `/opt/goby-test/exec-work-m3e/scan-reconciliation-full-execution-01`.
-Run `20260912_053517_9cb0074fc731` has reached running; inner unit
-`goby-client-backup-20260912-053517-9cb0074fc731.service`. Recoverydb runs as the
-separate final package before the build. Poll that exact handle; do not overlap
-another fixed-pair job or restart on observation timeout. Earlier source49 and
-source54-target receipts are historical and preserved.
+Run `20260912_053517_9cb0074fc731` and inner unit
+`goby-client-backup-20260912-053517-9cb0074fc731.service` are complete, including
+the separate final recoverydb package. Its removed pair and prior evidence are
+historical and must not be replayed.
+
+The actual private-mount operator passed [65 memory guards](storage-binding-scan-mount-tool-verification.json),
+then its [first real attempt](storage-binding-scan-mount-attempt1.json) failed
+before dispatching unshare or the Go mount helper. Run
+`20260912_061505_b2b453a716a9` compiled a fresh race test binary successfully,
+but `host_witness` raised FileNotFoundError because
+`/sys/devices/virtual/block` does not exist on this environment. The fixture
+directory is empty and there is no helper output. The
+[failed terminal receipt](storage-binding-scan-mount-attempt1-terminal.json)
+SHA-256 is `737c70c0919491a559f0b79457849e34d6b0a19e394b955bf0ff5310ae88de60`.
+Outer `goby-bound-scan-root-mount-controller-v1.service`, invocation
+`6c741a464ae74b31839355d3ed2e9f06`, and its exact inner unit are terminal with
+empty cgroups. HBA is restored exactly; the dedicated pair is retained, not
+removed. Its live receipt SHA-256 is
+`190c202ca956a52b1914fabe7363ea821bd691f0a6f47869edc8785bc3fe288f`.
+Repair the host inventory reader, independently review disposal of this exact
+retained pair, and use a fresh scope for any subsequent actual mount test.
+Do not treat an absent inventory directory as proof of an empty inventory.
+
+The new automatic-refresh [shared transport guards](m3e-library-changed-transport-guards.json)
+passed 124 cases, report SHA-256
+`94167fabfe0b11f552e0b971906a5e5f044efeade4799aee5522de18e041256a`.
+The [source44 fixture guards](m3e-library-changed-source44-fixture-guards.json)
+passed 248 cases, report SHA-256
+`fbae697f3ec03835dfcf9b5fa3c2699ed2761585fc049e3d4ad84b8a59c3f106`.
+Both included two syntax checks and no live browser/HTTP. The browser driver
+and independent controller still need final review and remote guards before
+the single live automatic-refresh attempt.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
@@ -2245,7 +2292,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Reverify source48 fixture fixes and complete schema28 acceptance and safe reconciliation; deploy and verify original-client automatic refresh; then broaden global projections, events, subtitles and NextUp. Source44 capacity/full regression and publication are complete. |
+| P1 — M2/M3 / catalog and client acceptance | Source54 full regression/build passed. Repair and complete actual private-mount acceptance after exact failed-pair disposal, then finish binding UI/publication/deployment and original-client automatic refresh. Broader global projections, events, subtitles and NextUp remain open. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

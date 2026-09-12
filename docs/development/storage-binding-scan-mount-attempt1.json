@@ -1,0 +1,81 @@
+{
+  "catalog_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b",
+  "cleanup": {
+    "hba_restored_exactly": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "cluster": {
+    "process": {
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "pid": 327173,
+      "start_ticks": 289359
+    },
+    "system_identifier": "7684040109719526738"
+  },
+  "error": "The verified unit failed or was never observed running.",
+  "hba_after_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "hba_before_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+  "marker": "goby-client-backup-pair-m3e-v1",
+  "mode": "targeted",
+  "operator_sha256": "a605cc2f3bd64c5258b261d4ead54e6d67ee691d84c12f36c6cb62028782f11c",
+  "pair_evidence_retained": true,
+  "prerequisites": {
+    "full_controller_scope": "/opt/goby-test/exec-work-m3e/scan-reconciliation-full-execution-01",
+    "full_controller_terminal": {
+      "cgroup_empty": true,
+      "properties": {
+        "ActiveState": "active",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "InvocationID": "c8641f6597f0411ca832d052b885499d",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "exited"
+      },
+      "unit": "goby-scan-reconciliation-full-controller-v1.service"
+    },
+    "full_inner_unit": "goby-client-backup-20260912-053517-9cb0074fc731.service",
+    "full_receipt_sha256": "6accf5be1fa133d5d9f82a270ead3a0e2e82e1b5e0685f1cfee4d09843a48479",
+    "full_report": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_053517_9cb0074fc731/report.json",
+    "full_report_sha256": "50f8543b1b11cf7a3e00d3a0a83684080835fdad0f54ca4c983650f0f1e8892e",
+    "full_run": "20260912_053517_9cb0074fc731",
+    "prior_namespace_report_sha256": "8e3588a232a9838523485c587769e8d8a57bef28cacd31f6cefc6f96a800eb40",
+    "prior_namespace_worker_sha256": "d71fa1157419bff0d7964ea7b442a7b2bdfe20475e429484b12b74ca49f598f4"
+  },
+  "run_id": "20260912_061505_b2b453a716a9",
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-54",
+  "source_manifest_sha256": "c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3",
+  "status": "failed",
+  "tools": {
+    "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg": {
+      "sha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e",
+      "version": "ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers"
+    },
+    "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe": {
+      "sha256": "8b86ad18818830b003f4d5191c1bd0c9b3722539c6203fae30de4da7f04cc872",
+      "version": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers"
+    },
+    "/opt/goby-toolchains/go1.27.1/bin/go": {
+      "sha256": "30969f97169d7f43fe6a085873d75613adc21e30818a8c61d95bd27275df4624",
+      "version": "go version go1.27.1 linux/amd64"
+    },
+    "/usr/lib/postgresql/17/bin/pg_dump": {
+      "sha256": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793",
+      "version": "pg_dump (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)"
+    },
+    "/usr/lib/postgresql/17/bin/pg_restore": {
+      "sha256": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692",
+      "version": "pg_restore (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)"
+    }
+  },
+  "unit": "goby-client-backup-20260912-061505-b2b453a716a9.service",
+  "unit_exit": 1,
+  "unit_process": {
+    "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+    "pid": 1329950,
+    "start_ticks": 11657250
+  },
+  "verification": "source54-original-storage-scan-recovery-private-mount"
+}

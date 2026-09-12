@@ -1,0 +1,27 @@
+{
+  "exit_code": 0,
+  "files": {
+    "client-library-changed-source44-fixture.mjs": "0adec2110d89f41dfbade94915e0b9c71fd0c16f019d20612f9f225a9d7305cb",
+    "test-client-library-changed-source44-fixture.mjs": "de9f0d003d410586ecdd3ce8d9a76fe021b3fb43fabd1b0bca6d86ef517d699e"
+  },
+  "guards": {
+    "counts": {
+      "executed": 248,
+      "failed": 0,
+      "passed": 248
+    },
+    "external_effect_attempts": {
+      "filesystem": 0,
+      "http": 0,
+      "other": 0,
+      "process": 0
+    },
+    "failed": [],
+    "mode": "pure",
+    "result": "passed"
+  },
+  "live_client_acceptance": false,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "af4c633bc21c71803e5bc3fb2a3efbcceda003943045a410eae3a3dc6bf55b63",
+  "syntax_files": 2
+}

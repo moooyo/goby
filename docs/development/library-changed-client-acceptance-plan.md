@@ -170,6 +170,17 @@ and equality of original effective metadata, overrides, locked values, and
 locks. Last-edit actor/timestamps and revision legitimately retain this history;
 restoration does not mean byte-identical metadata rows.
 
+A missing or incomplete PUT acknowledgement is an unresolved write outcome.
+Source44 has no complete request-duration bound: its owned transaction timeout
+starts after acquiring the owner mutex. A later GET still showing revision R,
+the original value and no new audit row does not prove that the earlier request
+cannot commit afterward. Never classify that observation as not committed or
+send a blind replacement PUT. Retain restoration_required until exact owned
+revision and audit facts resolve the outcome. Revision R+1 with the expected
+owned forward audit permits the single reserved conditional restoration;
+revision R+2 with both exact owned audits can establish completed restoration.
+Otherwise preserve the unresolved boundary and all evidence.
+
 ## Ordered execution and observation windows
 
 Use a fresh root
@@ -362,8 +373,9 @@ requests, 128 MiB total response bytes, 2 MiB inspected JSON bodies, 64 KiB
 WebSocket messages, one active WebSocket, and at most two bootstrap/cleanup
 handshakes; allow no handshake change while armed. The new scope needs a bounded
 WebSocket lifetime long enough for both windows, up to 480 seconds, without
-altering old scope limits. IPC records remain at most 512 KiB and exported
-diagnostics are bounded/redacted. All loops must actually stop at their deadlines.
+altering old scope limits. IPC records remain at most 512 KiB; the separate final
+browser report is bounded at 4 MiB. Exported diagnostics are bounded/redacted.
+All loops must actually stop at their deadlines.
 
 Only after the new remote pure guards, syntax checks, source-closure inspection,
 and zero-HTTP candidate preflight pass should the root task dispatch the single

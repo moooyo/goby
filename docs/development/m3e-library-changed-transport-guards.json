@@ -1,0 +1,21 @@
+{
+  "exit_code": 0,
+  "files": {
+    "client-browser-cross-user.mjs": "144199bd0575c6f47336e9550f7a411167f3bc9272a30540dac8561b820ac6ef",
+    "test-client-browser-cross-user.mjs": "a5168ddce415fba53aecf7b23ff01d2839bc2bb5fc1524017cf6b6668961a4f8"
+  },
+  "guards": {
+    "counts": {
+      "executed": 124,
+      "failed": 0,
+      "passed": 124
+    },
+    "failed": [],
+    "harness_guards_only": true,
+    "mode": "pure",
+    "result": "passed"
+  },
+  "no_live_browser_or_http": true,
+  "status": "passed",
+  "syntax_files": 2
+}
