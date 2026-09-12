@@ -1,0 +1,33 @@
+{
+  "business_http": false,
+  "captured_at": "2026-09-12T16:28:32.428009+00:00",
+  "failures": 0,
+  "launch_intent_sha256": "7ccd1aa279801912ed48a6b3ade3545cba010d1b67996f41b8c3fda45e713c6b",
+  "marker": "goby-reference-ui-dom-terminal-v4",
+  "recursive_cgroup_members": [],
+  "reference_client_acceptance": false,
+  "result": "passed",
+  "source_directory": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04",
+  "sources": {
+    "client-browser-library-changed-reference-runtime.mjs": "b720d7bbdcf08ce59ae966a3f9d97eb0ebb946e790e563b46b8c50beec1c03e5",
+    "client-browser-library-changed-reference.mjs": "965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "test-client-browser-library-changed-reference.mjs": "dc5ea5be7c79afa35540caf954638d941c0e84a94e49ffdf747b84cdb72bb029"
+  },
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "3f1c5ed9be4b88c777c06da9af86dcde5375d1a608adb62852a549db2e7586a8",
+  "synthetic_html_only": true,
+  "systemd": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainCode": "1",
+    "ExecMainStatus": "0",
+    "InvocationID": "b7f26c05f4c0475f89a42238bbdb480f",
+    "MainPID": "0",
+    "RemainAfterExit": "yes",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "tests": 13,
+  "unit": "goby-reference-library-changed-ui-dom-v4.service"
+}

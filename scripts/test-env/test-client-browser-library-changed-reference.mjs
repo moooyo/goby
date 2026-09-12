@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { REFERENCE_TOOL as TOOL, REFERENCE_ROOT as ROOT, REFERENCE_OUTPUT as OUTPUT, REFERENCE_UNIT,
   REFERENCE_CONTROLLER_UNIT, REFERENCE_USER as USER, REFERENCE_SERVER as SERVER, REFERENCE_LIMITS,
+  REFERENCE_PRIOR_RECOVERY, REFERENCE_PRIOR_RECOVERY_REPORT, validateReferencePriorRecovery, readReferencePriorRecovery,
   parseReferenceArguments, validateReferenceInput, validateReferencePublicBaseline, referenceRoute, referenceMoviesRoute,
   referenceFullMovieQuery, projectReferenceItems, pairReferenceReads, referencePairReferences, pairReferenceMessages,
   referenceMessageEvidence, referenceLibraryChangedMessages,
@@ -22,6 +23,52 @@ function check(value) { if (!value) throw new Error('synthetic_reference_asserti
 function rejects(run) { let caught = false; try { run(); } catch { caught = true; } check(caught); }
 async function rejectsAsync(run) { let caught = false; try { await run(); } catch { caught = true; } check(caught); }
 function equal(left, right) { check(JSON.stringify(left) === JSON.stringify(right)); }
+/** Golden safe recovery records; private evidence paths remain opaque and are never opened. */
+export function referenceRecoveryFixture() {
+  return { terminal: {
+  "administrator_logout204_and_same_token401_verified": true,
+  "anchor_unchanged": true,
+  "captured_at": "2026-09-12T16:07:32.096425+00:00",
+  "full_target_restored_except_etag": true,
+  "library_changed_client_acceptance": false,
+  "main_acceptance": false,
+  "marker": "goby-reference-ui-recovery-terminal-v3",
+  "media_source_name_restored": true,
+  "media_unchanged": true,
+  "original_failed_report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v3/report.json",
+    "sha256": "a7290d22100b63f919324b7dded7d15228458b9ebf456384b6b6b4de5fa4e23a"
+  },
+  "original_report_rewritten": false,
+  "recursive_cgroup_members": [],
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/report.json",
+    "sha256": "3e9a555f0a91e42df63657652a5a2f84b3104db76871a340ffca7001ebf67e3e"
+  },
+  "restore_posts": 1,
+  "restore_status": 204,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/recover.py",
+    "sha256": "b230b22d29a34a154745c1d822ead6e2fcf68084ea78ff889eb0e1196aafea1b"
+  },
+  "status": "restoration_independently_confirmed",
+  "systemd": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "Id": "goby-reference-library-changed-ui-recovery-v3b.service",
+    "InvocationID": "c7b4694665e841ce98024e61107a1d47",
+    "MainPID": "0",
+    "RemainAfterExit": "yes",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "unit": "goby-reference-library-changed-ui-recovery-v3b.service",
+  "viewer_context_read_authentication": "administrator",
+  "viewer_ui_login_performed": false
+}, report: {"administrator_closed":true,"captured_at":"2026-09-12T16:03:07.659965+00:00","errors":[],"evidence":{"anchor-after-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/anchor-after-intent.json","sha256":"e134c732bbc92796d551311a5f0ab160545f8a1d73e85b95d9a41b28340eb487"},"anchor-after-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/anchor-after-result.json","sha256":"444fc81aaf2f0bbdf8a2207f2389893ea01e3aa70293215844adbd74904e3568"},"anchor-before-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/anchor-before-intent.json","sha256":"e134c732bbc92796d551311a5f0ab160545f8a1d73e85b95d9a41b28340eb487"},"anchor-before-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/anchor-before-result.json","sha256":"444fc81aaf2f0bbdf8a2207f2389893ea01e3aa70293215844adbd74904e3568"},"current-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/current-intent.json","sha256":"8aa34f6bb3b50ac75d23452b22020d22184c522613624592c73d9f56a010a562"},"current-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/current-result.json","sha256":"61dfbf54b377c252c3935465900db5b80c07e3fb73f00da3e7d499c54ceaf677"},"exact401-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/exact401-intent.json","sha256":"f272501010780ebe89841abbb30237cdc057da6b12b9f643737d1f3f1be9444c"},"exact401-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/exact401-result.json","sha256":"101071f78508ba3398fd3a25d1a78b22d19e2b10ee2af2b55f44c0e9fa1ed349"},"login-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/login-intent.json","sha256":"f31046da2f2142161839f9b7da51a3bbf6b648c29e414318724a01674245f95c"},"login-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/login-result-private.json","sha256":"78118785d0aa08675deb752d4c340a28949cadc8c578167de94825f446c79bd0"},"logout-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/logout-intent.json","sha256":"01d7fa8f324d2ffca8ec0aaed86a1a93d82939c5dcef4c16c596c45369b0cbe1"},"logout-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/logout-result.json","sha256":"9f41d255b56f6c2c35eeda4f670bacf0619065c8d33c332d3d048be0b479d6df"},"ownership":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/ownership.json","sha256":"8b830dcdbbffe55ca0f84449c907ae41b879571408b46d9145f3fc80b71c9bf6"},"restore-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/restore-intent.json","sha256":"909769520e8d755b50a677a4bbdcd05fe0af06f6abc2ad5c2d6bdc90f2bcc6ec"},"restore-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/restore-result.json","sha256":"9f41d255b56f6c2c35eeda4f670bacf0619065c8d33c332d3d048be0b479d6df"},"restored-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/restored-intent.json","sha256":"8aa34f6bb3b50ac75d23452b22020d22184c522613624592c73d9f56a010a562"},"restored-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/restored-result.json","sha256":"3466cb68b75e071ed281720e17be8189ecc6396a56c8d519eabc1901fbd9c3df"},"viewer-context-intent":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/viewer-context-intent.json","sha256":"a015bb15a1608735be8fd62c04808419799bb72ca732ac64276fdf53139b1a6c"},"viewer-context-result":{"path":"/opt/goby-test/exec-work-m3e/reference-library-changed-ui-recovery-v3b/viewer-context-result.json","sha256":"ecacbb04c8ed85a0dc45dbf41be414e1b9d063edf966206d4e2e33ba58d2356c"}},"http_requests":9,"library_changed_client_acceptance":false,"marker":"goby-reference-ui-name-recovery-v3","media_unchanged":true,"original_scope_replayed":false,"protocol_observation_complete":false,"restoration_confirmed":true,"restore_acknowledged":true,"restore_posts":1,"results":{"anchor-after":{"body_bytes":4740,"body_sha256":"eb7e85a2cd62689fb3eef6260b4b12bfa4f83368ae09be00428f75b24348ed9d","complete":true,"status":200,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"anchor-before":{"body_bytes":4740,"body_sha256":"eb7e85a2cd62689fb3eef6260b4b12bfa4f83368ae09be00428f75b24348ed9d","complete":true,"status":200,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"current":{"body_bytes":4814,"body_sha256":"152825f9cd3316f15cea578f1dce725ef58ecdd9df24f34f7aff81009dcbd8dd","complete":true,"status":200,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"exact401":{"body_bytes":35,"body_sha256":"64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255","complete":true,"status":401,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"login":{"body_bytes":2938,"body_sha256":"e1299144b4ea1680f24889656fa0bc6777ee6a5afa62051955da183992ab3a59","complete":true,"status":200,"token_sha256":null},"logout":{"body_bytes":0,"body_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","complete":true,"status":204,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"restore":{"body_bytes":0,"body_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","complete":true,"status":204,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"restored":{"body_bytes":4770,"body_sha256":"cfd2381e12d209decdd7ca89cbfc1f1ca256cd84f69655b2efd499e95593b216","complete":true,"status":200,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"},"viewer-context":{"body_bytes":4752,"body_sha256":"98bac71b0f0afa9d260ae21f62b982e8690d35b9f4a062bf46e6821e3355a55b","complete":true,"status":200,"token_sha256":"8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e"}},"status":"restored","viewer_projection_channel":"administrator_token_with_viewer_UserId","viewer_ui_login_performed":false} };
+}
+
 export function referenceInputFixture() {
   return { marker: 'goby-reference-library-changed-input-v1', version: 1, mode: 'reference-movies-name-automatic-refresh', root: ROOT, output: OUTPUT,
     actor: { slot: 'B', user_id: USER, username: 'm3e-library-changed-viewer-v1', credentials: descriptor(ROOT + '/viewer-credentials.json'), account_key: 'viewer' },
@@ -35,13 +82,13 @@ export function referenceInputFixture() {
       path: '/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Anchor (2030)/LibraryChanged Anchor (2030).mp4', type: 'Movie' },
     source_closure: Object.fromEntries(['client-browser-library-changed-reference.mjs', 'client-browser-library-changed-reference-runtime.mjs',
       'client-browser-session-proof.mjs'].map(name => [TOOL + '/' + name, sha('synthetic-source:' + name)])),
-    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v3/report.json'),
-      before_snapshot: descriptor(ROOT + '/before-public.json') },
+    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v4/report.json'),
+      before_snapshot: descriptor(ROOT + '/before-public.json'), prior_recovery: clone(REFERENCE_PRIOR_RECOVERY) },
     controller: { pid: 12345, start_ticks: '23456', boot_id: '12345678-1234-1234-1234-123456789abc', unit: REFERENCE_CONTROLLER_UNIT,
       invocation_id: sha('synthetic-controller').slice(0, 32) } };
 }
 function reservation() { const input = referenceInputFixture(); return { target_id: '100', library_id: '93', original_name: input.target.name,
-  marker_name: 'LibraryChanged Observed [reference UI]', original_body_sha256: sha('original'), forward_body_sha256: sha('forward'), restore_body_sha256: sha('original') }; }
+  marker_name: 'reference library changed ui four', original_body_sha256: sha('original'), forward_body_sha256: sha('forward'), restore_body_sha256: sha('original') }; }
 function binding() { const input = referenceInputFixture(); return { input_sha256: sha('input'), source_closure_sha256: sha('sources'), controller: input.controller,
   node_process: projectReferenceNodeProcess({ pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0, executable_path: '/synthetic/node',
     executable_sha256: sha('node'), cgroup: '0::/system.slice/' + REFERENCE_UNIT + '\n' }, input.controller.boot_id) }; }
@@ -116,36 +163,36 @@ test('input and CLI bind only the fresh reference scope', () => {
   rejects(() => parseReferenceArguments(['--input', ROOT + '/input.json']));
 });
 test('raw proc cgroup records publish the exact canonical worker path across the IPC boundary', () => {
-  const input = referenceInputFixture(), rawLine = '0::/system.slice/goby-reference-library-changed-ui-v3.service\n';
+  const input = referenceInputFixture(), rawLine = '0::/system.slice/goby-reference-library-changed-ui-v4.service\n';
   const proc = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
     executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: rawLine };
   const projected = projectReferenceNodeProcess(proc, input.controller.boot_id);
-  check(projected.cgroup === '/system.slice/goby-reference-library-changed-ui-v3.service' && proc.cgroup === rawLine);
+  check(projected.cgroup === '/system.slice/goby-reference-library-changed-ui-v4.service' && proc.cgroup === rawLine);
   check(canonicalReferenceCgroup(rawLine.slice(0, -1), REFERENCE_UNIT) === projected.cgroup);
   const actualBinding = { ...binding(), node_process: projected }, session = descriptor(OUTPUT + '/session-private.json');
   const stage = referenceStageRecord(actualBinding, 'discovery', discovery(), sha('synthetic-token'), session, null);
   const decodedStage = JSON.parse(encodeReferenceRecord(stage).toString('utf8'));
-  check(decodedStage.node_process.cgroup === '/system.slice/goby-reference-library-changed-ui-v3.service');
+  check(decodedStage.node_process.cgroup === '/system.slice/goby-reference-library-changed-ui-v4.service');
   const controllerChild = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
-    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: '/system.slice/goby-reference-library-changed-ui-v3.service' };
+    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: '/system.slice/goby-reference-library-changed-ui-v4.service' };
   const control = { marker: 'goby-reference-library-changed-control-v1', version: 1, name: 'reserved', ...actualBinding,
     node_process: controllerChild, previous_stage_sha256: sha('stage'), reservation: reservation(), commit: null, restoration: 'pending' };
   validateReferenceControl(control, actualBinding, { input, previous_stage_sha256: sha('stage') });
   rejects(() => validateReferenceControl({ ...control, node_process: { ...controllerChild, cgroup: rawLine } }, actualBinding,
     { input, previous_stage_sha256: sha('stage') }));
-  for (const raw of ['/system.slice/goby-reference-library-changed-ui-v3.service', rawLine.replace('\n', '\r\n'),
-    rawLine + '1:name=systemd:/system.slice/other.service\n', rawLine.replace('ui-v3.service', 'ui-v2.service'),
+  for (const raw of ['/system.slice/goby-reference-library-changed-ui-v4.service', rawLine.replace('\n', '\r\n'),
+    rawLine + '1:name=systemd:/system.slice/other.service\n', rawLine.replace('ui-v4.service', 'ui-v3.service'),
     rawLine.replace('.service\n', '.service/child\n'), rawLine.replace('0::', '1:name=systemd:'),
-    '0::/system.slice/goby-reference-library-changed-ui-controller-v3.service\n']) {
+    '0::/system.slice/goby-reference-library-changed-ui-controller-v4.service\n']) {
     rejects(() => projectReferenceNodeProcess({ ...proc, cgroup: raw }, input.controller.boot_id));
   }
-  check(canonicalReferenceCgroup('0::/system.slice/goby-reference-library-changed-ui-controller-v3.service\n', REFERENCE_CONTROLLER_UNIT) ===
-    '/system.slice/goby-reference-library-changed-ui-controller-v3.service');
+  check(canonicalReferenceCgroup('0::/system.slice/goby-reference-library-changed-ui-controller-v4.service\n', REFERENCE_CONTROLLER_UNIT) ===
+    '/system.slice/goby-reference-library-changed-ui-controller-v4.service');
   check(input.reference.service_identity.cgroup === '0::/system.slice/synthetic-reference.service\n');
-  for (const mutate of [value => { value.root = WORK + '/reference-library-changed-ui-v2'; },
-    value => { value.authority.preflight.path = WORK + '/reference-library-changed-ui-preflight-v2/report.json'; },
+  for (const mutate of [value => { value.root = WORK + '/reference-library-changed-ui-v3'; },
+    value => { value.authority.preflight.path = WORK + '/reference-library-changed-ui-preflight-v3/report.json'; },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure).map(([filename, hash]) =>
-      [filename.replace('ui-tool-03', 'ui-tool-02'), hash])); }]) {
+      [filename.replace('ui-tool-04', 'ui-tool-03'), hash])); }]) {
     const stale = clone(input); mutate(stale); rejects(() => validateReferenceInput(stale));
   }
 });
@@ -153,20 +200,62 @@ test('the fresh public baseline includes both Movies and complete device ownersh
   const input = referenceInputFixture(), movies = [input.anchor, input.target].map(value => ({ Id: value.id, Name: value.name, Type: 'Movie', IsFolder: false, Path: value.path,
     ParentId: value.id === '100' ? '99' : '95' }));
   const preflight = { marker: 'goby-reference-library-changed-preflight-v1', version: 1, mode: 'business-read-only-preflight',
-    root: WORK + '/reference-library-changed-ui-preflight-v3', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
-    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v3/after-public.json'), target: input.target, anchor: input.anchor,
+    root: WORK + '/reference-library-changed-ui-preflight-v4', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
+    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v4/after-public.json'), prior_recovery: clone(REFERENCE_PRIOR_RECOVERY), target: input.target, anchor: input.anchor,
     expected_libraries: input.expected_libraries, admin: { closed: true, login_status: 200, login_complete: true, logout_status: 204,
       logout_complete: true, exact401_status: 401, exact401_complete: true }, ledger: { authentication_posts: 2, metadata_posts: 0, http_requests: 80 },
     preservation: { passed: true }, errors: [], status: 'passed', completed_at: new Date(START).toISOString(), evidence: {} };
-  const before = { marker: 'goby-reference-library-changed-public-snapshot-v1', version: 1, captured_at: new Date(START + 1000).toISOString(), server: { Id: SERVER },
-    roster: { [USER]: { Id: USER, Name: input.actor.username, Policy: { IsAdministrator: false, IsDisabled: false } } }, configuration: {},
+  const before = { marker: 'goby-reference-library-changed-public-snapshot-v1', version: 1, captured_at: new Date(START + 1000).toISOString(),
+    credential_context: { channel: 'controller_api', authenticated_user_id: 'efe2137dc3394ed4a23f9c337598f105',
+      token_sha256: sha('synthetic-current-admin'), user_id_semantics: 'subject_projection' }, server: { Id: SERVER },
+    roster: { [USER]: { Id: USER, Name: input.actor.username, Policy: { IsAdministrator: false, IsDisabled: false } },
+      efe2137dc3394ed4a23f9c337598f105: { Id: 'efe2137dc3394ed4a23f9c337598f105', Policy: { IsAdministrator: true, IsDisabled: false } } }, configuration: {},
     libraries: { '93': { Name: input.expected_libraries[0].name } },
     catalog_by_library: { '93': Object.fromEntries(movies.map(value => [value.Id, value])) }, items_by_user: {}, preferences: {},
     details: { viewer: Object.fromEntries(movies.map(value => [value.Id, value])) }, devices: { '11': { Id: '11', ReportedDeviceId: 'old-device' } } };
   const owner = { serverId: SERVER, serviceIdentity: input.reference.service_identity };
   equal(validateReferencePublicBaseline(input, owner, preflight, before).device_ids, ['11', 'old-device']);
   for (const mutate of [value => { delete value.catalog_by_library['93']['96']; }, value => { value.details.viewer['100'].Path = '/foreign'; },
-    value => { value.roster[USER].Policy.IsAdministrator = true; }]) { const copy = clone(before); mutate(copy); rejects(() => validateReferencePublicBaseline(input, owner, preflight, copy)); }
+    value => { value.roster[USER].Policy.IsAdministrator = true; }, value => { delete value.credential_context; },
+    value => { value.credential_context.authenticated_user_id = USER; }, value => { value.credential_context.channel = 'browser_ui'; },
+    value => { value.credential_context.user_id_semantics = 'authenticated_viewer'; }, value => { value.credential_context.token_sha256 = 'unknown'; },
+    value => { value.credential_context.extra = true; }, value => { value.roster.efe2137dc3394ed4a23f9c337598f105.Policy.IsAdministrator = false; }]) {
+    const copy = clone(before); mutate(copy); rejects(() => validateReferencePublicBaseline(input, owner, preflight, copy));
+  }
+  const subjectOnly = clone(before);
+  subjectOnly.details.viewer['100'].UserData = { IsFavorite: false, Key: 'synthetic-subject-projection' };
+  equal(validateReferencePublicBaseline(input, owner, preflight, subjectOnly).device_ids, ['11', 'old-device']);
+});
+test('the actual recovery records remain closed restoration evidence rather than UI acceptance', () => {
+  const actual = referenceRecoveryFixture(); validateReferencePriorRecovery(actual.terminal, actual.report);
+  check(actual.terminal.systemd.ControlGroup === '' && actual.terminal.systemd.MainPID === '0' && actual.report.results.login.token_sha256 === null);
+  for (const mutate of [value => { value.terminal.version = 1; }, value => { value.report.version = 1; },
+    value => { value.terminal.original_report_rewritten = true; }, value => { value.terminal.library_changed_client_acceptance = true; },
+    value => { value.terminal.viewer_ui_login_performed = true; }, value => { value.terminal.systemd.ControlGroup = '/system.slice/live.service'; },
+    value => { value.terminal.original_failed_report.path = ROOT + '/report.json'; }, value => { value.report.restore_posts = 2; },
+    value => { value.report.administrator_closed = false; }, value => { value.report.protocol_observation_complete = true; },
+    value => { value.report.viewer_projection_channel = 'actual_ui_token'; }, value => { value.report.results.logout.status = 200; },
+    value => { value.report.results.exact401.token_sha256 = sha('synthetic-other-token'); }]) {
+    const changed = referenceRecoveryFixture(); mutate(changed); rejects(() => validateReferencePriorRecovery(changed.terminal, changed.report));
+  }
+});
+test('recovery loading pins only its two safe files before any dependent or private read', async () => {
+  const input = referenceInputFixture(), actual = referenceRecoveryFixture(), calls = [];
+  const read = async item => { calls.push(clone(item));
+    if (item.path === REFERENCE_PRIOR_RECOVERY.path) return clone(actual.terminal);
+    if (item.path === REFERENCE_PRIOR_RECOVERY_REPORT.path) return clone(actual.report);
+    throw new Error('unexpected_private_evidence_read');
+  };
+  await readReferencePriorRecovery(input, read); equal(calls, [REFERENCE_PRIOR_RECOVERY, REFERENCE_PRIOR_RECOVERY_REPORT]);
+  for (const mutate of [value => { delete value.authority.prior_recovery; },
+    value => { value.authority.prior_recovery.path = ROOT + '/report.json'; }, value => { value.authority.prior_recovery.sha256 = sha('synthetic-foreign-terminal'); }]) {
+    const changed = referenceInputFixture(); mutate(changed); calls.length = 0;
+    await rejectsAsync(() => readReferencePriorRecovery(changed, read)); check(calls.length === 0);
+  }
+  let reads = 0;
+  await rejectsAsync(() => readReferencePriorRecovery(input, async () => { reads++; const terminal = clone(actual.terminal);
+    terminal.report.path = ROOT + '/viewer-credentials.json'; return terminal; }));
+  check(reads === 1);
 });
 test('only the exact Movie library query proves the two-item anchor', () => {
   const pair = wirePair(); check(referenceFullMovieQuery(pair.physical));
@@ -409,7 +498,7 @@ test('a bound controller abort interrupts a control wait before its timeout', as
 
 /** The explicit DOM mode is an isolated synthetic fixture, never a reference client run. */
 export async function runReferenceDOMGuards(argv) {
-  const domTool = WORK + '/reference-library-changed-ui-js-tool-03';
+  const domTool = WORK + '/reference-library-changed-ui-js-tool-04';
   check(process.platform === 'linux' && process.getuid?.() === 0 && SELF === domTool + '/test-client-browser-library-changed-reference.mjs');
   check(Array.isArray(argv) && argv.length === 9 && argv[0] === '--dom'); const values = {};
   for (let index = 1; index < argv.length; index += 2) {

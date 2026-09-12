@@ -9,15 +9,20 @@ import { createReferenceBrowserActor, sanitizeDiagnostic, REFERENCE_HTTP_PHASES,
   REFERENCE_REQUEST_CONTENT_TYPES } from './client-browser-library-changed-reference-runtime.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-03';
-export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v3';
+export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-04';
+export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v4';
 export const REFERENCE_OUTPUT = REFERENCE_ROOT + '/browser';
-export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v3.service';
-export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v3.service';
+export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v4.service';
+export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v4.service';
 export const REFERENCE_ORIGIN = 'http://127.0.0.1:18197';
 export const REFERENCE_USER = 'c5f36699a54f4971a891682cd9de410f';
 export const REFERENCE_SERVER = 'f56dec8ff7414847873064c4be9fba74';
+export const REFERENCE_PRIOR_RECOVERY = Object.freeze({ path: WORK + '/reference-library-changed-ui-execution-03/recovery-terminal.json',
+  sha256: '8bed884bc76dfe2277f0a9f116195a5db28cabfacf40a45bdf0d1886385fbc6e' });
+export const REFERENCE_PRIOR_RECOVERY_REPORT = Object.freeze({ path: WORK + '/reference-library-changed-ui-recovery-v3b/report.json',
+  sha256: '3e9a555f0a91e42df63657652a5a2f84b3104db76871a340ffca7001ebf67e3e' });
 const VIEWER = 'm3e-library-changed-viewer-v1', ITEM = '100', ANCHOR = '96', LIBRARY = '93';
+const ADMIN = 'efe2137dc3394ed4a23f9c337598f105';
 const MEDIA = '/opt/goby-fixtures/client-library-changed-v1/Movies';
 const SELF = fileURLToPath(import.meta.url), SHA = /^[0-9a-f]{64}$/;
 const SOURCES = ['client-browser-library-changed-reference.mjs', 'client-browser-library-changed-reference-runtime.mjs', 'client-browser-session-proof.mjs'];
@@ -84,10 +89,10 @@ export function validateReferenceInput(value) {
     value.expected_libraries.every(row => exact(row, ['id', 'name']) && decimal(row.id) && safeText(row.name)) &&
     new Set(value.expected_libraries.map(row => row.id)).size === value.expected_libraries.length &&
     value.expected_libraries.some(row => row.id === LIBRARY && row.name === 'M3e Controlled LibraryChanged Movies'));
-  need(exact(value.authority, ['owner', 'preflight', 'before_snapshot']) && Object.values(value.authority).every(descriptor) &&
+  need(exact(value.authority, ['owner', 'preflight', 'before_snapshot', 'prior_recovery']) && Object.values(value.authority).every(descriptor) &&
     value.authority.owner.path === WORK + '/reference-owner.json' &&
-    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v3/report.json' &&
-    value.authority.before_snapshot.path === REFERENCE_ROOT + '/before-public.json');
+    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v4/report.json' &&
+    value.authority.before_snapshot.path === REFERENCE_ROOT + '/before-public.json' && same(value.authority.prior_recovery, REFERENCE_PRIOR_RECOVERY));
   need(record(value.source_closure) && same(Object.keys(value.source_closure).sort(), SOURCES.map(name => REFERENCE_TOOL + '/' + name).sort()) &&
     Object.values(value.source_closure).every(value => SHA.test(value)));
   const controller = value.controller;
@@ -100,24 +105,29 @@ export function validateReferenceInput(value) {
 export function validateReferencePublicBaseline(input, owner, preflight, before) {
   validateReferenceInput(input);
   need(owner.serverId === REFERENCE_SERVER && same(owner.serviceIdentity, input.reference.service_identity));
-  need(exact(preflight, ['marker', 'version', 'mode', 'root', 'reference', 'script_sha256', 'source_closure_sha256', 'public_snapshot',
+  need(exact(preflight, ['marker', 'version', 'mode', 'root', 'reference', 'script_sha256', 'source_closure_sha256', 'public_snapshot', 'prior_recovery',
     'target', 'anchor', 'expected_libraries', 'admin', 'ledger', 'preservation', 'errors', 'status', 'completed_at', 'evidence']) &&
     preflight.marker === 'goby-reference-library-changed-preflight-v1' && preflight.version === 1 &&
-    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v3' &&
+    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v4' &&
     preflight.status === 'passed' && same(preflight.errors, []) && preflight.preservation?.passed === true &&
-    SHA.test(preflight.script_sha256) && preflight.source_closure_sha256 === null &&
+    SHA.test(preflight.script_sha256) && preflight.source_closure_sha256 === null && same(preflight.prior_recovery, input.authority.prior_recovery) &&
     same(preflight.reference, input.reference) && same(preflight.target, input.target) && same(preflight.anchor, input.anchor) &&
     same(preflight.expected_libraries, input.expected_libraries) && preflight.admin?.closed === true &&
     preflight.admin.login_status === 200 && preflight.admin.login_complete === true && preflight.admin.logout_status === 204 &&
     preflight.admin.logout_complete === true && preflight.admin.exact401_status === 401 && preflight.admin.exact401_complete === true &&
     preflight.ledger?.authentication_posts === 2 && preflight.ledger.metadata_posts === 0 && preflight.ledger.http_requests > 0 &&
     descriptor(preflight.public_snapshot) && preflight.public_snapshot.path === preflight.root + '/after-public.json');
-  need(exact(before, ['marker', 'version', 'captured_at', 'server', 'roster', 'configuration', 'libraries', 'catalog_by_library',
+  need(exact(before, ['marker', 'version', 'captured_at', 'credential_context', 'server', 'roster', 'configuration', 'libraries', 'catalog_by_library',
     'items_by_user', 'preferences', 'details', 'devices']) && before.marker === 'goby-reference-library-changed-public-snapshot-v1' && before.version === 1 && before.server?.Id === REFERENCE_SERVER &&
     instant(before.captured_at) >= instant(preflight.completed_at) && record(before.devices));
+  const context = before.credential_context;
+  need(exact(context, ['channel', 'authenticated_user_id', 'token_sha256', 'user_id_semantics']) && context.channel === 'controller_api' &&
+    context.authenticated_user_id === ADMIN && SHA.test(context.token_sha256) && context.user_id_semantics === 'subject_projection',
+  'reference_snapshot_credential_context');
   const roster = Array.isArray(before.roster) ? before.roster : Object.values(before.roster ?? {});
-  const viewer = roster.find(row => row.Id === REFERENCE_USER);
-  need(viewer?.Name === VIEWER && viewer.Policy?.IsAdministrator === false && viewer.Policy?.IsDisabled === false);
+  const viewer = roster.find(row => row.Id === REFERENCE_USER), administrator = roster.find(row => row.Id === ADMIN);
+  need(viewer?.Name === VIEWER && viewer.Policy?.IsAdministrator === false && viewer.Policy?.IsDisabled === false &&
+    administrator?.Policy?.IsAdministrator === true && administrator.Policy.IsDisabled === false);
   need(record(before.libraries) && same(Object.entries(before.libraries).map(([id, row]) => ({ id, name: row.Name })).sort((left, right) => left.id.localeCompare(right.id)),
     [...input.expected_libraries].sort((left, right) => left.id.localeCompare(right.id))));
   const catalog = before.catalog_by_library?.[LIBRARY];
@@ -125,6 +135,7 @@ export function validateReferencePublicBaseline(input, owner, preflight, before)
     : Array.isArray(catalog?.Items) ? catalog.Items : Object.values(catalog ?? {});
   const movies = rows.filter(row => row.Type === 'Movie' && row.IsFolder !== true);
   need(movies.length === 2 && same(movies.map(row => row.Id).sort(), [ITEM, ANCHOR].sort()));
+  // These are admin-authenticated UserId subject projections, not the later UI-token baseline.
   for (const target of [input.target, input.anchor]) {
     const item = movies.find(row => row.Id === target.id), detail = before.details?.viewer?.[target.id];
     need(item?.Name === target.name && detail?.Id === target.id && detail.Name === target.name && detail.Type === 'Movie' &&
@@ -133,6 +144,61 @@ export function validateReferencePublicBaseline(input, owner, preflight, before)
   }
   return { device_ids: [...new Set(Object.entries(before.devices).flatMap(([key, value]) => [key, value.Id, value.ReportedDeviceId])
     .filter(value => typeof value === 'string' && value.length > 0))] };
+}
+
+export function validateReferenceRecoveryTerminal(terminal) {
+  need(exact(terminal, ['administrator_logout204_and_same_token401_verified', 'anchor_unchanged', 'captured_at', 'full_target_restored_except_etag',
+    'library_changed_client_acceptance', 'main_acceptance', 'marker', 'media_source_name_restored', 'media_unchanged', 'original_failed_report',
+    'original_report_rewritten', 'recursive_cgroup_members', 'report', 'restore_posts', 'restore_status', 'source', 'status', 'systemd', 'unit',
+    'viewer_context_read_authentication', 'viewer_ui_login_performed']) && terminal.marker === 'goby-reference-ui-recovery-terminal-v3' &&
+    terminal.status === 'restoration_independently_confirmed' && Number.isFinite(instant(terminal.captured_at)) &&
+    terminal.administrator_logout204_and_same_token401_verified === true && terminal.anchor_unchanged === true &&
+    terminal.full_target_restored_except_etag === true && terminal.media_source_name_restored === true && terminal.media_unchanged === true &&
+    terminal.library_changed_client_acceptance === false && terminal.main_acceptance === false && terminal.original_report_rewritten === false &&
+    terminal.viewer_ui_login_performed === false && terminal.viewer_context_read_authentication === 'administrator' &&
+    terminal.restore_posts === 1 && terminal.restore_status === 204 && same(terminal.recursive_cgroup_members, []) &&
+    same(terminal.report, REFERENCE_PRIOR_RECOVERY_REPORT) &&
+    same(terminal.original_failed_report, { path: WORK + '/reference-library-changed-ui-v3/report.json',
+      sha256: 'a7290d22100b63f919324b7dded7d15228458b9ebf456384b6b6b4de5fa4e23a' }) &&
+    same(terminal.source, { path: WORK + '/reference-library-changed-ui-recovery-v3b/recover.py',
+      sha256: 'b230b22d29a34a154745c1d822ead6e2fcf68084ea78ff889eb0e1196aafea1b' }) &&
+    terminal.unit === 'goby-reference-library-changed-ui-recovery-v3b.service' && same(terminal.systemd, {
+      ActiveState: 'active', ControlGroup: '', ExecMainStatus: '0', Id: 'goby-reference-library-changed-ui-recovery-v3b.service',
+      InvocationID: 'c7b4694665e841ce98024e61107a1d47', MainPID: '0', RemainAfterExit: 'yes', Result: 'success', SubState: 'exited' }),
+  'reference_prior_recovery_terminal'); return terminal;
+}
+
+export function validateReferencePriorRecovery(terminal, report) {
+  validateReferenceRecoveryTerminal(terminal);
+  need(exact(report, ['administrator_closed', 'captured_at', 'errors', 'evidence', 'http_requests', 'library_changed_client_acceptance', 'marker',
+    'media_unchanged', 'original_scope_replayed', 'protocol_observation_complete', 'restoration_confirmed', 'restore_acknowledged', 'restore_posts',
+    'results', 'status', 'viewer_projection_channel', 'viewer_ui_login_performed']) && report.marker === 'goby-reference-ui-name-recovery-v3' &&
+    report.status === 'restored' && instant(report.captured_at) <= instant(terminal.captured_at) && report.administrator_closed === true &&
+    same(report.errors, []) && record(report.evidence) && report.http_requests === 9 && report.restore_posts === 1 && report.restore_acknowledged === true &&
+    report.restoration_confirmed === true && report.media_unchanged === true && report.original_scope_replayed === false &&
+    report.library_changed_client_acceptance === false && report.protocol_observation_complete === false && report.viewer_ui_login_performed === false &&
+    report.viewer_projection_channel === 'administrator_token_with_viewer_UserId', 'reference_prior_recovery_report');
+  const statuses = { login: 200, current: 200, 'anchor-before': 200, restore: 204, restored: 200, 'viewer-context': 200, 'anchor-after': 200, logout: 204, exact401: 401 };
+  need(exact(report.results, Object.keys(statuses)) && SHA.test(report.results.logout.token_sha256), 'reference_prior_recovery_results');
+  const token = report.results.logout.token_sha256;
+  for (const [name, status] of Object.entries(statuses)) {
+    const result = report.results[name];
+    need(exact(result, ['body_bytes', 'body_sha256', 'complete', 'status', 'token_sha256']) && result.complete === true && result.status === status &&
+      Number.isSafeInteger(result.body_bytes) && result.body_bytes >= 0 && result.body_bytes <= REFERENCE_LIMITS.json_bytes && SHA.test(result.body_sha256) &&
+      result.token_sha256 === (name === 'login' ? null : token), 'reference_prior_recovery_results');
+  }
+  need(report.results.logout.body_bytes === 0 && report.results.restore.body_bytes === 0 && report.results.logout.body_sha256 === sha('') &&
+    report.results.restore.body_sha256 === sha('') && report.results['anchor-before'].body_sha256 === report.results['anchor-after'].body_sha256 &&
+    report.results['anchor-before'].body_bytes === report.results['anchor-after'].body_bytes, 'reference_prior_recovery_results');
+  return { terminal, report };
+}
+
+/** Read only the two fixed safe recovery records; never follow their private evidence descriptors. */
+export async function readReferencePriorRecovery(input, read = ownedJSON) {
+  validateReferenceInput(input);
+  const terminal = validateReferenceRecoveryTerminal(await read(input.authority.prior_recovery));
+  const report = await read(REFERENCE_PRIOR_RECOVERY_REPORT);
+  return validateReferencePriorRecovery(terminal, report);
 }
 
 export function referenceRoute(raw) {
@@ -764,7 +830,9 @@ export async function runReferenceBrowser(options) {
   const args = parseReferenceArguments(Object.entries(options).flatMap(([key, value]) => ['--' + key, value]));
   need(process.platform === 'linux' && process.getuid?.() === 0 && SELF === REFERENCE_TOOL + '/client-browser-library-changed-reference.mjs', 'reference_execution_scope');
   const inputItem = { path: args.input, sha256: args['input-sha256'] }, input = validateReferenceInput(await ownedJSON(inputItem));
+  const recovery = await readReferencePriorRecovery(input);
   const rootIdentity = await checkDirectory(REFERENCE_ROOT), owner = await ownedJSON(input.authority.owner), preflight = await ownedJSON(input.authority.preflight);
+  need(instant(preflight.completed_at) >= instant(recovery.terminal.captured_at), 'reference_preflight_before_recovery');
   const baseline = validateReferencePublicBaseline(input, owner, preflight, await ownedJSON(input.authority.before_snapshot));
   const credentials = await ownedJSON(input.actor.credentials);
   need(exact(credentials, ['viewer']) && exact(credentials.viewer, ['username', 'password', 'userId']) && credentials.viewer.username === VIEWER &&
@@ -772,7 +840,7 @@ export async function runReferenceBrowser(options) {
   await sourcePins(input); const nodeProcess = projectReferenceNodeProcess(await processIdentity(process.pid, true), input.controller.boot_id);
   const binding = { input_sha256: args['input-sha256'], source_closure_sha256: sha(JSON.stringify(ordered(input.source_closure))),
     controller: clone(input.controller), node_process: nodeProcess };
-  const pins = [inputItem, ...Object.values(input.authority), input.actor.credentials];
+  const pins = [inputItem, ...Object.values(input.authority), REFERENCE_PRIOR_RECOVERY_REPORT, input.actor.credentials];
   const pin = async () => {
     need(same(await checkDirectory(REFERENCE_ROOT), rootIdentity));
     for (const item of pins) await ownedJSON(item);
@@ -786,7 +854,7 @@ export async function runReferenceBrowser(options) {
   };
   await pin(); await fs.mkdir(REFERENCE_OUTPUT, { mode: 0o700 });
   const report = { marker: 'goby-reference-library-changed-browser-v1', version: 1, ...binding,
-    reference: clone(input.reference), target: clone(input.target), anchor: clone(input.anchor), started_at: new Date().toISOString(),
+    reference: clone(input.reference), target: clone(input.target), anchor: clone(input.anchor), prior_recovery: clone(input.authority.prior_recovery), started_at: new Date().toISOString(),
     protocol_observation_complete: false, library_changed_client_acceptance: false, main_acceptance: false, restoration: 'pending', actor: {}, failure: null };
   let actor, workflow, session = null, cleanupDeadline = null;
   const secrets = [credentials.viewer.password], publishing = new Map();

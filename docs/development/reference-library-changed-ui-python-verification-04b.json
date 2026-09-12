@@ -1,0 +1,58 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-04b/test-observe-client-library-changed-reference-ui.py"
+  ],
+  "business_http": false,
+  "compilations": [
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-04b/observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": [
+        {
+          "category": "SyntaxWarning",
+          "line": 654,
+          "message": "invalid escape sequence '\\.'"
+        },
+        {
+          "category": "SyntaxWarning",
+          "line": 1014,
+          "message": "invalid escape sequence '\\.'"
+        }
+      ]
+    },
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-04b/test-observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": []
+    }
+  ],
+  "completed_at": "2026-09-12T16:29:17.930423+00:00",
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-python-verification-v4b",
+  "prior_failed_verification": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-verification-04/report.json",
+    "sha256": "a961c571ca54c07b2f0d4200cd8706c97ff8f912ad4311be9eb680abea8495d2"
+  },
+  "python_version": "3.13.5 (main, Jun 13 2026, 14:18:01) [GCC 14.2.0]",
+  "reference_client_acceptance": false,
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-04b/observe-client-library-changed-reference-ui.py": {
+      "bytes": 147828,
+      "sha256": "5e021df408e287695c243ab4ec14bd4519e4ca5e3660234605339b030a22105c"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-04b/test-observe-client-library-changed-reference-ui.py": {
+      "bytes": 88496,
+      "sha256": "f892d20345679197db4625472c2261ecd1ab00355c22382264dc292472dcefab"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "8c6a2ff4d84d235a5e4a38187ca2a684db1ec8bec979f6ff5afbe91891d016e7",
+  "stdout_sha256": "55f4b471e68c7989c1f0ed7060e164846ca2b17c2d50c576578e3499d453f471",
+  "tests": 57
+}

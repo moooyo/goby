@@ -1,0 +1,49 @@
+{
+  "argv": [
+    "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/test-client-browser-library-changed-reference.mjs"
+  ],
+  "business_http": false,
+  "completed_at": "2026-09-12T16:27:46.175922+00:00",
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-js-verification-v4",
+  "prior_runtime_verification": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-verification-03/report.json",
+    "sha256": "228f9f4ecfa262f0ffb25cd9a83e4a5b437f515de62943a02ec1ff585bbcb187"
+  },
+  "reference_client_acceptance": false,
+  "runtime_guard_count_reused": 28,
+  "runtime_guard_rerun": false,
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 100522,
+      "reused_from": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-03/client-browser-library-changed-reference-runtime.mjs",
+      "sha256": "b720d7bbdcf08ce59ae966a3f9d97eb0ebb946e790e563b46b8c50beec1c03e5"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/client-browser-library-changed-reference.mjs": {
+      "bytes": 84612,
+      "reused_from": null,
+      "sha256": "965e5e2f0d4a35ef8402b2a79660e0be114344073d282f52886733b06b1f5c5c"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "reused_from": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-03/client-browser-session-proof.mjs",
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/test-client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 35815,
+      "reused_from": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-03/test-client-browser-library-changed-reference-runtime.mjs",
+      "sha256": "466d25a587497b310032c77bb30edb9b2a92ff185fe1526c9e08301c346c20a6"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-04/test-client-browser-library-changed-reference.mjs": {
+      "bytes": 62422,
+      "reused_from": null,
+      "sha256": "dc5ea5be7c79afa35540caf954638d941c0e84a94e49ffdf747b84cdb72bb029"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "8e6dbba65f3434213d1ead1c909fc073b400a6e8f3cf8573ec679d50eb097d36",
+  "tests": 29
+}

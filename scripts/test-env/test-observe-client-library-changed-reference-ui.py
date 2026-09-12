@@ -356,12 +356,21 @@ def descriptor(path, value='a'):
 
 
 def movie(name='Observed', identifier='100'):
-    return {'Id': identifier, 'Name': name, 'Type': 'Movie', 'IsFolder': False,
+    value = {'Id': identifier, 'Name': name, 'Type': 'Movie', 'IsFolder': False,
         'ParentId': '99' if identifier == '100' else '95',
         'Path': CONTROLLER.TARGET_PATH if identifier == '100' else CONTROLLER.ANCHOR_PATH,
         'SortName': name, 'ForcedSortName': name, 'Overview': 'Original overview.', 'ProviderIds': {'opaque': 'retained'},
         'Genres': [], 'LockedFields': [], 'LockData': False, 'UserData': {'Played': False, 'PlayCount': 0, 'PlaybackPositionTicks': 0},
         'Opaque': {'LargeInteger': 9007199254740993, 'SmallNumber': Decimal('1.000000000000000001')}}
+    if identifier == '100':
+        value['MediaSources'] = [{'Id': 'mediasource_100', 'ItemId': '100', 'Path': CONTROLLER.TARGET_PATH, 'Name': name,
+            'RunTimeTicks': 9007199254740993, 'Container': 'mp4', 'MediaStreams': [{'Index': 0, 'Type': 'Video', 'Codec': 'h264', 'Width': 1920}],
+            'UnknownTechnical': {'Retained': Decimal('1.000000000000000001')}}]
+    return value
+
+
+def movie_with_source(name='Observed'):
+    return movie(name)
 
 
 def snapshot():
@@ -372,6 +381,7 @@ def snapshot():
         'Policy': {'IsAdministrator': administrator, 'IsDisabled': False}, 'LastLoginDate': at(-10), 'LastActivityDate': at(-10)}
         for key, name, administrator in ((CONTROLLER.ADMIN, CONTROLLER.ADMIN_NAME, True), (CONTROLLER.VIEWER, CONTROLLER.VIEWER_NAME, False))}
     return {'marker': CONTROLLER.SNAPSHOT_MARKER, 'version': 1, 'captured_at': at(),
+        'credential_context': CONTROLLER.credential_context(CONTROLLER.ADMIN, hashlib.sha256(ADMIN_TOKEN.encode()).hexdigest()),
         'server': {'Id': CONTROLLER.SERVER, 'Version': '4.9.5.0'}, 'roster': users, 'configuration': {'EnableRemoteAccess': False},
         'libraries': {'93': {'ItemId': '93', 'Name': library['Name'], 'Locations': [str(CONTROLLER.MOVIES)], 'CollectionType': 'movies',
             'LibraryOptions': {'SaveLocalMetadata': False, 'MetadataSavers': []}}},
@@ -399,6 +409,7 @@ def input_record():
         'anchor': {'id': '96', 'name': 'Anchor', 'path': CONTROLLER.ANCHOR_PATH, 'type': 'Movie'},
         'source_closure': {str(CONTROLLER.TOOL / name): hashlib.sha256(name.encode()).hexdigest() for name in CONTROLLER.JS_NAMES},
         'authority': {'owner': {'path': str(CONTROLLER.OWNER), 'sha256': CONTROLLER.OWNER_SHA},
+            'prior_recovery': copy.deepcopy(CONTROLLER.PRIOR_RECOVERY),
             'preflight': descriptor(CONTROLLER.PREFLIGHT_ROOT / 'report.json'), 'before_snapshot': descriptor(CONTROLLER.ROOT / 'before-public.json')},
         'controller': {'pid': 7001, 'start_ticks': '12345', 'boot_id': CONTROLLER.BOOT, 'unit': CONTROLLER.CONTROLLER_UNIT, 'invocation_id': 'd' * 32}}
 
@@ -412,6 +423,41 @@ def private_session(value=None):
     return {'marker': 'goby-reference-library-changed-session-private-v1', 'version': 1, 'input_sha256': 'a' * 64,
         'source_closure_sha256': CONTROLLER.sha(CONTROLLER.canonical(value['source_closure'])), 'controller': value['controller'],
         'node_process': CHILD, 'token': TOKEN, 'proof': proof}
+
+
+def viewer_baseline_fixture(value=None, private=None):
+    value = value or input_record(); private = private or private_session(value)
+    target = dict(movie(), CanDelete=False, CanDownload=False)
+    anchor = dict(movie('Anchor', '96'), CanDelete=False, CanDownload=False)
+    bodies = {'identity': {'Id': CONTROLLER.VIEWER, 'Name': CONTROLLER.VIEWER_NAME, 'Policy': {'IsAdministrator': False, 'IsDisabled': False}},
+        'target': target, 'anchor': anchor}
+    results = {role: {'channel': 'controller_api', 'status': 200, 'complete': True, 'body': body,
+        'body_bytes': len(CONTROLLER.canonical(body)), 'body_sha256': CONTROLLER.sha(CONTROLLER.canonical(body)),
+        'token_sha256': TOKEN_SHA, 'operation': None, 'completed_at': at(10)} for role, body in bodies.items()}
+    names = {'identity': 'viewer-fresh-identity-result.json', 'target': 'viewer-baseline-target-result.json', 'anchor': 'viewer-baseline-anchor-result.json'}
+    baseline = {'marker': 'goby-reference-library-changed-viewer-baseline-v1', 'version': 1, 'captured_at': at(10),
+        'input_sha256': 'a' * 64, 'session_private': descriptor(CONTROLLER.ROOT / 'browser/session-private.json'),
+        'credential_context': CONTROLLER.credential_context(CONTROLLER.VIEWER, TOKEN_SHA),
+        'details': {'100': copy.deepcopy(target), '96': copy.deepcopy(anchor)}}
+    for role, result in results.items():
+        baseline[role + '_result'] = {'path': str(CONTROLLER.ROOT / names[role]), 'sha256': CONTROLLER.sha(CONTROLLER.canonical(result) + b'\n')}
+    return baseline, results
+
+
+def prior_recovery_report():
+    report = {'administrator_closed': True, 'captured_at': '2026-09-12T16:03:07.659965+00:00', 'errors': [], 'http_requests': 9,
+        'library_changed_client_acceptance': False, 'marker': 'goby-reference-ui-name-recovery-v3', 'media_unchanged': True,
+        'original_scope_replayed': False, 'protocol_observation_complete': False, 'restoration_confirmed': True,
+        'restore_acknowledged': True, 'restore_posts': 1, 'status': 'restored',
+        'viewer_projection_channel': 'administrator_token_with_viewer_UserId', 'viewer_ui_login_performed': False, 'results': {}, 'evidence': {}}
+    for name, (status, size, body_sha) in CONTROLLER.PRIOR_RECOVERY_RESULTS.items():
+        report['results'][name] = {'status': status, 'body_bytes': size, 'body_sha256': body_sha, 'complete': True,
+            'token_sha256': None if name == 'login' else '8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e'}
+        for suffix in ('-intent', '-result'):
+            key = name + suffix; filename = 'login-result-private.json' if key == 'login-result' else key + '.json'
+            report['evidence'][key] = descriptor(CONTROLLER.PRIOR_RECOVERY_ROOT / filename)
+    report['evidence']['ownership'] = descriptor(CONTROLLER.PRIOR_RECOVERY_ROOT / 'ownership.json')
+    return report
 
 
 def query_digest(route, query, hidden=()):
@@ -554,6 +600,7 @@ class MetadataAndPublicGuards(GuardTestCase):
         original = movie(); reservation = CONTROLLER.reserve_edit(original)
         changed = copy.deepcopy(original); changed['Name'] = reservation['public']['marker_name']
         changed['SortName'] = changed['ForcedSortName'] = changed['Name']
+        changed['MediaSources'][0]['Name'] = changed['Name']
         self.assertEqual(CONTROLLER.classify_metadata(original, changed, reservation, at(), at(10), True)[0], 'mutated')
         changed['Overview'] = 'Foreign metadata'
         self.assertEqual(CONTROLLER.classify_metadata(original, changed, reservation, at(), at(10), True)[0], 'foreign-or-unknown')
@@ -572,14 +619,109 @@ class MetadataAndPublicGuards(GuardTestCase):
 
     def test_sorting_is_derived_in_the_response_but_never_a_separate_write(self):
         original = movie(); reservation = CONTROLLER.reserve_edit(original)
-        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui three')
+        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui four')
         self.assertEqual(reservation['forward_body']['SortName'], original['SortName'])
         self.assertEqual(reservation['forward_body']['ForcedSortName'], original['ForcedSortName'])
-        forward = dict(original, Name=CONTROLLER.MARKER_NAME, SortName=CONTROLLER.MARKER_NAME, ForcedSortName=CONTROLLER.MARKER_NAME)
+        forward = copy.deepcopy(original)
+        forward.update(Name=CONTROLLER.MARKER_NAME, SortName=CONTROLLER.MARKER_NAME, ForcedSortName=CONTROLLER.MARKER_NAME)
+        forward['MediaSources'][0]['Name'] = CONTROLLER.MARKER_NAME
         self.assertEqual(CONTROLLER.classify_metadata(original, forward, reservation, at(), at(10), True)[0], 'mutated')
         forward['Name'] = original['Name']
         self.assertEqual(CONTROLLER.classify_metadata(original, forward, reservation, at(), at(10), True)[0], 'foreign-or-unknown')
         self.assertEqual(CONTROLLER.classify_metadata(original, original, reservation, at(), at(10), True)[0], 'original')
+
+    def test_the_unique_media_source_name_is_a_projection_and_restores_exactly(self):
+        original = movie_with_source(); untouched = copy.deepcopy(original); reservation = CONTROLLER.reserve_edit(original)
+        forward = copy.deepcopy(original)
+        forward['Name'] = forward['SortName'] = forward['ForcedSortName'] = CONTROLLER.MARKER_NAME
+        forward['MediaSources'][0]['Name'] = CONTROLLER.MARKER_NAME
+        self.assertEqual(CONTROLLER.name_projection(original, CONTROLLER.MARKER_NAME), forward)
+        self.assertEqual(CONTROLLER.classify_metadata(original, forward, reservation, at(), at(10), True)[0], 'mutated')
+        self.assertEqual(original, untouched); self.assertNotIn('MediaSources', reservation['forward_body'])
+        before = snapshot(); before['details']['admin']['100'] = copy.deepcopy(original)
+        del before['catalog_by_library']['93']['100']['MediaSources']
+        after = copy.deepcopy(before); after['captured_at'] = at(10)
+        for family in ('catalog_by_library', 'items_by_user', 'details'):
+            for rows in after[family].values():
+                if '100' not in rows: continue
+                target = rows['100']; target['Name'] = target['SortName'] = target['ForcedSortName'] = CONTROLLER.MARKER_NAME
+                if 'MediaSources' in target: target['MediaSources'][0]['Name'] = CONTROLLER.MARKER_NAME
+        compared = CONTROLLER.compare_public(before, after, expected_name=CONTROLLER.MARKER_NAME, metadata_sent=True)
+        self.assertTrue(compared['passed'])
+        self.assertNotIn('MediaSources', after['catalog_by_library']['93']['100'])
+        self.assertTrue(any(row['kind'] == 'name-derived-media-source' for row in compared['automatic_changes']))
+        self.assertEqual(CONTROLLER.classify_metadata(original, original, reservation, at(), at(20), True)[0], 'original')
+        forward['Name'] = forward['SortName'] = forward['ForcedSortName'] = original['Name']
+        self.assertEqual(CONTROLLER.classify_metadata(original, forward, reservation, at(), at(20), True)[0], 'foreign-or-unknown')
+
+    def test_media_source_identity_types_count_technical_and_unknown_values_are_preserved(self):
+        for field, replacement in (('Id', 'other'), ('ItemId', 100), ('Path', '/foreign'), ('Name', 'Independent source title')):
+            value = movie_with_source(); value['MediaSources'][0][field] = replacement
+            with self.subTest(field=field): self.reject(lambda: CONTROLLER.reserve_edit(value))
+        value = movie_with_source(); value['MediaSources'] *= 2
+        self.reject(lambda: CONTROLLER.reserve_edit(value))
+        missing = movie(); del missing['MediaSources']
+        self.reject(lambda: CONTROLLER.reserve_edit(missing))
+        original = movie_with_source(); reservation = CONTROLLER.reserve_edit(original)
+        for defect in ('path', 'runtime', 'stream', 'unknown', 'missing', 'added'):
+            current = copy.deepcopy(original)
+            current['Name'] = current['SortName'] = current['ForcedSortName'] = CONTROLLER.MARKER_NAME
+            source = current['MediaSources'][0]; source['Name'] = CONTROLLER.MARKER_NAME
+            if defect == 'path': source['Path'] = '/foreign'
+            elif defect == 'runtime': source['RunTimeTicks'] -= 1
+            elif defect == 'stream': source['MediaStreams'][0]['Width'] = 1280
+            elif defect == 'unknown': source['UnknownTechnical']['Retained'] = Decimal('1')
+            elif defect == 'missing': del current['MediaSources']
+            else: source['Unexpected'] = None
+            with self.subTest(defect=defect):
+                self.assertEqual(CONTROLLER.classify_metadata(original, current, reservation, at(), at(10), True)[0], 'foreign-or-unknown')
+
+    def test_snapshot_context_identifies_admin_projection_without_equating_fresh_tokens(self):
+        before = snapshot(); after = copy.deepcopy(before); after['captured_at'] = at(10)
+        after['credential_context']['token_sha256'] = 'c' * 64
+        self.assertTrue(CONTROLLER.compare_public(before, after)['passed'])
+        for field, replacement in (('authenticated_user_id', CONTROLLER.VIEWER), ('user_id_semantics', 'authenticated_viewer'),
+                                   ('channel', 'browser_ui'), ('token_sha256', None)):
+            changed = copy.deepcopy(after); changed['credential_context'][field] = replacement
+            with self.subTest(field=field): self.reject(lambda: CONTROLLER.validate_public_snapshot(changed))
+
+    def test_prior_recovery_remains_an_exact_failed_scope_restoration_receipt(self):
+        terminal = copy.deepcopy(CONTROLLER.PRIOR_RECOVERY_TERMINAL); report = prior_recovery_report()
+        CONTROLLER.validate_prior_recovery(terminal, report)
+        self.assertNotIn('version', terminal); self.assertNotIn('version', report)
+        for defect in ('viewer_auth', 'replay', 'posts', 'logout', 'token', 'terminal', 'old_report', 'evidence_path'):
+            changed, changed_terminal = copy.deepcopy(report), copy.deepcopy(terminal)
+            if defect == 'viewer_auth': changed['viewer_ui_login_performed'] = True
+            elif defect == 'replay': changed['original_scope_replayed'] = True
+            elif defect == 'posts': changed['restore_posts'] = 2
+            elif defect == 'logout': changed['results']['logout']['complete'] = False
+            elif defect == 'token': changed['results']['exact401']['token_sha256'] = 'b' * 64
+            elif defect == 'terminal': changed_terminal['systemd']['MainPID'] = '123'
+            elif defect == 'old_report': changed_terminal['original_failed_report']['sha256'] = 'a' * 64
+            else: changed['evidence']['login-result']['path'] = str(CONTROLLER.ROOT / 'foreign.json')
+            with self.subTest(defect=defect): self.reject(lambda: CONTROLLER.validate_prior_recovery(changed_terminal, changed))
+
+    def test_viewer_baseline_binds_real_results_session_token_and_unfiltered_details(self):
+        value = input_record(); private = private_session(value); baseline, results = viewer_baseline_fixture(value, private)
+        CONTROLLER.validate_viewer_baseline(baseline, value, 'a' * 64, CHILD, private, baseline['session_private'], snapshot(), results)
+        self.assertFalse(baseline['details']['100']['CanDelete']); self.assertNotIn('SupportsSync', baseline['details']['100'])
+        for defect in ('principal', 'token', 'result_descriptor', 'result_token', 'permission', 'anchor', 'ordinary_identity', 'missing_source'):
+            changed, records = copy.deepcopy(baseline), copy.deepcopy(results)
+            if defect == 'principal': changed['credential_context']['authenticated_user_id'] = CONTROLLER.ADMIN
+            elif defect == 'token': changed['credential_context']['token_sha256'] = 'c' * 64
+            elif defect == 'result_descriptor': changed['target_result']['sha256'] = 'f' * 64
+            elif defect == 'result_token': records['target']['token_sha256'] = 'c' * 64
+            elif defect == 'permission': changed['details']['100']['CanDelete'] = True
+            elif defect == 'anchor': changed['details']['96']['Overview'] = 'Changed anchor'
+            elif defect == 'ordinary_identity':
+                records['identity']['body']['Policy']['IsAdministrator'] = True
+                changed['identity_result']['sha256'] = CONTROLLER.sha(CONTROLLER.canonical(records['identity']) + b'\n')
+            else:
+                del changed['details']['100']['MediaSources']; del records['target']['body']['MediaSources']
+                changed['target_result']['sha256'] = CONTROLLER.sha(CONTROLLER.canonical(records['target']) + b'\n')
+            with self.subTest(defect=defect):
+                self.reject(lambda: CONTROLLER.validate_viewer_baseline(changed, value, 'a' * 64, CHILD, private,
+                    baseline['session_private'], snapshot(), records))
 
     def test_automatic_fields_are_recorded_and_time_bounded(self):
         original = movie(); changed = dict(original, Etag='new-etag', DateLastSaved=at(5))
@@ -781,9 +923,9 @@ class BrowserEvidenceGuards(GuardTestCase):
             with self.subTest(field=field): self.reject(lambda: CONTROLLER.validate_private_session(changed, value, 'a' * 64, CHILD, snapshot()))
 
     def test_real_proc_cgroup_projects_identically_into_private_stage_and_report(self):
-        expected = '/system.slice/goby-reference-library-changed-ui-v3.service'
-        for raw in ('0::/system.slice/goby-reference-library-changed-ui-v3.service',
-                    '0::/system.slice/goby-reference-library-changed-ui-v3.service\n'):
+        expected = '/system.slice/goby-reference-library-changed-ui-v4.service'
+        for raw in ('0::/system.slice/goby-reference-library-changed-ui-v4.service',
+                    '0::/system.slice/goby-reference-library-changed-ui-v4.service\n'):
             with self.subTest(raw=raw):
                 child = copy.deepcopy(CHILD)
                 child['cgroup'] = CONTROLLER.worker_cgroup_path(raw)
@@ -800,14 +942,15 @@ class BrowserEvidenceGuards(GuardTestCase):
                 self.assertEqual(report['reference']['service_identity']['cgroup'], '0::/system.slice/reference.service\n')
 
     def test_cgroup_rejects_malformed_proc_rows_and_coherently_wrong_publication(self):
-        expected = '/system.slice/goby-reference-library-changed-ui-v3.service'
+        expected = '/system.slice/goby-reference-library-changed-ui-v4.service'
         old = '/system.slice/goby-reference-library-changed-ui-v1.service'
         previous = '/system.slice/goby-reference-library-changed-ui-v2.service'
-        controller = '/system.slice/goby-reference-library-changed-ui-controller-v3.service'
-        for raw in (expected, '0::' + old, '0::' + previous, '0::' + controller, '0::' + expected + '\r\n',
+        latest = '/system.slice/goby-reference-library-changed-ui-v3.service'
+        controller = '/system.slice/goby-reference-library-changed-ui-controller-v4.service'
+        for raw in (expected, '0::' + old, '0::' + previous, '0::' + latest, '0::' + controller, '0::' + expected + '\r\n',
                     '0::' + expected + '\n\n', '0::' + expected + '\n0::/other', ' 0::' + expected):
             with self.subTest(raw=raw): self.reject(lambda: CONTROLLER.worker_cgroup_path(raw))
-        for published in ('0::' + expected + '\n', old, previous, controller):
+        for published in ('0::' + expected + '\n', old, previous, latest, controller):
             child = copy.deepcopy(CHILD); child['cgroup'] = published
             value = input_record(); private = private_session(value); private['node_process'] = copy.deepcopy(child)
             current_stage = stage('discovery', discovery(), value); current_stage['node_process'] = copy.deepcopy(child)
@@ -868,7 +1011,8 @@ class QuietAndCLIGuards(GuardTestCase):
         for flag, replacement in (('--node', '/opt/reference/original-executable'), ('--preflight-sha256', 'pending'),
                                   ('--source-closure', str(CONTROLLER.ROOT / 'sources.json')),
                                   ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-01/source-closure.json')),
-                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-02/source-closure.json'))):
+                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-02/source-closure.json')),
+                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-03/source-closure.json'))):
             changed = list(values); changed[changed.index(flag) + 1] = replacement
             with self.subTest(flag=flag): self.reject(lambda: CONTROLLER.arguments(changed))
 
@@ -909,12 +1053,20 @@ def transport_run(case, mode='observe'):
         run.records[name] = record
         return record
     run.save = save
+    baseline, baseline_results = viewer_baseline_fixture(run.input, run.browser)
+    environment['viewer_target'] = copy.deepcopy(baseline['details']['100'])
+    environment['viewer_anchor'] = copy.deepcopy(baseline['details']['96'])
+    environment['viewer_identity'] = copy.deepcopy(baseline_results['identity']['body'])
+    if mode == 'observe':
+        run.viewer_baseline = copy.deepcopy(baseline)
+        saved = run.save('viewer-baseline.json', baseline)
+        run.source_pins[saved['path']] = saved['sha256']
     case.enterContext(patch.object(CONTROLLER, 'media_snapshot', lambda: copy.deepcopy(run.media)))
     class Connection:
         def __init__(self, host, port, timeout):
             case.assertEqual((host, port, timeout), ('127.0.0.1', 18197, 8)); self.closed = False; run.connections.append(self)
         def request(self, method, path, body, headers):
-            self.method, self.path = method, path
+            self.method, self.path, self.headers = method, path, dict(headers)
             run.exchanges.append({'method': method, 'path': path, 'body': memory_json_decode(body) if body else None, 'headers': dict(headers)})
             if method == 'POST' and path == '/emby/Items/100':
                 environment['state'] = 'mutated' if memory_json_decode(body)['Name'] == run.reservation['public']['marker_name'] else 'original'
@@ -928,10 +1080,13 @@ def transport_run(case, mode='observe'):
             if self.path == '/emby/Sessions/Logout': return MemoryResponse(None, 204)
             if self.path == '/emby/System/Info': return MemoryResponse({'error': 'unauthorized'}, 401)
             if self.method == 'POST': return MemoryResponse(None, 204)
-            current = movie()
+            if self.path == '/emby/Users/' + CONTROLLER.VIEWER: return MemoryResponse(environment['viewer_identity'])
+            if self.path.endswith('/Items/96'): return MemoryResponse(copy.deepcopy(environment['viewer_anchor']))
+            current = copy.deepcopy(environment['viewer_target'] if self.headers.get('X-Emby-Token') == TOKEN else run.reservation['detail'])
             if environment['state'] == 'mutated':
                 current['Name'] = run.reservation['public']['marker_name']
                 current['SortName'] = current['ForcedSortName'] = current['Name']
+                if 'MediaSources' in current: current['MediaSources'][0]['Name'] = current['Name']
             return MemoryResponse(current)
         def close(self): self.closed = True
     case.enterContext(patch.object(CONTROLLER.http.client, 'HTTPConnection', Connection))
@@ -984,9 +1139,12 @@ class TransportAndRecoveryGuards(GuardTestCase):
         run.work_requests = run.http_requests = CONTROLLER.WORK_HTTP
         run.work_received = run.bytes_received = CONTROLLER.WORK_BYTES
         run.metadata_post(True, cleanup=True)
-        self.assertEqual(run.restoration, 'confirmed'); self.assertEqual(run.cleanup_requests, 4)
-        self.assertEqual([row['method'] for row in run.exchanges], ['GET', 'POST', 'GET', 'GET'])
+        self.assertEqual(run.restoration, 'confirmed'); self.assertEqual(run.cleanup_requests, 5)
+        self.assertEqual([row['method'] for row in run.exchanges], ['GET', 'POST', 'GET', 'GET', 'GET'])
         self.reject(lambda: run.metadata_post(True, cleanup=True))
+        run.admin.logout()
+        self.assertTrue(run.admin.closed); self.assertEqual(run.cleanup_requests, 7)
+        self.assertLessEqual(run.cleanup_requests, CONTROLLER.CLEANUP_HTTP)
 
     def test_expired_work_clock_still_has_bounded_cleanup_time(self):
         run, environment = transport_run(self)
@@ -994,12 +1152,30 @@ class TransportAndRecoveryGuards(GuardTestCase):
         run.op = types.SimpleNamespace(same_service=lambda _owner: None,
             process_identity=lambda _pid: {'startTicks': '378464', 'bootId': CONTROLLER.BOOT, 'networkNamespace': 'net:[1]'})
         self.enterContext(patch.object(CONTROLLER.os, 'readlink', lambda _path: 'net:[1]'))
-        self.reject(lambda: CONTROLLER.Run.check(run))
+        baseline = copy.deepcopy(run.records['viewer-baseline.json']); reads = []
+        def memory_protected(path, expected=None, limit=CONTROLLER.MAX_JSON, modes=(0o600,)):
+            CONTROLLER.require(str(path) == baseline['path'] and expected == baseline['sha256'] and modes == (0o600, 0o644),
+                'The deadline fixture requested an unowned memory artifact.')
+            reads.append(str(path))
+            raw = CONTROLLER.canonical(run.documents['viewer-baseline.json']) + b'\n'
+            CONTROLLER.require(len(raw) <= limit and CONTROLLER.sha(raw) == expected, 'The owned memory artifact changed its size or digest.')
+            return raw
+        self.enterContext(patch.object(CONTROLLER, 'protected', memory_protected))
+        run.check = types.MethodType(CONTROLLER.Run.check, run)
+        self.reject(run.check)
+        self.assertEqual(reads, [])
         run.recover()
         self.assertEqual(run.cleanup_deadline, 891)
-        CONTROLLER.Run.check(run, cleanup=True)
+        run.check(cleanup=True)
+        self.assertEqual(reads, [baseline['path']])
+        original = copy.deepcopy(run.documents['viewer-baseline.json'])
+        run.documents['viewer-baseline.json']['input_sha256'] = 'f' * 64
+        self.reject(lambda: run.check(cleanup=True))
+        run.documents['viewer-baseline.json'] = original
+        reads_before_expiry = len(reads)
         environment['clock']['now'] = 901
-        self.reject(lambda: CONTROLLER.Run.check(run, cleanup=True))
+        self.reject(lambda: run.check(cleanup=True))
+        self.assertEqual(len(reads), reads_before_expiry)
 
     def test_unknown_forward_at_original_is_not_treated_as_resolved(self):
         run, _environment = transport_run(self)
@@ -1062,6 +1238,52 @@ class TransportAndRecoveryGuards(GuardTestCase):
         self.assertIn('fresh-ui-device', headers['Authorization'])
         self.assertNotIn(run.admin.device, headers['Authorization'])
         self.assertEqual(run.documents['viewer-readback-result.json']['channel'], 'controller_api')
+
+    def test_real_ui_baseline_precedes_name_writes_and_preserves_its_own_permission_projection(self):
+        run, environment = transport_run(self)
+        original = movie_with_source()
+        run.reservation = CONTROLLER.reserve_edit(original); run.before['details']['admin']['100'] = copy.deepcopy(original)
+        run.before['details']['viewer']['100'].update(CanDelete=True, CanDownload=True, SupportsSync=True)
+        environment['viewer_target'] = dict(copy.deepcopy(original), CanDelete=False, CanDownload=False)
+        run.viewer_baseline = None; run.documents.pop('viewer-baseline.json'); run.records.pop('viewer-baseline.json')
+        run.child = copy.deepcopy(CHILD)
+        run.stages = [{'name': 'discovery', 'value': {'session_private': descriptor(CONTROLLER.ROOT / 'browser/session-private.json')}}]
+        run.capture_viewer_baseline(); run.require_viewer_baseline()
+        frozen = copy.deepcopy(run.viewer_baseline)
+        self.assertEqual([row['path'] for row in run.exchanges], ['/emby/Users/' + CONTROLLER.VIEWER,
+            '/emby/Users/' + CONTROLLER.VIEWER + '/Items/100', '/emby/Users/' + CONTROLLER.VIEWER + '/Items/96'])
+        self.assertTrue(all(row['headers']['X-Emby-Token'] == TOKEN and 'fresh-ui-device' in row['headers']['Authorization'] for row in run.exchanges))
+        self.assertTrue(all(run.source_pins[run.records[name]['path']] == run.records[name]['sha256'] for name in
+            ('viewer-baseline.json', 'viewer-fresh-identity-result.json', 'viewer-baseline-target-result.json', 'viewer-baseline-anchor-result.json')))
+        run.metadata_post(); run.metadata_post(True)
+        self.assertEqual(run.restoration, 'confirmed'); self.assertEqual(run.viewer_baseline, frozen)
+        self.assertFalse(run.documents['forward-viewer-confirmed.json']['detail']['CanDelete'])
+        self.assertNotIn('SupportsSync', run.documents['restore-viewer-confirmed.json']['detail'])
+        self.assertEqual(run.documents['restore-viewer-confirmed.json']['detail']['MediaSources'], original['MediaSources'])
+        self.assertEqual(sum(row['method'] == 'POST' for row in run.exchanges), 2)
+
+    def test_real_viewer_permission_presence_or_anchor_drift_is_never_filtered_out(self):
+        for defect in ('delete', 'download', 'missing', 'added', 'anchor', 'baseline_mutation'):
+            run, environment = transport_run(self)
+            if defect == 'delete': environment['viewer_target']['CanDelete'] = True
+            elif defect == 'download': environment['viewer_target']['CanDownload'] = True
+            elif defect == 'missing': del environment['viewer_target']['CanDelete']
+            elif defect == 'added': environment['viewer_target']['SupportsSync'] = False
+            elif defect == 'anchor': environment['viewer_anchor']['Overview'] = 'Foreign anchor'
+            else: run.viewer_baseline['details']['100']['CanDelete'] = True
+            with self.subTest(defect=defect): self.reject(lambda: run.metadata_post())
+            self.assertEqual(sum(row['method'] == 'POST' for row in run.exchanges), 0 if defect == 'baseline_mutation' else 1)
+
+    def test_invalid_ui_identity_stops_before_baseline_movie_reads_or_reservation(self):
+        run, environment = transport_run(self)
+        run.viewer_baseline = None; run.documents.pop('viewer-baseline.json'); run.records.pop('viewer-baseline.json')
+        run.child = copy.deepcopy(CHILD)
+        run.stages = [{'name': 'discovery', 'value': {'session_private': descriptor(CONTROLLER.ROOT / 'browser/session-private.json')}}]
+        environment['viewer_identity']['Policy']['IsAdministrator'] = True
+        self.reject(run.capture_viewer_baseline)
+        self.assertEqual([row['path'] for row in run.exchanges], ['/emby/Users/' + CONTROLLER.VIEWER])
+        self.assertIsNone(run.viewer_baseline); self.assertEqual(run.controls, [])
+        self.reject(lambda: run.control('reserved'))
 
     def test_preflight_transport_rejects_any_name_write(self):
         run, _environment = transport_run(self, 'preflight')

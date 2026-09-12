@@ -32,12 +32,12 @@ import types
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'reference-library-changed-ui-tool-03'
-ROOT = WORK / 'reference-library-changed-ui-v3'
-PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v3'
-WORKER_UNIT = 'goby-reference-library-changed-ui-v3.service'
-CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v3.service'
-PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v3.service'
+TOOL = WORK / 'reference-library-changed-ui-tool-04'
+ROOT = WORK / 'reference-library-changed-ui-v4'
+PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v4'
+WORKER_UNIT = 'goby-reference-library-changed-ui-v4.service'
+CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v4.service'
+PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v4.service'
 MARKER = 'goby-reference-library-changed-observation-v1'
 INPUT_MARKER = 'goby-reference-library-changed-input-v1'
 SNAPSHOT_MARKER = 'goby-reference-library-changed-public-snapshot-v1'
@@ -72,13 +72,42 @@ TARGET_PATH = str(MOVIES / 'LibraryChanged Observed (2031)/LibraryChanged Observ
 ANCHOR_PATH = str(MOVIES / 'LibraryChanged Anchor (2030)/LibraryChanged Anchor (2030).mp4')
 JS_NAMES = ('client-browser-library-changed-reference.mjs', 'client-browser-library-changed-reference-runtime.mjs',
             'client-browser-session-proof.mjs')
+PRIOR_RECOVERY = {'path': str(WORK / 'reference-library-changed-ui-execution-03/recovery-terminal.json'),
+    'sha256': '8bed884bc76dfe2277f0a9f116195a5db28cabfacf40a45bdf0d1886385fbc6e'}
+PRIOR_RECOVERY_ROOT = WORK / 'reference-library-changed-ui-recovery-v3b'
+PRIOR_RECOVERY_REPORT = {'path': str(PRIOR_RECOVERY_ROOT / 'report.json'),
+    'sha256': '3e9a555f0a91e42df63657652a5a2f84b3104db76871a340ffca7001ebf67e3e'}
+PRIOR_RECOVERY_TERMINAL = {
+    'administrator_logout204_and_same_token401_verified': True, 'anchor_unchanged': True,
+    'captured_at': '2026-09-12T16:07:32.096425+00:00', 'full_target_restored_except_etag': True,
+    'library_changed_client_acceptance': False, 'main_acceptance': False, 'marker': 'goby-reference-ui-recovery-terminal-v3',
+    'media_source_name_restored': True, 'media_unchanged': True,
+    'original_failed_report': {'path': str(WORK / 'reference-library-changed-ui-v3/report.json'),
+        'sha256': 'a7290d22100b63f919324b7dded7d15228458b9ebf456384b6b6b4de5fa4e23a'},
+    'original_report_rewritten': False, 'recursive_cgroup_members': [], 'report': PRIOR_RECOVERY_REPORT,
+    'restore_posts': 1, 'restore_status': 204,
+    'source': {'path': str(PRIOR_RECOVERY_ROOT / 'recover.py'), 'sha256': 'b230b22d29a34a154745c1d822ead6e2fcf68084ea78ff889eb0e1196aafea1b'},
+    'status': 'restoration_independently_confirmed',
+    'systemd': {'ActiveState': 'active', 'ControlGroup': '', 'ExecMainStatus': '0', 'Id': 'goby-reference-library-changed-ui-recovery-v3b.service',
+        'InvocationID': 'c7b4694665e841ce98024e61107a1d47', 'MainPID': '0', 'RemainAfterExit': 'yes', 'Result': 'success', 'SubState': 'exited'},
+    'unit': 'goby-reference-library-changed-ui-recovery-v3b.service', 'viewer_context_read_authentication': 'administrator', 'viewer_ui_login_performed': False}
+PRIOR_RECOVERY_RESULTS = {
+    'anchor-after': (200, 4740, 'eb7e85a2cd62689fb3eef6260b4b12bfa4f83368ae09be00428f75b24348ed9d'),
+    'anchor-before': (200, 4740, 'eb7e85a2cd62689fb3eef6260b4b12bfa4f83368ae09be00428f75b24348ed9d'),
+    'current': (200, 4814, '152825f9cd3316f15cea578f1dce725ef58ecdd9df24f34f7aff81009dcbd8dd'),
+    'exact401': (401, 35, '64f610e896fbad1d2b9561c266036aad3ca7f64ef69effae892749fee5327255'),
+    'login': (200, 2938, 'e1299144b4ea1680f24889656fa0bc6777ee6a5afa62051955da183992ab3a59'),
+    'logout': (204, 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
+    'restore': (204, 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
+    'restored': (200, 4770, 'cfd2381e12d209decdd7ca89cbfc1f1ca256cd84f69655b2efd499e95593b216'),
+    'viewer-context': (200, 4752, '98bac71b0f0afa9d260ae21f62b982e8690d35b9f4a062bf46e6821e3355a55b')}
 EDIT_FIELDS = ('Name', 'SortName', 'ForcedSortName', 'OriginalTitle', 'Overview', 'ProductionYear', 'PremiereDate',
     'EndDate', 'CommunityRating', 'CriticRating', 'OfficialRating', 'CustomRating', 'ProviderIds', 'Genres', 'Tags', 'TagItems',
     'Studios', 'People', 'LockedFields', 'LockData', 'Taglines', 'ProductionLocations', 'PreferredMetadataLanguage',
     'PreferredMetadataCountryCode', 'IndexNumber', 'ParentIndexNumber', 'SortIndexNumber', 'SortParentIndexNumber', 'DisplayOrder', 'Status', 'DateCreated')
 AUTOMATIC_FIELDS = frozenset(('Etag', 'ETag', 'DateLastSaved', 'DateLastRefreshed'))
 SORT_FIELDS = ('SortName', 'ForcedSortName')
-MARKER_NAME = 'reference library changed ui three'
+MARKER_NAME = 'reference library changed ui four'
 AUTH_TIME_FIELDS = frozenset(('LastLoginDate', 'LastActivityDate'))
 FIELDS = 'Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear'
 STAGES, CONTROLS = ('discovery', 'armed', 'restore-armed', 'restored'), ('reserved', 'forward', 'restored', 'close')
@@ -220,6 +249,8 @@ def edit_body(detail):
 def reserve_edit(detail):
     original = edit_body(detail)
     sorting = reversible_sorting(detail)
+    require('MediaSources' in detail, 'The complete administrator target omits its unique media-source identity.')
+    media_source_name(detail)
     marker = MARKER_NAME
     require(detail['Name'] != marker, 'The single fixed Name marker is already present.')
     forward = copy.deepcopy(original)
@@ -241,6 +272,114 @@ def reversible_sorting(detail):
             'The current lock and sorting state has no reviewed exact Name-only round trip.')
     return {'mode': 'unlocked-follow-name', 'original_name': detail['Name'],
             'original_sorting': {field: detail[field] for field in SORT_FIELDS}}
+
+
+def media_source_name(detail):
+    if 'MediaSources' not in detail: return None
+    sources = detail['MediaSources']
+    require(isinstance(sources, list) and len(sources) == 1 and isinstance(sources[0], dict) and
+            sources[0].get('Id') == 'mediasource_100' and sources[0].get('ItemId') == ITEM and
+            sources[0].get('Path') == TARGET_PATH and sources[0].get('Name') == detail.get('Name'),
+            'The target media source has no reviewed exact Name-only projection.')
+    return sources[0]['Name']
+
+
+def name_projection(detail, name):
+    media_source_name(detail)
+    expected = copy.deepcopy(detail)
+    expected['Name'] = name
+    for field in SORT_FIELDS:
+        if field in expected: expected[field] = name
+    if 'MediaSources' in expected: expected['MediaSources'][0]['Name'] = name
+    return expected
+
+
+def credential_context(principal, token_sha):
+    require(principal in (ADMIN, VIEWER) and digest(token_sha), 'A public credential context lacks its exact principal or token fingerprint.')
+    return {'channel': 'controller_api', 'authenticated_user_id': principal, 'token_sha256': token_sha, 'user_id_semantics': 'subject_projection'}
+
+
+def validate_credential_context(value, principal):
+    require(isinstance(value, dict) and set(value) == {'channel', 'authenticated_user_id', 'token_sha256', 'user_id_semantics'} and
+            same(value, credential_context(principal, value.get('token_sha256'))), 'A subject projection was attributed to another credential context.')
+
+
+def validate_viewer_response(value, token_sha):
+    require(isinstance(value, dict) and set(value) == {'channel', 'status', 'complete', 'body', 'body_bytes', 'body_sha256',
+            'token_sha256', 'operation', 'completed_at'} and value['channel'] == 'controller_api' and type(value['status']) is int and value['status'] == 200 and
+            value['complete'] is True and value['operation'] is None and value['token_sha256'] == token_sha and
+            isinstance(value['body'], dict) and type(value['body_bytes']) is int and 0 < value['body_bytes'] <= 2 << 20 and digest(value['body_sha256']),
+            'A real viewer API read lacks its complete same-token response.')
+    instant(value['completed_at'])
+
+
+def validate_viewer_identity(value):
+    require(value.get('Id') == VIEWER and value.get('Name') == VIEWER_NAME and isinstance(value.get('Policy'), dict) and
+            value['Policy'].get('IsAdministrator') is False and value['Policy'].get('IsDisabled') is False,
+            'The actual UI token is not the expected ordinary viewer.')
+
+
+def validate_prior_recovery(terminal, report):
+    require(same(terminal, PRIOR_RECOVERY_TERMINAL), 'The previous failed scope lacks its exact independent recovery terminal.')
+    require(isinstance(report, dict) and set(report) == {'administrator_closed', 'captured_at', 'errors', 'evidence', 'http_requests',
+            'library_changed_client_acceptance', 'marker', 'media_unchanged', 'original_scope_replayed', 'protocol_observation_complete',
+            'restoration_confirmed', 'restore_acknowledged', 'restore_posts', 'results', 'status', 'viewer_projection_channel', 'viewer_ui_login_performed'} and
+            report['marker'] == 'goby-reference-ui-name-recovery-v3' and report['status'] == 'restored' and
+            report['captured_at'] == '2026-09-12T16:03:07.659965+00:00' and report['errors'] == [] and
+            type(report['http_requests']) is int and report['http_requests'] == 9 and type(report['restore_posts']) is int and report['restore_posts'] == 1 and
+            all(report[key] is True for key in ('administrator_closed', 'media_unchanged', 'restoration_confirmed', 'restore_acknowledged')) and
+            all(report[key] is False for key in ('library_changed_client_acceptance', 'original_scope_replayed', 'protocol_observation_complete', 'viewer_ui_login_performed')) and
+            report['viewer_projection_channel'] == 'administrator_token_with_viewer_UserId' and
+            isinstance(report['results'], dict) and set(report['results']) == set(PRIOR_RECOVERY_RESULTS),
+            'The prior recovery report changed its exact restoration, authentication or failed-observation facts.')
+    for name, (status, size, body_sha) in PRIOR_RECOVERY_RESULTS.items():
+        expected = {'status': status, 'body_bytes': size, 'body_sha256': body_sha, 'complete': True,
+            'token_sha256': None if name == 'login' else '8c1f5d1d11d471242c8d00be3c073ecba5ed6e162a9f3e2b20578e3d62e18f3e'}
+        require(same(report['results'][name], expected), 'A prior recovery exchange lost its exact completed same-token result.')
+    names = {name + suffix for name in PRIOR_RECOVERY_RESULTS for suffix in ('-intent', '-result')} | {'ownership'}
+    require(isinstance(report['evidence'], dict) and set(report['evidence']) == names, 'The prior recovery evidence inventory changed.')
+    for name, descriptor in report['evidence'].items():
+        filename = 'login-result-private.json' if name == 'login-result' else name + '.json'
+        require(isinstance(descriptor, dict) and set(descriptor) == {'path', 'sha256'} and
+                descriptor['path'] == str(PRIOR_RECOVERY_ROOT / filename) and digest(descriptor['sha256']),
+                'A prior recovery evidence descriptor escaped its sealed scope.')
+
+
+def validate_viewer_baseline(value, input_record, input_sha, child, private, session_private, before, results):
+    require(isinstance(value, dict) and set(value) == {'marker', 'version', 'captured_at', 'input_sha256', 'session_private',
+            'credential_context', 'identity_result', 'target_result', 'anchor_result', 'details'} and
+            value['marker'] == 'goby-reference-library-changed-viewer-baseline-v1' and type(value['version']) is int and value['version'] == 1 and
+            value['input_sha256'] == input_sha and same(value['session_private'], session_private) and
+            isinstance(session_private, dict) and set(session_private) == {'path', 'sha256'} and
+            session_private['path'] == str(ROOT / 'browser/session-private.json') and digest(session_private['sha256']),
+            'The real viewer baseline lost its exact input or private session acknowledgement.')
+    proof = validate_private_session(private, input_record, input_sha, child, before)
+    validate_credential_context(value['credential_context'], VIEWER)
+    require(value['credential_context']['token_sha256'] == proof['token_sha256'] and
+            proof['token_sha256'] != before['credential_context']['token_sha256'] and
+            isinstance(results, dict) and set(results) == {'identity', 'target', 'anchor'} and
+            isinstance(value['details'], dict) and set(value['details']) == {ITEM, ANCHOR},
+            'The real viewer baseline reused administrator authority or omitted a movie.')
+    names = {'identity': 'viewer-fresh-identity-result.json', 'target': 'viewer-baseline-target-result.json', 'anchor': 'viewer-baseline-anchor-result.json'}
+    for role, result in results.items():
+        validate_viewer_response(result, proof['token_sha256'])
+        descriptor = value[role + '_result']
+        require(isinstance(descriptor, dict) and set(descriptor) == {'path', 'sha256'} and descriptor['path'] == str(ROOT / names[role]) and
+                descriptor['sha256'] == sha(canonical(result) + b'\n') and
+                instant(proof['created_at']) <= instant(result['completed_at']) <= instant(value['captured_at']),
+                'A viewer baseline response changed its actual result descriptor or capture interval.')
+    validate_viewer_identity(results['identity']['body'])
+    require(same(value['details'][ITEM], results['target']['body']) and same(value['details'][ANCHOR], results['anchor']['body']),
+            'The real viewer baseline no longer contains its complete target and anchor responses.')
+    target, anchor = value['details'][ITEM], value['details'][ANCHOR]
+    edit_body(target)
+    require('MediaSources' in target, 'The complete actual viewer target omits its unique media-source identity.')
+    media_source_name(target)
+    require(target['Name'] == input_record['target']['name'] and all(target[key] == target['Name'] for key in SORT_FIELDS if key in target) and
+            anchor.get('Id') == ANCHOR and anchor.get('Name') == input_record['anchor']['name'] and anchor.get('Path') == ANCHOR_PATH and
+            anchor.get('Type') == 'Movie' and anchor.get('IsFolder') is False,
+            'The actual viewer did not receive the original exact two-movie baseline.')
+    return value
 
 
 def automatic_changes(before, after, start, end, permitted):
@@ -267,11 +406,8 @@ def classify_metadata(original, current, reservation, start, end, dispatched):
     changes = automatic_changes(original, current, start, end, dispatched)
     left, right = ({key: value for key, value in row.items() if key not in AUTOMATIC_FIELDS} for row in (original, current))
     if same(left, right): return 'original', changes
-    expected = copy.deepcopy(left)
-    expected['Name'] = reservation['public']['marker_name']
     require(reservation.get('sorting', {}).get('mode') == 'unlocked-follow-name', 'The metadata reservation omitted its reversible sorting contract.')
-    for field in SORT_FIELDS:
-        if field in expected: expected[field] = reservation['public']['marker_name']
+    expected = name_projection(left, reservation['public']['marker_name'])
     if same(right, expected): return 'mutated', changes
     return 'foreign-or-unknown', changes
 
@@ -288,9 +424,10 @@ def indexed_page(value, key='Id', bound=256):
 
 def validate_public_snapshot(value):
     require(isinstance(value, dict) and set(value) == {'marker', 'version', 'captured_at', 'server', 'roster', 'configuration', 'libraries',
-            'catalog_by_library', 'items_by_user', 'preferences', 'details', 'devices'} and value['marker'] == SNAPSHOT_MARKER and
+            'catalog_by_library', 'items_by_user', 'preferences', 'details', 'devices', 'credential_context'} and value['marker'] == SNAPSHOT_MARKER and
             type(value['version']) is int and value['version'] == 1, 'The complete public snapshot shape changed.')
     instant(value['captured_at'])
+    validate_credential_context(value['credential_context'], ADMIN)
     require(value['server'].get('Id') == SERVER and value['server'].get('Version') == '4.9.5.0', 'The fresh public server is not the pinned reference.')
     users, libraries = value['roster'], value['libraries']
     require(isinstance(users, dict) and 2 <= len(users) <= 16 and ADMIN in users and VIEWER in users and
@@ -325,6 +462,7 @@ def validate_public_snapshot(value):
     for family in ('catalog_by_library', 'items_by_user', 'details'):
         for rows in value[family].values():
             if ITEM in rows:
+                media_source_name(rows[ITEM])
                 require(rows[ITEM].get('Name') == detail['admin'][ITEM]['Name'] and
                         all(rows[ITEM][field] == detail['admin'][ITEM]['Name'] for field in SORT_FIELDS if field in rows[ITEM]),
                         'A target projection has an unreviewed sorting representation that cannot be restored exactly.')
@@ -369,11 +507,9 @@ def compare_public(before, after, *, expected_name=None, metadata_sent=False, ow
                     continue
                 expected = copy.deepcopy(old)
                 if expected_name is not None:
-                    expected['Name'] = expected_name
                     if expected_name != old['Name']:
-                        require(metadata_sent, 'Derived sorting changed without an owned metadata dispatch.')
-                        for field in SORT_FIELDS:
-                            if field in expected: expected[field] = expected_name
+                        require(metadata_sent, 'A Name-derived projection changed without an owned metadata dispatch.')
+                    expected = name_projection(old, expected_name)
                 require(same({key: value for key, value in expected.items() if key not in AUTOMATIC_FIELDS},
                              {key: value for key, value in new.items() if key not in AUTOMATIC_FIELDS}),
                         'The target changed outside Name or its controlled automatic fields.')
@@ -381,6 +517,10 @@ def compare_public(before, after, *, expected_name=None, metadata_sent=False, ow
                 if automatic: changes.append({'kind': 'metadata-automatic', 'family': family, 'group': group, 'item_id': ITEM, 'fields': automatic})
                 sorting = {field: {'before': old.get(field), 'after': new.get(field)} for field in SORT_FIELDS if field in old and old[field] != new.get(field)}
                 if sorting: changes.append({'kind': 'name-derived-sorting', 'family': family, 'group': group, 'item_id': ITEM, 'fields': sorting})
+                if 'MediaSources' in old and old['MediaSources'][0]['Name'] != new['MediaSources'][0]['Name']:
+                    changes.append({'kind': 'name-derived-media-source', 'family': family, 'group': group, 'item_id': ITEM,
+                        'source_id': 'mediasource_100', 'field': 'MediaSources[0].Name',
+                        'before': old['MediaSources'][0]['Name'], 'after': new['MediaSources'][0]['Name']})
     old_devices, new_devices = before['devices'], after['devices']
     require(set(old_devices) <= set(new_devices), 'An existing public device disappeared.')
     owned = {entry['device_id']: entry for entry in owned_devices}
@@ -502,6 +642,7 @@ class Run:
         self.phase = 'load'
         self.js_sources = {}
         self.viewer_token = None
+        self.viewer_baseline = None
         self.closed = False
 
     def error(self, phase, error):
@@ -548,7 +689,7 @@ class Run:
         if len(query) != len({key.lower() for key, _ in query}) or any(re.search('token|password|secret|authorization|api.?key', key, re.I) for key, _ in query): return False
         path = parsed.path
         if cleanup:
-            allowed = ('/emby/Users/' + (VIEWER if viewer else ADMIN) + '/Items/' + ITEM,)
+            allowed = tuple('/emby/Users/' + (VIEWER if viewer else ADMIN) + '/Items/' + item for item in ((ITEM, ANCHOR) if viewer else (ITEM,)))
             return not query and (path in allowed or not viewer and path == '/emby/System/Info')
         if viewer: return path in ('/emby/Users/' + VIEWER, '/emby/Users/' + VIEWER + '/Items/' + ITEM, '/emby/Users/' + VIEWER + '/Items/' + ANCHOR) and not query
         if path in ('/emby/System/Info/Public', '/emby/Users', '/emby/System/Configuration', '/emby/Library/VirtualFolders/Query', '/emby/Devices'):
@@ -581,8 +722,12 @@ class Run:
                     require(label == 'admin-exact401' and 'admin-logout' in self.dispatched, 'The unique administrator rejection proof must follow its logout.')
                 else:
                     require(self.mode == 'observe' and self.reservation is not None and 'forward' in self.dispatched and label in
-                            ('restore-fresh-admin', 'restore-admin-readback', 'restore-viewer-readback', 'restore-reconcile'),
+                            ('restore-fresh-admin', 'restore-admin-readback', 'restore-viewer-readback', 'restore-viewer-anchor', 'restore-reconcile'),
                             'A cleanup read lacks a pending owned metadata operation.')
+                    require((label == 'restore-viewer-anchor' and viewer and route == '/emby/Users/' + VIEWER + '/Items/' + ANCHOR) or
+                            (label == 'restore-viewer-readback' and viewer and route == '/emby/Users/' + VIEWER + '/Items/' + ITEM) or
+                            (label in ('restore-fresh-admin', 'restore-admin-readback', 'restore-reconcile') and not viewer and
+                             route == '/emby/Users/' + ADMIN + '/Items/' + ITEM), 'The cleanup label changed its exact credential and movie route.')
         else:
             require(method == 'POST' and not viewer and operation in ('admin-login', 'admin-logout', 'forward', 'restore') and
                     operation not in self.reserved, 'An unowned or repeated public write was requested.')
@@ -693,7 +838,8 @@ class Run:
         configuration = self.get(label + '-configuration', '/emby/System/Configuration')
         value = {'marker': SNAPSHOT_MARKER, 'version': 1, 'captured_at': utc_now(), 'server': server, 'roster': roster,
             'configuration': configuration, 'libraries': libraries,
-            'catalog_by_library': catalogs, 'items_by_user': projections, 'preferences': preferences, 'details': details, 'devices': device_rows}
+            'catalog_by_library': catalogs, 'items_by_user': projections, 'preferences': preferences, 'details': details, 'devices': device_rows,
+            'credential_context': credential_context(ADMIN, sha(self.admin.token.encode()))}
         validate_public_snapshot(value)
         self.save(label + '-public.json', value)
         return value
@@ -712,6 +858,7 @@ class Run:
         script = TOOL / 'observe-client-library-changed-reference-ui.py'
         require(Path(__file__).absolute() == script, 'The controller is outside its fresh fixed tool directory.')
         protected(script, self.args.script_sha256, 2 << 20)
+        validate_prior_recovery(read_record(PRIOR_RECOVERY), read_record(PRIOR_RECOVERY_REPORT))
         self.op = load_operator()
         self.owner = decode(protected(OWNER, OWNER_SHA))
         self.op.validate_owner(self.owner)
@@ -731,7 +878,8 @@ class Run:
                 viewer['username'] == VIEWER_NAME and text(viewer['password'], 1024), 'The viewer credential is not the acknowledged continuation account.')
         self.viewer_credentials = {'viewer': {key: viewer[key] for key in ('username', 'password', 'userId')}}
         self.source_pins = {str(script): self.args.script_sha256, str(OPERATOR): OPERATOR_SHA, str(OWNER): OWNER_SHA,
-            str(ACCOUNTS): ACCOUNTS_SHA, str(VIEWER_CREDENTIALS): VIEWER_CREDENTIALS_SHA, str(PROXY_STATUS): PROXY_STATUS_SHA}
+            str(ACCOUNTS): ACCOUNTS_SHA, str(VIEWER_CREDENTIALS): VIEWER_CREDENTIALS_SHA, str(PROXY_STATUS): PROXY_STATUS_SHA,
+            PRIOR_RECOVERY['path']: PRIOR_RECOVERY['sha256'], PRIOR_RECOVERY_REPORT['path']: PRIOR_RECOVERY_REPORT['sha256']}
         if self.mode == 'observe':
             source = decode(protected(self.args.source_closure, self.args.source_closure_sha256))
             require(isinstance(source, dict) and set(source) == {'marker', 'files'} and
@@ -747,6 +895,8 @@ class Run:
             validate_preflight(self.preflight, self.args.script_sha256, service)
             self.preflight_snapshot = read_record(self.preflight['public_snapshot'])
             validate_public_snapshot(self.preflight_snapshot)
+            require(same(self.preflight_snapshot['credential_context'], credential_context(ADMIN, self.preflight['admin']['token_sha256'])),
+                    'The preflight snapshot was attributed to another authenticated principal.')
             self.source_pins[str(PREFLIGHT_ROOT / 'report.json')] = self.args.preflight_sha256
             self.source_pins[self.preflight['public_snapshot']['path']] = self.preflight['public_snapshot']['sha256']
         self.check()
@@ -771,6 +921,7 @@ class Run:
         self.save('media-before.json', self.media)
         self.admin.login()
         self.before = self.snapshot('before')
+        require(instant(self.before['captured_at']) >= instant('2026-09-12T16:07:32.096425Z'), 'The new snapshot predates the sealed prior recovery.')
         preview = reserve_edit(self.before['details']['admin'][ITEM])
         require(preview['public']['marker_name'] != self.before['details']['admin'][ANCHOR]['Name'], 'The one marker would collide with the visible anchor.')
         require(all(row['ReportedDeviceId'] != self.admin.device for row in getattr(self, 'preflight_snapshot', {}).get('devices', {}).values()),
@@ -811,6 +962,7 @@ class Run:
             'reference': self.reference(), 'expected_libraries': self.expected_libraries(), 'target': self.target(), 'anchor': self.anchor(),
             'source_closure': self.js_sources, 'controller': self.controller,
             'authority': {'owner': {'path': str(OWNER), 'sha256': OWNER_SHA},
+                'prior_recovery': PRIOR_RECOVERY,
                 'preflight': {'path': str(PREFLIGHT_ROOT / 'report.json'), 'sha256': self.args.preflight_sha256},
                 'before_snapshot': self.records['before-public.json']}}
         self.input_sha = self.save('input.json', self.input)['sha256']
@@ -913,6 +1065,7 @@ class Run:
 
     def control(self, name, commit=None, restoration='pending'):
         require(name in CONTROLS and not any(value['name'] == name for value in self.controls), 'A controller control was replayed.')
+        if name in ('reserved', 'forward'): self.require_viewer_baseline()
         if name != 'close': require(name == CONTROLS[len(self.controls)], 'A control crossed its ordered stage barrier.')
         else: require(restoration in ('confirmed', 'not_required'), 'An unknown restoration cannot release a successful close.')
         value = {'marker': 'goby-reference-library-changed-control-v1', 'version': 1, 'name': name, 'input_sha256': self.input_sha,
@@ -926,8 +1079,41 @@ class Run:
         user = VIEWER if viewer else ADMIN
         return self.get(label, '/emby/Users/' + user + '/Items/' + ITEM, viewer=viewer, cleanup=cleanup)
 
+    def capture_viewer_baseline(self):
+        require(self.viewer_baseline is None and len(self.stages) == 1 and self.stages[0]['name'] == 'discovery' and not self.controls and
+                not self.forward_sent and self.browser is not None, 'The viewer baseline must precede reservation and all metadata writes.')
+        proof = self.browser['proof']
+        identity = self.request('viewer-fresh-identity', 'GET', '/emby/Users/' + VIEWER, viewer=True)
+        validate_viewer_response(identity, proof['token_sha256'])
+        validate_viewer_identity(identity['body'])
+        results = {'identity': identity}
+        for role, item in (('target', ITEM), ('anchor', ANCHOR)):
+            results[role] = self.request('viewer-baseline-' + role, 'GET', '/emby/Users/' + VIEWER + '/Items/' + item, viewer=True)
+            validate_viewer_response(results[role], proof['token_sha256'])
+        value = {'marker': 'goby-reference-library-changed-viewer-baseline-v1', 'version': 1, 'captured_at': utc_now(), 'input_sha256': self.input_sha,
+            'session_private': copy.deepcopy(self.stages[0]['value']['session_private']), 'credential_context': credential_context(VIEWER, proof['token_sha256']),
+            'identity_result': self.records['viewer-fresh-identity-result.json'], 'target_result': self.records['viewer-baseline-target-result.json'],
+            'anchor_result': self.records['viewer-baseline-anchor-result.json'],
+            'details': {ITEM: copy.deepcopy(results['target']['body']), ANCHOR: copy.deepcopy(results['anchor']['body'])}}
+        validate_viewer_baseline(value, self.input, self.input_sha, self.child, self.browser, value['session_private'], self.before, results)
+        saved = self.save('viewer-baseline.json', value)
+        for descriptor in (saved, value['identity_result'], value['target_result'], value['anchor_result']):
+            self.source_pins[descriptor['path']] = descriptor['sha256']
+        self.viewer_baseline = copy.deepcopy(value)
+
+    def require_viewer_baseline(self):
+        descriptor = self.records.get('viewer-baseline.json')
+        require(self.viewer_baseline is not None and isinstance(descriptor, dict) and
+                descriptor.get('path') == str(ROOT / 'viewer-baseline.json') and
+                descriptor.get('sha256') == sha(canonical(self.viewer_baseline) + b'\n') and
+                self.source_pins.get(descriptor['path']) == descriptor['sha256'] and
+                self.viewer_baseline['input_sha256'] == self.input_sha and self.browser is not None and
+                same(self.viewer_baseline['credential_context'], credential_context(VIEWER, self.browser['proof']['token_sha256'])),
+                'The operation lacks its immutable same-session real viewer baseline.')
+
     def metadata_post(self, restoring=False, cleanup=False):
         label = 'restore' if restoring else 'forward'
+        self.require_viewer_baseline()
         require(not (self.restore_sent if restoring else self.forward_sent), 'A physical metadata write cannot be retried.')
         current = self.detail_readback(label + '-fresh-admin', cleanup=cleanup)
         state, changes = classify_metadata(self.reservation['detail'], current, self.reservation, self.before['captured_at'], utc_now(), self.forward_sent)
@@ -952,12 +1138,20 @@ class Run:
         else: self.forward_ack = acknowledged
         require(acknowledged, 'The one metadata POST is not a complete HTTP 204; its physical request cannot be resent.')
         admin = self.detail_readback(label + '-admin-readback', cleanup=cleanup)
-        viewer = self.detail_readback(label + '-viewer-readback', viewer=True, cleanup=cleanup)
+        viewer_result = self.request(label + '-viewer-readback', 'GET', '/emby/Users/' + VIEWER + '/Items/' + ITEM, viewer=True, cleanup=cleanup)
+        validate_viewer_response(viewer_result, self.viewer_baseline['credential_context']['token_sha256'])
+        viewer = viewer_result['body']
+        anchor_result = self.request(label + '-viewer-anchor', 'GET', '/emby/Users/' + VIEWER + '/Items/' + ANCHOR, viewer=True, cleanup=cleanup)
+        validate_viewer_response(anchor_result, self.viewer_baseline['credential_context']['token_sha256'])
+        require(same(anchor_result['body'], self.viewer_baseline['details'][ANCHOR]), 'The real viewer anchor changed from its complete immutable baseline.')
         for role, row in (('admin', admin), ('viewer', viewer)):
-            original = self.before['details'][role][ITEM]
+            original = self.before['details']['admin'][ITEM] if role == 'admin' else self.viewer_baseline['details'][ITEM]
             state, changed = classify_metadata(original, row, self.reservation, self.before['captured_at'], utc_now(), True)
             require(state == ('original' if restoring else 'mutated'), 'A complete admin or viewer API readback disagrees with the exact Name operation.')
             self.save(label + '-' + role + '-confirmed.json', {'detail': row, 'automatic_changes': changed})
+        self.save(label + '-viewer-preservation.json', {'baseline': self.records['viewer-baseline.json'],
+            'credential_context': self.viewer_baseline['credential_context'], 'target_result': self.records[label + '-viewer-readback-result.json'],
+            'anchor_result': self.records[label + '-viewer-anchor-result.json'], 'target_complete': True, 'anchor_unchanged': True})
         if restoring: self.restoration = 'confirmed'
         return {'write_completed_at': result['completed_at'], 'native_result_sha256': self.records[label + '-result.json']['sha256'],
             'admin_readback_sha256': self.records[label + '-admin-readback-result.json']['sha256'],
@@ -966,9 +1160,7 @@ class Run:
     def execute_observation(self):
         self.phase = 'launch'; self.prepare_browser()
         self.phase = 'discovery'; self.stage('discovery', 90)
-        identity = self.get('viewer-fresh-identity', '/emby/Users/' + VIEWER, viewer=True)
-        require(identity.get('Id') == VIEWER and identity.get('Name') == VIEWER_NAME and identity.get('Policy', {}).get('IsAdministrator') is False and
-                identity['Policy'].get('IsDisabled') is False, 'The actual UI token is not the expected ordinary viewer.')
+        self.capture_viewer_baseline()
         self.control('reserved')
         self.phase = 'armed'; self.stage('armed', 100)
         forward = self.metadata_post()
@@ -1065,6 +1257,7 @@ class Run:
                 'logout_completed_at': self.responses.get('admin-logout', {}).get('completed_at')}
             success = not self.errors and preserved and admin is not None and admin['closed']
             value = {'marker': PREFLIGHT_MARKER, 'version': 1, 'mode': 'business-read-only-preflight', 'root': str(self.root),
+                'prior_recovery': PRIOR_RECOVERY,
                 'reference': self.reference(), 'script_sha256': self.args.script_sha256, 'source_closure_sha256': None,
                 'public_snapshot': self.records.get('after-public.json'), 'target': self.target() if self.before else None,
                 'anchor': self.anchor() if self.before else None, 'expected_libraries': self.expected_libraries() if self.before else None,
@@ -1073,12 +1266,16 @@ class Run:
         else:
             observed = getattr(self, 'browser_report', None)
             success = (not self.errors and preserved and admin is not None and admin['closed'] and self.closed and
-                self.restoration == 'confirmed' and observed is not None and observed.get('protocol_observation_complete') is True)
+                self.restoration == 'confirmed' and self.viewer_baseline is not None and
+                all(name in self.records for name in ('viewer-baseline.json', 'forward-viewer-preservation.json', 'restore-viewer-preservation.json')) and
+                observed is not None and observed.get('protocol_observation_complete') is True)
             outcomes = {name: observed.get(name) for name in ('forward', 'restored')} if observed else {}
             value = {'marker': MARKER, 'version': 1, 'mode': MODE, 'status': 'protocol_observation_complete' if success else 'failed',
+                'prior_recovery': PRIOR_RECOVERY,
                 'protocol_observation_complete': success, 'library_changed_client_acceptance': False, 'main_acceptance': False,
                 'reference': self.reference(), 'controller': getattr(self, 'controller', None), 'node_process': self.child,
                 'worker_terminal': self.terminal, 'input_sha256': self.input_sha, 'admin': admin, 'ledger': ledger,
+                'viewer_baseline': self.records.get('viewer-baseline.json'),
                 'outcomes': outcomes, 'restoration': self.restoration, 'restoration_required': self.restoration == 'restoration_required',
                 'reserved_operations': self.reserved, 'dispatched_operations': self.dispatched, 'preservation': getattr(self, 'preservation', None),
                 'errors': self.errors, 'evidence': dict(self.records), 'completed_at': utc_now()}
@@ -1127,10 +1324,10 @@ class Run:
 def validate_preflight(value, script_sha, service):
     require(isinstance(value, dict) and set(value) == {'marker', 'version', 'mode', 'root', 'reference', 'script_sha256',
             'source_closure_sha256', 'public_snapshot', 'target', 'anchor', 'expected_libraries', 'admin', 'ledger', 'preservation', 'errors',
-            'status', 'completed_at', 'evidence'} and value['marker'] == PREFLIGHT_MARKER and type(value['version']) is int and value['version'] == 1 and
+            'status', 'completed_at', 'evidence', 'prior_recovery'} and value['marker'] == PREFLIGHT_MARKER and type(value['version']) is int and value['version'] == 1 and
             value['mode'] == 'business-read-only-preflight' and value['root'] == str(PREFLIGHT_ROOT) and value['status'] == 'passed' and
             value['errors'] == [] and value['script_sha256'] == script_sha and value['source_closure_sha256'] is None and
-            same(value['reference'], {'server_id': SERVER, 'base_url': BASE_URL, 'service_identity': service}),
+            same(value['reference'], {'server_id': SERVER, 'base_url': BASE_URL, 'service_identity': service}) and same(value['prior_recovery'], PRIOR_RECOVERY),
             'The independent preflight lacks its exact successful source and service authority.')
     require(value['public_snapshot'].get('path') == str(PREFLIGHT_ROOT / 'after-public.json') and digest(value['public_snapshot'].get('sha256')) and
             value['preservation'].get('passed') is True and value['admin'].get('user_id') == ADMIN and value['admin'].get('closed') is True and
