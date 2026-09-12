@@ -147,6 +147,16 @@ access. These sources do not prove that the candidate policy-folder mapping
 permits all TV full details under P/Q's own tokens. An acknowledged policy or
 visible view alone is insufficient. Do not fall back to all-folders access.
 
+Actual [preparation03](nextup-global-reference-preparation-03.md) now records
+that exact failure: P's complete profile echoes grants 101/103, but its Views
+response is empty before catalog/detail/calibration work. The separate
+[folder observation02](nextup-folder-authority-observation-02.md) establishes
+the selectable numeric IDs, distinct Guids and native subfolder IDs using the
+official public endpoint and exact root paths. It makes no policy writes.
+The next experiment must test the observed Guid pair under one retained owned
+ordinary account and restore its original policy. Do not silently relabel the
+existing numeric policyFolderId as a proven authorization mapping.
+
 For each library, adapt the owned `prepare-client-reference.py:281` template
 by changing only its name, root paths, and `CollectionType` to `tvshows`:
 

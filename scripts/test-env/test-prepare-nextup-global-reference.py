@@ -19,6 +19,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -38,6 +39,7 @@ SUMMARIES = ("A", "AS1", "AS2", "B", "BS1", "BS2")
 RUNTIME_TICKS = 6_000_000_000
 PARTIAL_TICKS = 1_200_000_000
 STAMP = "2026-09-13T01:00:00Z"
+PRESERVATION_ORDER_OBSERVATION = None
 
 
 def encoded(value):
@@ -2009,6 +2011,101 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.assertFalse(self.fixture.output.exists())
 
 
+def preservation_order_probe(preparation, changed=("LastLoginDate", "LastActivityDate")):
+    """Exercise only the real preservation comparator with synthetic date facts."""
+    runner = object.__new__(preparation.PreparationRunner)
+    runner.user_ids = {"admin": "synthetic-order-admin"}
+    runner.manifest = {"actors": {}}
+    runner.tokens = {}
+    runner.authority = SimpleNamespace(release={"closedAuthentication": []})
+    before = {"captured_at": "2026-09-13T01:00:00Z", "server": {}, "configuration": {}, "details": {},
+        "catalog_by_library": {}, "libraries": {}, "preferences": {}, "items_by_user": {}, "devices": {},
+        "roster": {"synthetic-order-admin": {"Id": "synthetic-order-admin", "LastLoginDate": "2026-09-13T00:59:00Z",
+            "LastActivityDate": "2026-09-13T00:59:00Z"}}, "credential_context": {"token_sha256": "a" * 64}}
+    after = deepcopy(before)
+    after["captured_at"] = "2026-09-13T01:01:00Z"
+    for field in changed:
+        after["roster"]["synthetic-order-admin"][field] = "2026-09-13T01:00:30Z"
+    with patch.object(preparation, "Authority", side_effect=AssertionError("No authority access is allowed in the ordering probe.")), \
+         patch.object(preparation, "read_owned", side_effect=AssertionError("No file reads are allowed in the ordering comparator.")), \
+         patch.object(preparation.subprocess, "run", side_effect=AssertionError("No subprocess is allowed in the ordering comparator.")), \
+         patch.object(socket, "socket", side_effect=AssertionError("No socket is allowed in the ordering comparator.")), \
+         patch.object(socket, "create_connection", side_effect=AssertionError("No network is allowed in the ordering comparator.")):
+        report = runner._preserve(before, after)
+    return {"fields": [row["field"] for row in report["allowedAuthenticationChanges"]],
+        "reportSha256": digest((preparation.canonical(report) + "\n").encode())}
+
+
+def preservation_order_expected(fields):
+    report = {"preserved": True, "allowedAuthenticationChanges": [
+        {"kind": "owned-authentication-time", "userId": "synthetic-order-admin", "field": field} for field in fields],
+        "beforeTokenSha256": "a" * 64, "afterTokenSha256": "a" * 64}
+    return digest(encoded(report))
+
+
+class PreservationOrderingGuards(unittest.TestCase):
+    """Check canonical artifact bytes across independently randomized interpreters."""
+
+    def test_preservation_report_has_fixed_order_when_both_admin_dates_change(self):
+        preparation = load_source(PREPARATION_SOURCE, "ordered_preservation_subject")
+        self.addCleanup(sys.modules.pop, preparation.__name__, None)
+        observed = preservation_order_probe(preparation)
+        expected = ["LastActivityDate", "LastLoginDate"]
+        self.assertEqual(observed["fields"], expected)
+        self.assertEqual(observed["reportSha256"], preservation_order_expected(expected))
+
+    def test_unchanged_and_single_date_cases_keep_their_exact_report_meaning(self):
+        preparation = load_source(PREPARATION_SOURCE, "single_preservation_subject")
+        self.addCleanup(sys.modules.pop, preparation.__name__, None)
+        for fields in ([], ["LastActivityDate"], ["LastLoginDate"]):
+            with self.subTest(fields=fields):
+                observed = preservation_order_probe(preparation, tuple(fields))
+                self.assertEqual(observed["fields"], fields)
+                self.assertEqual(observed["reportSha256"], preservation_order_expected(fields))
+
+    def test_isolated_workers_witness_both_native_set_orders_but_identical_report_bytes(self):
+        global PRESERVATION_ORDER_OBSERVATION
+        observed, native_orders = [], set()
+        with tempfile.TemporaryDirectory(prefix="nextup-preservation-order-workers-") as temporary:
+            root = Path(temporary)
+            for index in range(32):
+                unused_report = root / ("unused-worker-%02d.json" % index)
+                command = ["/usr/bin/python3", "-I", "-B", str(Path(__file__).absolute()),
+                    "--preparation-source", str(PREPARATION_SOURCE), "--transport-source", str(TRANSPORT_SOURCE),
+                    "--matrix-source", str(MATRIX_SOURCE), "--report-path", str(unused_report), "--preservation-order-worker"]
+                environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "PYTHONHASHSEED": "0"}
+                for name in ("SSH_CONNECTION", "SSH_TTY"):
+                    if os.environ.get(name):
+                        environment[name] = os.environ[name]
+                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10,
+                                        check=False, env=environment)
+                self.assertEqual(result.returncode, 0, "The isolated synthetic ordering worker did not complete.")
+                self.assertEqual(result.stderr, b"", "The ordering worker emitted unexpected diagnostics.")
+                self.assertLessEqual(len(result.stdout), 4096)
+                value = json.loads(result.stdout)
+                self.assertEqual(set(value), {"kind", "nativeSetOrder", "fields", "reportSha256", "isolated", "noBytecode", "ignoreEnvironment", "hashRandomization"})
+                self.assertEqual(value["kind"], "synthetic-preservation-order-observation")
+                for flag in ("isolated", "noBytecode", "ignoreEnvironment", "hashRandomization"):
+                    self.assertIs(value[flag], True, "The worker did not establish isolated randomized interpreter startup.")
+                self.assertFalse(unused_report.exists(), "The synthetic worker must not create a suite report.")
+                self.assertEqual(set(value["nativeSetOrder"]), {"LastActivityDate", "LastLoginDate"})
+                native_orders.add(tuple(value["nativeSetOrder"]))
+                observed.append(value)
+                if len(native_orders) == 2 and len(observed) >= 4:
+                    break
+        PRESERVATION_ORDER_OBSERVATION = {"maximumWorkers": 32, "workersRun": len(observed),
+            "nativeOrdersObserved": [list(order) for order in sorted(native_orders)],
+            "hashSeedEnvironmentIgnoredByIsolatedWorkers": True,
+            "precondition": "both-native-orders-observed" if len(native_orders) == 2 else "inconclusive-native-order-coverage",
+            "expectedReportSha256": preservation_order_expected(["LastActivityDate", "LastLoginDate"]),
+            "observedReportSha256": sorted({value["reportSha256"] for value in observed})}
+        self.assertEqual(len(native_orders), 2,
+            "The bounded isolated workers did not witness both native set orders; this determinism experiment is inconclusive.")
+        for value in observed:
+            self.assertEqual(value["fields"], ["LastActivityDate", "LastLoginDate"])
+            self.assertEqual(value["reportSha256"], PRESERVATION_ORDER_OBSERVATION["expectedReportSha256"])
+
+
 def main():
     global PREPARATION_SOURCE, TRANSPORT_SOURCE, MATRIX_SOURCE
     if (sys.platform != "linux" or not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY")) or
@@ -2021,10 +2118,19 @@ def main():
     parser.add_argument("--transport-source", required=True, type=Path)
     parser.add_argument("--matrix-source", required=True, type=Path)
     parser.add_argument("--report-path", required=True, type=Path)
+    parser.add_argument("--preservation-order-worker", action="store_true",
+                        help="Run one bounded synthetic comparator observation; never perform preparation or write a report.")
     arguments = parser.parse_args()
     PREPARATION_SOURCE = arguments.preparation_source.resolve(strict=True)
     TRANSPORT_SOURCE = arguments.transport_source.resolve(strict=True)
     MATRIX_SOURCE = arguments.matrix_source.resolve(strict=True)
+    if arguments.preservation_order_worker:
+        preparation = load_source(PREPARATION_SOURCE, "isolated_preservation_order_subject")
+        observed = preservation_order_probe(preparation)
+        print(json.dumps({"kind": "synthetic-preservation-order-observation", "nativeSetOrder": list({"LastLoginDate", "LastActivityDate"}),
+            **observed, "isolated": bool(sys.flags.isolated), "noBytecode": bool(sys.flags.dont_write_bytecode),
+            "ignoreEnvironment": bool(sys.flags.ignore_environment), "hashRandomization": bool(sys.flags.hash_randomization)}, sort_keys=True))
+        return 0
     report_path = arguments.report_path.absolute()
     source_hashes = {"preparation": digest(PREPARATION_SOURCE.read_bytes()),
                      "transport": digest(TRANSPORT_SOURCE.read_bytes()),
@@ -2039,7 +2145,8 @@ def main():
         "failureDetails": [{"test": case.id(), "traceback": details} for case, details in result.failures],
         "errorDetails": [{"test": case.id(), "traceback": details} for case, details in result.errors],
         "skipDetails": [{"test": case.id(), "reason": reason} for case, reason in result.skipped],
-        "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "liveAcceptanceClaim": False}
+        "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "liveAcceptanceClaim": False,
+        "preservationOrderProbe": PRESERVATION_ORDER_OBSERVATION}
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("x", encoding="utf-8") as handle:
         json.dump(report, handle, sort_keys=True, indent=2)

@@ -1,6 +1,6 @@
 # Development handoff
 
-Execution state checkpoint: `2026-09-12T19:38:45+00:00`. Actual preparation03 created two owned libraries, two ordinary accounts and six media copies, then stopped at P's own-token Views gate after 107 requests. All acknowledged sessions are independently confirmed closed, its process has exited, and all 132 historical roots and the full Goby state are preserved. Complete public-snapshot reconstruction and the final failed-scope seal remain pending. SSH is restored; no matrix fixture is released.
+Execution state checkpoint: `2026-09-12T19:54:08+00:00`. Preparation03 is independently sealed after its 107-request failed visibility gate. A fresh folder-authority observation02 completed six requests, with exact session closure and all 138 historical roots/Goby state preserved. It established the two libraries' numeric IDs, distinct Guids and native subfolder paths, but made zero policy writes and does not prove grant semantics. TOOL07 passed 143 guards after a deterministic report-order repair. No matrix fixture is released.
 
 The [preparation03 record](nextup-global-reference-preparation-03.md) records
 64 normal and 43 cleanup requests, with zero playback calibrations. P's profile
@@ -42,21 +42,25 @@ failed after 33 requests on the Devices zero-count sentinel. Its six media
 copies and closed authentication history remain; no P/Q accounts, libraries,
 playback calibrations or matrix fixture were created by either attempt.
 
-The corrected preparation producer passed 140 guards and two compile checks;
+The latest preparation producer passed 143 guards and two compile checks;
 the observer passed 149 and two compile checks; the separate matrix operator
 passed 57 and two compile checks. The observer and operator changes were
 published as `c2291d9`; the preparation repair and actual failed-run evidence
 were published as `00bd1c5`. The operator now checks all 16 media files and nine
 required directories and excludes read-only authority from writable parents.
 
-Next: independently reconstruct preparation03's before/cleanup public snapshots
-and seal the consumed failed scope. Investigate the original public folder-grant
-contract from retained owned evidence before any new bounded live observation.
-Do not replay preparation03, silently substitute native root IDs, or launch a
-new preparation against the stale six-user/eight-library baseline. Four playback
-calibrations, usable matrix inputs, the reference matrix, actual client playback
-and the positive automatic-refresh gate remain open. The dedicated future
-matrix parent remains empty; no matrix or operator unit has been dispatched.
+Next: freeze a separate bounded grant-verification scope for the retained owned
+P account, using the actual SelectableMediaFolders Guid pair as an unproven
+candidate. Require complete original-policy readback, exact limited mutation,
+own-token Views/catalog validation, original-policy restoration and all-token
+closure. Do not infer authorization from an echoed Policy or weaken the gate
+with EnableAllFolders. Preparation03 and folder observation02 are consumed.
+The complete historical preparation snapshot contains eight users/ten libraries/
+ninety devices; the later read-only observation confirms ninety-one devices,
+but is not a new complete public snapshot. Fresh preparation therefore needs
+reviewed current population/input/budget authority. Four calibrations, a usable
+matrix fixture, reference matrix, actual playback and positive automatic refresh
+remain open; no matrix or main-upgrade unit has been dispatched.
 
 The reference v4 and Goby v7 automatic-refresh observations remain negative;
 normalized public payload equality establishes no Goby-specific defect. The

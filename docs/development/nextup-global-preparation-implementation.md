@@ -1,12 +1,25 @@
 # Global NextUp preparation producer implementation
 
-Status: **140 remote guards and two compile checks passed after the Devices
-repair. The earlier live preparation stopped before library/account creation.** The source is
+Status: **143 remote guards and two compile checks passed after the report-order
+repair. Actual preparation03 created libraries/accounts and then failed its
+ordinary-user Views gate; that consumed scope is independently sealed.** The source is
 [prepare-nextup-global-reference.py](../../scripts/test-env/prepare-nextup-global-reference.py).
 The remote-only guards are
 [test-prepare-nextup-global-reference.py](../../scripts/test-env/test-prepare-nextup-global-reference.py).
 This producer creates neither a reference result nor a client acceptance claim
 until a separately authorized live run actually supplies those observations.
+
+The [TOOL07 report](nextup-global-preparation-verification-04.json) binds producer
+SHA-256 `d5167f51d9e2203693eeab1f65b521342fa3221b231f7183f8a4b817f54afc39`.
+The one-line behavior change sorts allowed administrator authentication field
+names before appending report entries. Four independent isolated Python workers
+observed both native set orders while producing identical report bytes. The
+bounded experiment fails as inconclusive without both orders; it does not rely
+on PYTHONHASHSEED, which isolated mode ignores. Single-date and unchanged-date
+cases retain their meaning. No grants, request budgets, acceptance gates or old
+producer bytes change. The [preparation03 record](nextup-global-reference-preparation-03.md)
+documents the historical report ordering. The [folder observation](nextup-folder-authority-observation-02.md)
+records the next identifier evidence, not a successful grant.
 
 ## Execution and publication boundary
 

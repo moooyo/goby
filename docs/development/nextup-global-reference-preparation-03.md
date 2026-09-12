@@ -1,7 +1,7 @@
 # Actual global NextUp reference preparation03
 
-Status: **stopped at the ordinary-user Views gate; all acknowledged sessions
-independently confirmed closed. The final failed-scope seal is still pending.**
+Status: **failed at the ordinary-user Views gate and independently sealed after
+known cleanup. No usable matrix fixture was produced.**
 
 The frozen TOOL06 producer created two owned TV libraries, two ordinary
 accounts and six independent synthetic episode copies. It stopped before any
@@ -72,10 +72,34 @@ record SHA-256 is
 `029a0a3da689bf776f6935c2bff79d7d2e0259f4365725ea38d86af6aabd938a`.
 
 The two new accounts, two libraries and six copies remain owned retained
-artifacts. Session closure does not mean their deletion. The producer saved
-complete before/cleanup public snapshots and its preservation comparison;
-independent reconstruction of those documents and the final failed-scope
-inventory/terminal remain pending. The closure audit is not that final seal.
+artifacts. Session closure does not mean their deletion. The complete reference
+population after cleanup is eight users, ten libraries and ninety devices.
+
+The subsequent [independent terminal](nextup-global-reference-preparation-03-independent-terminal.json),
+SHA-256 `eda2a0b9a8263ef6048a2f81bab6de8bbd54a214ba9801254a975ddac1bc0535`,
+supersedes the earlier closure audit's pending reconstruction/seal flags without
+rewriting it. Its evidence is retained under
+`/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-seal-02`.
+The [complete reconstruction](nextup-global-reference-preparation-03-public-reconstruction.json)
+replays all 107 actual requests against the frozen producer with an in-memory
+journal and a transport that only returns recorded responses. It checks all
+331 private files and 108 export files, both full public snapshots and both
+preservation comparisons. All requests, final state and terminal bytes match.
+All sixteen media/NFO/marker files and their nine directories match the exact
+approved tree; the six MP4 files remain independent copies.
+
+One private comparison report has an allowedAuthenticationChanges list-order
+difference caused by the producer iterating a two-element set. Its exact list
+entries and every other JSON field match; sorting preserves duplicate counts.
+The audit explicitly records this difference and sets allProducerBytesMatched
+false. The other 330 private files and all 108 exports are byte-exact. The first
+strict byte-comparison attempt remains failed in the preparation execution
+directory. A separate audit source and scope perform the narrowly documented
+comparison; the original producer output is not rewritten. A producer repair
+for deterministic future report ordering is tracked separately.
+
+The final scope inventory SHA-256 is
+`834ebeddc9a2d64df7f93a9fbf6ea7df66d60dde47fb82150b25814fae394e54`.
 
 All runtime work ran through `ssh test-env` with `/usr/bin/python3 -I -B`.
 No local verification ran. No original application or reference database bytes
@@ -84,11 +108,9 @@ this statement does not claim its internal executable reads are zero.
 
 ## Remaining work
 
-Finish independent public-snapshot reconstruction and seal this failed run.
 Establish the actual public folder-grant semantics before preparing a fresh
 bounded scope. The previous six-user/eight-library baseline is historical
 after these retained creations and must not be reused as the current baseline.
 Four playback/cleanup calibrations, a usable matrix fixture, global NextUp
 observations and real client playback remain incomplete. The positive client
 automatic-refresh gate and main upgrade also remain open.
-

@@ -1106,7 +1106,7 @@ class PreparationRunner:
             allowed = {"LastLoginDate", "LastActivityDate"} if user == self.user_ids["admin"] else set()
             require(same({key: val for key, val in row.items() if key not in allowed}, {key: val for key, val in current.items() if key not in allowed}),
                     "An old account policy/configuration or unrelated field changed.")
-            for key in allowed:
+            for key in sorted(allowed):
                 if row.get(key) == current.get(key) and (key in row) == (key in current): continue
                 require(instant(before["captured_at"]) <= instant(current[key]) <= instant(after["captured_at"]), "An owned admin authentication date escaped the snapshot interval.")
                 changes.append({"kind": "owned-authentication-time", "userId": user, "field": key})

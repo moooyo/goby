@@ -1,0 +1,100 @@
+{
+  "all138RootsPreserved": true,
+  "allNinetyOldDeviceDTOsUnchanged": true,
+  "allTenLibraryDTOsUnchanged": true,
+  "authenticationClosure": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/closed-authentication.json",
+    "sha256": "dd0d8515a1a944eac6c541c0644f6e3b99204b9813c411d2a19e4e6763b97e3b"
+  },
+  "businessHttpByAudit": 0,
+  "capturedAt": "2026-09-12T19:53:10.703565+00:00",
+  "devicesAfter": 91,
+  "exactTokenClosed": true,
+  "fullReferencePublicSnapshotClaimed": false,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "gobyPreserved": true,
+  "grantSemanticsProven": false,
+  "input": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-folder-authority-observation-inputs-02/input.json",
+    "sha256": "88284a97ac12a9198479a4a3c90d186f1f140344cb14905cbcf5776bceebae37"
+  },
+  "kind": "nextup-folder-authority-independent-terminal",
+  "mapping": [
+    {
+      "isUserAccessConfigurable": true,
+      "libraryId": "101",
+      "rootPath": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-03/media/LA",
+      "selectableGuid": "b953914417ce42b5a5e07a3e8f6fd386",
+      "selectableId": "101",
+      "selectableSubFolderId": "102",
+      "sourceRootId": "102",
+      "symbol": "LA",
+      "viewId": "101"
+    },
+    {
+      "isUserAccessConfigurable": true,
+      "libraryId": "103",
+      "rootPath": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-03/media/LB",
+      "selectableGuid": "38fbd09cb8af4731993dd77e1750457f",
+      "selectableId": "103",
+      "selectableSubFolderId": "104",
+      "sourceRootId": "104",
+      "symbol": "LB",
+      "viewId": "103"
+    }
+  ],
+  "matrixInputsUsable": false,
+  "originalImplementationBytesRead": false,
+  "originalPidAbsent": true,
+  "policyWrites": 0,
+  "preservationAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/preservation-after.json",
+    "sha256": "1225ad1b23951e8d9d8a8029d4061de6876b60d275928628e080afb560ca224b"
+  },
+  "preservationBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/preservation-before.json",
+    "sha256": "399a152f9e436ff7697d8dc497d1c6e8c2345f0d1e9158a442a7859b51886490"
+  },
+  "producerTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-observation-02/private/terminal.json",
+    "sha256": "8513b1812696938f090437815a6ddd299604adb5175153a3ffeb92f9b466f10d"
+  },
+  "recursiveCgroupEmpty": true,
+  "referenceDatabaseRead": false,
+  "requestCount": 6,
+  "runId": "nextup-folder-authority-observation-20260913-02",
+  "schemaVersion": 1,
+  "scopeInventory": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/completed-scope-files.json",
+    "sha256": "a923843d7b0b26cead3d063b1c1b78bc90604ace13d261e5475c7e77f1f36fdc"
+  },
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/observe.py",
+    "sha256": "c667f0094d33699c50fbb12127796b24868db137b0337e5b908810dca73d89a2"
+  },
+  "status": "folder_identifiers_independently_observed_and_session_closed",
+  "unit": {
+    "name": "goby-nextup-folder-authority-observation-02.service",
+    "properties": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainPID": "1509103",
+      "ExecMainStatus": "0",
+      "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/observe.py /opt/goby-test/exec-work-m3e/nextup-folder-authority-observation-inputs-02/input.json 88284a97ac12a9198479a4a3c90d186f1f140344cb14905cbcf5776bceebae37 ; ignore_errors=no ; start_time=[Sun 2026-09-13 03:51:09 CST] ; stop_time=[Sun 2026-09-13 03:51:09 CST] ; pid=1509103 ; code=exited ; status=0 }",
+      "InvocationID": "ac1ab87be20946a19976c77c1ef382e0",
+      "MainPID": "0",
+      "RemainAfterExit": "yes",
+      "Result": "success",
+      "SubState": "exited",
+      "Type": "oneshot"
+    }
+  },
+  "wireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-folder-authority-execution-02/wire-index.json",
+    "sha256": "90923708719c3ccde1f19fc7934c42e50c6dde0341fd0637a25e379a707a847c"
+  }
+}
