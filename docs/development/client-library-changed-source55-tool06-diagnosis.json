@@ -1,0 +1,23 @@
+{
+  "browser_failure_stage": "before browser version and first document",
+  "client_acceptance": false,
+  "combined_report_bytes": 2858650,
+  "encoded_source": "frozen TOOL06 exported window fixtures and production encoder",
+  "explicit_pipe_argument_present": true,
+  "forward_dom_bytes": 306630,
+  "forward_http_bytes": 218636,
+  "forward_stage_bytes": 528003,
+  "installed_playwright_pipe_argument_rejected": true,
+  "marker": "goby-source55-tool06-verification-diagnosis-v1",
+  "no_original_client_implementation_read": true,
+  "original_error_message_not_retained": true,
+  "report_limit_bytes": 4194304,
+  "restored_stage_bytes": 519739,
+  "samples_per_window": 242,
+  "stage_limit_bytes": 524288,
+  "status": "diagnosed",
+  "tooling_source": {
+    "path": "/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright-core/lib/coreBundle.js",
+    "sha256": "549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171"
+  }
+}

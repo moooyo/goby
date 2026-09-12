@@ -14,10 +14,10 @@ import { loadLibraryChangedSource55Fixture, readLibraryChangedSource55Snapshot,
   libraryChangedSetupDiagnostic } from './client-library-changed-source55-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v5';
+export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v6';
 export const CHANGED_OUTPUT = CHANGED_ROOT + '/browser';
-export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v5.service';
-export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v5.service';
+export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v6.service';
+export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v6.service';
 const ROOT = CHANGED_ROOT, OUTPUT = CHANGED_OUTPUT;
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
@@ -137,8 +137,11 @@ export function validateLibraryChangedInput(input) {
       '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'],
     ['963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d', 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4',
       '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88', '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012',
-      'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'] ];
-  need(Array.isArray(input.authority.history) && input.authority.history.length === 3);
+      'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'],
+    ['093dfa5fc0d82ba509a0092c425ce64d33eebf3625441751427248065bdf2176', '86e0dafc48e8e9a54b83c4588f7a06cabf951eab4a7d250b3d326cd9271d2abe',
+      '154bd9857248eec76e921b2f34f3896e9a1fa73aeb078a64d03d06b54ca7e444', '348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d',
+      '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6'] ];
+  need(Array.isArray(input.authority.history) && input.authority.history.length === 4);
   input.authority.history.forEach((entry, index) => {
     const version = index + 2, historicalRoot = WORK + '/client-library-changed-ui-source55-v' + version;
     need(exact(entry, ['version', ...historyKeys]) && entry.version === version);
@@ -152,7 +155,7 @@ export function validateLibraryChangedInput(input) {
   need(record(input.source_closure) && Object.keys(input.source_closure).length === SOURCES.length &&
     Object.entries(input.source_closure).every(([filename, hash]) => descriptor({ path: filename, sha256: hash })));
   const scripts = Object.keys(input.source_closure).filter(filename => filename.endsWith('.mjs'));
-  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-05/' + name).sort()));
+  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-06b/' + name).sort()));
   return input;
 }
 
@@ -175,8 +178,8 @@ export function validateLibraryChangedBaseline(input, before, current) {
   need(same(captured(before), captured(current)) && instant(first.metadata.captured_at) > instant(previous.metadata.captured_at));
   const tables = first.tables;
   need(Object.keys(tables).length === 35 && Object.values(tables).every(Array.isArray) && Object.keys(first.sequences).length === 5 &&
-    tables.sessions.length === 78 && tables.devices.length === 67 &&
-    tables.activity_entries.length === 173 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
+    tables.sessions.length === 79 && tables.devices.length === 68 &&
+    tables.activity_entries.length === 175 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
     tables.libraries.length === 4 && tables.items.length === 22 && tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0);
   const user = tables.users.find(row => row.id === USER), target = tables.items.find(row => row.id === ITEM);
   const scopedMovies = tables.items.filter(row => row.library_id === LIBRARY && row.type === 'Movie' && row.is_folder === false);
@@ -411,6 +414,12 @@ export function pairLibraryChangedReads(physical, frames) {
   });
 }
 
+/** Preserve every independently derived pairing outcome without duplicating wire records. */
+export function pairLibraryChangedReadReferences(physical, frames) {
+  return pairLibraryChangedReads(physical, frames).map(pair => ({ frame_request_index: pair.frame.index,
+    physical_exchange_id: pair.physical?.id ?? null, complete: pair.complete, unambiguous: pair.unambiguous }));
+}
+
 export function libraryChangedFullMovieQuery(transfer) {
   if (transfer?.kind !== 'items' || !Array.isArray(transfer.query)) return false;
   const query = {};
@@ -451,9 +460,11 @@ export function libraryChangedIdentityMessage(boundary, events) {
 /** Bind a raw visible card only to a completed same-phase wire response and a proved library anchor. */
 export function bindLibraryChangedDOM(raw, context) {
   const result = { ...clone(raw), target_id: null, identity_mode: 'unbound', wire_identity: null, identity_proven: false, passed: false };
+  delete result.container_observations;
   if (!record(raw) || !['discovery', 'forward', 'restored'].includes(context?.phase) || !libraryChangedMoviesRoute(raw.route) ||
     !safeText(raw.document_id, 80) || !safeText(raw.expected_name, 256) ||
-    raw.visible_items_containers !== 1 || raw.visible_cards !== 1 || raw.visible_target_cards !== 1 || raw.visible_title_buttons !== 1 ||
+    !Number.isSafeInteger(raw.visible_items_containers) || raw.visible_items_containers < 0 || raw.visible_items_containers > 32 ||
+    raw.visible_card_containers !== 1 || raw.visible_cards !== 1 || raw.visible_target_cards !== 1 || raw.visible_title_buttons !== 1 ||
     raw.target_title_count !== 1 || raw.forbidden_title_count !== 0 || raw.explicit_identity_consistent !== true || raw.media_inactive !== true ||
     raw.observed_title !== raw.expected_name || !Number.isFinite(raw.started_elapsed_ms) || raw.started_elapsed_ms < 0 || !SHA.test(context.token_sha256)) return result;
   let afterSequence = context.after_sequence, afterElapsed = 0, messageID = null;
@@ -595,6 +606,8 @@ export function libraryChangedWindowEvidence(window, input, reservation, discove
   }
   if (window.dom.length) need(window.dom[0].started_elapsed_ms <= b.started_elapsed_ms + CHANGED_LIMITS.sample_ms + 3500,
     'library_changed_sampling_incomplete');
+  need(same(window.http.pairs, pairLibraryChangedReadReferences(window.http.physical, window.http.frames)),
+    'library_changed_pair_references_mismatch');
   const failure = outcome => ({ result: 'not_observed_within_window', outcome, proof: null });
   if (window.events.browser.length === 0 || window.events.physical.length === 0) return failure('websocket_not_observed_within_window');
   need(window.events.browser.length === 1 && window.events.physical.length === 1, 'library_changed_ambiguous_event');
@@ -968,7 +981,7 @@ export class LibraryChangedObserver {
       boundary: { ...clone(boundary), response_completed_elapsed_ms: end - CHANGED_LIMITS.window_ms, end_elapsed_ms: end,
         completed_elapsed_ms: this.elapsed(), duration_ms: CHANGED_LIMITS.window_ms },
       events: { physical: clone(this.wireMessages.filter(between)), browser: clone(this.browserMessages.filter(between)) },
-      http: { physical: clone(physical), frames: clone(frames), pairs: this.reads(boundary.started_sequence) },
+      http: { physical: clone(physical), frames: clone(frames), pairs: pairLibraryChangedReadReferences(physical, frames) },
       dom: clone(samples.filter(between)), actions: clone(this.actions.filter(between)), lifecycle: clone(this.lifecycle.filter(between)) };
   }
   dispose() { this.disposed = true; this.login.dispose(); }
@@ -979,33 +992,68 @@ export async function observeLibraryChangedDOM(page, target, expectedName, forbi
   const route = libraryChangedRoute(page.url()), containers = page.locator('.itemsContainer');
   need(await containers.count() <= 32, 'library_changed_dom_limit');
   const observed = await containers.evaluateAll((elements, values) => {
+    const insideClips = (box, ancestor) => {
+      let left = Math.max(0, box.left), right = Math.min(innerWidth, box.right), top = Math.max(0, box.top), bottom = Math.min(innerHeight, box.bottom), depth = 0;
+      if (box.width <= 0 || box.height <= 0 || right <= left || bottom <= top) return false;
+      while (ancestor) {
+        if (++depth > 64) return false;
+        const style = getComputedStyle(ancestor);
+        if (style.display !== 'contents') {
+          const clips = value => ['hidden', 'clip', 'scroll', 'auto'].includes(value);
+          const x = clips(style.overflowX ?? style.overflow), y = clips(style.overflowY ?? style.overflow);
+          if (x || y) {
+            const bounds = ancestor.getBoundingClientRect();
+            if (x) { if (bounds.width <= 0) return false; left = Math.max(left, bounds.left); right = Math.min(right, bounds.right); }
+            if (y) { if (bounds.height <= 0) return false; top = Math.max(top, bounds.top); bottom = Math.min(bottom, bounds.bottom); }
+            if (right <= left || bottom <= top) return false;
+          }
+        }
+        ancestor = ancestor.parentElement;
+      }
+      return true;
+    };
     const visible = element => { const box = element.getBoundingClientRect(), style = getComputedStyle(element);
-      return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth &&
-        style.display !== 'none' && style.visibility !== 'hidden'; };
-    const selected = elements.filter(visible), container = selected.length === 1 ? selected[0] : null;
-    const cards = container ? [...container.querySelectorAll('.card')].filter(value => visible(value) && value.closest('.itemsContainer') === container) : [];
-    const card = cards.length === 1 ? cards[0] : null;
-    const buttons = card ? [...card.querySelectorAll('button.cardTextActionButton')].filter(value => visible(value) && value.closest('.card') === card &&
-      value.closest('.itemsContainer') === container) : [];
-    let overflow = cards.length > 64 || buttons.length > 64;
+      return style.display !== 'none' && style.visibility !== 'hidden' && insideClips(box, element.parentElement); };
+    const pool = new Set(elements), allCards = document.querySelectorAll('.card'), allButtons = document.querySelectorAll('button.cardTextActionButton');
+    let overflow = allCards.length > 64 || allButtons.length > 64;
+    const cards = allCards.length <= 64 ? [...allCards].filter(visible) : [];
+    const buttons = allButtons.length <= 64 ? [...allButtons].filter(visible) : [];
+    const orphan = [...cards, ...buttons].some(value => !pool.has(value.closest('.itemsContainer')));
+    const owners = elements.map((container, index) => {
+      return { container, index, cards: cards.filter(value => value.closest('.itemsContainer') === container),
+        buttons: buttons.filter(value => value.closest('.itemsContainer') === container), visible: visible(container) };
+    });
+    const cardOwners = owners.filter(value => value.cards.length > 0), card = cards.length === 1 ? cards[0] : null;
+    const container = card ? card.closest('.itemsContainer') : null;
+    overflow ||= cards.length > 64 || buttons.length > 64;
     const title = button => {
       const texts = [], walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT); let node, count = 0;
       while ((node = walker.nextNode())) {
         if (++count > 64 || typeof node.nodeValue !== 'string' || node.nodeValue.length > 4096) { overflow = true; return null; }
         if (!node.nodeValue.trim() || !visible(node.parentElement)) continue;
         const range = document.createRange(); range.selectNodeContents(node); const box = range.getBoundingClientRect(); range.detach();
-        if (box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth) texts.push(node.nodeValue);
+        if (insideClips(box, node.parentElement)) texts.push(node.nodeValue);
       }
       const text = texts.join(' ').replace(/\s+/g, ' ').trim(); if (text.length > 256) { overflow = true; return null; } return text;
     };
-    const titles = buttons.slice(0, 64).map(title), button = buttons.length === 1 ? buttons[0] : null;
+    const titles = buttons.slice(0, 64).map(title), buttonTitles = new Map(buttons.slice(0, 64).map((value, index) => [value, titles[index]]));
+    const button = buttons.length === 1 ? buttons[0] : null;
     const box = button?.closest('.cardBox'), text = button?.closest('.cardText');
-    const consistent = Boolean(button && card.tagName.toLowerCase() === 'div' && box?.closest('.card') === card &&
+    const consistent = Boolean(!orphan && button && card && container && button.closest('.card') === card && button.closest('.itemsContainer') === container &&
+      card.tagName.toLowerCase() === 'div' && box?.closest('.card') === card &&
       text?.closest('.cardBox') === box && [button, text, box, card].every(value => {
         const id = value.getAttribute('data-id'), type = value.getAttribute('data-type');
         return (id === null || id === values.target) && (type === null || type === 'Movie');
       }) && (container.getAttribute('data-id') === null || container.getAttribute('data-id') === values.library));
-    return { containers: selected.length, cards: cards.length, buttons: buttons.length, consistent, overflow,
+    const number = value => Number.isFinite(value) ? Math.max(-100000, Math.min(100000, Math.round(value * 10) / 10)) : null;
+    const containerObservations = owners.map(value => { const bounds = value.container.getBoundingClientRect();
+      return { index: value.index, visible: value.visible, tag: value.container.tagName.toLowerCase() === 'div' ? 'div' : 'other',
+        classes: ['itemsContainer'], rect: { x: number(bounds.x), y: number(bounds.y), width: number(bounds.width), height: number(bounds.height) },
+        visible_cards: value.cards.length, visible_title_buttons: value.buttons.length,
+        target_title_count: value.buttons.filter(button => buttonTitles.get(button) === values.expected).length,
+        forbidden_title_count: values.forbidden === null ? 0 : value.buttons.filter(button => buttonTitles.get(button) === values.forbidden).length }; });
+    return { containers: owners.filter(value => value.visible).length, card_containers: cardOwners.length,
+      cards: cards.length, buttons: buttons.length, consistent, overflow, container_observations: containerObservations,
       observed_title: titles.length === 1 ? titles[0] : null,
       target_titles: titles.filter(value => value === values.expected).length,
       forbidden_titles: values.forbidden === null ? 0 : titles.filter(value => value === values.forbidden).length };
@@ -1014,7 +1062,8 @@ export async function observeLibraryChangedDOM(page, target, expectedName, forbi
   const active = await page.locator('audio,video').evaluateAll(elements => elements.some(element =>
     !element.paused && !element.ended || element.currentTime > 0));
   return { route, document_id: documentID, started_elapsed_ms: null, target_id: null, expected_name: expectedName,
-    visible_items_containers: observed.containers, visible_cards: observed.cards, visible_title_buttons: observed.buttons,
+    visible_items_containers: observed.containers, visible_card_containers: observed.card_containers,
+    visible_cards: observed.cards, visible_title_buttons: observed.buttons, container_observations: observed.container_observations,
     visible_target_cards: observed.cards, target_title_count: observed.target_titles, forbidden_title_count: observed.forbidden_titles,
     explicit_identity_consistent: observed.consistent, observed_title: observed.observed_title,
     identity_mode: 'unbound', wire_identity: null, identity_proven: false, media_inactive: !active, passed: false,
@@ -1330,6 +1379,10 @@ export class LibraryChangedWorkflow {
     this.observer.assertStable();
     const started = this.observer.elapsed();
     const raw = await bounded(this.dom(this.actor.page, this.input.target, expected, forbidden, this.observer.documentID), 3000);
+    if (Array.isArray(raw.container_observations)) {
+      this.lastDiscovery.container_observations = clone(raw.container_observations.slice(0, 32));
+      delete raw.container_observations;
+    }
     raw.started_elapsed_ms = started;
     if (libraryChangedRoute(this.actor.page.url()) !== raw.route || this.observer.documentID !== raw.document_id) return raw;
     const boundary = this.observer.window, after = boundary?.started_sequence ?? this.lastDiscovery.navigation.before_sequence;

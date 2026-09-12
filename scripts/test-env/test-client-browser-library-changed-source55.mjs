@@ -8,7 +8,8 @@ import { parseSource55JSON } from './client-library-changed-source55-fixture.mjs
 import { CHANGED_ROOT as ROOT, CHANGED_OUTPUT as OUTPUT, CHANGED_UNIT, CHANGED_CONTROLLER_UNIT, CHANGED_LIMITS,
   parseLibraryChangedArguments, validateLibraryChangedInput, validateLibraryChangedViewer, validateLibraryChangedBaseline,
   validateLibraryChangedControl, parseLibraryChangedJSON, projectLibraryChangedMessage, libraryChangedCatalogRequest,
-  projectLibraryChangedItems, libraryChangedRoute, pairLibraryChangedReads, libraryChangedWindowEvidence as rawLibraryChangedWindowEvidence, libraryChangedNavigationEvidence,
+  projectLibraryChangedItems, libraryChangedRoute, pairLibraryChangedReads, pairLibraryChangedReadReferences,
+  libraryChangedWindowEvidence as rawLibraryChangedWindowEvidence, libraryChangedNavigationEvidence,
   libraryChangedPublication, encodeLibraryChangedRecord, publishLibraryChangedRecord, LibraryChangedObserver,
   observeLibraryChangedDOM, libraryChangedStageRecord, LibraryChangedWorkflow, libraryChangedObservationPassed,
   disposeLibraryChangedSecrets, validateLibraryChangedAbort, readLibraryChangedSnapshot,
@@ -17,7 +18,7 @@ import { CHANGED_ROOT as ROOT, CHANGED_OUTPUT as OUTPUT, CHANGED_UNIT, CHANGED_C
 import { collectLibraryChangedPublicDOM, observeLibraryChangedViewport, libraryChangedSecretVariants,
   libraryChangedResponseDiagnostic, bindLibraryChangedDOM, libraryChangedFullMovieQuery } from './client-browser-library-changed-source55.mjs';
 
-const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-05';
+const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-06b';
 const SYNTHETIC_UPGRADE = WORK + '/client-schema28-source55-upgrade-20260912_120000_c0ffee123456';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738', ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
@@ -69,7 +70,10 @@ export function libraryChangedInputFixture() {
           '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'],
         ['963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d', 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4',
           '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88', '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012',
-          'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f']
+          'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'],
+        ['093dfa5fc0d82ba509a0092c425ce64d33eebf3625441751427248065bdf2176', '86e0dafc48e8e9a54b83c4588f7a06cabf951eab4a7d250b3d326cd9271d2abe',
+          '154bd9857248eec76e921b2f34f3896e9a1fa73aeb078a64d03d06b54ca7e444', '348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d',
+          '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6']
       ].map((hashes, index) => {
         const version = index + 2, root = WORK + '/client-library-changed-ui-source55-v' + version;
         return { version, input: descriptor(root + '/input.json', hashes[0]), browser_report: descriptor(root + '/browser/report.json', hashes[1]),
@@ -86,7 +90,7 @@ function binding(input = libraryChangedInputFixture()) {
       executable_path: '/synthetic/node', executable_sha256: '3'.repeat(64), cgroup: '/system.slice/' + CHANGED_UNIT } };
 }
 export function libraryChangedReservationFixture() {
-  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v5]',
+  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v6]',
     original_controls_sha256: '4'.repeat(64), forward_body_sha256: '5'.repeat(64), restore_body_sha256: '6'.repeat(64) };
 }
 function controlFixture(name = 'reserved', bound = binding()) {
@@ -108,7 +112,7 @@ function messageBytes(id = 'synthetic-catalog-event-1') {
 }
 function domObservation(expected, passed = true) {
   return { route: ROUTE, document_id: 'document-2', started_elapsed_ms: 500, target_id: null, expected_name: expected,
-    visible_items_containers: 1, visible_cards: 1, visible_title_buttons: 1, explicit_identity_consistent: true,
+    visible_items_containers: 3, visible_card_containers: 1, visible_cards: 1, visible_title_buttons: 1, explicit_identity_consistent: true,
     observed_title: passed ? expected : 'Old Name', identity_mode: 'unbound', wire_identity: null,
     visible_target_cards: 1, target_title_count: passed ? 1 : 0, forbidden_title_count: passed ? 0 : 1,
     identity_proven: false, media_inactive: true, passed: false,
@@ -148,7 +152,7 @@ export function libraryChangedWindowFixture(name = 'forward') {
       complete: true, received: true, forwarded: true, message: clone(projection) }],
     browser: [{ sequence: 3000, elapsed_ms: 3000, connection_id: 'library-changed-ws-0', token_sha256: token,
       document_id: 'document-2', route: ROUTE, complete: true, received: true, forwarded: true, message: clone(projection) }] },
-    http: { physical: [physical], frames: [frame], pairs: pairLibraryChangedReads([physical], [frame]) }, dom: [], actions: [], lifecycle: [] };
+    http: { physical: [physical], frames: [frame], pairs: pairLibraryChangedReadReferences([physical], [frame]) }, dom: [], actions: [], lifecycle: [] };
   const discovery = libraryChangedNavigationFixture();
   for (let start = 1000; start <= 121500; start += 500) {
     const raw = { ...domObservation(expected, start >= 3500), started_elapsed_ms: start };
@@ -219,9 +223,9 @@ test('source55 input binds the exact seven-file new scope', () => {
   for (const change of [value => { value.candidate.process.pid = 1; }, value => { value.candidate.source = WORK + '/source-attempt-44'; },
     value => { value.candidate.state_sha256 = '0'.repeat(64); }, value => { delete value.authority.upgrade_attestation; },
     value => { value.actor.credentials.path = WORK + '/browser.json'; }, value => { value.actor.admin = {}; },
-    value => { value.root = ROOT.replace('source55-v5', 'source55-v4'); },
+    value => { value.root = ROOT.replace('source55-v6', 'source55-v5'); },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure)
-      .map(([filename, hash]) => [filename.replace('source55-tool-05', 'source55-tool-04'), hash])); },
+      .map(([filename, hash]) => [filename.replace('source55-tool-06b', 'source55-tool-06'), hash])); },
     value => { value.source_closure[TOOL + '/unexpected.mjs'] = 'a'.repeat(64); }, value => { delete value.source_closure[TOOL + '/client-browser-goby-fixture.mjs']; },
     value => { value.target.id = USER; }, value => { value.controller.unit = CHANGED_UNIT; }]) {
     const input = libraryChangedInputFixture(); change(input); rejects(() => validateLibraryChangedInput(input));
@@ -235,7 +239,7 @@ test('source55 requires future process and upgrade authority inputs without defa
   for (const key of ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) {
     const input = libraryChangedInputFixture(); delete input.authority[key]; rejects(() => validateLibraryChangedInput(input));
   }
-  for (const index of [0, 1, 2]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
+  for (const index of [0, 1, 2, 3]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
     const input = libraryChangedInputFixture(); input.authority.history[index][key].sha256 = sha('synthetic-foreign-prior'); rejects(() => validateLibraryChangedInput(input));
   }
   const reordered = libraryChangedInputFixture(); reordered.authority.history.reverse(); rejects(() => validateLibraryChangedInput(reordered));
@@ -310,7 +314,7 @@ test('source55 navigation cannot stand in for either automatic refresh window', 
   const input = libraryChangedInputFixture(), reservation = libraryChangedReservationFixture();
   for (const name of ['forward', 'restored']) {
     const window = libraryChangedWindowFixture(name), pair = libraryChangedNavigationFixture().collection_folder_reads[0];
-    window.http = { physical: [pair.physical], frames: [pair.frame], pairs: [pair] };
+    window.http = { physical: [pair.physical], frames: [pair.frame], pairs: pairLibraryChangedReadReferences([pair.physical], [pair.frame]) };
     check(libraryChangedWindowEvidence(window, input, reservation).outcome === 'automatic_http_not_observed_within_window');
   }
   const report = completedReportFixture(); report.discovery.collection_folder_reads[0].frame.finished = false;
@@ -348,9 +352,9 @@ test('the complete before ledger must match current authority and its target', (
     'play_sessions', 'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions', 'task_occurrences', 'task_run_children',
     'task_run_requests', 'task_runs', 'task_triggers', 'theme_owner_ids', 'theme_reserved_paths', 'user_item_data', 'user_settings', 'users'];
   const tables = Object.fromEntries(names.map(name => [name, []]));
-  tables.sessions = Array.from({ length: 78 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
-  tables.devices = Array.from({ length: 67 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
-  for (const [name, count] of [['activity_entries', 173], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
+  tables.sessions = Array.from({ length: 79 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
+  tables.devices = Array.from({ length: 68 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
+  for (const [name, count] of [['activity_entries', 175], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
   tables.libraries = clone(input.expected_libraries); tables.users = [{ id: USER, is_disabled: false, is_administrator: false, management_revision: 5 }];
   tables.items = [{ ...input.target, is_folder: false }, ...Array.from({ length: 21 }, () => ({}))]; tables.item_metadata_state = [{ item_id: ITEM }];
   const sequences = Object.fromEntries(['activity_entries_id_seq', 'application_keys_id_seq', 'catalog_entities_id_seq',
@@ -361,7 +365,7 @@ test('the complete before ledger must match current authority and its target', (
   current.database.sequences.activity_entries_id_seq.last_value = 9007199254740993n;
   tables.items[0].file_size = 9007199254740995n;
   const before = clone(current); before.database.metadata.captured_at = new Date(START + 1000).toISOString();
-  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 78);
+  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 79);
   for (const change of [value => { value.database.tables.items[0].name = 'Foreign Name'; }, value => { value.database.tables.devices.pop(); },
     value => { value.database.sequences.unknown = 1; }, value => { value.schema = 27; },
     value => { delete value.database.tables.library_roots[0].binding_revision; },
@@ -379,7 +383,7 @@ test('the complete before ledger must match current authority and its target', (
   rejects(() => validateLibraryChangedBaseline(input, duplicateBefore, duplicate));
   duplicate.database.tables.items[1].library_id = input.expected_libraries[1].id;
   const otherLibraryBefore = clone(duplicate); otherLibraryBefore.database.metadata.captured_at = before.database.metadata.captured_at;
-  check(validateLibraryChangedBaseline(input, otherLibraryBefore, duplicate).session_ids.length === 78);
+  check(validateLibraryChangedBaseline(input, otherLibraryBefore, duplicate).session_ids.length === 79);
 });
 
 test('discovery identity requires the full singleton query and complete matching wire', () => {
@@ -396,7 +400,8 @@ test('discovery identity requires the full singleton query and complete matching
     value => { value.physical[0].route = '/foreign'; value.frames[0].route = '/foreign'; }]) {
     const altered = clone(context); change(altered); check(!bindLibraryChangedDOM(raw, altered).passed);
   }
-  for (const change of [value => { value.visible_cards = 2; }, value => { value.visible_items_containers = 2; },
+  for (const change of [value => { value.visible_cards = 2; }, value => { value.visible_card_containers = 2; },
+    value => { value.visible_items_containers = 33; },
     value => { value.visible_title_buttons = 2; }, value => { value.explicit_identity_consistent = false; },
     value => { delete value.document_id; }, value => { delete value.expected_name; }, value => { value.observed_title = 'Old Name'; }]) {
     const altered = clone(raw); change(altered); check(!bindLibraryChangedDOM(altered, context).passed);
@@ -441,8 +446,8 @@ test('only the three sealed snapshots reach the lossless reader without numeric 
     await rejectsAsync(() => readLibraryChangedSnapshot(input, key, read));
   }
   for (const mutate of [value => { value.authority.current_snapshot.path = WORK + '/client-fixture.json'; },
-    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v5', 'source55-v4') + '/before-full.json'; },
-    value => { value.root = ROOT.replace('source55-v5', 'source55-v4'); }]) {
+    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v6', 'source55-v5') + '/before-full.json'; },
+    value => { value.root = ROOT.replace('source55-v6', 'source55-v5'); }]) {
     const altered = clone(input); mutate(altered);
     await rejectsAsync(() => readLibraryChangedSnapshot(altered, 'current_snapshot', read));
   }
@@ -674,7 +679,7 @@ test('driver and shared transport agree on the single library and exact target s
     [`/Items?ParentId=${USER}&Ids=${ITEM}`, false], [`/Users/${USER}/Items?ParentId=${USER}`, false]]) {
     const url = 'http://127.0.0.1:18196/emby' + route;
     check(Boolean(libraryChangedCatalogRequest(url, 'GET', input)) === expected);
-    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v5')) === expected);
+    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v6')) === expected);
   }
 });
 
@@ -698,6 +703,7 @@ for (const [label, change] of [
   ['no visible final card', value => { value.dom.at(-1).observation.passed = false; }],
 ]) test('incomplete chain is never accepted: ' + label, () => {
   const value = libraryChangedWindowFixture(); change(value);
+  value.http.pairs = pairLibraryChangedReadReferences(value.http.physical, value.http.frames);
   check(libraryChangedWindowEvidence(value, libraryChangedInputFixture(), libraryChangedReservationFixture()).result !== 'passed');
 });
 
@@ -726,6 +732,7 @@ test('worker-originated physical reads require an explicit worker identity', () 
   Object.assign(frame, { source: 'worker', main_frame: false, worker_id: 'worker-1' });
   check(libraryChangedWindowEvidence(value, libraryChangedInputFixture(), libraryChangedReservationFixture()).result === 'passed');
   frame.worker_id = null;
+  value.http.pairs = pairLibraryChangedReadReferences(value.http.physical, value.http.frames);
   check(libraryChangedWindowEvidence(value, libraryChangedInputFixture(), libraryChangedReservationFixture()).result !== 'passed');
 });
 
@@ -733,6 +740,28 @@ test('identical concurrent requests cannot share a physical exchange proof', () 
   const value = libraryChangedWindowFixture(), frames = [value.http.frames[0], { ...clone(value.http.frames[0]), index: 2 }];
   check(pairLibraryChangedReads(value.http.physical, frames).every(pair => !pair.complete));
   rejects(() => pairLibraryChangedReads([value.http.physical[0], clone(value.http.physical[0])], value.http.frames));
+});
+
+test('window pair references must exactly match independent full-array pairing', () => {
+  const input = libraryChangedInputFixture(), reservation = libraryChangedReservationFixture();
+  equal(libraryChangedWindowFixture().http.pairs, [{ frame_request_index: 1, physical_exchange_id: 1, complete: true, unambiguous: true }]);
+  for (const change of [value => { value.http.pairs = []; }, value => { value.http.pairs.push(clone(value.http.pairs[0])); },
+    value => { value.http.pairs[0].frame_request_index = 2; }, value => { value.http.pairs[0].physical_exchange_id = 2; },
+    value => { value.http.pairs[0].complete = false; }, value => { value.http.pairs[0].unambiguous = false; },
+    value => { value.http.pairs[0].unexpected = true; },
+    value => { value.http.pairs = pairLibraryChangedReads(value.http.physical, value.http.frames); }]) {
+    const value = libraryChangedWindowFixture(); change(value); rejects(() => libraryChangedWindowEvidence(value, input, reservation));
+  }
+  const noMessage = libraryChangedWindowFixture(); noMessage.events = { physical: [], browser: [] }; noMessage.http.pairs = [];
+  rejects(() => libraryChangedWindowEvidence(noMessage, input, reservation));
+});
+
+test('ambiguous pair references retain null outcomes and cannot prove automatic refresh', () => {
+  const value = libraryChangedWindowFixture(); value.http.frames.push({ ...clone(value.http.frames[0]), index: 2 });
+  value.http.pairs = pairLibraryChangedReadReferences(value.http.physical, value.http.frames);
+  equal(value.http.pairs, [{ frame_request_index: 1, physical_exchange_id: null, complete: false, unambiguous: false },
+    { frame_request_index: 2, physical_exchange_id: null, complete: false, unambiguous: false }]);
+  check(libraryChangedWindowEvidence(value, libraryChangedInputFixture(), libraryChangedReservationFixture()).result !== 'passed');
 });
 
 test('a callback cannot substitute transport counters or partial buffers for protocol identity', () => {
@@ -789,7 +818,7 @@ test('visible card and title remain unbound until the matching complete wire pro
   const globals = ['document', 'NodeFilter', 'getComputedStyle', 'innerHeight', 'innerWidth'];
   const saved = new Map(globals.map(name => [name, { exists: Object.hasOwn(globalThis, name), value: globalThis[name] }]));
   globalThis.innerHeight = 800; globalThis.innerWidth = 1000; globalThis.NodeFilter = { SHOW_TEXT: 4 };
-  globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible' });
+  globalThis.getComputedStyle = node => ({ display: node.display ?? 'block', visibility: 'visible', overflowX: node.overflow ?? 'visible', overflowY: node.overflow ?? 'visible' });
   globalThis.document = { createTreeWalker(root) { let at = 0; return { nextNode: () => root.childNodes[at++] ?? null }; },
     createRange() { let selected; return { selectNodeContents(node) { selected = node; }, getBoundingClientRect: () => selected.box, detach() {} }; } };
   try {
@@ -797,21 +826,52 @@ test('visible card and title remain unbound until the matching complete wire pro
     const button = element('button.cardTextActionButton', 30, 'BUTTON');
     card.parentElement = container; box.parentElement = card; text.parentElement = box; button.parentElement = text;
     const title = { nodeValue: changed, parentElement: button, box: rectangle(30) }; button.childNodes.push(title);
-    const cards = [card], buttons = [button], containers = [container];
-    container.querySelectorAll = () => cards; card.querySelectorAll = () => buttons;
+    const cards = [card], buttons = [button], emptyOne = element('.itemsContainer', 40), emptyTwo = element('.itemsContainer', 45);
+    const otherCards = [], otherButtons = [], orphanCards = [], orphanButtons = [], containers = [emptyOne, container, emptyTwo];
+    globalThis.document.querySelectorAll = selector => selector === '.card' ? [...cards, ...otherCards, ...orphanCards] : [...buttons, ...otherButtons, ...orphanButtons];
+    container.querySelectorAll = selector => selector === '.card' ? cards : buttons;
+    emptyOne.querySelectorAll = selector => selector === '.card' ? otherCards : otherButtons;
+    emptyTwo.querySelectorAll = () => [];
     const page = { url: () => 'http://127.0.0.1:18196' + ROUTE, locator: selector => selector === 'audio,video' ? { evaluateAll: async () => false }
       : { count: async () => containers.length, evaluateAll: async (run, args) => run(containers, args) } };
     const capture = async () => ({ ...await observeLibraryChangedDOM(page, { id: ITEM }, changed, 'Old Name', 'document-2'), started_elapsed_ms: 3500 });
     const window = libraryChangedWindowFixture(), context = { phase: 'forward', physical: window.http.physical, frames: window.http.frames,
       token_sha256: sha(TOKEN), boundary: window.boundary, events: window.events, discovery: libraryChangedNavigationFixture() };
     const raw = await capture(); check(!raw.passed && !raw.identity_proven && raw.target_id === null && raw.target_title_count === 1);
+    check(raw.visible_items_containers === 3 && raw.visible_card_containers === 1 && raw.visible_cards === 1 && raw.visible_title_buttons === 1);
+    equal(raw.container_observations.map(value => value.visible_cards), [0, 1, 0]);
     check(bindLibraryChangedDOM(raw, context).passed);
+    const originalBox = container.box; container.box = { ...originalBox, width: 0, height: 0 };
+    const zeroOwner = await capture(); check(zeroOwner.visible_items_containers === 2 && zeroOwner.visible_card_containers === 1 && bindLibraryChangedDOM(zeroOwner, context).passed);
+    for (const overflow of ['hidden', 'clip']) {
+      container.overflow = overflow;
+      const clipped = await capture(); check(clipped.visible_card_containers === 0 && clipped.visible_cards === 0 && clipped.visible_title_buttons === 0 &&
+        !bindLibraryChangedDOM(clipped, context).passed);
+    }
+    container.display = 'contents'; check(bindLibraryChangedDOM(await capture(), context).passed);
+    container.display = 'block'; container.overflow = 'visible';
+    container.box = originalBox;
     card.id = USER; check(!(await capture()).explicit_identity_consistent); card.id = null;
     title.nodeValue = 'Old Name'; check(!bindLibraryChangedDOM(await capture(), context).passed);
     title.nodeValue = changed; title.box = rectangle(1000); check(!bindLibraryChangedDOM(await capture(), context).passed); title.box = rectangle(30);
     const duplicate = element('.card', 40); duplicate.parentElement = container;
     cards.push(duplicate); check(!bindLibraryChangedDOM(await capture(), context).passed); cards.pop();
-    containers.push(element('.itemsContainer', 45)); check(!bindLibraryChangedDOM(await capture(), context).passed);
+    duplicate.parentElement = emptyOne; otherCards.push(duplicate);
+    const twoOwners = await capture(); check(twoOwners.visible_card_containers === 2 && !bindLibraryChangedDOM(twoOwners, context).passed); otherCards.pop();
+    const foreignTitle = element('button.cardTextActionButton', 35, 'BUTTON'); foreignTitle.parentElement = emptyOne;
+    foreignTitle.childNodes.push({ nodeValue: changed, parentElement: foreignTitle, box: rectangle(35) });
+    buttons.pop(); otherButtons.push(foreignTitle);
+    const crossOwner = await capture(); check(crossOwner.visible_cards === 1 && crossOwner.target_title_count === 1 && !crossOwner.explicit_identity_consistent && !bindLibraryChangedDOM(crossOwner, context).passed);
+    otherButtons.pop(); buttons.push(button); foreignTitle.parentElement = text; buttons.push(foreignTitle);
+    const duplicateTitle = await capture(); check(duplicateTitle.visible_title_buttons === 2 && !bindLibraryChangedDOM(duplicateTitle, context).passed);
+    buttons.pop();
+    orphanCards.push(element('.card', 50));
+    const orphanCard = await capture(); check(orphanCard.visible_cards === 2 && orphanCard.visible_card_containers === 1 &&
+      !orphanCard.explicit_identity_consistent && !bindLibraryChangedDOM(orphanCard, context).passed); orphanCards.pop();
+    const orphanButton = element('button.cardTextActionButton', 55, 'BUTTON');
+    orphanButton.childNodes.push({ nodeValue: changed, parentElement: orphanButton, box: rectangle(55) }); orphanButtons.push(orphanButton);
+    const orphanTitle = await capture(); check(orphanTitle.visible_title_buttons === 2 && orphanTitle.visible_cards === 1 &&
+      !orphanTitle.explicit_identity_consistent && !bindLibraryChangedDOM(orphanTitle, context).passed);
   } finally { for (const [name, prior] of saved) { if (prior.exists) globalThis[name] = prior.value; else delete globalThis[name]; } }
 });
 function memoryIO() {
@@ -859,9 +919,15 @@ test('full reports have a separate bounded budget while IPC remains small', asyn
   const forward = libraryChangedWindowFixture(), restored = libraryChangedWindowFixture('restored');
   for (const value of [forward, restored]) {
     const first = value.http.physical[0], frame = value.http.frames[0];
-    value.http.physical = Array.from({ length: 20 }, (_, id) => ({ ...clone(first), id, query: [['Fields', 'x'.repeat(3900)]] }));
-    value.http.frames = Array.from({ length: 20 }, (_, index) => ({ ...clone(frame), index }));
-    value.http.pairs = value.http.physical.map((physical, index) => ({ physical, frame: value.http.frames[index], unambiguous: true, complete: true }));
+    const shifted = (source, index) => Object.fromEntries(Object.entries(clone(source)).map(([key, entry]) =>
+      [key, typeof entry === 'number' && (key.endsWith('_elapsed_ms') || key === 'request_sequence') ? entry + index * 1000 : entry]));
+    const query = [['Fields', 'x'.repeat(3900)], ...clone(first.query)], shape = sha(JSON.stringify([first.route, query]));
+    value.http.physical = Array.from({ length: 20 }, (_, index) => ({ ...shifted(first, index), id: index + 1, query: clone(query), shape_sha256: shape }));
+    value.http.frames = Array.from({ length: 20 }, (_, index) => ({ ...shifted(frame, index), index: index + 1, shape_sha256: shape }));
+    value.http.pairs = pairLibraryChangedReadReferences(value.http.physical, value.http.frames);
+    check(value.http.physical.length === 20 && value.http.frames.length === 20 && value.http.pairs.length === 20 &&
+      value.http.pairs.every(pair => pair.complete && pair.unambiguous && pair.physical_exchange_id !== null) && value.dom.length === 242);
+    check(value.http.physical.every(physical => libraryChangedFullMovieQuery(physical) && physical.query[0][1].length === 3900));
     check(encodeLibraryChangedRecord({ forward: value, boundary: value.boundary }).length <= CHANGED_LIMITS.record_bytes);
   }
   const report = { forward, restored, actor: {

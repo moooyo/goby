@@ -1,0 +1,24 @@
+{
+  "automatic_retry": false,
+  "client_acceptance": false,
+  "failed_before_first_document": true,
+  "launch_intent_sha256": "f6abd09b2c274da02e1e9a4e5cf3b975655e1db688f70ae6be2261a391f36910",
+  "library_changed_client_acceptance": false,
+  "marker": "goby-source55-offline-dom-terminal-v1",
+  "recursive_cgroup_empty": true,
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06/stdout.json",
+    "sha256": "ffb9e0513fe88625290debe94a5f9bd95f251fb3ad6d6f309b9eb2c241d1e40a"
+  },
+  "state": {
+    "ActiveState": "failed",
+    "ControlGroup": "",
+    "ExecMainStatus": "1",
+    "InvocationID": "877ce871b5a74b5fa0f83ca7464d7bbc",
+    "MainPID": "0",
+    "Result": "exit-code",
+    "SubState": "failed"
+  },
+  "status": "failed",
+  "unit": "goby-client-library-changed-source55-dom-v6.service"
+}

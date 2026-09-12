@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-changed-ui-source55-v5';
-const TOOL = WORK + '/client-library-changed-source55-tool-05';
+const ROOT = WORK + '/client-library-changed-ui-source55-v6';
+const TOOL = WORK + '/client-library-changed-source55-tool-06b';
 const MODULE = TOOL + '/client-library-changed-source55-fixture.mjs';
 const SELF = fileURLToPath(import.meta.url);
 const LOADER = fileURLToPath(new URL('./client-library-changed-source55-fixture.mjs', import.meta.url));
@@ -104,7 +104,7 @@ function inputExample(pins) {
     authority: { ...clone(pins.UPGRADE_PINS), history: clone(pins.HISTORY_ENTRIES),
       before_snapshot: { path: ROOT + '/before-full.json', sha256: syntheticHash('before') } },
     controller: { pid: 900001, start_ticks: '10001', boot_id: pins.BOOT,
-      unit: 'goby-client-library-changed-ui-source55-controller-v5.service' } };
+      unit: 'goby-client-library-changed-ui-source55-controller-v6.service' } };
 }
 
 function inputCases(test, loaded) {
@@ -185,7 +185,7 @@ function inputCases(test, loaded) {
       rejects(() => valid(input), loaded);
     });
   }
-  for (const index of [0, 1, 2]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
+  for (const index of [0, 1, 2, 3]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
     test('input_requires_history_v' + (index + 2) + '_' + key, () => {
       const input = inputExample(loaded.pins); delete input.authority.history[index][key]; rejects(() => valid(input), loaded);
     });
@@ -429,25 +429,28 @@ function documentsExample(pins, input = inputExample(pins)) {
 }
 
 function priorExample(pins, input, current, version = 2) {
-  check(version === 2 || version === 3 || version === 4);
+  check(version === 2 || version === 3 || version === 4 || version === 5);
   const scope = version === 2 ? { root: pins.PRIOR_ROOT, tool: pins.PRIOR_TOOL, pins: pins.PRIOR_PINS, terminalPins: pins.PRIOR_TERMINAL_PINS,
     controllerUnit: pins.PRIOR_CONTROLLER_UNIT, workerUnit: pins.PRIOR_WORKER_UNIT,
     controllerInvocation: 'd6376750d8ff4fc08c97c69ac993f1e6', workerInvocation: '40884584c2784e3da2a91f816f563b45' }
     : version === 3 ? { root: pins.HISTORY_V3_ROOT, tool: pins.HISTORY_V3_TOOL, pins: pins.HISTORY_V3_PINS, terminalPins: pins.HISTORY_V3_TERMINAL_PINS,
       controllerUnit: 'goby-client-library-changed-ui-source55-controller-v3.service', workerUnit: 'goby-client-library-changed-ui-source55-v3.service',
       controllerInvocation: 'bb72fff9517e4f41baa01fbd3e86bf40', workerInvocation: 'e1296ab3a25a41d6964e577831df4152' }
-      : { root: pins.HISTORY_V4_ROOT, tool: pins.HISTORY_V4_TOOL, pins: pins.HISTORY_V4_PINS, terminalPins: pins.HISTORY_V4_TERMINAL_PINS,
+      : version === 4 ? { root: pins.HISTORY_V4_ROOT, tool: pins.HISTORY_V4_TOOL, pins: pins.HISTORY_V4_PINS, terminalPins: pins.HISTORY_V4_TERMINAL_PINS,
         controllerUnit: 'goby-client-library-changed-ui-source55-controller-v4.service', workerUnit: 'goby-client-library-changed-ui-source55-v4.service',
-        controllerInvocation: '6e2d992e43414cdc9aaf0f37be3ee688', workerInvocation: '8886fd825c644124ab82696979db2e73' };
+        controllerInvocation: '6e2d992e43414cdc9aaf0f37be3ee688', workerInvocation: '8886fd825c644124ab82696979db2e73' }
+        : { root: pins.HISTORY_V5_ROOT, tool: pins.HISTORY_V5_TOOL, pins: pins.HISTORY_V5_PINS, terminalPins: pins.HISTORY_V5_TERMINAL_PINS,
+          controllerUnit: 'goby-client-library-changed-ui-source55-controller-v5.service', workerUnit: 'goby-client-library-changed-ui-source55-v5.service',
+          controllerInvocation: 'f47dfd37b99d435d95458d1401f215cd', workerInvocation: 'b8531eeb770e48559a5e3d42f2f4e6f0' };
   const clock = (value, date = '2026-09-12') => date + 'T12:' + String(Number(value.slice(0, 2)) + (version - 2) * 10).padStart(2, '0') + value.slice(2);
   const nextDevice = current.database.sequences.devices_id_seq.last_value + 1, nextAudit = current.database.sequences.activity_entries_id_seq.last_value + 1;
   const priorInput = { ...clone(input), root: scope.root, output: scope.root + '/browser',
     actor: { ...clone(input.actor), credentials: { ...clone(input.actor.credentials), path: scope.root + '/viewer-credentials.json' } },
     source_closure: Object.fromEntries(pins.SOURCES.map(name => [scope.tool + '/' + name, syntheticHash('prior-source-' + name)])),
-    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : version === 4 ? { history: clone(pins.HISTORY_ENTRIES.slice(0, 2)) } : {}),
+    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : version === 4 || version === 5 ? { history: clone(pins.HISTORY_ENTRIES.slice(0, version === 4 ? 2 : 3)) } : {}),
       before_snapshot: clone(scope.pins.prior_before_snapshot) },
-    controller: { pid: version === 2 ? 1462458 : version === 3 ? 1465143 : 1467708,
-      start_ticks: version === 2 ? '13310272' : version === 3 ? '13494073' : '13676321', boot_id: pins.BOOT, unit: scope.controllerUnit } };
+    controller: { pid: version === 2 ? 1462458 : version === 3 ? 1465143 : version === 4 ? 1467708 : 1470221,
+      start_ticks: version === 2 ? '13310272' : version === 3 ? '13494073' : version === 4 ? '13676321' : '13881878', boot_id: pins.BOOT, unit: scope.controllerUnit } };
   const proof = { token_sha256: syntheticHash('prior-browser-token-' + version), session_id: syntheticHash('prior-browser-session-' + version).slice(0, 32),
     user_id: input.actor.user_id, client_name: 'Emby Web', device_id: 'synthetic-v' + version + '-device', device_name: 'HeadlessChrome Linux', client_version: '4.9.5.0',
     server_id: input.candidate.server_id, created_at: clock('06:00.123456Z'), created_at_source: 'SessionInfo.LastActivityDate', kind: 'emby', slot: 'B',
@@ -470,8 +473,8 @@ function priorExample(pins, input, current, version = 2) {
   const before = clone(priorAfter); before.database.metadata.captured_at = clock('10:00Z');
   const closure = { context_closed: true, browser_closed: true, proxy_closed: true, http_pending: 0, websocket_pending: 0,
     websocket_active: 0, websocket_opened: 1, websocket_closed: 1, sockets_remaining: 0, cleanup_failures: [] };
-  const node = { pid: version === 2 ? 1462519 : version === 3 ? 1465203 : 1467770,
-    start_ticks: version === 2 ? '13310370' : version === 3 ? '13494210' : '13676505', boot_id: pins.BOOT, uid: 0, gid: 0,
+  const node = { pid: version === 2 ? 1462519 : version === 3 ? 1465203 : version === 4 ? 1467770 : 1470281,
+    start_ticks: version === 2 ? '13310370' : version === 3 ? '13494210' : version === 4 ? '13676505' : '13882106', boot_id: pins.BOOT, uid: 0, gid: 0,
     executable_path: WORK + '/client-library-changed-source44-tool-01/node',
     executable_sha256: '3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327', cgroup: '/system.slice/' + scope.workerUnit };
   const closureSHA = hash(JSON.stringify(ordered(priorInput.source_closure)));
@@ -503,7 +506,7 @@ function priorExample(pins, input, current, version = 2) {
   const priorControllerReport = { marker: 'goby-client-library-changed-observation-v1', version: 1, mode: input.mode, status: 'failed', phase: 'discovery',
     input_sha256: scope.pins.prior_input.sha256, source_closure_sha256: closureSHA, controller: clone(priorInput.controller), node_process: clone(node),
     candidate_process: clone(input.candidate.process), candidate_invocation: input.candidate.invocation_id, state_sha256: input.candidate.state_sha256,
-    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : version === 4 ? { history: clone(pins.HISTORY_ENTRIES.slice(0, 2)) } : {}) },
+    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : version === 4 || version === 5 ? { history: clone(pins.HISTORY_ENTRIES.slice(0, version === 4 ? 2 : 3)) } : {}) },
     reserved_native_intents: [], dispatched_native_intents: [], restoration: 'not_required',
     automatic_retry: false, browser_fallback_used: false, candidate_or_primary_service_writes: false, client_acceptance: false, full_m3_complete: false,
     library_changed_client_acceptance: false, restoration_required: false, sql_business_writes: false, worker_chain_ledger_passed: false,
@@ -562,14 +565,28 @@ function priorExample(pins, input, current, version = 2) {
       history_preservation: clone(priorControllerReport.history_preservation), prior_baseline: clone(pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot),
       discovery_screenshot_bytes: 38695, ...clone(pins.HISTORY_V4_PREDECESSORS) });
   }
+  if (version === 5) {
+    priorControllerReport.history_preservation = [2, 3, 4].map(previous => ({ version: previous, ledger: clone(ledger),
+      after_snapshot: clone(pins.HISTORY_ENTRIES[previous - 2].after_snapshot),
+      independent_snapshot: clone(previous === 2 ? pins.PRIOR_TERMINAL_PINS.independent_snapshot
+        : previous === 3 ? pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot : pins.HISTORY_V4_TERMINAL_PINS.independent_snapshot) }));
+    priorBrowserReport.diagnostics = { discovery_failure: { ...clone(pins.HISTORY_V5_DIAGNOSTICS.discovery_failure), bytes: 12134 },
+      screenshot: { ...clone(pins.HISTORY_V5_DIAGNOSTICS.screenshot), bytes: 38695 }, status: 'saved', reason: null };
+    Object.assign(priorTerminal, { baseline_chain_verified: true, old_v2_scope_preserved: true, old_v3_scope_preserved: true,
+      old_v4_scope_preserved: true, predecessor_units_preserved: true, guard_evidence_preserved: true,
+      guard_evidence: clone(pins.HISTORY_V5_GUARD_EVIDENCE), cumulative_totals: { sessions: 79, devices: 68, activity_entries: 175 },
+      history_preservation: clone(priorControllerReport.history_preservation), prior_baseline: clone(pins.HISTORY_V4_TERMINAL_PINS.independent_snapshot),
+      discovery_screenshot_bytes: 38695, ...clone(pins.HISTORY_V5_PREDECESSORS) });
+  }
   return { priorInput, priorBrowserReport, priorControllerReport, priorTerminal, priorBefore, priorAfter, priorIndependent, before };
 }
 
 function historyExample(pins, input, current) {
-  const first = priorExample(pins, input, current, 2), second = priorExample(pins, input, first.priorAfter, 3), third = priorExample(pins, input, second.priorAfter, 4);
-  return { history: [first, second, third].map((entry, index) => ({ version: index + 2, input: entry.priorInput, browser_report: entry.priorBrowserReport,
+  const first = priorExample(pins, input, current, 2), second = priorExample(pins, input, first.priorAfter, 3), third = priorExample(pins, input, second.priorAfter, 4),
+    fourth = priorExample(pins, input, third.priorAfter, 5);
+  return { history: [first, second, third, fourth].map((entry, index) => ({ version: index + 2, input: entry.priorInput, browser_report: entry.priorBrowserReport,
     controller_report: entry.priorControllerReport, terminal: entry.priorTerminal, before: entry.priorBefore, after: entry.priorAfter,
-    independent: entry.priorIndependent })), before: third.before };
+    independent: entry.priorIndependent })), before: fourth.before };
 }
 
 function documentCases(test, loaded) {
@@ -728,7 +745,7 @@ function priorCases(test, loaded) {
     const value = example(), { input, documents } = value;
     check(valid(value) === true && input.authority.current_snapshot.sha256 === loaded.pins.UPGRADE_PINS.current_snapshot.sha256 &&
       input.authority.current_snapshot.sha256 !== input.authority.history[0].after_snapshot.sha256 &&
-      documents.current.database.tables.sessions.length === 75 && documents.before.database.tables.sessions.length === 78 &&
+      documents.current.database.tables.sessions.length === 75 && documents.before.database.tables.sessions.length === 79 &&
       documents.history[0].terminal.status === 'failed_scope_sealed' && documents.history[0].terminal.client_acceptance === false); noEffects(loaded);
   });
   for (const [name, mutate] of [
@@ -838,7 +855,7 @@ function historyCases(test, loaded) {
       Object.keys(documents.history[0].input.authority).length === 5 && Object.keys(documents.history[1].input.authority).length === 11 &&
       !Object.hasOwn(documents.history[0].input.authority, 'history') && !Object.hasOwn(documents.history[1].input.authority, 'history') &&
       documents.current.database.tables.sessions.length === 75 && documents.history[0].after.database.tables.sessions.length === 76 &&
-      documents.history[1].after.database.tables.sessions.length === 77 && documents.before.database.tables.sessions.length === 78); noEffects(loaded);
+      documents.history[1].after.database.tables.sessions.length === 77 && documents.before.database.tables.sessions.length === 79); noEffects(loaded);
   });
   test('history_second_delta_uses_only_explicit_v3_counts_and_preserves_v2_rows', () => {
     const { documents } = example(), second = documents.history[1];
@@ -846,10 +863,21 @@ function historyCases(test, loaded) {
   });
   test('history_third_delta_keeps_archived_v4_two_entry_authority_and_explicit_counts', () => {
     const { input, documents } = example(), third = documents.history[2];
-    check(input.authority.history.length === 3 && third.input.authority.history.length === 2 &&
+    check(input.authority.history.length === 4 && third.input.authority.history.length === 2 &&
       same(third.input.authority.history.map(entry => entry.version), [2, 3]) &&
       same(loaded.api.validatePriorSnapshotDelta(third.before, third.after, third.browser_report, 4), third.controller_report.ledger) &&
       third.after.database.tables.sessions.length === 78 && third.after.database.tables.devices.length === 67 && third.after.database.tables.activity_entries.length === 173);
+    noEffects(loaded);
+  });
+  test('history_fourth_delta_keeps_archived_v5_three_entry_authority_and_explicit_counts', () => {
+    const { input, documents } = example(), fourth = documents.history[3];
+    check(valid({ input, documents }) === true && input.authority.history.length === 4 && fourth.input.authority.history.length === 3 &&
+      same(fourth.input.authority.history.map(entry => entry.version), [2, 3, 4]) &&
+      same(loaded.api.validatePriorSnapshotDelta(fourth.before, fourth.after, fourth.browser_report, 5), fourth.controller_report.ledger) &&
+      fourth.after.database.tables.sessions.length === 79 && fourth.after.database.tables.devices.length === 68 && fourth.after.database.tables.activity_entries.length === 175 &&
+      Object.keys(fourth.terminal).length === 64 && Object.keys(fourth.terminal.guard_evidence).length === 17 &&
+      fourth.terminal.guard_evidence.initial_controller_status === 'failed' && fourth.terminal.guard_evidence.repaired_controller_status === 'passed' &&
+      fourth.terminal.status === 'failed_scope_sealed');
     noEffects(loaded);
   });
   for (const [name, mutate] of [
@@ -902,12 +930,39 @@ function historyCases(test, loaded) {
     ['v4_before_predates_v3_independent', v => { v.documents.history[2].before.database.metadata.captured_at = '2026-09-12T12:18:30Z'; }],
     ['v4_after_changes_v3_session', v => { v.documents.history[2].after.database.tables.sessions[76].client_version = 'foreign'; }],
     ['fresh_before_uses_v3_after', v => { v.documents.before = clone(v.documents.history[1].after); v.documents.before.database.metadata.captured_at = '2026-09-12T12:30:00Z'; }],
+    ['v5_input_includes_its_own_history', v => { v.documents.history[3].input.authority.history.push(clone(v.input.authority.history[3])); }],
+    ['v5_controller_history_order', v => { v.documents.history[3].controller_report.history_preservation.reverse(); }],
+    ['v5_controller_history_after_relabelled_upgrade', v => { v.documents.history[3].controller_report.history_preservation[2].after_snapshot = clone(v.input.authority.current_snapshot); }],
+    ['v5_browser_discovery_digest', v => { v.documents.history[3].browser_report.diagnostics.discovery_failure.sha256 = syntheticHash('foreign'); }],
+    ['v5_terminal_guard_missing', v => { delete v.documents.history[3].terminal.guard_evidence; }],
+    ['v5_terminal_guard_extra_field', v => { v.documents.history[3].terminal.guard_evidence.repaired_controller_passed = 75; }],
+    ['v5_terminal_guard_not_preserved', v => { v.documents.history[3].terminal.guard_evidence_preserved = false; }],
+    ['v5_terminal_old_v4_not_preserved', v => { v.documents.history[3].terminal.old_v4_scope_preserved = false; }],
+    ['v5_terminal_original_guard_promoted', v => { v.documents.history[3].terminal.guard_evidence.initial_controller_status = 'passed'; }],
+    ['v5_terminal_original_guard_report', v => { v.documents.history[3].terminal.guard_evidence.initial_report.sha256 = syntheticHash('foreign'); }],
+    ['v5_terminal_original_guard_overwritten', v => { v.documents.history[3].terminal.guard_evidence.old_guard_source = clone(v.documents.history[3].terminal.guard_evidence.repaired_guard_source); }],
+    ['v5_terminal_repaired_guard_count', v => { v.documents.history[3].terminal.guard_evidence.repaired_controller_tests = 74; }],
+    ['v5_terminal_launch_prerequisite_relabelled', v => { v.documents.history[3].terminal.guard_evidence.launch_prerequisites.real_documents = clone(v.documents.history[3].terminal.guard_evidence.initial_report); }],
+    ['v5_terminal_runtime_controller_changed', v => { v.documents.history[3].terminal.guard_evidence.runtime_controller_source.sha256 = syntheticHash('foreign'); }],
+    ['v5_terminal_retained_loader_count_changed', v => { v.documents.history[3].terminal.guard_evidence.retained_passed_counts.loader = 560; }],
+    ['v5_terminal_marker_replayed_v4', v => { v.documents.history[3].terminal.marker = 'goby-source55-failed-ui-terminal-v4'; }],
+    ['v5_terminal_cumulative_totals', v => { v.documents.history[3].terminal.cumulative_totals.sessions = 78; }],
+    ['v5_terminal_predecessor_order', v => { v.documents.history[3].terminal.predecessor_terminals.reverse(); }],
+    ['v5_terminal_prior_baseline_relabelled', v => { v.documents.history[3].terminal.prior_baseline = clone(loaded.pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot); }],
+    ['v5_terminal_independent_digest', v => { v.documents.history[3].terminal.independent_snapshot.sha256 = syntheticHash('foreign'); }],
+    ['v5_terminal_history_order', v => { v.documents.history[3].terminal.history_preservation.reverse(); }],
+    ['v5_terminal_controller_invocation', v => {
+      v.documents.history[3].terminal.failed_units['goby-client-library-changed-ui-source55-controller-v5.service'].properties.InvocationID = syntheticHash('foreign').slice(0, 32);
+    }],
+    ['v5_before_predates_v4_independent', v => { v.documents.history[3].before.database.metadata.captured_at = '2026-09-12T12:28:30Z'; }],
+    ['v5_after_changes_v4_session', v => { v.documents.history[3].after.database.tables.sessions[77].client_version = 'foreign'; }],
+    ['fresh_before_uses_v4_after', v => { v.documents.before = clone(v.documents.history[2].after); v.documents.before.database.metadata.captured_at = '2026-09-12T12:40:00Z'; }],
   ]) test('history_rejects_' + name, () => {
     const value = example(); mutate(value); rejects(() => valid(value), loaded);
   });
   test('history_delta_rejects_unbound_or_mismatched_count_scope', () => {
     const { documents } = example(), first = documents.history[0], second = documents.history[1];
-    for (const version of ['3', 5, null]) rejects(() => loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, version), loaded);
+    for (const version of ['3', 6, null]) rejects(() => loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, version), loaded);
     rejects(() => loaded.api.validatePriorSnapshotDelta(first.before, first.after, first.browser_report, 3), loaded);
     rejects(() => loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, 2), loaded);
   });
@@ -1046,7 +1101,8 @@ async function runtimeExample(raw, observeEffects = () => {}, configure = () => 
     for (const [key, name] of [['input', 'input'], ['browser_report', 'browser_report'], ['controller_report', 'controller_report'],
       ['terminal', 'terminal'], ['before_snapshot', 'before'], ['after_snapshot', 'after']])
       memory.put(entry[key].path, JSON.stringify(documents.history[index][name]), entry[key].sha256);
-    const terminalPins = index === 0 ? pins.PRIOR_TERMINAL_PINS : index === 1 ? pins.HISTORY_V3_TERMINAL_PINS : pins.HISTORY_V4_TERMINAL_PINS;
+    const terminalPins = index === 0 ? pins.PRIOR_TERMINAL_PINS : index === 1 ? pins.HISTORY_V3_TERMINAL_PINS
+      : index === 2 ? pins.HISTORY_V4_TERMINAL_PINS : pins.HISTORY_V5_TERMINAL_PINS;
     memory.put(terminalPins.independent_snapshot.path, JSON.stringify(documents.history[index].independent), terminalPins.independent_snapshot.sha256);
   }
   memory.put(documents.report.evidence['before-state.json'].path, JSON.stringify(documents.beforeState), pins.PREVIOUS.state_sha256);
@@ -1175,6 +1231,7 @@ function runtimeCases(test, raw, observeEffects) {
       ...value.input.authority.history.flatMap(entry => Object.entries(entry).filter(([key]) => key !== 'version').map(([, item]) => item.path)),
       value.loaded.pins.PRIOR_TERMINAL_PINS.independent_snapshot.path, value.loaded.pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot.path,
       value.loaded.pins.HISTORY_V4_TERMINAL_PINS.independent_snapshot.path,
+      value.loaded.pins.HISTORY_V5_TERMINAL_PINS.independent_snapshot.path,
       ...Object.keys(value.input.source_closure)])
       check(memory.trace.filter(item => item.operation === 'open' && item.path === filename).length >= 4);
     scope(value);
@@ -1191,6 +1248,8 @@ function runtimeCases(test, raw, observeEffects) {
     ['v3_independent_bytes_changed', v => { v.memory.content(v.loaded.pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot.path, '{"schema":28}'); }],
     ['v4_terminal_bytes_changed', v => { v.memory.content(v.input.authority.history[2].terminal.path, '{"status":"failed_scope_sealed"}'); }],
     ['v4_independent_bytes_changed', v => { v.memory.content(v.loaded.pins.HISTORY_V4_TERMINAL_PINS.independent_snapshot.path, '{"schema":28}'); }],
+    ['v5_terminal_bytes_changed', v => { v.memory.content(v.input.authority.history[3].terminal.path, '{"status":"failed_scope_sealed"}'); }],
+    ['v5_independent_bytes_changed', v => { v.memory.content(v.loaded.pins.HISTORY_V5_TERMINAL_PINS.independent_snapshot.path, '{"schema":28}'); }],
     ['before_state_inode_replaced', v => { v.memory.files.get(v.documents.report.evidence['before-state.json'].path).info.ino += 1n; }],
     ['catalog_bytes_changed', v => { v.memory.content(v.loaded.pins.PINS.catalog.path, '{"version":27}'); }],
     ['current_snapshot_bytes_changed', v => { v.memory.content(v.input.authority.current_snapshot.path, '{"schema":28,"changed":true}'); }],
@@ -1400,11 +1459,11 @@ function snapshotReaderCases(test, loaded, raw, observeEffects) {
   });
   test('snapshot_reader_reads_only_each_declared_snapshot', async () => {
     const value = await runtimeExample(raw, observeEffects);
-    for (const [key, expected] of [['current_snapshot', value.documents.current], ['history_after_snapshot', value.documents.history[2].after],
+    for (const [key, expected] of [['current_snapshot', value.documents.current], ['history_after_snapshot', value.documents.history[3].after],
       ['before_snapshot', value.documents.before]]) {
       const start = value.memory.trace.length, snapshot = await value.loaded.api.readLibraryChangedSource55Snapshot(value.input, key);
       const opened = value.memory.trace.slice(start).filter(item => item.operation === 'open').map(item => item.path);
-      const item = key === 'history_after_snapshot' ? value.input.authority.history[2].after_snapshot : value.input.authority[key];
+      const item = key === 'history_after_snapshot' ? value.input.authority.history[3].after_snapshot : value.input.authority[key];
       check(same(snapshot, expected) && same(opened, [item.path]));
     }
     check(value.memory.handles.size === 0); noEffects(value.loaded);

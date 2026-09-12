@@ -1,0 +1,23 @@
+{
+  "body_bytes": 272,
+  "body_reconstructed_from_preserved_facts": true,
+  "body_sha256": "78f9c5001ee426b92c26dd797df7fb93f89714878d6b1b24d1f735706164de6b",
+  "business_writes": 0,
+  "client_acceptance": false,
+  "marker": "goby-source55-native-login-time-diagnosis-v1",
+  "native_login_result": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-result.json",
+    "sha256": "a47b15514956048dd329c544b1c39fd2d366c56d4fa4d87adcedf4590ee921b2"
+  },
+  "native_user_format": "Go time.Time JSON with explicit RFC3339 offset; nativeUser does not call UTC()",
+  "new_http_requests": 0,
+  "secret_values_exported": false,
+  "sql_queries": 0,
+  "status": "diagnosed",
+  "stored_created_at": "2026-09-10T22:42:57.432877+00:00",
+  "unique_matching_representation": {
+    "created_at": "2026-09-11T06:42:57.432877+08:00",
+    "offset_minutes": 480,
+    "same_utc_instant": true
+  }
+}
