@@ -1,0 +1,1 @@
+{"actual_controller_flow":true,"errors":0,"failures":0,"guard_sha256":"d0d955715c6c7ed5f3f9234833638d0707773fb880a1f39367c7812f8af46541","operator_sha256":"cd71e292bfd9f6ab03c7b5b41fe8c50dff7cea78ce1862f7d239f8a81319b457","skips":0,"status":"passed","suite":"client-schema28-upgrade-guards","test_count":94,"unexpected_effects":0}

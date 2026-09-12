@@ -1,0 +1,31 @@
+{
+  "argv": [
+    "/opt/goby-toolchains/go1.27.1/bin/go",
+    "test",
+    "-json",
+    "-race",
+    "-mod=readonly",
+    "-count=1",
+    "-timeout=60s",
+    "./cmd/client-schema28-migration/main.go",
+    "./cmd/client-schema28-migration/main_test.go"
+  ],
+  "database_access": false,
+  "exit_code": 0,
+  "failures_or_skips": 0,
+  "guard_source_sha256": "abd819580eb126d90489a0d9899b711e27c5729ce8f6f7ee4b666125110a097a",
+  "helper_source_sha256": "17eac4a4e46406be83f30cd41a4b3433ef2e4af44b166a2a82407ed804d0b9e8",
+  "log_sha256": "f26ccaa72bde686eac458e616c11a8907345656a6ff08d301acf8fa74842844c",
+  "marker": "goby-client-schema28-helper-go-guards-v1",
+  "run_id": "20260912_100845_47bff13c329b",
+  "status": "passed",
+  "tests": [
+    "TestRolePropertiesPostgreSQLWhitespaceReportRoundTrip",
+    "TestRolePropertiesPrivilegeChangesRemainSignificant",
+    "TestRolePropertiesIntegerAndNullableValuesArePreserved",
+    "TestRolePropertiesRejectMissingUnknownDuplicateAndWrongShapes",
+    "TestRolePropertiesRejectValueTypeChanges",
+    "TestRolePropertiesNormalizationDoesNotMutateOrAliasInput",
+    "TestRoleNormalizationDoesNotHideOtherCapturedStateChanges"
+  ]
+}
