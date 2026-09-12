@@ -1,53 +1,82 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T16:45:33.301790+00:00`, reference UI v4 completed with independent restoration and cleanup confirmation. The positive automatic-refresh gate remains unmet.
+Execution state checkpoint: `2026-09-12T18:04:23+00:00`, runtime, transport, preparation tools and all four owned-browser controls are published and remotely verified through `609fa9180c30c4f9592303450563a5646be96857`. Real NextUp preparation has not executed, new SSH connections are blocked at agent signing, and the positive client gate is unmet.
 
-SSH access is available. V4 passed [57 Python guards and two compilation checks](reference-library-changed-ui-python-verification-04b.json),
-[29 driver guards](reference-library-changed-ui-js-verification-04.json), and
-[13 isolated Chromium DOM cases using synthetic HTML](reference-library-changed-ui-dom-verification-04.json).
-The unchanged runtime reuses its 28 verified v3 guards without a rerun. The
-initial Python04 fixture failure remains retained; guard-only04b corrected it.
-The four changed sources and four tool reports were published as
-`7568275018b6c07388ed80d4a514dad8d0ae7b73`; nine safe v3 reports were published as
-`a6a7c58c7b3ac91a19db86521994cee857816290`.
-
-V4's [business preflight](reference-library-changed-ui-preflight-v4.json) and
-[independent preflight terminal](reference-library-changed-ui-preflight-v4-terminal.json)
-passed with 65 HTTP requests, two authentication POSTs, zero metadata POSTs and
-administrator logout204/same-token401. The actual [v4 report](reference-library-changed-ui-v4.json)
-and [browser report](reference-library-changed-ui-v4-browser.json) complete the
-reference observation: 78 API HTTP requests, two authentication POSTs, two
-metadata POSTs and seven actual-viewer GETs. Forward and restoration POSTs both
-returned204. Each 120-second window contains 225 DOM samples, one physical and
-one browser LibraryChanged event, and zero HTTP in both complete request
-channels. Every sampled title remains `LibraryChanged Observed`. Forward is
-`automatic_refresh_not_observed_within_window`; restoration is
-`matches_expected_without_proven_transition`, which is not a positive transition.
-
-The [independent v4 terminal](reference-library-changed-ui-v4-terminal.json)
-records `protocol_observation_complete_independently_confirmed`. The complete
-target, including `MediaSources[0].Name`, is restored except Etag; anchor and
-media are unchanged. Administrator and viewer both have logout204/exact-token401
-closure. Both original unit invocations exited0 with MainPID0 and empty recursive
-cgroups. All 87 history/tool roots and the complete Goby v7 state at
-83 sessions/70 devices/185 audits are preserved. V4 is complete and consumed.
-
+The latest actual reference scope remains [v4](reference-library-changed-ui-v4-terminal.json),
+completed and independently sealed with full target restoration except Etag,
+unchanged anchor/media, administrator/viewer logout204/exact-token401, both
+original invocations exited0/MainPID0 with empty cgroups, all 87 roots preserved,
+and the unchanged Goby v7 state at 83 sessions/70 devices/185 audits. Both complete
+120-second windows have zero automatic HTTP and no visible title transition.
 The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json)
-finds equal reference v4 and Goby v7 public envelopes/Data after normalizing only
-target ID and MessageId. The 29-byte wire-length difference matches the target-ID
-length difference; three extra v7 summary fields are absent from the wire.
-Reference events arrived 40003ms/40005ms after POST completion, versus 2.0664ms
-for Goby. The timing difference has no established causal explanation.
+finds normalized wire equality; the event-delay difference has no established
+causal explanation. This complete negative control does not satisfy the positive
+automatic-HTTP-and-DOM gate or establish a Goby-specific protocol defect. The
+candidate remains source55/schema28 and the main service remains source32/schema27.
+Product publication authority remains `16d75c38064008680fa60839c637efee2f12f2ae`.
 
-This completed negative control closes the missing-reference-observation gap.
-It does not establish a Goby-specific protocol defect or satisfy the existing
-positive automatic-HTTP-and-DOM gate. That acceptance target is unchanged;
-LibraryChanged client acceptance remains false, the main service is not upgraded,
-and consumed scopes must not be replayed. V3's original failed report and its
-separate recovery/seal, plus v2 dispatch uncertainty, remain unchanged. Full
-M2-M6 remain open; M7 remains deferred. NextUp transport implementation and its
-verification are in progress; no live business request has been made for that
-work. Local verification remains prohibited.
+The owned reference runtime correction was published as
+`7ae35af5d6b823d4dbda126c00f90e328dec19e0`. It forwards interleaved ping/pong
+immediately, forwards valid close while discarding unapproved fragmented data,
+and still rejects forbidden application commands. All four new regressions fail
+against the old `b720d7bb...` copy; the corrected `209f72fa...` runtime passed
+[32 remote pure guards](reference-library-changed-ui-runtime-verification-05b.json).
+The original wrapper05 counting failure is retained. The
+[instrumentation review](library-changed-instrumentation-review.md) does not
+identify this correction as the cause of v4's negative result. V4's frozen
+runtime and consumed scope remain unchanged.
+
+The [native browser control](library-changed-browser-transparency.md) was
+published as `f5c38940c6b6be86d1e86d06d0ab1bcce314ecee`. All
+[four owned-HTML cases](library-changed-browser-transparency-02-summary.json)
+passed: baseline, reference collector, reference collector with DOM sampling,
+and Goby v7 collector. Each completed native callbacks, two callback GETs and
+forward/restored title transitions. The isolated run made 27 synthetic HTTP
+requests and zero business HTTP requests. Its
+[independent terminal](library-changed-browser-transparency-02-terminal.json)
+binds the exact invocation to successful systemd-manager lifecycle evidence,
+an absent original PID and an empty cgroup. Failed scope01 remains preserved.
+This proves the bounded callback-to-HTTP-to-DOM path on the owned page; original
+client refresh acceptance and universal instrumentation transparency remain unproven.
+
+NextUp transport TOOL02 was published as
+`1c6430a9aec2d62c5f89d9954a06c5eae2b8ae02`. Its
+[91 fake guards and two compilation checks](nextup-global-transport-tool02-verification-01.json)
+passed with zero failures/errors/skips, actual business HTTP or process probes.
+The transport enforces dual actors, metadata-only application/existing-owned-proxy
+bindings, at-most-once dispatch, private raw/public exported evidence, and four
+`contractVersion: 2` calibrations requiring eighteen distinct actual-response receipts.
+Its live CLI remains disabled pending a separately reviewed outer operator and
+independently attested real preparation; the Goby target is not enabled.
+
+The [preparation producer](nextup-global-preparation-implementation.md) was
+published as `609fa9180c30c4f9592303450563a5646be96857`. Its repaired sources
+passed [114 remote guards](nextup-global-preparation-verification-02.json) and
+two compilation checks, with zero failures/errors/skips or business HTTP.
+Independent review confirmed durable pending-ownership state before response
+parsing, including malformed, duplicate and failed-commit cases. The
+[design](nextup-global-preparation-design.md) reserves 320 HTTP requests:
+240 normal and 80 cleanup, with maxima of 232 normal, 238 success and 77
+failure-cleanup requests. Successful preparation still requires all four real
+calibrations, all three exact-token closures and independent terminal attestation.
+
+Only read-only [source/media](nextup-global-source-media-observation.json),
+[process authority](nextup-global-authority-observation.json), and
+[Goby preservation](nextup-global-goby-preservation.json) observations exist.
+No real preparation admission has executed; six independent media copies,
+two libraries, two users, four calibrations, global reference capture and client
+playback acceptance remain unexecuted. New SSH connections currently fail at
+agent signing with `agent refused operation`, followed by
+`Permission denied (publickey)`. The earlier verified remote results remain
+valid; fresh admission and preparation are blocked until signing is restored.
+Local verification is not authorized and must not substitute for `ssh test-env`.
+
+The next executable step is to finish the private input/release/media approval,
+run the frozen plan and read-only authority admission remotely, then perform
+one fresh bounded preparation with independent preservation and attestation.
+The positive client gate is unchanged; main is not upgraded and consumed scopes
+must not be replayed. V3's original failure/separate recovery and v2 dispatch
+uncertainty remain preserved. Full M2-M6 remain open; M7 remains deferred.
 
 Current verification boundary: **source55 passed 2,173 full-suite tests across
 25 packages, zero failures/skips, the Linux build and six cleanup checks. Its
@@ -578,7 +607,7 @@ missing v2 upstream-dispatch evidence.
 
 V3 implemented the observed form-login contract, original-byte forwarding and
 explicit physical phases. Its tools were published as
-`7b07a468811352514c21d60b5683f4268f14e8c1`. Remote
+`7b07a468811352514c21d60b5683f4268f14e8c1`. Nine safe v3 reports were separately published as `a6a7c58c7b3ac91a19db86521994cee857816290`. Remote
 [JavaScript checks](reference-library-changed-ui-js-verification-03.json)
 passed 28 runtime and 27 driver guards, and
 [Python checks](reference-library-changed-ui-python-verification-03.json)
@@ -754,17 +783,54 @@ The [GPU capability inventory](m4-gpu-test-env-capabilities.md), published as
 `8604901`, records no usable GPU exposed on `test-env`. Compiled FFmpeg hardware
 interfaces are not execution evidence. No suitable remote GPU environment has
 yet been supplied; actual hardware decode and encode remain outstanding.
-The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) was published
-as `37d2257`. Its actual reference and real-client gates remain unexecuted and
-require a fresh scope. NextUp transport implementation and verification are
-in progress; that work has made no live business request.
-The [NextUp matrix planner](nextup-global-matrix-implementation.md) is implemented
-and passed 33 remote guards plus two compilation checks. Cleanup reconciles a
-known acknowledged stop before deciding whether its pre-enumerated reset is
-needed. This pure module has made no real HTTP request; fresh fixtures, the
-recorder adapter, reference observations and client acceptance remain pending.
-The pure module and its evidence were published as
+The [global NextUp acceptance plan](nextup-global-acceptance-plan.md), published
+as `37d2257`, still requires fresh actual reference and client gates. The
+[verified matrix planner](nextup-global-matrix-implementation.md) passed 33 remote
+guards and two compilation checks and was published as
 `7d75a3d634a7f783f3abfa80221cfe6f19110d38`.
+
+The [NextUp transport](nextup-global-transport-implementation.md) is now published
+in commit `1c6430a9aec2d62c5f89d9954a06c5eae2b8ae02` with its guards, three retained
+verification reports, preparation design and source observation: eight files.
+[TOOL02 verification01](nextup-global-transport-tool02-verification-01.json)
+records 91 passing fake guards, zero failures/errors/skips, zero actual business
+HTTP and zero process probes; two compilation checks also passed. The initial
+[67-case/four-failure report](nextup-global-transport-tool01-verification-01.json)
+and subsequent [68-case pass](nextup-global-transport-tool01-verification-02.json)
+remain preserved. These are tool results, not live acceptance.
+
+TOOL02 binds two actors to the application metadata and existing owned proxy,
+uses at-most-once dispatch with private raw/public exported evidence, and enforces
+`contractVersion: 2`: P/A1 partial/complete and Q/B1 partial/complete calibration
+under each actor's own token, requiring eighteen distinct actual-response receipts.
+The live CLI remains disabled pending an independently attested real fixture
+and a separately reviewed outer operator; the Goby target is not enabled.
+
+The [source-media observation](nextup-global-source-media-observation.json),
+captured at `2026-09-12T17:12:32.973214+00:00`, checked only the owned source,
+manifest and existing lock. It confirmed 48,786,888 Movie bytes without creating
+media or modifying the source. Later read-only
+[authority](nextup-global-authority-observation.json) and
+[Goby preservation](nextup-global-goby-preservation.json) observations retain
+the public baseline and unchanged Goby state at 83/70/185; they are not admission.
+
+The [preparation producer](nextup-global-preparation-implementation.md) and guard
+were published as `609fa9180c30c4f9592303450563a5646be96857` after
+[114 remote guards](nextup-global-preparation-verification-02.json), two
+compilation checks and independent review. Pending ownership is durably recorded
+before consuming resource responses; malformed or duplicate ownership and failed
+commits preserve recovery-required evidence without further HTTP. The
+[design](nextup-global-preparation-design.md) reserves 320 requests, split
+240 normal/80 cleanup; maxima are 232 normal, 238 success and 77 failure cleanup.
+All three preparation sessions require exact-token closure and an independent
+terminal; draft matrix inputs remain unusable until independent attestation.
+
+Six independent copies, two libraries, two users and four calibrations remain
+uncreated or unexecuted. Private input completion, the frozen plan and read-only
+authority admission precede real preparation. New SSH connections are currently
+blocked at agent signing; no local verification fallback is authorized.
+Actual global NextUp reference capture and client playback acceptance remain
+unexecuted.
 
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
@@ -1531,7 +1597,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; reference v4 observation complete; positive client gate unmet | Candidate remains source55/schema28/PID1458051; primary remains source32/schema27. Goby v7 is independently restored and sealed at 83 sessions/70 devices/185 audits after its automatic-HTTP failure. Reference v4 now has a [complete independently confirmed observation](reference-library-changed-ui-v4-terminal.json): both 120-second windows contain 225 DOM samples, one physical/browser LibraryChanged event and zero HTTP in both complete channels; every title remains `LibraryChanged Observed`. Forward records `automatic_refresh_not_observed_within_window`; restoration records `matches_expected_without_proven_transition`, not a positive transition. Full target restoration except Etag, unchanged anchor/media, both exact-token closures, both original unit invocations exited0/MainPID0 with empty cgroups, all 87 preserved roots and the unchanged Goby v7 state are confirmed. The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json) finds equal wire payloads after target-ID/MessageId normalization; event timing differs but causality is unproven. This complete negative control does not prove a Goby-specific defect or satisfy the positive client gate. V1-v4 reference history is consumed; v3 retains its original failed report and separate recovery/seal, and v2 dispatch uncertainty remains unresolved. Goby payloads and the acceptance target remain unchanged. Main is not upgraded; its expired prepare still requires a fresh scope/input/prepare after the required client acceptance. NextUp transport implementation and verification are in progress without live business requests; actual global NextUp/client acceptance remains unexecuted. Full M2-M6 remain open; M7 remains deferred. |
+| M3e real-client acceptance | In progress; v4 negative control complete; later tools verified, positive gate unmet | Candidate remains source55/schema28; primary remains source32/schema27. The [complete v4 negative control](reference-library-changed-ui-v4-terminal.json) and Goby v7 retain zero automatic HTTP/no transition, full restoration and closed credentials; the positive client gate remains false. Public payload equality establishes no Goby-specific defect. The corrected runtime passed [32 guards](reference-library-changed-ui-runtime-verification-05b.json), and all [four owned-browser controls](library-changed-browser-transparency-02-summary.json) passed the bounded native callback/HTTP/DOM path without original-client acceptance. Published NextUp transport passed [91 guards](nextup-global-transport-tool02-verification-01.json); the preparation producer passed [114 guards](nextup-global-preparation-verification-02.json), with two compile checks for each. Actual six-copy/two-library/two-user preparation, four calibrations, reference matrix and client playback remain unexecuted. SSH agent signing currently blocks new connections and remote admission; local verification is not authorized. The live transport CLI remains disabled pending attested preparation and a reviewed outer operator. Preserve v3 failure/recovery, v2 uncertainty and all consumed scopes. Main needs the positive client gate followed by fresh scope/input/prepare, rehearsal, upgrade and independent attestation. |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
