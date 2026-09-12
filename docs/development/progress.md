@@ -26,9 +26,14 @@ with both sessions closed are independently confirmed. Current counts are
 83 sessions/70 devices/185 audits. Complete LibraryChanged acceptance remains
 false; V1-v7 are independently sealed and consumed.
 Read-only diagnosis found zero HTTP in both complete request channels during
-the window despite page-frame receipt of the matching event. A new bounded
-original-client UI control is being implemented; its six sources are not yet
-verified or executed, and protocol cause remains open.
+the window despite page-frame receipt of the matching event. The new bounded
+original-client UI control has four frozen JavaScript sources with remote
+tool-layer verification: 23 runtime guards, 24 driver guards and 13 isolated
+synthetic-HTML browser DOM cases passed, all with `business_http: false`.
+The two Python controller/guard sources are also frozen and passed 45 guards
+and two compilation checks remotely. All six tool sources are verified;
+business-read preflight and the actual reference UI run remain
+unexecuted; protocol cause remains open.
 The main preparation has expired and requires a fresh scope/input/prepare.
 Full M2-M6 remain open; M7 remains deferred.
 The final real management UI gate is accepted and all four preceding failed
@@ -401,9 +406,24 @@ proxy failures are zero. There was no existing request for the catalog matcher
 to miss. Page-frame receipt does not prove internal handler execution, and the
 protocol cause remains open. Retained Name+Overview reference events have the
 same relevant fields, but a positive original-Movies automatic-HTTP/UI-refresh
-example and Name-only UI control are missing. Six sources for a new bounded
-original-client control, pure guards and business-read preflight are being
-implemented, without verification or execution yet. Any owned login/logout in
+example and Name-only UI control are missing. The new bounded original-client
+control's four JavaScript sources are frozen and passed remote tool-layer checks:
+[23 runtime guards](reference-library-changed-ui-runtime-verification-02.json),
+SHA-256 `ef7d1cf1155bc686ee3d1112c85b921b5eac7c2d1153a3aa0d1f64eee6764502`;
+[24 pure driver guards](reference-library-changed-ui-js-verification-01.json),
+SHA-256 `26c1c487d502aed88e36a0d584edec8b3bfa4f35a40ffdc4d36ceaad14c4427f`;
+and [13 isolated synthetic-HTML browser DOM cases](reference-library-changed-ui-dom-verification-01.json),
+SHA-256 `4345e53001280c50011c406e1ff332b5039e87b781a8dceba6f2855c88b0b715`.
+The DOM terminal confirms unit `goby-reference-library-changed-ui-dom-v1.service`,
+invocation `7831ea125bd245129ac2fe0708235176`, exit0/MainPID0 and an empty recursive
+cgroup. All three checks record `business_http: false`; they do not establish
+reference-client acceptance. The two Python controller/guard sources are also
+frozen and passed [45 guards and two compilation checks](reference-library-changed-ui-python-verification-01.json)
+with zero failures/errors, SHA-256
+`c2ce1c30cffe15b6f02bc0934140ce59701edfcb703ffa5f1967113be8142fce`.
+All six tool sources are verified. Assemble the verified sources and dispatch a
+fresh business-read preflight before a new reference UI control run; both remain
+unexecuted. Any owned login/logout in
 that preflight uses HTTP and creates authentication records requiring cleanup.
 The Goby payload and acceptance target remain unchanged, and v7 is not replayed.
 The reviewed [main schema28 upgrade plan](main-schema28-upgrade-plan.md) is
@@ -470,8 +490,13 @@ fresh checks, backup/restore rehearsal, one main upgrade and attestation. This
 is read-only preparation success; main remains source32/schema27 and neither
 the client gate nor main deployment has passed. V7 failed the first automatic
 HTTP window; its controlled restoration and session closure are independently
-confirmed. Complete-channel diagnosis found no HTTP in the first window; a new
-bounded original-client UI control is being implemented and is not yet verified or executed.
+confirmed. Complete-channel diagnosis found no HTTP in the first window. The
+bounded original-client UI control's four JavaScript sources are frozen and
+passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM
+cases remotely, all with `business_http: false`. The two Python controller/guard
+sources are also frozen and passed 45 guards and two compilation checks remotely.
+All six tool sources are verified; business-read preflight and the actual
+reference UI run remain unexecuted.
 Main TOOL03 separates the controller's exact five-key authority from the
 browser/input shape with additional `before_snapshot`, binding the original
 scope `before-full.json` bytes. Its
@@ -1252,7 +1277,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v7 automatic-HTTP failure is independently sealed | Candidate remains PID1458051; primary stays source32/schema27. Current independently sealed counts are 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Its terminal confirms restored original sparse/effective metadata, ledger 2/1/6/+2, both credentials closed and full preservation. Both complete request channels contain zero window HTTP after receipt of the matching page frame; all 237 DOM samples retain the old title, excluding missed matching of an existing request. Protocol cause remains open and LibraryChanged acceptance false. Six sources for a bounded original-client UI control are in implementation, unverified and unexecuted; business-read preflight login/logout has authentication side effects. Keep the Goby payload/acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare still requires fresh scope/input/prepare before later upgrade after client acceptance. Main has not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); full M3 and broader M2-M6 remain open |
+| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v7 automatic-HTTP failure is independently sealed | Candidate remains PID1458051; primary stays source32/schema27. Current independently sealed counts are 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Its terminal confirms restored original sparse/effective metadata, ledger 2/1/6/+2, both credentials closed and full preservation. Both complete request channels contain zero window HTTP after receipt of the matching page frame; all 237 DOM samples retain the old title, excluding missed matching of an existing request. Protocol cause remains open and LibraryChanged acceptance false. The bounded original-client UI control's four JavaScript sources are frozen and passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM cases remotely, all with `business_http: false`. The two Python controller/guard sources are also frozen and passed 45 guards and two compilation checks remotely. All six tool sources are verified. Assemble them and dispatch a fresh business-read preflight before the new reference UI control run; both remain unexecuted. These tool checks do not establish reference-client acceptance; business-read preflight login/logout has authentication side effects. Keep the Goby payload/acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare still requires fresh scope/input/prepare before later upgrade after client acceptance. Main has not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); full M3 and broader M2-M6 remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

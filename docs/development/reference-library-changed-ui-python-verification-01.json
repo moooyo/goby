@@ -1,0 +1,43 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-01/test-observe-client-library-changed-reference-ui.py"
+  ],
+  "business_http": false,
+  "compilations": [
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-01/observe-client-library-changed-reference-ui.py",
+      "status": "passed"
+    },
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-01/test-observe-client-library-changed-reference-ui.py",
+      "status": "passed"
+    }
+  ],
+  "completed_at": "2026-09-12T15:10:25.879442+00:00",
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-python-verification-v1",
+  "python_version": "3.13.5 (main, Jun 13 2026, 14:18:01) [GCC 14.2.0]",
+  "reference_client_acceptance": false,
+  "source_transfer_sha256": "82bbfde52904a5bcec97fb9033f3134887c4a488d2e0c9765b99544b9207a93e",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-01/observe-client-library-changed-reference-ui.py": {
+      "bytes": 126598,
+      "sha256": "b876a66623a1ae04190323be6cf263ef1e450df27a25e7a9036774bcc816d058"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-01/test-observe-client-library-changed-reference-ui.py": {
+      "bytes": 60909,
+      "sha256": "ac769469787cdb62e5aa686800e22fe18cbea805caf46c925e4768c8811de40a"
+    }
+  },
+  "started_at": "2026-09-12T15:10:25.608708+00:00",
+  "status": "passed",
+  "stderr_sha256": "e8d743c664cdb433cbd9d1cff4e14aa20ac14397a9000acf8a9ba19366551079",
+  "stdout_sha256": "785119cace8b8a1d8fcf1c54a54cdf840d6bfe0274745c5875724f675e0c5fec",
+  "tests": 45
+}

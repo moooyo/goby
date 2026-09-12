@@ -1,0 +1,42 @@
+{
+  "argv": [
+    "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/test-client-browser-library-changed-reference.mjs"
+  ],
+  "browser": false,
+  "business_http": false,
+  "completed_at": "2026-09-12T15:04:34.938518+00:00",
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-js-verification-v1",
+  "node_sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
+  "result": "passed",
+  "runtime_guard_rerun": false,
+  "source_transfer_sha256": "a50885779daed8778bde513ff83c0d4d9023ae9ef3589f38d3b42626075ff1b0",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 88995,
+      "sha256": "9fc4a5ff72a62454c12e9d9693dbefca06a04570d60eafa98464ebd845ce5b5a"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/client-browser-library-changed-reference.mjs": {
+      "bytes": 74851,
+      "sha256": "f419bfe553c3d897b07b1ede553d2c8a56f9256c57a26185b8c1a05c586b9d87"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/test-client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 26656,
+      "sha256": "efee410b634dff34ef3eb10006fe4630937910d91a00ddcdbf91d455053e80fb"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-01/test-client-browser-library-changed-reference.mjs": {
+      "bytes": 42615,
+      "sha256": "5ddfbcd36b45451b26024101ae9264067ecb9b78514148e492b855a27bbdf7ad"
+    }
+  },
+  "started_at": "2026-09-12T15:04:34.471995+00:00",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "2e9c05aef4214d95da33ea2e85bef3de9fdcb8c173fbf21de8b22e711e58e47b",
+  "tests": 24
+}

@@ -18,9 +18,14 @@ effective metadata, two closed sessions, one device, six audits and revision
 delta2. Current counts are 83 sessions/70 devices/185 audits. LibraryChanged
 acceptance remains false; V1-v7 are independently sealed and consumed.
 Read-only diagnosis found zero HTTP in both complete request channels during
-the window despite page-frame receipt of the matching event. A new bounded
-original-client UI control is being implemented to establish reference behavior;
-its six sources are not yet verified or executed.
+the window despite page-frame receipt of the matching event. The new bounded
+original-client UI control has four frozen JavaScript sources with remote
+tool-layer verification: 23 runtime guards, 24 driver guards and 13 isolated
+synthetic-HTML browser DOM cases passed, all with `business_http: false`.
+The two Python controller/guard sources are also frozen and passed 45 guards
+and two compilation checks remotely. All six tool sources are verified;
+business-read preflight and the actual reference UI run remain
+unexecuted; protocol cause remains open.
 The main preparation has expired and requires a fresh scope/input/prepare.
 Full M2-M6 remain open; M7 remains deferred.
 Source55 adds the two-file Movies CollectionFolder direct-detail `Subviews`
@@ -467,12 +472,27 @@ the protocol cause remains open.
 
 Retained Name+Overview reference events have the same relevant fields, but the
 repository lacks a positive original-Movies metadata automatic-HTTP/UI-refresh
-example and a Name-only UI control. Six sources for a new bounded original-client
-control are being implemented, including pure guards and a business-read preflight;
-they are not yet verified or executed. A preflight containing owned login/logout
-uses HTTP and creates authentication records, so it must account for those side
-effects and cleanup. The Goby payload and acceptance target remain unchanged,
-and v7 will not be replayed.
+example and a Name-only UI control. The new bounded original-client control's
+four JavaScript sources are frozen and passed remote tool-layer checks:
+[23 runtime guards](reference-library-changed-ui-runtime-verification-02.json),
+SHA-256 `ef7d1cf1155bc686ee3d1112c85b921b5eac7c2d1153a3aa0d1f64eee6764502`;
+[24 pure driver guards](reference-library-changed-ui-js-verification-01.json),
+SHA-256 `26c1c487d502aed88e36a0d584edec8b3bfa4f35a40ffdc4d36ceaad14c4427f`;
+and [13 isolated synthetic-HTML browser DOM cases](reference-library-changed-ui-dom-verification-01.json),
+SHA-256 `4345e53001280c50011c406e1ff332b5039e87b781a8dceba6f2855c88b0b715`.
+The DOM terminal confirms unit `goby-reference-library-changed-ui-dom-v1.service`,
+invocation `7831ea125bd245129ac2fe0708235176`, exit0/MainPID0 and an empty recursive
+cgroup. All three checks record `business_http: false`; they do not establish
+reference-client acceptance. The two Python controller/guard sources are also
+frozen and passed [45 guards and two compilation checks](reference-library-changed-ui-python-verification-01.json)
+with zero failures/errors, SHA-256
+`c2ce1c30cffe15b6f02bc0934140ce59701edfcb703ffa5f1967113be8142fce`.
+All six tool sources are verified. Assemble the verified sources and dispatch a
+fresh business-read preflight before a new reference UI control run; both remain
+unexecuted. A preflight containing owned
+login/logout uses HTTP and creates authentication records, so it must account
+for those side effects and cleanup. The Goby payload and acceptance target
+remain unchanged, and v7 will not be replayed.
 The [main schema28 upgrade plan](main-schema28-upgrade-plan.md) was reviewed and
 published as `933257c913cd36a57c26c72bb324f73b57441ecd`. The two Go helper source
 files, plan and four safe reports were then published as
@@ -646,9 +666,13 @@ independently sealed. V7's corrected tools passed their prerequisites and the
 actual run passed login and forward PUT/readback, then failed to capture an
 automatic HTTP request within the first window. Native restoration and session
 closure are independently confirmed. Complete request channels contain zero HTTP
-within the window, so a bounded original-client UI control is being implemented.
-Its verification/execution remain pending. Complete LibraryChanged acceptance
-remains false.
+within the window. The bounded original-client UI control's four JavaScript
+sources are frozen; 23 runtime guards, 24 driver guards and 13 isolated
+synthetic-HTML DOM cases passed remotely with `business_http: false`. The two
+Python controller/guard sources are also frozen and passed 45 guards and two
+compilation checks remotely. All six tool sources are verified; business-read
+preflight and the actual reference UI run remain
+unexecuted. Complete LibraryChanged acceptance remains false.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -3026,7 +3050,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051; primary stays source32/schema27. Current independently sealed v7 state is 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Native restoration of original sparse/effective metadata, ledger 2/1/6/+2, dual-session closure and preservation are independently confirmed. The matching event reached the page, but both complete request channels contain zero window HTTP and all 237 DOM samples retain the old title; no existing request was missed by matching. Finish and verify the new bounded original-client UI control; its six sources are in implementation, with no execution yet. Business-read preflight login/logout must account for authentication side effects. Keep the Goby payload and acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare requires fresh scope/input/prepare before later upgrade after client acceptance. Main is not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); broader M2-M6 remain open. |
+| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051; primary stays source32/schema27. Current independently sealed v7 state is 83/70/185 at `31d08d24...`; V1-v7 are consumed. V7 passed 952 guards/13 DOM cases and prerequisites, then failed the first automatic-HTTP window. Native restoration of original sparse/effective metadata, ledger 2/1/6/+2, dual-session closure and preservation are independently confirmed. The matching event reached the page, but both complete request channels contain zero window HTTP and all 237 DOM samples retain the old title; no existing request was missed by matching. The bounded original-client UI control's four JavaScript sources are frozen and passed 23 runtime guards, 24 driver guards and 13 isolated synthetic-HTML DOM cases remotely, all with `business_http: false`. The two Python controller/guard sources are also frozen and passed 45 guards and two compilation checks remotely. All six tool sources are verified. Assemble them and dispatch a fresh business-read preflight before the new reference UI control run; both remain unexecuted. These tool checks do not establish reference-client acceptance. Business-read preflight login/logout must account for authentication side effects. Keep the Goby payload and acceptance target unchanged. Main TOOL03 passed 55 guards/two compilation checks and review; the expired prepare requires fresh scope/input/prepare before later upgrade after client acceptance. Main is not upgraded. Global NextUp is [planned, unexecuted](nextup-global-acceptance-plan.md); broader M2-M6 remain open. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. The [published inventory](m4-gpu-test-env-capabilities.md) confirms no usable exposed GPU on `test-env`; a suitable remote GPU environment is still required. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

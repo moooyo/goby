@@ -686,10 +686,26 @@ is not established, and no LibraryChanged pass is claimed.
 The retained reference Name+Overview event uses the same field shape, but there
 is no retained positive proof that original-client Movies metadata updates
 trigger automatic HTTP and UI refresh. The Name-only control remains missing.
-The new bounded reference UI control has six sources under implementation and
-has not been validated or executed. It does not change Goby payloads or the
-acceptance target, replay v7, or establish a new accepted client run. The pure
-guard contract forbids external effects. A business-read preflight may log in and out
+The new bounded reference UI control's four JavaScript sources are frozen and
+passed remote tool-layer checks:
+[23 runtime guards](reference-library-changed-ui-runtime-verification-02.json),
+SHA-256 `ef7d1cf1155bc686ee3d1112c85b921b5eac7c2d1153a3aa0d1f64eee6764502`;
+[24 pure driver guards](reference-library-changed-ui-js-verification-01.json),
+SHA-256 `26c1c487d502aed88e36a0d584edec8b3bfa4f35a40ffdc4d36ceaad14c4427f`;
+and [13 isolated synthetic-HTML browser DOM cases](reference-library-changed-ui-dom-verification-01.json),
+SHA-256 `4345e53001280c50011c406e1ff332b5039e87b781a8dceba6f2855c88b0b715`.
+The DOM terminal confirms unit `goby-reference-library-changed-ui-dom-v1.service`,
+invocation `7831ea125bd245129ac2fe0708235176`, exit0/MainPID0 and an empty recursive
+cgroup. All three checks record `business_http: false`; they do not establish
+reference-client acceptance. The two Python controller/guard sources are also
+frozen and passed [45 guards and two compilation checks](reference-library-changed-ui-python-verification-01.json)
+with zero failures/errors, SHA-256
+`c2ce1c30cffe15b6f02bc0934140ce59701edfcb703ffa5f1967113be8142fce`.
+All six tool sources are verified. Assemble the verified sources and dispatch a
+fresh business-read preflight before a new reference UI control run; both remain
+unexecuted. The control does not change
+Goby payloads or the acceptance target, replay v7, or establish a new accepted
+client run. The pure guard contract forbids external effects. A business-read preflight may log in and out
 and produce owned authentication records; those records and HTTP requests must
 be bounded, retained and cleaned up. That preflight is not a zero-HTTP claim.
 Complete wire and MessageId correlation remain required.
@@ -779,8 +795,12 @@ separate fresh scope after the active LibraryChanged work releases its fixture.
 1. Bind new control preparation to the complete H7 terminal, current independent
    83/70/185 snapshot, exact restored 2/1/6/+2 ledger and preserved inventories.
    Keep all consumed v1-v7 scopes immutable and do not reuse the pre-v7 baseline.
-2. Prepare the bounded original-client UI control and its pure guards plus
-   business-read preflight to fill the missing metadata-refresh positive and Name-only control.
+2. Assemble the bounded original-client UI control's six frozen, verified sources.
+   Its JavaScript checks passed 23 runtime guards, 24 driver guards and 13 isolated
+   synthetic-HTML DOM cases with `business_http: false`; the two Python sources
+   passed 45 guards and two compilation checks. Dispatch a fresh business-read
+   preflight, then a new reference UI control run to fill the missing
+   metadata-refresh positive and Name-only control; neither has executed yet.
    Account for permitted owned login/logout records and HTTP during preflight;
    only the pure guards make a zero-external-effects claim.
    Preserve MessageId/document/token correlation, Goby payloads and the existing

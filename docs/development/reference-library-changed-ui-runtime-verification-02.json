@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-tool-02/test-client-browser-library-changed-reference-runtime.mjs"
+  ],
+  "browser_started": false,
+  "business_http": false,
+  "counts": {
+    "cancelled": 0,
+    "fail": 0,
+    "pass": 23,
+    "skipped": 0,
+    "tests": 23,
+    "todo": 0
+  },
+  "exit_code": 0,
+  "marker": "goby-reference-ui-runtime-guards-v2",
+  "reference_client_acceptance": false,
+  "source_transfer_sha256": "dae7a491cf93cd21becb2fea90eb7bb166a39c2292d62574cd748a798c6c3f1f",
+  "sources": {
+    "client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 88995,
+      "sha256": "9fc4a5ff72a62454c12e9d9693dbefca06a04570d60eafa98464ebd845ce5b5a"
+    },
+    "client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "test-client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 26656,
+      "sha256": "efee410b634dff34ef3eb10006fe4630937910d91a00ddcdbf91d455053e80fb"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "bb28dee4bb99bd7081c23ae4cec0ab2559661057c7c1b5305847172452094680"
+}
