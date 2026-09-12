@@ -2181,7 +2181,7 @@ export async function runCrossUserGuards(source) {
     socket.emit('close'); check(entry.browser_closed === true && entry.closed === false);
     rejected(() => api.createLibraryChangedBrowserActor({ account: { slot: 'B', id: A_ID }, pin: () => {}, report: {}, observer }));
   });
-  const source55Scope = 'library-changed-ui-source55-v4';
+  const source55Scope = 'library-changed-ui-source55-v5';
   test('source55_catalog_scope_is_explicit_and_does_not_expand_source44', () => {
     for (const prefix of ['', '/emby']) {
       for (const route of [`/Items/${changedLibrary}`, `/Users/${changedUser}/Items/${changedLibrary}`]) {
@@ -2201,7 +2201,8 @@ export async function runCrossUserGuards(source) {
     rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v1'));
     rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v2'));
     rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v3'));
-    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v5'));
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v4'));
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v6'));
   });
   test('source55_keeps_existing_websocket_budgets_and_wire_delivery', async () => {
     rejected(() => api.websocketHandshakeBudget('library-changed-ui-source55-v1'));
@@ -2210,6 +2211,8 @@ export async function runCrossUserGuards(source) {
     rejected(() => api.websocketLifetimeBudget('library-changed-ui-source55-v2'));
     rejected(() => api.websocketHandshakeBudget('library-changed-ui-source55-v3'));
     rejected(() => api.websocketLifetimeBudget('library-changed-ui-source55-v3'));
+    rejected(() => api.websocketHandshakeBudget('library-changed-ui-source55-v4'));
+    rejected(() => api.websocketLifetimeBudget('library-changed-ui-source55-v4'));
     check(api.websocketHandshakeBudget(source55Scope) === 2 && api.websocketLifetimeBudget(source55Scope) === 480000);
     check(api.websocketHandshakeBudget(changedScope) === 2 && api.websocketLifetimeBudget(changedScope) === 480000);
     const observed = [], bytes = wireFrame(changedBytes);

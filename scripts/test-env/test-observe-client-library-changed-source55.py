@@ -37,6 +37,7 @@ import sys
 import time
 import types
 import unicodedata
+import urllib.parse
 import unittest
 from unittest.mock import Mock, call, patch
 
@@ -382,7 +383,8 @@ def authority_fixture():
             ("upgrade_intent", CONTROLLER.UPGRADE_TOOL / "intent.json"), ("upgrade_report", output / "report.json"),
             ("upgrade_attestation", output / "attestation.json"), ("current_snapshot", output / "after-full.json"))},
             'history': [{'version': 2, **{name: copy.deepcopy(CONTROLLER.PRIOR_PINS[key]) for name, key in CONTROLLER.HISTORY_NAMES.items()}},
-                        {'version': 3, **copy.deepcopy(CONTROLLER.HISTORY_V3_PINS)}]}}
+                        {'version': 3, **copy.deepcopy(CONTROLLER.HISTORY_V3_PINS)},
+                        {'version': 4, **copy.deepcopy(CONTROLLER.HISTORY_V4_PINS)}]}}
 
 
 def schema_state():
@@ -740,7 +742,7 @@ def prior_terminal_fixture(value, version=2):
     controller['worker_terminal'] = dict(failed[scope['worker']]['properties'], cgroup_empty=True)
     terminal = {'marker': 'goby-source55-failed-ui-terminal-v' + str(version), 'version': 1, 'schema': 28, 'status': 'failed_scope_sealed',
         'observed_run_status': 'failed', 'phase': 'discovery', 'scope': str(scope['root']), 'tool': str(scope['tool']),
-        'captured_at': at(12 if version == 2 else 27), 'cleanup': 'not_required', 'restoration': 'not_required', 'cleanup_needed': False, 'cleanup_performed': False,
+        'captured_at': at({2: 12, 3: 27, 4: 42}[version]), 'cleanup': 'not_required', 'restoration': 'not_required', 'cleanup_needed': False, 'cleanup_performed': False,
         'automatic_retry': False, 'client_acceptance': False, 'full_m3_complete': False, 'library_changed_client_acceptance': False,
         'sql_business_writes': False, 'http_requests': 0, 'service_writes': 0, 'reserved_native_intents': [], 'dispatched_native_intents': [],
         'candidate_preserved': True, 'current_matches_prior_after': True, 'exact_owned_additions_retained': True, 'media_preserved': True,
@@ -764,8 +766,13 @@ def prior_terminal_fixture(value, version=2):
         terminal.update(baseline_chain_verified=True, old_v2_scope_preserved=True, prior_baseline=copy.deepcopy(CONTROLLER.PRIOR_INDEPENDENT),
             prior_failure_preservation=copy.deepcopy(controller['prior_failure_preservation']),
             cumulative_totals={'activity_entries': 171, 'devices': 66, 'sessions': 77}, **copy.deepcopy(CONTROLLER.HISTORY_V3_PREDECESSORS))
+    elif version == 4:
+        terminal.update(baseline_chain_verified=True, old_v2_scope_preserved=True, old_v3_scope_preserved=True,
+            predecessor_units_preserved=True, prior_baseline=copy.deepcopy(CONTROLLER.HISTORY_V3_INDEPENDENT),
+            history_preservation=copy.deepcopy(controller['history_preservation']), discovery_screenshot_bytes=38695,
+            cumulative_totals={'activity_entries': 173, 'devices': 67, 'sessions': 78}, **copy.deepcopy(CONTROLLER.HISTORY_V4_PREDECESSORS))
     independent = copy.deepcopy(value['after'])
-    independent['database']['metadata']['captured_at'] = at(11 if version == 2 else 26)
+    independent['database']['metadata']['captured_at'] = at({2: 11, 3: 26, 4: 41}[version])
     return terminal, independent
 
 
@@ -819,14 +826,62 @@ def history_documents_fixture():
     actor = second['browser']['actor']
     actor['token_fingerprint'] = actor['proxy_logout']['token_fingerprint'] = actor['session_proof']['entries'][0]['token_fingerprint'] = proof['token_sha256']
     terminal3, independent3 = prior_terminal_fixture(second, 3)
+    third = copy.deepcopy(second)
+    third['version'] = 4
+    third['authority'] = CONTROLLER.history_entry_authority(authority, authority['history'][2])
+    third['baseline'] = copy.deepcopy(second['after'])
+    third['before'] = copy.deepcopy(second['after'])
+    third['before']['database']['metadata']['captured_at'] = at(30)
+    third['after'] = copy.deepcopy(third['before'])
+    third['after']['database']['metadata']['captured_at'] = at(40)
+    rows, sequences = third['after']['database']['tables'], third['after']['database']['sequences']
+    proof = dict(ordinary_proof(), session_id='bd' * 16, token_sha256=hashlib.sha256(b'third synthetic closed session').hexdigest(),
+                 device_id='third-synthetic-browser', created_at=at(31))
+    device_id = sequences['devices_id_seq']['last_value'] + 1
+    session = session_row(proof['session_id'], CONTROLLER.B, proof['token_sha256'], 'emby', 31,
+                          device_id=proof['device_id'], device_registry_id=device_id)
+    session.update(last_seen_at=at(38), revoked_at=at(39), client_capabilities={'PlayableMediaTypes': ['Video']})
+    rows['sessions'].append(session)
+    rows['devices'].append(dict(rows['devices'][-1], id=device_id, reported_device_id=proof['device_id'], created_at=at(30.5), last_seen_at=at(38)))
+    next_audit = sequences['activity_entries_id_seq']['last_value'] + 1
+    for offset, action, moment in ((0, 'session.login', 31), (1, 'session.revoked', 39)):
+        rows['activity_entries'].append(audit_row(next_audit + offset, action, CONTROLLER.B, proof['session_id'],
+            'session', proof['session_id'], moment, source='emby'))
+    sequences['devices_id_seq'] = {'last_value': device_id, 'is_called': True}
+    sequences['activity_entries_id_seq'] = {'last_value': next_audit + 1, 'is_called': True}
+    scope, flat = CONTROLLER.history_scope(4), third['authority']
+    original_authority = {**{key: flat[key] for key in CONTROLLER.UPGRADE_AUTHORITY_KEYS}, 'history': copy.deepcopy(authority['history'][:2])}
+    input_authority = dict(original_authority, before_snapshot=flat['prior_before_snapshot'])
+    sources = {str(scope['tool'] / name): hashlib.sha256(('v4-' + name).encode()).hexdigest() for name in CONTROLLER.JS_NAMES}
+    outer = dict(third['controller']['controller'], pid=310059, start_ticks='210059', unit=scope['controller'])
+    worker = dict(third['controller']['node_process'], pid=310060, start_ticks='210060', cgroup='/system.slice/' + scope['worker'])
+    source_sha = CONTROLLER.sha(CONTROLLER.canonical(sources))
+    third['prior_input'].update(root=str(scope['root']), output=str(scope['root'] / 'browser'), authority=input_authority,
+                                 source_closure=sources, controller=outer)
+    third['prior_input']['actor']['credentials']['path'] = str(scope['root'] / 'viewer-credentials.json')
+    third['controller'].update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=original_authority,
+        controller=outer, node_process=worker, history_preservation=[{'version': version, 'ledger': copy.deepcopy(first['controller']['ledger']),
+            'after_snapshot': CONTROLLER.history_scope(version)['pins']['after_snapshot'],
+            'independent_snapshot': CONTROLLER.history_seal(version)['independent']} for version in (2, 3)])
+    third['controller'].pop('prior_failure_preservation')
+    for name, key in (('input.json', 'prior_input'), ('browser-report.json', 'prior_browser_report'),
+                       ('before-full.json', 'prior_before_snapshot'), ('after-full.json', 'prior_after_snapshot')):
+        third['controller']['evidence'][name] = flat[key]
+    third['browser'].update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=input_authority,
+        controller=outer, node_process=worker, login_proof=proof)
+    third['browser']['capabilities_private']['path'] = str(scope['root'] / 'browser/capabilities-private.json')
+    third['controller']['evidence']['browser-capabilities-private.json']['path'] = third['browser']['capabilities_private']['path']
+    actor = third['browser']['actor']
+    actor['token_fingerprint'] = actor['proxy_logout']['token_fingerprint'] = actor['session_proof']['entries'][0]['token_fingerprint'] = proof['token_sha256']
+    terminal4, independent4 = prior_terminal_fixture(third, 4)
     def bundle(value, terminal, independent):
         return {'input': value['prior_input'], 'browser_report': value['browser'], 'controller_report': value['controller'],
                 'terminal': terminal, 'before_snapshot': value['before'], 'after_snapshot': value['after'], 'independent_snapshot': independent}
-    return authority, first['baseline'], [bundle(first, terminal2, independent2), bundle(second, terminal3, independent3)]
+    return authority, first['baseline'], [bundle(first, terminal2, independent2), bundle(second, terminal3, independent3), bundle(third, terminal4, independent4)]
 
 
 class Source55OrderedHistoryGuards(GuardTestCase):
-    def test_only_two_ordered_original_history_formats_are_admitted(self):
+    def test_only_three_ordered_original_history_formats_are_admitted(self):
         value = authority_fixture()
         CONTROLLER.validate_authority_input(value)
         for history in ([], list(reversed(value['authority']['history'])), [value['authority']['history'][0]] * 2,
@@ -836,15 +891,15 @@ class Source55OrderedHistoryGuards(GuardTestCase):
             with self.subTest(length=len(history)):
                 self.reject(lambda: CONTROLLER.validate_authority_input(changed))
 
-    def test_two_complete_failed_ledgers_preserve_the_upgrade_and_all_closed_sessions(self):
+    def test_three_complete_failed_ledgers_preserve_the_upgrade_and_all_closed_sessions(self):
         authority, upgraded, documents = history_documents_fixture()
         original = copy.deepcopy((authority, upgraded, documents))
         after, independent, results = CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded)
-        self.assertEqual([value['version'] for value in results], [2, 3])
+        self.assertEqual([value['version'] for value in results], [2, 3, 4])
         self.assertTrue(all(value['ledger']['new_sessions'] == 1 and value['ledger']['metadata_revision_delta'] == 0 for value in results))
         self.assertEqual((authority, upgraded, documents), original)
         fresh = copy.deepcopy(independent)
-        fresh['database']['metadata']['captured_at'] = at(28)
+        fresh['database']['metadata']['captured_at'] = at(43)
         CONTROLLER.compare_fixed_snapshot(after, fresh)
         CONTROLLER.compare_fixed_snapshot(independent, fresh)
         self.reject(lambda: CONTROLLER.compare_fixed_snapshot(upgraded, fresh))
@@ -941,10 +996,10 @@ class Source55PriorFailureGuards(GuardTestCase):
 
 class Source55AuthorityGuards(GuardTestCase):
     def test_cli_requires_the_exact_authority_and_new_driver_paths(self):
-        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-04")
-        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v4")
-        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v4.service")
-        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v4.service")
+        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-05")
+        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v5")
+        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v5.service")
+        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v5.service")
         values = ["--script-sha256", "12" * 32, "--driver", str(CONTROLLER.TOOL / CONTROLLER.JS_NAMES[0]),
             "--source-closure", str(CONTROLLER.TOOL / "sources.json"), "--source-closure-sha256", "23" * 32,
             "--authority", str(CONTROLLER.TOOL / "authority.json"), "--authority-sha256", "34" * 32,
@@ -954,7 +1009,7 @@ class Source55AuthorityGuards(GuardTestCase):
         changed = list(values)
         changed[changed.index("--authority") + 1] = str(CONTROLLER.WORK / "authority.json")
         self.reject(lambda: CONTROLLER.arguments(changed))
-        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-03"
+        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-04"
         for option, name in (("--driver", CONTROLLER.JS_NAMES[0]), ("--authority", "authority.json"), ("--source-closure", "sources.json")):
             changed = list(values)
             changed[changed.index(option) + 1] = str(previous_tool / name)
@@ -1328,7 +1383,7 @@ class LedgerAndRestorationGuards(GuardTestCase):
         self.assertEqual(CONTROLLER.classify_metadata(document, fixture["after"], fixture["profile"], fixture["reservation"], NATIVE_SESSION), "foreign")
 
 
-PAGE_ROUTE = "/synthetic-movies-list"
+PAGE_ROUTE = '/web/index.html#!/videos?parentId=' + CONTROLLER.LIBRARY + '&serverId=' + CONTROLLER.SERVER
 DOCUMENT = "synthetic-document-1"
 CONNECTION = "synthetic-socket-1"
 CHILD = {"pid": 2002, "start_ticks": 10002, "boot_id": "a" * 32}
@@ -1351,24 +1406,34 @@ def private_fixture(input_record, input_sha=INPUT_SHA):
         "controller": copy.deepcopy(input_record["controller"]), "proof": ordinary_proof(), "token": TOKEN}
 
 
-def dom_fixture(name, passed=True):
-    return {"target_id": CONTROLLER.ITEM, "expected_name": name, "media_inactive": True, "route": PAGE_ROUTE,
+def dom_fixture(name, passed=True, wire=None, phase='discovery', message_id=None, started=250):
+    wire = wire or read_fixture(name, start=100, request_sequence=1, phase='discovery')
+    physical, frame = wire['physical'], wire['frame']
+    proof = {'phase': phase, 'physical_exchange_id': physical['id'], 'frame_request_index': frame['index'],
+        'body_sha256': physical['projection']['body_sha256'], 'shape_sha256': physical['shape_sha256'],
+        'request_sha256': physical['request_sha256'], 'token_sha256': TOKEN_SHA, 'message_id': message_id}
+    return {"target_id": CONTROLLER.ITEM if passed else None, "expected_name": name, "media_inactive": True, "route": PAGE_ROUTE,
         "document_id": DOCUMENT, "passed": passed, "identity_proven": passed, "visible_target_cards": 1,
-        "target_title_count": int(passed), "forbidden_title_count": int(not passed)}
+        "target_title_count": int(passed), "forbidden_title_count": int(not passed), 'started_elapsed_ms': started,
+        'visible_items_containers': 1, 'visible_cards': 1, 'visible_title_buttons': 1, 'explicit_identity_consistent': True,
+        'observed_title': name if passed else 'Earlier title', 'selector': '.itemsContainer .card',
+        'identity_mode': 'singleton-movie-list-wire-and-card' if passed else 'unbound', 'wire_identity': proof if passed else None}
 
 
-def read_fixture(name, start=22120, request_sequence=14, identifier=1, index=0):
-    query = [["ParentId", CONTROLLER.LIBRARY]]
+def read_fixture(name, start=22120, request_sequence=14, identifier=1, index=0, phase='discovery'):
+    query = [['IncludeItemTypes', 'Movie'], ['Limit', '50'], ["ParentId", CONTROLLER.LIBRARY], ['Recursive', 'true'], ['StartIndex', '0']]
     route = "/Users/" + CONTROLLER.B + "/Items"
     shape = digest([route, query])
     target = {"Id": CONTROLLER.ITEM, "Name": name, "Type": "Movie"}
     body = CONTROLLER.canonical({"Items": [target], "TotalRecordCount": 1})
     transfer = {"id": identifier, "kind": "items", "route": route, "query": query, "shape_sha256": shape,
+        'phase': phase, 'method': 'GET', 'terminal': 'completed',
         "token_sha256": TOKEN_SHA, "request_sha256": "1" * 64, "completed": True, "status": 200,
         "request_sequence": request_sequence,
         "terminal_status": 200, "request_elapsed_ms": start + 10, "finished_elapsed_ms": start + 80,
         "projection": {"target": target, "count": 1, "body_sha256": CONTROLLER.sha(body), "body_bytes": len(body)}}
     frame = {"index": index, "token_sha256": TOKEN_SHA, "request_sha256": "1" * 64, "shape_sha256": shape,
+        'phase': phase, 'kind': 'items', 'route': route,
         "finished": True, "failed": False, "status": 200, "content_type": "application/json",
         "from_service_worker": False, "source": "page", "main_frame": True, "request_sequence": request_sequence,
         "request_elapsed_ms": start, "finished_elapsed_ms": start + 100, "document_id": DOCUMENT, "page_route": PAGE_ROUTE}
@@ -1410,11 +1475,12 @@ def window_fixture(name="forward", commit=None, control_sha="2" * 64):
         "token_sha256": TOKEN_SHA, "complete": True, "received": True, "forwarded": True, "message": message}
     received = dict(upstream, sequence=sequence + 3, elapsed_ms=start + 110, document_id=DOCUMENT, route=PAGE_ROUTE)
     pair = read_fixture(expected, start=start + 120, request_sequence=sequence + 4,
-                        identifier=1 if name == "forward" else 2)
+                        identifier=1 if name == "forward" else 2, phase=name)
     samples = [{"sequence": sequence + 1, "started_elapsed_ms": start, "elapsed_ms": start + 10,
-                "observation": dom_fixture(expected, False)}]
+                "observation": dom_fixture(expected, False, started=start)}]
     samples.extend({"sequence": sequence + 20 + index, "started_elapsed_ms": moment, "elapsed_ms": moment + 10,
-        "observation": dom_fixture(expected)} for index, moment in enumerate(range(start + 500, start + 120001, 500)))
+        "observation": dom_fixture(expected, wire=pair, phase=name, message_id=message['MessageId'], started=moment)}
+        for index, moment in enumerate(range(start + 500, start + 120001, 500)))
     return {"name": name, "control_sha256": control_sha, "boundary": boundary,
         "commit": commit or {"revision": "2" if name == "forward" else "3", "write_completed_at": at(12),
                              "native_result_sha256": "3" * 64, "readback_sha256": "4" * 64},
@@ -1432,7 +1498,7 @@ def stage_observation(name, input_record, control=None):
     if name == "discovery":
         pair = read_fixture(original_name, start=100, request_sequence=1)
         collection = collection_folder_fixture()
-        return {"home": {"passed": True}, "dom": dom_fixture(original_name), "reads": [pair],
+        return {"home": {"passed": True}, "dom": dom_fixture(original_name, wire=pair), "reads": [pair],
             "collection_folder_reads": [collection],
             "collection_folder": {"id": CONTROLLER.LIBRARY, "type": "CollectionFolder", "subviews": ["movies", "movies", "folders"],
                 "physical_exchange_id": collection["physical"]["id"], "frame_request_index": collection["frame"]["index"], "passed": True},
@@ -1441,10 +1507,11 @@ def stage_observation(name, input_record, control=None):
             "socket": {"token_sha256": TOKEN_SHA, "connection_id": CONNECTION, "opened": 1, "seen": 1}}
     if name == "armed":
         samples = [{"sequence": index, "started_elapsed_ms": moment, "elapsed_ms": moment + 10,
-            "observation": dom_fixture(original_name)} for index, moment in enumerate(range(1000, 21000, 1000), 1)]
+            "observation": dom_fixture(original_name, started=moment)} for index, moment in enumerate(range(1000, 21000, 1000), 1)]
         return {"boundary": boundary_fixture(), "quiet": {"passed": True, "duration_ms": 20000, "catalog_requests": 0,
-            "library_changed_messages": 0, "started_elapsed_ms": 0, "completed_elapsed_ms": 20000,
-            "samples": samples[:-1] + [dict(samples[-1], started_elapsed_ms=19900, elapsed_ms=20000)]}}
+            "library_changed_messages": 0, "started_elapsed_ms": 1000, "completed_elapsed_ms": 21000,
+            "samples": samples[:-1] + [dict(samples[-1], started_elapsed_ms=20900, elapsed_ms=21000,
+                observation=dom_fixture(original_name, started=20900))]}}
     window_name = "forward" if name == "restore-armed" else "restored"
     window = window_fixture(window_name, commit=copy.deepcopy(control["value"]["commit"]) if control else None,
                             control_sha=control["sha256"] if control else "2" * 64)
@@ -1498,7 +1565,7 @@ class LoginAndStageGuards(GuardTestCase):
         for key in ("kind", "route", "shape_sha256"):
             window["http"]["frames"][0][key] = copy.deepcopy(collection["frame"][key])
         reservation = reservation_fixture(profile_fixture(baseline_snapshot()))["public"]
-        self.assertNotEqual(CONTROLLER.window_evidence(window, value, reservation)["result"], "passed")
+        self.assertNotEqual(CONTROLLER.window_evidence(window, value, reservation, stage_observation("discovery", value))["result"], "passed")
 
     def test_one_browser_login_and_private_token_require_exact_new_process_and_rows(self):
         fixture = ledger_fixture("original", False)
@@ -1519,12 +1586,12 @@ class LoginAndStageGuards(GuardTestCase):
         value = input_fixture()
         for name in CONTROLLER.STAGES:
             stage = stage_fixture(name, value, previous="6" * 64)
-            self.assertEqual(CONTROLLER.validate_stage(stage, value, INPUT_SHA, CHILD, name, "6" * 64, ordinary_proof()), stage["observation"])
+            self.assertEqual(CONTROLLER.validate_stage(stage, value, INPUT_SHA, CHILD, name, "6" * 64, ordinary_proof(), stage_observation("discovery", value)), stage["observation"])
             for key, replacement in (("version", True), ("input_sha256", "0" * 64), ("token_sha256", NATIVE_TOKEN_SHA),
                                      ("previous_control_sha256", None), ("node_process", dict(CHILD, pid=3000))):
                 changed = copy.deepcopy(stage)
                 changed[key] = replacement
-                self.reject(lambda: CONTROLLER.validate_stage(changed, value, INPUT_SHA, CHILD, name, "6" * 64, ordinary_proof()))
+                self.reject(lambda: CONTROLLER.validate_stage(changed, value, INPUT_SHA, CHILD, name, "6" * 64, ordinary_proof(), stage_observation("discovery", value)))
         manifest = {"marker": "goby-client-library-changed-sources-v1", "files": value["source_closure"]}
         self.assertEqual(CONTROLLER.validate_source_manifest(manifest, CONTROLLER.TOOL / CONTROLLER.JS_NAMES[0]), value["source_closure"])
         manifest["files"] = dict(manifest["files"], **{str(CONTROLLER.TOOL / "extra.py"): "8" * 64})
@@ -1541,7 +1608,102 @@ class LoginAndStageGuards(GuardTestCase):
                                  ("samples", []), ("completed_elapsed_ms", 19000)):
             changed = stage_fixture("armed", value)
             changed["observation"]["quiet"][key] = replacement
-            self.reject(lambda: CONTROLLER.validate_stage(changed, value, INPUT_SHA, CHILD, "armed", None, ordinary_proof()))
+            self.reject(lambda: CONTROLLER.validate_stage(changed, value, INPUT_SHA, CHILD, "armed", None, ordinary_proof(), stage_observation("discovery", value)))
+
+
+class SingletonWireCardGuards(GuardTestCase):
+    def test_movies_identity_rejects_a_consistently_relabelled_detail_or_duplicate_parent_route(self):
+        input_record = input_fixture()
+        for route in (PAGE_ROUTE.replace('!/videos', '!/item'), PAGE_ROUTE + '&ParentId=' + CONTROLLER.LIBRARY,
+                      PAGE_ROUTE.replace(CONTROLLER.SERVER, 'f0' * 16)):
+            discovery = stage_observation('discovery', input_record)
+            discovery['dom']['route'] = discovery['navigation']['after_route'] = route
+            for pair in discovery['reads']:
+                pair['frame']['page_route'] = route
+            with self.subTest(route=route):
+                self.reject(lambda: CONTROLLER.discovery_identity(discovery, input_record, TOKEN_SHA))
+
+    def test_discovery_wire_must_start_after_the_actual_navigation_boundary(self):
+        input_record = input_fixture()
+        for side in ('physical', 'frame'):
+            discovery = stage_observation('discovery', input_record)
+            discovery['reads'][0][side]['request_sequence'] = discovery['navigation']['before_sequence']
+            with self.subTest(side=side):
+                self.reject(lambda: CONTROLLER.discovery_identity(discovery, input_record, TOKEN_SHA))
+
+    def test_preflight_singleton_is_scoped_to_the_owned_movie_library(self):
+        snapshot = baseline_snapshot()
+        for row in snapshot['database']['tables']['items']:
+            if row['id'] not in (CONTROLLER.ITEM, CONTROLLER.LIBRARY):
+                row['library_id'] = format(2000, '032x')
+        profile = profile_fixture(snapshot)
+        CONTROLLER.validate_singleton_movie(snapshot, profile)
+        snapshot['database']['tables']['items'][-1]['name'] = profile['item']['name']
+        CONTROLLER.validate_singleton_movie(snapshot, profile)
+        snapshot['database']['tables']['items'][-1]['library_id'] = CONTROLLER.LIBRARY
+        self.reject(lambda: CONTROLLER.validate_singleton_movie(snapshot, profile))
+
+    def test_dom_proof_recomputes_wire_ids_hashes_phase_and_unique_visible_card(self):
+        input_record = input_fixture()
+        discovery = stage_observation('discovery', input_record)
+        CONTROLLER.discovery_identity(discovery, input_record, TOKEN_SHA)
+        for field, value in (('physical_exchange_id', 999), ('frame_request_index', 999), ('body_sha256', 'f0' * 32),
+                             ('shape_sha256', 'f0' * 32), ('request_sha256', 'f0' * 32), ('phase', 'restored'), ('message_id', 'other')):
+            changed = copy.deepcopy(discovery)
+            changed['dom']['wire_identity'][field] = value
+            with self.subTest(wire_field=field):
+                self.reject(lambda: CONTROLLER.discovery_identity(changed, input_record, TOKEN_SHA))
+        for field, value in (('visible_items_containers', 2), ('visible_cards', 2), ('visible_title_buttons', 2),
+                             ('target_title_count', 2), ('explicit_identity_consistent', False), ('observed_title', 'Wrong title'),
+                             ('started_elapsed_ms', 99)):
+            changed = copy.deepcopy(discovery)
+            changed['dom'][field] = value
+            with self.subTest(dom_field=field):
+                self.reject(lambda: CONTROLLER.discovery_identity(changed, input_record, TOKEN_SHA))
+
+    def test_discovery_rejects_ids_subset_wrong_phase_and_more_than_one_response_item(self):
+        for mutation in ('ids-subset', 'wrong-phase', 'multiple-items'):
+            input_record = input_fixture()
+            discovery = stage_observation('discovery', input_record)
+            pair = discovery['reads'][0]
+            if mutation == 'ids-subset':
+                pair['physical']['query'] = [['Ids', CONTROLLER.ITEM]]
+                pair['physical']['shape_sha256'] = digest([pair['physical']['route'], pair['physical']['query']])
+                pair['frame']['shape_sha256'] = pair['physical']['shape_sha256']
+            elif mutation == 'wrong-phase':
+                pair['physical']['phase'] = pair['frame']['phase'] = 'restored'
+            else:
+                pair['physical']['projection']['count'] = 2
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.discovery_identity(discovery, input_record, TOKEN_SHA))
+
+    def test_restoration_samples_cannot_reuse_discovery_or_previous_window_identity(self):
+        input_record = input_fixture()
+        discovery = stage_observation('discovery', input_record)
+        reservation = reservation_fixture(profile_fixture(baseline_snapshot()))['public']
+        for proof in (discovery['dom']['wire_identity'], window_fixture('forward')['dom'][1]['observation']['wire_identity']):
+            window = window_fixture('restored')
+            for sample in window['dom'][1:]:
+                sample['observation']['wire_identity'] = copy.deepcopy(proof)
+            result = CONTROLLER.window_evidence(window, input_record, reservation, discovery)
+            self.assertNotEqual(result['result'], 'passed')
+
+    def test_window_keeps_exact_target_get_after_its_own_message(self):
+        input_record = input_fixture()
+        discovery = stage_observation('discovery', input_record)
+        reservation = reservation_fixture(profile_fixture(baseline_snapshot()))['public']
+        window = window_fixture('forward')
+        pair = window['http']['pairs'][0]
+        route = '/Users/' + CONTROLLER.B + '/Items/' + CONTROLLER.ITEM
+        physical, frame = pair['physical'], pair['frame']
+        physical.update(kind='target', route=route, query=[], shape_sha256=digest([route, []]))
+        frame.update(kind='target', route=route, shape_sha256=physical['shape_sha256'])
+        raw = CONTROLLER.canonical(physical['projection']['target'])
+        physical['projection'].update(body_sha256=CONTROLLER.sha(raw), body_bytes=len(raw))
+        for sample in window['dom'][1:]:
+            sample['observation'] = dom_fixture(reservation['marker_name'], wire=pair, phase='forward',
+                message_id=window['events']['browser'][0]['message']['MessageId'], started=sample['started_elapsed_ms'])
+        self.assertEqual(CONTROLLER.window_evidence(window, input_record, reservation, discovery)['result'], 'passed')
 
 
 class WindowAndIntentGuards(GuardTestCase):
@@ -1549,7 +1711,7 @@ class WindowAndIntentGuards(GuardTestCase):
         reservation = reservation_fixture(profile_fixture(baseline_snapshot()))["public"]
         for name in ("forward", "restored"):
             window = window_fixture(name)
-            result = CONTROLLER.window_evidence(window, input_fixture(), reservation)
+            result = CONTROLLER.window_evidence(window, input_fixture(), reservation, stage_observation("discovery", input_fixture()))
             self.assertEqual(result, {key: window[key] for key in ("result", "outcome", "proof")})
             self.assertLess(window["events"]["browser"][0]["elapsed_ms"], window["boundary"]["response_completed_elapsed_ms"])
 
@@ -1581,9 +1743,18 @@ class WindowAndIntentGuards(GuardTestCase):
             elif layer == "http":
                 window["http"]["frames"][0]["request_sequence"] = window["events"]["browser"][0]["sequence"]
             else:
-                window["dom"][-1]["observation"]["passed"] = False
-            self.assertEqual(CONTROLLER.window_evidence(window, input_fixture(), reservation),
+                sample = window["dom"][-1]
+                sample["observation"] = dom_fixture(sample["observation"]["expected_name"], passed=False,
+                    started=sample["started_elapsed_ms"])
+            self.assertEqual(CONTROLLER.window_evidence(window, input_fixture(), reservation, stage_observation("discovery", input_fixture())),
                              {"result": "not_observed_within_window", "outcome": outcome, "proof": None})
+
+    def test_bound_dom_with_false_passed_is_rejected(self):
+        reservation = reservation_fixture(profile_fixture(baseline_snapshot()))["public"]
+        window = window_fixture()
+        window["dom"][-1]["observation"]["passed"] = False
+        self.reject(lambda: CONTROLLER.window_evidence(window, input_fixture(), reservation,
+            stage_observation("discovery", input_fixture())))
 
     def test_full_window_rejects_intervention_wrong_public_payload_gaps_and_short_duration(self):
         reservation = reservation_fixture(profile_fixture(baseline_snapshot()))["public"]
@@ -1595,7 +1766,7 @@ class WindowAndIntentGuards(GuardTestCase):
                        lambda w: w["http"]["pairs"][0].update(complete=False)):
             window = window_fixture()
             change(window)
-            self.reject(lambda: CONTROLLER.window_evidence(window, input_fixture(), reservation))
+            self.reject(lambda: CONTROLLER.window_evidence(window, input_fixture(), reservation, stage_observation("discovery", input_fixture())))
 
     def test_native_intents_bind_methods_routes_order_and_never_replay(self):
         fence = CONTROLLER.NativeFence()

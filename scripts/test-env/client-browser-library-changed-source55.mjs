@@ -14,10 +14,10 @@ import { loadLibraryChangedSource55Fixture, readLibraryChangedSource55Snapshot,
   libraryChangedSetupDiagnostic } from './client-library-changed-source55-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v4';
+export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v5';
 export const CHANGED_OUTPUT = CHANGED_ROOT + '/browser';
-export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v4.service';
-export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v4.service';
+export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v5.service';
+export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v5.service';
 const ROOT = CHANGED_ROOT, OUTPUT = CHANGED_OUTPUT;
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
@@ -134,8 +134,11 @@ export function validateLibraryChangedInput(input) {
       '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc'],
     ['eab8c899d06b525271afec345d4137b3e0adec70bb5e8ecf911fdf4dae7e9f6e', '9360e3b5c60b16f714b80b2da3f1f7a31d58313e196abee99dfbb4f8e3bc9d1f',
       'e9b931c568c98e4438917d8c204922267b0931a2de4c9f6bba40f2155c196fb4', 'e53e9777337c8c0b33a0cc86dad2e22c79d5e7f2601aa64dd68c6ed91cd9ecf1',
-      '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'] ];
-  need(Array.isArray(input.authority.history) && input.authority.history.length === 2);
+      '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'],
+    ['963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d', 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4',
+      '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88', '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012',
+      'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'] ];
+  need(Array.isArray(input.authority.history) && input.authority.history.length === 3);
   input.authority.history.forEach((entry, index) => {
     const version = index + 2, historicalRoot = WORK + '/client-library-changed-ui-source55-v' + version;
     need(exact(entry, ['version', ...historyKeys]) && entry.version === version);
@@ -149,7 +152,7 @@ export function validateLibraryChangedInput(input) {
   need(record(input.source_closure) && Object.keys(input.source_closure).length === SOURCES.length &&
     Object.entries(input.source_closure).every(([filename, hash]) => descriptor({ path: filename, sha256: hash })));
   const scripts = Object.keys(input.source_closure).filter(filename => filename.endsWith('.mjs'));
-  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-04/' + name).sort()));
+  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-05/' + name).sort()));
   return input;
 }
 
@@ -172,10 +175,14 @@ export function validateLibraryChangedBaseline(input, before, current) {
   need(same(captured(before), captured(current)) && instant(first.metadata.captured_at) > instant(previous.metadata.captured_at));
   const tables = first.tables;
   need(Object.keys(tables).length === 35 && Object.values(tables).every(Array.isArray) && Object.keys(first.sequences).length === 5 &&
-    tables.sessions.length === 77 && tables.devices.length === 66 &&
-    tables.activity_entries.length === 171 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
+    tables.sessions.length === 78 && tables.devices.length === 67 &&
+    tables.activity_entries.length === 173 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
     tables.libraries.length === 4 && tables.items.length === 22 && tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0);
   const user = tables.users.find(row => row.id === USER), target = tables.items.find(row => row.id === ITEM);
+  const scopedMovies = tables.items.filter(row => row.library_id === LIBRARY && row.type === 'Movie' && row.is_folder === false);
+  need(scopedMovies.length === 1 && scopedMovies[0].id === ITEM &&
+    tables.items.filter(row => row.library_id === LIBRARY && row.name === input.target.name).length === 1,
+  'library_changed_singleton_scope_required');
   need(user && user.is_disabled === false && user.is_administrator === false && user.management_revision === 5 && target &&
     target.library_id === LIBRARY && target.name === input.target.name && target.type === 'Movie' && target.is_folder === false &&
     target.parent_id === input.target.parent_id && target.root_id === input.target.root_id && target.relative_path === input.target.relative_path &&
@@ -404,10 +411,102 @@ export function pairLibraryChangedReads(physical, frames) {
   });
 }
 
+export function libraryChangedFullMovieQuery(transfer) {
+  if (transfer?.kind !== 'items' || !Array.isArray(transfer.query)) return false;
+  const query = {};
+  for (const entry of transfer.query) {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== 'string' || typeof entry[1] !== 'string') return false;
+    const key = entry[0].toLowerCase(); if (Object.hasOwn(query, key)) return false; query[key] = entry[1];
+  }
+  return query.parentid === LIBRARY && query.includeitemtypes === 'Movie' && query.recursive === 'true' &&
+    query.startindex === '0' && query.limit === '50' && query.ids === undefined;
+}
+
+function libraryChangedMoviesRoute(route) {
+  try {
+    const url = new URL(ORIGIN + route); if (libraryChangedRoute(url.href) !== route || url.hash.split('?')[0] !== '#!/videos') return false;
+    const values = [...new URLSearchParams(url.hash.split('?').slice(1).join('?'))];
+    const parents = values.filter(([key]) => key.toLowerCase() === 'parentid'), servers = values.filter(([key]) => key.toLowerCase() === 'serverid');
+    return parents.length === 1 && parents[0][1] === LIBRARY && servers.length <= 1 && (!servers.length || servers[0][1] === SERVER);
+  } catch { return false; }
+}
+
+export function libraryChangedIdentityMessage(boundary, events) {
+  if (!boundary || !events || events.browser?.length !== 1 || events.physical?.length !== 1) return null;
+  const browser = events.browser[0], physical = events.physical[0];
+  const inside = value => value.sequence > boundary.started_sequence && value.elapsed_ms >= boundary.started_elapsed_ms &&
+    value.token_sha256 === boundary.token_sha256 && value.connection_id === boundary.connection_id && value.complete === true && value.received === true;
+  if (!inside(browser) || !inside(physical) || physical.forwarded !== true || !same(browser.message, physical.message) ||
+    physical.elapsed_ms > browser.elapsed_ms || browser.route !== boundary.route || browser.document_id !== boundary.document_id ||
+    browser.message?.MessageType !== 'LibraryChanged' || !safeText(browser.message.MessageId, 256)) return null;
+  const message = browser.message;
+  if (!exact(message.Data, [...ARRAYS, 'IsEmpty']) || message.Data.IsEmpty !== false ||
+    !ARRAYS.every(key => same(message.Data[key], key === 'ItemsUpdated' ? [ITEM] : [])) || !SHA.test(message.body_sha256) ||
+    !SHA.test(message.projection_sha256) || !Number.isSafeInteger(message.body_bytes) || message.body_bytes <= 0 ||
+    message.body_bytes > CHANGED_LIMITS.message_bytes || message.projection_sha256 !== sha(JSON.stringify(ordered({
+      MessageType: message.MessageType, MessageId: message.MessageId, Data: message.Data })))) return null;
+  return browser;
+}
+
+/** Bind a raw visible card only to a completed same-phase wire response and a proved library anchor. */
+export function bindLibraryChangedDOM(raw, context) {
+  const result = { ...clone(raw), target_id: null, identity_mode: 'unbound', wire_identity: null, identity_proven: false, passed: false };
+  if (!record(raw) || !['discovery', 'forward', 'restored'].includes(context?.phase) || !libraryChangedMoviesRoute(raw.route) ||
+    !safeText(raw.document_id, 80) || !safeText(raw.expected_name, 256) ||
+    raw.visible_items_containers !== 1 || raw.visible_cards !== 1 || raw.visible_target_cards !== 1 || raw.visible_title_buttons !== 1 ||
+    raw.target_title_count !== 1 || raw.forbidden_title_count !== 0 || raw.explicit_identity_consistent !== true || raw.media_inactive !== true ||
+    raw.observed_title !== raw.expected_name || !Number.isFinite(raw.started_elapsed_ms) || raw.started_elapsed_ms < 0 || !SHA.test(context.token_sha256)) return result;
+  let afterSequence = context.after_sequence, afterElapsed = 0, messageID = null;
+  if (context.phase !== 'discovery') {
+    const anchor = context.discovery;
+    if (!anchor?.dom?.passed || anchor.dom.identity_mode !== 'singleton-movie-list-wire-and-card' ||
+      anchor.dom.route !== raw.route || anchor.dom.document_id !== raw.document_id || anchor.socket?.token_sha256 !== context.token_sha256) return result;
+    if (context.boundary?.name !== context.phase || context.boundary.token_sha256 !== context.token_sha256 ||
+      context.boundary.route !== raw.route || context.boundary.document_id !== raw.document_id) return result;
+    if (!Array.isArray(anchor.reads) || !anchor.reads.length || !anchor.reads.every(value => value?.physical && value?.frame) ||
+      !Array.isArray(anchor.query_allowlist) || !anchor.query_allowlist.length ||
+      !anchor.query_allowlist.every(value => anchor.reads.some(pair => libraryChangedFullMovieQuery(pair.physical) &&
+        value.kind === 'items' && value.shape_sha256 === pair.physical.shape_sha256 && value.route === pair.physical.route && same(value.query, pair.physical.query)))) return result;
+    const rebound = bindLibraryChangedDOM(anchor.dom, { phase: 'discovery', physical: anchor.reads.map(value => value.physical),
+      frames: anchor.reads.map(value => value.frame), token_sha256: context.token_sha256, after_sequence: anchor.navigation?.before_sequence });
+    if (!rebound.passed || !same(rebound.wire_identity, anchor.dom.wire_identity)) return result;
+    if (!anchor.reads.every(pair => bindLibraryChangedDOM(anchor.dom, { phase: 'discovery', physical: [pair.physical], frames: [pair.frame],
+      token_sha256: context.token_sha256, after_sequence: anchor.navigation.before_sequence }).passed)) return result;
+    const message = libraryChangedIdentityMessage(context.boundary, context.events); if (!message) return result;
+    afterSequence = message.sequence; afterElapsed = message.elapsed_ms; messageID = message.message.MessageId;
+  }
+  if (!Number.isSafeInteger(afterSequence) || afterSequence < 0) return result;
+  const pairs = pairLibraryChangedReads(context.physical, context.frames);
+  const selected = pairs.filter(pair => {
+    const transfer = pair.physical, frame = pair.frame, target = transfer?.projection?.target;
+    const fullItems = libraryChangedFullMovieQuery(transfer) && [`/Users/${USER}/Items`, '/Items'].includes(transfer.route) && (context.phase === 'discovery' ||
+      context.discovery.query_allowlist.some(value => value.kind === 'items' && value.shape_sha256 === transfer.shape_sha256));
+    const targetRead = context.phase !== 'discovery' && transfer?.kind === 'target' &&
+      [`/Users/${USER}/Items/${ITEM}`, `/Items/${ITEM}`].includes(transfer.route);
+    return pair.complete && (fullItems || targetRead) && transfer.method === 'GET' && transfer.terminal === 'completed' &&
+      frame.route === transfer.route && SHA.test(transfer.projection.body_sha256) &&
+      Number.isSafeInteger(transfer.projection.body_bytes) && transfer.projection.body_bytes > 0 && transfer.projection.body_bytes <= CHANGED_LIMITS.json_bytes &&
+      transfer.phase === context.phase && frame.phase === context.phase && transfer.projection.count === 1 &&
+      target?.Id === ITEM && target.Type === 'Movie' && target.Name === raw.observed_title &&
+      transfer.token_sha256 === context.token_sha256 && frame.token_sha256 === context.token_sha256 &&
+      frame.page_route === raw.route && frame.document_id === raw.document_id &&
+      frame.request_sequence > afterSequence && transfer.request_sequence > afterSequence &&
+      frame.request_elapsed_ms >= afterElapsed && transfer.request_elapsed_ms >= afterElapsed &&
+      frame.finished_elapsed_ms <= raw.started_elapsed_ms && transfer.finished_elapsed_ms <= raw.started_elapsed_ms;
+  }).sort((left, right) => left.frame.finished_elapsed_ms - right.frame.finished_elapsed_ms);
+  if (!selected.length) return result;
+  const pair = selected[0];
+  return { ...result, target_id: pair.physical.projection.target.Id, identity_mode: 'singleton-movie-list-wire-and-card',
+    wire_identity: { phase: context.phase, physical_exchange_id: pair.physical.id, frame_request_index: pair.frame.index,
+      body_sha256: pair.physical.projection.body_sha256, shape_sha256: pair.physical.shape_sha256,
+      request_sha256: pair.physical.request_sha256, token_sha256: pair.physical.token_sha256, message_id: messageID },
+    identity_proven: true, passed: true };
+}
+
 /** Prove Movies navigation from the actual completed CollectionFolder exchange. */
 export function libraryChangedNavigationEvidence(discovery, input) {
   need(input.target?.id === ITEM && input.target.library_id === LIBRARY && record(discovery) &&
-    discovery.dom?.passed === true && discovery.dom.target_id === ITEM &&
+    discovery.dom?.passed === true && discovery.dom.target_id === ITEM && discovery.dom.expected_name === input.target.name &&
     safeText(discovery.dom.route, 4096) && safeText(discovery.dom.document_id, 80) &&
     exact(discovery.navigation, ['before_route', 'after_route', 'before_sequence']) &&
     safeText(discovery.navigation.before_route, 4096) && discovery.navigation.after_route === discovery.dom.route &&
@@ -416,6 +515,14 @@ export function libraryChangedNavigationEvidence(discovery, input) {
     SHA.test(discovery.socket?.token_sha256) && Array.isArray(discovery.collection_folder_reads) &&
     discovery.collection_folder_reads.length > 0 && discovery.collection_folder_reads.length <= 8,
   'library_changed_collection_folder_not_proven');
+  need(Array.isArray(discovery.reads) && discovery.reads.length > 0 && discovery.reads.length <= 8 &&
+    discovery.reads.every(value => value?.physical && value?.frame), 'library_changed_singleton_anchor_missing');
+  const rebound = bindLibraryChangedDOM(discovery.dom, { phase: 'discovery', physical: discovery.reads.map(value => value.physical),
+    frames: discovery.reads.map(value => value.frame), token_sha256: discovery.socket.token_sha256,
+    after_sequence: discovery.navigation.before_sequence });
+  need(rebound.passed && same(rebound.wire_identity, discovery.dom.wire_identity), 'library_changed_singleton_anchor_missing');
+  need(discovery.reads.every(pair => bindLibraryChangedDOM(discovery.dom, { phase: 'discovery', physical: [pair.physical], frames: [pair.frame],
+    token_sha256: discovery.socket.token_sha256, after_sequence: discovery.navigation.before_sequence }).passed), 'library_changed_singleton_anchor_missing');
   const supplied = discovery.collection_folder_reads;
   need(supplied.every(pair => record(pair) && record(pair.physical) && record(pair.frame)));
   const pairs = pairLibraryChangedReads(supplied.map(pair => pair.physical), supplied.map(pair => pair.frame));
@@ -438,7 +545,7 @@ export function libraryChangedNavigationEvidence(discovery, input) {
 }
 
 /** Recompute success from the recorded events, transfers and DOM, never from a passed flag. */
-export function libraryChangedWindowEvidence(window, input, reservation) {
+export function libraryChangedWindowEvidence(window, input, reservation, discovery) {
   validateReservation(reservation, input);
   need(record(window) && ['forward', 'restored'].includes(window.name) && SHA.test(window.control_sha256));
   const b = window.boundary, expected = window.name === 'forward' ? reservation.marker_name : reservation.original_name;
@@ -475,7 +582,9 @@ export function libraryChangedWindowEvidence(window, input, reservation) {
   for (const sample of window.dom) {
     need(inWindow(sample) && Number.isFinite(sample.started_elapsed_ms) && sample.started_elapsed_ms <= sample.elapsed_ms &&
       sample.observation?.route === b.route && sample.observation.document_id === b.document_id &&
-      sample.observation.target_id === ITEM && sample.observation.expected_name === expected && sample.observation.media_inactive === true,
+      [null, ITEM].includes(sample.observation.target_id) && sample.observation.expected_name === expected && sample.observation.media_inactive === true &&
+      Number.isFinite(sample.observation.started_elapsed_ms) && sample.observation.started_elapsed_ms >= sample.started_elapsed_ms &&
+      sample.observation.started_elapsed_ms <= sample.elapsed_ms,
     'library_changed_document_or_route_changed');
   }
   for (let index = 1; index < window.dom.length; index++) {
@@ -492,17 +601,34 @@ export function libraryChangedWindowEvidence(window, input, reservation) {
   const received = window.events.browser[0], upstream = window.events.physical[0];
   need(upstream.forwarded === true && same(received.message, upstream.message) && upstream.elapsed_ms <= received.elapsed_ms &&
     received.document_id === b.document_id && received.route === b.route, 'library_changed_delivery_not_bound');
+  need(discovery?.dom?.expected_name === reservation.original_name && discovery.dom.route === b.route &&
+    discovery.dom.document_id === b.document_id && discovery.socket?.token_sha256 === b.token_sha256,
+  'library_changed_singleton_anchor_missing');
   const pairs = pairLibraryChangedReads(window.http.physical, window.http.frames);
   const accepted = pairs.filter(pair => pair.complete && ['items', 'target'].includes(pair.physical.kind) &&
+    pair.physical.phase === window.name && pair.frame.phase === window.name && pair.physical.projection?.count === 1 &&
+    pair.physical.method === 'GET' && pair.physical.terminal === 'completed' &&
+    SHA.test(pair.physical.projection.body_sha256) && Number.isSafeInteger(pair.physical.projection.body_bytes) &&
+    pair.physical.projection.body_bytes > 0 && pair.physical.projection.body_bytes <= CHANGED_LIMITS.json_bytes &&
+    pair.frame.route === pair.physical.route &&
+    (pair.physical.kind === 'target' && [`/Users/${USER}/Items/${ITEM}`, `/Items/${ITEM}`].includes(pair.physical.route) ||
+      libraryChangedFullMovieQuery(pair.physical) && [`/Users/${USER}/Items`, '/Items'].includes(pair.physical.route) &&
+      discovery.query_allowlist.some(value => value.kind === 'items' && value.shape_sha256 === pair.physical.shape_sha256)) &&
     record(pair.physical.projection?.target) && pair.frame.request_sequence > received.sequence &&
+    pair.physical.request_sequence > received.sequence && pair.physical.request_elapsed_ms >= received.elapsed_ms &&
     pair.frame.request_elapsed_ms >= received.elapsed_ms && pair.frame.finished_elapsed_ms <= b.end_elapsed_ms &&
     pair.physical.finished_elapsed_ms <= b.end_elapsed_ms && pair.frame.token_sha256 === b.token_sha256 &&
     pair.physical.token_sha256 === b.token_sha256 && pair.frame.document_id === b.document_id && pair.frame.page_route === b.route &&
-    pair.physical.projection.target.Id === ITEM && pair.physical.projection.target.Name === expected);
+    pair.physical.projection.target.Id === ITEM && pair.physical.projection.target.Type === 'Movie' && pair.physical.projection.target.Name === expected);
   if (accepted.length === 0) return failure('automatic_http_not_observed_within_window');
   const selected = accepted.sort((a, z) => a.frame.finished_elapsed_ms - z.frame.finished_elapsed_ms)[0];
-  const targetDOM = sample => sample.observation.passed === true && sample.observation.identity_proven === true &&
-    sample.observation.visible_target_cards === 1 && sample.observation.target_title_count >= 1 && sample.observation.forbidden_title_count === 0;
+  const targetDOM = sample => {
+    const rebound = bindLibraryChangedDOM(sample.observation, { phase: window.name, physical: window.http.physical, frames: window.http.frames,
+      token_sha256: b.token_sha256, boundary: b, events: window.events, discovery });
+    return rebound.passed && sample.observation.passed === true && sample.observation.identity_proven === true &&
+      sample.observation.identity_mode === rebound.identity_mode && sample.observation.target_id === rebound.target_id &&
+      same(sample.observation.wire_identity, rebound.wire_identity);
+  };
   const after = window.dom.filter(sample => sample.started_elapsed_ms >= selected.frame.finished_elapsed_ms && targetDOM(sample));
   const firstPair = after.find((sample, index) => index + 1 < after.length &&
     after[index + 1].started_elapsed_ms - sample.elapsed_ms >= CHANGED_LIMITS.sample_ms - 100 &&
@@ -535,7 +661,7 @@ export function libraryChangedPublication(final, pending) {
   return 'publishing';
 }
 
-export function encodeLibraryChangedRecord(value) { return Buffer.from(JSON.stringify(value, null, 2) + '\n'); }
+export function encodeLibraryChangedRecord(value) { return Buffer.from(JSON.stringify(value) + '\n'); }
 async function syncDirectory(filename, io) {
   const handle = await io.open(filename, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
   try { await handle.sync(); } finally { await handle.close(); }
@@ -850,61 +976,51 @@ export class LibraryChangedObserver {
 
 /** Inspect rendered identities and exact visible titles, without application internals. */
 export async function observeLibraryChangedDOM(page, target, expectedName, forbiddenName, documentID) {
-  const route = libraryChangedRoute(page.url());
-  const nodes = page.locator(`[data-id="${target.id}"]`);
-  need(await nodes.count() <= 64, 'library_changed_dom_limit');
-  const observed = await nodes.evaluateAll((elements, values) => {
-    const visible = element => {
-      const bounds = element.getBoundingClientRect(), style = getComputedStyle(element);
-      return bounds.width > 0 && bounds.height > 0 && bounds.bottom > 0 && bounds.right > 0 &&
-        bounds.top < innerHeight && bounds.left < innerWidth && style.display !== 'none' && style.visibility !== 'hidden';
-    };
-    const selected = elements.filter(visible);
-    const roots = selected.filter(element => !selected.some(other => other !== element && other.contains(element)));
-    const cards = roots.map(element => ({ tag: element.tagName.toLowerCase(), classes: String(element.className).slice(0, 256),
-      id: element.getAttribute('data-id'), type: element.getAttribute('data-type') }));
-    let targetTitle = 0, forbiddenTitle = 0, count = 0, overflow = false;
-    if (roots.length === 1) {
-      const walker = document.createTreeWalker(roots[0], NodeFilter.SHOW_ELEMENT);
-      let element = roots[0];
-      while (element) {
-        if (++count > 512) { overflow = true; break; }
-        if (visible(element) && element.closest('[data-id]')?.getAttribute('data-id') === values.id) {
-          const ownText = [];
-          for (const child of element.childNodes) {
-            if (child.nodeType === 3 && child.nodeValue?.trim()) {
-              if (ownText.length >= 64 || child.nodeValue.length > 4096) { overflow = true; break; }
-              ownText.push(child);
-            }
-          }
-          const text = ownText.map(node => node.nodeValue).join(' ').replace(/\s+/g, ' ').trim();
-          const textVisible = ownText.length > 0 && ownText.every(node => {
-            const range = document.createRange(); range.selectNodeContents(node);
-            const box = range.getBoundingClientRect(); range.detach();
-            return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth;
-          });
-          if (textVisible && text.length <= 4096) {
-            if (text === values.expected) targetTitle++;
-            if (values.forbidden !== null && text === values.forbidden) forbiddenTitle++;
-          }
-        }
-        element = walker.nextNode();
+  const route = libraryChangedRoute(page.url()), containers = page.locator('.itemsContainer');
+  need(await containers.count() <= 32, 'library_changed_dom_limit');
+  const observed = await containers.evaluateAll((elements, values) => {
+    const visible = element => { const box = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth &&
+        style.display !== 'none' && style.visibility !== 'hidden'; };
+    const selected = elements.filter(visible), container = selected.length === 1 ? selected[0] : null;
+    const cards = container ? [...container.querySelectorAll('.card')].filter(value => visible(value) && value.closest('.itemsContainer') === container) : [];
+    const card = cards.length === 1 ? cards[0] : null;
+    const buttons = card ? [...card.querySelectorAll('button.cardTextActionButton')].filter(value => visible(value) && value.closest('.card') === card &&
+      value.closest('.itemsContainer') === container) : [];
+    let overflow = cards.length > 64 || buttons.length > 64;
+    const title = button => {
+      const texts = [], walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT); let node, count = 0;
+      while ((node = walker.nextNode())) {
+        if (++count > 64 || typeof node.nodeValue !== 'string' || node.nodeValue.length > 4096) { overflow = true; return null; }
+        if (!node.nodeValue.trim() || !visible(node.parentElement)) continue;
+        const range = document.createRange(); range.selectNodeContents(node); const box = range.getBoundingClientRect(); range.detach();
+        if (box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth) texts.push(node.nodeValue);
       }
-    }
-    return { cards, targetTitle, forbiddenTitle, overflow };
-  }, { id: target.id, expected: expectedName, forbidden: forbiddenName });
-  need(!observed.overflow && observed.targetTitle <= 64 && observed.forbiddenTitle <= 64, 'library_changed_dom_limit');
-  const { cards, targetTitle, forbiddenTitle } = observed;
+      const text = texts.join(' ').replace(/\s+/g, ' ').trim(); if (text.length > 256) { overflow = true; return null; } return text;
+    };
+    const titles = buttons.slice(0, 64).map(title), button = buttons.length === 1 ? buttons[0] : null;
+    const box = button?.closest('.cardBox'), text = button?.closest('.cardText');
+    const consistent = Boolean(button && card.tagName.toLowerCase() === 'div' && box?.closest('.card') === card &&
+      text?.closest('.cardBox') === box && [button, text, box, card].every(value => {
+        const id = value.getAttribute('data-id'), type = value.getAttribute('data-type');
+        return (id === null || id === values.target) && (type === null || type === 'Movie');
+      }) && (container.getAttribute('data-id') === null || container.getAttribute('data-id') === values.library));
+    return { containers: selected.length, cards: cards.length, buttons: buttons.length, consistent, overflow,
+      observed_title: titles.length === 1 ? titles[0] : null,
+      target_titles: titles.filter(value => value === values.expected).length,
+      forbidden_titles: values.forbidden === null ? 0 : titles.filter(value => value === values.forbidden).length };
+  }, { target: ITEM, library: LIBRARY, expected: expectedName, forbidden: forbiddenName });
+  need(!observed.overflow, 'library_changed_dom_limit');
   const active = await page.locator('audio,video').evaluateAll(elements => elements.some(element =>
     !element.paused && !element.ended || element.currentTime > 0));
-  const identity = cards.length === 1 && cards[0].id === target.id && (cards[0].type === null || cards[0].type === 'Movie');
-  return { route, document_id: documentID, target_id: target.id, expected_name: expectedName,
-    visible_target_cards: cards.length, target_title_count: targetTitle, forbidden_title_count: forbiddenTitle,
-    identity_proven: identity, media_inactive: !active, passed: identity && targetTitle >= 1 && forbiddenTitle === 0 && !active,
-    selector: { identity_attribute: 'data-id', title_mode: 'exact-visible-text', card_tag: cards.length === 1 ? cards[0].tag : null,
-      card_class: cards.length === 1 ? cards[0].classes : null, context: 'current-visible-dom' } };
+  return { route, document_id: documentID, started_elapsed_ms: null, target_id: null, expected_name: expectedName,
+    visible_items_containers: observed.containers, visible_cards: observed.cards, visible_title_buttons: observed.buttons,
+    visible_target_cards: observed.cards, target_title_count: observed.target_titles, forbidden_title_count: observed.forbidden_titles,
+    explicit_identity_consistent: observed.consistent, observed_title: observed.observed_title,
+    identity_mode: 'unbound', wire_identity: null, identity_proven: false, media_inactive: !active, passed: false,
+    selector: { identity_attribute: 'composite-wire-card', title_mode: 'exact-visible-title-button', card_tag: observed.cards === 1 ? 'div' : null,
+      card_class: observed.cards === 1 ? 'card' : null, context: 'current-visible-dom' } };
 }
-
 /** Keep bounded public structure for diagnosis without changing the acceptance matcher. */
 export async function observeLibraryChangedCandidates(page, secrets = []) {
   const variants = libraryChangedSecretVariants(secrets);
@@ -1212,7 +1328,15 @@ export class LibraryChangedWorkflow {
   async capture(expected, forbidden) {
     this.active(); await this.noticeAbort(); await this.noticeClose(); await bounded(this.actor.settled(), 3000);
     this.observer.assertStable();
-    return bounded(this.dom(this.actor.page, this.input.target, expected, forbidden, this.observer.documentID), 3000);
+    const started = this.observer.elapsed();
+    const raw = await bounded(this.dom(this.actor.page, this.input.target, expected, forbidden, this.observer.documentID), 3000);
+    raw.started_elapsed_ms = started;
+    if (libraryChangedRoute(this.actor.page.url()) !== raw.route || this.observer.documentID !== raw.document_id) return raw;
+    const boundary = this.observer.window, after = boundary?.started_sequence ?? this.lastDiscovery.navigation.before_sequence;
+    return bindLibraryChangedDOM(raw, { phase: boundary?.name ?? 'discovery', physical: this.observer.physical, frames: this.observer.frames,
+      token_sha256: this.observer.boundToken(), after_sequence: after, boundary, discovery: this.report.discovery,
+      events: { physical: this.observer.wireMessages.filter(value => value.sequence > after),
+        browser: this.observer.browserMessages.filter(value => value.sequence > after) } });
   }
   async publishStage(name, observation, previousControl) {
     this.active(); need(name === STAGES[this.state.stages.length] && this.report.session_private);
@@ -1307,7 +1431,8 @@ export class LibraryChangedWorkflow {
     do {
       this.retainDiscovery();
       dom = await this.capture(this.input.target.name, null); this.retainDiscovery({ dom }); reads = this.observer.reads(beforeSequence);
-      if (dom.passed && dom.route !== previousRoute && !dom.route.includes(ITEM) && reads.some(pair => pair.complete && pair.physical.kind === 'items' &&
+      if (dom.passed && dom.route !== previousRoute && !dom.route.includes(ITEM) && reads.some(pair => pair.complete && libraryChangedFullMovieQuery(pair.physical) &&
+        pair.physical.projection.count === 1 &&
         pair.frame.page_route === dom.route && pair.frame.document_id === dom.document_id &&
         pair.physical.projection.target.Name === this.input.target.name && pair.frame.token_sha256 === this.observer.boundToken()) &&
         reads.some(pair => pair.complete && pair.physical.kind === 'collection-folder' &&
@@ -1319,7 +1444,8 @@ export class LibraryChangedWorkflow {
     const collectionFolderReads = reads.filter(pair => pair.complete && pair.physical.kind === 'collection-folder' &&
       pair.frame.token_sha256 === this.observer.boundToken() && [previousRoute, dom.route].includes(pair.frame.page_route) &&
       pair.frame.document_id === dom.document_id);
-    reads = reads.filter(pair => pair.complete && pair.physical.kind === 'items' && pair.frame.token_sha256 === this.observer.boundToken() &&
+    reads = reads.filter(pair => pair.complete && libraryChangedFullMovieQuery(pair.physical) && pair.physical.projection.count === 1 &&
+      pair.physical.projection.target.Type === 'Movie' && pair.frame.token_sha256 === this.observer.boundToken() &&
       pair.frame.page_route === dom.route && pair.frame.document_id === dom.document_id &&
       pair.physical.projection.target.Name === this.input.target.name);
     need(reads.length > 0 && reads.length <= 8, 'library_changed_list_read_not_proven');
@@ -1374,7 +1500,7 @@ export class LibraryChangedWorkflow {
     }
     this.observer.assertStable(); await bounded(this.actor.settled(), 3000);
     const observation = this.observer.windowData(boundary, control, this.windowSamples.get(name));
-    Object.assign(observation, libraryChangedWindowEvidence(observation, this.input, this.state.reservation));
+    Object.assign(observation, libraryChangedWindowEvidence(observation, this.input, this.state.reservation, this.report.discovery));
     this.report[name] = clone(observation);
     need(observation.result === 'passed', observation.outcome);
     await bounded(this.actor.assertPinned(), 10000); return observation;
@@ -1428,6 +1554,18 @@ export function libraryChangedObservationPassed(report) {
       report.armed.quiet.catalog_requests === 0 && report.armed.quiet.library_changed_messages === 0 &&
       report.catalog_observation?.observer_failure === null && homeSessionClosed(report));
     need(same(report.discovery.collection_folder, libraryChangedNavigationEvidence(report.discovery, { target: report.target })));
+    const quietSamples = report.armed.quiet.samples;
+    need(Array.isArray(quietSamples) && quietSamples.length > 0 && quietSamples.length <= CHANGED_LIMITS.samples);
+    for (const sample of quietSamples) {
+      need(Number.isFinite(sample.started_elapsed_ms) && Number.isFinite(sample.elapsed_ms) &&
+        sample.observation?.started_elapsed_ms >= sample.started_elapsed_ms && sample.observation.started_elapsed_ms <= sample.elapsed_ms &&
+        sample.observation.expected_name === report.target.name);
+      const rebound = bindLibraryChangedDOM(sample.observation, { phase: 'discovery', physical: report.discovery.reads.map(value => value.physical),
+        frames: report.discovery.reads.map(value => value.frame), token_sha256: report.discovery.socket.token_sha256,
+        after_sequence: report.discovery.navigation.before_sequence });
+      need(rebound.passed && sample.observation.passed && sample.observation.identity_proven &&
+        sample.observation.identity_mode === rebound.identity_mode && same(sample.observation.wire_identity, rebound.wire_identity));
+    }
     const reservation = report.controls[0].value.reservation;
     need(report.forward.control_sha256 === report.controls[1].sha256 && report.restored.control_sha256 === report.controls[2].sha256 &&
       same(report.forward.commit, report.controls[1].value.commit) && same(report.restored.commit, report.controls[2].value.commit) &&
@@ -1435,7 +1573,7 @@ export function libraryChangedObservationPassed(report) {
       same(report.forward.boundary.connection_id, report.restored.boundary.connection_id) &&
       same(report.forward.boundary.token_sha256, report.restored.boundary.token_sha256) &&
       report.forward.proof.message_id !== report.restored.proof.message_id);
-    for (const name of ['forward', 'restored']) need(libraryChangedWindowEvidence(report[name], { target: report.target }, reservation).result === 'passed');
+    for (const name of ['forward', 'restored']) need(libraryChangedWindowEvidence(report[name], { target: report.target }, reservation, report.discovery).result === 'passed');
     return true;
   } catch { return false; }
 }

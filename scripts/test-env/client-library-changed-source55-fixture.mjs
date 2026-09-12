@@ -7,12 +7,14 @@ import { TextDecoder } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-changed-ui-source55-v4';
-const TOOL = WORK + '/client-library-changed-source55-tool-04';
+const ROOT = WORK + '/client-library-changed-ui-source55-v5';
+const TOOL = WORK + '/client-library-changed-source55-tool-05';
 const PRIOR_ROOT = WORK + '/client-library-changed-ui-source55-v2';
 const PRIOR_TOOL = WORK + '/client-library-changed-source55-tool-02';
 const HISTORY_V3_ROOT = WORK + '/client-library-changed-ui-source55-v3';
 const HISTORY_V3_TOOL = WORK + '/client-library-changed-source55-tool-03';
+const HISTORY_V4_ROOT = WORK + '/client-library-changed-ui-source55-v4';
+const HISTORY_V4_TOOL = WORK + '/client-library-changed-source55-tool-04';
 const STATE = WORK + '/client-fixture.json';
 const SELF = fileURLToPath(import.meta.url);
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
@@ -26,7 +28,7 @@ const SOURCE_SHA = '7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765
 const CATALOG_SHA = '8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b';
 const UPGRADE_TOOL = WORK + '/client-schema28-source55-tool-05';
 const UPGRADE_MARKER = 'goby-client-schema28-source55-upgrade-v1';
-const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v4.service';
+const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v5.service';
 const PRIOR_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v2.service';
 const PRIOR_WORKER_UNIT = 'goby-client-library-changed-ui-source55-v2.service';
 const UPGRADE_ROOT = WORK + '/client-schema28-source55-upgrade-20260912_100845_47bff13c329b';
@@ -86,8 +88,39 @@ const HISTORY_V3_PREDECESSORS = Object.freeze({
   discovery_failure: { path: HISTORY_V3_ROOT + '/browser/discovery-failure.json',
     sha256: '23b42c459572f25fd17f18b86eacc3b75c7553020521df6ea0ab6ec43bfb609f' },
 });
-const HISTORY_ENTRIES = Object.freeze([2, 3].map(version => {
-  const pins = version === 2 ? PRIOR_PINS : HISTORY_V3_PINS;
+const HISTORY_V4_PINS = Object.freeze({
+  prior_input: { path: HISTORY_V4_ROOT + '/input.json', sha256: '963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d' },
+  prior_browser_report: { path: HISTORY_V4_ROOT + '/browser/report.json', sha256: 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4' },
+  prior_controller_report: { path: HISTORY_V4_ROOT + '/report.json', sha256: '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88' },
+  prior_terminal: { path: WORK + '/client-library-changed-source55-execution-04/failed-terminal.json',
+    sha256: '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012' },
+  prior_before_snapshot: { path: HISTORY_V4_ROOT + '/before-full.json', sha256: 'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9' },
+  prior_after_snapshot: { path: HISTORY_V4_ROOT + '/after-full.json', sha256: 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f' },
+});
+const HISTORY_V4_TERMINAL_PINS = Object.freeze({
+  independent_snapshot: { path: WORK + '/client-library-changed-source55-execution-04/independent-after-full.json',
+    sha256: '5ceeb7916191ceaa223a27062ed399614e906481528a9038400eed3c64c882f1' },
+  scope_files: { path: WORK + '/client-library-changed-source55-execution-04/failed-scope-files.json',
+    sha256: '2618849ab3caa0d8756f372e0a3c9022f6d3bc7b2ef325a8e623bcd27172e407' },
+  seal_script: { path: WORK + '/client-library-changed-source55-execution-04/seal-failed-terminal.py',
+    sha256: 'bc078d418dbc68c1909fa6f9795c9217111e4787d393de7109c4b25a02c3f80f' },
+  controller_source: { path: HISTORY_V4_TOOL + '/observe-client-library-changed-source55.py',
+    sha256: '9fcfc06b6c9e2922064849db65e4a13c05b2b3f13835cf7b28e9a6b3a78a953b' },
+});
+const HISTORY_V4_DIAGNOSTICS = Object.freeze({
+  discovery_failure: { path: HISTORY_V4_ROOT + '/browser/discovery-failure.json',
+    sha256: '2c9153e4dee96d1d704552473240692717d272b9397a6f4682885eff1b2f97b6' },
+  screenshot: { path: HISTORY_V4_ROOT + '/browser/discovery-failure.png',
+    sha256: '07cab956ecc046fa0ad2e634a188bf907b15ff289575ab6160521e933ddead10' },
+});
+const HISTORY_V4_PREDECESSORS = Object.freeze({
+  predecessor_terminals: [...HISTORY_V3_PREDECESSORS.predecessor_terminals, HISTORY_V3_PINS.prior_terminal],
+  predecessor_inventories: [...HISTORY_V3_PREDECESSORS.predecessor_inventories, HISTORY_V3_TERMINAL_PINS.scope_files],
+  discovery_failure: HISTORY_V4_DIAGNOSTICS.discovery_failure,
+  discovery_screenshot: HISTORY_V4_DIAGNOSTICS.screenshot,
+});
+const HISTORY_ENTRIES = Object.freeze([2, 3, 4].map(version => {
+  const pins = version === 2 ? PRIOR_PINS : version === 3 ? HISTORY_V3_PINS : HISTORY_V4_PINS;
   return Object.freeze({ version, input: pins.prior_input, browser_report: pins.prior_browser_report,
     controller_report: pins.prior_controller_report, terminal: pins.prior_terminal,
     before_snapshot: pins.prior_before_snapshot, after_snapshot: pins.prior_after_snapshot });
@@ -157,24 +190,35 @@ function freeze(value) {
 }
 
 function historyScope(version) {
-  need(version === 2 || version === 3);
-  return version === 2 ? {
+  need(version === 2 || version === 3 || version === 4);
+  if (version === 2) return {
     version, root: PRIOR_ROOT, tool: PRIOR_TOOL, pins: PRIOR_PINS, terminalPins: PRIOR_TERMINAL_PINS,
     controllerUnit: PRIOR_CONTROLLER_UNIT, workerUnit: PRIOR_WORKER_UNIT,
     controllerInvocation: 'd6376750d8ff4fc08c97c69ac993f1e6', workerInvocation: '40884584c2784e3da2a91f816f563b45',
     beforeCounts: { sessions: 75, devices: 64, activity_entries: 167 }, afterCounts: { sessions: 76, devices: 65, activity_entries: 169 },
-  } : {
+  };
+  if (version === 3) return {
     version, root: HISTORY_V3_ROOT, tool: HISTORY_V3_TOOL, pins: HISTORY_V3_PINS, terminalPins: HISTORY_V3_TERMINAL_PINS,
     controllerUnit: 'goby-client-library-changed-ui-source55-controller-v3.service', workerUnit: 'goby-client-library-changed-ui-source55-v3.service',
     controllerInvocation: 'bb72fff9517e4f41baa01fbd3e86bf40', workerInvocation: 'e1296ab3a25a41d6964e577831df4152',
     beforeCounts: { sessions: 76, devices: 65, activity_entries: 169 }, afterCounts: { sessions: 77, devices: 66, activity_entries: 171 },
   };
+  return { version, root: HISTORY_V4_ROOT, tool: HISTORY_V4_TOOL, pins: HISTORY_V4_PINS, terminalPins: HISTORY_V4_TERMINAL_PINS,
+    controllerUnit: 'goby-client-library-changed-ui-source55-controller-v4.service', workerUnit: 'goby-client-library-changed-ui-source55-v4.service',
+    controllerInvocation: '6e2d992e43414cdc9aaf0f37be3ee688', workerInvocation: '8886fd825c644124ab82696979db2e73',
+    beforeCounts: { sessions: 77, devices: 66, activity_entries: 171 }, afterCounts: { sessions: 78, devices: 67, activity_entries: 173 } };
+}
+
+function historicalControllerAuthority(version) {
+  historyScope(version);
+  if (version === 2) return { ...UPGRADE_PINS };
+  if (version === 3) return { ...UPGRADE_PINS, ...PRIOR_PINS };
+  return { ...UPGRADE_PINS, history: HISTORY_ENTRIES.slice(0, 2) };
 }
 
 function historicalInputAuthority(version) {
   const scope = historyScope(version);
-  return version === 2 ? { ...UPGRADE_PINS, before_snapshot: scope.pins.prior_before_snapshot }
-    : { ...UPGRADE_PINS, ...PRIOR_PINS, before_snapshot: scope.pins.prior_before_snapshot };
+  return { ...historicalControllerAuthority(version), before_snapshot: scope.pins.prior_before_snapshot };
 }
 
 const SETUP_PHASES = Object.freeze(['arguments', 'input', 'root_identity', 'process_identity', 'source_closure', 'baseline',
@@ -272,7 +316,7 @@ export function validateLibraryChangedSource55Input(input) {
     input.actor.credentials.path === ROOT + '/viewer-credentials.json');
   const authority = input.authority;
   need(exact(authority, [...Object.keys(UPGRADE_PINS), 'history', 'before_snapshot']) && descriptor(authority.before_snapshot) &&
-    Object.entries(UPGRADE_PINS).every(([key, value]) => same(authority[key], value)) && Array.isArray(authority.history) && authority.history.length === 2 &&
+    Object.entries(UPGRADE_PINS).every(([key, value]) => same(authority[key], value)) && Array.isArray(authority.history) && authority.history.length === 3 &&
     authority.history.every((entry, index) => exact(entry, ['version', 'input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) &&
       entry.version === index + 2 && ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot'].every(key => descriptor(entry[key])) &&
       same(entry, HISTORY_ENTRIES[index])));
@@ -534,7 +578,10 @@ function validatePriorTerminal(input, terminal, priorInput, browser, report, led
     'primary_invocation_id', 'primary_preserved', 'primary_process', 'prior_after_snapshot', 'report', 'reserved_native_intents',
     'restoration', 'schema', 'scope', 'scope_files', 'scope_files_unchanged', 'seal_script', 'service_writes', 'sql_business_writes',
     'status', 'tool', 'upgrade_authority_snapshot', 'version', ...(scope.version === 3 ? ['baseline_chain_verified', 'cumulative_totals',
-      'discovery_failure', 'old_v2_scope_preserved', 'predecessor_inventories', 'predecessor_terminals', 'prior_baseline', 'prior_failure_preservation'] : [])]) &&
+      'discovery_failure', 'old_v2_scope_preserved', 'predecessor_inventories', 'predecessor_terminals', 'prior_baseline', 'prior_failure_preservation']
+      : scope.version === 4 ? ['baseline_chain_verified', 'cumulative_totals', 'discovery_failure', 'discovery_screenshot', 'discovery_screenshot_bytes',
+        'history_preservation', 'old_v2_scope_preserved', 'old_v3_scope_preserved', 'predecessor_inventories', 'predecessor_terminals',
+        'predecessor_units_preserved', 'prior_baseline'] : [])]) &&
     terminal.marker === 'goby-source55-failed-ui-terminal-v' + scope.version && terminal.version === 1 && terminal.status === 'failed_scope_sealed' &&
     terminal.observed_run_status === 'failed' && terminal.phase === 'discovery' && terminal.schema === 28 &&
     terminal.scope === scope.root && terminal.tool === scope.tool && terminal.cleanup === 'not_required' && terminal.restoration === 'not_required' &&
@@ -552,6 +599,11 @@ function validatePriorTerminal(input, terminal, priorInput, browser, report, led
     same(terminal.cumulative_totals, scope.afterCounts) && same(terminal.prior_failure_preservation, ledger) &&
     same(terminal.prior_baseline, PRIOR_TERMINAL_PINS.independent_snapshot) &&
     Object.entries(HISTORY_V3_PREDECESSORS).every(([key, value]) => same(terminal[key], value)));
+  if (scope.version === 4) need(terminal.baseline_chain_verified === true && terminal.old_v2_scope_preserved === true &&
+    terminal.old_v3_scope_preserved === true && terminal.predecessor_units_preserved === true &&
+    same(terminal.cumulative_totals, scope.afterCounts) && same(terminal.history_preservation, report.history_preservation) &&
+    same(terminal.prior_baseline, HISTORY_V3_TERMINAL_PINS.independent_snapshot) && terminal.discovery_screenshot_bytes === 38695 &&
+    Object.entries(HISTORY_V4_PREDECESSORS).every(([key, value]) => same(terminal[key], value)));
   need(same(terminal.primary_process, { pid: PRIMARY.pid, start_ticks: PRIMARY.start_ticks, boot_id: BOOT }) &&
     terminal.primary_invocation_id === PRIMARY.invocation &&
     terminal.primary_fact_sha256 === '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a' &&
@@ -647,11 +699,15 @@ function validateHistoryRecord(input, documents, scope) {
   if (scope.version === 3) need(exact(browser.diagnostics, ['discovery_failure', 'screenshot', 'status', 'reason']) &&
     same(browser.diagnostics.discovery_failure, { ...HISTORY_V3_PREDECESSORS.discovery_failure, bytes: 9503 }) &&
     browser.diagnostics.screenshot === null && browser.diagnostics.status === 'saved' && browser.diagnostics.reason === null);
+  if (scope.version === 4) need(exact(browser.diagnostics, ['discovery_failure', 'screenshot', 'status', 'reason']) &&
+    same(browser.diagnostics.discovery_failure, { ...HISTORY_V4_DIAGNOSTICS.discovery_failure, bytes: 19957 }) &&
+    same(browser.diagnostics.screenshot, { ...HISTORY_V4_DIAGNOSTICS.screenshot, bytes: 38695 }) &&
+    browser.diagnostics.status === 'saved' && browser.diagnostics.reason === null);
   need(record(report) && report.marker === 'goby-client-library-changed-observation-v1' && report.version === 1 && report.mode === input.mode &&
     report.status === 'failed' && report.phase === 'discovery' && report.input_sha256 === scope.pins.prior_input.sha256 &&
     report.source_closure_sha256 === closureSHA && same(report.controller, controller) && same(report.node_process, node) &&
     same(report.candidate_process, input.candidate.process) && report.candidate_invocation === input.candidate.invocation_id &&
-    report.state_sha256 === input.candidate.state_sha256 && same(report.authority, scope.version === 2 ? UPGRADE_PINS : { ...UPGRADE_PINS, ...PRIOR_PINS }) &&
+    report.state_sha256 === input.candidate.state_sha256 && same(report.authority, historicalControllerAuthority(scope.version)) &&
     same(report.reserved_native_intents, []) && same(report.dispatched_native_intents, []) && report.restoration === 'not_required' &&
     ['automatic_retry', 'browser_fallback_used', 'candidate_or_primary_service_writes', 'client_acceptance', 'full_m3_complete',
       'library_changed_client_acceptance', 'restoration_required', 'sql_business_writes', 'worker_chain_ledger_passed',
@@ -670,6 +726,10 @@ function validateHistoryRecord(input, documents, scope) {
   const ledger = validatePriorSnapshotDelta(priorBefore, priorAfter, browser, scope.version);
   need(same(report.ledger, ledger));
   if (scope.version === 3) need(same(report.prior_failure_preservation, ledger));
+  if (scope.version === 4) need(same(report.history_preservation, [2, 3].map(version => {
+    const previous = historyScope(version);
+    return { version, ledger, after_snapshot: previous.pins.prior_after_snapshot, independent_snapshot: previous.terminalPins.independent_snapshot };
+  })));
   validatePriorTerminal(input, priorTerminal, priorInput, browser, report, ledger, scope);
   identicalSnapshotWithLaterCapture(priorAfter, priorIndependent);
   need(ledgerInstant(priorIndependent.database.metadata.captured_at) <= ledgerInstant(priorTerminal.captured_at));
@@ -677,7 +737,7 @@ function validateHistoryRecord(input, documents, scope) {
 }
 
 function validatePriorDocuments(input, documents) {
-  need(Array.isArray(documents.history) && documents.history.length === 2);
+  need(Array.isArray(documents.history) && documents.history.length === 3);
   let previous = documents.current, independent = null;
   const summaries = [];
   for (const [index, entry] of documents.history.entries()) {
@@ -714,6 +774,15 @@ function validateUpgradeIntent(input, intent) {
     source.binary.path === WORK + '/client-backup-run-20260912_084241_db776aacc1a7/tmp/goby-linux-amd64' &&
     Number.isSafeInteger(source.binary.bytes) && source.binary.bytes > 1024 * 1024 && source.binary.bytes <= 128 * 1024 * 1024);
   return scope;
+}
+
+function validateMovieQuerySingleton(tables, target) {
+  need(record(tables) && Array.isArray(tables.items) && target?.id === ITEM && target.library_id === LIBRARY);
+  const movies = tables.items.filter(row => row.library_id === LIBRARY && row.type === 'Movie');
+  need(movies.length === 1 && movies[0].id === ITEM && movies[0].is_folder === false &&
+    ['name', 'parent_id', 'root_id', 'relative_path'].every(key => movies[0][key] === target[key]) &&
+    tables.items.filter(row => row.library_id === LIBRARY && row.name === target.name).length === 1);
+  return true;
 }
 
 export function validateLibraryChangedSource55Documents(input, documents) {
@@ -810,10 +879,11 @@ export function validateLibraryChangedSource55Documents(input, documents) {
   need(proxy?.pid === PROXY_PROCESS.pid && String(proxy.start_ticks) === String(PROXY_PROCESS.start_ticks) &&
     proxy.reference_only === false && Array.isArray(proxy.listen) && proxy.listen.length <= 4 &&
     proxy.listen.filter(value => value === '127.0.0.1:18196').length === 1);
-  need(Array.isArray(documents.history) && documents.history.length === 2);
+  need(Array.isArray(documents.history) && documents.history.length === 3);
   validateSchema28Snapshots(current, documents.history[0].before, catalog, candidate);
   validatePriorDocuments(input, documents);
   const tables = before.database.tables;
+  validateMovieQuerySingleton(tables, input.target);
   const user = tables.users?.find(value => value.id === USER), target = tables.items.find(value => value.id === ITEM);
   need(user?.is_administrator === false && user.is_disabled === false && user.management_revision === 5 && target?.type === 'Movie' &&
     target.is_folder === false && target.library_id === LIBRARY && target.name === input.target.name &&
@@ -925,7 +995,7 @@ export async function readLibraryChangedSource55Snapshot(input, key) {
     need(key === 'current_snapshot' || key === 'history_after_snapshot' || key === 'before_snapshot');
     need(process.platform === 'linux' && process.getuid?.() === 0 && process.getgid?.() === 0 &&
       SELF === TOOL + '/client-library-changed-source55-fixture.mjs');
-    const item = key === 'history_after_snapshot' ? input.authority.history[1].after_snapshot : input.authority[key];
+    const item = key === 'history_after_snapshot' ? input.authority.history[2].after_snapshot : input.authority[key];
     const file = await protectedFile(item.path, item.sha256, new Map(), true, SNAPSHOT_LIMIT, [0o600n]);
     need(record(file.value));
     return file.value;

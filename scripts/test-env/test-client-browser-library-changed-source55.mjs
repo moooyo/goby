@@ -8,21 +8,21 @@ import { parseSource55JSON } from './client-library-changed-source55-fixture.mjs
 import { CHANGED_ROOT as ROOT, CHANGED_OUTPUT as OUTPUT, CHANGED_UNIT, CHANGED_CONTROLLER_UNIT, CHANGED_LIMITS,
   parseLibraryChangedArguments, validateLibraryChangedInput, validateLibraryChangedViewer, validateLibraryChangedBaseline,
   validateLibraryChangedControl, parseLibraryChangedJSON, projectLibraryChangedMessage, libraryChangedCatalogRequest,
-  projectLibraryChangedItems, libraryChangedRoute, pairLibraryChangedReads, libraryChangedWindowEvidence, libraryChangedNavigationEvidence,
+  projectLibraryChangedItems, libraryChangedRoute, pairLibraryChangedReads, libraryChangedWindowEvidence as rawLibraryChangedWindowEvidence, libraryChangedNavigationEvidence,
   libraryChangedPublication, encodeLibraryChangedRecord, publishLibraryChangedRecord, LibraryChangedObserver,
   observeLibraryChangedDOM, libraryChangedStageRecord, LibraryChangedWorkflow, libraryChangedObservationPassed,
   disposeLibraryChangedSecrets, validateLibraryChangedAbort, readLibraryChangedSnapshot,
   libraryChangedSetupFailure, observeLibraryChangedCandidates, captureLibraryChangedFailureScreenshot,
   publishLibraryChangedScreenshot, CHANGED_DIAGNOSTIC_LIMITS } from './client-browser-library-changed-source55.mjs';
 import { collectLibraryChangedPublicDOM, observeLibraryChangedViewport, libraryChangedSecretVariants,
-  libraryChangedResponseDiagnostic } from './client-browser-library-changed-source55.mjs';
+  libraryChangedResponseDiagnostic, bindLibraryChangedDOM, libraryChangedFullMovieQuery } from './client-browser-library-changed-source55.mjs';
 
-const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-04';
+const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-05';
 const SYNTHETIC_UPGRADE = WORK + '/client-schema28-source55-upgrade-20260912_120000_c0ffee123456';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738', ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
 const TOKEN = 'synthetic-library-changed-token-only', START = Date.parse('2026-09-12T12:00:00.000Z');
-const ROUTE = '/web/index.html#!/observed-movies?parentId=' + LIBRARY;
+const ROUTE = '/web/index.html#!/videos?parentId=' + LIBRARY;
 const SELF = fileURLToPath(import.meta.url), sha = value => createHash('sha256').update(value).digest('hex');
 const clone = value => Array.isArray(value) ? value.map(clone) : value !== null && typeof value === 'object'
   ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, clone(child)])) : value;
@@ -66,7 +66,10 @@ export function libraryChangedInputFixture() {
           '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc'],
         ['eab8c899d06b525271afec345d4137b3e0adec70bb5e8ecf911fdf4dae7e9f6e', '9360e3b5c60b16f714b80b2da3f1f7a31d58313e196abee99dfbb4f8e3bc9d1f',
           'e9b931c568c98e4438917d8c204922267b0931a2de4c9f6bba40f2155c196fb4', 'e53e9777337c8c0b33a0cc86dad2e22c79d5e7f2601aa64dd68c6ed91cd9ecf1',
-          '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd']
+          '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'],
+        ['963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d', 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4',
+          '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88', '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012',
+          'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f']
       ].map((hashes, index) => {
         const version = index + 2, root = WORK + '/client-library-changed-ui-source55-v' + version;
         return { version, input: descriptor(root + '/input.json', hashes[0]), browser_report: descriptor(root + '/browser/report.json', hashes[1]),
@@ -83,7 +86,7 @@ function binding(input = libraryChangedInputFixture()) {
       executable_path: '/synthetic/node', executable_sha256: '3'.repeat(64), cgroup: '/system.slice/' + CHANGED_UNIT } };
 }
 export function libraryChangedReservationFixture() {
-  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v4]',
+  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v5]',
     original_controls_sha256: '4'.repeat(64), forward_body_sha256: '5'.repeat(64), restore_body_sha256: '6'.repeat(64) };
 }
 function controlFixture(name = 'reserved', bound = binding()) {
@@ -104,24 +107,38 @@ function messageBytes(id = 'synthetic-catalog-event-1') {
     Data: { ItemsAdded: [], ItemsRemoved: [], ItemsUpdated: [ITEM], FoldersAddedTo: [], FoldersRemovedFrom: [], CollectionFolders: [], IsEmpty: false } }));
 }
 function domObservation(expected, passed = true) {
-  return { route: ROUTE, document_id: 'document-2', target_id: ITEM, expected_name: expected,
+  return { route: ROUTE, document_id: 'document-2', started_elapsed_ms: 500, target_id: null, expected_name: expected,
+    visible_items_containers: 1, visible_cards: 1, visible_title_buttons: 1, explicit_identity_consistent: true,
+    observed_title: passed ? expected : 'Old Name', identity_mode: 'unbound', wire_identity: null,
     visible_target_cards: 1, target_title_count: passed ? 1 : 0, forbidden_title_count: passed ? 0 : 1,
-    identity_proven: true, media_inactive: true, passed,
+    identity_proven: false, media_inactive: true, passed: false,
     selector: { identity_attribute: 'data-id', title_mode: 'exact-visible-text', card_tag: 'div', card_class: 'card', context: 'current-visible-dom' } };
+}
+
+function libraryChangedReadFixture(expected, phase, id = 1) {
+  const base = phase === 'discovery' ? 0 : 3000, token = sha(TOKEN), route = `/Users/${USER}/Items`;
+  const query = [['IncludeItemTypes', 'Movie'], ['Limit', '50'], ['ParentId', LIBRARY], ['Recursive', 'true'], ['StartIndex', '0']];
+  const physical = { id, kind: 'items', phase, method: 'GET', route, query,
+    shape_sha256: sha(JSON.stringify([route, query])), request_sha256: sha('synthetic-request-' + phase + '-' + id), token_sha256: token,
+    request_elapsed_ms: base + 150, request_sequence: base + 150, status: 200, response_elapsed_ms: base + 200,
+    completed: true, terminal: 'completed', terminal_status: 200, finished_elapsed_ms: base + 250, response_bytes: 100,
+    projection: { target: { Id: ITEM, Name: expected, Type: 'Movie' }, count: 1, body_sha256: 'c'.repeat(64), body_bytes: 100 } };
+  const frame = { index: id, kind: 'items', phase, route, shape_sha256: physical.shape_sha256, request_sha256: physical.request_sha256,
+    token_sha256: token, request_elapsed_ms: base + 100, request_sequence: base + 100,
+    source: 'page', main_frame: true, worker_id: null, document_id: 'document-2', page_route: ROUTE,
+    status: 200, response_elapsed_ms: base + 260, finished_elapsed_ms: base + 300, content_type: 'application/json',
+    from_service_worker: false, finished: true, failed: false };
+  return { physical, frame };
+}
+
+function libraryChangedWindowEvidence(window, input, reservation, discovery = libraryChangedNavigationFixture()) {
+  return rawLibraryChangedWindowEvidence(window, input, reservation, discovery);
 }
 
 export function libraryChangedWindowFixture(name = 'forward') {
   const reservation = libraryChangedReservationFixture(), expected = name === 'forward' ? reservation.marker_name : reservation.original_name;
   const token = sha(TOKEN), projection = projectLibraryChangedMessage(messageBytes(name === 'forward' ? 'forward-event' : 'restored-event'));
-  const physical = { id: 1, kind: 'items', phase: name, method: 'GET', route: `/Users/${USER}/Items`, query: [['ParentId', LIBRARY]],
-    shape_sha256: 'a'.repeat(64), request_sha256: 'b'.repeat(64), token_sha256: token, request_elapsed_ms: 3150, request_sequence: 3150,
-    status: 200, response_elapsed_ms: 3200, completed: true, terminal: 'completed', terminal_status: 200, finished_elapsed_ms: 3250,
-    response_bytes: 100, projection: { target: { Id: ITEM, Name: expected, Type: 'Movie' }, count: 1, body_sha256: 'c'.repeat(64), body_bytes: 100 } };
-  const frame = { index: 1, kind: 'items', phase: name, route: physical.route, shape_sha256: physical.shape_sha256,
-    request_sha256: physical.request_sha256, token_sha256: token, request_elapsed_ms: 3100, request_sequence: 3100,
-    source: 'page', main_frame: true, worker_id: null, document_id: 'document-2', page_route: ROUTE,
-    status: 200, response_elapsed_ms: 3260, finished_elapsed_ms: 3300, content_type: 'application/json',
-    from_service_worker: false, finished: true, failed: false };
+  const { physical, frame } = libraryChangedReadFixture(expected, name);
   const result = { name, control_sha256: 'd'.repeat(64), commit: { revision: name === 'forward' ? '2' : '3',
     write_completed_at: new Date(START + 2000).toISOString(), native_result_sha256: '8'.repeat(64), readback_sha256: '9'.repeat(64) },
     boundary: { name, started_elapsed_ms: 1000, started_sequence: 900, response_completed_elapsed_ms: 2000, end_elapsed_ms: 122000,
@@ -132,13 +149,19 @@ export function libraryChangedWindowFixture(name = 'forward') {
     browser: [{ sequence: 3000, elapsed_ms: 3000, connection_id: 'library-changed-ws-0', token_sha256: token,
       document_id: 'document-2', route: ROUTE, complete: true, received: true, forwarded: true, message: clone(projection) }] },
     http: { physical: [physical], frames: [frame], pairs: pairLibraryChangedReads([physical], [frame]) }, dom: [], actions: [], lifecycle: [] };
-  for (let start = 1000; start <= 121500; start += 500) result.dom.push({ sequence: start + 10, started_elapsed_ms: start,
-    elapsed_ms: start + 10, observation: domObservation(expected, start >= 3500) });
+  const discovery = libraryChangedNavigationFixture();
+  for (let start = 1000; start <= 121500; start += 500) {
+    const raw = { ...domObservation(expected, start >= 3500), started_elapsed_ms: start };
+    const observation = bindLibraryChangedDOM(raw, { phase: name, physical: [physical], frames: [frame], token_sha256: token,
+      boundary: result.boundary, events: result.events, discovery });
+    result.dom.push({ sequence: start + 10, started_elapsed_ms: start, elapsed_ms: start + 10, observation });
+  }
   return result;
 }
 
 function completedReportFixture() {
   const input = libraryChangedInputFixture(), token = sha(TOKEN), loginHash = 'e'.repeat(64);
+  const discovery = libraryChangedNavigationFixture();
   const forward = libraryChangedWindowFixture(), restored = libraryChangedWindowFixture('restored');
   const reservedControl = controlFixture('reserved'), forwardControl = controlFixture('forward'), restoredControl = controlFixture('restored');
   forwardControl.commit = clone(forward.commit); restoredControl.commit = clone(restored.commit);
@@ -151,8 +174,9 @@ function completedReportFixture() {
       { name: 'forward', sha256: forward.control_sha256, value: forwardControl },
       { name: 'restored', sha256: restored.control_sha256, value: restoredControl }],
     control_close: { value: { restoration: 'confirmed', previous_stage_sha256: '4'.repeat(64) } },
-    discovery: libraryChangedNavigationFixture(),
-    armed: { quiet: { passed: true, duration_ms: 20000, catalog_requests: 0, library_changed_messages: 0 } }, forward, restored,
+    discovery,
+    armed: { quiet: { passed: true, duration_ms: 20000, catalog_requests: 0, library_changed_messages: 0,
+      samples: [{ started_elapsed_ms: 600, elapsed_ms: 610, observation: { ...clone(discovery.dom), started_elapsed_ms: 600 } }] } }, forward, restored,
     catalog_observation: { observer_failure: null }, login_proof: { token_sha256: token, session_id: '1'.repeat(32) },
     session_private: descriptor(OUTPUT + '/session-private.json'), capabilities_private: descriptor(OUTPUT + '/capabilities-private.json'),
     observation: { frames: [{ kind: 'login', finished: true, failed: false, status: 200, from_service_worker: false,
@@ -170,7 +194,8 @@ function completedReportFixture() {
 }
 
 export function libraryChangedNavigationFixture() {
-  const input = libraryChangedInputFixture(), read = clone(libraryChangedWindowFixture('restored').http.pairs[0]);
+  const input = libraryChangedInputFixture(), source = libraryChangedReadFixture(input.target.name, 'discovery', 10);
+  const read = pairLibraryChangedReads([source.physical], [source.frame])[0];
   const collection = clone(read), route = `/Users/${USER}/Items/${LIBRARY}`;
   const bytes = Buffer.from(JSON.stringify({ Id: LIBRARY, Name: 'M3e Client Movies', Type: 'CollectionFolder',
     IsFolder: true, CollectionType: 'movies', Subviews: ['movies', 'movies', 'folders'] }));
@@ -182,7 +207,9 @@ export function libraryChangedNavigationFixture() {
   const discovery = { home: { passed: true }, dom: domObservation(input.target.name), reads: [read],
     collection_folder_reads: [collection], query_allowlist: [{ kind: read.physical.kind, route: read.physical.route,
       query: read.physical.query, shape_sha256: read.physical.shape_sha256 }], socket: { token_sha256: sha(TOKEN) },
-    navigation: { before_route: '/web/index.html#!/synthetic-home', after_route: ROUTE, before_sequence: 1000 } };
+    navigation: { before_route: '/web/index.html#!/synthetic-home', after_route: ROUTE, before_sequence: 10 } };
+  discovery.dom = bindLibraryChangedDOM(discovery.dom, { phase: 'discovery', physical: [read.physical], frames: [read.frame],
+    token_sha256: sha(TOKEN), after_sequence: discovery.navigation.before_sequence });
   discovery.collection_folder = libraryChangedNavigationEvidence(discovery, input);
   return discovery;
 }
@@ -192,9 +219,9 @@ test('source55 input binds the exact seven-file new scope', () => {
   for (const change of [value => { value.candidate.process.pid = 1; }, value => { value.candidate.source = WORK + '/source-attempt-44'; },
     value => { value.candidate.state_sha256 = '0'.repeat(64); }, value => { delete value.authority.upgrade_attestation; },
     value => { value.actor.credentials.path = WORK + '/browser.json'; }, value => { value.actor.admin = {}; },
-    value => { value.root = ROOT.replace('source55-v4', 'source55-v3'); },
+    value => { value.root = ROOT.replace('source55-v5', 'source55-v4'); },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure)
-      .map(([filename, hash]) => [filename.replace('source55-tool-04', 'source55-tool-03'), hash])); },
+      .map(([filename, hash]) => [filename.replace('source55-tool-05', 'source55-tool-04'), hash])); },
     value => { value.source_closure[TOOL + '/unexpected.mjs'] = 'a'.repeat(64); }, value => { delete value.source_closure[TOOL + '/client-browser-goby-fixture.mjs']; },
     value => { value.target.id = USER; }, value => { value.controller.unit = CHANGED_UNIT; }]) {
     const input = libraryChangedInputFixture(); change(input); rejects(() => validateLibraryChangedInput(input));
@@ -208,7 +235,7 @@ test('source55 requires future process and upgrade authority inputs without defa
   for (const key of ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) {
     const input = libraryChangedInputFixture(); delete input.authority[key]; rejects(() => validateLibraryChangedInput(input));
   }
-  for (const index of [0, 1]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
+  for (const index of [0, 1, 2]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
     const input = libraryChangedInputFixture(); input.authority.history[index][key].sha256 = sha('synthetic-foreign-prior'); rejects(() => validateLibraryChangedInput(input));
   }
   const reordered = libraryChangedInputFixture(); reordered.authority.history.reverse(); rejects(() => validateLibraryChangedInput(reordered));
@@ -321,9 +348,9 @@ test('the complete before ledger must match current authority and its target', (
     'play_sessions', 'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions', 'task_occurrences', 'task_run_children',
     'task_run_requests', 'task_runs', 'task_triggers', 'theme_owner_ids', 'theme_reserved_paths', 'user_item_data', 'user_settings', 'users'];
   const tables = Object.fromEntries(names.map(name => [name, []]));
-  tables.sessions = Array.from({ length: 77 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
-  tables.devices = Array.from({ length: 66 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
-  for (const [name, count] of [['activity_entries', 171], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
+  tables.sessions = Array.from({ length: 78 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
+  tables.devices = Array.from({ length: 67 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
+  for (const [name, count] of [['activity_entries', 173], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
   tables.libraries = clone(input.expected_libraries); tables.users = [{ id: USER, is_disabled: false, is_administrator: false, management_revision: 5 }];
   tables.items = [{ ...input.target, is_folder: false }, ...Array.from({ length: 21 }, () => ({}))]; tables.item_metadata_state = [{ item_id: ITEM }];
   const sequences = Object.fromEntries(['activity_entries_id_seq', 'application_keys_id_seq', 'catalog_entities_id_seq',
@@ -334,7 +361,7 @@ test('the complete before ledger must match current authority and its target', (
   current.database.sequences.activity_entries_id_seq.last_value = 9007199254740993n;
   tables.items[0].file_size = 9007199254740995n;
   const before = clone(current); before.database.metadata.captured_at = new Date(START + 1000).toISOString();
-  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 77);
+  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 78);
   for (const change of [value => { value.database.tables.items[0].name = 'Foreign Name'; }, value => { value.database.tables.devices.pop(); },
     value => { value.database.sequences.unknown = 1; }, value => { value.schema = 27; },
     value => { delete value.database.tables.library_roots[0].binding_revision; },
@@ -347,6 +374,58 @@ test('the complete before ledger must match current authority and its target', (
     value => { value.database.unrecognized_projection = {}; }, value => { value.unrecognized_envelope = {}; }]) {
     const altered = clone(before); change(altered); rejects(() => validateLibraryChangedBaseline(input, altered, current));
   }
+  const duplicate = clone(current); duplicate.database.tables.items[1] = { ...clone(tables.items[0]), id: USER };
+  const duplicateBefore = clone(duplicate); duplicateBefore.database.metadata.captured_at = before.database.metadata.captured_at;
+  rejects(() => validateLibraryChangedBaseline(input, duplicateBefore, duplicate));
+  duplicate.database.tables.items[1].library_id = input.expected_libraries[1].id;
+  const otherLibraryBefore = clone(duplicate); otherLibraryBefore.database.metadata.captured_at = before.database.metadata.captured_at;
+  check(validateLibraryChangedBaseline(input, otherLibraryBefore, duplicate).session_ids.length === 78);
+});
+
+test('discovery identity requires the full singleton query and complete matching wire', () => {
+  const discovery = libraryChangedNavigationFixture(), raw = clone(discovery.dom);
+  const context = { phase: 'discovery', physical: discovery.reads.map(value => clone(value.physical)), frames: discovery.reads.map(value => clone(value.frame)),
+    token_sha256: sha(TOKEN), after_sequence: discovery.navigation.before_sequence };
+  check(bindLibraryChangedDOM(raw, context).passed && libraryChangedFullMovieQuery(context.physical[0]));
+  raw.target_id = USER; check(bindLibraryChangedDOM(raw, context).target_id === ITEM);
+  for (const change of [value => { value.physical[0].projection.target.Id = USER; }, value => { value.physical[0].projection.count = 2; },
+    value => { value.physical[0].projection.body_sha256 = ''; }, value => { delete value.physical[0].projection.body_bytes; },
+    value => { value.physical[0].completed = false; }, value => { value.frames[0].finished = false; },
+    value => { value.frames[0].token_sha256 = sha('foreign-token'); }, value => { value.physical[0].phase = 'restored'; },
+    value => { value.physical[0].query.push(['Ids', ITEM]); }, value => { value.physical[0].query = [['ParentId', LIBRARY]]; },
+    value => { value.physical[0].route = '/foreign'; value.frames[0].route = '/foreign'; }]) {
+    const altered = clone(context); change(altered); check(!bindLibraryChangedDOM(raw, altered).passed);
+  }
+  for (const change of [value => { value.visible_cards = 2; }, value => { value.visible_items_containers = 2; },
+    value => { value.visible_title_buttons = 2; }, value => { value.explicit_identity_consistent = false; },
+    value => { delete value.document_id; }, value => { delete value.expected_name; }, value => { value.observed_title = 'Old Name'; }]) {
+    const altered = clone(raw); change(altered); check(!bindLibraryChangedDOM(altered, context).passed);
+  }
+});
+
+test('restoration cannot reuse the initial response and exact target refresh still binds', () => {
+  const window = libraryChangedWindowFixture('restored'), discovery = libraryChangedNavigationFixture();
+  const raw = { ...domObservation(libraryChangedReservationFixture().original_name), started_elapsed_ms: 3500 };
+  const context = { phase: 'restored', physical: window.http.physical, frames: window.http.frames, token_sha256: sha(TOKEN),
+    boundary: window.boundary, events: window.events, discovery };
+  check(bindLibraryChangedDOM(raw, context).passed);
+  const old = { ...context, physical: discovery.reads.map(value => clone(value.physical)), frames: discovery.reads.map(value => clone(value.frame)) };
+  check(!bindLibraryChangedDOM(raw, old).passed);
+  old.physical[0].phase = 'restored'; old.frames[0].phase = 'restored'; check(!bindLibraryChangedDOM(raw, old).passed);
+  const physical = window.http.physical[0], frame = window.http.frames[0], route = `/Users/${USER}/Items/${ITEM}`;
+  Object.assign(physical, { kind: 'target', route, query: [], shape_sha256: sha(JSON.stringify([route, []])) });
+  Object.assign(frame, { kind: 'target', route, shape_sha256: physical.shape_sha256 });
+  check(bindLibraryChangedDOM(raw, context).passed && !bindLibraryChangedDOM(raw, { ...context, discovery: null }).passed);
+  for (const sample of window.dom) sample.observation = bindLibraryChangedDOM(sample.observation, context);
+  check(libraryChangedWindowEvidence(window, libraryChangedInputFixture(), libraryChangedReservationFixture(), discovery).result === 'passed');
+  physical.route = `/Items/${USER}`; frame.route = physical.route; check(!bindLibraryChangedDOM(raw, context).passed);
+});
+
+test('DOM proof timestamps cannot move beyond the actual sample', () => {
+  const window = libraryChangedWindowFixture(); window.dom[10].observation.started_elapsed_ms = window.dom[10].elapsed_ms + 1;
+  rejects(() => libraryChangedWindowEvidence(window, libraryChangedInputFixture(), libraryChangedReservationFixture()));
+  const report = completedReportFixture(); report.armed.quiet.samples[0].observation.started_elapsed_ms = 611;
+  check(!libraryChangedObservationPassed(report));
 });
 
 test('only the three sealed snapshots reach the lossless reader without numeric conversion', async () => {
@@ -362,8 +441,8 @@ test('only the three sealed snapshots reach the lossless reader without numeric 
     await rejectsAsync(() => readLibraryChangedSnapshot(input, key, read));
   }
   for (const mutate of [value => { value.authority.current_snapshot.path = WORK + '/client-fixture.json'; },
-    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v4', 'source55-v3') + '/before-full.json'; },
-    value => { value.root = ROOT.replace('source55-v4', 'source55-v3'); }]) {
+    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v5', 'source55-v4') + '/before-full.json'; },
+    value => { value.root = ROOT.replace('source55-v5', 'source55-v4'); }]) {
     const altered = clone(input); mutate(altered);
     await rejectsAsync(() => readLibraryChangedSnapshot(altered, 'current_snapshot', read));
   }
@@ -595,7 +674,7 @@ test('driver and shared transport agree on the single library and exact target s
     [`/Items?ParentId=${USER}&Ids=${ITEM}`, false], [`/Users/${USER}/Items?ParentId=${USER}`, false]]) {
     const url = 'http://127.0.0.1:18196/emby' + route;
     check(Boolean(libraryChangedCatalogRequest(url, 'GET', input)) === expected);
-    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v4')) === expected);
+    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v5')) === expected);
   }
 });
 
@@ -700,48 +779,41 @@ test('a browser-side socket close invalidates the held physical handshake immedi
   entry.browser_handshake_observed = false; rejects(() => observer.socket());
 });
 
-test('visible title evidence belongs to the same card and visible text range', async () => {
+test('visible card and title remain unbound until the matching complete wire proves identity', async () => {
   const changed = libraryChangedReservationFixture().marker_name;
   const rectangle = top => ({ top, bottom: top + 30, left: 10, right: 110, width: 100, height: 30 });
-  function element(id, top, text = null, textTop = top) {
-    const value = { nodeType: 1, tagName: 'DIV', className: 'card', parentElement: null, childNodes: [], box: rectangle(top),
-      getAttribute(name) { return name === 'data-id' ? id : name === 'data-type' && id ? 'Movie' : null; },
-      getBoundingClientRect() { return this.box; },
-      contains(other) { for (let cursor = other; cursor; cursor = cursor.parentElement) if (cursor === this) return true; return false; },
-      closest() { for (let cursor = this; cursor; cursor = cursor.parentElement) if (cursor.getAttribute('data-id')) return cursor; return null; } };
-    if (text !== null) value.childNodes.push({ nodeType: 3, nodeValue: text, parentElement: value, box: rectangle(textTop) });
-    return value;
-  }
+  const element = (role, top, tag = 'DIV') => ({ tagName: tag, role, id: null, type: null, parentElement: null, childNodes: [], box: rectangle(top),
+    getAttribute(name) { return name === 'data-id' ? this.id : name === 'data-type' ? this.type : null; },
+    getBoundingClientRect() { return this.box; },
+    closest(selector) { for (let cursor = this; cursor; cursor = cursor.parentElement) if (cursor.role === selector) return cursor; return null; } });
   const globals = ['document', 'NodeFilter', 'getComputedStyle', 'innerHeight', 'innerWidth'];
   const saved = new Map(globals.map(name => [name, { exists: Object.hasOwn(globalThis, name), value: globalThis[name] }]));
-  globalThis.innerHeight = 800; globalThis.innerWidth = 1000; globalThis.NodeFilter = { SHOW_ELEMENT: 1 };
+  globalThis.innerHeight = 800; globalThis.innerWidth = 1000; globalThis.NodeFilter = { SHOW_TEXT: 4 };
   globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible' });
-  globalThis.document = {
-    createTreeWalker(root) {
-      const nodes = [];
-      const collect = parent => { for (const child of parent.childNodes) if (child.nodeType === 1) { nodes.push(child); collect(child); } };
-      collect(root); let index = 0; return { nextNode: () => nodes[index++] ?? null };
-    },
-    createRange() { let selected; return { selectNodeContents(node) { selected = node; }, getBoundingClientRect: () => selected.box, detach() {} }; },
-  };
+  globalThis.document = { createTreeWalker(root) { let at = 0; return { nextNode: () => root.childNodes[at++] ?? null }; },
+    createRange() { let selected; return { selectNodeContents(node) { selected = node; }, getBoundingClientRect: () => selected.box, detach() {} }; } };
   try {
-    const visible = element(ITEM, 10), title = element(null, 20, changed); title.parentElement = visible; visible.childNodes.push(title);
-    const outside = element(ITEM, 1000, changed), nodes = [visible, outside];
-    const page = { url: () => 'http://127.0.0.1:18196' + ROUTE,
-      locator: selector => selector === 'audio,video' ? { evaluateAll: async () => false }
-        : { count: async () => nodes.length, evaluateAll: async (run, args) => run(nodes, args) } };
-    check((await observeLibraryChangedDOM(page, { id: ITEM }, changed, 'Old Name', 'document-2')).passed);
-    title.childNodes[0].nodeValue = 'Old Name';
-    check(!(await observeLibraryChangedDOM(page, { id: ITEM }, changed, 'Old Name', 'document-2')).passed);
-    title.childNodes[0].nodeValue = changed; title.childNodes[0].box = rectangle(1000);
-    check(!(await observeLibraryChangedDOM(page, { id: ITEM }, changed, 'Old Name', 'document-2')).passed);
-  } finally {
-    for (const [name, previous] of saved) {
-      if (previous.exists) globalThis[name] = previous.value; else delete globalThis[name];
-    }
-  }
+    const container = element('.itemsContainer', 10), card = element('.card', 15), box = element('.cardBox', 20), text = element('.cardText', 25);
+    const button = element('button.cardTextActionButton', 30, 'BUTTON');
+    card.parentElement = container; box.parentElement = card; text.parentElement = box; button.parentElement = text;
+    const title = { nodeValue: changed, parentElement: button, box: rectangle(30) }; button.childNodes.push(title);
+    const cards = [card], buttons = [button], containers = [container];
+    container.querySelectorAll = () => cards; card.querySelectorAll = () => buttons;
+    const page = { url: () => 'http://127.0.0.1:18196' + ROUTE, locator: selector => selector === 'audio,video' ? { evaluateAll: async () => false }
+      : { count: async () => containers.length, evaluateAll: async (run, args) => run(containers, args) } };
+    const capture = async () => ({ ...await observeLibraryChangedDOM(page, { id: ITEM }, changed, 'Old Name', 'document-2'), started_elapsed_ms: 3500 });
+    const window = libraryChangedWindowFixture(), context = { phase: 'forward', physical: window.http.physical, frames: window.http.frames,
+      token_sha256: sha(TOKEN), boundary: window.boundary, events: window.events, discovery: libraryChangedNavigationFixture() };
+    const raw = await capture(); check(!raw.passed && !raw.identity_proven && raw.target_id === null && raw.target_title_count === 1);
+    check(bindLibraryChangedDOM(raw, context).passed);
+    card.id = USER; check(!(await capture()).explicit_identity_consistent); card.id = null;
+    title.nodeValue = 'Old Name'; check(!bindLibraryChangedDOM(await capture(), context).passed);
+    title.nodeValue = changed; title.box = rectangle(1000); check(!bindLibraryChangedDOM(await capture(), context).passed); title.box = rectangle(30);
+    const duplicate = element('.card', 40); duplicate.parentElement = container;
+    cards.push(duplicate); check(!bindLibraryChangedDOM(await capture(), context).passed); cards.pop();
+    containers.push(element('.itemsContainer', 45)); check(!bindLibraryChangedDOM(await capture(), context).passed);
+  } finally { for (const [name, prior] of saved) { if (prior.exists) globalThis[name] = prior.value; else delete globalThis[name]; } }
 });
-
 function memoryIO() {
   const files = new Map(); let next = 1;
   const snapshot = file => ({ dev: 1, ino: file.ino, uid: 0, gid: 0, mode: 0o600, size: file.bytes.length,

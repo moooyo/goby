@@ -31,14 +31,15 @@ import subprocess
 import time
 import types
 import unicodedata
+import urllib.parse
 
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'client-library-changed-source55-tool-04'
-ROOT = WORK / 'client-library-changed-ui-source55-v4'
+TOOL = WORK / 'client-library-changed-source55-tool-05'
+ROOT = WORK / 'client-library-changed-ui-source55-v5'
 BROWSER_ROOT = ROOT / 'browser'
-WORKER_UNIT = 'goby-client-library-changed-ui-source55-v4.service'
-CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v4.service'
+WORKER_UNIT = 'goby-client-library-changed-ui-source55-v5.service'
+CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v5.service'
 CGROUP = '/system.slice/' + WORKER_UNIT
 MARKER = 'goby-client-library-changed-observation-v1'
 INPUT_MARKER = 'goby-client-library-changed-input-v1'
@@ -128,6 +129,38 @@ HISTORY_V3_PREDECESSORS = {
          'sha256': '62cc954df4141a3ddb3faf9e99772a9055f7c5f864f68ee1d30728ae00144872'}, PRIOR_SEAL_RECORDS['scope_files']],
     'discovery_failure': {'path': str(WORK / 'client-library-changed-ui-source55-v3/browser/discovery-failure.json'),
          'sha256': '23b42c459572f25fd17f18b86eacc3b75c7553020521df6ea0ab6ec43bfb609f'},
+}
+HISTORY_V4_PINS = {
+    'input': {'path': str(WORK / 'client-library-changed-ui-source55-v4/input.json'),
+              'sha256': '963bf8d50a68ffd9534146f66d53df10b099818307f2496517cc89c97161a94d'},
+    'browser_report': {'path': str(WORK / 'client-library-changed-ui-source55-v4/browser/report.json'),
+              'sha256': 'f99ff64ced6abb41a0c5f913a2a66cf18e36bb6527a46a43172f0e7c78a89cf4'},
+    'controller_report': {'path': str(WORK / 'client-library-changed-ui-source55-v4/report.json'),
+              'sha256': '6d4acb05e4c0f7328c1cc28c41b17062c08bdd05eb441bcd70786649fa6d4a88'},
+    'before_snapshot': {'path': str(WORK / 'client-library-changed-ui-source55-v4/before-full.json'),
+              'sha256': 'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9'},
+    'after_snapshot': {'path': str(WORK / 'client-library-changed-ui-source55-v4/after-full.json'),
+              'sha256': 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'},
+    'terminal': {'path': str(WORK / 'client-library-changed-source55-execution-04/failed-terminal.json'),
+              'sha256': '021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012'},
+}
+HISTORY_V4_INDEPENDENT = {'path': str(WORK / 'client-library-changed-source55-execution-04/independent-after-full.json'),
+                         'sha256': '5ceeb7916191ceaa223a27062ed399614e906481528a9038400eed3c64c882f1'}
+HISTORY_V4_SEAL_RECORDS = {
+    'scope_files': {'path': str(WORK / 'client-library-changed-source55-execution-04/failed-scope-files.json'),
+                    'sha256': '2618849ab3caa0d8756f372e0a3c9022f6d3bc7b2ef325a8e623bcd27172e407'},
+    'seal_script': {'path': str(WORK / 'client-library-changed-source55-execution-04/seal-failed-terminal.py'),
+                    'sha256': 'bc078d418dbc68c1909fa6f9795c9217111e4787d393de7109c4b25a02c3f80f'},
+    'controller_source': {'path': str(WORK / 'client-library-changed-source55-tool-04/observe-client-library-changed-source55.py'),
+                    'sha256': '9fcfc06b6c9e2922064849db65e4a13c05b2b3f13835cf7b28e9a6b3a78a953b'},
+}
+HISTORY_V4_PREDECESSORS = {
+    'predecessor_terminals': [*HISTORY_V3_PREDECESSORS['predecessor_terminals'], HISTORY_V3_PINS['terminal']],
+    'predecessor_inventories': [*HISTORY_V3_PREDECESSORS['predecessor_inventories'], HISTORY_V3_SEAL_RECORDS['scope_files']],
+    'discovery_failure': {'path': str(WORK / 'client-library-changed-ui-source55-v4/browser/discovery-failure.json'),
+         'sha256': '2c9153e4dee96d1d704552473240692717d272b9397a6f4682885eff1b2f97b6'},
+    'discovery_screenshot': {'path': str(WORK / 'client-library-changed-ui-source55-v4/browser/discovery-failure.png'),
+         'sha256': '07cab956ecc046fa0ad2e634a188bf907b15ff289575ab6160521e933ddead10'},
 }
 FIXTURE = {
     'profile_receipt': (WORK / 'client-special-features-protocol-finalization-v1/completed.json', 'b443e5f6d5faceb3486d68644298b0a1527f6dcc1e4ac1109ff6d0c252fdfb36'),
@@ -302,13 +335,17 @@ def artifact_descriptor(value):
 
 
 def history_scope(version):
-    require(type(version) is int and version in (2, 3), 'Only the two sealed predecessor scopes may be read.')
+    require(type(version) is int and version in (2, 3, 4), 'Only the three sealed predecessor scopes may be read.')
     if version == 2:
         return {'root': PRIOR_ROOT, 'tool': PRIOR_TOOL, 'worker': PRIOR_WORKER, 'controller': PRIOR_CONTROLLER,
                 'pins': {name: PRIOR_PINS[key] for name, key in HISTORY_NAMES.items()}}
-    return {'root': WORK / 'client-library-changed-ui-source55-v3', 'tool': WORK / 'client-library-changed-source55-tool-03',
+    if version == 3:
+        return {'root': WORK / 'client-library-changed-ui-source55-v3', 'tool': WORK / 'client-library-changed-source55-tool-03',
             'worker': 'goby-client-library-changed-ui-source55-v3.service',
             'controller': 'goby-client-library-changed-ui-source55-controller-v3.service', 'pins': HISTORY_V3_PINS}
+    return {'root': WORK / 'client-library-changed-ui-source55-v4', 'tool': WORK / 'client-library-changed-source55-tool-04',
+            'worker': 'goby-client-library-changed-ui-source55-v4.service',
+            'controller': 'goby-client-library-changed-ui-source55-controller-v4.service', 'pins': HISTORY_V4_PINS}
 
 
 def validate_history_entry(entry, version):
@@ -331,8 +368,11 @@ def history_seal(version):
     if version == 2:
         return {'independent': PRIOR_INDEPENDENT, 'records': PRIOR_SEAL_RECORDS,
                 'controller_invocation': 'd6376750d8ff4fc08c97c69ac993f1e6', 'worker_invocation': '40884584c2784e3da2a91f816f563b45'}
-    return {'independent': HISTORY_V3_INDEPENDENT, 'records': HISTORY_V3_SEAL_RECORDS,
+    if version == 3:
+        return {'independent': HISTORY_V3_INDEPENDENT, 'records': HISTORY_V3_SEAL_RECORDS,
             'controller_invocation': 'bb72fff9517e4f41baa01fbd3e86bf40', 'worker_invocation': 'e1296ab3a25a41d6964e577831df4152'}
+    return {'independent': HISTORY_V4_INDEPENDENT, 'records': HISTORY_V4_SEAL_RECORDS,
+            'controller_invocation': '6e2d992e43414cdc9aaf0f37be3ee688', 'worker_invocation': '8886fd825c644124ab82696979db2e73'}
 
 
 def validate_authority_input(value):
@@ -360,9 +400,9 @@ def validate_authority_input(value):
     require(isinstance(authority, dict) and set(authority) == AUTHORITY_KEYS, 'Only the exact upgrade authority chain may admit this run.')
     for key in UPGRADE_AUTHORITY_KEYS:
         artifact_descriptor(authority[key])
-    require(isinstance(authority['history'], list) and len(authority['history']) == 2,
-            'Exactly the ordered sealed v2 and v3 history is required.')
-    for entry, version in zip(authority['history'], (2, 3)):
+    require(isinstance(authority['history'], list) and len(authority['history']) == 3,
+            'Exactly the ordered sealed v2, v3 and v4 history is required.')
+    for entry, version in zip(authority['history'], (2, 3, 4)):
         validate_history_entry(entry, version)
     require(authority['upgrade_intent']['path'] == str(UPGRADE_TOOL / 'intent.json'), 'The upgrade intent is outside its frozen tool.')
     output = Path(authority['upgrade_report']['path']).parent
@@ -533,6 +573,15 @@ def quiescent(snapshot):
             require(row['started_at'] is None and row['counted'] is False and row['application_client_id'] is None and
                     owner.get('kind') == 'emby' and owner.get('user_id') == row['user_id'] and owner.get('revoked_at') is not None,
                     'Prepared history is not bound to an already revoked ordinary session.')
+
+
+def validate_singleton_movie(snapshot, profile):
+    rows = [row for row in snapshot['database']['tables']['items'] if row['library_id'] == LIBRARY]
+    movies = [row for row in rows if row['type'] == 'Movie']
+    require(len(movies) == 1 and movies[0]['id'] == ITEM and movies[0]['is_folder'] is False and
+            all(same(movies[0][key], profile['item'][key]) for key in ('root_id', 'parent_id', 'relative_path', 'name')) and
+            len([row for row in rows if row['name'] == profile['item']['name']]) == 1,
+            'The controlled Movie query is not one uniquely named ordinary target in its owned library.')
 
 
 def metadata_value_projection(automatic, overrides, locked):
@@ -1025,16 +1074,44 @@ def publication_state(final, pending):
     return 'publishing'
 
 
+def movies_route(route):
+    if not isinstance(route, str) or len(route) > 4096 or '\\' in route or any(ord(char) < 32 for char in route):
+        return False
+    try:
+        value = urllib.parse.urlsplit(route)
+        if value.scheme or value.netloc or value.path not in ('/web/index.html', '/web/', '/web') or urllib.parse.urlunsplit(value) != route:
+            return False
+        fragment, _, query = value.fragment.partition('?')
+        if fragment != '!/videos':
+            return False
+        parameters = urllib.parse.parse_qsl(query, keep_blank_values=True)
+        for key, _ in parameters + urllib.parse.parse_qsl(value.query, keep_blank_values=True):
+            if re.search('token|password|api_key|authorization', key, re.IGNORECASE):
+                return False
+        parents = [word for key, word in parameters if key.lower() == 'parentid']
+        servers = [word for key, word in parameters if key.lower() == 'serverid']
+        return parents == [LIBRARY] and len(servers) <= 1 and (not servers or servers == [SERVER])
+    except ValueError:
+        return False
+
+
 def dom_identity(value, target, name, route=None, document=None, passed=True):
-    require(isinstance(value, dict) and value.get('target_id') == target['id'] and value.get('expected_name') == name and
-        value.get('media_inactive') is True and safe_text(value.get('route'), 4096) and safe_text(value.get('document_id'), 80) and
-        (route is None or value['route'] == route) and (document is None or value['document_id'] == document),
+    require(isinstance(value, dict) and value.get('target_id') in (None, target['id']) and value.get('expected_name') == name and
+        value.get('media_inactive') is True and movies_route(value.get('route')) and safe_text(value.get('document_id'), 80) and
+        numeric(value.get('started_elapsed_ms')) and value['started_elapsed_ms'] >= 0 and
+        type(value.get('explicit_identity_consistent')) is bool and (value.get('observed_title') is None or isinstance(value['observed_title'], str)) and
+        all(type(value.get(key)) is int and 0 <= value[key] <= 128 for key in ('visible_target_cards', 'visible_items_containers',
+            'visible_cards', 'visible_title_buttons', 'target_title_count', 'forbidden_title_count')) and
+        (route is None or value['route'] == route) and (document is None or value['document_id'] == document) and
+        ((value.get('identity_mode') == 'unbound' and value['target_id'] is None and value.get('identity_proven') is False and
+            value.get('passed') is False and value.get('wire_identity') is None) or
+         (value.get('identity_mode') == 'singleton-movie-list-wire-and-card' and value['target_id'] == target['id'] and
+            value.get('identity_proven') is True and value.get('passed') is True and isinstance(value.get('wire_identity'), dict))),
         'A DOM sample lacks its exact passive target, route or document binding.')
     if passed:
         require(value.get('passed') is True and value.get('identity_proven') is True and
-            type(value.get('visible_target_cards')) is int and value['visible_target_cards'] == 1 and
-            type(value.get('target_title_count')) is int and value['target_title_count'] >= 1 and
-            type(value.get('forbidden_title_count')) is int and value['forbidden_title_count'] == 0,
+            all(value[key] == 1 for key in ('visible_target_cards', 'visible_items_containers', 'visible_cards', 'visible_title_buttons', 'target_title_count')) and
+            value['forbidden_title_count'] == 0 and value['observed_title'] == name and value['explicit_identity_consistent'] is True,
             'The visible target card is ambiguous or retains the forbidden title.')
 
 
@@ -1105,6 +1182,77 @@ def pair_reads(physical, frames):
     return result
 
 
+def singleton_movie_query(value):
+    catalog_shape(value)
+    query = {key.lower(): word for key, word in value['query']}
+    return value['kind'] == 'items' and 'ids' not in query and all(query.get(key) == word for key, word in {
+        'parentid': LIBRARY, 'includeitemtypes': 'Movie', 'recursive': 'true', 'startindex': '0', 'limit': '50'}.items())
+
+
+def dom_wire_identity(value, pairs, input_record, discovery, phase, token, message_id=None, after_sequence=None):
+    name = value['expected_name']
+    dom_identity(value, input_record['target'], name, discovery['dom']['route'], discovery['dom']['document_id'])
+    proof = value['wire_identity']
+    require(set(proof) == {'phase', 'physical_exchange_id', 'frame_request_index', 'body_sha256', 'shape_sha256',
+            'request_sha256', 'token_sha256', 'message_id'} and proof['phase'] == phase and proof['message_id'] == message_id and
+            phase in ('discovery', 'forward', 'restored') and (message_id is None if phase == 'discovery' else safe_text(message_id)),
+            'The visible identity does not name its exact discovery or notification phase.')
+    allowlist = {canonical(value) for value in discovery['query_allowlist']}
+    matched = []
+    for pair in pairs:
+        if not pair['complete'] or not pair['unambiguous']:
+            continue
+        physical, frame = pair['physical'], pair['frame']
+        shape = {key: physical[key] for key in ('kind', 'route', 'query', 'shape_sha256')}
+        eligible = ((singleton_movie_query(physical) and canonical(shape) in allowlist) or
+                    phase != 'discovery' and physical['kind'] == 'target')
+        if not eligible:
+            continue
+        projection = physical['projection']
+        expected = {'phase': phase, 'physical_exchange_id': physical['id'], 'frame_request_index': frame['index'],
+            'body_sha256': projection['body_sha256'], 'shape_sha256': physical['shape_sha256'],
+            'request_sha256': physical['request_sha256'], 'token_sha256': token, 'message_id': message_id}
+        if (same(proof, expected) and physical.get('method') == 'GET' and physical.get('terminal') == 'completed' and
+                frame.get('kind') == physical['kind'] and frame.get('route') == physical['route'] and
+                physical.get('phase') == frame.get('phase') == phase and physical['token_sha256'] == frame['token_sha256'] == token and
+                projection['count'] == 1 and same(projection.get('target'), {'Id': ITEM, 'Name': name, 'Type': 'Movie'}) and
+                frame['page_route'] == value['route'] and frame['document_id'] == value['document_id'] and
+                max(frame['finished_elapsed_ms'], physical['finished_elapsed_ms']) <= value['started_elapsed_ms'] and
+                (after_sequence is None or all(type(row.get('request_sequence')) is int and row['request_sequence'] > after_sequence for row in (physical, frame)))):
+            matched.append(pair)
+    require(len(matched) == 1, 'The card identity lacks its unique completed same-phase wire response before sampling.')
+    return proof
+
+
+def discovery_identity(discovery, input_record, token):
+    require(isinstance(discovery, dict) and isinstance(discovery.get('reads'), list) and 0 < len(discovery['reads']) <= 8 and
+            isinstance(discovery.get('query_allowlist'), list) and 0 < len(discovery['query_allowlist']) <= 8,
+            'The initial full Movie query anchor is missing.')
+    require(isinstance(discovery.get('navigation'), dict) and type(discovery['navigation'].get('before_sequence')) is int and
+            discovery['navigation']['before_sequence'] >= 0, 'The Movie anchor lacks its actual navigation request boundary.')
+    reads = discovery['reads']
+    require(all(isinstance(pair, dict) and isinstance(pair.get('physical'), dict) and isinstance(pair.get('frame'), dict) for pair in reads),
+            'The initial Movie anchor is not a complete paired response.')
+    paired = pair_reads([pair['physical'] for pair in reads], [pair['frame'] for pair in reads])
+    require(same(paired, reads) and all(pair['complete'] and singleton_movie_query(pair['physical']) and
+            pair['physical'].get('phase') == pair['frame'].get('phase') == 'discovery' and pair['physical'].get('method') == 'GET' and
+            pair['physical'].get('terminal') == 'completed' and pair['frame'].get('kind') == 'items' and
+            pair['frame'].get('route') == pair['physical']['route'] and pair['physical']['projection']['count'] == 1 and
+            pair['physical']['token_sha256'] == pair['frame']['token_sha256'] == token and
+            all(type(row.get('request_sequence')) is int and row['request_sequence'] > discovery['navigation']['before_sequence']
+                for row in (pair['physical'], pair['frame'])) and
+            pair['frame']['page_route'] == discovery['dom']['route'] and pair['frame']['document_id'] == discovery['dom']['document_id'] and
+            same(pair['physical']['projection'].get('target'), {'Id': ITEM, 'Name': input_record['target']['name'], 'Type': 'Movie'})
+            for pair in reads),
+            'The initial anchor is not the controlled complete Movie query.')
+    shapes = {canonical({key: pair['physical'][key] for key in ('kind', 'route', 'query', 'shape_sha256')}) for pair in reads}
+    require(shapes == {canonical(value) for value in discovery['query_allowlist']} and len(shapes) == len(discovery['query_allowlist']) and
+            discovery['dom'].get('expected_name') == input_record['target']['name'], 'The frozen query allowlist or original target name changed.')
+    dom_wire_identity(discovery['dom'], paired, input_record, discovery, 'discovery', token,
+                      after_sequence=discovery['navigation']['before_sequence'])
+    return paired
+
+
 def navigation_evidence(discovery, input_record, token):
     reads = discovery.get('collection_folder_reads')
     proof = discovery.get('collection_folder')
@@ -1153,7 +1301,7 @@ def validate_boundary(boundary, name, token):
         1 <= boundary['websocket_opened'] <= boundary['websocket_seen'] <= 2, 'An observation boundary is not bound to one open socket.')
 
 
-def window_evidence(window, input_record, reservation):
+def window_evidence(window, input_record, reservation, discovery=None):
     require(isinstance(window, dict) and window.get('name') in ('forward', 'restored') and
             isinstance(window.get('control_sha256'), str) and HASH.fullmatch(window['control_sha256']), 'A window has no exact control receipt.')
     name, boundary = window['name'], window['boundary']
@@ -1162,6 +1310,9 @@ def window_evidence(window, input_record, reservation):
         reservation['original_name'] == input_record['target']['name'], 'A window reservation targets another item.')
     validate_boundary(boundary, name, boundary.get('token_sha256'))
     b = boundary
+    discovery_identity(discovery, input_record, b['token_sha256'])
+    require(b['route'] == discovery['dom']['route'] and b['document_id'] == discovery['dom']['document_id'],
+            'The notification window left its proven singleton Movie page.')
     require(all(numeric(b.get(key)) and b[key] >= 0 for key in ('response_completed_elapsed_ms', 'end_elapsed_ms', 'completed_elapsed_ms')) and
         type(b.get('duration_ms')) is int and b['duration_ms'] == 120000 and b['response_completed_elapsed_ms'] >= b['started_elapsed_ms'] - 1000 and
         b['end_elapsed_ms'] == b['response_completed_elapsed_ms'] + 120000 and
@@ -1195,6 +1346,8 @@ def window_evidence(window, input_record, reservation):
         require(inside(sample) and numeric(sample.get('started_elapsed_ms')) and sample['started_elapsed_ms'] <= sample['elapsed_ms'],
                 'A DOM sample is outside its observation interval.')
         dom_identity(sample['observation'], input_record['target'], expected, b['route'], b['document_id'], passed=False)
+        require(sample['started_elapsed_ms'] <= sample['observation']['started_elapsed_ms'] <= sample['elapsed_ms'],
+                'The DOM observation was not sampled inside its recorded interval.')
         if index:
             prior = window['dom'][index - 1]
             require(sample['sequence'] > prior['sequence'] and 0 <= sample['started_elapsed_ms'] - prior['elapsed_ms'] <= 4000,
@@ -1211,8 +1364,16 @@ def window_evidence(window, input_record, reservation):
         received.get('document_id') == b['document_id'] and received.get('route') == b['route'], 'The physical notification was not bound to this document delivery.')
     pairs = pair_reads(window['http']['physical'], window['http']['frames'])
     require(same(pairs, window['http'].get('pairs')), 'The reported HTTP pairs differ from independent unambiguous pairing.')
+    allowed_shapes = {canonical(value) for value in discovery['query_allowlist']}
     accepted = [pair for pair in pairs if pair['complete'] and pair['physical']['kind'] in ('items', 'target') and
+        pair['physical'].get('phase') == pair['frame'].get('phase') == name and
+        pair['physical'].get('method') == 'GET' and pair['physical'].get('terminal') == 'completed' and
+        pair['frame'].get('kind') == pair['physical']['kind'] and pair['frame'].get('route') == pair['physical']['route'] and
+        pair['physical']['projection']['count'] == 1 and
+        (pair['physical']['kind'] == 'target' or singleton_movie_query(pair['physical']) and
+            canonical({key: pair['physical'][key] for key in ('kind', 'route', 'query', 'shape_sha256')}) in allowed_shapes) and
         pair['frame'].get('request_sequence', -1) > received['sequence'] and
+        type(pair['physical'].get('request_sequence')) is int and pair['physical']['request_sequence'] > received['sequence'] and
         pair['frame']['request_elapsed_ms'] >= received['elapsed_ms'] and pair['frame']['finished_elapsed_ms'] <= b['end_elapsed_ms'] and
         pair['physical']['finished_elapsed_ms'] <= b['end_elapsed_ms'] and pair['frame']['token_sha256'] == b['token_sha256'] and
         pair['frame'].get('document_id') == b['document_id'] and pair['frame'].get('page_route') == b['route'] and
@@ -1223,6 +1384,8 @@ def window_evidence(window, input_record, reservation):
     def target_dom(sample):
         try:
             dom_identity(sample['observation'], input_record['target'], expected, b['route'], b['document_id'])
+            dom_wire_identity(sample['observation'], pairs, input_record, discovery, name, b['token_sha256'],
+                              received['message']['MessageId'], received['sequence'])
             return True
         except ObservationError:
             return False
@@ -1238,7 +1401,7 @@ def window_evidence(window, input_record, reservation):
         'last_dom_sequence': last['sequence'], 'identity_bound': True, 'ordered': True}}
 
 
-def validate_stage(value, input_record, input_sha, child, name, previous, proof):
+def validate_stage(value, input_record, input_sha, child, name, previous, proof, discovery=None):
     require(isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller',
         'node_process', 'name', 'token_sha256', 'session_private', 'previous_control_sha256', 'observation'} and
         value['marker'] == 'goby-client-library-changed-stage-v1' and type(value['version']) is int and value['version'] == 1 and
@@ -1253,7 +1416,7 @@ def validate_stage(value, input_record, input_sha, child, name, previous, proof)
             'restore-armed': {'forward', 'boundary'}, 'restored': {'restored'}}[name]
     require(isinstance(observation, dict) and set(observation) == keys, 'A stage contains another authorization payload.')
     if name == 'discovery':
-        dom_identity(observation['dom'], input_record['target'], input_record['target']['name'])
+        discovery_identity(observation, input_record, proof['token_sha256'])
         navigation_evidence(observation, input_record, proof['token_sha256'])
         require(observation['home'].get('passed') is True and isinstance(observation['reads'], list) and 0 < len(observation['reads']) <= 8 and
             isinstance(observation['query_allowlist'], list) and 0 < len(observation['query_allowlist']) <= 8,
@@ -1279,18 +1442,23 @@ def validate_stage(value, input_record, input_sha, child, name, previous, proof)
     elif name in ('armed', 'restore-armed'):
         validate_boundary(observation['boundary'], 'forward' if name == 'armed' else 'restored', proof['token_sha256'])
         if name == 'armed':
+            anchor_pairs = discovery_identity(discovery, input_record, proof['token_sha256'])
             quiet = observation['quiet']
             require(isinstance(quiet, dict) and quiet.get('passed') is True and type(quiet.get('duration_ms')) is int and quiet['duration_ms'] == 20000 and
                 type(quiet.get('catalog_requests')) is int and quiet['catalog_requests'] == 0 and type(quiet.get('library_changed_messages')) is int and
                 quiet['library_changed_messages'] == 0 and numeric(quiet.get('started_elapsed_ms')) and numeric(quiet.get('completed_elapsed_ms')) and
                 20000 <= quiet['completed_elapsed_ms'] - quiet['started_elapsed_ms'] <= 25000 and
                 isinstance(quiet.get('samples'), list) and 2 <= len(quiet['samples']) <= 100, 'The complete quiet baseline is missing.')
+            require(quiet['started_elapsed_ms'] >= discovery['dom']['started_elapsed_ms'], 'Quiet sampling began before the proved discovery anchor.')
             prior = None
             for sample in quiet['samples']:
                 dom_identity(sample['observation'], input_record['target'], input_record['target']['name'],
                     observation['boundary']['route'], observation['boundary']['document_id'])
+                dom_wire_identity(sample['observation'], anchor_pairs, input_record, discovery, 'discovery', proof['token_sha256'],
+                                  after_sequence=discovery['navigation']['before_sequence'])
                 require(type(sample.get('sequence')) is int and numeric(sample.get('started_elapsed_ms')) and numeric(sample.get('elapsed_ms')) and
                     quiet['started_elapsed_ms'] <= sample['started_elapsed_ms'] <= sample['elapsed_ms'] <= quiet['completed_elapsed_ms'] and
+                    sample['started_elapsed_ms'] <= sample['observation']['started_elapsed_ms'] <= sample['elapsed_ms'] and
                     (prior is None or sample['sequence'] > prior['sequence'] and 0 <= sample['started_elapsed_ms'] - prior['elapsed_ms'] <= 4000),
                     'The quiet sampling has a gap or unordered sample.')
                 prior = sample
@@ -1373,6 +1541,8 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
     expected_authority = {key: authority[key] for key in UPGRADE_AUTHORITY_KEYS}
     if version == 3:
         expected_authority.update(PRIOR_PINS)
+    elif version == 4:
+        expected_authority['history'] = [{'version': number, **history_scope(number)['pins']} for number in (2, 3)]
     expected_browser_authority = {**expected_authority, 'before_snapshot': authority['prior_before_snapshot']}
     require(isinstance(prior_input, dict) and set(prior_input) == {'marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate',
                 'fixture', 'expected_libraries', 'target', 'source_closure', 'authority', 'controller'} and
@@ -1448,6 +1618,10 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
     require(same(controller.get('ledger'), result), 'The predecessor summary disagrees with the complete independently recomputed delta.')
     if version == 3:
         require(same(controller.get('prior_failure_preservation'), result), 'The v3 report lost its separately validated v2 predecessor result.')
+    elif version == 4:
+        expected_history = [{'version': number, 'ledger': result, 'after_snapshot': history_scope(number)['pins']['after_snapshot'],
+                             'independent_snapshot': history_seal(number)['independent']} for number in (2, 3)]
+        require(same(controller.get('history_preservation'), expected_history), 'The v4 report changed its original two-entry preservation history.')
     return result
 
 
@@ -1462,9 +1636,11 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
         'primary_fact_sha256', 'primary_invocation_id', 'primary_preserved', 'primary_process', 'prior_after_snapshot', 'report',
         'reserved_native_intents', 'restoration', 'schema', 'scope', 'scope_files', 'scope_files_unchanged', 'seal_script',
         'service_writes', 'sql_business_writes', 'status', 'tool', 'upgrade_authority_snapshot', 'version'}
-    if version == 3:
+    if version in (3, 4):
         keys |= {'baseline_chain_verified', 'cumulative_totals', 'discovery_failure', 'old_v2_scope_preserved',
-                 'predecessor_inventories', 'predecessor_terminals', 'prior_baseline', 'prior_failure_preservation'}
+                 'predecessor_inventories', 'predecessor_terminals', 'prior_baseline'}
+        keys |= {'prior_failure_preservation'} if version == 3 else {'history_preservation', 'old_v3_scope_preserved',
+                 'predecessor_units_preserved', 'discovery_screenshot', 'discovery_screenshot_bytes'}
     require(isinstance(terminal, dict) and set(terminal) == keys and terminal['marker'] == 'goby-source55-failed-ui-terminal-v' + str(version) and
             type(terminal['version']) is int and terminal['version'] == 1 and type(terminal['schema']) is int and terminal['schema'] == 28 and
             terminal['status'] == 'failed_scope_sealed' and terminal['observed_run_status'] == 'failed' and terminal['phase'] == 'discovery' and
@@ -1531,17 +1707,27 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
                 same(terminal['cumulative_totals'], {'sessions': 77, 'devices': 66, 'activity_entries': 171}) and
                 same(terminal['cumulative_totals'], {key: len(after['database']['tables'][key]) for key in ('sessions', 'devices', 'activity_entries')}),
                 'The v3 failure seal lost its ordered predecessor chain or exact cumulative population.')
+    elif version == 4:
+        require(terminal['baseline_chain_verified'] is True and terminal['old_v2_scope_preserved'] is True and
+                terminal['old_v3_scope_preserved'] is True and terminal['predecessor_units_preserved'] is True and
+                same(terminal['prior_baseline'], HISTORY_V3_INDEPENDENT) and
+                all(same(terminal[key], descriptor) for key, descriptor in HISTORY_V4_PREDECESSORS.items()) and
+                type(terminal['discovery_screenshot_bytes']) is int and terminal['discovery_screenshot_bytes'] == 38695 and
+                same(terminal['history_preservation'], controller['history_preservation']) and
+                same(terminal['cumulative_totals'], {'sessions': 78, 'devices': 67, 'activity_entries': 173}) and
+                same(terminal['cumulative_totals'], {key: len(after['database']['tables'][key]) for key in ('sessions', 'devices', 'activity_entries')}),
+                'The v4 failure seal changed its complete predecessor chain, diagnostic or cumulative population.')
     compare_fixed_snapshot(after, independent)
     require(instant(independent['database']['metadata']['captured_at']) <= instant(terminal['captured_at']),
             'The independent failure snapshot postdates its seal.')
 
 
 def validate_history_documents(candidate, authority, documents, upgraded):
-    """Validate only the two retained original formats in their fixed order."""
-    require(isinstance(documents, list) and len(documents) == 2 and isinstance(authority.get('history'), list) and
-            len(authority['history']) == 2, 'The complete two-entry history is required.')
+    """Validate only the three retained original formats in their fixed order."""
+    require(isinstance(documents, list) and len(documents) == 3 and isinstance(authority.get('history'), list) and
+            len(authority['history']) == 3, 'The complete three-entry history is required.')
     baseline, latest, results = upgraded, upgraded, []
-    for entry, document, version in zip(authority['history'], documents, (2, 3)):
+    for entry, document, version in zip(authority['history'], documents, (2, 3, 4)):
         validate_history_entry(entry, version)
         require(isinstance(document, dict) and set(document) == {*HISTORY_NAMES, 'independent_snapshot'},
                 'A history document bundle omitted an original artifact.')
@@ -1750,6 +1936,7 @@ class Run:
         compare_fixed_snapshot(self.prior_after, self.before)
         compare_fixed_snapshot(self.prior_independent, self.before)
         self.profile = target_profile(self.before)
+        validate_singleton_movie(self.before, self.profile)
         self.credentials = decode(protected(CREDENTIALS, CREDENTIALS_SHA))
         require(self.credentials.get('base_url') == BASE_URL and self.credentials.get('direct_url') == DIRECT_URL and
             self.credentials.get('viewer', {}).get('username') == 'm3e-client-viewer' and
@@ -1915,7 +2102,8 @@ class Run:
                 require(all(row['revoked_at'] is None for row in current['database']['tables']['sessions'] if row['id'] in active_ids),
                         'An observation stage lost one of its newly owned active credentials.')
                 previous = self.controls[-1]['sha256'] if self.controls else None
-                observation = validate_stage(record['value'], self.input, self.input_sha, self.child, name, previous, self.browser)
+                discovery = self.stages[0]['value']['observation'] if self.stages else None
+                observation = validate_stage(record['value'], self.input, self.input_sha, self.child, name, previous, self.browser, discovery)
                 require(record['value']['session_private'] == self.records['browser-session-private.json'], 'The stage names another private session record.')
                 phase = {'discovery': 'original', 'armed': 'original', 'restore-armed': 'forward', 'restored': 'restored'}[name]
                 validate_ledger(self.before, current, self.profile, self.reservation, self.browser, self.administrator,
@@ -1936,7 +2124,7 @@ class Run:
                         'completed_elapsed_ms', 'duration_ms'} and all(same(window['boundary'][key], value) for key, value in original_boundary.items()),
                         'The completed window does not extend its exact previously accepted armed boundary.')
                     require(window['control_sha256'] == control['sha256'] and same(window['commit'], control['value']['commit']) and
-                        same(window_evidence(window, self.input, self.reservation['public']),
+                        same(window_evidence(window, self.input, self.reservation['public'], discovery),
                              {key: window.get(key) for key in ('result', 'outcome', 'proof')}) and window['result'] == 'passed',
                         'Independent event, automatic HTTP and visible DOM evidence did not pass.')
                     if name == 'restored':
@@ -2455,7 +2643,7 @@ class Run:
             same(report.get('restore_armed'), self.stages[2]['value']['observation']['boundary']) and
             same(report.get('restored'), self.stages[3]['value']['observation']['restored']), 'The final report differs from the independently consumed stage/control records.')
         for window in (report['forward'], report['restored']):
-            require(same(window_evidence(window, self.input, self.reservation['public']), {key: window[key] for key in ('result', 'outcome', 'proof')}) and
+            require(same(window_evidence(window, self.input, self.reservation['public'], report['discovery']), {key: window[key] for key in ('result', 'outcome', 'proof')}) and
                 window['result'] == 'passed', 'The final automatic refresh chain does not independently recompute.')
         actor, closure = report.get('actor', {}), report.get('closure', {})
         observation = report.get('observation', {})
