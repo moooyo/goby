@@ -64,8 +64,8 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 	want := extraSnapshotState(t, ctx, source)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
-	if facts.SchemaVersion != 27 || len(facts.Tables) != 35 || len(facts.MigrationChecksums) != 27 {
-		t.Fatal("the extra archive did not contain the complete actual schema27")
+	if facts.SchemaVersion != 28 || len(facts.Tables) != 35 || len(facts.MigrationChecksums) != 28 {
+		t.Fatal("the extra archive did not contain the complete actual schema28")
 	}
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
@@ -77,7 +77,7 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 		failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 			func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 				called = true
-				if result.SourceVersion != 27 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+				if result.SourceVersion != 28 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 					return errors.New("extra finalizer received changed source facts")
 				}
 				_, err := tx.Exec(ctx, mutation)
@@ -93,7 +93,7 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 		}
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 27 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the unchanged nonempty extra archive: %v", err)
 	}
 	if extraSnapshotState(t, ctx, target) != want {
@@ -103,11 +103,11 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 	targetOptions.SourceURL = target.Config().ConnString()
 	targetFacts, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
 	if !equalJSON(targetFacts, before) || len(targetSequences) != len(sequences) {
-		t.Fatal("the schema27 round trip changed complete source table fingerprints or sequence inventory")
+		t.Fatal("the schema28 round trip changed complete source table fingerprints or sequence inventory")
 	}
 	for name, expected := range sequences {
 		if actual, exists := targetSequences[name]; !exists || actual != expected {
-			t.Fatalf("the schema27 round trip changed original sequence %s", name)
+			t.Fatalf("the schema28 round trip changed original sequence %s", name)
 		}
 	}
 	for _, test := range []struct {
@@ -166,7 +166,7 @@ func TestPostgreSQLExtraSnapshotAndRestoreRejectSemanticCorruption(t *testing.T)
 			}
 			// Exercise the semantic recheck used after a locked recovery
 			// inspection. Invalid state must fail before any facts are returned.
-			inspection := &RecoveryInspection{tx: tx, catalog: plan.catalog, identity: plan.identity, version: 27, locked: true}
+			inspection := &RecoveryInspection{tx: tx, catalog: plan.catalog, identity: plan.identity, version: 28, locked: true}
 			_, recoveryErr := inspection.Facts(ctx, options.ProbeVersion)
 			rollback(tx)
 			if !errors.Is(recoveryErr, ErrSchema) {

@@ -42,6 +42,7 @@ type scanState struct {
 	themes              *themeScan
 	themeLibrary        *themeLibraryScan
 	extras              *extraScan
+	reconciliation      *scanReconciliationEvidence
 }
 
 type storedFile struct {
@@ -60,7 +61,7 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		return "Library is unavailable", err
 	}
 	rows, err := s.pool.Query(task.ctx, `SELECT id, library_id, path, allowed_path, relative_path
-		FROM library_roots WHERE library_id = $1 ORDER BY path`, library.ID)
+		FROM library_roots WHERE library_id = $1 ORDER BY path LIMIT $2`, library.ID, maxRegisteredRootBindingList+1)
 	if err != nil {
 		return "Library directories could not be read", err
 	}
@@ -77,6 +78,14 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 	if err := rows.Err(); err != nil {
 		return "Library directories could not be read", err
 	}
+	if len(roots) > maxRegisteredRootBindingList {
+		return "Library directory count exceeds the complete scan limit; existing catalog records were retained", ErrUnavailable
+	}
+	reconciliation, err := s.prepareScanReconciliation(task, roots)
+	if err != nil {
+		return "Library storage approval or scan ownership changed; existing catalog records were retained", err
+	}
+	defer reconciliation.Close()
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
 	themeOwners := &themeLibraryScan{roots: make(map[string]*scanState), expected: roots,
 		claimed: make(map[string]string), issues: make(map[string]int)}
@@ -86,12 +95,17 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err
 		}
-		opened, err := s.openLibraryRoot(root)
+		opened, err := reconciliation.openRoot(s, root)
 		if err != nil {
+			var preparationFailure *scanReconciliationPreparationFailure
+			if errors.As(err, &preparationFailure) {
+				return "Library storage approval or scan ownership changed; existing catalog records were retained", err
+			}
 			failedRoots++
 			continue
 		}
-		state := &scanState{store: s, task: task, library: library, root: root, opened: opened, themeLibrary: themeOwners}
+		state := &scanState{store: s, task: task, library: library, root: root, opened: opened,
+			themeLibrary: themeOwners, reconciliation: reconciliation.collector()}
 		err = state.startThemeScan()
 		if err == nil {
 			err = state.startExtraScan()
@@ -133,6 +147,10 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			musicParents[parentID] = true
 		}
 	}
+	reconciliationMessage, err := reconciliation.finish(s, task, library, failedRoots == 0 && warnings == 0, musicParents)
+	if err != nil {
+		return "Missing catalog records could not be reconciled safely", err
+	}
 	if _, musicEnabled := s.prober.(interface{ MusicMetadataVersion() int }); musicEnabled {
 		musicWarnings, err := s.refreshScannedMusicAlbums(task.ctx, library.ID, musicParents, completeRoots)
 		if err != nil {
@@ -145,13 +163,14 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		numberingMessage = fmt.Sprintf("; %d local metadata numbering conflicts were ignored to preserve the existing hierarchy", numberingConflicts)
 	}
 	numberingMessage += themeWarningMessage(themeOwners)
+	numberingMessage += reconciliationMessage
 	if failedRoots > 0 {
 		return fmt.Sprintf("%d media directories could not be scanned; existing catalog records were retained", failedRoots) + numberingMessage, ErrUnavailable
 	}
 	if warnings > 0 {
 		return fmt.Sprintf("%d media or local metadata entries could not be inspected; previous valid metadata was retained", warnings) + numberingMessage, nil
 	}
-	return "", nil
+	return strings.TrimPrefix(reconciliationMessage, "; "), nil
 }
 
 func (state *scanState) walk(relative string, current hierarchy, depth int) error {
@@ -174,9 +193,12 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	// Hold the observed directory while its NFO and children are processed so
 	// its identity cannot be recycled after a concurrent rename or removal.
 	defer directory.Close()
-	entries, err := directory.ReadDir(-1)
+	entries, err := readScanDirectoryEntries(state.task.ctx, directory)
 	if err != nil {
 		return err
+	}
+	if state.reconciliation != nil {
+		_ = state.reconciliation.RecordDirectory(state.root.id, relative, info, entries)
 	}
 	entries, err = state.classifyExtraDirectory(relative, entries, info)
 	if err == nil {
@@ -273,7 +295,13 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 			state.failThemeDirectory(relative)
 		}
 	}
-	return state.publishThemeDirectory(relative)
+	if err := state.publishThemeDirectory(relative); err != nil {
+		return err
+	}
+	if state.reconciliation != nil && state.warnings == 0 {
+		_ = state.reconciliation.CompleteDirectory(state.root.id, relative)
+	}
+	return nil
 }
 
 func (state *scanState) scanFile(path, kind string, current hierarchy) error {
@@ -379,6 +407,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 			return err
 		}
 		state.recordThemePrimary(path, stored.id, itemType)
+		state.recordScanSeen(stored.id)
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
@@ -465,6 +494,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	state.recordThemePrimary(path, id, itemType)
+	state.recordScanSeen(id)
 	return state.store.persistProgress(state.task)
 }
 
@@ -570,6 +600,7 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 			return "", err
 		}
 	}
+	state.recordScanSeen(id)
 	return id, nil
 }
 

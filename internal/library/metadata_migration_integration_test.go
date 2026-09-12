@@ -145,6 +145,11 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'device_registry_id'
 				ORDER BY (to_jsonb(original) - 'device_registry_id')::text), '[]'::jsonb)::text FROM sessions original`
 		}
+		if table == "library_roots" {
+			// Storage binding defaults are checked separately; compare every old field.
+			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by'
+				ORDER BY (to_jsonb(original) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by')::text), '[]'::jsonb)::text FROM library_roots original`
+		}
 		if table == "play_sessions" || table == "encoding_jobs" || table == "client_playback_references" {
 			// New application-client columns do not change any historical field.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'application_client_id'
@@ -298,8 +303,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Fatalf("metadata migration version = %d, want 27, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Fatalf("metadata migration version = %d, want 28, error = %v", version, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -308,6 +313,11 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 			if after[table] != before[table] {
 				t.Errorf("metadata migration rewrote existing table %s", table)
 			}
+		}
+		var boundRoots int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
+			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL`).Scan(&boundRoots); err != nil || boundRoots != 0 {
+			t.Errorf("metadata migration changed historical root binding defaults: count=%d error=%v", boundRoots, err)
 		}
 		var taskLinkedScans int
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM scan_jobs WHERE task_child_id IS NOT NULL").Scan(&taskLinkedScans); err != nil || taskLinkedScans != 0 {

@@ -25,41 +25,42 @@ var (
 type Action string
 
 const (
-	ActionUserCreated              Action = "user.created"
-	ActionUserUpdated              Action = "user.updated"
-	ActionUserPasswordReset        Action = "user.password_reset"
-	ActionSessionLogin             Action = "session.login"
-	ActionSessionRevoked           Action = "session.revoked"
-	ActionApplicationKeyCreated    Action = "application_key.created"
-	ActionApplicationKeyRevealed   Action = "application_key.revealed"
-	ActionApplicationKeyRevoked    Action = "application_key.revoked"
-	ActionDeviceUpdated            Action = "device.updated"
-	ActionDeviceRemoved            Action = "device.removed"
-	ActionLibraryCreated           Action = "library.created"
-	ActionLibraryRemoved           Action = "library.removed"
-	ActionScanRequested            Action = "scan.requested"
-	ActionScanCancelRequested      Action = "scan.cancel_requested"
-	ActionScanFinished             Action = "scan.finished"
-	ActionMetadataUpdated          Action = "metadata.updated"
-	ActionSettingsUpdated          Action = "settings.updated"
-	ActionTaskAdmitted             Action = "task.admitted"
-	ActionTaskCancelRequested      Action = "task.cancel_requested"
-	ActionTaskFinished             Action = "task.finished"
-	ActionTaskScheduleUpdated      Action = "task.schedule_updated"
-	ActionBackupRequested          Action = "backup.requested"
-	ActionBackupCancelRequested    Action = "backup.cancel_requested"
-	ActionBackupFinished           Action = "backup.finished"
-	ActionBackupImported           Action = "backup.imported"
-	ActionBackupDeleteRequested    Action = "backup.delete_requested"
-	ActionBackupDeleted            Action = "backup.deleted"
-	ActionBackupDownloaded         Action = "backup.downloaded"
-	ActionRestoreRequested         Action = "restore.requested"
-	ActionRestorePlanned           Action = "restore.planned"
-	ActionRestoreApplyRequested    Action = "restore.apply_requested"
-	ActionRestoreApplied           Action = "restore.applied"
-	ActionRestoreRollbackRequested Action = "restore.rollback_requested"
-	ActionRestoreCancelRequested   Action = "restore.cancel_requested"
-	ActionRestoreFailed            Action = "restore.failed"
+	ActionUserCreated               Action = "user.created"
+	ActionUserUpdated               Action = "user.updated"
+	ActionUserPasswordReset         Action = "user.password_reset"
+	ActionSessionLogin              Action = "session.login"
+	ActionSessionRevoked            Action = "session.revoked"
+	ActionApplicationKeyCreated     Action = "application_key.created"
+	ActionApplicationKeyRevealed    Action = "application_key.revealed"
+	ActionApplicationKeyRevoked     Action = "application_key.revoked"
+	ActionDeviceUpdated             Action = "device.updated"
+	ActionDeviceRemoved             Action = "device.removed"
+	ActionLibraryCreated            Action = "library.created"
+	ActionLibraryRemoved            Action = "library.removed"
+	ActionLibraryRootBindingUpdated Action = "library.root_binding.updated"
+	ActionScanRequested             Action = "scan.requested"
+	ActionScanCancelRequested       Action = "scan.cancel_requested"
+	ActionScanFinished              Action = "scan.finished"
+	ActionMetadataUpdated           Action = "metadata.updated"
+	ActionSettingsUpdated           Action = "settings.updated"
+	ActionTaskAdmitted              Action = "task.admitted"
+	ActionTaskCancelRequested       Action = "task.cancel_requested"
+	ActionTaskFinished              Action = "task.finished"
+	ActionTaskScheduleUpdated       Action = "task.schedule_updated"
+	ActionBackupRequested           Action = "backup.requested"
+	ActionBackupCancelRequested     Action = "backup.cancel_requested"
+	ActionBackupFinished            Action = "backup.finished"
+	ActionBackupImported            Action = "backup.imported"
+	ActionBackupDeleteRequested     Action = "backup.delete_requested"
+	ActionBackupDeleted             Action = "backup.deleted"
+	ActionBackupDownloaded          Action = "backup.downloaded"
+	ActionRestoreRequested          Action = "restore.requested"
+	ActionRestorePlanned            Action = "restore.planned"
+	ActionRestoreApplyRequested     Action = "restore.apply_requested"
+	ActionRestoreApplied            Action = "restore.applied"
+	ActionRestoreRollbackRequested  Action = "restore.rollback_requested"
+	ActionRestoreCancelRequested    Action = "restore.cancel_requested"
+	ActionRestoreFailed             Action = "restore.failed"
 )
 
 type Severity string
@@ -106,6 +107,7 @@ const (
 	ResourceApplicationKey ResourceKind = "application_key"
 	ResourceDevice         ResourceKind = "device"
 	ResourceLibrary        ResourceKind = "library"
+	ResourceLibraryRoot    ResourceKind = "library_root"
 	ResourceScan           ResourceKind = "scan"
 	ResourceItem           ResourceKind = "item"
 	ResourceSettings       ResourceKind = "settings"
@@ -178,18 +180,22 @@ const (
 // mean no revision and no affected resources respectively. State is required
 // for terminal scan, task, backup, and restore facts. ChangedFields contains
 // names alone, never before/after values; backup and restore events have none.
+// Root binding updates additionally retain adjacent previous/current revisions
+// and a canonical observation digest, never a path or an observation handle.
 // The writer does not authorize the actor.
 type Event struct {
-	Action        Action
-	Severity      Severity
-	Source        Source
-	Actor         Actor
-	Resource      Resource
-	RequestID     string
-	Revision      int64
-	Count         int64
-	State         State
-	ChangedFields []Field
+	Action                 Action
+	Severity               Severity
+	Source                 Source
+	Actor                  Actor
+	Resource               Resource
+	RequestID              string
+	Revision               int64
+	PreviousRevision       int64  `json:"PreviousRevision,omitempty"`
+	ObservationFingerprint string `json:"ObservationFingerprint,omitempty"`
+	Count                  int64
+	State                  State
+	ChangedFields          []Field
 }
 
 // Entry projects only explicit stored facts. ActorName is optional current-user

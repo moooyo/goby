@@ -302,7 +302,7 @@ export interface OverviewResponse {
 export const activityActions = [
   "user.created", "user.updated", "user.password_reset", "session.login", "session.revoked",
   "application_key.created", "application_key.revealed", "application_key.revoked", "device.updated", "device.removed",
-  "library.created", "library.removed", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated",
+  "library.created", "library.removed", "library.root_binding.updated", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated",
   "settings.updated", "task.admitted", "task.cancel_requested", "task.finished", "task.schedule_updated",
   "backup.requested", "backup.cancel_requested", "backup.finished", "backup.imported", "backup.delete_requested", "backup.deleted", "backup.downloaded",
   "restore.requested", "restore.planned", "restore.apply_requested", "restore.applied", "restore.rollback_requested", "restore.cancel_requested", "restore.failed",
@@ -310,7 +310,7 @@ export const activityActions = [
 export const activitySeverities = ["Info", "Debug", "Warn", "Error", "Fatal"] as const;
 export type ActivityAction = typeof activityActions[number];
 export type ActivitySeverity = typeof activitySeverities[number];
-export type ActivityResourceKind = "user" | "session" | "application_key" | "device" | "library" | "scan" | "item" | "settings" | "task" | "task_run" | "backup" | "restore";
+export type ActivityResourceKind = "user" | "session" | "application_key" | "device" | "library" | "library_root" | "scan" | "item" | "settings" | "task" | "task_run" | "backup" | "restore";
 
 export interface ActivityEntry {
   Id: string;
@@ -321,6 +321,8 @@ export interface ActivityEntry {
   Actor: { Kind: "user" | "application_key" | "system"; Id: string | null; Name: string | null };
   Resource: { Kind: ActivityResourceKind; Id: string };
   Revision: string | null;
+  PreviousRevision?: string;
+  ObservationFingerprint?: string;
   Count: string;
   State: "completed" | "failed" | "cancelled" | "interrupted" | null;
   ChangedFields: string[];
@@ -1248,13 +1250,22 @@ function validActivityEntry(value: unknown): value is ActivityEntry {
     || (value.Actor.Id !== null && !nonemptyString(value.Actor.Id))
     || (value.Actor.Name !== null && typeof value.Actor.Name !== "string")
     || !isRecord(value.Resource) || !nonemptyString(value.Resource.Id)
-    || !["user", "session", "application_key", "device", "library", "scan", "item", "settings", "task", "task_run", "backup", "restore"].includes(value.Resource.Kind as string)
+    || !["user", "session", "application_key", "device", "library", "library_root", "scan", "item", "settings", "task", "task_run", "backup", "restore"].includes(value.Resource.Kind as string)
     || (value.Revision !== null && !validObservabilityDecimal(value.Revision, true))
+    || (value.PreviousRevision !== undefined && !validObservabilityDecimal(value.PreviousRevision, true))
+    || (value.ObservationFingerprint !== undefined && (typeof value.ObservationFingerprint !== "string" || !/^[0-9a-f]{64}$/.test(value.ObservationFingerprint)))
     || !validObservabilityDecimal(value.Count)
     || (value.State !== null && !["completed", "failed", "cancelled", "interrupted"].includes(value.State as string))
     || !Array.isArray(value.ChangedFields) || !value.ChangedFields.every((field) => typeof field === "string")
     || typeof value.Name !== "string" || typeof value.Overview !== "string") return false;
-  return Object.keys(value).every((field) => ["Id", "Date", "Action", "Severity", "Source", "Actor", "Resource", "Revision", "Count", "State", "ChangedFields", "Name", "Overview"].includes(field))
+  if (value.Action === "library.root_binding.updated") {
+    if (value.Source !== "native" || value.Actor.Kind !== "user" || value.Resource.Kind !== "library_root"
+      || !validObservabilityDecimal(value.PreviousRevision, true) || !validObservabilityDecimal(value.Revision, true)
+      || typeof value.ObservationFingerprint !== "string" || !/^[0-9a-f]{64}$/.test(value.ObservationFingerprint)
+      || BigInt(value.PreviousRevision) >= 9223372036854775807n || BigInt(value.Revision) !== BigInt(value.PreviousRevision) + 1n
+      || value.Count !== "0" || value.State !== null || value.ChangedFields.length !== 0) return false;
+  } else if (value.PreviousRevision !== undefined || value.ObservationFingerprint !== undefined) return false;
+  return Object.keys(value).every((field) => ["Id", "Date", "Action", "Severity", "Source", "Actor", "Resource", "Revision", "PreviousRevision", "ObservationFingerprint", "Count", "State", "ChangedFields", "Name", "Overview"].includes(field))
     && Object.keys(value.Actor).every((field) => ["Kind", "Id", "Name"].includes(field))
     && Object.keys(value.Resource).every((field) => ["Kind", "Id"].includes(field));
 }

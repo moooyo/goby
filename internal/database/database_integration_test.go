@@ -72,6 +72,20 @@ func migrationHistory(t *testing.T, ctx context.Context, pool *pgxpool.Pool) str
 	return snapshot
 }
 
+// Original-column snapshots prove row preservation; these checks account for
+// every binding column added by the current migration without inferring approval.
+func assertStorageBindingMigrationDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var changedRoots, changedActivity int
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
+			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL),
+		(SELECT count(*) FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
+			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&changedRoots, &changedActivity); err != nil || changedRoots != 0 || changedActivity != 0 {
+		t.Fatalf("migration inferred root approval or binding audit facts: roots=%d activity=%d error=%v", changedRoots, changedActivity, err)
+	}
+}
+
 // Historical settings and music migrations keep their published schema25
 // endpoint even after the current runner gains later schema additions.
 func migratePublishedSchema25TestPrefix(ctx context.Context, pool *pgxpool.Pool) error {
@@ -108,15 +122,15 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		}
 	}
 	version, err := database.SchemaVersion(ctx, pool)
-	if err != nil || version != 27 {
-		t.Fatalf("schema version after concurrent migration = %d, want 27, error = %v", version, err)
+	if err != nil || version != 28 {
+		t.Fatalf("schema version after concurrent migration = %d, want 28, error = %v", version, err)
 	}
 	var count int
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatalf("count applied migrations: %v", err)
 	}
-	if count != 27 {
-		t.Fatalf("migration history count = %d, want 27", count)
+	if count != 28 {
+		t.Fatalf("migration history count = %d, want 28", count)
 	}
 	before := migrationHistory(t, ctx, pool)
 	if err := database.Migrate(ctx, pool); err != nil {
@@ -125,8 +139,8 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if after := migrationHistory(t, ctx, pool); after != before {
 		t.Errorf("repeated migration changed history: before = %s, after = %s", before, after)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Errorf("schema version after repeated migration = %d, want 27, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Errorf("schema version after repeated migration = %d, want 28, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
 	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources"} {

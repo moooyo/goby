@@ -25,6 +25,12 @@ func beforeMigration(ctx context.Context, tx pgx.Tx, version int64) error {
 }
 
 func afterMigration(ctx context.Context, tx pgx.Tx, version int64) error {
+	if version == 28 {
+		if err := ValidateRootBindingState(ctx, tx, version); err != nil {
+			return fmt.Errorf("validate migrated storage root bindings: %w", err)
+		}
+		return nil
+	}
 	if version != 27 {
 		return nil
 	}

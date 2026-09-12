@@ -16,7 +16,7 @@ type Row interface {
 
 const queryEntries = `WITH filtered AS (
 	SELECT id,created_at,action,severity,source,actor_kind,actor_id,actor_credential_id,
-		resource_kind,resource_id,request_id,revision,affected_count,state,changed_fields
+		resource_kind,resource_id,request_id,revision,previous_revision,observation_fingerprint,affected_count,state,changed_fields
 	FROM activity_entries
 	WHERE ($1::timestamptz IS NULL OR created_at >= $1)
 		AND ($2 = '' OR severity = $2)
@@ -30,7 +30,8 @@ SELECT (SELECT count(*) FROM filtered), COALESCE((
 		'ID',p.id,'Date',p.created_at,'Action',p.action,'Severity',p.severity,'Source',p.source,
 		'Actor',jsonb_build_object('Kind',p.actor_kind,'ID',p.actor_id,'CredentialID',p.actor_credential_id),
 		'Resource',jsonb_build_object('Kind',p.resource_kind,'ID',p.resource_id),
-		'RequestID',p.request_id,'Revision',p.revision,'Count',p.affected_count,
+		'RequestID',p.request_id,'Revision',p.revision,'PreviousRevision',p.previous_revision,
+		'ObservationFingerprint',p.observation_fingerprint,'Count',p.affected_count,
 		'State',p.state,'ChangedFields',p.changed_fields,'ActorName',COALESCE(u.name,''))
 		ORDER BY p.created_at DESC,p.id DESC)
 	FROM page p LEFT JOIN users u ON p.actor_kind = 'user' AND u.id = p.actor_id
@@ -92,6 +93,13 @@ func QueryOwned(queryRow func(string, ...any) Row, options QueryOptions) (Page, 
 			entry.ActorName = ""
 		}
 		entry.Name, entry.Overview = description(entry.Action, entry.State)
+		if entry.Action == ActionLibraryRootBindingUpdated {
+			if _, err := eventArguments(entry.Event); err != nil {
+				return Page{}, fmt.Errorf("%w: stored root binding activity is invalid", ErrUnavailable)
+			}
+			entry.Overview = fmt.Sprintf("A registered media directory binding changed from revision %d to %d. Observation fingerprint: %s.",
+				entry.PreviousRevision, entry.Revision, entry.ObservationFingerprint)
+		}
 	}
 	return result, nil
 }
@@ -134,6 +142,8 @@ func description(action Action, state State) (string, string) {
 		return "Library created", "A media library was registered."
 	case ActionLibraryRemoved:
 		return "Library removed", "A media library was removed from the catalog; media files were retained."
+	case ActionLibraryRootBindingUpdated:
+		return "Library root binding updated", "A registered media directory binding was updated."
 	case ActionScanRequested:
 		return "Library scan requested", "A library scan was durably queued."
 	case ActionScanCancelRequested:

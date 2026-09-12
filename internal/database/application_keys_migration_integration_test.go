@@ -43,8 +43,8 @@ func requireApplicationKeyConstraint(t *testing.T, err error, code string) {
 }
 
 // Version 15 already contains management revisions and all login metadata.
-// Exclude the new device registry and nullable client-context columns; every
-// old field, including secrets and timestamps, remains compared.
+// Exclude the new device registry, client-context, and storage-binding columns;
+// every old field, including secrets and timestamps, remains compared.
 func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
@@ -53,7 +53,7 @@ func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 		'users', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM users t),
 		'credentials', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
-		'roots', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM library_roots t),
+		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'playback', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM play_sessions t),
 		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
@@ -105,12 +105,13 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("migrate application credentials: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Fatalf("application key schema = %d, want 27, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Fatalf("application key schema = %d, want 28, error=%v", version, err)
 	}
 	if after := applicationKeyLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("application key migration changed historical rows or credential material")
 	}
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var registeredLogins int
 	var registryMatches bool
 	if err := pool.QueryRow(ctx, `SELECT count(*), bool_and(authentication.device_registry_id IS NOT NULL
@@ -239,4 +240,5 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if migrationHistory(t, ctx, pool) != history {
 		t.Fatal("repeated application key migration changed history")
 	}
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 }

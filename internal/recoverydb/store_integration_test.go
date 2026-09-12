@@ -572,6 +572,10 @@ func TestRecoveryDatabaseStoreIntegration(t *testing.T) {
 		f.assertFacts(t, f.source, retained.Facts)
 	})
 
+	run("reset_preserves_storage_binding_changes", func(t *testing.T) {
+		assertRecoveryRootBindingResetProtection(t, f, retained)
+	})
+
 	run("reset_rechecks_a_writer_that_commits_during_its_lock_wait", func(t *testing.T) {
 		blocker, pid, relation := f.block(t, f.source, "users", "ACCESS SHARE")
 		defer recoveryRollback(blocker)

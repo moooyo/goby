@@ -253,76 +253,9 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 		// context, matching Exec/QueryRow without cancelling its lock connection.
 		queryCtx = owned.ctx
 	}
-	rows, err := tx.Query(queryCtx, `WITH RECURSIVE members AS (
-		SELECT i.id, i.library_id FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
-		UNION
-		SELECT child.id, child.library_id FROM members parent JOIN items child
-			ON child.parent_id = parent.id AND child.library_id = parent.library_id
-		WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder) AND `+ordinaryItemSQL("child")+`
-	) SELECT i.media -> 'EmbeddedMusic' FROM members member JOIN items i ON i.id = member.id AND i.library_id = member.library_id
-		WHERE i.type = 'Audio' AND NOT i.is_folder AND `+ordinaryItemSQL("i")+`
-		ORDER BY i.parent_index_number, i.index_number, i.id`, albumID, libraryID)
-	if err != nil {
-		return false, fmt.Errorf("read accepted album members: %w", err)
-	}
-	defer rows.Close()
-	source := musicMetadataSource{Version: musicSourceVersion, Artists: []string{}, AlbumArtists: []string{}}
-	seenArtists := make(map[string]bool)
-	var uniformAlbum, uniformArtist, uniformAlbumArtist string
-	allAlbums, allArtists, readAll, withinBounds := true, true, true, true
-	allAlbumArtists, noAlbumArtists := true, true
-	memberCount := 0
-	for rows.Next() {
-		var raw []byte
-		if err := rows.Scan(&raw); err != nil {
-			return false, fmt.Errorf("scan accepted album member: %w", err)
-		}
-		facts, accepted := acceptedTrackMusic(raw)
-		if !accepted {
-			readAll = false
-			continue
-		}
-		if memberCount == 0 {
-			uniformAlbum, uniformArtist, uniformAlbumArtist = facts.Album, facts.Artist, facts.AlbumArtist
-		}
-		memberCount++
-		allAlbums = allAlbums && strings.TrimSpace(facts.Album) != "" && facts.Album == uniformAlbum
-		allArtists = allArtists && strings.TrimSpace(facts.Artist) != "" && facts.Artist == uniformArtist
-		albumArtistPresent := strings.TrimSpace(facts.AlbumArtist) != ""
-		allAlbumArtists = allAlbumArtists && albumArtistPresent && facts.AlbumArtist == uniformAlbumArtist
-		noAlbumArtists = noAlbumArtists && !albumArtistPresent
-		if strings.TrimSpace(facts.Artist) != "" && !seenArtists[facts.Artist] {
-			if len(source.Artists) == musicSourceMaxEntries {
-				withinBounds = false
-				continue
-			}
-			source.Artists = append(source.Artists, facts.Artist)
-			seenArtists[facts.Artist] = true
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return false, fmt.Errorf("finish accepted album member read: %w", err)
-	}
-	rows.Close()
-	if !readAll || !withinBounds {
-		return false, nil
-	}
-	if memberCount > 0 && allAlbums {
-		source.Name, source.Album = uniformAlbum, uniformAlbum
-	}
-	// Explicit album artists win only with complete agreement. The historical
-	// track-artist fallback applies only when no member supplies album_artist;
-	// partial or conflicting explicit facts must not be hidden by that fallback.
-	if memberCount > 0 {
-		if allAlbumArtists {
-			source.AlbumArtists = []string{uniformAlbumArtist}
-		} else if noAlbumArtists && allArtists {
-			source.AlbumArtists = []string{uniformArtist}
-		}
-	}
-	encoded, err := encodeAcceptedMusicSource(source)
-	if err != nil {
-		return false, nil
+	encoded, ready, err := readAcceptedMusicAlbumSource(queryCtx, tx, libraryID, albumID, nil, nil)
+	if err != nil || !ready {
+		return false, err
 	}
 	var changed bool
 	if err := tx.QueryRow(ctx, "SELECT music_source IS DISTINCT FROM $2::jsonb FROM item_metadata_state WHERE item_id = $1",
@@ -354,4 +287,207 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 		return false, err
 	}
 	return true, nil
+}
+
+const acceptedMusicAlbumReadBatch = 64
+
+// Four accepted fields each contain at most metadataValueMaxName bytes. Even
+// maximally escaped JSON fits this bound; larger jsonb projections are invalid.
+const acceptedMusicAlbumTrackBytes = 32 << 10
+
+// Reserve one bounded result page, source encoding, and query-array scratch in
+// addition to retained rows. Per-row charges cover maps and decoded strings.
+const acceptedMusicAlbumScratchBytes = 4 << 20
+
+type acceptedMusicAlbumBudget struct {
+	items int
+	bytes int
+}
+
+func (budget *acceptedMusicAlbumBudget) retain(bytes int) bool {
+	if bytes < 0 || budget.items >= scanReconciliationMaxItems || bytes > scanReconciliationMaxBytes-budget.bytes {
+		return false
+	}
+	budget.items++
+	budget.bytes += bytes
+	return true
+}
+
+type acceptedMusicAlbumTrack struct {
+	id                 string
+	parentIndex, index int
+	raw                []byte
+}
+
+// The caller has resolved a surviving ordinary MusicAlbum. Read the exact
+// post-deletion membership when excluded is nonempty, without publishing it.
+// Discovery and publication share these aggregation rules and bounded reads.
+func readAcceptedMusicAlbumSource(ctx context.Context, tx pgx.Tx, libraryID, albumID string, excluded []string, budget *acceptedMusicAlbumBudget) ([]byte, bool, error) {
+	if budget == nil {
+		budget = &acceptedMusicAlbumBudget{bytes: acceptedMusicAlbumScratchBytes}
+	}
+	if excluded == nil {
+		excluded = []string{}
+	}
+	queryCtx := ctx
+	if owned, ok := tx.(*ownedTx); ok {
+		queryCtx = owned.ctx
+	}
+	frontier := []string{albumID}
+	seen := map[string]bool{albumID: true}
+	var tracks []acceptedMusicAlbumTrack
+	for depth := 0; len(frontier) != 0; depth++ {
+		var next []string
+		afterID := ""
+		for {
+			if err := ctx.Err(); err != nil {
+				return nil, false, err
+			}
+			rows, err := tx.Query(queryCtx, `SELECT
+				CASE WHEN octet_length(i.id)<=256 THEN i.id ELSE '' END,
+				i.type='Audio' AND NOT i.is_folder,
+				CASE WHEN i.type='Audio' AND NOT i.is_folder
+					AND octet_length((i.media->'EmbeddedMusic')::text)<=$5
+					THEN (i.media->'EmbeddedMusic')::text END,
+				i.parent_index_number, i.index_number
+				FROM items i WHERE i.parent_id=ANY($1::text[]) AND i.library_id=$2
+				AND NOT (i.id=ANY($3::text[])) AND i.id>$4
+				AND NOT (i.type='MusicAlbum' AND i.is_folder) AND `+ordinaryItemSQL("i")+`
+				ORDER BY i.id LIMIT $6`, frontier, libraryID, excluded, afterID, acceptedMusicAlbumTrackBytes, acceptedMusicAlbumReadBatch)
+			if err != nil {
+				return nil, false, fmt.Errorf("read accepted album members: %w", err)
+			}
+			count, ready := 0, true
+			for rows.Next() {
+				var track acceptedMusicAlbumTrack
+				var audio bool
+				if err := rows.Scan(&track.id, &audio, &track.raw, &track.parentIndex, &track.index); err != nil {
+					rows.Close()
+					return nil, false, fmt.Errorf("scan accepted album member: %w", err)
+				}
+				count++
+				afterID = track.id
+				if !validCatalogLibraryIdentifier(track.id) || depth >= scanReconciliationMaxDepth ||
+					!budget.retain(scanReconciliationItemBytes+len(track.id)+2*len(track.raw)) {
+					ready = false
+					continue
+				}
+				if seen[track.id] {
+					continue
+				}
+				seen[track.id] = true
+				next = append(next, track.id)
+				if audio {
+					tracks = append(tracks, track)
+				}
+			}
+			err = rows.Err()
+			rows.Close()
+			if err != nil {
+				return nil, false, fmt.Errorf("finish accepted album member read: %w", err)
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, false, err
+			}
+			if !ready {
+				return nil, false, nil
+			}
+			if count < acceptedMusicAlbumReadBatch {
+				break
+			}
+		}
+		frontier = next
+	}
+	if len(tracks) > 1 {
+		// Preserve PostgreSQL's existing ID collation for equal track numbers,
+		// including restored legacy IDs. Sort only the bounded facts already read.
+		ids := make([]string, len(tracks))
+		parentIndexes, indexes := make([]int32, len(tracks)), make([]int32, len(tracks))
+		for index, track := range tracks {
+			ids[index], parentIndexes[index], indexes[index] = track.id, int32(track.parentIndex), int32(track.index)
+		}
+		rows, err := tx.Query(queryCtx, `SELECT member.ordinal FROM
+			unnest($1::text[],$2::integer[],$3::integer[]) WITH ORDINALITY
+			AS member(id,parent_index_number,index_number,ordinal)
+			ORDER BY member.parent_index_number,member.index_number,member.id`, ids, parentIndexes, indexes)
+		if err != nil {
+			return nil, false, fmt.Errorf("order accepted album members: %w", err)
+		}
+		ordered := make([]acceptedMusicAlbumTrack, 0, len(tracks))
+		for rows.Next() {
+			var position int
+			if err := rows.Scan(&position); err != nil {
+				rows.Close()
+				return nil, false, fmt.Errorf("read accepted album member order: %w", err)
+			}
+			if position < 1 || position > len(tracks) || len(ordered) == len(tracks) {
+				rows.Close()
+				return nil, false, fmt.Errorf("accepted album member order is invalid")
+			}
+			ordered = append(ordered, tracks[position-1])
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return nil, false, fmt.Errorf("finish accepted album member order: %w", err)
+		}
+		if len(ordered) != len(tracks) {
+			return nil, false, fmt.Errorf("accepted album member order is incomplete")
+		}
+		tracks = ordered
+	}
+	source := musicMetadataSource{Version: musicSourceVersion, Artists: []string{}, AlbumArtists: []string{}}
+	seenArtists := make(map[string]bool)
+	var uniformAlbum, uniformArtist, uniformAlbumArtist string
+	allAlbums, allArtists, readAll, withinBounds := true, true, true, true
+	allAlbumArtists, noAlbumArtists := true, true
+	memberCount := 0
+	for _, track := range tracks {
+		if err := ctx.Err(); err != nil {
+			return nil, false, err
+		}
+		facts, accepted := acceptedTrackMusic(track.raw)
+		if !accepted {
+			readAll = false
+			continue
+		}
+		if memberCount == 0 {
+			uniformAlbum, uniformArtist, uniformAlbumArtist = facts.Album, facts.Artist, facts.AlbumArtist
+		}
+		memberCount++
+		allAlbums = allAlbums && strings.TrimSpace(facts.Album) != "" && facts.Album == uniformAlbum
+		allArtists = allArtists && strings.TrimSpace(facts.Artist) != "" && facts.Artist == uniformArtist
+		albumArtistPresent := strings.TrimSpace(facts.AlbumArtist) != ""
+		allAlbumArtists = allAlbumArtists && albumArtistPresent && facts.AlbumArtist == uniformAlbumArtist
+		noAlbumArtists = noAlbumArtists && !albumArtistPresent
+		if strings.TrimSpace(facts.Artist) != "" && !seenArtists[facts.Artist] {
+			if len(source.Artists) == musicSourceMaxEntries {
+				withinBounds = false
+				continue
+			}
+			source.Artists = append(source.Artists, facts.Artist)
+			seenArtists[facts.Artist] = true
+		}
+	}
+	if !readAll || !withinBounds {
+		return nil, false, nil
+	}
+	if memberCount > 0 && allAlbums {
+		source.Name, source.Album = uniformAlbum, uniformAlbum
+	}
+	// Explicit album artists win only with complete agreement. The historical
+	// track-artist fallback applies only when no member supplies album_artist;
+	// partial or conflicting explicit facts must not be hidden by that fallback.
+	if memberCount > 0 {
+		if allAlbumArtists {
+			source.AlbumArtists = []string{uniformAlbumArtist}
+		} else if noAlbumArtists && allArtists {
+			source.AlbumArtists = []string{uniformArtist}
+		}
+	}
+	encoded, err := encodeAcceptedMusicSource(source)
+	if err != nil {
+		return nil, false, nil
+	}
+	return encoded, true, nil
 }

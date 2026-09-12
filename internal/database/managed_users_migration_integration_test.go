@@ -55,9 +55,10 @@ func managedUsersVersion12Baseline(t *testing.T, ctx context.Context, pool *pgxp
 	}
 }
 
-// Exclude new management, device registry, and client-context columns; old fields, including
-// password digests, token digests, timestamps, policy, and configuration, stays
-// in the exact comparison. Snapshot contents are never printed on failure.
+// Exclude new management, device registry, client-context, and storage-binding
+// columns; old fields, including password digests, token digests, timestamps,
+// policy, and configuration, remain in the exact comparison. Snapshot contents
+// are never printed on failure.
 func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
@@ -66,7 +67,7 @@ func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' ORDER BY id) FROM users t),
 		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
-		'roots', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM library_roots t),
+		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'play', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM play_sessions t),
 		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
@@ -139,12 +140,13 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade managed users from version 12: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Fatalf("managed user schema version = %d, want 27, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Fatalf("managed user schema version = %d, want 28, error = %v", version, err)
 	}
 	if after := managedUsersLegacySnapshot(t, ctx, pool); after != before {
 		t.Error("managed user migration changed historical identity, settings, catalog, or playback state")
 	}
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var preservedHistory, migrationName string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(t) ORDER BY version)::text
 		FROM schema_migrations t WHERE version <= 12`).Scan(&preservedHistory); err != nil || preservedHistory != historyBefore {
@@ -204,6 +206,7 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 	if after := managedUsersLegacySnapshot(t, ctx, pool); after != beforeRepeat {
 		t.Error("repeated managed user migration changed historical data")
 	}
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	if after := migrationHistory(t, ctx, pool); after != historyBeforeRepeat {
 		t.Error("repeated managed user migration changed migration history")
 	}

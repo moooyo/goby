@@ -13,6 +13,7 @@ import (
 )
 
 func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
+	s.registerRootBindingRoutes(mux)
 	mux.HandleFunc("GET /admin/v1/libraries", s.requireAdmin(s.listLibraries))
 	mux.HandleFunc("POST /admin/v1/libraries", s.requireAdmin(s.createLibrary))
 	mux.HandleFunc("DELETE /admin/v1/libraries/{id}", s.requireAdmin(s.deleteLibrary))

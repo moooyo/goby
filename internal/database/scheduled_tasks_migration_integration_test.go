@@ -176,8 +176,8 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 		if err := database.Migrate(ctx, pool); err != nil {
 			t.Fatalf("scheduled-task migration attempt %d: %v", attempt, err)
 		}
-		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-			t.Fatalf("scheduled-task full migration schema = %d, want 27: %v", version, err)
+		if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+			t.Fatalf("scheduled-task full migration schema = %d, want 28: %v", version, err)
 		}
 		var name string
 		if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 19").Scan(&name); err != nil || name != "0019_scheduled_tasks.sql" {
@@ -194,6 +194,7 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 				t.Errorf("migration attempt %d changed an original field or row in %s", attempt, table.name)
 			}
 		}
+		assertStorageBindingMigrationDefaults(t, ctx, pool)
 		scheduledTasksAssertEmptyTables(t, ctx, pool)
 	}
 }

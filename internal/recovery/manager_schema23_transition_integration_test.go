@@ -23,7 +23,7 @@ import (
 	"github.com/moooyo/goby/internal/lifecycle"
 )
 
-// The current primary retains schema27 music, preferences, and theme owners.
+// The current primary retains schema28 music, preferences, and theme owners.
 // A historical encrypted archive replaces the other slot. Reopening and rollback
 // must continue to distinguish the imported and original identities and keys.
 func TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback(t *testing.T) {
@@ -55,8 +55,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	if err := f.runtime.BindDatabase(ctx, f.seed.configuration, f.seed.source, f.lease); err != nil {
 		t.Fatal("bind the current primary before importing a historical archive")
 	}
-	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 27 {
-		t.Fatalf("original primary schema = %d, want 27: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 28 {
+		t.Fatalf("original primary schema = %d, want 28: %v", version, err)
 	}
 	var preferenceOwners int
 	if err := f.seed.source.QueryRow(ctx, "SELECT count(*) FROM user_settings WHERE settings<>'{}'::jsonb").Scan(&preferenceOwners); err != nil || preferenceOwners != 2 {
@@ -125,8 +125,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	operation, err := f.manager.operationCopy(plan.Id)
 	if err != nil || operation.Manifest == nil || operation.Manifest.Source.SchemaVersion != sourceVersion ||
-		operation.Target == nil || operation.Target.Facts.SchemaVersion != 27 || len(operation.Target.Facts.Tables) != 35 {
-		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema27 target")
+		operation.Target == nil || operation.Target.Facts.SchemaVersion != 28 || len(operation.Target.Facts.Tables) != 35 {
+		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema28 target")
 	}
 	assertHistoricalManagerTarget(t, ctx, f.seed.target, legacyState)
 	assertHistoricalManagerGeneration(t, ctx, f.runtime, operation.GenerationID, f.seed.target, legacy, legacyMaster, originalMaster)
@@ -206,7 +206,7 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	status, err := f.manager.Status(ctx, actor)
 	if err != nil || !status.Rollback.Available || status.GenerationRevision != "1" {
-		t.Fatal("the historical target did not retain the original schema27 rollback image")
+		t.Fatal("the historical target did not retain the original schema28 rollback image")
 	}
 	rollback, err := f.manager.Rollback(ctx, actor, RollbackRequest{RequestId: recoveryEngineTestID(t), GenerationRevision: "1"})
 	if err != nil {
@@ -233,8 +233,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 		t.Fatalf("accept rollback after the historical encrypted archive transition: %v", err)
 	}
 	assertTransitionAppliedReceipt(t, ctx, returned.Pool, rollback.Id)
-	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 27 {
-		t.Fatalf("rollback schema = %d, want original schema27: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 28 {
+		t.Fatalf("rollback schema = %d, want original schema28: %v", version, err)
 	}
 	if actual := recoveryEngineRetainedState(t, ctx, returned.Pool); actual != originalHistory ||
 		recoveryEnginePreferenceState(t, ctx, returned.Pool) != originalPreferences ||
@@ -322,14 +322,15 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 		}
 	})
 	legacy.vault = identity.NewApplicationKeyVault(cfg.APIKeyMasterKeyFile)
-	legacy.identities = identity.NewWithApplicationKeyVault(pool, legacy.vault)
+	identityPool, finishIdentities := historicalManagerIdentityPool(t, ctx, pool)
+	legacy.identities = identity.NewWithApplicationKeyVault(identityPool, legacy.vault)
 	admin, err := legacy.identities.Bootstrap(ctx, "Schema"+versionText+" administrator", historicalManagerAdministratorPassword(version))
 	if err != nil {
-		t.Fatal("bootstrap the real historical administrator")
+		t.Fatalf("bootstrap the real schema%d historical administrator: %v", version, err)
 	}
 	viewer, err := legacy.identities.CreateUser(ctx, "Schema"+versionText+" viewer", "schema"+versionText+"-viewer-password", false)
 	if err != nil {
-		t.Fatal("create a distinct historical viewer")
+		t.Fatalf("create a distinct historical viewer: %v", err)
 	}
 	if _, err := pool.Exec(ctx, `UPDATE users SET configuration=jsonb_build_object('HistoricalUser',id,
 		'AudioLanguagePreference','fra','ExactInteger',9007199254740993::bigint),management_revision=9007199254740993
@@ -347,33 +348,35 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	seedHistoricalManagerCatalog(t, ctx, pool, admin.ID)
 	legacy.adminLogin, err = legacy.identities.Authenticate(ctx, admin.Name, historicalManagerAdministratorPassword(version), identity.Client{Name: "Historical native login"}, "admin")
 	if err != nil {
-		t.Fatal("issue the real historical administrator credential")
+		t.Fatalf("issue the real historical administrator credential: %v", err)
 	}
 	legacy.actor, err = legacy.identities.Resolve(ctx, legacy.adminLogin.Token, "admin")
 	if err != nil {
-		t.Fatal("resolve the historical administrator")
+		t.Fatalf("resolve the historical administrator: %v", err)
 	}
 	legacy.embyLogin, err = legacy.identities.Authenticate(ctx, admin.Name, historicalManagerAdministratorPassword(version),
 		identity.Client{Name: "Historical player", DeviceID: "schema" + versionText + "-player", Device: "Historical device"}, "emby")
 	if err != nil {
-		t.Fatal("issue a real historical player credential")
+		t.Fatalf("issue a real historical player credential: %v", err)
 	}
 	serverID, err := legacy.identities.ServerID(ctx)
 	if err != nil {
-		t.Fatal("retain the historical server identity")
+		t.Fatalf("retain the historical server identity: %v", err)
 	}
 	client := identity.Client{DeviceID: serverID, Device: "Historical server", Version: "schema" + versionText}
 	legacy.activeKey, err = legacy.identities.CreateApplicationKey(ctx, legacy.actor, "Historical active key", "192.0.2."+versionText, client)
 	if err != nil {
-		t.Fatal("create a real key sealed by the independent historical master")
+		t.Fatalf("create a real key sealed by the independent historical master: %v", err)
 	}
 	legacy.revokedKey, err = legacy.identities.CreateApplicationKey(ctx, legacy.actor, "Historical revoked key", "192.0.2."+versionText, client)
 	if err != nil {
-		t.Fatal("create real historical sealed key history")
+		t.Fatalf("create real historical sealed key history: %v", err)
 	}
 	if _, err := legacy.identities.RevokeApplicationKey(ctx, legacy.actor, legacy.revokedKey.ID); err != nil {
-		t.Fatal("retain an already-revoked historical key")
+		t.Fatalf("retain an already-revoked historical key: %v", err)
 	}
+	finishIdentities()
+	legacy.identities = identity.NewWithApplicationKeyVault(pool, legacy.vault)
 	legacy.engine, err = NewEngine(cfg, pool, legacy.vault, legacy.objects, "schema"+versionText+"-manager-transition-fixture")
 	if err != nil {
 		t.Fatal("construct the real historical encryption engine")
@@ -426,6 +429,61 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	return legacy, metadata, state
 }
 
+// Current identity operations add neutral schema28 audit fields. A private
+// fixture view projects those writes onto the unchanged historical table, and
+// is removed before the real catalog inspection and encrypted archive export.
+func historicalManagerIdentityPool(t *testing.T, ctx context.Context, pool *pgxpool.Pool) (*pgxpool.Pool, func()) {
+	t.Helper()
+	schema := pgx.Identifier{"goby_historical_identity_" + recoveryEngineTestID(t)}.Sanitize()
+	view := schema + ".activity_entries"
+	function := schema + ".record_activity"
+	if _, err := pool.Exec(ctx, `CREATE SCHEMA `+schema+`;
+		CREATE VIEW `+view+` AS SELECT entry.*,0::bigint AS previous_revision,
+			''::text AS observation_fingerprint FROM public.activity_entries entry;
+		CREATE FUNCTION `+function+`() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN
+			IF NEW.previous_revision IS DISTINCT FROM 0 OR NEW.observation_fingerprint IS DISTINCT FROM '' THEN
+				RAISE EXCEPTION 'Historical identity activity requires neutral schema28 fields';
+			END IF;
+			INSERT INTO public.activity_entries(action,severity,source,actor_kind,actor_id,actor_credential_id,
+				resource_kind,resource_id,request_id,revision,affected_count,state,changed_fields)
+			VALUES(NEW.action,NEW.severity,NEW.source,NEW.actor_kind,NEW.actor_id,NEW.actor_credential_id,
+				NEW.resource_kind,NEW.resource_id,NEW.request_id,NEW.revision,NEW.affected_count,NEW.state,NEW.changed_fields);
+			RETURN NEW;
+		END;
+		$$;
+		CREATE TRIGGER historical_identity_activity_insert INSTEAD OF INSERT ON `+view+`
+			FOR EACH ROW EXECUTE FUNCTION `+function+`()`); err != nil {
+		t.Fatalf("create the historical identity audit fixture adapter: %v", err)
+	}
+	var identityPool *pgxpool.Pool
+	closed := false
+	cleanup := func() {
+		t.Helper()
+		if closed {
+			return
+		}
+		if identityPool != nil {
+			identityPool.Close()
+		}
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := pool.Exec(cleanupCtx, "DROP VIEW "+view+" RESTRICT; DROP FUNCTION "+function+"() RESTRICT; DROP SCHEMA "+schema+" RESTRICT"); err != nil {
+			t.Fatalf("remove the owned historical identity audit fixture adapter: %v", err)
+		}
+		closed = true
+	}
+	t.Cleanup(cleanup)
+	configuration := pool.Config()
+	configuration.ConnConfig.RuntimeParams["search_path"] = schema + ",public"
+	var err error
+	identityPool, err = pgxpool.NewWithConfig(ctx, configuration)
+	if err != nil {
+		t.Fatalf("open the historical identity fixture pool: %v", err)
+	}
+	return identityPool, cleanup
+}
+
 func seedHistoricalManagerCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool, editorID string) {
 	t.Helper()
 	// Music-shaped historical NFO fields are preserved as original metadata.
@@ -476,14 +534,14 @@ func seedHistoricalManagerCatalog(t *testing.T, ctx context.Context, pool *pgxpo
 	}
 }
 
-// Compare every old catalog field while checking the two schema25 additions
-// separately. JSON is kept in PostgreSQL so exact integers remain unchanged.
+// Compare every old catalog field while checking the schema25 and schema28
+// additions separately. JSON stays in PostgreSQL to preserve exact integers.
 func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'libraries',(SELECT jsonb_agg(to_jsonb(l) ORDER BY id) FROM libraries l),
-		'roots',(SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM library_roots r),
+		'roots',(SELECT jsonb_agg(to_jsonb(r)-'binding_revision'-'storage_binding'-'bound_at'-'bound_by' ORDER BY id) FROM library_roots r),
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
 		'credits',(SELECT jsonb_agg(to_jsonb(c)-'credit_group' ORDER BY item_id,entity_id,position) FROM item_entities c),
@@ -495,8 +553,8 @@ func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxp
 
 func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState) {
 	t.Helper()
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Fatalf("the historical archive target schema = %d, want 27: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Fatalf("the historical archive target schema = %d, want 28: %v", version, err)
 	}
 	var actualUsers string
 	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u").Scan(&actualUsers); err != nil || actualUsers != state.users ||
@@ -505,6 +563,14 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 	}
 	if actual := historicalManagerCatalogState(t, ctx, pool); actual != state.catalog {
 		t.Fatal("native historical restoration changed an original metadata, catalog, or credit field")
+	}
+	var bindingDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
+			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
+			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&bindingDefaults); err != nil || !bindingDefaults {
+		t.Fatalf("historical manager restoration inferred a root binding or changed neutral audit defaults: %v", err)
 	}
 	var musicSources, creditGroups, artists int
 	if err := pool.QueryRow(ctx, `SELECT

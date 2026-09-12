@@ -88,7 +88,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 	failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 		func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 			called = true
-			if result.SourceVersion != 26 || result.CurrentVersion != 27 {
+			if result.SourceVersion != 26 || result.CurrentVersion != 28 {
 				t.Fatal("the theme finalizer received a different migration transition")
 			}
 			_, err := tx.Exec(ctx, "DELETE FROM theme_owner_ids WHERE virtual_root")
@@ -103,12 +103,13 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 		t.Fatal("rewind unchanged theme archive for retry")
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the same nonempty theme archive after semantic rollback: %v", err)
 	}
 	if themeSnapshotState(t, ctx, target) != want {
 		t.Fatal("restore rotated owner IDs, lost inactive classification, reparented an item, or changed user data")
 	}
+	assertHistoricalArchiveBindingDefaults(t, ctx, target)
 	for _, test := range []struct {
 		id       string
 		ordinary bool
@@ -199,9 +200,10 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			before := themeSnapshotState(t, ctx, source)
 			archive, facts := sourceArchive(t, ctx, source, options)
 			result, err := RestoreOffline(ctx, target, archive, facts, options)
-			if err != nil || result.CurrentVersion != 27 || themeSnapshotState(t, ctx, target) != before {
+			if err != nil || result.CurrentVersion != 28 || themeSnapshotState(t, ctx, target) != before {
 				t.Fatalf("inactive history could not be preserved after its owner moved or became reserved: %v", err)
 			}
+			assertHistoricalArchiveBindingDefaults(t, ctx, target)
 			var active, ordinary, direct int
 			if err := target.QueryRow(ctx, `SELECT count(*) FILTER(WHERE link.active),
 				count(*) FILTER(WHERE `+database.ThemeOrdinaryItemSQL("i")+`),

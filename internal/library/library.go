@@ -131,6 +131,8 @@ type Store struct {
 	workers     sync.WaitGroup
 	done        chan struct{}
 
+	rootBindingAnchors map[string]rootBindingAnchor
+
 	catalogListener      atomic.Pointer[catalogChangeListener]
 	catalogChangesClosed atomic.Bool
 }

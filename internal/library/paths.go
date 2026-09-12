@@ -21,46 +21,55 @@ func hasTraversal(path string) bool {
 	return false
 }
 
-func (s *Store) authorizePath(path string) (libraryRoot, error) {
+func (s *Store) authorizePath(path string) (*rootBindingRegistration, error) {
 	if strings.TrimSpace(path) == "" || strings.ContainsRune(path, '\x00') || !filepath.IsAbs(path) || hasTraversal(path) {
-		return libraryRoot{}, fmt.Errorf("%w: media paths must be absolute directories without traversal", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: media paths must be absolute directories without traversal", ErrInvalidInput)
 	}
 	// Resolve the administrator-supplied name before deriving a relative path.
-	// The subsequent open uses an already anchored approved root descriptor.
+	// A new registration retains its own current configured anchor. Existing
+	// registrations continue using their previously admitted shared or root anchor.
 	canonical, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return libraryRoot{}, fmt.Errorf("%w: media directory cannot be resolved", ErrUnavailable)
+		return nil, fmt.Errorf("%w: media directory cannot be resolved", ErrUnavailable)
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.closed {
-		return libraryRoot{}, ErrUnavailable
+		s.mu.Unlock()
+		return nil, ErrUnavailable
 	}
-	for index := range s.roots {
-		approved := &s.roots[index]
+	var allowedPath string
+	for _, approved := range s.roots {
 		if !pathWithin(approved.path, canonical) {
 			continue
 		}
-		if err := openApprovedRoot(approved); err != nil {
-			return libraryRoot{}, err
-		}
-		relative, err := filepath.Rel(approved.path, canonical)
-		if err != nil {
-			return libraryRoot{}, fmt.Errorf("%w: media directory is outside the approved root", ErrInvalidInput)
-		}
-		root, err := openRegisteredRoot(approved.root, relative)
-		if err != nil {
-			return libraryRoot{}, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
-		}
-		_ = root.Close()
-		return libraryRoot{path: canonical, allowedPath: approved.path, relativePath: relative}, nil
+		allowedPath = strings.Clone(approved.path)
+		break
 	}
-	return libraryRoot{}, fmt.Errorf("%w: media directory is outside configured roots", ErrForbidden)
+	s.mu.Unlock()
+	if allowedPath == "" {
+		return nil, fmt.Errorf("%w: media directory is outside configured roots", ErrForbidden)
+	}
+	relative, err := filepath.Rel(allowedPath, canonical)
+	if err != nil {
+		return nil, fmt.Errorf("%w: media directory is outside the approved root", ErrInvalidInput)
+	}
+	approved := approvedRoot{path: allowedPath}
+	if err := openApprovedRoot(&approved); err != nil {
+		return nil, err
+	}
+	lease := &libraryRootLease{approved: approved.root, relativePath: relative}
+	registered, err := lease.Open()
+	if err != nil {
+		_ = lease.Close()
+		return nil, err
+	}
+	return &rootBindingRegistration{root: libraryRoot{path: canonical, allowedPath: allowedPath, relativePath: relative},
+		lease: lease, registered: registered}, nil
 }
 
-// openApprovedRoot retains the initial safe directory descriptor. All later
-// paths are opened relative to that descriptor, preventing pathname swaps from
-// redirecting a scan outside the directory that was actually approved.
+// openApprovedRoot retains the initial configured anchor for roots without an
+// explicit binding override. Relative opens prevent pathname swaps from
+// redirecting access outside the directory that was actually approved.
 func openApprovedRoot(approved *approvedRoot) error {
 	if approved.root != nil {
 		return nil
@@ -108,10 +117,17 @@ func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
 	if hasTraversal(root.relativePath) || filepath.IsAbs(root.relativePath) {
 		return nil, fmt.Errorf("%w: stored media directory is outside the approved root", ErrForbidden)
 	}
+	bound, rebound := s.rootBindingAnchors[root.id]
+	if rebound && (bound.root != root || bound.approved == nil) {
+		return nil, fmt.Errorf("%w: registered media directory no longer matches its approved binding", ErrUnavailable)
+	}
 	for index := range s.roots {
 		approved := &s.roots[index]
 		if approved.path != root.allowedPath {
 			continue
+		}
+		if rebound {
+			return bound.approved, nil
 		}
 		if err := openApprovedRoot(approved); err != nil {
 			return nil, err

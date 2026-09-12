@@ -13,6 +13,7 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, StorageRootsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
+import { RootBindingDialog } from './RootBindingDialog';
 
 const collectionTypes: { value: LibraryInput['CollectionType']; label: string }[] = [
   { value: 'movies', label: 'Movies' },
@@ -192,6 +193,7 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Library>();
   const [refreshingMedia, setRefreshingMedia] = useState<Library>();
+  const [bindingLibrary, setBindingLibrary] = useState<Library>();
   const [unconfirmedRefreshes, setUnconfirmedRefreshes] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ message: string; taskLink: boolean }>();
@@ -271,6 +273,7 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
                     </Stack>
                     <Stack direction="row" sx={{ gap: 1, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
                       <Button variant="contained" size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}>Manage items</Button>
+                      <Button size="small" color="secondary" startIcon={<FolderOpenOutlined />} onClick={() => setBindingLibrary(library)} aria-label={`Storage bindings for ${library.Name}`}>Storage bindings</Button>
                       <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
                       <Button size="small" color="secondary" startIcon={<RestartAltRounded />} onClick={() => setRefreshingMedia(library)} disabled={scanning.has(library.Id)} aria-label={`Refresh media details for ${library.Name}`}>Refresh media details</Button>
                       <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
@@ -292,6 +295,7 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
       {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
+      {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>
   );

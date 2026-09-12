@@ -79,6 +79,16 @@ func (s *Store) CreateLibraryAsAdministrator(ctx context.Context, actor identity
 }
 
 func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string) (Library, error) {
+	return s.createLibraryWithCapture(ctx, administrator, name, collectionType, paths, captureRootBindingRegistrationTopology)
+}
+
+func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string, captureRoot rootBindingRegistrationCaptureFactory) (Library, error) {
+	if ctx == nil || captureRoot == nil {
+		return Library{}, ErrInvalidInput
+	}
+	if s == nil {
+		return Library{}, ErrUnavailable
+	}
 	name = strings.TrimSpace(name)
 	if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 128 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
 		return Library{}, fmt.Errorf("%w: library name must contain 1 to 128 printable characters", ErrInvalidInput)
@@ -90,48 +100,99 @@ func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdminis
 	if len(paths) < 1 || len(paths) > 32 {
 		return Library{}, fmt.Errorf("%w: a library requires 1 to 32 directories", ErrInvalidInput)
 	}
-	roots := make([]libraryRoot, 0, len(paths))
-	for _, path := range paths {
-		root, err := s.authorizePath(path)
-		if err != nil {
-			return Library{}, err
-		}
-		for _, existing := range roots {
-			if pathWithin(existing.path, root.path) || pathWithin(root.path, existing.path) {
-				return Library{}, fmt.Errorf("%w: library directories must not overlap", ErrInvalidInput)
-			}
-		}
-		root.id, err = randomID()
-		if err != nil {
-			return Library{}, err
-		}
-		roots = append(roots, root)
+	if err := s.checkLibraryRegistrationAdministrator(ctx, administrator); err != nil {
+		return Library{}, err
+	}
+	boundBy, err := rootBindingRegistrationActorID(administrator)
+	if err != nil {
+		return Library{}, err
 	}
 	id, err := randomID()
 	if err != nil {
 		return Library{}, err
+	}
+	roots := make([]*rootBindingRegistration, 0, len(paths))
+	defer func() {
+		for _, registration := range roots {
+			_ = registration.Close()
+		}
+	}()
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return Library{}, err
+		}
+		registration, err := s.authorizePath(path)
+		if err != nil {
+			return Library{}, err
+		}
+		root := &registration.root
+		overlaps := false
+		for _, existing := range roots {
+			if pathWithin(existing.root.path, root.path) || pathWithin(root.path, existing.root.path) {
+				overlaps = true
+				break
+			}
+		}
+		roots = append(roots, registration)
+		if overlaps {
+			return Library{}, fmt.Errorf("%w: library directories must not overlap", ErrInvalidInput)
+		}
+		root.libraryID = id
+		root.id, err = randomID()
+		if err != nil {
+			return Library{}, err
+		}
+		if err := registration.prepare(ctx, captureRoot); err != nil {
+			return Library{}, err
+		}
+	}
+	for _, registration := range roots {
+		if err := registration.Revalidate(ctx); err != nil {
+			return Library{}, err
+		}
+	}
+	// Hold admission through commit and anchor publication. Filesystem capture
+	// happened outside Store.mu; its revalidation never consults the Store.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return Library{}, ErrUnavailable
+	}
+	for _, registration := range roots {
+		if !s.rootBindingPathConfiguredLocked(registration.root.allowedPath) {
+			return Library{}, ErrUnavailable
+		}
 	}
 	tx, err := s.beginOwnedTx(ctx)
 	if err != nil {
 		return Library{}, fmt.Errorf("begin library creation: %w", err)
 	}
 	defer rollback(tx)
-	if err := administrator.check(ctx, tx, true); err != nil {
+	protected := tx.(*ownedTx).ctx
+	if err := administrator.check(protected, tx, true); err != nil {
 		return Library{}, err
 	}
 	var createdAt time.Time
-	if err := tx.QueryRow(ctx, `INSERT INTO libraries (id, name, collection_type)
+	if err := tx.QueryRow(protected, `INSERT INTO libraries (id, name, collection_type)
 		VALUES ($1, $2, $3) RETURNING created_at`, id, name, collectionType).Scan(&createdAt); err != nil {
 		return Library{}, fmt.Errorf("create library: %w", err)
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO items (id, library_id, name, sort_name, type, is_folder)
+	if _, err := tx.Exec(protected, `INSERT INTO items (id, library_id, name, sort_name, type, is_folder)
 		VALUES ($1, $1, $2, $3, 'CollectionFolder', true)`, id, name, strings.ToLower(name)); err != nil {
 		return Library{}, fmt.Errorf("create library root item: %w", err)
 	}
 	library := Library{ID: id, Name: name, CollectionType: collectionType, CreatedAt: createdAt, Paths: make([]string, 0, len(roots))}
-	for _, root := range roots {
-		if _, err := tx.Exec(ctx, `INSERT INTO library_roots (id, library_id, path, allowed_path, relative_path)
-			VALUES ($1, $2, $3, $4, $5)`, root.id, id, root.path, root.allowedPath, root.relativePath); err != nil {
+	for _, registration := range roots {
+		root := registration.root
+		var document, actor any
+		if registration.document != nil {
+			document, actor = string(registration.document), boundBy
+		}
+		if _, err := tx.Exec(protected, `INSERT INTO library_roots
+			(id, library_id, path, allowed_path, relative_path, binding_revision, storage_binding, bound_at, bound_by)
+			VALUES ($1, $2, $3, $4, $5, 1, $6::jsonb,
+				CASE WHEN $6::jsonb IS NOT NULL THEN clock_timestamp() END, $7)`,
+			root.id, id, root.path, root.allowedPath, root.relativePath, document, actor); err != nil {
 			return Library{}, fmt.Errorf("register library directory: %w", err)
 		}
 		library.Paths = append(library.Paths, root.path)
@@ -141,15 +202,24 @@ func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdminis
 	if err := activity.RecordOwned(catalogActivityTx{tx: tx}, event); err != nil {
 		return Library{}, err
 	}
-	if err := administrator.check(ctx, tx, false); err != nil {
-		return Library{}, err
-	}
 	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogAdded, ItemID: id, LibraryID: id,
 		IsFolder: true, IsCollectionFolder: true}); err != nil {
 		return Library{}, err
 	}
-	if err := tx.Commit(ctx); err != nil {
+	for _, registration := range roots {
+		if err := registration.Revalidate(protected); err != nil {
+			return Library{}, err
+		}
+	}
+	if err := administrator.check(protected, tx, false); err != nil {
+		return Library{}, err
+	}
+	if err := tx.Commit(protected); err != nil {
 		return Library{}, fmt.Errorf("commit library creation: %w", err)
+	}
+	for _, registration := range roots {
+		s.installRootBindingAnchorLocked(registration.root, registration.anchor)
+		registration.anchor = nil
 	}
 	sort.Strings(library.Paths)
 	return library, nil
@@ -244,7 +314,11 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 	if err := administrator.check(ctx, tx, false); err != nil {
 		return err
 	}
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	s.retireRootBindingAnchorsLocked(id)
+	return nil
 }
 
 // Close cancels all owned jobs, drains the queue, then releases catalog ownership
@@ -266,6 +340,7 @@ func (s *Store) Close(ctx context.Context) error {
 					_ = root.root.Close()
 				}
 			}
+			s.retireRootBindingAnchorsLocked("")
 			s.mu.Unlock()
 			close(s.done)
 		}()

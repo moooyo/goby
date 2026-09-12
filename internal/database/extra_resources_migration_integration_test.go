@@ -232,6 +232,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 					if err := database.Migrate(ctx, pool); err != nil {
 						t.Fatalf("complete normal extra migration: %v", err)
 					}
+					assertStorageBindingMigrationDefaults(t, ctx, pool)
 				} else {
 					themeOwnersMigrateTo(t, ctx, pool, 27)
 				}
@@ -279,9 +280,13 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 			if err := pool.QueryRow(ctx, "SELECT "+database.ThemeOrdinaryItemSQL("item")+" FROM items item WHERE id='extra-hidden-owner'").Scan(&historicalOrdinary); err != nil || !historicalOrdinary {
 				t.Fatal("the historical schema26 predicate acquired current-schema reservations")
 			}
+			wantVersion := 27
+			if runner == "normal" {
+				wantVersion = 28
+			}
 			var tables, resources, version int
 			if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema()),
-				(SELECT count(*) FROM item_extra_resources),(SELECT max(version) FROM schema_migrations)`).Scan(&tables, &resources, &version); err != nil || tables != 35 || resources != 0 || version != 27 {
+				(SELECT count(*) FROM item_extra_resources),(SELECT max(version) FROM schema_migrations)`).Scan(&tables, &resources, &version); err != nil || tables != 35 || resources != 0 || version != wantVersion {
 				t.Fatalf("extra migration inventory: tables=%d resources=%d version=%d error=%v", tables, resources, version, err)
 			}
 		})

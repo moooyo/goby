@@ -133,9 +133,9 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
 	if err != nil {
 		logFixtureCatalogDifference(t, ctx, target, options)
-		t.Fatalf("restore the actual schema25 music archive into schema27: %v", err)
+		t.Fatalf("restore the actual schema25 music archive into schema28: %v", err)
 	}
-	if result.SourceVersion != 25 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+	if result.SourceVersion != 25 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatal("theme migration rewrote the historical archive version or source table facts")
 	}
 	for table, expected := range before {
@@ -149,6 +149,7 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 	assertMusicSnapshotIdentity(t, ctx, target)
 	assertHistoricalArchiveThemeDefaults(t, ctx, target, `[["schema25-theme-root","Legacy/Theme-Music",true]]`)
 	assertHistoricalArchiveExtraDefaults(t, ctx, target)
+	assertHistoricalArchiveBindingDefaults(t, ctx, target)
 	var exposed int
 	if err := target.QueryRow(ctx, `SELECT count(*) FROM items i WHERE i.id IN ('schema25-theme-directory','schema25-theme-song')
 		AND (`+database.ThemeOrdinaryItemSQL("i")+` OR `+database.ThemeDirectItemSQL("i")+`)`).Scan(&exposed); err != nil || exposed != 0 {
@@ -169,8 +170,8 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 	}
 	var targetVersion, targetTables int
 	if err := target.QueryRow(ctx, `SELECT (SELECT max(version) FROM schema_migrations),
-		(SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())`).Scan(&targetVersion, &targetTables); err != nil || targetVersion != 27 || targetTables != 35 {
-		t.Fatalf("historical music restoration did not reach the complete schema27: version=%d tables=%d error=%v", targetVersion, targetTables, err)
+		(SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())`).Scan(&targetVersion, &targetTables); err != nil || targetVersion != 28 || targetTables != 35 {
+		t.Fatalf("historical music restoration did not reach the complete schema28: version=%d tables=%d error=%v", targetVersion, targetTables, err)
 	}
 	assertSourceWitness(t, ctx, source, options, sourceBefore, sequences)
 	if err := source.QueryRow(ctx, `SELECT to_regclass('theme_owner_ids') IS NULL

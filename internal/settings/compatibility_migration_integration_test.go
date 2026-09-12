@@ -28,6 +28,9 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	if table == "item_entities" {
 		projection += " - 'credit_group'"
 	}
+	if table == "library_roots" {
+		projection += " - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by'"
+	}
 	statement := "SELECT COALESCE(jsonb_agg(" + projection + " ORDER BY (" + projection + ")::text), '[]'::jsonb)::text FROM " + pgx.Identifier{table}.Sanitize() + " original"
 	if table == "schema_migrations" {
 		statement += " WHERE version <= 20"
@@ -55,10 +58,20 @@ func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxp
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 27 {
-		t.Fatalf("compatibility full migration history count = %d, want 27: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 28 {
+		t.Fatalf("compatibility full migration history count = %d, want 28: %v", count, err)
 	}
 	return snapshot
+}
+
+// New binding columns must remain neutral while every schema-20 field is compared.
+func compatibilityMigrationBindingDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var changedRoots int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
+		OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL`).Scan(&changedRoots); err != nil || changedRoots != 0 {
+		t.Fatalf("compatibility migration changed historical root binding defaults: count=%d error=%v", changedRoots, err)
+	}
 }
 
 func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testing.T) {
@@ -109,9 +122,10 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-					t.Fatalf("compatibility full migration schema version = %d, want 27: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+					t.Fatalf("compatibility full migration schema version = %d, want 28: %v", version, err)
 				}
+				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				var name string
 				if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 21").Scan(&name); err != nil || name != "0021_configuration_compatibility.sql" {
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
@@ -172,6 +186,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("repeat compatibility migration with mode %s: %v", state.mode, err)
 				}
+				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
 					t.Errorf("repeated compatibility migration changed persisted mode %s, width, or original settings", state.mode)
 				}

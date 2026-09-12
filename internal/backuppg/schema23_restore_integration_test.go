@@ -23,7 +23,8 @@ func schema23ArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool, 
 
 // Only columns introduced after these historical schemas are omitted. Every
 // original field, including unbounded credit types and exact JSON numbers,
-// remains part of the ordered row multiset.
+// remains part of the ordered row multiset. New binding and audit defaults are
+// asserted separately on each migrated target.
 func historicalArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool, table string, version int64) string {
 	t.Helper()
 	projection := "to_jsonb(original)"
@@ -32,6 +33,12 @@ func historicalArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 	}
 	if version < 25 && table == "item_entities" {
 		projection += " - 'credit_group'"
+	}
+	if version < 28 && table == "library_roots" {
+		projection += " - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by'"
+	}
+	if version < 28 && table == "activity_entries" {
+		projection += " - 'previous_revision' - 'observation_fingerprint'"
 	}
 	statement := `SELECT COALESCE(jsonb_agg(` + projection + ` ORDER BY (` + projection + `)::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + ` original`
 	if table == "schema_migrations" {
@@ -42,6 +49,18 @@ func historicalArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		t.Fatalf("snapshot schema %d archive table %s: %v", version, table, err)
 	}
 	return rows
+}
+
+func assertHistoricalArchiveBindingDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
+			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
+			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("historical restoration inferred a root binding or changed neutral audit defaults: %v", err)
+	}
 }
 
 func TestPostgreSQLRestoreSchema23ArchivePreservesDataAndMigratesToCurrent(t *testing.T) {
@@ -193,6 +212,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 	assertHistoricalArchiveMusicDefaults(t, ctx, target)
 	assertHistoricalArchiveThemeDefaults(t, ctx, target)
 	assertHistoricalArchiveExtraDefaults(t, ctx, target)
+	assertHistoricalArchiveBindingDefaults(t, ctx, target)
 	var migrationName string
 	if err := target.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version=24").Scan(&migrationName); err != nil || migrationName != "0024_user_settings.sql" {
 		t.Fatalf("restored schema 24 migration name = %q: %v", migrationName, err)

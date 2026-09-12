@@ -19,7 +19,7 @@ const actionLabels: Record<ActivityAction, string> = {
   'session.login': 'Signed in', 'session.revoked': 'Session revoked',
   'application_key.created': 'API key created', 'application_key.revealed': 'API key revealed', 'application_key.revoked': 'API key revoked',
   'device.updated': 'Device updated', 'device.removed': 'Device removed',
-  'library.created': 'Library created', 'library.removed': 'Library removed',
+  'library.created': 'Library created', 'library.removed': 'Library removed', 'library.root_binding.updated': 'Library root binding updated',
   'scan.requested': 'Scan requested', 'scan.cancel_requested': 'Scan cancellation requested', 'scan.finished': 'Scan finished',
   'metadata.updated': 'Metadata updated', 'settings.updated': 'Settings updated',
   'task.admitted': 'Task admitted', 'task.cancel_requested': 'Task cancellation requested', 'task.finished': 'Task finished', 'task.schedule_updated': 'Task schedule updated',
@@ -29,7 +29,7 @@ const actionLabels: Record<ActivityAction, string> = {
   'restore.applied': 'Restore applied', 'restore.rollback_requested': 'Restore rollback requested', 'restore.cancel_requested': 'Restore cancellation requested', 'restore.failed': 'Restore failed',
 };
 const resourceLabels: Record<ActivityResourceKind, string> = {
-  user: 'User', session: 'Session', application_key: 'API key', device: 'Device', library: 'Library', scan: 'Scan',
+  user: 'User', session: 'Session', application_key: 'API key', device: 'Device', library: 'Library', library_root: 'Library root', scan: 'Scan',
   item: 'Item', settings: 'Settings', task: 'Task', task_run: 'Task run', backup: 'Backup', restore: 'Restore',
 };
 const sourceLabels = { native: 'Native', emby: 'Emby', system: 'System' };
@@ -76,11 +76,13 @@ function Actor({ actor, onFilter }: { actor: ActivityEntry['Actor']; onFilter: (
 function ActivityDetails({ entry, id, expanded }: { entry: ActivityEntry; id: string; expanded: boolean }) {
   return <Collapse in={expanded} unmountOnExit id={id}>
     <Box sx={{ p: 2.5, bgcolor: 'background.default', borderTop: 1, borderColor: 'divider' }}>
-      {entry.Overview && <Typography variant="body2" sx={{ mb: 2 }}>{entry.Overview}</Typography>}
+      {entry.Overview && <Typography variant="body2" sx={{ mb: 2, overflowWrap: 'anywhere' }}>{entry.Overview}</Typography>}
       <Stack direction="row" sx={{ flexWrap: 'wrap', columnGap: 4, rowGap: 1.5 }}>
         <Box><Typography variant="caption" color="text.secondary">Activity ID</Typography><Typography variant="body2" className="mono">{entry.Id}</Typography></Box>
         <Box><Typography variant="caption" color="text.secondary">Affected count</Typography><Typography variant="body2" className="mono">{entry.Count}</Typography></Box>
+        {entry.PreviousRevision !== undefined && <Box><Typography variant="caption" color="text.secondary">Previous revision</Typography><Typography variant="body2" className="mono">{entry.PreviousRevision}</Typography></Box>}
         {entry.Revision !== null && <Box><Typography variant="caption" color="text.secondary">Revision</Typography><Typography variant="body2" className="mono">{entry.Revision}</Typography></Box>}
+        {entry.ObservationFingerprint !== undefined && <Box sx={{ minWidth: 0, maxWidth: '100%' }}><Typography variant="caption" color="text.secondary">Observation fingerprint</Typography><Typography variant="body2" className="mono" sx={{ overflowWrap: 'anywhere' }}>{entry.ObservationFingerprint}</Typography></Box>}
         {entry.State !== null && <Box><Typography variant="caption" color="text.secondary">Outcome</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{entry.State}</Typography></Box>}
       </Stack>
       {entry.ChangedFields.length > 0 && <Box sx={{ mt: 2 }}><Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.8 }}>Changed fields</Typography><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.8 }}>{entry.ChangedFields.map((field) => <Chip key={field} label={field} size="small" variant="outlined" />)}</Stack></Box>}

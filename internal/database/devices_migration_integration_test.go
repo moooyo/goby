@@ -317,6 +317,7 @@ func TestMigrateDevicesPreservesVersion16HistoryAndGroupsOrdinaryLogins(t *testi
 		t.Fatalf("device migration did not record its actual version 17 execution: name=%q error=%v", migrationName, err)
 	}
 	assertDeviceLegacyTablesPreserved(t, ctx, pool, legacy)
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	devices := readMigratedOrdinaryDevices(t, ctx, pool)
 	expectedWinners := map[string]string{
 		"Shared-ID": "device-shared-winner", "TieCreated": "device-created-a", "TieID": "device-tie-z",
@@ -396,4 +397,5 @@ func TestMigrateDevicesPreservesVersion16HistoryAndGroupsOrdinaryLogins(t *testi
 		t.Error("repeated migration rewrote device generations, login assignments, or migration history")
 	}
 	assertDeviceLegacyTablesPreserved(t, ctx, pool, legacy)
+	assertStorageBindingMigrationDefaults(t, ctx, pool)
 }

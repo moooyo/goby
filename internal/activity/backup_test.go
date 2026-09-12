@@ -38,11 +38,39 @@ func activityMigrationVersion22(t *testing.T, ctx context.Context, pool *pgxpool
 func snapshotActivityRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
-	if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(to_jsonb(entry) ORDER BY id), '[]'::jsonb)::text
+	if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(
+		to_jsonb(entry) - 'previous_revision' - 'observation_fingerprint' ORDER BY id), '[]'::jsonb)::text
 		FROM activity_entries entry`).Scan(&snapshot); err != nil {
 		t.Fatalf("snapshot activity history: %v", err)
 	}
 	return snapshot
+}
+
+// Seed the published schema 22 shape before testing its upgrade. The current
+// production writer requires the current schema and must not adapt at runtime.
+func insertSchema22ActivityEvent(t *testing.T, ctx context.Context, pool *pgxpool.Pool, event activity.Event) {
+	t.Helper()
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 22 {
+		t.Fatalf("historical activity insertion requires schema 22: version=%d error=%v", version, err)
+	}
+	if event.PreviousRevision != 0 || event.ObservationFingerprint != "" {
+		t.Fatal("a schema 22 fixture cannot contain later root binding facts")
+	}
+	if event.Severity == "" {
+		event.Severity = activity.SeverityInfo
+	}
+	fields := make([]string, len(event.ChangedFields))
+	for index, field := range event.ChangedFields {
+		fields[index] = string(field)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO activity_entries
+		(action,severity,source,actor_kind,actor_id,actor_credential_id,resource_kind,resource_id,
+		request_id,revision,affected_count,state,changed_fields)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+		event.Action, event.Severity, event.Source, event.Actor.Kind, event.Actor.ID, event.Actor.CredentialID,
+		event.Resource.Kind, event.Resource.ID, event.RequestID, event.Revision, event.Count, event.State, fields); err != nil {
+		t.Fatalf("seed the published schema 22 activity shape: %v", err)
+	}
 }
 
 func snapshotActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
@@ -60,8 +88,8 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 	ctx, pool := activityIntegrationPool(t, false)
 	activityMigrationVersion22(t, ctx, pool)
 	seedActivityUser(t, ctx, pool)
-	insertActivityEvent(t, ctx, pool, activityTestEvent("historical-user"))
-	insertActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionTaskFinished,
+	insertSchema22ActivityEvent(t, ctx, pool, activityTestEvent("historical-user"))
+	insertSchema22ActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionTaskFinished,
 		Source: activity.SourceSystem, Actor: activity.Actor{Kind: activity.ActorSystem},
 		Resource: activity.Resource{Kind: activity.ResourceTaskRun, ID: "historical-task"}, State: activity.StateInterrupted})
 	before := snapshotActivityRows(t, ctx, pool)
@@ -85,10 +113,15 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 		}
 	}
 	if after := snapshotActivityRows(t, ctx, pool); after != before {
-		t.Fatal("schema 23 changed or backfilled retained activity history")
+		t.Fatal("the activity upgrade changed or backfilled retained historical facts")
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 27 {
-		t.Fatalf("upgraded activity schema version = %d, want 27: %v", version, err)
+	var nondefault int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM activity_entries
+		WHERE previous_revision IS DISTINCT FROM 0 OR observation_fingerprint IS DISTINCT FROM ''`).Scan(&nondefault); err != nil || nondefault != 0 {
+		t.Fatalf("historical activity received invented root binding facts: count=%d error=%v", nondefault, err)
+	}
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+		t.Fatalf("upgraded activity schema version = %d, want 28: %v", version, err)
 	}
 	insertActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionBackupFinished,
 		Source: activity.SourceSystem, Actor: activity.Actor{Kind: activity.ActorSystem},
@@ -102,7 +135,7 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 func TestBackupActivityMigrationRejectsAmbiguousCatalogAtomically(t *testing.T) {
 	ctx, pool := activityIntegrationPool(t, false)
 	activityMigrationVersion22(t, ctx, pool)
-	insertActivityEvent(t, ctx, pool, activityTestEvent("retained-on-migration-failure"))
+	insertSchema22ActivityEvent(t, ctx, pool, activityTestEvent("retained-on-migration-failure"))
 	before := snapshotActivityRows(t, ctx, pool)
 	// Discovery reaches this second target after dropping the action check in
 	// the same migration transaction. A rejection must restore that first drop.

@@ -101,7 +101,7 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 	result, err = RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 		func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 			called = true
-			if result.SourceVersion != 26 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+			if result.SourceVersion != 26 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 				return errors.New("migration finalizer lost original archive facts")
 			}
 			var active bool
@@ -120,7 +120,7 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 		t.Fatal("rewind the unchanged historical archive after semantic rollback")
 	}
 	result, err = RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 27 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore exact schema26 archive with its permitted selective migration: %v", err)
 	}
 	for table, expected := range rowsBefore {
@@ -139,13 +139,14 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 	}
 	var valid bool
 	if err := target.QueryRow(ctx, `SELECT
-		(SELECT max(version) FROM schema_migrations)=27
+		(SELECT max(version) FROM schema_migrations)=28
 		AND (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())=35
 		AND (SELECT count(*) FROM extra_reserved_paths)=1
 		AND EXISTS(SELECT 1 FROM extra_reserved_paths WHERE root_id='theme-root' AND relative_path='Legacy/featurettes' AND is_directory)
 		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("schema26 migration inferred extras or missed its exact reserved boundary: %v", err)
 	}
+	assertHistoricalArchiveBindingDefaults(t, ctx, target)
 	if err := database.Migrate(ctx, target); err != nil {
 		t.Fatalf("repeat the completed trusted migration: %v", err)
 	}

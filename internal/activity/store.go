@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -27,8 +28,8 @@ type OwnedExecutor interface {
 
 const insertEntry = `INSERT INTO activity_entries
 	(action,severity,source,actor_kind,actor_id,actor_credential_id,
-	resource_kind,resource_id,request_id,revision,affected_count,state,changed_fields)
-	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`
+	resource_kind,resource_id,request_id,revision,previous_revision,observation_fingerprint,affected_count,state,changed_fields)
+	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
 
 func Record(ctx context.Context, tx Executor, event Event) error {
 	if tx == nil {
@@ -69,6 +70,15 @@ func eventArguments(event Event) ([]any, error) {
 		event.Revision < 0 || event.Count < 0 || len(event.ChangedFields) > MaxChangedFields {
 		return nil, ErrInvalidInput
 	}
+	if event.Action == ActionLibraryRootBindingUpdated {
+		if event.Source != SourceNative || event.Actor.Kind != ActorUser || event.PreviousRevision < 1 ||
+			event.PreviousRevision == math.MaxInt64 || event.Revision != event.PreviousRevision+1 ||
+			!validObservationFingerprint(event.ObservationFingerprint) || event.Count != 0 || event.State != "" || len(event.ChangedFields) != 0 {
+			return nil, ErrInvalidInput
+		}
+	} else if event.PreviousRevision != 0 || event.ObservationFingerprint != "" {
+		return nil, ErrInvalidInput
+	}
 	switch event.Action {
 	case ActionScanFinished, ActionTaskFinished, ActionBackupFinished:
 		if event.State != StateCompleted && event.State != StateFailed && event.State != StateCancelled && event.State != StateInterrupted {
@@ -97,7 +107,21 @@ func eventArguments(event Event) ([]any, error) {
 	slices.Sort(fields)
 	return []any{string(event.Action), string(event.Severity), string(event.Source), string(event.Actor.Kind),
 		event.Actor.ID, event.Actor.CredentialID, string(event.Resource.Kind), event.Resource.ID,
-		event.RequestID, event.Revision, event.Count, string(event.State), fields}, nil
+		event.RequestID, event.Revision, event.PreviousRevision, event.ObservationFingerprint, event.Count, string(event.State), fields}, nil
+}
+
+func validObservationFingerprint(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	for index := range value {
+		if value[index] < '0' || value[index] > '9' {
+			if value[index] < 'a' || value[index] > 'f' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func validIdentifier(value string, optional bool) bool {
@@ -148,6 +172,8 @@ func actionResource(action Action) ResourceKind {
 		return ResourceDevice
 	case ActionLibraryCreated, ActionLibraryRemoved:
 		return ResourceLibrary
+	case ActionLibraryRootBindingUpdated:
+		return ResourceLibraryRoot
 	case ActionScanRequested, ActionScanCancelRequested, ActionScanFinished:
 		return ResourceScan
 	case ActionMetadataUpdated:

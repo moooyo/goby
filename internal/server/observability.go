@@ -179,19 +179,21 @@ type nativeActivityResource struct {
 }
 
 type nativeActivityEntry struct {
-	ID            string                 `json:"Id"`
-	Date          time.Time              `json:"Date"`
-	Action        activity.Action        `json:"Action"`
-	Severity      activity.Severity      `json:"Severity"`
-	Source        activity.Source        `json:"Source"`
-	Actor         nativeActivityActor    `json:"Actor"`
-	Resource      nativeActivityResource `json:"Resource"`
-	Revision      *string                `json:"Revision"`
-	Count         string                 `json:"Count"`
-	State         *activity.State        `json:"State"`
-	ChangedFields []activity.Field       `json:"ChangedFields"`
-	Name          string                 `json:"Name"`
-	Overview      string                 `json:"Overview"`
+	ID                     string                 `json:"Id"`
+	Date                   time.Time              `json:"Date"`
+	Action                 activity.Action        `json:"Action"`
+	Severity               activity.Severity      `json:"Severity"`
+	Source                 activity.Source        `json:"Source"`
+	Actor                  nativeActivityActor    `json:"Actor"`
+	Resource               nativeActivityResource `json:"Resource"`
+	Revision               *string                `json:"Revision"`
+	PreviousRevision       *string                `json:"PreviousRevision,omitempty"`
+	ObservationFingerprint string                 `json:"ObservationFingerprint,omitempty"`
+	Count                  string                 `json:"Count"`
+	State                  *activity.State        `json:"State"`
+	ChangedFields          []activity.Field       `json:"ChangedFields"`
+	Name                   string                 `json:"Name"`
+	Overview               string                 `json:"Overview"`
 }
 
 type nativeActivityPage struct {
@@ -212,12 +214,13 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 	result := nativeActivityPage{Items: make([]nativeActivityEntry, 0, len(page.Items)), TotalRecordCount: page.TotalRecordCount,
 		StartIndex: page.StartIndex, Limit: page.Limit, RetentionDays: retention}
 	for _, entry := range page.Items {
-		if entry.ID < 1 || entry.Count < 0 || entry.Revision < 0 {
+		if entry.ID < 1 || entry.Count < 0 || entry.Revision < 0 || entry.PreviousRevision < 0 || !nativeActivityRootBindingFactsValid(entry) {
 			return nativeActivityPage{}, activity.ErrUnavailable
 		}
 		item := nativeActivityEntry{ID: strconv.FormatInt(entry.ID, 10), Date: entry.Date.UTC(), Action: entry.Action, Severity: entry.Severity,
 			Source: entry.Source, Actor: nativeActivityActor{Kind: entry.Actor.Kind}, Resource: nativeActivityResource{Kind: entry.Resource.Kind, ID: entry.Resource.ID},
-			Count: strconv.FormatInt(entry.Count, 10), ChangedFields: append([]activity.Field{}, entry.ChangedFields...), Name: entry.Name, Overview: entry.Overview}
+			Count: strconv.FormatInt(entry.Count, 10), ChangedFields: append([]activity.Field{}, entry.ChangedFields...), Name: entry.Name, Overview: entry.Overview,
+			ObservationFingerprint: entry.ObservationFingerprint}
 		if entry.Actor.ID != "" {
 			value := entry.Actor.ID
 			item.Actor.ID = &value
@@ -230,6 +233,10 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 			value := strconv.FormatInt(entry.Revision, 10)
 			item.Revision = &value
 		}
+		if entry.PreviousRevision > 0 {
+			value := strconv.FormatInt(entry.PreviousRevision, 10)
+			item.PreviousRevision = &value
+		}
 		if entry.State != "" {
 			value := entry.State
 			item.State = &value
@@ -237,6 +244,20 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 		result.Items = append(result.Items, item)
 	}
 	return result, nil
+}
+
+func nativeActivityRootBindingFactsValid(entry activity.Entry) bool {
+	if entry.Action != activity.ActionLibraryRootBindingUpdated {
+		return entry.PreviousRevision == 0 && entry.ObservationFingerprint == ""
+	}
+	if entry.Source != activity.SourceNative || entry.Actor.Kind != activity.ActorUser || entry.Resource.Kind != activity.ResourceLibraryRoot ||
+		entry.PreviousRevision < 1 || entry.PreviousRevision == 1<<63-1 || entry.Revision != entry.PreviousRevision+1 ||
+		entry.Count != 0 || entry.State != "" || len(entry.ChangedFields) != 0 || len(entry.ObservationFingerprint) != 64 {
+		return false
+	}
+	return strings.IndexFunc(entry.ObservationFingerprint, func(character rune) bool {
+		return !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f')
+	}) == -1
 }
 
 func (s *Server) adminActivity(w http.ResponseWriter, r *http.Request) {
