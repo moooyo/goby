@@ -1,0 +1,190 @@
+{
+  "businessHttpIssued": false,
+  "capturedAt": "2026-09-12T17:29:24.188091+00:00",
+  "endpoint": {
+    "host": "127.0.0.1",
+    "port": 18197,
+    "scheme": "http"
+  },
+  "existingProxyChecksUnchanged": true,
+  "kind": "nextup-global-reference-authority-observation",
+  "lock": {
+    "device": 2049,
+    "inode": 2424193,
+    "path": "/opt/goby-test/exec-work-m3e/reference.lock"
+  },
+  "metadataObserverSource": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-transport-tool-02/nextup-global-transport.py",
+    "sha256": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "newFixtureCreated": false,
+  "notPreparationAdmission": true,
+  "originalExecutableContentRead": false,
+  "ownedProxySource": {
+    "path": "/opt/goby-test/exec-work-m3e/client-acceptance-proxy.py",
+    "sha256": "256017d62eb98b39a1e026516e6c29ced0a3f599fd961a3c9e0ee9b4d878d99b"
+  },
+  "priorClosedDevices": [
+    {
+      "client": {
+        "client_name": "Goby Reference UI Controller",
+        "client_version": "1.0",
+        "device_id": "goby-reference-ui-observe-2a9d8888124f24b96401a0b433c8ffb0",
+        "device_name": "Linux Reference UI Recorder",
+        "user_id": "efe2137dc3394ed4a23f9c337598f105",
+        "username": "m3e-reference-admin"
+      },
+      "last_observed_at": "2026-09-12T16:42:19.267896Z",
+      "loginProof": {
+        "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/admin-proven.json",
+        "sha256": "9894b4a68f49b0fba08d85c222be571f8109dda694b1f736e7c75c30f65d36da"
+      },
+      "logoutResult": {
+        "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/admin-logout-result.json",
+        "sha256": "1cb73c101111cfa2e6f1154eb60f8069381926f3507caf0b7b9703b9e9cd9c98"
+      },
+      "logout_completed_at": "2026-09-12T16:42:19.404405Z",
+      "sameToken401": {
+        "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/admin-exact401-result.json",
+        "sha256": "33c07745222984d85af916ebfc6959cdf561277391beea5ac54382b95c748198"
+      }
+    }
+  ],
+  "priorImportFailure": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-01/authority-observation-01-import-failure.json",
+    "sha256": "f502986d5bfcc6ce5a4194eb83c41a359e7bd1d805c904857d2dc26b1e135444"
+  },
+  "process": {
+    "application": {
+      "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cgroup": "0::/system.slice/goby-emby-client-m3e.service\n",
+      "cmdline": [
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+        "-programdata",
+        "/opt/goby-test/exec-work-m3e/reference-data",
+        "-ffdetect",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffdetect",
+        "-ffmpeg",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffmpeg",
+        "-ffprobe",
+        "/dev/shm/goby-emby-reference/package/opt/emby-server/bin/ffprobe",
+        "-restartexitcode",
+        "3",
+        "-updatepackage",
+        "emby-server-deb_{version}_amd64.deb"
+      ],
+      "exe": "/dev/shm/goby-emby-reference/package/opt/emby-server/system/EmbyServer",
+      "exeDevice": 26,
+      "exeInode": 332,
+      "networkNamespace": "net:[4026532602]",
+      "pid": 332054,
+      "startTicks": "357218",
+      "uid": 0
+    },
+    "endpoint": {
+      "bootId": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+      "cgroup": "0::/system.slice/goby-client-proxy-m3e-fresh.service\n",
+      "cmdline": [
+        "/usr/bin/python3",
+        "/opt/goby-test/exec-work-m3e/client-acceptance-proxy.py",
+        "--reference-pid",
+        "332054",
+        "--reference-start-ticks",
+        "357218",
+        "--reference-sha256",
+        "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+        "--status-file",
+        "/opt/goby-test/exec-work-m3e/dual-proxy-status-02.json"
+      ],
+      "exe": "/usr/bin/python3.13",
+      "exeDevice": 2049,
+      "exeInode": 397,
+      "listener": {
+        "port": 18197,
+        "socketInode": "296864"
+      },
+      "networkNamespace": "net:[4026531840]",
+      "pid": 334022,
+      "startTicks": "378464",
+      "uid": 0
+    },
+    "workerNetworkNamespace": "net:[4026531840]"
+  },
+  "pythonIsolated": true,
+  "referenceOwner": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-owner.json",
+    "sha256": "3bdbeee28406f9809624f3619b38915ab4445fa1a7c8aca30cbe445d3d1ddb40"
+  },
+  "retainedLibraryCount": 8,
+  "retainedPublicBaseline": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/after-public.json",
+    "sha256": "48b3acb509b8318481c2d9c4e35ce534a69bb6deaaf31246a1bd78b3cc3bab32"
+  },
+  "retainedUserCount": 6,
+  "schemaVersion": 1,
+  "sealedReferenceV4Inventory": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-04/completed-scope-files.json",
+    "sha256": "7e246418ddf69f40571ee641f15be4884a424786c4965df63b26feee45cc3e32"
+  },
+  "sealedReferenceV4Terminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-execution-04/completed-terminal.json",
+    "sha256": "90f6f197e00ab48e9bedf252e5f0534a7e5d8c23a326a33d490e56d446ffa64a"
+  },
+  "services": {
+    "goby-client-proxy-m3e-fresh.service": {
+      "ActiveState": "active",
+      "ControlGroup": "/system.slice/goby-client-proxy-m3e-fresh.service",
+      "ExecMainStatus": "0",
+      "Id": "goby-client-proxy-m3e-fresh.service",
+      "InvocationID": "7fdc742e0cfc4590ba644727d3424114",
+      "LoadState": "loaded",
+      "MainPID": "334022",
+      "Result": "success",
+      "SubState": "running"
+    },
+    "goby-emby-client-m3e.service": {
+      "ActiveState": "active",
+      "ControlGroup": "/system.slice/goby-emby-client-m3e.service",
+      "ExecMainStatus": "0",
+      "Id": "goby-emby-client-m3e.service",
+      "InvocationID": "aa59e192c1c846459bc3f218bd923364",
+      "LoadState": "loaded",
+      "MainPID": "332054",
+      "Result": "success",
+      "SubState": "running"
+    },
+    "goby-reference-library-changed-ui-controller-v4.service": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainStatus": "0",
+      "Id": "goby-reference-library-changed-ui-controller-v4.service",
+      "InvocationID": "2507f713aa6d47c58f2ac067cb306b19",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "exited"
+    },
+    "goby-reference-library-changed-ui-preflight-v4.service": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainStatus": "0",
+      "Id": "goby-reference-library-changed-ui-preflight-v4.service",
+      "InvocationID": "f696c0b6c36a4c8fa0cdeb00b1d29d4b",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "exited"
+    },
+    "goby-reference-library-changed-ui-v4.service": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainStatus": "0",
+      "Id": "goby-reference-library-changed-ui-v4.service",
+      "InvocationID": "1c804ccfe84b45c9a5d5d1531615ebae",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "exited"
+    }
+  }
+}

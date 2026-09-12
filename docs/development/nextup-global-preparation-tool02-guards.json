@@ -1,0 +1,22 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic preparation and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "7af91e4ee31375a19623fad43d73753a46ce9900dfb634b2d9e2bb073bdef54c",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "preparation": "f2bd6d56386869855f1bfbd7baf86150b72b8f0636d2e1c1eba167f1224b217c",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "suite": "prepare-nextup-global-reference-guards",
+  "testsRun": 64
+}

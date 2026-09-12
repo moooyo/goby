@@ -1,0 +1,9 @@
+{
+  "authorityAccepted": false,
+  "intendedBusinessHttp": false,
+  "kind": "nextup-authority-observation-failure",
+  "reason": "The non-isolated stdin interpreter resolved inspect from the SSH default working directory while importing dataclasses; the import failed. No authority observation was produced.",
+  "resolution": "Use isolated Python; do not read, edit, or remove the unrelated shadowing file.",
+  "schemaVersion": 1,
+  "status": "failed_before_intended_process_probe"
+}

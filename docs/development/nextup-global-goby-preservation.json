@@ -1,0 +1,19 @@
+{
+  "businessHttpIssued": false,
+  "capturedAt": "2026-09-12T17:48:18.934103+00:00",
+  "counts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "equalsSealedV7ExceptCaptureTime": true,
+  "gobyMutationPerformed": false,
+  "kind": "nextup-goby-preservation-observation",
+  "notPreparationAdmission": true,
+  "originalReferenceDatabaseRead": false,
+  "schemaVersion": 1,
+  "snapshot": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-01/goby-before-preparation.json",
+    "sha256": "c0a6fa5cd2cc348ae29d09426a3063424512c8cc783ab8353bbb97cfd4c864ef"
+  }
+}

@@ -1,6 +1,9 @@
 # Global NextUp preparation and cleanup contract design
 
-Status: **producer implementation is pending; no live preparation executed**.
+Status: **the producer passed 114 remote fake guards; no live preparation executed**.
+Its [implementation contract](nextup-global-preparation-implementation.md) and
+[current verification](nextup-global-preparation-verification-02.json) retain
+the separate code and evidence boundary.
 The owned source-media prerequisite was subsequently checked remotely. Written on
 2026-09-13 from owned scripts and retained public-response receipts, this is the
 preparation producer design for the [acceptance plan](nextup-global-acceptance-plan.md),
@@ -293,17 +296,17 @@ and enumerate every observation slot before dispatch.
 | Phase | Maximum normal requests | Contents |
 | --- | ---: | --- |
 | Administrator login and full before snapshot | 32 | One login and the 31-request preserved public snapshot described below; reuse its public identity, Users, and virtual-library responses. |
-| Two new libraries and scans | 41 | Two create POSTs, one acknowledged-library lookup, two scoped refresh POSTs; at most twelve rounds of one library inventory plus two scoped catalogs, requiring two identical complete ready rounds. Stop observation at 100 seconds. |
+| Two new libraries and scans | 42 | Each create POST is followed by its own unique library lookup and durable identity registration before the next library is created. Two scoped refresh POSTs follow; at most twelve rounds of one inventory plus two scoped catalogs require two identical complete ready rounds. Stop observation at 100 seconds. |
 | Explicit root/view mapping | 5 | Administrator Views; two full view details and two full source-root details. |
 | Two new ordinary accounts | 8 | Each create, password, exact policy, and profile acknowledgement. |
 | Own-token baseline | 36 | For each actor: login, profile, preferences, Views, two scoped catalogs, six episode details, six summary details. |
 | Four cleanup calibrations | 44 | P/A1 partial and complete, Q/B1 partial and complete: four eight-request lifecycles including DELETE/proof, plus six summary proofs after each actor's partial reset. |
 | Final own-token zero baseline | 28 | Twelve episode details, twelve summaries, and four profile/preferences reads. |
 | Full after snapshot | 37 | The expanded eight-user/ten-library public snapshot; reuse its catalog/roster definitions for the final preservation comparison. |
-| Total normal maximum | **231** | Nine unused normal slots authorize no additional route or retry. |
+| Total normal maximum | **232** | Eight unused normal slots authorize no additional route or retry. |
 
 Success then spends six cleanup requests to log out the three exact owned
-tokens and prove each rejected. The complete success path is at most **237**
+tokens and prove each rejected. The complete success path is at most **238**
 requests. The maximum enumerated failure cleanup set is **77**: two known
 pending stop slots, two reconciliation details and two conditional DELETE
 slots for P/A1 and Q/B1, twelve episode details, twelve summary details, four
@@ -405,11 +408,16 @@ preparation journals live in a different root.
 
 ## Remaining gates
 
-No live receipt producer or verified new fixture is established by this file.
-Before dispatch, the root task still needs the final metadata-only reference
-plus owned-proxy identity contract, current release/lock identities, current
-owned source-byte and destination-visibility proofs, a frozen new producer,
-and remote guards for that producer. All verification runs through
+The producer implementation and remote fake guards are complete; no verified
+new live fixture is established by this file. The
+[authority observation](nextup-global-authority-observation.json) records the
+current application/proxy metadata, retained baseline, old controller logout,
+and stopped v4 units. The [Goby observation](nextup-global-goby-preservation.json)
+confirms its full sealed v7 state, except capture time, remains unchanged.
+Before dispatch, the root task must assemble and recheck the actual release,
+credentials, media approval, source-bound plan, and outer execution/preservation
+inputs. Actual destination visibility and restricted account access still need
+their public responses. All verification runs through
 `ssh test-env`; no local fallback is permitted.
 
 Unknown public facts remain explicit gates: P/Q's actual restricted TV access,

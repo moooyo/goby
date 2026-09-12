@@ -1,0 +1,27 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic preparation and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [
+    {
+      "test": "__main__.DispatchBudgetGuards.test_clock_regression_cannot_extend_dispatch_authority",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-01/test-prepare-nextup-global-reference.py\", line 1185, in test_clock_regression_cannot_extend_dispatch_authority\n    with self.assertRaises(self.P.PreparationError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: PreparationError not raised\n"
+    }
+  ],
+  "failures": 1,
+  "liveAcceptanceClaim": false,
+  "passed": false,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "9d1d39dadf58d3065007362da164fbb4c2fd0a67d999569b8139a45ef9559139",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "preparation": "8dfb6483c83e9345bbd22d2f920c843943def646ce46ed94913c9c112ddcbc41",
+    "transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
+  },
+  "suite": "prepare-nextup-global-reference-guards",
+  "testsRun": 56
+}
