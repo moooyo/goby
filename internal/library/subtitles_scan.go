@@ -242,11 +242,14 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 	var size int64
 	var modified *time.Time
 	var mediaJSON []byte
-	err = tx.QueryRow(ctx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media FROM items i
+	change := CatalogChange{Kind: CatalogUpdated}
+	err = tx.QueryRow(ctx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
+		i.id, i.library_id, COALESCE(i.parent_id, ''), i.is_folder, i.type = 'CollectionFolder' FROM items i
 		JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
 		AND NOT i.is_folder AND i.media IS NOT NULL FOR UPDATE OF i`,
-		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON)
+		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON,
+		&change.ItemID, &change.LibraryID, &change.ParentID, &change.IsFolder, &change.IsCollectionFolder)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}
@@ -284,6 +287,10 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 	embedded := highestEmbeddedStreamIndex(&probe)
 	if embedded > highest {
 		highest = embedded
+	}
+	beforeProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
+	if err != nil {
+		return err
 	}
 	retire := make([]int, 0)
 	retained := make(map[string]int, len(active))
@@ -336,6 +343,15 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 			entry.Size, entry.ModifiedAt, entry.changeTimeNs, entry.Codec, entry.Language, entry.Title,
 			entry.IsDefault, entry.IsForced, entry.IsHearingImpaired, entry.MIMEType)
 		if err != nil {
+			return err
+		}
+	}
+	afterProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
+	if err != nil {
+		return err
+	}
+	if beforeProjection != afterProjection {
+		if err := recordCatalogChanges(tx, change); err != nil {
 			return err
 		}
 	}

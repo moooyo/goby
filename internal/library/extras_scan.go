@@ -264,6 +264,13 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 		}
 		retire = append(retire, resource.ID)
 	}
+	// Retain an independent approved anchor before taking ownership.mu. The
+	// final checks still reopen the registered name chain from that anchor.
+	rootLease, err := state.store.leaseLibraryRoot(state.root)
+	if err != nil {
+		return err
+	}
+	defer rootLease.Close()
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return err
@@ -345,10 +352,21 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	if count != len(expected) || invalid != 0 {
 		return fmt.Errorf("%w: atomic extra publication did not preserve its complete valid shape", ErrUnavailable)
 	}
-	if err := state.verifyThemeDirectories(".", true); err != nil {
+	root, err := rootLease.Open()
+	if err != nil {
+		return fmt.Errorf("%w: extra source root changed before commit", ErrUnavailable)
+	}
+	verifyErr := state.verifyThemeDirectoriesAt(root, ".", true)
+	_ = root.Close()
+	if verifyErr != nil {
 		return fmt.Errorf("%w: extra source directories changed before commit", ErrUnavailable)
 	}
-	if err := verifyPreparedThemeFiles(files); err != nil {
+	if err := verifyPreparedThemeFilesWithRoots(files, func(candidate *scanState) (*os.Root, error) {
+		if candidate != state {
+			return nil, fmt.Errorf("%w: extra source changed its registered root", ErrUnavailable)
+		}
+		return rootLease.Open()
+	}); err != nil {
 		return fmt.Errorf("%w: extra sources changed before commit", ErrUnavailable)
 	}
 	if err := state.task.ctx.Err(); err != nil {

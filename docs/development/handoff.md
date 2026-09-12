@@ -1,9 +1,9 @@
 # Development handoff
 
-Current verification boundary: **source37 passed its full 24-package regression
-with 1,920 top-level tests, zero failures, zero skips and all six PostgreSQL
-cleanup checks true. Source38 passed 95 auxiliary-notification/lock checks;
-its separate full-suite regression is running.**
+Current verification boundary: **source38 passed its full 24-package regression
+with 1,953 top-level tests, zero failures, zero skips and all six PostgreSQL
+cleanup checks true. Source40's theme/extra notification increment passed 12
+pure race tests and has started its PostgreSQL targeted run.**
 SSH is restored. Primary and candidate remain on source32/schema27; neither
 notification increment has been deployed, and original-client UI acceptance
 remains open.
@@ -51,8 +51,9 @@ cgroup; its former PID979794 is historical. Execution records remain under
 Terminal receipt SHA-256 is
 `a76176e12c7fdc87d4016bac7311f4743a443d2632ee9c9285e6e7fb8966b194`.
 
-Keep the accepted ten-file source37 checkpoint separate from source38's 19
-unstaged Go files. Source38 adds post-commit image/subtitle projection changes,
+The accepted ten-file source37 checkpoint is published on main as
+`7e2e9af8c86fbfbb0b5d557d0390c4ef98fe052f`. Source38's 19 Go files form a
+separate accepted increment. Source38 adds post-commit image/subtitle projection changes,
 derived album changes and inherited Audio/theme references, an extras scan
 lock-order lease fix, and the low-level root-identity adapter. Its remote
 formatting and [formal source preflight](m3e-library-changed-aux-source-preflight.json)
@@ -69,14 +70,47 @@ The controller `goby-library-changed-aux-controller-v1.service`, invocation
 Its terminal receipt SHA-256 is
 `43a58b42154d8365d2f06d9e08c046f6580214c559971f9d4e492eaa3700c7b8`.
 
-Source38 full regression is **running** under
-`goby-library-changed-aux-full-controller-v1.service`, PID1013204, invocation
+Source38 [full regression](m3e-library-changed-aux-full-verification.json)
+**passed**: 1,953 tests across 24 packages, zero failures, zero skips and all six
+cleanup checks true. Report SHA-256:
+`d090026061703c819c15cf9c7e6fd6d44a29e13beba633266b4f6b19588ecfc0`.
+Controller `goby-library-changed-aux-full-controller-v1.service`, invocation
 `d7760f6de7de42638b47348df631dac9`, with execution records under
 `/opt/goby-test/exec-work-m3e/library-changed-aux-full-execution-01`.
-Run ID: `20260912_013304_de10a2ccd535`; pending report:
+Run ID: `20260912_013304_de10a2ccd535`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_013304_de10a2ccd535/report.json`.
-Recheck this exact handle without restarting on an observation timeout. No
-source38 full-suite result or deployment is claimed.
+The controller exited0 with MainPID0 and an empty cgroup; PID1013204 is
+historical. Terminal SHA-256:
+`d8d6afc174b9f925bcc0fd4ee20af827313bf55b0088453290624ee95779e9b4`.
+Its 28,297,205-byte `tmp/goby-linux-amd64` has SHA-256
+`2928ff156a17ad94c7e78d8edd0f9b4484090c5d8aa6894e8de9fca37110ca81`.
+The 19 staged Git blobs matched this verified source before publication.
+No deployment is claimed.
+
+Source40 is a separate 11-file theme/extra notification increment based on
+source38, including marker visibility, resource/owner changes, inherited Genres,
+ordinary-owner child retirement and native metadata edits. It separates semantic
+owners from browse parents and merges compatible folder membership invalidations.
+Its [preflight](m3e-library-changed-resources-source-preflight.json) covers 4,172
+files, manifest `e4eb47609e273343850f799809f00142fa2f1bde31315ef01caaadf69d5e35a6`.
+The [pure race checks](m3e-library-changed-resources-pure-verification.json) passed
+12 tests across library/server, report SHA-256
+`fd32af6957d67a57f85f26dedc296e69425b67bcf6bea5577a8529ac2a947732`.
+PostgreSQL verification is running under
+`goby-library-changed-resources-controller-v1.service`, PID1044627, invocation
+`88f2bf72b124444c9784ef228aa9e51f`, execution directory
+`/opt/goby-test/exec-work-m3e/library-changed-resources-execution-01`.
+Read that exact handle; do not overlap the fixed disposable database pair.
+
+Source39 separately froze the eight root topology files on source38. Its
+[preflight](root-topology-source-preflight.json) passed, but its
+[first race run](root-topology-go-verification-failed.json) failed: 15 passed and
+four filesystem tests rejected a valid external nsfs mountinfo root name.
+Report SHA-256: `e0cd3435405b21fdd550980045d4e9ccbf38bd689029c83707ceff7f25572e0f`.
+The failed unit `goby-root-topology-go-v1.service`, invocation
+`1862792e16c6410fb0d234f09c647bf9`, is terminal with exit1, MainPID0 and empty
+cgroup. Keep its evidence at `root-topology-go-verification-01`; a parser fix
+and a fresh verification scope are required. Source40 excludes these files.
 
 The [storage binding plan](storage-root-bindings-plan.md) now distinguishes the
 implemented low-level adapter from unimplemented persistence and reconciliation.
@@ -107,8 +141,8 @@ rollback, failed commit and no-op edits do not publish. The bounded notifier
 feeds the existing broadcast and current-permission delivery path. Source35
 does not include ordinary scan production. Source37 subsequently passed its
 ordinary scan/move targeted checks and full suite. Source38's image/subtitle and
-derived-album producers are implemented but await PostgreSQL and full-suite
-results; original-client UI acceptance remains pending. See
+derived-album producers passed their PostgreSQL targeted checks and full suite;
+original-client UI acceptance remains pending. See
 [implementation boundaries](library-change-notifications.md).
 
 The [completed source35 full report](m3e-library-changed-full-verification.json)
@@ -182,8 +216,9 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: complete source38's full regression and
-original-client UI acceptance, and implement complete theme/extra resource-change
+Next: complete source40's PostgreSQL and full regression, repair and verify root
+topology observation, then deploy and complete original-client UI acceptance.
+Finish complete theme/extra resource-change
 notifications and global entity projection invalidation. Safe missing-file
 reconciliation requires durable
 root/storage binding, complete cross-root move matching and stable directory
@@ -1798,7 +1833,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Finish source37 full regression and original-client UI acceptance; implement auxiliary/derived notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
+| P1 — M2/M3 / catalog and client acceptance | Finish source40 verification and root topology repair; deploy the verified notification increment and complete original-client automatic refresh acceptance; implement global entity notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

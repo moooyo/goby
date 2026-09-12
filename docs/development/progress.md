@@ -1,10 +1,9 @@
 # Implementation progress
 
-Current boundary: **source37's ordinary scan/move increment passed its full
-regression: 24 packages, 1,920 top-level tests, zero failures, zero skips and all
-six PostgreSQL cleanup checks true. Source38 passed 95 auxiliary-notification
-and lock checks; its full regression is running. Original-client UI acceptance
-remains open.**
+Current boundary: **source38 passed its full regression: 24 packages, 1,953
+top-level tests, zero failures, zero skips and all six PostgreSQL cleanup checks
+true. Source40 passed 12 pure race tests and its PostgreSQL targeted run is
+running. Original-client UI acceptance and deployment remain open.**
 Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
 report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
 The subsequent [runner failure](m3e-library-changed-scan-manifest-failure.json)
@@ -44,7 +43,8 @@ The accepted ten-file source37 checkpoint includes ordinary Added/Updated,
 effective-folder, explicit-probe and `PreviousParentID` move behavior.
 SSH is restored; no current authentication blocker is recorded.
 
-Source38's 19 unstaged Go files are a separate frozen increment: image/subtitle
+Source37 is published on main as `7e2e9af8c86fbfbb0b5d557d0390c4ef98fe052f`.
+Source38's 19 Go files are a separate accepted increment: image/subtitle
 post-commit projection notifications, derived album and inherited Audio/theme
 reference notifications, the extras lock-order lease fix and the low-level
 root-identity adapter. Remote formatting and
@@ -57,13 +57,28 @@ Report SHA-256: `3645b4e6d066a2b303b0baa7486869dd899e746ec3d955026e1ff976fe1ecd0
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_012842_0cfb5473113e/report.json`.
 Its controller exited0 with MainPID0 and an empty cgroup; terminal SHA-256 is
 `43a58b42154d8365d2f06d9e08c046f6580214c559971f9d4e492eaa3700c7b8`.
-Full regression is **running** under
-`goby-library-changed-aux-full-controller-v1.service`, PID1013204, invocation
+The [full regression](m3e-library-changed-aux-full-verification.json) passed
+1,953 tests across 24 packages with no failures or skips and six successful
+cleanup checks. Report SHA-256:
+`d090026061703c819c15cf9c7e6fd6d44a29e13beba633266b4f6b19588ecfc0`.
+Controller `goby-library-changed-aux-full-controller-v1.service`, invocation
 `d7760f6de7de42638b47348df631dac9`, execution directory
 `/opt/goby-test/exec-work-m3e/library-changed-aux-full-execution-01`.
-Run ID: `20260912_013304_de10a2ccd535`; pending report:
+Run ID: `20260912_013304_de10a2ccd535`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_013304_de10a2ccd535/report.json`.
-No full-suite pass is claimed for these 19 files yet.
+The controller exited0/MainPID0 with an empty cgroup, terminal SHA-256
+`d8d6afc174b9f925bcc0fd4ee20af827313bf55b0088453290624ee95779e9b4`.
+The 28,297,205-byte Linux binary SHA-256 is
+`2928ff156a17ad94c7e78d8edd0f9b4484090c5d8aa6894e8de9fca37110ca81`.
+
+The separate source40 theme/extra producer passed [12 pure race tests](m3e-library-changed-resources-pure-verification.json).
+Its [source preflight](m3e-library-changed-resources-source-preflight.json) binds
+4,172 files to manifest `e4eb47609e273343850f799809f00142fa2f1bde31315ef01caaadf69d5e35a6`.
+Its PostgreSQL unit `goby-library-changed-resources-controller-v1.service` is
+running, invocation `88f2bf72b124444c9784ef228aa9e51f`.
+Source39 root topology observation instead [failed its first remote run](root-topology-go-verification-failed.json):
+15 passed, four failed on a valid external nsfs root name. Its parser repair
+requires a fresh frozen source and test run; source40 excludes topology files.
 
 Persistent bindings, rebind and safe missing-file reconciliation remain at the
 [implementation-plan stage](storage-root-bindings-plan.md). The low-level
@@ -88,7 +103,7 @@ committed writes still notify after request cancellation; rollback, failed
 commit and no-op edits do not. That source35 increment excludes ordinary scan
 production. Source37 subsequently passed its scan/move targeted checks and full
 regression. Source38 adds the image/subtitle and derived-album producers, whose
-PostgreSQL and full-suite checks remain pending. Original-client UI acceptance
+PostgreSQL targeted checks and full suite passed. Original-client UI acceptance
 remains open. See
 [implementation boundaries](library-change-notifications.md).
 

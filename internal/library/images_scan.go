@@ -1,13 +1,11 @@
 package library
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
 )
 
@@ -150,14 +148,7 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 		return err
 	}
 	defer rollback(tx)
-	var authorizedID string
-	err = tx.QueryRow(state.task.ctx, `SELECT i.id FROM items i
-		JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
-		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 FOR UPDATE OF i`,
-		itemID, state.library.ID, state.root.id).Scan(&authorizedID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrNotFound
-	}
+	beforeCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
 	if err != nil {
 		return err
 	}
@@ -180,6 +171,15 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 			if err != nil {
 				return err
 			}
+		}
+	}
+	afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
+	if err != nil {
+		return err
+	}
+	if beforeCatalog.properties != afterCatalog.properties {
+		if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
+			return err
 		}
 	}
 	return tx.Commit(state.task.ctx)

@@ -1,0 +1,28 @@
+{
+  "base_manifest_sha256": "e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b",
+  "database_setup_performed": false,
+  "files": 4172,
+  "formal_source_preflight": "passed",
+  "format_changed": [
+    "internal/server/library_notifier.go",
+    "internal/library/auxiliary_catalog_changes.go",
+    "internal/library/auxiliary_catalog_changes_test.go",
+    "internal/library/auxiliary_catalog_changes_integration_test.go"
+  ],
+  "formatted_archive_sha256": "73a056f502e7418f4dfca9801c9e05d02f529b49ea39e05c80146342392fc778",
+  "formatted_files": {
+    "internal/library/auxiliary_catalog_changes.go": "c65882cd8251ae1026e64b9b103dc8e6782df6fe3ed55f315cf2829c786d996f",
+    "internal/library/auxiliary_catalog_changes_integration_test.go": "948808729c38a62aab50ed8eee6ed4d4b01147e33e4df41929873862d1348289",
+    "internal/library/auxiliary_catalog_changes_test.go": "870cc76c4e7cd0d713f5a44367067106983bcd0746284e2e8a77fa0c65190445",
+    "internal/library/catalog_changes.go": "2b2c978f22aaed8f3045a3f906e050f75c4d017585cb41e835215ddc32c7a9a8",
+    "internal/library/catalog_changes_children_test.go": "2fb5d275f67fc263df42f53f38997bb14253639fff01d3c19d971445dea5c39e",
+    "internal/library/extras_scan.go": "2f9c84c7f53db6ebd275fe205f27c434d00019a6775c2c92fcad1412d0352bb9",
+    "internal/library/metadata_store.go": "0e253db730006ee0a6107ae30cc521e68d0b152621e10f0323dff502975579be",
+    "internal/library/scan.go": "ad9cf8c1b4a09e884daa7af563a1284a78fb0d922e50fc112e415d1e7a7f769c",
+    "internal/library/themes_scan.go": "5a198e35429af5fc5317b8c8703816107b8ec5424d44d46f1d737d291f4765bf",
+    "internal/server/library_notifier.go": "f300f010aee1817a8efe96de109a370ea152eeb2acc28821a387d0666790c16f",
+    "internal/server/library_notifier_children_test.go": "c53fcf108bf6fcec8ef189d8e53f7b850037dc51442114b95386b93fe52bf8c1"
+  },
+  "manifest_sha256": "e4eb47609e273343850f799809f00142fa2f1bde31315ef01caaadf69d5e35a6",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-40"
+}

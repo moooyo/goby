@@ -197,9 +197,35 @@ func (s *Store) refreshOwnedMusicAlbum(ctx context.Context, libraryID, albumID s
 		return false, err
 	}
 	defer rollback(tx)
+	before, err := readScanCatalogItem(ctx, tx, albumID)
+	if err != nil {
+		return false, err
+	}
 	ready, err := refreshAcceptedMusicAlbum(ctx, tx, libraryID, albumID)
 	if err != nil {
 		return false, err
+	}
+	if ready && before.present && before.change.LibraryID == libraryID {
+		after, err := readScanCatalogItem(ctx, tx, albumID)
+		if err != nil {
+			return false, err
+		}
+		before, err = musicAlbumCatalogSnapshot(before)
+		if err != nil {
+			return false, err
+		}
+		after, err = musicAlbumCatalogSnapshot(after)
+		if err != nil {
+			return false, err
+		}
+		// A changed accepted source can remain hidden by administrator controls.
+		// Only the effective album and entity projection invalidates the catalog.
+		if err := recordScanCatalogChange(tx, libraryID, before, after, false); err != nil {
+			return false, err
+		}
+		if err := recordMusicAlbumReferenceChanges(ctx, tx, libraryID, albumID, before, after); err != nil {
+			return false, err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return false, fmt.Errorf("commit accepted music album source: %w", err)

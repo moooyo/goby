@@ -1,0 +1,26 @@
+{
+  "base_manifest_sha256": "e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b",
+  "database_setup_performed": false,
+  "files": 4175,
+  "formal_source_preflight": "passed",
+  "format_changed": [
+    "internal/library/root_topology.go",
+    "internal/library/root_topology_mountinfo.go",
+    "internal/library/root_topology_test.go",
+    "internal/library/root_topology_linux_test.go",
+    "internal/library/root_topology_mountinfo_test.go"
+  ],
+  "formatted_archive_sha256": "a9910b553ad6ccdc8c758bbea8c0672e32e5df48ed226f5410266b29db2f50e6",
+  "formatted_files": {
+    "internal/library/root_topology.go": "074c4482803d6bcdc0e49e70af0ace86c28edf5a0f6d3e843dd881fbe904b7f8",
+    "internal/library/root_topology_linux.go": "a859420c47ac4d5dd36c48cad17a188c3b24402a8c33ac71d4f02c59b755aaaa",
+    "internal/library/root_topology_linux_test.go": "210e05e443cabcd9d04b2b078af3c2b103ca78410442837b88d5264701a58eb4",
+    "internal/library/root_topology_mountinfo.go": "825dec6bb9ea96d73fbaf0843b4b7abd38964d5b40cc6681051ecf8a3f6e0f24",
+    "internal/library/root_topology_mountinfo_test.go": "596b3d2b6aaa88867c6fae06662c89d9cd4f579ba1962a7b2fa7c265c5006950",
+    "internal/library/root_topology_other.go": "101e24177a4ac531475d4b8c32517787d1e86cc36b22efd2f2152be7475b9ee4",
+    "internal/library/root_topology_other_test.go": "be9c7e9461885ccfcd994df6e4b037d66f72672175d2ea0298a655727db166e5",
+    "internal/library/root_topology_test.go": "24548d4fb070e651234b56f67f24178720ce128910bbbd085de30115c04d0489"
+  },
+  "manifest_sha256": "3b19b30ac925f1ce60fc87ff4886928c40fd630f5426f421c4e38a12003ef931",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-39"
+}

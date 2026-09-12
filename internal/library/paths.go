@@ -89,6 +89,19 @@ func openApprovedRoot(approved *approvedRoot) error {
 func (s *Store) openLibraryRoot(root libraryRoot) (*os.Root, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	approved, err := s.approvedLibraryRootLocked(root)
+	if err != nil {
+		return nil, err
+	}
+	opened, err := openRegisteredRoot(approved, root.relativePath)
+	if err != nil {
+		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
+	}
+	return opened, nil
+}
+
+// The caller holds Store.mu while finding or initializing the approved anchor.
+func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
 	if s.closed {
 		return nil, ErrUnavailable
 	}
@@ -103,13 +116,43 @@ func (s *Store) openLibraryRoot(root libraryRoot) (*os.Root, error) {
 		if err := openApprovedRoot(approved); err != nil {
 			return nil, err
 		}
-		opened, err := openRegisteredRoot(approved.root, root.relativePath)
-		if err != nil {
-			return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
-		}
-		return opened, nil
+		return approved.root, nil
 	}
 	return nil, fmt.Errorf("%w: media directory is no longer configured", ErrUnavailable)
+}
+
+// A publication lease owns a clone of the approved anchor, not the registered
+// directory. Each Open rechecks the registered name chain without Store.mu,
+// which must never be acquired while an owned transaction holds ownership.mu.
+type libraryRootLease struct {
+	approved     *os.Root
+	relativePath string
+}
+
+func (s *Store) leaseLibraryRoot(root libraryRoot) (*libraryRootLease, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	approved, err := s.approvedLibraryRootLocked(root)
+	if err != nil {
+		return nil, err
+	}
+	held, err := approved.OpenRoot(".")
+	if err != nil {
+		return nil, fmt.Errorf("%w: approved media anchor cannot be retained", ErrUnavailable)
+	}
+	return &libraryRootLease{approved: held, relativePath: strings.Clone(root.relativePath)}, nil
+}
+
+func (lease *libraryRootLease) Open() (*os.Root, error) {
+	opened, err := openRegisteredRoot(lease.approved, lease.relativePath)
+	if err != nil {
+		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
+	}
+	return opened, nil
+}
+
+func (lease *libraryRootLease) Close() error {
+	return lease.approved.Close()
 }
 
 // Open each registered path component from its already opened parent. A later

@@ -38,8 +38,16 @@ These results advance the earlier API feasibility observations to a tested
 adapter; system reboot, nested mounts, other filesystems and the complete
 service sandbox remain unverified. Source38 also passed its separate
 [95-test PostgreSQL notification/lock checks](m3e-library-changed-aux-verification.json);
-its full-suite regression is running. The persistence and reconciliation
+its full-suite regression passed 1,953 tests across 24 packages with no failures
+or skips and all cleanup checks true. The persistence and reconciliation
 steps below remain planned and are not deletion authorization.
+
+The subsequent root topology observer is implemented in eight separate files,
+but [its first remote race run](root-topology-go-verification-failed.json) failed:
+15 tests passed and four real filesystem tests rejected a valid external nsfs
+mountinfo root name. Source39 and its failed test scope remain immutable; the
+parser fix must pass a fresh run before this observer is accepted. Persistent
+bindings, rebind, nested-mount loss acceptance and deletion remain unimplemented.
 
 ## Problem and acceptance boundary
 

@@ -663,11 +663,17 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 }
 
 func verifyPreparedThemeFiles(files []*preparedThemeFile) error {
+	return verifyPreparedThemeFilesWithRoots(files, func(state *scanState) (*os.Root, error) {
+		return state.store.openLibraryRoot(state.root)
+	})
+}
+
+func verifyPreparedThemeFilesWithRoots(files []*preparedThemeFile, openRoot func(*scanState) (*os.Root, error)) error {
 	for _, file := range files {
 		if err := file.state.task.ctx.Err(); err != nil {
 			return err
 		}
-		root, err := file.state.store.openLibraryRoot(file.state.root)
+		root, err := openRoot(file.state)
 		if err != nil {
 			return err
 		}
@@ -705,6 +711,10 @@ func (state *scanState) verifyThemeDirectories(ownerDirectory string, all bool) 
 		return err
 	}
 	defer root.Close()
+	return state.verifyThemeDirectoriesAt(root, ownerDirectory, all)
+}
+
+func (state *scanState) verifyThemeDirectoriesAt(root *os.Root, ownerDirectory string, all bool) error {
 	rootInfo, err := root.Stat(".")
 	beforeRoot := state.themes.directories["."]
 	if err != nil || beforeRoot == nil || !rootInfo.IsDir() || !os.SameFile(beforeRoot, rootInfo) ||

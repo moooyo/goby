@@ -5,7 +5,8 @@ changes reach the bounded notifier and outbound permission filter. Source37
 passed its 80 targeted PostgreSQL/HTTP/WebSocket checks and full remote suite:
 24 packages, 1,920 top-level tests, zero failures, zero skips and all six cleanup
 checks true. Source38 adds image/subtitle and derived-album notifications; its
-95 targeted checks passed and its full-suite result is pending. Complete
+95 targeted checks and full 1,953-test suite passed. Source40 adds theme/extra
+resource production and passed 12 pure race tests; its PostgreSQL run is running. Complete
 theme/extra resource-change notifications, global entity projection invalidation,
 persistent root binding and safe missing-file reconciliation remain unfinished.
 Original-client UI acceptance remains open. Primary and candidate still run
@@ -155,7 +156,7 @@ visits stay quiet. Same-library moves retain PreviousParentID in one update fact
 and earlier commits are not gated on the eventual whole-scan result. Source37's
 targeted PostgreSQL/HTTP/WebSocket checks and full suite cover these changes;
 source35's earlier result does not. The accepted ten-file source37 increment is
-kept separate from source38's 19 unstaged Go files. Original-client UI acceptance
+kept separate from source38's accepted 19-file increment. Original-client UI acceptance
 remains open.
 
 The [source36 pure verification](m3e-library-changed-scan-pure-verification.json)
@@ -208,7 +209,7 @@ The earlier 1,908-test source35 result remains a separate historical checkpoint.
 
 ## Source38 auxiliary and derived changes
 
-The frozen, unstaged source38 increment compares image and subtitle public
+The accepted source38 increment compares image and subtitle public
 projections inside their existing owned transactions. Actual additions, content
 hash changes, metadata changes and removals record an Updated fact for the owner;
 unchanged scans, retained values after rejected input, rollback and failed commits
@@ -241,19 +242,24 @@ checks. Report SHA-256 is
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_012842_0cfb5473113e/report.json`.
 Its controller is exited0/MainPID0 with an empty cgroup; terminal SHA-256 is
 `43a58b42154d8365d2f06d9e08c046f6580214c559971f9d4e492eaa3700c7b8`.
-Source38 full regression is **running** under
-`goby-library-changed-aux-full-controller-v1.service`, PID1013204, InvocationId
+Source38 [full regression](m3e-library-changed-aux-full-verification.json) passed
+1,953 tests across 24 packages, zero failures, zero skips and all six cleanup
+checks. Report SHA-256:
+`d090026061703c819c15cf9c7e6fd6d44a29e13beba633266b4f6b19588ecfc0`.
+Controller `goby-library-changed-aux-full-controller-v1.service`, InvocationId
 `d7760f6de7de42638b47348df631dac9`, execution directory
 `/opt/goby-test/exec-work-m3e/library-changed-aux-full-execution-01`.
-Run ID: `20260912_013304_de10a2ccd535`; pending report:
+Run ID: `20260912_013304_de10a2ccd535`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_013304_de10a2ccd535/report.json`.
-Its 19-file increment has no full-suite result yet. Recheck this handle instead
-of replacing a live run after an observation timeout.
+The controller exited0 with MainPID0 and an empty cgroup. Terminal SHA-256:
+`d8d6afc174b9f925bcc0fd4ee20af827313bf55b0088453290624ee95779e9b4`.
+The Linux binary SHA-256 is
+`2928ff156a17ad94c7e78d8edd0f9b4484090c5d8aa6894e8de9fca37110ca81`.
 SSH access is restored, with no current access blocker.
 
 ## Remaining integration
 
-Complete source38 full-suite verification, then original-client UI
+Complete source40 PostgreSQL and full-suite verification, then original-client UI
 acceptance of the implemented scan changes. Complete theme/extra resource-change
 notifications and global entity projection invalidation remain separate work.
 Preserve earlier committed changes when a later scan step fails, and distinguish
