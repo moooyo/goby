@@ -74,10 +74,29 @@ disposal is needed. Preserve TOOL01, TOOL02 and the partial private backup
 materials; never replay the failed actual scope.
 Its private terminal, after-state and complete failed-file inventory are under
 `/opt/goby-test/exec-work-m3e/client-schema28-source55-execution-02`.
-TOOL03 is being implemented to preserve the explicitly verified absent-master
-state only when all application-key state is empty. It must not generate a key
-or accept a missing key for populated application-key state. The Go helper
-source remains `379d810f7753a79af991f9877936abcd5bcfb0fb62f2ae77ddf5eb04561a775e`.
+TOOL03 implemented explicit absent-master preservation, passed
+[82 guards](client-schema28-tool03-guards.json), a
+[fresh helper build](client-schema28-tool03-helper-build.json) and
+[actual preflight](client-schema28-tool03-preflight.json). Its second
+[actual attempt](client-schema28-attempt2.json),
+`20260912_094448_c961207bcea3`, reached the Go backup helper and failed with
+`helper_snapshot_dump_failed`. The helper passed a custom `dumpWriter` to
+`Snapshot.Dump`, but the existing `backuppg` command accepts only an owned
+regular `*os.File` or `*bytes.Buffer`. The sink was rejected before `pg_dump`;
+both the partial dump and pending helper report are zero bytes.
+The [second failed terminal](client-schema28-attempt2-terminal.json), SHA-256
+`2fa536f22ffbcc4ed957fe3fbf1d4fab2b9653056e460113dffc03b5c3f1f5a4`,
+confirms invocation `f5e92a8eaea040afb14270ec0949e93f`, exit1/MainPID0 and an
+empty cgroup. Complete candidate, primary, media, host, catalog, HBA and HISTORY
+preservation passed again; no rehearsal pair or service action occurred. The
+first failed scope also remains byte-exact. Preserve this second scope and
+its incomplete private files; they are not a usable backup and must not be
+adopted or replayed. Independent evidence is under
+`/opt/goby-test/exec-work-m3e/client-schema28-source55-execution-03`.
+TOOL04 is being implemented to pass the owned file directly to `Snapshot.Dump`,
+then derive its bounded size/hash from the same file after successful dumping.
+It must keep the existing product writer restriction and empty-key safeguards.
+The source55 product and candidate baseline remain unchanged.
 The helper must build in a separate source55 copy. The candidate upgrade must
 complete its schema27 backup and independent schema28 restore rehearsal before
 stopping the existing candidate, and install the accepted frontend under
@@ -86,6 +105,11 @@ Fresh source55 original-client tooling has completed static implementation,
 but awaits the final successful upgrade authority and remote verification.
 Its final fixed upgrade-tool binding is deliberately pending. It needs a schema28 loader and complete
 snapshot/audit validation, bound to the actual upgrade terminal and after-state.
+Preliminary remote pure checks passed 127 shared-actor and 52 driver cases.
+The controller guard suite stopped at an argparse translation call blocked by
+its effect fence, then its failure renderer attempted a fenced source read.
+The guard adapter and renderer have been repaired locally; the planned 59-case
+suite and final successful-upgrade binding still require remote verification.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.
 The preceding source44 product checkpoint passed 2,002 tests;

@@ -55,8 +55,15 @@ has no master-key file and no application-key state. The
 [failed terminal](client-schema28-attempt1-terminal.json) proves complete old
 state preservation, an absent rehearsal pair, and no helper or service action.
 The failed scope and partial private materials remain retained and must not be
-replayed. TOOL03 is being implemented to preserve that explicitly verified
-empty-key state without creating a key or weakening populated-key requirements.
+replayed. TOOL03 then preserved that explicitly verified empty-key state and
+passed [82 guards](client-schema28-tool03-guards.json), its build and preflight.
+Its [second actual attempt](client-schema28-attempt2.json) reached the backup
+helper, which supplied an unsupported custom writer to `Snapshot.Dump`.
+The [second failed terminal](client-schema28-attempt2-terminal.json) proves
+complete old-state preservation and no rehearsal pair or service action.
+Its zero-byte dump and pending helper report remain failed private evidence.
+TOOL04 is being implemented to use the accepted owned-file sink and compute
+the bounded digest afterward, without changing the product writer contract.
 Candidate source44/schema27 and primary source32/schema27 remain running.
 Fresh client tooling awaits a successful upgrade and its final authority pins.
 
