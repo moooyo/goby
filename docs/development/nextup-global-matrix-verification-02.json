@@ -1,0 +1,44 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix-guards.py",
+    "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix.py"
+  ],
+  "business_http": false,
+  "classification": "pure tool guards; not reference or client acceptance",
+  "compilations": [
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix.py",
+      "status": "passed",
+      "warnings": []
+    },
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix-guards.py",
+      "status": "passed",
+      "warnings": []
+    }
+  ],
+  "completed_at": "2026-09-12T15:43:03.722336+00:00",
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-nextup-matrix-v2-verification",
+  "python_version": "3.13.5 (main, Jun 13 2026, 14:18:01) [GCC 14.2.0]",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix-guards.py": {
+      "bytes": 24473,
+      "sha256": "20aae9d8bc6ebd66cf22f492a2b38f6a13d9f497f8142d72fa9abc054a21a250"
+    },
+    "/opt/goby-test/exec-work-m3e/nextup-global-matrix-tool-02/nextup-global-matrix.py": {
+      "bytes": 51749,
+      "sha256": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "35592f03ba1442359fdb080523adcb3298a128dc27b268f2568365641e69e8d2",
+  "stdout_sha256": "21994aa145ca87818ee0efb4166f09b32684eca209f5f678224abe7cbac9a00b",
+  "tests": 33
+}

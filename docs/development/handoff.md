@@ -676,6 +676,12 @@ remain outstanding alongside the broader M2-M6 work. M7 remains deferred.
 The [global NextUp acceptance plan](nextup-global-acceptance-plan.md), published
 as `37d2257`, is a plan only and has not been executed. Its reference and client
 gates remain future work after the current LibraryChanged fixture is released.
+The [NextUp matrix planner](nextup-global-matrix-implementation.md) now implements
+the bounded two-account request/state contract and passed 33 remote guards plus
+two compilation checks. Its post-stop cleanup reconciliation preserves unrelated
+UserData and selects an enumerated reset from fresh details. This is a verified
+pure module; fixture preparation, recorder transport, actual reference responses
+and client playback acceptance remain unexecuted.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.
 The preceding source44 product checkpoint passed 2,002 tests;

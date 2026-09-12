@@ -616,6 +616,11 @@ yet been supplied; actual hardware decode and encode remain outstanding.
 The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) was published
 as `37d2257`. It is unexecuted planning, with reference and real-client gates
 still open after the current LibraryChanged fixture is released.
+The [NextUp matrix planner](nextup-global-matrix-implementation.md) is implemented
+and passed 33 remote guards plus two compilation checks. Cleanup reconciles a
+known acknowledged stop before deciding whether its pre-enumerated reset is
+needed. This pure module has made no real HTTP request; fresh fixtures, the
+recorder adapter, reference observations and client acceptance remain pending.
 
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
