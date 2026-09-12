@@ -1,0 +1,15 @@
+{
+  "capture_root_exists": false,
+  "duration_seconds": 0.765,
+  "live_http_executed": false,
+  "marker": "goby-collection-folder-contract-preflight-v1",
+  "operator_sha256": "922941488d8dd55894cb1c8ac4c916ff1c360a271fd98a5248e35b6e8da2f782",
+  "result": {
+    "before_authority_sha256": "1277a8034d738ed451cf99e71b88c53e31c9731576bca7fbae16085e573ce870",
+    "evidence_created": false,
+    "http_requests": 0,
+    "marker": "goby-collection-folder-contract-v1",
+    "status": "preflight_passed"
+  },
+  "status": "passed"
+}

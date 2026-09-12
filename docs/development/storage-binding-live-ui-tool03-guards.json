@@ -1,0 +1,27 @@
+{
+  "exit_code": 0,
+  "guards": {
+    "blocked_effects": [],
+    "database_commands": 0,
+    "errors": 0,
+    "failures": 0,
+    "filesystem_mutations": 0,
+    "fixtures": "one-source-read-then-effect-fenced-memory-only",
+    "initial_source_reads": 1,
+    "operator_sha256": "59e7fdbac6f07fde47954411d15deb72bbb078cae30c7c9afda2076fe4104dd4",
+    "skips": 0,
+    "status": "passed",
+    "suite": "storage-binding-live-ui-guards",
+    "summaries": [],
+    "tests": 88
+  },
+  "marker": "goby-storage-binding-live-ui-tool03-guards-v1",
+  "source_sha256": {
+    "test-verify-storage-binding-live-ui.py": "66abfd5bd6fa84ffa0df37672fb086916ce21929b6662952fb9cb5518d247700",
+    "verify-storage-binding-live-ui.py": "59e7fdbac6f07fde47954411d15deb72bbb078cae30c7c9afda2076fe4104dd4"
+  },
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "80da091b5e1163930e8a627eae0a54c74603b9117db9f3a1a9622bb602781528",
+  "syntax_passed": 2
+}

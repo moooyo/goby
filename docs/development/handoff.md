@@ -1,15 +1,74 @@
 # Development handoff
 
-Current verification boundary: **source54 passed 2,173 full-suite tests across
-25 packages, the Linux build and all six cleanup checks. Its separate real
-private-mount recovery test also passed. Schema28 and the new scanner remain
-unpublished pending live management UI acceptance.**
-The latest published product checkpoint is source44, which passed 2,002 tests;
-its exact 27-file increment is on main as
+Current verified and published source: **source55 passed 2,173 full-suite tests
+across 25 packages, zero failures/skips, the Linux build and all six cleanup
+checks. Its 98 product-file changes are committed and pushed to `origin/main`;
+deployment has not occurred.** The real storage-binding management UI gate also
+passed its fifth run with all 15 checks, ten IPC stages and complete cleanup.
+Source55 adds the two-file Movies CollectionFolder direct-detail `Subviews`
+repair. Remote gofmt made no changes and formal source preflight passed. The
+[preparation receipt](collection-folder-source55-preparation.json)
+binds 4,243 files to manifest
+`7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a`.
+The preceding source54 full verification checkpoint passed 2,173 tests across
+25 packages, the Linux build, six cleanup checks and separate real private-mount
+recovery. Schema28 and the scanner are now published, but remain undeployed;
+their scoped real management UI acceptance is complete. All four preceding
+failed UI scopes were independently disposed and remain immutable history.
+The [source55 targeted report](collection-folder-source55-target.json), SHA-256
+`7e13a8cef6c97451311dbb51dd36401d94d2e67e51db12fdeb6b562abc77ee95`,
+records two passes, zero failures/skips and six cleanup checks. Its
+[terminal](collection-folder-source55-target-terminal.json), SHA-256
+`d6ebb651b174caf2712ae247ad28e23bbcaaa8610a001e08e20fa34d04c6aa64`,
+is passed. The separate [full report](collection-folder-source55-full.json),
+SHA-256 `2c0b5a54b51f66ffa0b11f3160cf50325df520322ec79af1fd92fc9bff93596c`,
+and [independent terminal](collection-folder-source55-full-terminal.json),
+SHA-256 `7d43a77d904bb212f9231bf427133eb0034a9f74a2187004e18775ccd334880c`,
+prove full success. Controller `goby-collection-folder-source55-full-controller-v1.service`
+retained invocation `20f0d83200c34228aa5862e07ce24c2c` and exited0/MainPID0
+with an empty cgroup. Run `20260912_084241_db776aacc1a7` used worker
+`goby-client-backup-20260912-084241-db776aacc1a7.service` and output directory
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_084241_db776aacc1a7`.
+Its finished receipt and shared HISTORY record confirm all six cleanup checks.
+This scope is terminal and consumed; do not rerun it. Execution evidence is in
+`/opt/goby-test/exec-work-m3e/collection-folder-source55-full-execution-01`.
+The accepted Linux binary is 29,337,989 bytes, SHA-256
+`6a8c46cdd0dcff56af28f11084eabcf2497daf5ce11ac072eaad7a5dbf486e81`.
+The 96 storage/scanner files were pushed as
+`13b21d60c8bdc4caf8d59abdddc9e2b96dc52775`; the two Subviews files followed as
+`16d75c38064008680fa60839c637efee2f12f2ae`. The
+[final Git reconciliation](collection-folder-source55-git-reconciliation.json),
+SHA-256 `70551338dfd13741f6679944c25de8bcb4463a088c7b048a7eeb55c360136af8`,
+checked 849 inputs: 848 were byte-exact, while the historical
+`internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json` differs
+only by source CRLF versus Git LF. The [independent EOL verification](collection-folder-source55-git-eol.json),
+SHA-256 `5f277f60f87842ccaf6b2b9b89a2117f8ddec31b63822b7335b6979e02442785`,
+confirmed equal JSON values and passed
+`TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility` in a
+separate remote copy with 807 Go inputs. This supplementary single test is not
+added to the 2,173 full-suite count, and the 849 inputs are not all raw-byte-exact.
+Live verification tools and current evidence documentation remain a separate
+publication group.
+Independent static review of candidate schema28 upgrade tooling is complete:
+`upgrade-client-schema28.py`, `migrate-client-schema28.go` and its Python guards
+are undergoing remote helper-build/guard verification. Runtime admission and
+the candidate upgrade have not occurred.
+The helper must build in a separate source55 copy. The candidate upgrade must
+complete its schema27 backup and independent schema28 restore rehearsal before
+stopping the existing candidate, and install the accepted frontend under
+`/opt/goby-client-m3e/admin` while preserving the primary's shared frontend.
+Fresh source55 original-client tooling is being implemented in parallel and
+has not been verified. It needs a schema28 loader and complete
+snapshot/audit validation, bound to the actual upgrade terminal and after-state.
+The consumed source44 browser scope and its older population counts cannot be
+reused by changing only process or binary pins.
+The preceding source44 product checkpoint passed 2,002 tests;
+its exact 27-file increment was published as
 `35ae3d000f812fa18d234921cedb3c33d88190e0`.
 Source41's failed staging was replaced only after its repair passed full
 verification. Source38 (`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`, 1,953 passes)
-is the previous product checkpoint. Schema28 binding code remains unpublished.
+is an earlier product checkpoint. Schema28 publication is recorded above;
+its runtime deployment remains pending.
 Source48 passed all 143 targeted PostgreSQL checks after correcting source47's
 two fixture assertions. Source49 full regression is terminal: 2,105 top-level
 passes and two failures in the schema23/schema24 encrypted recovery transition
@@ -41,18 +100,50 @@ confirms exit0/MainPID0 and an empty cgroup; SHA-256
 `08d91a6611b5d2f1cac425528c60054235770fde57a4950414416dcc92a362b0`.
 All business rows, sequences, catalog, credentials, recovery files and three
 media groups were preserved. The original failed upgrade evidence is immutable.
-Primary remains source32/schema27, PID762090; SSH is restored. Schema28 has
-not been published or deployed. Original-client automatic-refresh acceptance
+Primary remains source32/schema27, PID762090; SSH is restored. Schema28 code is
+published but not deployed. Original-client automatic-refresh acceptance
 remains open. Its first live attempt is now terminal: the client raised a
 TypeError on opening Movies, before any native login or metadata edit. Normal
 UI logout and exact-token 401 passed; the complete ledger permits exactly one
-new session, one device and two audit rows. Current candidate totals are
-74 sessions, 63 devices and 165 audits. The new authoritative private snapshot
+new session, one device and two audit rows. That attempt ended with
+74 sessions, 63 devices and 165 audits. Its private snapshot
 is `client-library-changed-ui-source44-v1/after-full.json`, SHA-256
 `1277a8034d738ed451cf99e71b88c53e31c9731576bca7fbae16085e573ce870`.
-Any new client scope must account for that proven transition from the earlier
-source44 continuation; do not replay the consumed v1 scope or compare a new
-snapshot directly with the old 73/62/163 totals.
+The later public CollectionFolder capture below advances this baseline again.
+Do not replay either consumed v1 scope or compare a new snapshot directly with
+the older 73/62/163 or 74/63/165 totals.
+
+The [public CollectionFolder capture](collection-folder-contract-capture.json)
+passed with 18 HTTP requests after 57 remote memory guards and a zero-HTTP
+preflight. Both fresh ordinary sessions completed logout204 and exact-token401;
+candidate business rows, sequences, private state, media and primary were
+preserved, with exactly one added closed session, one device and two audit rows.
+Current candidate totals are **75 sessions, 64 devices and 167 audits**. The
+current private authority is `collection-folder-contract-v1/after-full.json`,
+SHA-256 `2659f45dfa82d8568b07375d04c08cd4ba216defcfa2a4a1c269867b176573be`.
+The [independent terminal](collection-folder-contract-terminal.json), SHA-256
+`289b58f779489f9af488bc14e5075c9f0d4b120797b9daa9bffb273d491a100e`,
+confirms exit0, MainPID0, the original invocation and an empty recursive cgroup.
+The service is `goby-collection-folder-contract-v1.service`, invocation
+`ee935d93ff98437f8f392ef450a2fbe2`; this scope is terminal and consumed.
+Report SHA-256 is
+`d2260c109eaba6859e3291f01096c9a8db68bb5521c88ab7a8a8b5597d1fb384`.
+Reference research used the existing public proxy and did not read reference
+implementation or database content; the proxy's existing internal identity
+checks were unchanged. No reference-database preservation or full-browser
+profile equivalence is claimed.
+
+The retained [reference projection](collection-folder-contract-reference.json)
+has `Subviews: ["movies", "movies", "folders"]` on the direct Movies
+CollectionFolder response; the [candidate projection](collection-folder-contract-candidate.json)
+omits it and other reference fields. These are complete public responses for
+default and field/switch requests. Source55 implements only the observed Movies
+direct-detail array, preserving its order and duplicate value. Views, ordinary
+item lists, other collection types and generic projection switches are unchanged.
+Other DTO differences and the specific cause of the prior client `includes`
+error remain unproven. Source55 targeted/full verification and publication
+passed. Complete the separately admitted deployment, then use a fresh client
+scope linked to its actual upgrade terminal and current authority.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -62,13 +153,57 @@ and notifications. A shared music-readiness gate checks proposed surviving
 members before deletion; actual album publication remains afterward. Its 28
 selected race checks and related test-package compilation passed without
 database access, followed by 74 passing PostgreSQL checks and the complete
-2,173-test regression/build and actual private-mount scan recovery. Publication
-and live management UI gates remain open. This does not establish recovery
+2,173-test regression/build and actual private-mount scan recovery. The separate
+real management UI gate below also passed; publication is complete and deployment
+remains open.
+This does not establish recovery
 across a system reboot or on other filesystem types.
-The separate [live management UI plan](storage-binding-live-ui-acceptance-plan.md)
-uses a fresh isolated Go backend, database and private mount namespace with the
-already verified binary and web build. It does not restart the candidate or
-primary, and it does not reuse a consumed paired-run receipt.
+The [real management UI gate](storage-binding-live-ui-acceptance-plan.md) passed
+run `20260912_083703_5a77d18d2ae0` with the existing source54 binary and built
+administrator UI, a fresh schema28 database and a private mount namespace.
+The [browser result](storage-binding-live-ui-accepted-browser.json), SHA-256
+`a812dbdfe16dfd4183e5319182ed1c3ee3371beb2538e2ab6914e62ae625e479`,
+proves 15 checks and ten ordered IPC stages. One real Playwright test completed
+in 16.133 seconds, with zero skips or retries. UI logout/exact401 and the
+controller's separate session cleanup passed. All four worker cleanup checks
+and all ten controller cleanup checks passed: database, role and runtime were
+removed, while HBA, global catalog, host, candidate, primary, history and inputs
+were preserved.
+
+The [controller report](storage-binding-live-ui-accepted.json), SHA-256
+`a28c62e56630df9a7bff0dcfac0b00ecd57450f235d7f9e2fbdd5b69901c2d95`,
+retains its `awaiting_outer_attestation` publication state. The independent
+[accepted terminal](storage-binding-live-ui-accepted-terminal.json), SHA-256
+`7d5755df17cd4f10b869628897dce0a496cd99df51a5ffc3c842faa8b5b49b38`,
+closes that gate with `passed`. Controller invocation
+`a7af29564e974d41aac27bdf546cc9c5` and worker invocation
+`f7ada25209944cfbaa4a92c39ebba535` both retain exit0, MainPID0, active/exited
+state and empty recursive cgroups. The retained [desktop](storage-binding-live-ui-desktop.png)
+and [narrow](storage-binding-live-ui-narrow.png) screenshots were visually
+checked: long paths wrap, action buttons remain visible and the narrow layout
+has no horizontal overflow. The narrow capture is a scrolled view.
+
+TOOL05 passed [90 guards and two syntax checks](storage-binding-live-ui-tool05-guards.json),
+[single-test discovery](storage-binding-live-ui-tool05-web-list.json) and
+[input preflight](storage-binding-live-ui-tool05-preflight.json). Runtime mode
+is `0750`; the application directory remains `0700`. The four preceding failed
+attempts and their ordinary disposals remain separate immutable evidence:
+[attempt1 disposal](storage-binding-live-ui-attempt1-disposal.json) followed the
+failed `0710`/`O_RDONLY` assumption; [attempt2 disposal](storage-binding-live-ui-attempt2-disposal.json)
+followed the sequence `to_jsonb(s)` failure, repaired with explicit
+`last_value`, `log_cnt` and `is_called`. [Attempt3 disposal](storage-binding-live-ui-attempt3-disposal.json)
+preserves the unsupported-storage fixture failure: tmpfs actually supported the
+tested identity operations, while the later [ramfs probe](storage-binding-live-ui-ramfs-capability.json)
+returned ioctl `ENOTTY` and handle `EOPNOTSUPP`. [Attempt4 disposal](storage-binding-live-ui-attempt4-disposal.json)
+preserves the ambiguous `Unavailable` text lookup, subsequently scoped to its
+alert. Its original catch did not retain the stack, so that ambiguity is not
+claimed as the unique cause.
+
+The accepted UI scope is consumed. Later source55 Go verification may legally
+advance the shared HISTORY file. Its earlier `78cb...` state is retained in
+`history-before.json` in the source55 target execution evidence; do not rerun
+the old UI attestation against the newer history. Deployment and
+fresh original-client navigation/automatic-refresh acceptance are still open.
 
 The source44 automatic-refresh tooling passed 124 shared transport guards and
 342 TOOL02 guards: 49 controller, 248 fixture and 45 browser checks. Its corrected
@@ -77,9 +212,9 @@ a real client library-navigation failure; the pure checks do not establish
 automatic-refresh acceptance. The observed failing page consumed a 200 JSON
 response for the virtual Movies CollectionFolder, then raised
 `Cannot read properties of undefined (reading 'includes')`. Existing public
-Views fixtures show missing CollectionFolder fields, but no retained direct
-library-detail reference response identifies the particular causal field.
-Collect the missing public DTO evidence before implementing a guessed fix.
+Views fixtures showed missing CollectionFolder fields. The later direct public
+capture above now supplies both complete DTO variants, although it does not
+identify the particular causal field without a repaired real-client run.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -651,12 +786,15 @@ Emby/client source, JavaScript handlers or reference databases, including frozen
 assets. Use existing public protocol/UI recordings and permitted black-box UI.
 The [concrete candidate-only acceptance plan](library-changed-client-acceptance-plan.md)
 defines native title change/restoration and the unbroken WebSocket, automatic
-HTTP and visible-DOM chain. It has not executed; current Movies selectors must
-first be established from permitted visible UI/DOM discovery.
+HTTP and visible-DOM chain. Its first execution failed during Movies discovery,
+before the native edit; the completed public DTO capture and source55 repair
+above supply the current follow-up boundary. A fresh original-client scope is
+still required after verified publication/deployment.
 
-The [storage binding plan](storage-root-bindings-plan.md) distinguishes the
-verified adapter and targeted persistence acceptance from pending full scanner
-and deployment acceptance.
+The historical [storage binding plan](storage-root-bindings-plan.md) separated
+adapter/persistence checks from the later scanner, live UI and deployment gates.
+Scanner and scoped live UI acceptance have since passed as recorded at the head;
+deployment and broader recovery coverage remain open.
 The adapter passed [14 remote race tests](root-identity-go-verification.json),
 report SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
 The [actual Go helper](root-identity-go-unprivileged.json) also obtained the same
@@ -760,7 +898,8 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: complete the reviewed retained-pair disposal, source44 capacity/auxiliary
+Historical next-work note, superseded by the current head: complete the
+reviewed retained-pair disposal, source44 capacity/auxiliary
 HTTP checks and a fresh full regression. Generate the actual schema28 catalog
 and verify binding/audit/archive behavior before wiring native rebind and safe
 missing-file reconciliation. Deployment and original-client UI acceptance remain open.
@@ -776,7 +915,7 @@ M3/M4/M5/M6 remain open and M7 remains deferred.
 The candidate's source32/schema27 and 73-session/62-device/163-audit authority
 below are unchanged by this independent reference work.
 
-Latest candidate state: **the original-client library permission UI gate passed once
+Historical candidate checkpoint: **the original-client library permission UI gate passed once
 after explicit browser reloads. Policy restoration and both owned session
 cleanups passed. Automatic refresh was not observed in either bounded window.**
 The [controller report](m3e-library-permission-ui.json), SHA-256
@@ -2379,7 +2518,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Source54 full regression/build and actual private-mount recovery passed. Finish real binding UI/publication/deployment. Diagnose the real Movies CollectionFolder navigation failure with public DTO evidence, then complete automatic refresh in a fresh scope using the preserved post-failure baseline. Broader global projections, events, subtitles and NextUp remain open. |
+| P1 — M2/M3 / catalog and client acceptance | Source55 targeted/full regression, Linux build, cleanup and product publication passed; actual private-mount recovery and the final real management UI gate also passed. Finish remote verification/runtime admission of the schema28 upgrade tooling, then deploy and complete fresh original-client navigation/automatic-refresh acceptance. Current candidate remains source44/schema27 at baseline `2659f45d...` (75 sessions/64 devices/167 audits); fresh-client tooling is not yet verified. The accepted UI/full scopes are consumed; later shared HISTORY changes do not permit replay. Other DTO fields, global projections, events, subtitles and NextUp remain open. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

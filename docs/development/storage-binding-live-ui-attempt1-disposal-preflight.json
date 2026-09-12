@@ -1,0 +1,66 @@
+{
+  "exit_code": 0,
+  "marker": "goby-storage-binding-live-ui-startup-disposal-preflight-v2",
+  "preflight": {
+    "browser_executed": false,
+    "catalog_before_sha256": "78c26be6733cc43406dcfa7d798ec5d40e9b4050bef89e021c5a3fdf7d0fc9f8",
+    "database_initialized": false,
+    "database_oid": 18926079,
+    "empty_database": {
+      "casts_sha256": "fc250f76988e861c8ef3119a2abfa635bde6df9e97659b1dd6ebb464c7afcc66",
+      "objects": [],
+      "post_init_objects": 0,
+      "public": {
+        "acl": [
+          "pg_database_owner=UC/pg_database_owner",
+          "=U/pg_database_owner"
+        ],
+        "comment": "standard public schema",
+        "oid": 2200,
+        "owner": "pg_database_owner"
+      }
+    },
+    "failed_report_sha256": "1596f8941f1938ced001d55379152475f0871641ce5b493673b54153875a1d6d",
+    "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+    "historical_trees_sha256": "0082ff7110e0955e0e0ab51fc487bb01c2da56024ce4947b1b42a3f64c36008e",
+    "intent_sha256": "ddef05716037cea8a1ea451b741638f115f4b20a002e204ca07b91f20bb66abc",
+    "live_ui_acceptance": false,
+    "marker": "goby-storage-binding-live-ui-startup-disposal-v1",
+    "operator_sha256": "90d920ce367399480f2228e10b4c7fb4bde06acc196792e86d3a922f78c76a8a",
+    "role_oid": 18926078,
+    "run_id": "20260912_074733_ca8294cb9f47",
+    "runtime_tree_sha256": "22bab4760c030c568e9e3382be1cacbdecb5e0cce5e3de5cfb406d2bbab6b7ad",
+    "script_sha256": "297fd8ea4d899c98381500b02f562b2a37b196853a89c24f07b7e86d74942c42",
+    "sessions_prepared_slots": {
+      "prepared": 0,
+      "sessions": 0,
+      "slots": 0
+    },
+    "status": "preflight_passed",
+    "units": {
+      "controller": {
+        "ActiveState": "failed",
+        "ExecMainStatus": "1",
+        "InvocationID": "6f1883bd35074e77a645235021b34979",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "worker": {
+        "ActiveState": "failed",
+        "ExecMainStatus": "1",
+        "InvocationID": "fb0ff6acfd8745cdbbedb4cd1a188f00",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      }
+    }
+  },
+  "script_sha256": "297fd8ea4d899c98381500b02f562b2a37b196853a89c24f07b7e86d74942c42",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "24c519cbfec1742d9de6fea6a61619a310235a38679a0d2c318e31aa2528e528",
+  "syntax_passed": true
+}

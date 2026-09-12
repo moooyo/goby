@@ -1,0 +1,50 @@
+{
+  "argv": [
+    "/opt/goby-toolchains/go1.27.1/bin/go",
+    "test",
+    "-json",
+    "-race",
+    "-count=1",
+    "-timeout=60s",
+    "-run",
+    "^TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility$",
+    "./internal/server"
+  ],
+  "copy": "/opt/goby-test/exec-work-m3e/source55-git-eol-verification-01/source",
+  "copy_only_declared_eol_difference": true,
+  "database_access": false,
+  "difference": "CRLF to LF only",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "amd64",
+    "GOCACHE": "/opt/goby-test/go-caches-m5h/build",
+    "GOMODCACHE": "/opt/goby-test/go-caches-m5h/modules",
+    "GOOS": "linux",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOWORK": "off",
+    "HOME": "/root",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "PATH": "/opt/goby-toolchains/go1.27.1/bin:/usr/bin:/bin"
+  },
+  "exit_code": 0,
+  "failures_or_skips": 0,
+  "fixture": "internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json",
+  "frozen_sha256": "5ec0e48ef4182e58cfed2951c46ef93db29726aa92eea75b4f12b48f084f8c53",
+  "git_blob": "d600490d4edcf4a1c8d568c3be51e288fdda0886",
+  "git_lf_sha256": "fffebfb769295596b6994498bf980f71cedd1fbf343225a8e6f335ebd558c24e",
+  "go_input_count": 807,
+  "json_values_equal": true,
+  "log_sha256": "79b6be36932f5a1743d539c88f102c6f91d2637f5d1e47183487485a305c8251",
+  "marker": "goby-source55-git-eol-verification-v1",
+  "recursive_cgroup_empty": true,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-55",
+  "source_manifest_sha256": "7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a",
+  "source_unchanged": true,
+  "status": "passed",
+  "tests": [
+    "TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility"
+  ]
+}

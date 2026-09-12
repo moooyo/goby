@@ -1,0 +1,27 @@
+{
+  "changed": {
+    "internal/server/items.go": {
+      "after": "cf1e91f39f35a642760a12360f2bc03648ac3d7d9f6b9a39744cb60823cd9b67",
+      "before": "7c0869e2fb58614d2d51f0b244f32c28f93f02ed2349e7e5ae56e1acd53e3b8b",
+      "transferred": "cf1e91f39f35a642760a12360f2bc03648ac3d7d9f6b9a39744cb60823cd9b67"
+    },
+    "internal/server/library_integration_test.go": {
+      "after": "38e16bf851449305619db989c64a30bcb6cc7008375e159fbbfe5facb3d62b43",
+      "before": "428e3bd7e70fc9351caa17285371cb2ed865a6505a02384e082c718b9cbc47c2",
+      "transferred": "38e16bf851449305619db989c64a30bcb6cc7008375e159fbbfe5facb3d62b43"
+    }
+  },
+  "database_commands": 0,
+  "files": 4243,
+  "formal_source_preflight_passed": true,
+  "gofmt_passed": true,
+  "marker": "goby-collection-folder-source55-preparation-v1",
+  "product_tests_executed": false,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-55",
+  "source_identity": {
+    "device": 2049,
+    "inode": 2526821
+  },
+  "source_manifest_sha256": "7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a",
+  "status": "passed"
+}

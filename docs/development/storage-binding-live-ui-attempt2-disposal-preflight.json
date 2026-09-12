@@ -1,0 +1,106 @@
+{
+  "exit_code": 0,
+  "marker": "goby-storage-binding-live-ui-readiness-disposal-preflight-v1",
+  "preflight": {
+    "bootstrap_only": true,
+    "browser_executed": false,
+    "catalog_before_sha256": "78c26be6733cc43406dcfa7d798ec5d40e9b4050bef89e021c5a3fdf7d0fc9f8",
+    "database_initialized": true,
+    "database_oid": 18926081,
+    "failed_report_sha256": "7a96989dc7306f79ea596f8d5b0795953507a5a26f45312215118c8386e1a675",
+    "hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd",
+    "historical_trees_sha256": "05953643ddb3ded7d0be48bb8eb4875bd10323912fcbc27467a6be15fd5c93ca",
+    "initial_snapshot_sha256": "7a1a8ba0b351eba71581d605b723a04ebe475e88c1d7112b2bce162880f1df79",
+    "initialized_database": {
+      "casts_sha256": "fc250f76988e861c8ef3119a2abfa635bde6df9e97659b1dd6ebb464c7afcc66",
+      "objects_sha256": "4a1e5060231d2ff49705ed729581a563856a212dff283196dcc864266c2db2b3",
+      "public": {
+        "acl": [
+          "pg_database_owner=UC/pg_database_owner",
+          "=U/pg_database_owner"
+        ],
+        "comment": "standard public schema",
+        "oid": 2200,
+        "owner": "pg_database_owner"
+      },
+      "row_counts": {
+        "activity_entries": 0,
+        "application_key_clients": 0,
+        "application_key_devices": 0,
+        "application_keys": 0,
+        "catalog_entities": 0,
+        "client_playback_references": 0,
+        "devices": 0,
+        "encoding_jobs": 0,
+        "extra_reserved_paths": 0,
+        "item_entities": 0,
+        "item_extra_resources": 0,
+        "item_images": 0,
+        "item_metadata_state": 0,
+        "item_subtitles": 0,
+        "item_theme_resources": 0,
+        "items": 0,
+        "libraries": 0,
+        "library_roots": 0,
+        "managed_settings": 1,
+        "play_sessions": 0,
+        "scan_jobs": 0,
+        "schema_migrations": 28,
+        "server_settings": 2,
+        "sessions": 0,
+        "task_definitions": 1,
+        "task_occurrences": 0,
+        "task_run_children": 0,
+        "task_run_requests": 0,
+        "task_runs": 0,
+        "task_triggers": 0,
+        "theme_owner_ids": 1,
+        "theme_reserved_paths": 0,
+        "user_item_data": 0,
+        "user_settings": 0,
+        "users": 0
+      },
+      "sequence_count": 5,
+      "snapshot_sha256": "7a1a8ba0b351eba71581d605b723a04ebe475e88c1d7112b2bce162880f1df79"
+    },
+    "intent_sha256": "2194deada12a61654bf49c170a4d6bab382d59a333cca0f2f156d3ac749df6a2",
+    "live_ui_acceptance": false,
+    "marker": "goby-storage-binding-live-ui-readiness-disposal-v1",
+    "operator_sha256": "19d00d6311901119583df5b84ab6eec1d3c9b93c6efb160b7f53f00461aaed7b",
+    "role_oid": 18926080,
+    "run_id": "20260912_075346_bf9011cca3e0",
+    "runtime_tree_sha256": "87631a95c3afa226847aed1bd159c3eb1613889bf9ae29e4aefc898d3decc81d",
+    "script_sha256": "4e64c0ebcebee1c60a824bcfba0c42f62f150ae6e5e7d25d5db70875f5fdf19a",
+    "sessions_prepared_slots": {
+      "prepared": 0,
+      "sessions": 0,
+      "slots": 0
+    },
+    "status": "preflight_passed",
+    "units": {
+      "controller": {
+        "ActiveState": "failed",
+        "ExecMainStatus": "1",
+        "InvocationID": "d44b1bb27c8d48deb484bedd17452f0a",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "worker": {
+        "ActiveState": "failed",
+        "ExecMainStatus": "1",
+        "InvocationID": "36bac17cf2274fdda0b35e11fd86463a",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      }
+    }
+  },
+  "script_sha256": "4e64c0ebcebee1c60a824bcfba0c42f62f150ae6e5e7d25d5db70875f5fdf19a",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "47b9fe33b27b80b1e699dab9075ce46f71f7f249fc21d92ffa2d26da35549d73",
+  "syntax_passed": true
+}

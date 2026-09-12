@@ -1,0 +1,16 @@
+{
+  "actual_live_ui_executed": false,
+  "controller_unit": "goby-storage-binding-live-ui-controller-20260912-075346-bf9011cca3e0.service",
+  "database_commands": 0,
+  "http_requests": 0,
+  "intent_sha256": "2194deada12a61654bf49c170a4d6bab382d59a333cca0f2f156d3ac749df6a2",
+  "marker": "goby-storage-binding-live-ui-tool02-input-preflight-v1",
+  "output": "/opt/goby-test/exec-work-m3e/storage-binding-live-ui-20260912_075346_bf9011cca3e0",
+  "run_id": "20260912_075346_bf9011cca3e0",
+  "runtime": "/opt/goby-binding-ui-runtime-20260912_075346_bf9011cca3e0",
+  "runtime_required_mode": "0750",
+  "status": "passed",
+  "tool": "/opt/goby-test/exec-work-m3e/storage-binding-live-ui-tool-02",
+  "web_files": 58,
+  "worker_unit": "goby-storage-binding-live-ui-worker-20260912-075346-bf9011cca3e0.service"
+}

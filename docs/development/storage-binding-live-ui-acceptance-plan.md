@@ -1,11 +1,51 @@
 # Storage binding live administrator UI acceptance
 
-Status: proposed operator and browser contract; no operation in this plan has
-been executed. The current accepted backend prerequisite is source54's 2,173
+Status: accepted. Run5, `20260912_083703_5a77d18d2ae0`, completed all
+[15 browser checks and 10 IPC stages](storage-binding-live-ui-accepted-browser.json)
+against the real schema28 backend. Playwright passed one test in 16.133s with zero
+skips or retries. UI logout and exact-cookie401, the controller's separate
+session cleanup, all four worker cleanup checks and all ten controller cleanup
+checks passed. The database/role pair and runtime were removed; HBA, global
+catalog, host, candidate/primary, history and frozen inputs were preserved.
+The [independent terminal](storage-binding-live-ui-accepted-terminal.json) is the
+final acceptance authority. The [controller report](storage-binding-live-ui-accepted.json)
+retains its original `awaiting_outer_attestation` status by design.
+
+TOOL05 passed [90 remote memory guards and two syntax checks](storage-binding-live-ui-tool05-guards.json),
+[single-test discovery](storage-binding-live-ui-tool05-web-list.json) and
+[complete input preflight](storage-binding-live-ui-tool05-preflight.json) before
+the accepted run. Visual review of the [desktop](storage-binding-live-ui-desktop.png)
+and [narrow](storage-binding-live-ui-narrow.png) captures confirmed wrapped text,
+visible controls and no horizontal overflow in the narrow view. The accepted
+backend prerequisite remains source54's 2,173
 full-suite passes across 25 packages, Linux build, and subsequent real private
 mount acceptance. The existing 68 frontend checks use mocked binding APIs.
-This gate must connect the built administrator UI to the real schema28 backend.
-Publication and deployment remain separate work.
+The broader M2-M6 acceptance obligations and existing M7 deferred scope remain
+unchanged. Source55 verification and product publication are now complete;
+candidate upgrade/deployment and fresh original-client acceptance remain pending.
+The accepted UI gate retains its actual source54 frozen inputs below.
+
+| Scope | Observed outcome | Current disposition |
+| --- | --- | --- |
+| [Attempt1](storage-binding-live-ui-attempt1.json), `20260912_074733_ca8294cb9f47` | Runtime mode `0710` failed the directory reads required by `openDirectory`. Zero browser/UI stages; empty database. | [Failed terminal](storage-binding-live-ui-attempt1-terminal.json) and [dedicated ordinary disposal](storage-binding-live-ui-attempt1-disposal.json) retained; pair/runtime absent. |
+| [Attempt2](storage-binding-live-ui-attempt2.json), `20260912_075346_bf9011cca3e0` | Runtime mode `0750` reached ready, but `to_jsonb(s)` on a PostgreSQL17 sequence lacked a composite type. Zero browser/UI stages; schema28 initialized. | [Failed terminal](storage-binding-live-ui-attempt2-terminal.json) and [dedicated ordinary disposal](storage-binding-live-ui-attempt2-disposal.json) retained; pair/runtime absent. The reader now selects `last_value`, `log_cnt` and `is_called` explicitly. |
+| [Attempt3](storage-binding-live-ui-attempt3-browser.json), `20260912_080512_4d076f299a7a` | The tmpfs fixture was actually supported and did not produce the required unbound baseline. Only `browser_ready` completed. | [Failed terminal](storage-binding-live-ui-attempt3-terminal.json) and [ordinary disposal](storage-binding-live-ui-attempt3-disposal.json) retained; pair/runtime absent. The unsupported fixture was changed to proven ramfs. |
+| [Attempt4](storage-binding-live-ui-attempt4-browser.json), `20260912_081819_2ede994eef07` | The broad `Unavailable` text locator matched multiple elements and was replaced with an Alert-scoped locator. The catch did not preserve the original stack, so this is not claimed as the sole cause of the failed assertion. | [Failed terminal](storage-binding-live-ui-attempt4-terminal.json) and [ordinary disposal](storage-binding-live-ui-attempt4-disposal.json) retained; pair/runtime absent. |
+| [Run5](storage-binding-live-ui-accepted-browser.json), `20260912_083703_5a77d18d2ae0` | All 15 checks and 10 IPC stages passed; final bindings were A3, B1 and U2. | [Independent acceptance](storage-binding-live-ui-accepted-terminal.json) passed, including pair/runtime absence. This scope is consumed. |
+
+| Accepted evidence | SHA256 |
+| --- | --- |
+| [Independent terminal](storage-binding-live-ui-accepted-terminal.json) | `7d5755df17cd4f10b869628897dce0a496cd99df51a5ffc3c842faa8b5b49b38` |
+| [Controller report](storage-binding-live-ui-accepted.json) | `a28c62e56630df9a7bff0dcfac0b00ecd57450f235d7f9e2fbdd5b69901c2d95` |
+| [Browser result](storage-binding-live-ui-accepted-browser.json) | `a812dbdfe16dfd4183e5319182ed1c3ee3371beb2538e2ab6914e62ae625e479` |
+
+The accepted scope and all four disposed failed scopes remain immutable.
+Its original `78cb...` HISTORY record is independently retained in
+`history-before.json` in the source55 target execution evidence. Legitimate
+later source55 updates to shared HISTORY do not invalidate this completed UI
+acceptance. Do not rerun the old `attest` against the changed shared record.
+The frozen inputs and procedure below describe this consumed gate, not a new
+execution authorization.
 
 ## Frozen product inputs
 
@@ -32,6 +72,13 @@ For example, `index.html` is
 `dd980aa1c9f4c0504aff4006b1adcd074659e2998535e071274b5471ed28a514`.
 Pin the entire inventory, including absence of extra files, rather than only
 these examples. Pair the two product artifacts explicitly in the new manifest.
+
+The [accepted TOOL05 closure](storage-binding-live-ui-tool05-guards.json) pins:
+
+| Tool input | SHA256 |
+| --- | --- |
+| `verify-storage-binding-live-ui.py` | `87c401d9acabc383e074c4c5f9fd493c63222b5d545d73f9cf8c5f11e797a685` |
+| `root-binding-live.spec.ts` | `57b3e4ba16072690931a9d861964fea9ecae73e9d3e25c48560a2a6ca8912945` |
 
 The application does not embed this frontend. In
 [`dashboard.go`](../../internal/server/dashboard.go), `GOBY_WEB_DIR` supplies
@@ -60,12 +107,13 @@ its fallback port18096 is outside this gate.
 
 ## Fresh isolated scope
 
-The reviewed operator should create one fresh run with an unpredictable suffix,
-not resume any prior UI or database receipt. Suggested namespaces are:
+The scope contract requires one fresh run with an unpredictable suffix and no
+reuse of a prior UI or database receipt. The accepted tool and run namespace
+templates are:
 
 ```text
 WORK       /opt/goby-test/exec-work-m3e
-TOOL       WORK/storage-binding-live-ui-tool-01
+TOOL       WORK/storage-binding-live-ui-tool-05
 EVIDENCE   WORK/storage-binding-live-ui-<run>
 RUNTIME    /opt/goby-binding-ui-runtime-<run>
 DB         goby_binding_ui_<run_without_separators>
@@ -75,9 +123,10 @@ WORKER     goby-storage-binding-live-ui-worker-<run>.service
 ORIGIN     http://127.0.0.1:18288
 ```
 
-These are proposed names, not claims that the paths or port are available.
-Require nonexistence and an unoccupied port before creating resources; fail on
-a collision without choosing a different destination silently. Also reject
+The TOOL05 path and accepted run above are pinned by the input preflight. The
+consumed intent is not reusable. These templates do not establish that any new
+destination or port is available. Require nonexistence and an unoccupied port before creating resources;
+fail on a collision without choosing a different destination silently. Also reject
 ports5432,15432,18096,18097,18196,18197,18198 as application destinations.
 
 Use the existing owned PostgreSQL17 workspace on port15432, directory
@@ -94,9 +143,12 @@ Keep `EVIDENCE` and credentials root-owned0700/0600. Both `/opt/goby-test` and
 uid995 without changing an existing ancestor. Do not change either directory
 or any source ancestor's permissions. The new runtime is directly below `/opt`,
 whose observed ownership/mode is root:root0755. Recheck that parent identity
-before creating the fresh runtime root as root:goby0710. Copy verified bytes
-there, checking both source and copy against the frozen inventory. Keep the
-frozen executable root:goby0550, web directories root:goby0550, and web files
+before creating the fresh runtime root as root:goby0750. The earlier
+root:goby0710 proposal is a failed assumption: `openDirectory` opens each path
+component with `O_RDONLY`, so execute-only group traversal was insufficient in
+Attempt1. Copy verified bytes there, checking both source and copy against the
+frozen inventory. Keep the frozen executable root:goby0550, web directories
+root:goby0550, and web files
 root:goby0440; retain group read/traversal without application write permission.
 Create the separate `RUNTIME/app` state directories as uid995-owned0700. Retain
 a verified executable descriptor before starting the exact child. Pin
@@ -182,20 +234,21 @@ three empty backing directories produce distinct strong directory identities.
 All directories and mount sources have a fixed manifest and ownership witness.
 No real user media or generated audiovisual files are needed.
 
-Fresh supported registrations bind automatically. To reach a real unbound row
-through public APIs, initially place a small owned tmpfs at `U` inside the private
-namespace. Registration's explicit unsupported-capability path can leave its
-binding null while retaining its authorized mapping. This is a runtime fixture
-precondition, not a claimed tmpfs result: require registration success and a
-read-only row showing revision1 with null binding/actor/time. If the current
-kernel does not produce that result, stop this scenario and report the missing
-fixture capability. Do not clear a binding using SQL or patch production code.
-Remove only that owned tmpfs to expose the underlying supported `U` directory.
+Fresh supported registrations bind automatically. The accepted unbound fixture
+uses a small owned ramfs at `U` inside the private namespace. The independent
+[ramfs capability observation](storage-binding-live-ui-ramfs-capability.json)
+recorded uid995 with no supplementary groups, UUID ioctl `ENOTTY` and file-handle
+`EOPNOTSUPP`. Attempt3 showed that tmpfs was supported on this host and therefore
+did not satisfy this fixture contract. Require registration success and a
+read-only row showing revision1 with null binding/actor/time. If a fresh kernel
+observation does not produce that result, stop and report the missing fixture
+capability. Do not clear a binding using SQL or patch production code. Remove
+only the owned ramfs to expose the underlying supported `U` directory.
 
 | Phase | Filesystem or actor operation | Required browser and persistence proof |
 | --- | --- | --- |
-| Baseline | Register A with `archive` bound to source1, B unchanged, U on tmpfs; `Scan:false`. | A/B verified at revision1 and attributed to the new administrator. U's stored binding is null at revision1; its API status may be unavailable while unsupported storage is still mounted. No scan job or binding-update audit is created by merely opening/refreshing the dialog. |
-| Unbound observation | Unmount only U's tmpfs, exposing its supported directory. | U remains unbound with an observed topology/fingerprint. Approval is disabled before consent; refreshing clears consent and creates no PUT. |
+| Baseline | Register A with `archive` bound to source1, B unchanged, U on ramfs; `Scan:false`. | A/B verified at revision1 and attributed to the new administrator. U's stored binding is null at revision1; its API status may be unavailable while unsupported storage is still mounted. No scan job or binding-update audit is created by merely opening/refreshing the dialog. |
+| Unbound observation | Unmount only U's ramfs, exposing its supported directory. | U remains unbound with an observed topology/fingerprint. Approval is disabled before consent; refreshing clears consent and creates no PUT. |
 | Real conflict | Replace A's `archive` bind mount with source2. Browser observes mismatch at revision1. Controller separately observes and approves that exact root/fingerprint, obtaining revision2. Browser then explicitly submits its stale revision1. | Browser receives real409 `root_binding_conflict`, clears/disables consent and requires explicit refresh. The failed request creates no revision increment or audit. Refresh returns verified revision2; no automatic retry occurs. |
 | Browser rebind | Replace A's `archive` mount with source3 and refresh. | `Storage changed` and the `archive` boundary marked `Changed`; review approved/current identities. One consented `Accept replacement` PUT succeeds. UI says `Storage binding saved.`, `Verified`, revision3, real BoundBy and BoundAt. A fresh independent GET and row/audit read match exactly. B remains byte-for-byte at its approved revision1. |
 | Unavailable | Temporarily remove uid995 access to the exact owned A directory, retaining its original mode for restoration. | Require an actual unavailable observation before asserting UI behavior. Prior approved topology stays visible; its boundary is `Not observed`, never `Removed`. There is no consent control or permitted approval and no persisted change. Restore the original mode and require verified revision3 again. |
@@ -287,16 +340,45 @@ The worker cannot certify its own terminal state. No skipped required phase,
 missing ACK, forced shutdown, residual session/pair/mount, or unverified artifact
 can be converted into a pass.
 
-## Work required before dispatch
+## Next work
 
-1. Implement a new narrow operator plus memory-only guards for this exact fresh
-   scope, based on the reusable patterns above. Review it independently before
-   execution; do not modify or invoke historical operators as a shortcut.
-2. Add a separate live Playwright spec, private fixture loader and exact stage
-   protocol. Keep `root-binding-workflow.spec.ts` as the existing mocked suite.
-3. Freeze the tool closure and complete input manifest, verify the unsupported
-   fixture/preflight contract, and prepare independently checked terminal and
-   disposal logic. No runtime authority is established by this document alone.
-4. Run reviewed verification only on `test-env`; preserve the new run's reports
-   and screenshots. Update the milestone evidence after successful independent
-   terminal acceptance. Publication/deployment is a subsequent scoped operation.
+Source55's [two real PostgreSQL HTTP tests](collection-folder-source55-target.json)
+passed with zero failures/skips and all six cleanup checks true; its
+[independent targeted terminal](collection-folder-source55-target-terminal.json)
+also passed. The [source55 full run](collection-folder-source55-full.json) and
+[independent full terminal](collection-folder-source55-full-terminal.json) passed
+2,173 tests across 25 packages with zero failures/skips, the Linux build and all
+six cleanup checks. Its binary is 29,337,989 bytes with SHA256
+`6a8c46cdd0dcff56af28f11084eabcf2497daf5ce11ac072eaad7a5dbf486e81`.
+The full scope is terminal and consumed, and shared HISTORY is finished; do not
+rerun that scope or this UI gate's old `attest`.
+
+Product publication to `origin/main` is complete: the 96-file storage/scanner
+change is commit `13b21d60c8bdc4caf8d59abdddc9e2b96dc52775`, followed by the
+two-file Subviews change `16d75c38064008680fa60839c637efee2f12f2ae`.
+The [Git reconciliation](collection-folder-source55-git-reconciliation.json)
+checked 849 closure files: 848 matched the frozen raw bytes, and the sole
+difference was CRLF in the historical
+`internal/server/testdata/emby-4.9.5.0-playback-video-index-zero.json` versus LF
+in Git. The [separate EOL verification](collection-folder-source55-git-eol.json)
+passed `TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility`
+on an 807-input remote Go source copy without database access. This independent
+single test is not added to the 2,173 full-suite count.
+
+Source55 is not deployed. The candidate remains source44/schema27 at baseline
+`2659...` with 75 sessions, 64 devices and 167 audits; the primary remains
+source32/schema27. The candidate schema28 upgrade tool has completed static
+review and is undergoing remote build/guard verification, without runtime
+admission. Fresh source55 original-client tooling is being implemented and has
+not yet been verified.
+
+1. Finish the upgrade tool's remote build and guard verification, then establish
+   current runtime admission for the candidate schema28 upgrade and source55
+   deployment. Keep the protected primary and the consumed acceptance evidence
+   separate from this new deployment scope.
+2. Verify the fresh original-client tooling and, after deployment, complete
+   navigation and automatic-refresh acceptance with new owned sessions, a
+   current candidate baseline and independent cleanup/terminal proof. Native
+   administrator UI acceptance does not establish those client outcomes.
+3. Keep broader M2-M6 acceptance open and retain the existing M7 deferred scope;
+   this accepted storage-binding gate does not reduce either scope.

@@ -1,0 +1,138 @@
+{
+  "after_snapshot_sha256": "3afac856c175a15a79b69dc04264bb95b48e7bb1444fb65dc85842d9c164ddbf",
+  "anchors": {
+    "catalog-before.json": "78c26be6733cc43406dcfa7d798ec5d40e9b4050bef89e021c5a3fdf7d0fc9f8",
+    "private/application.log": "22a8d934a2af35d2bfc5e24cbac73c22db54aaffe166181a4e9aca23bc60e044",
+    "private/browser-result.json": "035f760987c55130541c65df20976a22082f357af1a7469ff20cbf7a6c1831b1",
+    "private/browser-session.json": "ad05c53cb185535ddbe033e23916e8b2f4e98a8137938b70d102bb94eb180854",
+    "private/http-002.json": "1b7f30907e4487e3c9ee6b3df9a2a6f04886a2170bcb047a515dd25030955d10",
+    "private/http-003.json": "d6324940c931bc060a922cc4cc9cd9e8e86af13ad233c2021987a940f5859f2f",
+    "private/worker-admitted.json": "3b08f39d0caadf507b35af91a92101492ebb59b88275ada4bd78759ca2a3c26a",
+    "receipt-009.json": "974b51297e66adda271e3232c0833f6e196f698be7563e0c488f13b223a82034",
+    "runtime-owner.json": "b8a8e9ec26c7ad745a1f56b1529f456a7d9f5ce5421a816da540a7656efc3faf"
+  },
+  "audit_actions": [
+    "library.created",
+    "session.login",
+    "session.revoked",
+    "user.created"
+  ],
+  "browser_started": true,
+  "completed_browser_checks": {
+    "backend_ready_before_http": true,
+    "bootstrap_created_by_ui": true,
+    "browser_context_closed": true,
+    "browser_version_pinned": true,
+    "configured_storage_only": true,
+    "native_login": true
+  },
+  "failure": "live_ui_assertion_failed",
+  "fallback_logout204_exact401": true,
+  "history_unchanged": true,
+  "host_unchanged": true,
+  "initial_bindings": {
+    "A": {
+      "approved": true,
+      "revision": 1
+    },
+    "B": {
+      "approved": true,
+      "revision": 1
+    },
+    "U": {
+      "approved": false,
+      "revision": 1
+    }
+  },
+  "inputs_unchanged": true,
+  "marker": "goby-storage-binding-live-ui-selection-failed-terminal-v1",
+  "normal_ui_logout": false,
+  "owned_session_revoked": true,
+  "pair_retained": true,
+  "port_closed": true,
+  "protected_unchanged": true,
+  "recursive_cgroups_empty": true,
+  "report_sha256": "7c6c4f0b1f0581615fc303a78409019c3ef2b5134bf64245317ec41f8f0f8efa",
+  "run_id": "20260912_081819_2ede994eef07",
+  "runtime_retained": true,
+  "stages": [
+    "browser_ready"
+  ],
+  "states": {
+    "controller_unit": {
+      "ActiveState": "failed",
+      "CPUQuotaPerSecUSec": "1.500000s",
+      "ControlGroup": "",
+      "Description": "goby-storage-binding-live-ui-v1:20260912_081819_2ede994eef07",
+      "ExecMainStatus": "1",
+      "InvocationID": "be5471dec2c3498b96a54bb4e6969cf0",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "RemainAfterExit": "yes",
+      "Result": "exit-code",
+      "RuntimeMaxUSec": "12min",
+      "SubState": "failed",
+      "TasksMax": "256"
+    },
+    "worker_unit": {
+      "ActiveState": "failed",
+      "CPUQuotaPerSecUSec": "1.500000s",
+      "ControlGroup": "",
+      "Description": "goby-storage-binding-live-ui-v1:20260912_081819_2ede994eef07",
+      "ExecMainStatus": "1",
+      "InvocationID": "ecae35dab99f4c038644734a92000fd8",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "RemainAfterExit": "yes",
+      "Result": "exit-code",
+      "RuntimeMaxUSec": "10min",
+      "SubState": "failed",
+      "TasksMax": "256"
+    }
+  },
+  "status": "failed",
+  "table_counts": {
+    "activity_entries": 4,
+    "application_key_clients": 0,
+    "application_key_devices": 0,
+    "application_keys": 0,
+    "catalog_entities": 0,
+    "client_playback_references": 0,
+    "devices": 0,
+    "encoding_jobs": 0,
+    "extra_reserved_paths": 0,
+    "item_entities": 0,
+    "item_extra_resources": 0,
+    "item_images": 0,
+    "item_metadata_state": 1,
+    "item_subtitles": 0,
+    "item_theme_resources": 0,
+    "items": 1,
+    "libraries": 1,
+    "library_roots": 3,
+    "managed_settings": 1,
+    "play_sessions": 0,
+    "scan_jobs": 0,
+    "schema_migrations": 28,
+    "server_settings": 3,
+    "sessions": 1,
+    "task_definitions": 1,
+    "task_occurrences": 0,
+    "task_run_children": 0,
+    "task_run_requests": 0,
+    "task_runs": 0,
+    "task_triggers": 0,
+    "theme_owner_ids": 2,
+    "theme_reserved_paths": 0,
+    "user_item_data": 0,
+    "user_settings": 0,
+    "users": 1
+  },
+  "worker_result_sha256": "d507187c2d7f5a010a2affdf97b417523eedf9699fdd25428bac42ca9dc20ce5"
+}

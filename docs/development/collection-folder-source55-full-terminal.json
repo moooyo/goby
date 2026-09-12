@@ -1,0 +1,65 @@
+{
+  "binary": {
+    "bytes": 29337989,
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_084241_db776aacc1a7/tmp/goby-linux-amd64",
+    "sha256": "6a8c46cdd0dcff56af28f11084eabcf2497daf5ce11ac072eaad7a5dbf486e81"
+  },
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "expected_invocation_id": "20f0d83200c34228aa5862e07ce24c2c",
+  "finished_receipt": "/opt/goby-test/exec-work-m3e/collection-folder-source55-full-execution-01/finished-receipt.json",
+  "finished_receipt_sha256": "bb8ee46a81fb81eb5e9472021813dbb0591b285fac9770044c7a364f0be347f4",
+  "finished_receipt_source": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_084241_db776aacc1a7/receipt-5796fa07bd122481.json",
+  "history_cleanup_complete": true,
+  "history_phase": "finished",
+  "history_run_id": "20260912_084241_db776aacc1a7",
+  "history_sha256": "bb8ee46a81fb81eb5e9472021813dbb0591b285fac9770044c7a364f0be347f4",
+  "marker": "goby-collection-folder-source55-full-terminal-v1",
+  "observed_at": "2026-09-12T09:18:59.707073+00:00",
+  "packages": 25,
+  "recursive_cgroup_empty": true,
+  "report": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_084241_db776aacc1a7/report.json",
+  "report_sha256": "2c0b5a54b51f66ffa0b11f3160cf50325df520322ec79af1fd92fc9bff93596c",
+  "run_id": "20260912_084241_db776aacc1a7",
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-55",
+  "source_manifest_sha256": "7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765937a",
+  "state": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainCode": "1",
+    "ExecMainStatus": "0",
+    "InvocationID": "20f0d83200c34228aa5862e07ce24c2c",
+    "LoadState": "loaded",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "status": "passed",
+  "tests": {
+    "failures": 0,
+    "skips": 0,
+    "top_level_passes": 2173
+  },
+  "unit": "goby-collection-folder-source55-full-controller-v1.service",
+  "worker_expected_invocation_id": "8c2f30e884c04c10aa0ae616917b041e",
+  "worker_recursive_cgroup_empty": true,
+  "worker_state": {
+    "ActiveState": "inactive",
+    "ControlGroup": "",
+    "ExecMainCode": "0",
+    "ExecMainStatus": "0",
+    "InvocationID": "",
+    "LoadState": "not-found",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "worker_unit": "goby-client-backup-20260912-084241-db776aacc1a7.service"
+}

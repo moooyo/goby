@@ -1,0 +1,62 @@
+{
+  "anchors": {
+    "catalog-before.json": "78c26be6733cc43406dcfa7d798ec5d40e9b4050bef89e021c5a3fdf7d0fc9f8",
+    "private/application.log": "e81fbca993a87b940829f7ff2482a146f5e3477235eb206dad012bbc8ab672cf",
+    "private/worker-admitted.json": "17303fc58330a66dbd9041e9c229f1dffac05d86549c268280b3e476e050159c",
+    "receipt-009.json": "a3c7eec80ba09cb25ad8b67400a3f89cdc15bf0a36c153a512b38aca8b3f37db",
+    "runtime-owner.json": "9aacb5769abbd2febfb4666c5b810f0aae0fed87e2d55aadb02f7cf89ee84ac0"
+  },
+  "browser_started": false,
+  "history_unchanged": true,
+  "host_unchanged": true,
+  "inputs_unchanged": true,
+  "marker": "goby-storage-binding-live-ui-startup-failed-terminal-v1",
+  "pair_retained": true,
+  "port_closed": true,
+  "protected_unchanged": true,
+  "recursive_cgroups_empty": true,
+  "report_sha256": "1596f8941f1938ced001d55379152475f0871641ce5b493673b54153875a1d6d",
+  "run_id": "20260912_074733_ca8294cb9f47",
+  "runtime_retained": true,
+  "stages": [],
+  "states": {
+    "controller_unit": {
+      "ActiveState": "failed",
+      "CPUQuotaPerSecUSec": "1.500000s",
+      "ControlGroup": "",
+      "Description": "goby-storage-binding-live-ui-v1:20260912_074733_ca8294cb9f47",
+      "ExecMainStatus": "1",
+      "InvocationID": "6f1883bd35074e77a645235021b34979",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "RemainAfterExit": "yes",
+      "Result": "exit-code",
+      "RuntimeMaxUSec": "12min",
+      "SubState": "failed",
+      "TasksMax": "256"
+    },
+    "worker_unit": {
+      "ActiveState": "failed",
+      "CPUQuotaPerSecUSec": "1.500000s",
+      "ControlGroup": "",
+      "Description": "goby-storage-binding-live-ui-v1:20260912_074733_ca8294cb9f47",
+      "ExecMainStatus": "1",
+      "InvocationID": "fb0ff6acfd8745cdbbedb4cd1a188f00",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "RemainAfterExit": "yes",
+      "Result": "exit-code",
+      "RuntimeMaxUSec": "10min",
+      "SubState": "failed",
+      "TasksMax": "256"
+    }
+  },
+  "status": "failed",
+  "worker_result_sha256": "a87de371f522fb70b93d820e81663d66865467d3c22a953f1160ddaa781759c6"
+}

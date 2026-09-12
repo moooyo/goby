@@ -1,0 +1,18 @@
+{
+  "exit_code": 0,
+  "host_unchanged": true,
+  "marker": "goby-storage-binding-ui-ramfs-capability-v1",
+  "observation": {
+    "private_namespace": "mnt:[4026533402]",
+    "probe": {
+      "gid": 986,
+      "groups": [],
+      "handle_errno": 95,
+      "uid": 995,
+      "uuid_errno": 25
+    }
+  },
+  "owned_empty_directories_removed": true,
+  "status": "passed",
+  "stderr": ""
+}

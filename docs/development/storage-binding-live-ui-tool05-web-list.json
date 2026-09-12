@@ -1,0 +1,8 @@
+{
+  "actual_tests_executed": false,
+  "exit_code": 0,
+  "listed_tests": 1,
+  "marker": "goby-storage-binding-live-ui-web-list-v3",
+  "spec_sha256": "57b3e4ba16072690931a9d861964fea9ecae73e9d3e25c48560a2a6ca8912945",
+  "status": "passed"
+}

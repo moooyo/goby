@@ -1,0 +1,213 @@
+{
+  "marker": "goby-storage-binding-live-ui-browser-result-v1",
+  "version": 1,
+  "run_id": "20260912_081819_2ede994eef07",
+  "nonce": "985d50646e4302105ff3be11f94e1ce6e580ae492139d960e0b6a56047204b78",
+  "complete": false,
+  "status": "failed",
+  "checks": {
+    "browser_version_pinned": true,
+    "backend_ready_before_http": true,
+    "bootstrap_created_by_ui": true,
+    "native_login": true,
+    "configured_storage_only": true,
+    "browser_context_closed": true
+  },
+  "failure": "live_ui_assertion_failed",
+  "fixture_sha256": "888f981ceca7f30cc74b92b211d4c12b6e64c3e15c5ed17ca1b879543b04bd14",
+  "browser_version": "153.0.8010.12",
+  "administrator_id": "2934a12f0559be493f5380b7b5de767f",
+  "library_id": "a062c021c43f775c64fb0d7fd95f89a6",
+  "root_ids": {
+    "A": "79036181ddffa554e0bd06109b7a6c50",
+    "B": "8f3a0dc68f7d85ff4986bf5a783ed039",
+    "U": "f3c9134db2c805ee5e30a13d0b9fbc88"
+  },
+  "bindings": null,
+  "session": {
+    "path": "/opt/goby-test/exec-work-m3e/storage-binding-live-ui-20260912_081819_2ede994eef07/private/browser-session.json",
+    "sha256": "ad05c53cb185535ddbe033e23916e8b2f4e98a8137938b70d102bb94eb180854",
+    "validated": true
+  },
+  "stages": [
+    {
+      "sequence": 1,
+      "action": "browser_ready",
+      "request_sha256": "715d152a052a93a5c0b556000544e3fd0d07075f028ddc76516774552ddd9f4d",
+      "ack_sha256": "9ffce1a6e98d9163777a3f1fd914709805b82954dac4ea9f3eab1b4668b3935e"
+    }
+  ],
+  "requests": [
+    {
+      "sequence": 1,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/bootstrap",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 22
+    },
+    {
+      "sequence": 2,
+      "phase": "baseline_created",
+      "method": "POST",
+      "path": "/admin/v1/bootstrap",
+      "status": 201,
+      "request_bytes": 192,
+      "body_keys": [
+        "Name",
+        "Password",
+        "SetupToken"
+      ],
+      "complete": true,
+      "response_bytes": 208
+    },
+    {
+      "sequence": 3,
+      "phase": "baseline_created",
+      "method": "POST",
+      "path": "/admin/v1/session",
+      "status": 200,
+      "request_bytes": 112,
+      "body_keys": [
+        "Name",
+        "Password"
+      ],
+      "complete": true,
+      "response_bytes": 287
+    },
+    {
+      "sequence": 4,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 34,
+      "response_sha256": "e022f314391c0cec37e2fef0aba55d4069df3d6cf26f908703ca2fb05c978d21"
+    },
+    {
+      "sequence": 5,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/storage/roots",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 126,
+      "response_sha256": "5e3ad86e44e93aaf60b0758c006dc1c5dddd4d368653dc01b7c9a09bb108f52d"
+    },
+    {
+      "sequence": 6,
+      "phase": "baseline_created",
+      "method": "POST",
+      "path": "/admin/v1/libraries",
+      "status": 201,
+      "request_bytes": 328,
+      "body_keys": [
+        "CollectionType",
+        "Name",
+        "Paths",
+        "Scan"
+      ],
+      "complete": true,
+      "response_bytes": 433,
+      "response_sha256": "1eaa2a6ad942decc7030f0b88ade1392845e8df9c5d43899b363d58c0589b891"
+    },
+    {
+      "sequence": 7,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 454,
+      "response_sha256": "84f220ef7a80c8d216a5f2f4e0aaa3da561d4db54e680e56d44b5b8545a9827c"
+    },
+    {
+      "sequence": 8,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/storage/roots",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 126,
+      "response_sha256": "5e3ad86e44e93aaf60b0758c006dc1c5dddd4d368653dc01b7c9a09bb108f52d"
+    },
+    {
+      "sequence": 9,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries/a062c021c43f775c64fb0d7fd95f89a6/roots",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 891,
+      "response_sha256": "d61cf042ff84a43d4b11766056d626820c79f72d121122a2910353147e3b43d0"
+    },
+    {
+      "sequence": 10,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries/a062c021c43f775c64fb0d7fd95f89a6/roots/79036181ddffa554e0bd06109b7a6c50/binding",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 1779,
+      "response_sha256": "eecb4e9011d22e3f0cae2566e09fcfe61a46af31afd7de2533708a1739c69e95"
+    },
+    {
+      "sequence": 11,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries/a062c021c43f775c64fb0d7fd95f89a6/roots/79036181ddffa554e0bd06109b7a6c50/binding",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 1779,
+      "response_sha256": "eecb4e9011d22e3f0cae2566e09fcfe61a46af31afd7de2533708a1739c69e95"
+    },
+    {
+      "sequence": 12,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries/a062c021c43f775c64fb0d7fd95f89a6/roots/8f3a0dc68f7d85ff4986bf5a783ed039/binding",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 1366,
+      "response_sha256": "7649bf9733a69c6557b936646b34aac7aa018ef15964c0f8e432c52e94e6f10f"
+    },
+    {
+      "sequence": 13,
+      "phase": "baseline_created",
+      "method": "GET",
+      "path": "/admin/v1/libraries/a062c021c43f775c64fb0d7fd95f89a6/roots/f3c9134db2c805ee5e30a13d0b9fbc88/binding",
+      "status": 200,
+      "request_bytes": 0,
+      "body_keys": [],
+      "complete": true,
+      "response_bytes": 321,
+      "response_sha256": "98cd3cd729b852b65e03749cc973e37ec7053c54030a9df210be13719f7e9935"
+    }
+  ],
+  "screenshots": [],
+  "violations": [],
+  "page_errors": 0,
+  "console_errors": 0,
+  "static_requests": 24,
+  "static_bytes": 662492
+}

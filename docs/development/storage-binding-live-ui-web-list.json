@@ -1,0 +1,21 @@
+{
+  "execution": "Playwright discovery only; no live fixture supplied and no tests executed.",
+  "exit_code": 0,
+  "files": {
+    "e2e/root-binding-live.spec.ts": "52d0e9f5ad8a3a447bd06c9c83ab75d837aa20f0a55ecc88062bba720516c759",
+    "package-lock.json": "3f68111eb71283903ac90550e340dd261a3bba33eb4ff2f65f21dd41ab0c9307",
+    "package.json": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b",
+    "playwright.config.ts": "e270b700e65d18a8f5120d6db27850cfd55682551881fd0d103efc6cb44dba44"
+  },
+  "listed_tests": 1,
+  "marker": "goby-storage-binding-live-ui-web-list-v2",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "0c3d616afc5c764605a83f7d463d157d69fda7cbfc665b6f8657660c1bf6a8cd",
+  "test_results": [
+    []
+  ],
+  "titles": [
+    "real registration, stale conflict, replacement, unavailable storage and initial binding"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "duration_seconds": 0.254,
+  "exit_code": 0,
+  "guard_sha256": "a745fe17166831de54f8cb5cfe4224e4d51b6644c88b04272d320fd8bdc7d512",
+  "guards": {
+    "database_commands": 0,
+    "errors": 0,
+    "evidence_created": false,
+    "failure_details": null,
+    "failures": 0,
+    "guard_sha256": "a745fe17166831de54f8cb5cfe4224e4d51b6644c88b04272d320fd8bdc7d512",
+    "live_http_executed": false,
+    "operator_sha256": "922941488d8dd55894cb1c8ac4c916ff1c360a271fd98a5248e35b6e8da2f782",
+    "passed": true,
+    "service_actions": 0,
+    "skips": 0,
+    "suite": "collection-folder-contract-memory-guards",
+    "tests": 57
+  },
+  "marker": "goby-collection-folder-contract-guard-verification-v4",
+  "operator": "/opt/goby-test/exec-work-m3e/collection-folder-contract-tool-02/capture-collection-folder-contract.py",
+  "operator_sha256": "922941488d8dd55894cb1c8ac4c916ff1c360a271fd98a5248e35b6e8da2f782",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "891c0aa78808a8312b460ae067bdb6042cfa9003b7ae0148fc9fcd6b602a2819",
+  "syntax_passed": 2
+}

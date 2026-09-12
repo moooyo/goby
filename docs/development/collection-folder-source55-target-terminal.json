@@ -1,0 +1,35 @@
+{
+  "cleanup": {
+    "goby_backup_m3e_source_removed": true,
+    "goby_backup_m3e_target_removed": true,
+    "hba_restored_exactly": true,
+    "preexisting_catalog_unchanged": true,
+    "receipt_saved": true,
+    "unit_terminal": true
+  },
+  "controller": {
+    "ActiveState": "active",
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "d2f1851e24a3468d9b85e6a60a904457",
+    "LoadState": "loaded",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "finished_receipt_sha256": "70e8d67d6c1a614685948622db82255bd9041397be9d71367cf76c2ed137584c",
+  "marker": "goby-collection-folder-source55-target-terminal-v1",
+  "recursive_cgroup_empty": true,
+  "report": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_084052_cc8f07967c67/report.json",
+  "report_sha256": "7e13a8cef6c97451311dbb51dd36401d94d2e67e51db12fdeb6b562abc77ee95",
+  "status": "passed",
+  "tests": {
+    "failures": 0,
+    "passed": [
+      "TestHTTPLibraryPermissionsCSRFAndLivePolicyRevocation",
+      "TestHTTPLibraryScanBrowseFieldsAndDeletePreservesMedia"
+    ],
+    "skips": 0,
+    "top_level_passes": 2
+  }
+}
