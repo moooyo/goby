@@ -545,7 +545,7 @@ export function requireReferenceClientMessage(decoded) {
       decoded.json.MessageType === 'SessionsStop' && decoded.json.Data === ''), 'reference_client_message_not_allowlisted');
 }
 
-/** Complete data messages are admitted before their original wire frames are released. */
+/** Admit complete data messages while forwarding interleaved control frames promptly. */
 export function decodeWebSocketFrames(state, chunk, now = Date.now(), onMessage = () => {}) {
   guard(Buffer.isBuffer(chunk) && Number.isFinite(now) && state.wireBytes + chunk.length <= L.wireBytes);
   state.wireBytes += chunk.length;
@@ -570,8 +570,8 @@ export function decodeWebSocketFrames(state, chunk, now = Date.now(), onMessage 
     const wire = Buffer.from(state.pending.subarray(0, offset + length)), payload = Buffer.from(state.pending.subarray(offset, offset + length));
     state.pending = Buffer.from(state.pending.subarray(offset + length));
     if (masked) for (let index = 0; index < payload.length; index += 1) payload[index] ^= wire[maskOffset + index % 4];
-    state.held.push(wire);
     if (opcode < 8) {
+      state.held.push(wire);
       guard(opcode === 0 ? state.opcode !== null : state.opcode === null);
       if (opcode !== 0) state.opcode = opcode;
       state.messageBytes += payload.length; guard(state.messageBytes <= L.messageBytes);
@@ -583,13 +583,18 @@ export function decodeWebSocketFrames(state, chunk, now = Date.now(), onMessage 
       state.messages += 1;
       onMessage({ index: state.messages, direction: state.direction, frame_number: state.frames, bytes, ...decoded });
       state.parts = []; state.messageBytes = 0; state.opcode = null;
-    } else if (opcode === 8) {
-      if (payload.length >= 2) {
-        const code = payload.readUInt16BE(0);
-        guard(code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code) && (code <= 1014 || code >= 3000));
-        new TextDecoder('utf-8', { fatal: true }).decode(payload.subarray(2));
+    } else {
+      if (opcode === 8) {
+        if (payload.length >= 2) {
+          const code = payload.readUInt16BE(0);
+          guard(code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code) && (code <= 1014 || code >= 3000));
+          new TextDecoder('utf-8', { fatal: true }).decode(payload.subarray(2));
+        }
+        state.closed = true;
+        state.held = []; state.parts = []; state.messageBytes = 0; state.opcode = null;
       }
-      guard(state.opcode === null, 'reference_close_inside_fragment'); state.closed = true;
+      output.push(wire);
+      continue;
     }
     if (state.opcode === null) { output.push(...state.held); state.held = []; }
   }

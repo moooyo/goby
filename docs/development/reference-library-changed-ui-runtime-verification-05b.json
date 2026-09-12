@@ -1,0 +1,51 @@
+{
+  "argv": [
+    "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+    "--test",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-tool-05/test-client-browser-library-changed-reference-runtime.mjs"
+  ],
+  "automatic_refresh_acceptance": false,
+  "browser_started": false,
+  "business_http": false,
+  "completed_at": "2026-09-12T17:01:47.299631+00:00",
+  "counts": {
+    "cancelled": 0,
+    "fail": 0,
+    "pass": 32,
+    "skipped": 0,
+    "tests": 32,
+    "todo": 0
+  },
+  "exit_code": 0,
+  "marker": "goby-reference-runtime-control-fragment-verification-v5b",
+  "prior_wrapper_failure": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-verification-05/report.json",
+    "sha256": "5f6fdd872c37cca7878f821a8379413c6a0452835debf93c6a5a61ae177d3c70"
+  },
+  "reference_ui_replayed": false,
+  "regression_reproduction": {
+    "actual_failures": 4,
+    "expected_failures": 4,
+    "old_runtime_sha256": "b720d7bbdcf08ce59ae966a3f9d97eb0ebb946e790e563b46b8c50beec1c03e5",
+    "reused_not_rerun": true,
+    "stdout_sha256": "a89529198674717592f1c6da9b7c7c96ff17f99f60f68a4c010de9340e6ef5cb",
+    "tests": 4
+  },
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-tool-05/client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 100615,
+      "sha256": "209f72fa812647742003b50c311ee358ffc6f1279e29a2e142eec506245fed7c"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-tool-05/client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-tool-05/test-client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 40459,
+      "sha256": "af867a2daf3f957e7a2c8d93a1f7ead2be42290ece4568c2f2181ed352dd849b"
+    }
+  },
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "85fa551eaf627931150e949ce60b660df7bc56dc91c5fe188c758fa3fd5e89fe"
+}

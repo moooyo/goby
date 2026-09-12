@@ -1,0 +1,26 @@
+{
+  "business_http": false,
+  "completed_at": "2026-09-12T17:01:47.099691+00:00",
+  "fixed_runtime_tests_executed": false,
+  "marker": "goby-reference-runtime-control-fragment-verification-v5",
+  "old_runtime": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-runtime-regression-tool-05/client-browser-library-changed-reference-runtime.mjs",
+    "sha256": "b720d7bbdcf08ce59ae966a3f9d97eb0ebb946e790e563b46b8c50beec1c03e5"
+  },
+  "reason": "Node's name filter reports only its four selected tests, rather than 32 including 28 skips; the wrapper rejected this count before running the fixed suite.",
+  "regression": {
+    "all_four_new_regressions_failed_on_old_runtime": true,
+    "counts": {
+      "cancelled": 0,
+      "fail": 4,
+      "pass": 0,
+      "skipped": 0,
+      "tests": 4,
+      "todo": 0
+    },
+    "exit_code": 1,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "a89529198674717592f1c6da9b7c7c96ff17f99f60f68a4c010de9340e6ef5cb"
+  },
+  "status": "verification_wrapper_failed"
+}

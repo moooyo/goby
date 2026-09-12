@@ -391,6 +391,68 @@ test('complete and fragmented server messages retain the original wire bytes', (
   assert.equal(bomEvidence.text, bomText); assert.equal(bomEvidence.body_sha256, hash(bomText));
 });
 
+test('fragmented data keeps its admission barrier while ping and pong pass immediately', () => {
+  for (const direction of ['server', 'client']) {
+    const masked = direction === 'client', observed = [], state = createReferenceFrameState(direction);
+    const message = masked ? '{"MessageType":"SessionsStop","Data":""}' : '{"MessageType":"LibraryChanged","Data":{"ItemsUpdated":["100"]}}';
+    const first = frame(message.slice(0, 18), { masked, final: false });
+    const last = frame(message.slice(18), { masked, opcode: 0 });
+    const ping = frame('probe', { masked, opcode: 9 }), pong = frame('reply', { masked, opcode: 10 });
+    assert.deepEqual(decodeWebSocketFrames(state, first, 1000, value => observed.push(value)), []);
+    assert.deepEqual(decodeWebSocketFrames(state, Buffer.concat([ping, pong]), 1001, value => observed.push(value)), [ping, pong]);
+    assert.equal(observed.length, 0); assert.deepEqual(state.held, [first]);
+    assert.deepEqual(decodeWebSocketFrames(state, last, 1002, value => observed.push(value)), [first, last]);
+    assert.equal(observed.length, 1); assert.equal(observed[0].bytes.toString(), message);
+    assert.equal(observed[0].frame_number, 4); assert.deepEqual(state.held, []); assert.equal(state.messages, 1);
+  }
+});
+
+test('fragmented denied application data is never released after interleaved ping', () => {
+  for (const direction of ['server', 'client']) {
+    const masked = direction === 'client', observed = [], state = createReferenceFrameState(direction);
+    const message = '{"MessageType":"GeneralCommand","Data":{"Name":"Play"}}';
+    const first = frame(message.slice(0, 18), { masked, final: false });
+    const ping = frame('probe', { masked, opcode: 9 }), last = frame(message.slice(18), { masked, opcode: 0 });
+    assert.deepEqual(decodeWebSocketFrames(state, first, 1000, value => observed.push(value)), []);
+    assert.deepEqual(decodeWebSocketFrames(state, ping, 1001, value => observed.push(value)), [ping]);
+    assert.throws(() => decodeWebSocketFrames(state, last, 1002, value => observed.push(value)), /control_denied/);
+    assert.equal(observed.length, 0); assert.equal(state.messages, 0);
+  }
+});
+
+test('close interrupts pending fragments without releasing an unadmitted message', () => {
+  for (const direction of ['server', 'client']) {
+    const masked = direction === 'client', state = createReferenceFrameState(direction), observed = [];
+    const first = frame('{"MessageType":', { masked, final: false });
+    const close = frame(Buffer.concat([Buffer.from([3, 232]), Buffer.from('done')]), { masked, opcode: 8 });
+    assert.deepEqual(decodeWebSocketFrames(state, first, 1000, value => observed.push(value)), []);
+    assert.deepEqual(decodeWebSocketFrames(state, close, 1001, value => observed.push(value)), [close]);
+    assert.equal(state.closed, true); assert.equal(state.opcode, null); assert.equal(state.messageBytes, 0);
+    assert.deepEqual(state.held, []); assert.deepEqual(state.parts, []); assert.equal(observed.length, 0);
+    assert.throws(() => decodeWebSocketFrames(state, frame('"SessionsStop","Data":""}', { masked, opcode: 0 }), 1002));
+    for (const payload of [Buffer.from([3]), Buffer.from([3, 238]), Buffer.from([3, 232, 255])]) {
+      const invalid = createReferenceFrameState(direction);
+      decodeWebSocketFrames(invalid, first, 1000);
+      assert.throws(() => decodeWebSocketFrames(invalid, frame(payload, { masked, opcode: 8 }), 1001));
+      assert.equal(invalid.closed, false);
+    }
+  }
+});
+
+test('split control frames pass when complete without waiting for the data continuation', () => {
+  for (const direction of ['server', 'client']) {
+    const masked = direction === 'client', state = createReferenceFrameState(direction), observed = [];
+    const message = masked ? '{"MessageType":"SessionsStop","Data":""}' : '{"MessageType":"LibraryChanged","Data":{}}';
+    const first = frame(message.slice(0, 18), { masked, final: false }), last = frame(message.slice(18), { masked, opcode: 0 });
+    const ping = frame('probe', { masked, opcode: 9 }), split = ping.length - 1;
+    assert.deepEqual(decodeWebSocketFrames(state, Buffer.concat([first, ping.subarray(0, split)]), 1000, value => observed.push(value)), []);
+    assert.deepEqual(decodeWebSocketFrames(state, ping.subarray(split), 1001, value => observed.push(value)), [ping]);
+    assert.equal(observed.length, 0); assert.deepEqual(state.held, [first]);
+    assert.deepEqual(decodeWebSocketFrames(state, last, 1002, value => observed.push(value)), [first, last]);
+    assert.equal(observed.length, 1); assert.equal(observed[0].bytes.toString(), message);
+  }
+});
+
 test('original LibraryChanged evidence fails closed instead of redacting its body', () => {
   const text = JSON.stringify({ MessageType: 'LibraryChanged', MessageId: 'not-a-guessed-id', Data: { FoldersAddedTo: [], value: token } });
   let observed;
