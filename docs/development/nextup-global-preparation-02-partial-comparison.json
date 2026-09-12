@@ -1,0 +1,24 @@
+{
+  "businessHttpRequests": 0,
+  "capturedAt": "2026-09-12T18:19:42.900287+00:00",
+  "changedOldDeviceFields": {},
+  "completePublicPreservationClaimed": false,
+  "configurationObserved": false,
+  "deviceReportedTotal": 0,
+  "deviceResponseSha256": "9b06672040960b1c8d4bdc466d7ad93c83dc62fcff405e836c27263d4e62498e",
+  "deviceRows": 86,
+  "kind": "nextup-global-partial-observation-comparison",
+  "newDeviceCount": 1,
+  "newDeviceMatchesOwnedAdministrator": true,
+  "observedDocumentDifferences": {
+    "catalog_by_library": [],
+    "details": [],
+    "items_by_user": [],
+    "libraries": [],
+    "preferences": [],
+    "roster_except_admin_auth_dates": [],
+    "server": []
+  },
+  "oldDeviceCount": 85,
+  "runId": "nextup-global-reference-20260913-02"
+}

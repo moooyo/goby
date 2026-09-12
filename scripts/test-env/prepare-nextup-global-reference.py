@@ -349,7 +349,9 @@ def validate_public_baseline(value, manifest):
     require(detail_keys == expected and all(isinstance(rows, dict) and all(isinstance(row, dict) and row.get("Id") == item for item, row in rows.items())
             for rows in value["details"].values()), "All six retained explicit detail witnesses are required.")
     require(len(value["devices"]) <= 256 and all(identifier(key) and isinstance(row, dict) and row.get("Id") == key and
-            isinstance(row.get("ReportedDeviceId"), str) for key, row in value["devices"].items()), "The retained device registry is malformed.")
+            isinstance(row.get("ReportedDeviceId"), str) and 0 < len(row["ReportedDeviceId"]) <= 512 for key, row in value["devices"].items()) and
+            len({row["ReportedDeviceId"] for row in value["devices"].values()}) == len(value["devices"]),
+            "The retained device registry is malformed or repeats a reported identity.")
     context = value["credential_context"]
     require(set(context) == {"channel", "authenticated_user_id", "token_sha256", "user_id_semantics"} and context["channel"] == "controller_api" and
             context["authenticated_user_id"] == manifest["actors"]["admin"]["userId"] and context["user_id_semantics"] == "subject_projection" and sha(context["token_sha256"]),
@@ -610,6 +612,23 @@ def page(value, key="Id", maximum=256):
             value.get("TotalRecordCount", len(value["Items"])) == len(value["Items"]), "A required public list is incomplete or truncated.")
     result = {row[key]: row for row in value["Items"] if isinstance(row, dict) and identifier(row.get(key))}
     require(len(result) == len(value["Items"]), "A public list has repeated or malformed identities.")
+    return result
+
+
+def devices_page(value):
+    """Decode only Devices: retained reference replies use a zero count sentinel."""
+    require(isinstance(value, dict) and set(value) == {"Items", "TotalRecordCount"} and
+            isinstance(value["Items"], list) and len(value["Items"]) <= 256 and
+            type(value["TotalRecordCount"]) is int and value["TotalRecordCount"] in (0, len(value["Items"])),
+            "The Devices response is not the exact bounded observed count contract.")
+    result, reported = {}, set()
+    for row in value["Items"]:
+        require(isinstance(row, dict) and identifier(row.get("Id")) and row["Id"] not in result and
+                isinstance(row.get("ReportedDeviceId"), str) and 0 < len(row["ReportedDeviceId"]) <= 512 and
+                row["ReportedDeviceId"] not in reported,
+                "The complete Devices population has a missing or duplicate device identity.")
+        result[row["Id"]] = row
+        reported.add(row["ReportedDeviceId"])
     return result
 
 
@@ -1007,6 +1026,34 @@ class PreparationRunner:
         if ids is not None: query["Ids"] = ",".join(sorted(ids))
         return "/emby/Users/" + user + "/Items?" + urlencode(query)
 
+    def _devices(self, label):
+        devices = devices_page(self._get(label, "admin", "/emby/Devices"))
+        baseline = self.authority.baseline["devices"]
+        require(set(baseline) <= set(devices) and
+                all(devices[key]["ReportedDeviceId"] == row["ReportedDeviceId"] for key, row in baseline.items()),
+                "The Devices response omitted or replaced a retained old device identity.")
+        require("admin" in self.logins and set(self.logins) == set(self.tokens),
+                "Devices population checks require actual acknowledged preparation logins.")
+        owned = set()
+        for actor, login in self.logins.items():
+            metadata = self.manifest["actors"][actor]
+            acknowledged = login["response"]["body"]
+            require(acknowledged["AccessToken"] == self.tokens[actor] and acknowledged["SessionInfo"]["UserId"] == self.user_ids[actor] and
+                    acknowledged["SessionInfo"]["DeviceId"] == metadata["deviceId"],
+                    "A device population binding differs from its actual actor login acknowledgement.")
+            selected = [row for row in devices.values() if row["ReportedDeviceId"] == metadata["deviceId"]]
+            require(len(selected) == 1, "The Devices response lacks one acknowledged owned preparation device.")
+            row = selected[0]
+            require(row["Id"] not in baseline and row["Id"] not in owned and row.get("LastUserId") == self.user_ids[actor] and
+                    row.get("LastUserName") == metadata["username"] and row.get("AppName") == "Goby NextUp Preparation" and
+                    row.get("AppVersion") == "1.0" and row.get("Name") == "Linux Fixture Recorder",
+                    "A new device does not match its exact owned actor and request client metadata.")
+            instant(row.get("DateLastActivity"))
+            owned.add(row["Id"])
+        require(set(devices) - set(baseline) == owned,
+                "The Devices response contains an unowned new device or an incomplete owned population.")
+        return devices
+
     def _snapshot(self, prefix, *, final=False):
         admin = self.user_ids["admin"]
         server = self._get(prefix + "-server", "admin", "/emby/System/Info/Public")
@@ -1033,7 +1080,7 @@ class PreparationRunner:
         for index, row in enumerate(self.manifest["preservation"]["detailRoutes"]):
             details.setdefault(row["group"], {})[row["itemId"]] = self._get(prefix + "-detail-" + str(index), "admin",
                     "/emby/Users/" + row["userId"] + "/Items/" + row["itemId"])
-        devices = page(self._get(prefix + "-devices", "admin", "/emby/Devices"))
+        devices = self._devices(prefix + "-devices")
         configuration = self._get(prefix + "-configuration", "admin", "/emby/System/Configuration")
         result = {"marker": self.authority.baseline["marker"], "version": 1, "captured_at": self.utc_now(), "server": server,
                   "roster": roster, "libraries": libraries, "configuration": configuration, "catalog_by_library": catalogs,

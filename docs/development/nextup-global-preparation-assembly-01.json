@@ -1,0 +1,7 @@
+{
+  "businessHttpRequests": 0,
+  "exitCode": 1,
+  "sourceSha256": "b03086436a0082fbe349c9b57da8103421a39b7474a61a452072cc3ace3b1600",
+  "stderrSha256": "90abfbef7e3a6ec31dd59a5fa1de52c97aa8aed14eb01fe883919044f8e1f3aa",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

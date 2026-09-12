@@ -1,0 +1,51 @@
+{
+  "plan": {
+    "calibrations": [
+      [
+        "P",
+        "A1",
+        "partial"
+      ],
+      [
+        "P",
+        "A1",
+        "complete"
+      ],
+      [
+        "Q",
+        "B1",
+        "partial"
+      ],
+      [
+        "Q",
+        "B1",
+        "complete"
+      ]
+    ],
+    "catalogDisposition": "retained",
+    "classification": "planned preparation; no execution",
+    "cleanupMaximum": 77,
+    "cleanupReserve": 80,
+    "manifestSha256": "4c2e8659f553803272dae07eefbd2a56b0e73ecaefaaa89669c2f50f8489246b",
+    "maximumRequests": 320,
+    "normalLimit": 240,
+    "normalMaximum": 232,
+    "phaseMaximums": {
+      "accounts": 8,
+      "after": 37,
+      "baseline": 36,
+      "before": 32,
+      "calibration": 44,
+      "cleanup": 77,
+      "libraries": 42,
+      "mapping": 5,
+      "zero": 28
+    },
+    "runId": "nextup-global-reference-20260913-02",
+    "scanRounds": 12,
+    "schemaVersion": 1,
+    "successMaximumIncludingLogout": 238,
+    "terminal": "awaiting_independent_attestation"
+  },
+  "planSha256": "501ae7a97586bfd263f61b90a28e53c3360716a647d9a45cb4b602ccbdabb5f2"
+}

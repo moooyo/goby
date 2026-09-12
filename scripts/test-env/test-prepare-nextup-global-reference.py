@@ -286,7 +286,11 @@ class PreparationFixture:
             "preferences": {user: {"SyntheticPreference": index} for index, user in enumerate(self.old_user_ids)},
             "details": {"admin": {key: deepcopy(items[key]) for key in list(items)[:4]},
                         "viewer": {key: deepcopy(items[key]) for key in list(items)[:2]}},
-            "devices": {}, "credential_context": {"channel": "controller_api", "authenticated_user_id": self.actor_ids["admin"],
+            "devices": {"old-device-0": {"Id": "old-device-0", "ReportedDeviceId": "old-reported-device-0",
+                "LastUserId": "old-user-1", "LastUserName": roster["old-user-1"]["Name"],
+                "AppName": "Old Synthetic Client", "AppVersion": "0.1", "Name": "Old Synthetic Device",
+                "DateLastActivity": STAMP}},
+            "credential_context": {"channel": "controller_api", "authenticated_user_id": self.actor_ids["admin"],
                 "token_sha256": "b" * 64, "user_id_semantics": "subject_projection"}}
 
     def views(self, actor):
@@ -338,6 +342,7 @@ class FakeWire:
         self.sessions = {actor: "synthetic-session-" + actor for actor in ("admin", "P", "Q")}
         self.users = deepcopy(fixture.baseline["roster"])
         self.libraries = deepcopy(fixture.baseline["libraries"])
+        self.devices = deepcopy(fixture.baseline["devices"])
         self.states = {actor: {item: zero_state(item) for item in EPISODES} for actor in ACTORS}
         self.revoked = set()
         self.started = {}
@@ -396,6 +401,13 @@ class FakeWire:
             authorization = headers["Authorization"]
             device = authorization.split('DeviceId="', 1)[1].split('"', 1)[0]
             self.login_devices[actor] = device
+            registry_id = "synthetic-registered-" + actor
+            if registry_id in self.devices or any(row["ReportedDeviceId"] == device for row in self.devices.values()):
+                raise AssertionError("A synthetic login reused a pre-existing registered device identity.")
+            self.devices[registry_id] = {"Id": registry_id, "ReportedDeviceId": device,
+                "AppName": "Goby NextUp Preparation", "AppVersion": "1.0", "Name": "Linux Fixture Recorder",
+                "LastUserId": user_id, "LastUserName": fixture.credentials[actor]["username"],
+                "DateLastActivity": fixture.clock.utc_now()}
             return self.wire(200, {"AccessToken": self.tokens[actor], "ServerId": fixture.server_id,
                 "User": deepcopy(self.users[user_id]), "SessionInfo": {"Id": self.sessions[actor],
                     "UserId": user_id, "DeviceId": device}})
@@ -419,8 +431,7 @@ class FakeWire:
         if route == "/emby/Users" and method == "GET":
             return self.wire(200, list(deepcopy(self.users).values()))
         if route == "/emby/Devices" and method == "GET":
-            return self.wire(200, {"Items": list(deepcopy(fixture.baseline["devices"]).values()),
-                                   "TotalRecordCount": len(fixture.baseline["devices"])})
+            return self.wire(200, {"Items": list(deepcopy(self.devices).values()), "TotalRecordCount": 0})
         if route == "/emby/Library/VirtualFolders/Query" and method == "GET":
             return self.wire(200, {"Items": list(deepcopy(self.libraries).values()),
                                    "TotalRecordCount": len(self.libraries)})
@@ -1053,6 +1064,218 @@ class WireContractGuards(GuardCase):
 
     def test_nonfinite_json_response_is_not_a_login_acknowledgement(self):
         self.reject_first_response(lambda wire, response: wire.wire(200, raw=b'{"AccessToken":NaN}'))
+
+
+class DevicesDecoderGuards(GuardCase):
+    """Confine the observed zero-count sentinel to the exact Devices endpoint."""
+
+    def rows(self):
+        return [deepcopy(self.fixture.baseline["devices"]["old-device-0"]),
+                {"Id": "synthetic-device-second", "ReportedDeviceId": "synthetic-reported-second"}]
+
+    def test_devices_zero_count_accepts_nonempty_items_while_catalog_still_rejects_them(self):
+        value = {"Items": self.rows(), "TotalRecordCount": 0}
+        before = deepcopy(value)
+        self.assertEqual(self.P.devices_page(value), {row["Id"]: row for row in value["Items"]})
+        self.assertEqual(value, before)
+        with self.assertRaises(self.P.PreparationError):
+            self.P.page(value)
+        with self.assertRaises(self.P.PreparationError):
+            self.P.page({"Items": [{"Id": "synthetic-catalog-item", "Type": "Episode"}], "TotalRecordCount": 0})
+        self.assertFalse(self.fixture.output.exists())
+
+    def test_devices_exact_count_and_empty_zero_count_are_valid(self):
+        rows = self.rows()
+        self.assertEqual(self.P.devices_page({"Items": rows, "TotalRecordCount": len(rows)}),
+                         {row["Id"]: row for row in rows})
+        self.assertEqual(self.P.devices_page({"Items": [], "TotalRecordCount": 0}), {})
+
+    def test_devices_decoder_requires_exact_top_level_shape_and_array_items(self):
+        values = (None, [], {}, {"Items": []}, {"TotalRecordCount": 0},
+                  {"Items": [], "TotalRecordCount": 0, "StartIndex": 0},
+                  {"Items": None, "TotalRecordCount": 0}, {"Items": {}, "TotalRecordCount": 0})
+        for value in values:
+            with self.subTest(value=value):
+                with self.assertRaises((self.P.PreparationError, ValueError)):
+                    self.P.devices_page(value)
+
+    def test_devices_count_requires_integer_zero_or_exact_length(self):
+        for count in (True, False, 0.0, 2.0, "0", -1, 1, 3, None):
+            with self.subTest(count=count):
+                with self.assertRaises(self.P.PreparationError):
+                    self.P.devices_page({"Items": self.rows(), "TotalRecordCount": count})
+
+    def test_devices_zero_count_does_not_remove_the_256_row_bound(self):
+        rows = [{"Id": "synthetic-device-" + str(index), "ReportedDeviceId": "synthetic-reported-" + str(index)}
+                for index in range(257)]
+        self.assertEqual(len(self.P.devices_page({"Items": rows[:256], "TotalRecordCount": 0})), 256)
+        with self.assertRaises(self.P.PreparationError):
+            self.P.devices_page({"Items": rows, "TotalRecordCount": 0})
+
+    def test_devices_rows_need_nonempty_string_identities_and_object_shape(self):
+        for row in (None, [], {}, {"Id": "synthetic-one"}, {"ReportedDeviceId": "synthetic-one"},
+                    {"Id": "", "ReportedDeviceId": "synthetic-one"}, {"Id": "synthetic-one", "ReportedDeviceId": ""},
+                    {"Id": True, "ReportedDeviceId": "synthetic-one"}, {"Id": "synthetic-one", "ReportedDeviceId": None}):
+            with self.subTest(row=row):
+                with self.assertRaises((self.P.PreparationError, ValueError)):
+                    self.P.devices_page({"Items": [row], "TotalRecordCount": 0})
+
+    def test_devices_identities_are_independently_unique(self):
+        rows = self.rows()
+        duplicate_id = {**rows[1], "Id": rows[0]["Id"]}
+        duplicate_reported = {**rows[1], "ReportedDeviceId": rows[0]["ReportedDeviceId"]}
+        for duplicate in (duplicate_id, duplicate_reported):
+            with self.subTest(duplicate=duplicate):
+                with self.assertRaises(self.P.PreparationError):
+                    self.P.devices_page({"Items": [rows[0], duplicate], "TotalRecordCount": 0})
+
+
+class DevicesSnapshotGuards(GuardCase):
+    """Verify the preserved registry and every acknowledged preparation device."""
+
+    def corrupt_devices(self, transform, *, label="before-devices"):
+        before = deepcopy(self.fixture.baseline)
+        observed = []
+        def corrupt(wire, call, response):
+            if call["request"].route == "/emby/Devices" and call["request"].label == label:
+                body = transform(deepcopy(json.loads(response.raw)))
+                raw = encoded(body)
+                observed.append({"ordinal": len(wire.calls), "label": label, "raw": raw})
+                return wire.wire(200, raw=raw)
+        runner, wire, unused_authority = self.runner(response_hook=corrupt)
+        result = runner.run()
+        self.assertEqual(len(observed), 1, result)
+        self.assert_failed(result)
+        self.assertTrue(result["cleanupComplete"], result)
+        self.assertIsNone(result["ownershipPending"])
+        self.assertFalse(result["uncertain"])
+        self.assertEqual(self.fixture.baseline, before, "Fake login or decoder mutated the frozen baseline.")
+        self.assertTrue(all(call["request"].cleanup for call in wire.calls[observed[0]["ordinal"]:]),
+                        "A failed device observation must stop normal preparation.")
+        if label == "before-devices":
+            self.assertFalse(any(call["request"].route in ("/emby/Library/VirtualFolders", "/emby/Users/New", "/emby/Sessions/Playing")
+                                 for call in wire.calls))
+        record = self.fixture.output / "private" / ("%04d-%s-response.json" % (observed[0]["ordinal"], label))
+        self.assertEqual(base64.b64decode(json.loads(record.read_text())["rawBase64"]), observed[0]["raw"])
+        self.assert_no_resume(runner, wire)
+
+    def changed_owned(self, field, value, *, actor="admin", label="before-devices"):
+        reported = self.fixture.manifest["actors"][actor]["deviceId"]
+        def change(body):
+            selected = next(row for row in body["Items"] if row["ReportedDeviceId"] == reported)
+            selected[field] = value
+            return body
+        self.corrupt_devices(change, label=label)
+
+    def test_zero_count_devices_support_complete_pipeline_and_independent_login_registry(self):
+        before = deepcopy(self.fixture.baseline)
+        runner, wire, unused_authority = self.runner()
+        result = runner.run()
+        self.assertTrue(result["completed"], result)
+        self.assertEqual(self.fixture.baseline, before)
+        self.assertEqual(set(wire.devices), set(before["devices"]) | {"synthetic-registered-" + actor for actor in ("admin", "P", "Q")})
+        for actor in ("admin", "P", "Q"):
+            row = wire.devices["synthetic-registered-" + actor]
+            self.assertEqual(row["ReportedDeviceId"], self.fixture.manifest["actors"][actor]["deviceId"])
+            self.assertEqual(row["LastUserId"], self.fixture.actor_ids[actor])
+            self.assertEqual(row["LastUserName"], self.fixture.credentials[actor]["username"])
+        initial = json.loads((self.fixture.output / "private" / "before-public.json").read_text())
+        final = json.loads((self.fixture.output / "private" / "after-public.json").read_text())
+        self.assertEqual(set(initial["devices"]), set(before["devices"]) | {"synthetic-registered-admin"})
+        self.assertEqual(set(final["devices"]), set(wire.devices))
+        for key, row in before["devices"].items():
+            self.assertEqual(initial["devices"][key], row)
+            self.assertEqual(final["devices"][key], row)
+
+    def test_exact_device_count_also_supports_the_complete_pipeline(self):
+        counts = []
+        def exact(wire, call, response):
+            if call["request"].route == "/emby/Devices":
+                body = json.loads(response.raw)
+                body["TotalRecordCount"] = len(body["Items"])
+                counts.append(body["TotalRecordCount"])
+                return wire.wire(200, body)
+        runner, wire, unused_authority = self.runner(response_hook=exact)
+        result = runner.run()
+        self.assertTrue(result["completed"], result)
+        self.assertEqual(counts, [2, 4])
+
+    def test_snapshot_cannot_omit_a_preserved_old_device(self):
+        self.corrupt_devices(lambda body: {**body, "Items": [row for row in body["Items"] if row["Id"] != "old-device-0"]})
+
+    def test_snapshot_cannot_reassign_a_preserved_old_reported_device_identity(self):
+        def change(body):
+            next(row for row in body["Items"] if row["Id"] == "old-device-0")["ReportedDeviceId"] = "changed-old-reported-device"
+            return body
+        self.corrupt_devices(change)
+
+    def test_snapshot_requires_the_verified_administrator_login_device(self):
+        self.corrupt_devices(lambda body: {**body, "Items": [row for row in body["Items"] if row["Id"] != "synthetic-registered-admin"]})
+
+    def test_after_snapshot_requires_the_verified_ordinary_login_device(self):
+        self.corrupt_devices(lambda body: {**body, "Items": [row for row in body["Items"] if row["Id"] != "synthetic-registered-P"]},
+                             label="after-devices")
+
+    def test_snapshot_rejects_duplicate_registry_ids(self):
+        def duplicate(body):
+            row = deepcopy(body["Items"][-1])
+            row["ReportedDeviceId"] = "duplicate-id-with-another-reported-device"
+            body["Items"].append(row)
+            return body
+        self.corrupt_devices(duplicate)
+
+    def test_snapshot_rejects_duplicate_reported_device_ids(self):
+        def duplicate(body):
+            row = deepcopy(body["Items"][-1])
+            row["Id"] = "another-registry-id-with-duplicate-reported-device"
+            body["Items"].append(row)
+            return body
+        self.corrupt_devices(duplicate)
+
+    def test_snapshot_rejects_an_extra_unowned_device_even_with_valid_client_fields(self):
+        def extra(body):
+            row = deepcopy(body["Items"][-1])
+            row.update(Id="synthetic-unowned-registry", ReportedDeviceId="synthetic-unowned-reported")
+            body["Items"].append(row)
+            return body
+        self.corrupt_devices(extra)
+
+    def test_snapshot_rejects_a_declared_actor_device_before_its_login_is_acknowledged(self):
+        def extra(body):
+            body["Items"].append({"Id": "synthetic-premature-P-registry",
+                "ReportedDeviceId": self.fixture.manifest["actors"]["P"]["deviceId"],
+                "AppName": "Goby NextUp Preparation", "AppVersion": "1.0", "Name": "Linux Fixture Recorder",
+                "LastUserId": self.fixture.actor_ids["P"], "LastUserName": self.fixture.credentials["P"]["username"],
+                "DateLastActivity": self.clock.utc_now()})
+            return body
+        self.corrupt_devices(extra)
+
+    def test_snapshot_requires_the_exact_login_user_id(self):
+        self.changed_owned("LastUserId", "old-user-1")
+
+    def test_snapshot_requires_the_exact_login_username(self):
+        self.changed_owned("LastUserName", "Another Synthetic User")
+
+    def test_snapshot_requires_the_exact_preparation_application_name(self):
+        self.changed_owned("AppName", "Another Synthetic Client")
+
+    def test_snapshot_requires_the_exact_preparation_application_version(self):
+        self.changed_owned("AppVersion", "2.0")
+
+    def test_snapshot_requires_the_exact_preparation_device_name(self):
+        self.changed_owned("Name", "Another Synthetic Device")
+
+    def test_after_snapshot_checks_the_other_ordinary_actor_device_owner(self):
+        self.changed_owned("LastUserId", self.fixture.actor_ids["P"], actor="Q", label="after-devices")
+
+    def test_snapshot_rejects_an_invalid_owned_device_activity_timestamp(self):
+        self.changed_owned("DateLastActivity", "not-a-timestamp")
+
+    def test_snapshot_rejects_an_owned_device_activity_timestamp_without_timezone(self):
+        self.changed_owned("DateLastActivity", "2026-09-13T01:00:01")
+
+    def test_snapshot_rejects_nonzero_device_count_mismatch(self):
+        self.corrupt_devices(lambda body: {**body, "TotalRecordCount": len(body["Items"]) + 1})
 
 
 class OwnershipGuards(GuardCase):

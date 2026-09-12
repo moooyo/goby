@@ -1,82 +1,49 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T18:04:23+00:00`, runtime, transport, preparation tools and all four owned-browser controls are published and remotely verified through `609fa9180c30c4f9592303450563a5646be96857`. Real NextUp preparation has not executed, new SSH connections are blocked at agent signing, and the positive client gate is unmet.
+Execution state checkpoint: `2026-09-12T18:29:49+00:00`. Actual NextUp preparation02 stopped at the observed Devices count sentinel and was independently sealed after known cleanup. The corrected producer passed 140 remote guards and two compile checks. SSH access and Git publication are available.
 
-The latest actual reference scope remains [v4](reference-library-changed-ui-v4-terminal.json),
-completed and independently sealed with full target restoration except Etag,
-unchanged anchor/media, administrator/viewer logout204/exact-token401, both
-original invocations exited0/MainPID0 with empty cgroups, all 87 roots preserved,
-and the unchanged Goby v7 state at 83 sessions/70 devices/185 audits. Both complete
-120-second windows have zero automatic HTTP and no visible title transition.
-The [public-message comparison](reference-library-changed-ui-v4-goby-comparison.json)
-finds normalized wire equality; the event-delay difference has no established
-causal explanation. This complete negative control does not satisfy the positive
-automatic-HTTP-and-DOM gate or establish a Goby-specific protocol defect. The
-candidate remains source55/schema28 and the main service remains source32/schema27.
-Product publication authority remains `16d75c38064008680fa60839c637efee2f12f2ae`.
+The [actual preparation report](nextup-global-reference-preparation-02.md) records
+one completed run under the frozen TOOL05 source, with 33 HTTP attempts:
+31 normal and two cleanup. `/emby/Devices` returned 86 rows with
+`TotalRecordCount=0`, causing the generic paged-query decoder to stop before
+configuration, library creation, new user creation or playback. Six independent
+synthetic media copies and one closed administrator authentication device remain.
+The [independent terminal](nextup-global-preparation-02-terminal.json) verifies
+all raw request/reservation/response records, logout204/exact-token401, the
+original invocation exited2/MainPID0 with an empty cgroup, all 109 old roots
+unchanged, and the full Goby state preserved at 83 sessions/70 devices/185 audits.
+The observed public documents and old 85 device rows are equal; configuration
+was not observed, so the partial capture is not a complete new public baseline.
 
-The owned reference runtime correction was published as
-`7ae35af5d6b823d4dbda126c00f90e328dec19e0`. It forwards interleaved ping/pong
-immediately, forwards valid close while discarding unapproved fragmented data,
-and still rejects forbidden application commands. All four new regressions fail
-against the old `b720d7bb...` copy; the corrected `209f72fa...` runtime passed
-[32 remote pure guards](reference-library-changed-ui-runtime-verification-05b.json).
-The original wrapper05 counting failure is retained. The
-[instrumentation review](library-changed-instrumentation-review.md) does not
-identify this correction as the cause of v4's negative result. V4's frozen
-runtime and consumed scope remain unchanged.
+TOOL06 now has a dedicated Devices decoder that accepts the observed zero-count
+sentinel while preserving every old identity and requiring exactly the devices
+acknowledged by actual new logins. Generic catalog pagination remains strict.
+[140 remote guards](nextup-global-preparation-verification-03.json) and two compile
+checks passed with no business HTTP or real process probes. The source digest is
+`2c1d4d31fd2dfaf01fac0969d89acc881774aa2005b97b647442e625e634c98d`;
+the [implementation](nextup-global-preparation-implementation.md) retains the
+232-normal/238-success/77-cleanup maxima within the 320-request allowance.
+Preparation02 and the failed first input assembly are consumed and preserved.
 
-The [native browser control](library-changed-browser-transparency.md) was
-published as `f5c38940c6b6be86d1e86d06d0ab1bcce314ecee`. All
-[four owned-HTML cases](library-changed-browser-transparency-02-summary.json)
-passed: baseline, reference collector, reference collector with DOM sampling,
-and Goby v7 collector. Each completed native callbacks, two callback GETs and
-forward/restored title transitions. The isolated run made 27 synthetic HTTP
-requests and zero business HTTP requests. Its
-[independent terminal](library-changed-browser-transparency-02-terminal.json)
-binds the exact invocation to successful systemd-manager lifecycle evidence,
-an absent original PID and an empty cgroup. Failed scope01 remains preserved.
-This proves the bounded callback-to-HTTP-to-DOM path on the owned page; original
-client refresh acceptance and universal instrumentation transparency remain unproven.
+The next execution is a separately reviewed, bounded 34-request baseline
+observer: one new administrator login, all 31 snapshot GETs, logout204 and the
+same token's 401. Its complete snapshot and independent closure must account
+for the retained preparation02 device before another fresh preparation scope.
+The observer and matrix outer operator are being implemented and remotely
+verified. No successful prepared fixture, calibration or global matrix exists;
+the published transport CLI remains disabled and the Goby target is not enabled.
 
-NextUp transport TOOL02 was published as
-`1c6430a9aec2d62c5f89d9954a06c5eae2b8ae02`. Its
-[91 fake guards and two compilation checks](nextup-global-transport-tool02-verification-01.json)
-passed with zero failures/errors/skips, actual business HTTP or process probes.
-The transport enforces dual actors, metadata-only application/existing-owned-proxy
-bindings, at-most-once dispatch, private raw/public exported evidence, and four
-`contractVersion: 2` calibrations requiring eighteen distinct actual-response receipts.
-Its live CLI remains disabled pending a separately reviewed outer operator and
-independently attested real preparation; the Goby target is not enabled.
-
-The [preparation producer](nextup-global-preparation-implementation.md) was
-published as `609fa9180c30c4f9592303450563a5646be96857`. Its repaired sources
-passed [114 remote guards](nextup-global-preparation-verification-02.json) and
-two compilation checks, with zero failures/errors/skips or business HTTP.
-Independent review confirmed durable pending-ownership state before response
-parsing, including malformed, duplicate and failed-commit cases. The
-[design](nextup-global-preparation-design.md) reserves 320 HTTP requests:
-240 normal and 80 cleanup, with maxima of 232 normal, 238 success and 77
-failure-cleanup requests. Successful preparation still requires all four real
-calibrations, all three exact-token closures and independent terminal attestation.
-
-Only read-only [source/media](nextup-global-source-media-observation.json),
-[process authority](nextup-global-authority-observation.json), and
-[Goby preservation](nextup-global-goby-preservation.json) observations exist.
-No real preparation admission has executed; six independent media copies,
-two libraries, two users, four calibrations, global reference capture and client
-playback acceptance remain unexecuted. New SSH connections currently fail at
-agent signing with `agent refused operation`, followed by
-`Permission denied (publickey)`. The earlier verified remote results remain
-valid; fresh admission and preparation are blocked until signing is restored.
-Local verification is not authorized and must not substitute for `ssh test-env`.
-
-The next executable step is to finish the private input/release/media approval,
-run the frozen plan and read-only authority admission remotely, then perform
-one fresh bounded preparation with independent preservation and attestation.
-The positive client gate is unchanged; main is not upgraded and consumed scopes
-must not be replayed. V3's original failure/separate recovery and v2 dispatch
-uncertainty remain preserved. Full M2-M6 remain open; M7 remains deferred.
+The reference v4 and Goby v7 automatic-refresh observations remain negative.
+Their normalized public payloads match; this establishes no Goby-specific defect.
+The owned runtime correction passed 32 guards, the NextUp transport passed 91,
+and all four [owned-browser controls](library-changed-browser-transparency-02-summary.json)
+passed their callback-to-HTTP-to-DOM checks. Those controls do not establish
+original-client automatic refresh. The positive client gate remains unmet.
+Candidate source55/schema28, main source32/schema27, and product publication
+authority `16d75c38064008680fa60839c637efee2f12f2ae` are unchanged. Main needs the
+positive client gate followed by a fresh scope/input/prepare and independent
+upgrade attestation. Full M2-M6 remain open; M7 remains deferred. No local
+verification is authorized or was performed.
 
 Current verification boundary: **source55 passed 2,173 full-suite tests across
 25 packages, zero failures/skips, the Linux build and six cleanup checks. Its
@@ -814,23 +781,27 @@ media or modifying the source. Later read-only
 [Goby preservation](nextup-global-goby-preservation.json) observations retain
 the public baseline and unchanged Goby state at 83/70/185; they are not admission.
 
-The [preparation producer](nextup-global-preparation-implementation.md) and guard
-were published as `609fa9180c30c4f9592303450563a5646be96857` after
-[114 remote guards](nextup-global-preparation-verification-02.json), two
-compilation checks and independent review. Pending ownership is durably recorded
-before consuming resource responses; malformed or duplicate ownership and failed
-commits preserve recovery-required evidence without further HTTP. The
-[design](nextup-global-preparation-design.md) reserves 320 requests, split
-240 normal/80 cleanup; maxima are 232 normal, 238 success and 77 failure cleanup.
-All three preparation sessions require exact-token closure and an independent
-terminal; draft matrix inputs remain unusable until independent attestation.
+The TOOL05 producer was published as `609fa9180c30c4f9592303450563a5646be96857`
+after 114 remote guards and two compile checks. Its
+[actual preparation02](nextup-global-reference-preparation-02.md) passed plan and
+read-only admission, then stopped after 33 HTTP attempts on the Devices zero-count
+sentinel. Independent cleanup confirms the administrator token closed, six
+retained media copies, one retained authentication device, no library/user/playback
+operations, 109 old roots unchanged and the full Goby state at 83/70/185 preserved.
+Configuration was never observed; the partial capture is not a new full baseline.
 
-Six independent copies, two libraries, two users and four calibrations remain
-uncreated or unexecuted. Private input completion, the frozen plan and read-only
-authority admission precede real preparation. New SSH connections are currently
-blocked at agent signing; no local verification fallback is authorized.
-Actual global NextUp reference capture and client playback acceptance remain
-unexecuted.
+The corrected TOOL06 source passed [140 remote guards](nextup-global-preparation-verification-03.json)
+and two compile checks. Its Devices-only decoder preserves the complete old
+registry and requires exactly the newly acknowledged login devices. Catalog
+pagination remains strict, and durable pending-ownership semantics are unchanged.
+The budget remains 320 requests, 240 normal/80 cleanup, with maxima of 232 normal,
+238 success and 77 failure cleanup.
+
+SSH access is available. A new 34-request full baseline observer and matrix outer
+operator are being implemented and remotely verified. The full snapshot and its
+independent exact-token closure precede another fresh preparation. Preparation02
+is consumed; no P/Q accounts, libraries, calibrations, usable matrix fixture or
+client playback acceptance exist. No local verification fallback is authorized.
 
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
@@ -1597,7 +1568,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; v4 negative control complete; later tools verified, positive gate unmet | Candidate remains source55/schema28; primary remains source32/schema27. The [complete v4 negative control](reference-library-changed-ui-v4-terminal.json) and Goby v7 retain zero automatic HTTP/no transition, full restoration and closed credentials; the positive client gate remains false. Public payload equality establishes no Goby-specific defect. The corrected runtime passed [32 guards](reference-library-changed-ui-runtime-verification-05b.json), and all [four owned-browser controls](library-changed-browser-transparency-02-summary.json) passed the bounded native callback/HTTP/DOM path without original-client acceptance. Published NextUp transport passed [91 guards](nextup-global-transport-tool02-verification-01.json); the preparation producer passed [114 guards](nextup-global-preparation-verification-02.json), with two compile checks for each. Actual six-copy/two-library/two-user preparation, four calibrations, reference matrix and client playback remain unexecuted. SSH agent signing currently blocks new connections and remote admission; local verification is not authorized. The live transport CLI remains disabled pending attested preparation and a reviewed outer operator. Preserve v3 failure/recovery, v2 uncertainty and all consumed scopes. Main needs the positive client gate followed by fresh scope/input/prepare, rehearsal, upgrade and independent attestation. |
+| M3e real-client acceptance | In progress; v4 negative control complete; later tools verified, positive gate unmet | Candidate remains source55/schema28; primary remains source32/schema27. The [complete v4 negative control](reference-library-changed-ui-v4-terminal.json) and Goby v7 retain zero automatic HTTP/no transition, full restoration and closed credentials; the positive client gate remains false. Public payload equality establishes no Goby-specific defect. The corrected runtime passed [32 guards](reference-library-changed-ui-runtime-verification-05b.json), and all [four owned-browser controls](library-changed-browser-transparency-02-summary.json) passed the bounded native callback/HTTP/DOM path without original-client acceptance. Published NextUp transport passed [91 guards](nextup-global-transport-tool02-verification-01.json); the corrected preparation producer passed [140 guards](nextup-global-preparation-verification-03.json), with two compile checks for each. Actual preparation02 stopped on the Devices count sentinel after 33 requests; independent known cleanup and 109 preserved roots are confirmed. Six media copies and one closed administrator device remain, with no new libraries/users/playback. Configuration was not captured. A new 34-request full observer and independent baseline attestation precede fresh preparation, calibrations, reference matrix and client acceptance. SSH is available; local verification is not authorized. The live transport CLI remains disabled pending attested preparation and a reviewed outer operator. Preserve v3 failure/recovery, v2 uncertainty and all consumed scopes. Main needs the positive client gate followed by fresh scope/input/prepare, rehearsal, upgrade and independent attestation. |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

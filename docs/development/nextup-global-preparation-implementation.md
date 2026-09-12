@@ -1,7 +1,7 @@
 # Global NextUp preparation producer implementation
 
-Status: **114 remote guards and two compile checks passed after the ownership
-repair; no live preparation executed**. The source is
+Status: **140 remote guards and two compile checks passed after the Devices
+repair. The earlier live preparation stopped before library/account creation.** The source is
 [prepare-nextup-global-reference.py](../../scripts/test-env/prepare-nextup-global-reference.py).
 The remote-only guards are
 [test-prepare-nextup-global-reference.py](../../scripts/test-env/test-prepare-nextup-global-reference.py).
@@ -106,13 +106,20 @@ inputRoot, except that publicBaseline may refer directly to an explicitly
 sealed historical root. These descriptors must be real current files; a
 symbolic path, copied boolean, or missing receipt prevents prepare admission.
 
-The publicBaseline input is the complete retained v4 `after-public.json`, with
+The publicBaseline input is a complete retained public snapshot, initially the
+v4 `after-public.json`, with
 exactly marker/version/captured_at/server/roster/configuration/libraries/
 catalog_by_library/items_by_user/preferences/details/devices/credential_context.
 All identities, all six detail witnesses, capture time, and the original
 administrator-token fingerprint are checked before output or HTTP. The new
 snapshot retains its own fresh token fingerprint. These two fingerprints are
 compared as provenance, not treated as a business-state equality requirement.
+
+After the stopped preparation described below, the next run must use a newly
+observed complete snapshot. The input schema accepts a complete six-user,
+eight-library snapshot with the larger retained device population; it has no
+hard-coded 85-device requirement. All five proposed new preparation/matrix
+device IDs must remain absent from that actual baseline.
 
 The private credentials input has this shape:
 
@@ -281,17 +288,17 @@ Authority cases additionally exercise owned-file admission, real temporary
 flock contention, and six independent temporary media copies; they never read
 the real synthetic source or connect to a business service.
 
-All **114 guards passed**, with zero failures, errors, or skips, through
+All **140 guards passed**, with zero failures, errors, or skips, through
 `/usr/bin/python3 -I -B` in
-`/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-05`. Both sources
+`/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-06`. Both sources
 also passed remote `py_compile` checks. The exact
-[guard report](nextup-global-preparation-verification-02.json) has SHA-256
-`418e9083ed1dfc380d0f029489af6554d32a458602bed4ef6db79d7159b70f16`.
+[guard report](nextup-global-preparation-verification-03.json) has SHA-256
+`75e69bf98593ea0e711bbe6f0098f15b1c8bd6e30a122b47a1e26cf50475e243`.
 
 | Frozen source | SHA-256 |
 | --- | --- |
-| Preparation producer | `5abaa7893631f9ee63ee89f5a8d05a4c24c77e803d66421c7ac101dd6a3abc3e` |
-| Preparation guards | `a0ceafae6164af8545b584c01953237e175346f0336a617eb3e5aa2099db7ebb` |
+| Preparation producer | `2c1d4d31fd2dfaf01fac0969d89acc881774aa2005b97b647442e625e634c98d` |
+| Preparation guards | `dcafaf8ff644ab4cccb2686a0f15c808b095de62672ba2449942757a9ab1dc70` |
 | Transport consumer | `d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1` |
 | Matrix planner | `da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259` |
 
@@ -312,7 +319,13 @@ was registered. Tool-05 adds 23 malformed-resource/duplicate-session cases and
 eight persistence-boundary cases for login, account, library, and playback
 ownership. They prove actual raw-response retention, a durable unresolved
 ownership record, recovery_required, cleanupComplete=false, and zero HTTP after
-the failure. The 114-case receipt binds the repaired sources above.
+the failure. Its [114-case receipt](nextup-global-preparation-verification-02.json),
+SHA-256 `418e9083ed1dfc380d0f029489af6554d32a458602bed4ef6db79d7159b70f16`,
+and the tool-05 source/evidence scope remain unchanged. Tool-06 adds seven pure
+Devices decoder cases and nineteen complete-snapshot cases. Every normal fake
+pipeline now retains an initial old device, inserts each acknowledged login's
+device into an independent registry, and returns the observed zero sentinel.
+The 140-case receipt binds the current repaired sources above.
 
 The private input schema is unchanged by this repair. A new reviewed plan must
 bind the repaired preparation source digest and its revised 232-normal/238-success
@@ -326,3 +339,67 @@ the root task's actual input assembly; they are not preparation admission.
 Current real reference preparation inputs remain the independent root task's
 responsibility. These guards establish the
 operator contract under synthetic responses, not reference compatibility.
+
+## Stopped live preparation and the Devices count sentinel
+
+The separately authorized live tool-05 producer ran in
+`/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-02` and stopped
+with `stopped_with_known_cleanup`: 31 normal requests and two cleanup requests.
+It created only its administrator session, then proved logout 204 and rejection
+401 for that exact token. No new ordinary account, library API mutation, or
+playback request occurred. Six copied synthetic MP4s were staged and remain as
+declared artifacts. The root task independently sealed the completed scope;
+its execution record `independent-terminal.json` has SHA-256
+`588c4f09fc817ed555d7f2711f692f94e35f1f41bd288748626fffca12546111`.
+
+The last normal response was actual `GET /emby/Devices`, HTTP 200 and complete,
+with exactly the keys Items/TotalRecordCount, 86 unique device IDs, 86 unique
+ReportedDeviceIds, and TotalRecordCount=0. Its raw response record is
+`private/0031-before-devices-response.json`, SHA-256
+`9b06672040960b1c8d4bdc466d7ad93c83dc62fcff405e836c27263d4e62498e`.
+The earlier actual v4 `after-devices-result.json`, SHA-256
+`431be8903ae39e93eeb68627bf0197b4adbf428486338246299b87e0b8631f8f`,
+also returned TotalRecordCount=0 with 85 unique device and reported IDs. A
+read-only comparison of these retained responses found all old 85 DTOs exactly
+equal and one new device matching the stopped run's actual administrator
+device/user/name and request client metadata.
+
+`devices_page` therefore handles this exact route separately. It requires the
+two observed top-level fields, a bounded Items array, an actual integer count
+equal to zero or the measured array length, and unique nonempty Id and
+ReportedDeviceId values. It does not apply catalog pagination semantics to the
+zero sentinel. The generic `page` decoder is unchanged and still rejects a
+nonempty catalog with TotalRecordCount=0.
+
+The runner adds population checks before accepting Devices: every baseline
+device ID and ReportedDeviceId must remain; each actual acknowledged
+preparation login must have exactly one new device with its exact user and
+client metadata; and there may be no other new devices. Missing old/owned
+devices, repeated identities, substituted owners, or an unowned new device
+are rejected. Existing device DTO business fields and receipted closure-time
+changes remain subject to the separate preservation comparison.
+
+## Honest baseline renewal after the stopped attempt
+
+The stopped attempt observed the server, roster, libraries, catalogs, per-user
+projections, preferences, six explicit details, and Devices. It did not reach
+the following System/Configuration read. These records cannot be labeled a
+new complete snapshot, nor may an old configuration document be silently
+inserted under the stopped run's token/time attribution.
+
+The minimum new complete-observation allowance is one new independent admin
+login, the full 31-GET snapshot sequence, one logout, and one exact-token
+rejection: **34 HTTP requests**. Authentication and device history remain
+retained; it issues no catalog, media, user-creation or playback mutations. It
+needs its own exclusive evidence scope and current process/lock bindings. The new snapshot
+must include the stopped preparation's retained administrator device and the
+observer's own device. A snapshot captured before observer logout retains its
+own token attribution and is accompanied by that observer's actual closure
+window, intent, and response receipts.
+
+The root task is implementing this observer separately and owns its execution.
+It also checks the stopped preparation and observer units are closed in the
+new outer admission record. The producer's release contract may continue to
+bind the genuine sealed v4 terminal/inventory anchor, with the new observer's
+actual controller_api logout/401 evidence supplied to closedAuthentication.
+No release-schema expansion or fabricated composite snapshot is required.

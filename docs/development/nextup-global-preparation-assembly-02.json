@@ -1,0 +1,35 @@
+{
+  "businessHttpRequests": 0,
+  "capturedAt": "2026-09-12T18:12:39.089742+00:00",
+  "inputs": {
+    "credentials": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-02/credentials.json",
+      "sha256": "2bfad1706dd13104a508a10062a095ee48bd96b01fff847c36a548b0333f0a17"
+    },
+    "mediaApproval": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-02/media-approval.json",
+      "sha256": "536eabeb8678650a9730f49a38730cf08f46aea9abb2edb49abefe67b2cb50b8"
+    },
+    "publicBaseline": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-v4/after-public.json",
+      "sha256": "48b3acb509b8318481c2d9c4e35ce534a69bb6deaaf31246a1bd78b3cc3bab32"
+    },
+    "release": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-02/release.json",
+      "sha256": "2099258032ad61bd35bc8d936f54467dc56677041ef5c90bee610a3029ce232e"
+    }
+  },
+  "kind": "nextup-global-input-assembly",
+  "manifest": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-02/input.json",
+    "sha256": "2611adf729ec18cb5c738e6f9099142d247bbca26af4aaca0a60a07c30958c87"
+  },
+  "originalImplementationBytesRead": false,
+  "preparationExecuted": false,
+  "referenceDatabaseRead": false,
+  "runId": "nextup-global-reference-20260913-02",
+  "schemaVersion": 1,
+  "sealedRootCount": 109,
+  "sealedV4InventoryRechecked": true,
+  "sourceSha256": "5abaa7893631f9ee63ee89f5a8d05a4c24c77e803d66421c7ac101dd6a3abc3e"
+}
