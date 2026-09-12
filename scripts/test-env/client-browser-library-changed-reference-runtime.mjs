@@ -504,9 +504,36 @@ export function referenceSocketMessageRecord(message, secrets = []) {
   return evidence;
 }
 
-function publicRead(route) {
-  return route === '/' || /^\/web(?:\/|$)/i.test(route) ||
+function publicRead(route, method) {
+  return method === 'GET' && route === '/Branding/Css.css' || route === '/' || /^\/web(?:\/|$)/i.test(route) ||
     /^\/(?:System\/(?:Info\/Public|Ping)|Users\/Public|Branding\/(?:Css|Configuration))\/?$/i.test(route);
+}
+
+/** Apply the same authority guard used by the actual context request observer. */
+export function referenceObservedRequestAuthority(raw, method, headers, expectedToken, evidence) {
+  const actual = referenceAuthority(raw, headers);
+  guard(!actual || expectedToken !== null && actual.token === expectedToken, 'reference_foreign_authority');
+  const required = evidence.kind !== 'login' && !publicRead(evidence.route ?? '', method);
+  guard(!required || actual !== null, 'reference_missing_authority');
+  return actual;
+}
+
+/** Associate asynchronous failures without retaining exception text or stack traces. */
+export function referenceObservationFailure(error, association) {
+  const channels = ['context_request', 'context_response', 'context_finished', 'context_failed', 'physical_http',
+    'physical_websocket_setup', 'physical_websocket_write', 'login_private_capture'];
+  const reasons = new Map([
+    ['reference_missing_authority', 'missing_authority'], ['reference_foreign_authority', 'foreign_authority'],
+    ['reference_conflicting_authority', 'conflicting_authority'], ['reference_authorization_scheme', 'authorization_scheme_rejected'],
+    ['reference_authorization_fields', 'authorization_fields_rejected'], ['reference_operation_timeout', 'operation_timeout'],
+    ['reference_bootstrap_abort_unobserved', 'bootstrap_abort_unobserved'], ['reference_bootstrap_abort_failed', 'bootstrap_abort_failed'],
+    ['reference_client_metadata_missing', 'client_metadata_missing'], ['reference_conflicting_client_metadata', 'client_metadata_conflict'],
+    ['reference_runtime_guard_rejected', 'guard_rejected'],
+  ]);
+  return { request_id: typeof association?.request_id === 'string' && /^(?:physical|frame|service_worker|handshake)-[0-9]{1,5}$/.test(association.request_id)
+    ? association.request_id : null, channel: channels.includes(association?.channel) ? association.channel : 'runtime_async',
+    observation_reason: reasons.get(error?.message) ?? (error?.name === 'TypeError' ? 'observation_api_error' :
+      error?.name === 'TimeoutError' ? 'observation_timeout' : 'async_operation_failed') };
 }
 
 /** Delay proof capture until a genuine frame logout response has status 204. */
@@ -598,9 +625,9 @@ export async function createReferenceBrowserActor(options = {}) {
     guard(lifecycle.length < L.requests * 4 + L.frames * 4);
     const value = { type, ...stamp(), ...extra }; lifecycle.push(value); return value;
   }
-  function fail(reason, timing = undefined) {
+  function fail(reason, timing = undefined, association = undefined) {
     poisoned = true;
-    if (report.failures.length < 16) report.failures.push({ reason, ...(timing ?? stamp()) });
+    if (report.failures.length < 16) report.failures.push({ reason, ...(timing ?? stamp()), ...(association ?? {}) });
     if (!cleanupMode || identityLost) for (const socket of sockets) socket.destroy();
   }
   function notify(name, value, stamped = false) {
@@ -614,8 +641,10 @@ export async function createReferenceBrowserActor(options = {}) {
       guard(result === undefined, 'reference_observer_must_be_synchronous');
     } catch { report.observer_errors += 1; fail('observer_failed'); }
   }
-  function track(promise) {
-    const observed = Promise.resolve(promise).catch(() => { fail('passive_observation_failed'); });
+  function track(promise, association) {
+    const observed = Promise.resolve(promise).catch(error => {
+      fail('passive_observation_failed', undefined, referenceObservationFailure(error, association));
+    });
     pending.add(observed); observed.finally(() => pending.delete(observed)); return observed;
   }
   const trafficAllowed = kind => referenceTrafficAllowed({ poisoned, cleanup: cleanupMode, identityLost, closed }, kind);
@@ -634,6 +663,11 @@ export async function createReferenceBrowserActor(options = {}) {
     guard(!actual || token !== null && actual.token === token, 'reference_foreign_authority');
     guard(!required || actual !== null, 'reference_missing_authority');
     return actual;
+  }
+  function observedRequestAuthority(raw, method, headers, evidence) {
+    const actual = referenceAuthority(raw, headers);
+    if (actual && !secrets.includes(actual.token)) secrets.push(actual.token);
+    return referenceObservedRequestAuthority(raw, method, headers, token, evidence);
   }
   function requestEvidence(raw, method, headers, scope, index, extra = {}) {
     const timing = stamp();
@@ -732,7 +766,7 @@ export async function createReferenceBrowserActor(options = {}) {
       await bounded(Promise.resolve(onLogin({ token, proof: structuredClone(pendingLoginProof) })), 15000, 'reference_private_login_capture_failed');
       report.login.proof = structuredClone(pendingLoginProof); lifecycleEvent('login_private_capture_complete');
     })();
-    track(loginPublication);
+    track(loginPublication, { channel: 'login_private_capture', request_id: physicalHTTP.find(value => value.kind === 'login')?.id ?? null });
   }
   function reserve(plan) {
     const state = report.http, cleanup = report.cleanup_http;
@@ -743,11 +777,11 @@ export async function createReferenceBrowserActor(options = {}) {
     else if (plan.kind === 'logout') { guard(logoutIntent && token && state.login === 1 && state.logout === 0); state.logout += 1; }
     else if (plan.kind === 'capabilities') { guard(token && loginIntent && !logoutIntent && state.capabilities < L.capabilities); state.capabilities += 1; }
     else guard(plan.kind === 'read');
-    if (plan.kind !== 'login') authority(REFERENCE_ORIGIN + plan.path, plan.authorityHeaders, !publicRead(plan.route));
+    if (plan.kind !== 'login') authority(REFERENCE_ORIGIN + plan.path, plan.authorityHeaders, !publicRead(plan.route, plan.method));
     state.admitted += 1; state.active += 1;
     if (plan.cleanup) { cleanup.admitted += 1; cleanup.active += 1; }
   }
-  async function forwardHTTP(request, response) {
+  async function forwardHTTP(request, response, requestIndex) {
     const state = report.http;
     let plan, evidence, upstream, incoming, admitted = false, finished = false, requestBytes = 0, responseBytes = 0;
     const timer = setTimeout(() => stop('http_timeout'), L.httpMs);
@@ -785,7 +819,7 @@ export async function createReferenceBrowserActor(options = {}) {
       state.seen += 1;
       const rawHeaders = Object.fromEntries(Array.from({ length: request.rawHeaders.length / 2 }, (_, index) =>
         [request.rawHeaders[index * 2].toLowerCase(), request.rawHeaders[index * 2 + 1]]));
-      evidence = requestEvidence(request.url, request.method, rawHeaders, 'physical', physicalIndex++);
+      evidence = requestEvidence(request.url, request.method, rawHeaders, 'physical', requestIndex);
       physicalHTTP.push(evidence); notify('onHTTPStart', evidence, true);
       plan = referenceHTTPPlan(request.url, request.method, request.rawHeaders);
       reserve(plan); admitted = true;
@@ -898,7 +932,7 @@ export async function createReferenceBrowserActor(options = {}) {
             notify('onPhysicalMessage', evidence, true);
           }
           if (!forwarded) stop('websocket_frame_write_failed');
-        }));
+        }), { channel: 'physical_websocket_write', request_id: handshake.id });
       } catch (error) {
         for (const evidence of messages) notify('onPhysicalMessage', evidence, true);
         if (error?.message === 'reference_websocket_control_denied') state.control_attempts += 1;
@@ -964,7 +998,7 @@ export async function createReferenceBrowserActor(options = {}) {
         });
         upstream.end();
       } catch { stop('websocket_admission_failed'); }
-    })());
+    })(), { channel: 'physical_websocket_setup', request_id: handshake.id });
   }
   function observePageSocket(socket) {
     const timing = stamp(), index = report.websocket.browser_seen++;
@@ -1063,19 +1097,21 @@ export async function createReferenceBrowserActor(options = {}) {
         return evidence;
       }
       const headers = await bounded(request.allHeaders(), 3000);
-      const actual = authority(raw, headers, evidence.kind !== 'login' && !publicRead(evidence.route ?? ''));
+      const actual = observedRequestAuthority(raw, request.method(), headers, evidence);
       evidence.token_sha256 = actual?.token_sha256 ?? null;
       if (evidence.kind === 'login' && worker === null) frameLoginMetadata = referenceClientMetadata(raw, headers);
       guard(evidence.cleanup ? evidence.kind === 'logout' || report.context_http.cleanup_requests <= L.cleanupRequests * 2
         : report.context_http.requests <= L.requests * 2);
       return evidence;
     })();
-    requestRecords.set(request, operation); track(operation);
+    requestRecords.set(request, { operation, evidence });
+    track(operation, { channel: 'context_request', request_id: evidence.id });
   }
   function observeContextResponse(response) {
     const timing = stamp();
+    const state = requestRecords.get(response.request());
     track((async () => {
-      const evidence = await requestRecords.get(response.request()); if (!evidence) return;
+      const evidence = await state?.operation; if (!evidence) return;
       const headers = response.headers();
       Object.assign(evidence, { sequence: timing.sequence, elapsed_ms: timing.elapsed_ms,
         status: response.status(), response_elapsed_ms: timing.elapsed_ms, from_service_worker: response.fromServiceWorker(),
@@ -1085,19 +1121,20 @@ export async function createReferenceBrowserActor(options = {}) {
       if (evidence.kind === 'blocked_external_registration') fail('blocked_external_received_response');
       if (evidence.kind === 'login') guard(evidence.status === 200 && token && pendingLoginProof);
       if (evidence.kind === 'logout') { guard(evidence.token_sha256 === report.token_sha256); report.logout.frame_token_sha256 = evidence.token_sha256; }
-    })());
+    })(), { channel: 'context_response', request_id: state?.evidence.id ?? null });
   }
   function observeContextFinished(request, failed) {
     const timing = stamp();
+    const state = requestRecords.get(request);
     track((async () => {
-      const evidence = await requestRecords.get(request); if (!evidence) return;
+      const evidence = await state?.operation; if (!evidence) return;
       Object.assign(evidence, { sequence: timing.sequence, elapsed_ms: timing.elapsed_ms,
         finished_elapsed_ms: timing.elapsed_ms, completed: !failed, failed });
       report.context_http[failed ? 'failed' : 'finished'] += 1; notify('onFrameFinished', evidence, true);
       if (evidence.kind === 'login' && evidence.scope === 'frame' && !failed && evidence.status === 200) {
         frameLoginFinished = true; publishLogin();
       }
-    })());
+    })(), { channel: failed ? 'context_failed' : 'context_finished', request_id: state?.evidence.id ?? null });
   }
   async function drainTransport(forCleanup = false) {
     await bounded((async () => {
@@ -1200,7 +1237,10 @@ export async function createReferenceBrowserActor(options = {}) {
   }
   try {
     await assertPinned();
-    proxy = http.createServer({ maxHeaderSize: L.headerBytes }, (request, response) => track(forwardHTTP(request, response)));
+    proxy = http.createServer({ maxHeaderSize: L.headerBytes }, (request, response) => {
+      const index = physicalIndex++;
+      track(forwardHTTP(request, response, index), { channel: 'physical_http', request_id: `physical-${index}` });
+    });
     proxy.maxHeadersCount = 128; proxy.requestTimeout = L.httpMs; proxy.headersTimeout = 10000;
     proxy.on('connection', socket => {
       if (sockets.size >= L.connections || !trafficAllowed('read')) { socket.destroy(); return; }

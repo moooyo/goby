@@ -8,11 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { createReferenceBrowserActor, sanitizeDiagnostic } from './client-browser-library-changed-reference-runtime.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-01';
-export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v1';
+export const REFERENCE_TOOL = WORK + '/reference-library-changed-ui-tool-02';
+export const REFERENCE_ROOT = WORK + '/reference-library-changed-ui-v2';
 export const REFERENCE_OUTPUT = REFERENCE_ROOT + '/browser';
-export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v1.service';
-export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v1.service';
+export const REFERENCE_UNIT = 'goby-reference-library-changed-ui-v2.service';
+export const REFERENCE_CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v2.service';
 export const REFERENCE_ORIGIN = 'http://127.0.0.1:18197';
 export const REFERENCE_USER = 'c5f36699a54f4971a891682cd9de410f';
 export const REFERENCE_SERVER = 'f56dec8ff7414847873064c4be9fba74';
@@ -85,7 +85,7 @@ export function validateReferenceInput(value) {
     value.expected_libraries.some(row => row.id === LIBRARY && row.name === 'M3e Controlled LibraryChanged Movies'));
   need(exact(value.authority, ['owner', 'preflight', 'before_snapshot']) && Object.values(value.authority).every(descriptor) &&
     value.authority.owner.path === WORK + '/reference-owner.json' &&
-    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v1/report.json' &&
+    value.authority.preflight.path === WORK + '/reference-library-changed-ui-preflight-v2/report.json' &&
     value.authority.before_snapshot.path === REFERENCE_ROOT + '/before-public.json');
   need(record(value.source_closure) && same(Object.keys(value.source_closure).sort(), SOURCES.map(name => REFERENCE_TOOL + '/' + name).sort()) &&
     Object.values(value.source_closure).every(value => SHA.test(value)));
@@ -102,7 +102,7 @@ export function validateReferencePublicBaseline(input, owner, preflight, before)
   need(exact(preflight, ['marker', 'version', 'mode', 'root', 'reference', 'script_sha256', 'source_closure_sha256', 'public_snapshot',
     'target', 'anchor', 'expected_libraries', 'admin', 'ledger', 'preservation', 'errors', 'status', 'completed_at', 'evidence']) &&
     preflight.marker === 'goby-reference-library-changed-preflight-v1' && preflight.version === 1 &&
-    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v1' &&
+    preflight.mode === 'business-read-only-preflight' && preflight.root === WORK + '/reference-library-changed-ui-preflight-v2' &&
     preflight.status === 'passed' && same(preflight.errors, []) && preflight.preservation?.passed === true &&
     SHA.test(preflight.script_sha256) && preflight.source_closure_sha256 === null &&
     same(preflight.reference, input.reference) && same(preflight.target, input.target) && same(preflight.anchor, input.anchor) &&
@@ -537,6 +537,23 @@ export function normalizeReferenceSnapshot(snapshot) {
   return result;
 }
 
+/** Validate the single unified hierarchy before exposing its exact systemd path. */
+export function canonicalReferenceCgroup(raw, unit) {
+  need([REFERENCE_UNIT, REFERENCE_CONTROLLER_UNIT].includes(unit), 'reference_process_cgroup');
+  const canonical = '/system.slice/' + unit;
+  need(typeof raw === 'string' && (raw === '0::' + canonical + '\n' || raw === '0::' + canonical), 'reference_process_cgroup');
+  return canonical;
+}
+
+/** Only the published worker identity changes representation; service pins keep raw proc data. */
+export function projectReferenceNodeProcess(value, expectedBootID) {
+  need(exact(value, ['pid', 'start_ticks', 'boot_id', 'uid', 'gid', 'executable_path', 'executable_sha256', 'cgroup']) &&
+    Number.isSafeInteger(value.pid) && value.pid > 1 && /^[1-9]\d*$/.test(value.start_ticks) &&
+    value.boot_id === expectedBootID && /^[0-9a-f-]{36}$/.test(value.boot_id) && value.uid === 0 && value.gid === 0 &&
+    safeText(value.executable_path, 4096) && SHA.test(value.executable_sha256), 'reference_node_process');
+  return { ...clone(value), cgroup: canonicalReferenceCgroup(value.cgroup, REFERENCE_UNIT) };
+}
+
 async function processIdentity(pid, executableHash = false) {
   need(Number.isSafeInteger(pid) && pid > 1);
   const prefix = '/proc/' + pid, stat = await fs.readFile(prefix + '/stat', 'utf8'), start = stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
@@ -733,8 +750,7 @@ export async function runReferenceBrowser(options) {
   const credentials = await ownedJSON(input.actor.credentials);
   need(exact(credentials, ['viewer']) && exact(credentials.viewer, ['username', 'password', 'userId']) && credentials.viewer.username === VIEWER &&
     credentials.viewer.userId === REFERENCE_USER && /^[0-9a-f]{64}$/.test(credentials.viewer.password), 'reference_credentials_scope');
-  await sourcePins(input); const nodeProcess = await processIdentity(process.pid, true);
-  need(nodeProcess.uid === 0 && nodeProcess.gid === 0 && nodeProcess.cgroup.includes('/' + REFERENCE_UNIT) && nodeProcess.boot_id === input.controller.boot_id);
+  await sourcePins(input); const nodeProcess = projectReferenceNodeProcess(await processIdentity(process.pid, true), input.controller.boot_id);
   const binding = { input_sha256: args['input-sha256'], source_closure_sha256: sha(JSON.stringify(ordered(input.source_closure))),
     controller: clone(input.controller), node_process: nodeProcess };
   const pins = [inputItem, ...Object.values(input.authority), input.actor.credentials];
@@ -742,7 +758,8 @@ export async function runReferenceBrowser(options) {
     need(same(await checkDirectory(REFERENCE_ROOT), rootIdentity));
     for (const item of pins) await ownedJSON(item);
     await sourcePins(input); const controller = await processIdentity(input.controller.pid);
-    need(controller.start_ticks === input.controller.start_ticks && controller.boot_id === input.controller.boot_id && controller.uid === 0 && controller.cgroup.includes('/' + REFERENCE_CONTROLLER_UNIT));
+    need(controller.start_ticks === input.controller.start_ticks && controller.boot_id === input.controller.boot_id && controller.uid === 0 &&
+      canonicalReferenceCgroup(controller.cgroup, REFERENCE_CONTROLLER_UNIT) === '/system.slice/' + REFERENCE_CONTROLLER_UNIT);
     const service = input.reference.service_identity, current = await processIdentity(service.pid);
     need(current.start_ticks === service.startTicks && current.boot_id === service.bootId && current.uid === service.uid &&
       current.executable_path === service.exe && current.cgroup === service.cgroup && await fs.readlink('/proc/' + service.pid + '/ns/net') === service.networkNamespace &&

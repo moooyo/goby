@@ -512,6 +512,24 @@ def stage(name, observation, value=None):
         'observation': observation}
 
 
+def closed_failed_report(value, private, child):
+    return {'marker': 'goby-reference-library-changed-browser-v1', 'version': 1, 'input_sha256': 'a' * 64,
+        'source_closure_sha256': CONTROLLER.sha(CONTROLLER.canonical(value['source_closure'])),
+        'controller': copy.deepcopy(value['controller']), 'node_process': copy.deepcopy(child),
+        'reference': copy.deepcopy(value['reference']), 'target': copy.deepcopy(value['target']), 'anchor': copy.deepcopy(value['anchor']),
+        'library_changed_client_acceptance': False, 'main_acceptance': False, 'login_proof': copy.deepcopy(private['proof']),
+        'protocol_observation_complete': False, 'result': 'failed', 'failure': 'reference_synthetic_failure',
+        'actor': {'closed': True, 'cleanup_failures': [], 'session_proof_owner': 'runtime_viewer_only',
+            'user_id': CONTROLLER.VIEWER, 'server_id': CONTROLLER.SERVER, 'token_sha256': TOKEN_SHA,
+            'http': {'login': 1, 'logout': 1, 'active': 0}, 'websocket': {'active': 0, 'opened': 1, 'closed': 1},
+            'logout': {'status': 204, 'physical_completed': True, 'login_view_visible': True, 'post_logout_status': 401,
+                'token_sha256': TOKEN_SHA, 'frame_token_sha256': TOKEN_SHA},
+            'session_proof': {'outcome': 'all_observed_logout_tokens_rejected', 'entries': [
+                {'token_fingerprint': TOKEN_SHA, 'result': 'logout_token_rejected', 'ui_request': {'response_status': 204},
+                    'verification': {'status': 401, 'is_ui_request': False, 'method': 'GET',
+                        'route': '/emby/System/Info', 'result': 'token_rejected'}}]}}}
+
+
 class MetadataAndPublicGuards(GuardTestCase):
     def test_name_reservation_deepcopies_every_present_edit_field(self):
         original = movie()
@@ -551,7 +569,7 @@ class MetadataAndPublicGuards(GuardTestCase):
 
     def test_sorting_is_derived_in_the_response_but_never_a_separate_write(self):
         original = movie(); reservation = CONTROLLER.reserve_edit(original)
-        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui one')
+        self.assertEqual(reservation['public']['marker_name'], 'reference library changed ui two')
         self.assertEqual(reservation['forward_body']['SortName'], original['SortName'])
         self.assertEqual(reservation['forward_body']['ForcedSortName'], original['ForcedSortName'])
         forward = dict(original, Name=CONTROLLER.MARKER_NAME, SortName=CONTROLLER.MARKER_NAME, ForcedSortName=CONTROLLER.MARKER_NAME)
@@ -713,6 +731,43 @@ class BrowserEvidenceGuards(GuardTestCase):
             changed = copy.deepcopy(private); changed['proof'][field] = replacement
             with self.subTest(field=field): self.reject(lambda: CONTROLLER.validate_private_session(changed, value, 'a' * 64, CHILD, snapshot()))
 
+    def test_real_proc_cgroup_projects_identically_into_private_stage_and_report(self):
+        expected = '/system.slice/goby-reference-library-changed-ui-v2.service'
+        for raw in ('0::/system.slice/goby-reference-library-changed-ui-v2.service',
+                    '0::/system.slice/goby-reference-library-changed-ui-v2.service\n'):
+            with self.subTest(raw=raw):
+                child = copy.deepcopy(CHILD)
+                child['cgroup'] = CONTROLLER.worker_cgroup_path(raw)
+                value = input_record(); private = private_session(value)
+                private['node_process'] = copy.deepcopy(child)
+                current_stage = stage('discovery', discovery(), value)
+                current_stage['node_process'] = copy.deepcopy(child)
+                current_stage['previous_control_sha256'] = None
+                report = closed_failed_report(value, private, child)
+                proof = CONTROLLER.validate_private_session(private, value, 'a' * 64, child, snapshot())
+                CONTROLLER.validate_stage(current_stage, value, 'a' * 64, child, 'discovery', None, proof, None, None)
+                CONTROLLER.validate_browser_report(report, value, 'a' * 64, child, private, [], [])
+                for record in (private, current_stage, report): self.assertEqual(record['node_process']['cgroup'], expected)
+                self.assertEqual(report['reference']['service_identity']['cgroup'], '0::/system.slice/reference.service\n')
+
+    def test_cgroup_rejects_malformed_proc_rows_and_coherently_wrong_publication(self):
+        expected = '/system.slice/goby-reference-library-changed-ui-v2.service'
+        old = '/system.slice/goby-reference-library-changed-ui-v1.service'
+        controller = '/system.slice/goby-reference-library-changed-ui-controller-v2.service'
+        for raw in (expected, '0::' + old, '0::' + controller, '0::' + expected + '\r\n',
+                    '0::' + expected + '\n\n', '0::' + expected + '\n0::/other', ' 0::' + expected):
+            with self.subTest(raw=raw): self.reject(lambda: CONTROLLER.worker_cgroup_path(raw))
+        for published in ('0::' + expected + '\n', old, controller):
+            child = copy.deepcopy(CHILD); child['cgroup'] = published
+            value = input_record(); private = private_session(value); private['node_process'] = copy.deepcopy(child)
+            current_stage = stage('discovery', discovery(), value); current_stage['node_process'] = copy.deepcopy(child)
+            report = closed_failed_report(value, private, child)
+            with self.subTest(published=published):
+                self.reject(lambda: CONTROLLER.validate_private_session(private, value, 'a' * 64, child, snapshot()))
+                self.reject(lambda: CONTROLLER.validate_stage(current_stage, value, 'a' * 64, child,
+                    'discovery', 'c' * 64, private['proof'], None, None))
+                self.reject(lambda: CONTROLLER.validate_browser_report(report, value, 'a' * 64, child, private, [], []))
+
 
 def quiet_observation():
     samples = [{'sequence': 10 + index, 'started_elapsed_ms': moment, 'elapsed_ms': moment + 10,
@@ -761,7 +816,8 @@ class QuietAndCLIGuards(GuardTestCase):
             '--node', str(CONTROLLER.NODE), '--node-sha256', CONTROLLER.NODE_SHA]
         self.assertEqual(CONTROLLER.arguments(values).mode, 'observe')
         for flag, replacement in (('--node', '/opt/reference/original-executable'), ('--preflight-sha256', 'pending'),
-                                  ('--source-closure', str(CONTROLLER.ROOT / 'sources.json'))):
+                                  ('--source-closure', str(CONTROLLER.ROOT / 'sources.json')),
+                                  ('--source-closure', str(CONTROLLER.WORK / 'reference-library-changed-ui-tool-01/source-closure.json'))):
             changed = list(values); changed[changed.index(flag) + 1] = replacement
             with self.subTest(flag=flag): self.reject(lambda: CONTROLLER.arguments(changed))
 

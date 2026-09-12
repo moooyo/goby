@@ -9,7 +9,8 @@ import { REFERENCE_ORIGIN as ORIGIN, REFERENCE_VIEWER as VIEWER, requireReferenc
   referenceResponseProjection, referenceHTTPPlan, referenceHTTPResponsePlan, referenceWebSocketPlan,
   referenceWebSocketResponsePlan, referenceConnectInner, createReferenceFrameState, decodeWebSocketFrames,
   referenceSocketMessageRecord, createReferenceLogoutProofContext, referenceTrafficAllowed,
-  referenceHTTPBudgetAvailable, referenceBootstrapExternalRequest, REFERENCE_SERVER } from './client-browser-library-changed-reference-runtime.mjs';
+  referenceHTTPBudgetAvailable, referenceBootstrapExternalRequest, REFERENCE_SERVER,
+  referenceObservedRequestAuthority, referenceObservationFailure } from './client-browser-library-changed-reference-runtime.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const token = 'private-token-for-pure-reference-tests';
@@ -49,6 +50,41 @@ test('the selected origin and ordinary principal are fixed', () => {
   assert.equal(classifyReferenceRequest(`${ORIGIN}/emby/Items?UserId=other`, 'GET').allow, false);
   assert.equal(classifyReferenceRequest(`${ORIGIN}/emby/Items?UserId=${VIEWER}&UserId=other`, 'GET').allow, false);
   assert.equal(classifyReferenceRequest(`${ORIGIN}/emby/Items#fragment`, 'GET').allow, false);
+});
+
+test('the production request observer accepts only the observed public branding CSS GET before login', () => {
+  for (const path of ['/Branding/Css.css', '/emby/Branding/Css.css']) {
+    const raw = ORIGIN + path, evidence = referenceRequestRecord(raw, 'GET');
+    assert.equal(referenceObservedRequestAuthority(raw, 'GET', {}, null, evidence), null);
+    assert.equal(evidence.capture, false);
+    assert.equal(referenceHTTPPlan(raw, 'GET', ['Host', '127.0.0.1:18197']).kind, 'read');
+    assert.throws(() => referenceObservedRequestAuthority(raw, 'GET', { 'X-Emby-Token': token }, null, evidence), /foreign_authority/);
+    for (const method of ['HEAD', 'OPTIONS', 'POST'])
+      assert.throws(() => referenceObservedRequestAuthority(raw, method, {}, null, referenceRequestRecord(raw, method)), /missing_authority/);
+    assert.equal(classifyReferenceRequest(raw, 'POST').allow, false);
+  }
+  for (const path of ['/Branding/Css.css/', '/Branding/Other.css', '/Branding/Css.js', '/Items/100']) {
+    const raw = ORIGIN + path;
+    assert.throws(() => referenceObservedRequestAuthority(raw, 'GET', {}, null, referenceRequestRecord(raw, 'GET')), /missing_authority/);
+  }
+  for (const path of ['/Branding/Css', '/Branding/Configuration']) {
+    const raw = ORIGIN + path;
+    assert.equal(referenceObservedRequestAuthority(raw, 'GET', {}, null, referenceRequestRecord(raw, 'GET')), null);
+  }
+});
+
+test('async observation failures keep the safe request association and fixed reason only', async () => {
+  const raw = `${ORIGIN}/Items/100`, evidence = referenceRequestRecord(raw, 'GET');
+  const operation = Promise.resolve().then(() => referenceObservedRequestAuthority(raw, 'GET', {}, null, evidence));
+  for (const channel of ['context_request', 'context_failed']) {
+    const failure = await operation.catch(error => referenceObservationFailure(error, { request_id: 'frame-156', channel }));
+    assert.deepEqual(failure, { request_id: 'frame-156', channel, observation_reason: 'missing_authority' });
+  }
+  const failure = referenceObservationFailure(new Error(`Private ${token} at ${ORIGIN}/Items?api_key=${token}`),
+    { request_id: 'service_worker-7', channel: 'context_response' });
+  assert.deepEqual(failure, { request_id: 'service_worker-7', channel: 'context_response', observation_reason: 'async_operation_failed' });
+  assert.equal(JSON.stringify(failure).includes(token), false); assert.equal(JSON.stringify(failure).includes(ORIGIN), false);
+  assert.equal(Object.hasOwn(failure, 'stack'), false);
 });
 
 test('all playback preparation and other mutations are denied', () => {

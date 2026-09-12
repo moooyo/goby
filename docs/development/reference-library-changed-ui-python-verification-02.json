@@ -1,0 +1,56 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-02/test-observe-client-library-changed-reference-ui.py"
+  ],
+  "business_http": false,
+  "compilations": [
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-02/observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": [
+        {
+          "category": "SyntaxWarning",
+          "line": 513,
+          "message": "invalid escape sequence '\\.'"
+        },
+        {
+          "category": "SyntaxWarning",
+          "line": 862,
+          "message": "invalid escape sequence '\\.'"
+        }
+      ]
+    },
+    {
+      "executed": false,
+      "path": "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-02/test-observe-client-library-changed-reference-ui.py",
+      "status": "passed",
+      "warnings": []
+    }
+  ],
+  "completed_at": "2026-09-12T15:24:05.485397+00:00",
+  "errors": 0,
+  "exit_code": 0,
+  "failures": 0,
+  "marker": "goby-reference-ui-python-verification-v2",
+  "python_version": "3.13.5 (main, Jun 13 2026, 14:18:01) [GCC 14.2.0]",
+  "reference_client_acceptance": false,
+  "source_transfer_sha256": "04aca0421b8327c646a9c4d18bfdcc4f09b9591259fb5f6d21bade32938a009b",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-02/observe-client-library-changed-reference-ui.py": {
+      "bytes": 127061,
+      "sha256": "ae7474467b65ecbf8cc7f9d52549e559b4860c18117f44fdecae131b5239483a"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-python-tool-02/test-observe-client-library-changed-reference-ui.py": {
+      "bytes": 65698,
+      "sha256": "99de9547fe4ba898682e99a9bca3bd31ad63c441a48318a3ffcde04380895145"
+    }
+  },
+  "started_at": "2026-09-12T15:24:05.244161+00:00",
+  "status": "passed",
+  "stderr_sha256": "d298bcf43be6acf5e1f8780f7f030ffb0cf1100570fc4dde61ae0a2dd690c442",
+  "stdout_sha256": "f8439aa510924f294e34eea7e173e6a7fbe143e480f9034bd982a1a5ef4dfb67",
+  "tests": 47
+}

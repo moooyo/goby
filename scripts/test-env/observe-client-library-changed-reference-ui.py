@@ -32,12 +32,12 @@ import types
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'reference-library-changed-ui-tool-01'
-ROOT = WORK / 'reference-library-changed-ui-v1'
-PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v1'
-WORKER_UNIT = 'goby-reference-library-changed-ui-v1.service'
-CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v1.service'
-PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v1.service'
+TOOL = WORK / 'reference-library-changed-ui-tool-02'
+ROOT = WORK / 'reference-library-changed-ui-v2'
+PREFLIGHT_ROOT = WORK / 'reference-library-changed-ui-preflight-v2'
+WORKER_UNIT = 'goby-reference-library-changed-ui-v2.service'
+CONTROLLER_UNIT = 'goby-reference-library-changed-ui-controller-v2.service'
+PREFLIGHT_UNIT = 'goby-reference-library-changed-ui-preflight-v2.service'
 MARKER = 'goby-reference-library-changed-observation-v1'
 INPUT_MARKER = 'goby-reference-library-changed-input-v1'
 SNAPSHOT_MARKER = 'goby-reference-library-changed-public-snapshot-v1'
@@ -78,7 +78,7 @@ EDIT_FIELDS = ('Name', 'SortName', 'ForcedSortName', 'OriginalTitle', 'Overview'
     'PreferredMetadataCountryCode', 'IndexNumber', 'ParentIndexNumber', 'SortIndexNumber', 'SortParentIndexNumber', 'DisplayOrder', 'Status', 'DateCreated')
 AUTOMATIC_FIELDS = frozenset(('Etag', 'ETag', 'DateLastSaved', 'DateLastRefreshed'))
 SORT_FIELDS = ('SortName', 'ForcedSortName')
-MARKER_NAME = 'reference library changed ui one'
+MARKER_NAME = 'reference library changed ui two'
 AUTH_TIME_FIELDS = frozenset(('LastLoginDate', 'LastActivityDate'))
 FIELDS = 'Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear'
 STAGES, CONTROLS = ('discovery', 'armed', 'restore-armed', 'restored'), ('reserved', 'forward', 'restored', 'close')
@@ -117,6 +117,13 @@ def same(left, right): return canonical(left) == canonical(right)
 def digest(value): return isinstance(value, str) and HASH.fullmatch(value) is not None
 def text(value, bound=256): return isinstance(value, str) and 0 < len(value) <= bound and not any(ord(char) < 32 for char in value)
 def numeric(value): return type(value) is int or type(value) is float and math.isfinite(value) or isinstance(value, Decimal) and value.is_finite()
+
+
+def worker_cgroup_path(raw):
+    path = '/system.slice/' + WORKER_UNIT
+    require(isinstance(raw, str) and raw in ('0::' + path, '0::' + path + '\n'),
+            'The browser worker lacks its single exact unified cgroup entry.')
+    return path
 
 
 def decode(raw):
@@ -829,12 +836,11 @@ class Run:
                 current = self.op.process_identity(int(props['MainPID']))
                 require(current['uid'] == 0 and current['bootId'] == BOOT and current['exe'] == str(self.args.node) and
                         current['cmdline'] == arguments[arguments.index('--') + 1:] and
-                        current['networkNamespace'] == os.readlink('/proc/1/ns/net') and
-                        current['cgroup'].strip() == '0::/system.slice/' + WORKER_UNIT, 'The browser worker has another process, command or namespace.')
+                        current['networkNamespace'] == os.readlink('/proc/1/ns/net'), 'The browser worker has another process, command or namespace.')
                 expected_exe, running_exe = self.args.node.stat(), (Path('/proc') / str(current['pid']) / 'exe').stat()
                 require((expected_exe.st_dev, expected_exe.st_ino) == (running_exe.st_dev, running_exe.st_ino), 'The running Node inode differs from its pinned executable.')
                 self.child = {'pid': current['pid'], 'start_ticks': current['startTicks'], 'boot_id': current['bootId'], 'uid': 0, 'gid': 0,
-                    'executable_path': current['exe'], 'executable_sha256': self.args.node_sha256, 'cgroup': '/system.slice/' + WORKER_UNIT}
+                    'executable_path': current['exe'], 'executable_sha256': self.args.node_sha256, 'cgroup': worker_cgroup_path(current['cgroup'])}
                 self.worker_invocation = props.get('InvocationID')
                 require(isinstance(self.worker_invocation, str) and USER_ID.fullmatch(self.worker_invocation), 'The browser invocation is missing.')
                 self.save('browser-process.json', {'node_process': self.child, 'invocation_id': self.worker_invocation})
@@ -850,7 +856,7 @@ class Run:
         require(props.get('MainPID') == str(self.child['pid']) and props.get('InvocationID') == self.worker_invocation and
                 props.get('ActiveState') == 'active' and props.get('SubState') == 'running' and
                 current['startTicks'] == self.child['start_ticks'] and current['exe'] == self.child['executable_path'] and
-                current['cgroup'].strip() == '0::' + self.child['cgroup'], 'The browser worker was replaced or restarted.')
+                worker_cgroup_path(current['cgroup']) == self.child['cgroup'], 'The browser worker was replaced or restarted.')
 
     def ipc(self, name):
         require(re.fullmatch('(stage-(discovery|armed|restore-armed|restored)|abort)\.json', name), 'An IPC filename escaped the browser scope.')
@@ -1461,7 +1467,8 @@ def window_evidence(value, input_record, reservation, discovery):
 
 
 def validate_private_session(value, input_record, input_sha, child, before):
-    require(isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process', 'token', 'proof'} and
+    require(isinstance(child, dict) and child.get('cgroup') == '/system.slice/' + WORKER_UNIT and
+            isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process', 'token', 'proof'} and
             value['marker'] == 'goby-reference-library-changed-session-private-v1' and type(value['version']) is int and value['version'] == 1 and
             value['input_sha256'] == input_sha and value['source_closure_sha256'] == sha(canonical(input_record['source_closure'])) and
             same(value['controller'], input_record['controller']) and same(value['node_process'], child) and text(value['token'], 8192),
@@ -1481,7 +1488,8 @@ def validate_private_session(value, input_record, input_sha, child, before):
 
 
 def validate_stage(value, input_record, input_sha, child, name, previous, proof, discovery, reservation):
-    require(isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process',
+    require(isinstance(child, dict) and child.get('cgroup') == '/system.slice/' + WORKER_UNIT and
+            isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process',
             'name', 'token_sha256', 'session_private', 'previous_control_sha256', 'observation'} and
             value['marker'] == 'goby-reference-library-changed-stage-v1' and type(value['version']) is int and value['version'] == 1 and
             value['name'] == name and value['input_sha256'] == input_sha and value['source_closure_sha256'] == sha(canonical(input_record['source_closure'])) and
@@ -1549,7 +1557,8 @@ def validate_stage(value, input_record, input_sha, child, name, previous, proof,
 
 
 def validate_browser_report(report, input_record, input_sha, child, private, stages, controls):
-    require(isinstance(report, dict) and report.get('marker') == 'goby-reference-library-changed-browser-v1' and
+    require(isinstance(child, dict) and child.get('cgroup') == '/system.slice/' + WORKER_UNIT and
+            isinstance(report, dict) and report.get('marker') == 'goby-reference-library-changed-browser-v1' and
             type(report.get('version')) is int and report['version'] == 1 and report.get('input_sha256') == input_sha and
             report.get('source_closure_sha256') == sha(canonical(input_record['source_closure'])) and
             same(report.get('controller'), input_record['controller']) and same(report.get('node_process'), child) and

@@ -1,0 +1,66 @@
+{
+  "business_http": false,
+  "completed_at": "2026-09-12T15:25:30.254655+00:00",
+  "marker": "goby-reference-ui-js-verification-v2",
+  "node_sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
+  "reference_client_acceptance": false,
+  "results": {
+    "driver": {
+      "argv": [
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+        "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/test-client-browser-library-changed-reference.mjs"
+      ],
+      "exit_code": 0,
+      "stats": {
+        "failed_cases": [],
+        "failures": 0,
+        "tests": 25
+      },
+      "status": "passed",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "01801b290d0b6389070fe6de9fa17610af40d52ca3805aaa9b30744925508195"
+    },
+    "runtime": {
+      "argv": [
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+        "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/test-client-browser-library-changed-reference-runtime.mjs"
+      ],
+      "exit_code": 0,
+      "stats": {
+        "cancelled": 0,
+        "fail": 0,
+        "pass": 25,
+        "skipped": 0,
+        "tests": 25,
+        "todo": 0
+      },
+      "status": "passed",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "dc251b45251f5736f144efb74828485757e8cb39ed49b748f103b2559853656b"
+    }
+  },
+  "source_transfer_sha256": "849354e81793f67aca0b5394df42f4f94885f93506b9fe1f6a7ecbe3977b3ec9",
+  "sources": {
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 92295,
+      "sha256": "f0e87368d9e52306e512581d53b429f870c8dd343980e6f0c33263ce19bb2bfe"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/client-browser-library-changed-reference.mjs": {
+      "bytes": 75951,
+      "sha256": "d19ff0d08743101d95b7d5437f8e89f20f8e19263ca367bd8cd139d12b6aeb3d"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/test-client-browser-library-changed-reference-runtime.mjs": {
+      "bytes": 29241,
+      "sha256": "3fbeca2ad9a8f55fe612d11b9b2ae3a7f06319b51461cea3d836ec02730bf86e"
+    },
+    "/opt/goby-test/exec-work-m3e/reference-library-changed-ui-js-tool-02/test-client-browser-library-changed-reference.mjs": {
+      "bytes": 46000,
+      "sha256": "72f303a93478e227382c618816b219eaaa5443185280c069aec63a4458c22bfc"
+    }
+  },
+  "status": "passed"
+}

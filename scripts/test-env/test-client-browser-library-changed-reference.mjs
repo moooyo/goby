@@ -10,7 +10,7 @@ import { REFERENCE_TOOL as TOOL, REFERENCE_ROOT as ROOT, REFERENCE_OUTPUT as OUT
   referenceMessageEvidence, referenceLibraryChangedMessages,
   bindReferenceDOM, referenceWindowEvidence, referenceAcceptedReads, observeReferenceDOM, normalizeReferenceSnapshot,
   validateReferenceReservation, validateReferenceControl, validateReferenceAbort, referenceStageRecord, encodeReferenceRecord,
-  publishReferenceRecord, ReferenceWorkflow } from './client-browser-library-changed-reference.mjs';
+  publishReferenceRecord, canonicalReferenceCgroup, projectReferenceNodeProcess, ReferenceWorkflow } from './client-browser-library-changed-reference.mjs';
 
 const SELF = fileURLToPath(import.meta.url), WORK = '/opt/goby-test/exec-work-m3e', ORIGIN = 'http://127.0.0.1:18197';
 const ROUTE = '/web/index.html#!/videos?parentId=93&serverId=' + SERVER, START = Date.parse('2026-09-12T12:00:00Z');
@@ -35,7 +35,7 @@ export function referenceInputFixture() {
       path: '/opt/goby-fixtures/client-library-changed-v1/Movies/LibraryChanged Anchor (2030)/LibraryChanged Anchor (2030).mp4', type: 'Movie' },
     source_closure: Object.fromEntries(['client-browser-library-changed-reference.mjs', 'client-browser-library-changed-reference-runtime.mjs',
       'client-browser-session-proof.mjs'].map(name => [TOOL + '/' + name, sha('synthetic-source:' + name)])),
-    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v1/report.json'),
+    authority: { owner: descriptor(WORK + '/reference-owner.json'), preflight: descriptor(WORK + '/reference-library-changed-ui-preflight-v2/report.json'),
       before_snapshot: descriptor(ROOT + '/before-public.json') },
     controller: { pid: 12345, start_ticks: '23456', boot_id: '12345678-1234-1234-1234-123456789abc', unit: REFERENCE_CONTROLLER_UNIT,
       invocation_id: sha('synthetic-controller').slice(0, 32) } };
@@ -43,8 +43,8 @@ export function referenceInputFixture() {
 function reservation() { const input = referenceInputFixture(); return { target_id: '100', library_id: '93', original_name: input.target.name,
   marker_name: 'LibraryChanged Observed [reference UI]', original_body_sha256: sha('original'), forward_body_sha256: sha('forward'), restore_body_sha256: sha('original') }; }
 function binding() { const input = referenceInputFixture(); return { input_sha256: sha('input'), source_closure_sha256: sha('sources'), controller: input.controller,
-  node_process: { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0, executable_path: '/synthetic/node',
-    executable_sha256: sha('node'), cgroup: '0::/system.slice/' + REFERENCE_UNIT + '\n' } }; }
+  node_process: projectReferenceNodeProcess({ pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0, executable_path: '/synthetic/node',
+    executable_sha256: sha('node'), cgroup: '0::/system.slice/' + REFERENCE_UNIT + '\n' }, input.controller.boot_id) }; }
 function wirePair(phase = 'discovery', name = referenceInputFixture().target.name) {
   const input = referenceInputFixture(), query = { ParentId: '93', IncludeItemTypes: 'Movie', Recursive: 'true', StartIndex: '0', Limit: '50' };
   const body = { Items: [{ Id: '96', Name: input.anchor.name, Type: 'Movie', IsFolder: false, ParentId: '95' },
@@ -111,12 +111,46 @@ test('input and CLI bind only the fresh reference scope', () => {
   }
   rejects(() => parseReferenceArguments(['--input', ROOT + '/input.json']));
 });
+test('raw proc cgroup records publish the exact canonical worker path across the IPC boundary', () => {
+  const input = referenceInputFixture(), rawLine = '0::/system.slice/goby-reference-library-changed-ui-v2.service\n';
+  const proc = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
+    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: rawLine };
+  const projected = projectReferenceNodeProcess(proc, input.controller.boot_id);
+  check(projected.cgroup === '/system.slice/goby-reference-library-changed-ui-v2.service' && proc.cgroup === rawLine);
+  check(canonicalReferenceCgroup(rawLine.slice(0, -1), REFERENCE_UNIT) === projected.cgroup);
+  const actualBinding = { ...binding(), node_process: projected }, session = descriptor(OUTPUT + '/session-private.json');
+  const stage = referenceStageRecord(actualBinding, 'discovery', discovery(), sha('synthetic-token'), session, null);
+  const decodedStage = JSON.parse(encodeReferenceRecord(stage).toString('utf8'));
+  check(decodedStage.node_process.cgroup === '/system.slice/goby-reference-library-changed-ui-v2.service');
+  const controllerChild = { pid: 12346, start_ticks: '34567', boot_id: input.controller.boot_id, uid: 0, gid: 0,
+    executable_path: '/synthetic/node', executable_sha256: sha('node'), cgroup: '/system.slice/goby-reference-library-changed-ui-v2.service' };
+  const control = { marker: 'goby-reference-library-changed-control-v1', version: 1, name: 'reserved', ...actualBinding,
+    node_process: controllerChild, previous_stage_sha256: sha('stage'), reservation: reservation(), commit: null, restoration: 'pending' };
+  validateReferenceControl(control, actualBinding, { input, previous_stage_sha256: sha('stage') });
+  rejects(() => validateReferenceControl({ ...control, node_process: { ...controllerChild, cgroup: rawLine } }, actualBinding,
+    { input, previous_stage_sha256: sha('stage') }));
+  for (const raw of ['/system.slice/goby-reference-library-changed-ui-v2.service', rawLine.replace('\n', '\r\n'),
+    rawLine + '1:name=systemd:/system.slice/other.service\n', rawLine.replace('ui-v2.service', 'ui-v1.service'),
+    rawLine.replace('.service\n', '.service/child\n'), rawLine.replace('0::', '1:name=systemd:'),
+    '0::/system.slice/goby-reference-library-changed-ui-controller-v2.service\n']) {
+    rejects(() => projectReferenceNodeProcess({ ...proc, cgroup: raw }, input.controller.boot_id));
+  }
+  check(canonicalReferenceCgroup('0::/system.slice/goby-reference-library-changed-ui-controller-v2.service\n', REFERENCE_CONTROLLER_UNIT) ===
+    '/system.slice/goby-reference-library-changed-ui-controller-v2.service');
+  check(input.reference.service_identity.cgroup === '0::/system.slice/synthetic-reference.service\n');
+  for (const mutate of [value => { value.root = WORK + '/reference-library-changed-ui-v1'; },
+    value => { value.authority.preflight.path = WORK + '/reference-library-changed-ui-preflight-v1/report.json'; },
+    value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure).map(([filename, hash]) =>
+      [filename.replace('ui-tool-02', 'ui-tool-01'), hash])); }]) {
+    const stale = clone(input); mutate(stale); rejects(() => validateReferenceInput(stale));
+  }
+});
 test('the fresh public baseline includes both Movies and complete device ownership', () => {
   const input = referenceInputFixture(), movies = [input.anchor, input.target].map(value => ({ Id: value.id, Name: value.name, Type: 'Movie', IsFolder: false, Path: value.path,
     ParentId: value.id === '100' ? '99' : '95' }));
   const preflight = { marker: 'goby-reference-library-changed-preflight-v1', version: 1, mode: 'business-read-only-preflight',
-    root: WORK + '/reference-library-changed-ui-preflight-v1', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
-    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v1/after-public.json'), target: input.target, anchor: input.anchor,
+    root: WORK + '/reference-library-changed-ui-preflight-v2', reference: input.reference, script_sha256: sha('controller'), source_closure_sha256: null,
+    public_snapshot: descriptor(WORK + '/reference-library-changed-ui-preflight-v2/after-public.json'), target: input.target, anchor: input.anchor,
     expected_libraries: input.expected_libraries, admin: { closed: true, login_status: 200, login_complete: true, logout_status: 204,
       logout_complete: true, exact401_status: 401, exact401_complete: true }, ledger: { authentication_posts: 2, metadata_posts: 0, http_requests: 80 },
     preservation: { passed: true }, errors: [], status: 'passed', completed_at: new Date(START).toISOString(), evidence: {} };
@@ -336,7 +370,7 @@ test('a bound controller abort interrupts a control wait before its timeout', as
 
 /** The explicit DOM mode is an isolated synthetic fixture, never a reference client run. */
 export async function runReferenceDOMGuards(argv) {
-  const domTool = WORK + '/reference-library-changed-ui-js-tool-01';
+  const domTool = WORK + '/reference-library-changed-ui-js-tool-02';
   check(process.platform === 'linux' && process.getuid?.() === 0 && SELF === domTool + '/test-client-browser-library-changed-reference.mjs');
   check(Array.isArray(argv) && argv.length === 9 && argv[0] === '--dom'); const values = {};
   for (let index = 1; index < argv.length; index += 2) {
