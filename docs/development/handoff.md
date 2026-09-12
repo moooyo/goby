@@ -2949,6 +2949,9 @@ each increment still needs its own source, runtime and publication evidence.
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |
 
 Other DTO fields, global projections, events, subtitles and NextUp remain open.
+The [global NextUp acceptance plan](nextup-global-acceptance-plan.md) defines
+the next bounded public-reference matrix, ordered durable regressions and
+real-client playback/refresh gate. It is planned and has not been executed.
 
 M7 remains deferred. Software success is not GPU verification; matching routes
 alone is not third-party playback compatibility. These priorities remain open
