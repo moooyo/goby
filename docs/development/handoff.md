@@ -6,10 +6,12 @@ checks. Its 98 product-file changes are committed and pushed to `origin/main`,
 and the candidate now runs source55/schema28 after a successful independently
 attested upgrade. The primary remains source32/schema27.** The real storage-binding management UI gate also
 passed its fifth run with all 15 checks, ten IPC stages and complete cleanup.
-The latest source55 original-client v1 run failed during setup before the
-`browser/` directory or login; its failed scope is independently sealed and
-client acceptance is still open. TOOL02/v2 passed 59 controller guards remotely,
-but its JavaScript repairs and remaining verification are not complete.
+The latest source55 original-client v2 run passed setup and viewer B login but
+failed to observe the target card within 25 seconds after opening Movies.
+Its failed scope is now independently sealed, including the exact owned-session
+ledger and browser closure. The earlier v1 remains independently sealed.
+TOOL03/v3 is being prepared with complete continuation evidence and bounded
+discovery diagnostics; original-client acceptance is still open.
 Source55 adds the two-file Movies CollectionFolder direct-detail `Subviews`
 repair. Remote gofmt made no changes and formal source preflight passed. The
 [preparation receipt](collection-folder-source55-preparation.json)
@@ -58,6 +60,8 @@ The four final TOOL05 upgrade source files and 13 safe upgrade evidence files
 were then pushed as `212dc387581d9fffddfc7337bbfee1e77c2d04f4`; all 17 index
 files matched their frozen raw bytes. This commit contains tools/evidence only;
 the product publication authority remains `16d75c38064008680fa60839c637efee2f12f2ae`.
+The eight frozen v2 client tools and six safe evidence files were subsequently
+pushed as `93e88dc2250d8ccfc094cee6a24e2e5e0da25740`; product authority is unchanged.
 The candidate schema28 upgrade **passed** in TOOL05 run
 `20260912_100845_47bff13c329b`, with evidence under
 `/opt/goby-test/exec-work-m3e/client-schema28-source55-upgrade-20260912_100845_47bff13c329b`.
@@ -78,8 +82,17 @@ runtime SHA-256 is
 `1f245cd8f8c19dbe0b96b803dc8c60dd0cd4b7b7e2a8d99ccc2541e9430c4a7b`.
 The accepted upgrade authority is the successful run's `after-full.json`, SHA-256
 `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d`.
-Its 75 sessions, 64 devices and 167 audits remain unchanged. The earlier
-`2659f45d...` schema27 snapshot is pre-upgrade history, not a current baseline.
+The upgrade preserved 75 sessions, 64 devices and 167 audits. The later v2
+client attempt added one closed session, one device and two audits, so current
+counts are **76 sessions, 65 devices and 169 audits**. Its actual private
+`/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v2/after-full.json`
+has SHA-256 `a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc`;
+the independently sealed current snapshot is
+`/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-02/independent-after-full.json`,
+SHA-256 `6dfe6cbbf2288b21a66466719067b2c0d063bb588e693e06479d20da4feb9cd4`.
+These snapshots differ only in `captured_at`. `7b61f5c9...` remains upgrade
+evidence, not a current database snapshot with zero session/device/audit delta. The older
+`2659f45d...` schema27 snapshot is pre-upgrade history.
 
 TOOL05 passed [94 Python guards](client-schema28-tool05-guards.json),
 [seven Go guards](client-schema28-tool05-go-guards.json), its
@@ -188,11 +201,50 @@ actual `0600` mode by expecting `0644`, and treated legitimate index/sequence
 columns as ordinary-table columns. The driver's `checkedHomeFile` path also
 uses ordinary `JSON.parse`, which rounds large integers. A separate lossless
 diagnostic exposed incompatible BigInt cloning; that is not evidence that the
-actual v1 failed with a BigInt exception. TOOL02/v2 addresses these setup issues
-and has passed [59 controller guards](client-library-changed-source55-v2-controller-guards.json)
-remotely, SHA-256 `3029eedce04297c4a10a2ec1a786a9168a4dccd00fbfdecb94c6f8417a75ad10`.
-Its JavaScript repairs are still in progress, without complete validation or
-live acceptance.
+actual v1 failed with a BigInt exception. TOOL02/v2 repaired those setup paths
+and passed [348 loader / 54 driver guards](client-library-changed-source55-v2-guards.json),
+SHA-256 `bb73a096ccdcd2e46fec871e7eac91007c2fcc334bff43cf97c11d528ff8426f`,
+[127 actor guards](client-library-changed-source55-v2-actor-guards.json), SHA-256
+`c69caf2ad88daf339e414709634f800b2263b6750a8296c8d183cf2a5576a1a7`, and
+[59 controller guards](client-library-changed-source55-v2-controller-guards.json),
+SHA-256 `3029eedce04297c4a10a2ec1a786a9168a4dccd00fbfdecb94c6f8417a75ad10`.
+The [seven real-document checks](client-library-changed-source55-v2-real-documents.json),
+SHA-256 `f27ff9d00c683b4dae080a8e19b81f6d46b76459ba387a1575a234a666816f8a`,
+passed against immutable records, the restricted current-file reader and `0600`
+files. That check only rebound the v2 scope envelope; it was not an actual new
+before-snapshot. The [fresh Python preflight](client-library-changed-source55-v2-preflight.json),
+SHA-256 `c0e6b13db1dbdc045bdd41e6fe620c14e633d8dc4a6bcbc2cbd3e4e7003e8068`,
+also passed.
+
+The [actual v2 report](client-library-changed-source55-v2.json) and
+[browser report](client-library-changed-source55-v2-browser.json) record successful
+setup and viewer B login, followed by `library_changed_target_card_not_observed`
+after a 25-second Movies discovery wait. Catalog observations counted two
+physical requests and two browser frames. The retained report lacks the final
+DOM and catalog-response projections, so it does not establish the root cause
+or a DTO defect. No native operation or metadata write occurred. The ledger is
+one new session, one device, two audits and zero metadata revision delta; B
+logged out, the worker/browser/proxy closed, and old rows, sequences and private
+state were preserved. The [independent v2 terminal](client-library-changed-source55-v2-terminal.json),
+SHA-256 `b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6`,
+records `failed_scope_sealed` and `client_acceptance: false`. It independently
+confirms the exact ledger, session revocation, UI logout and token rejection,
+capability registration and browser/context/proxy closure. Both exact unit
+invocations exited with status1, MainPID0 and empty recursive cgroups. The v2
+scope/tool files and old v1 files are unchanged; candidate, primary, media and
+old rows/sequences/private state are preserved. No additional cleanup was
+required. The complete inventory SHA-256 is
+`3ef622b6f1724c996177ab7a2673b34c9d16a41608957f8546c0ac24d2085eaf`.
+Both failed client scopes are sealed and consumed, without client acceptance.
+
+TOOL03/v3 is being developed to bind the complete v2 terminal and exact
+1-session/1-device/2-audit continuation ledger, rather than changing counts
+alone. Its bounded discovery diagnostics will retain the last DOM, reads,
+public API projections and a safe screenshot without relaxing target-card
+matching. Remaining verification and a fresh live run are still required.
+The [main schema28 upgrade plan](main-schema28-upgrade-plan.md) was reviewed and
+published as `933257c913cd36a57c26c72bb324f73b57441ecd`. Its four tools are being
+implemented; their verification and main-environment deployment have not occurred.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.
 The preceding source44 product checkpoint passed 2,002 tests;
@@ -255,7 +307,8 @@ That capture left **75 sessions, 64 devices and 167 audits**, which the later
 upgrade preserved. Its historical schema27 authority is
 `collection-folder-contract-v1/after-full.json`,
 SHA-256 `2659f45dfa82d8568b07375d04c08cd4ba216defcfa2a4a1c269867b176573be`.
-Use the accepted schema28 `7b61f5c9...` after-state above for new candidate work.
+The accepted schema28 upgrade and subsequent v2 continuation are recorded above;
+new candidate work must account for both, rather than reuse this historical baseline.
 The [independent terminal](collection-folder-contract-terminal.json), SHA-256
 `289b58f779489f9af488bc14e5075c9f0d4b120797b9daa9bffb273d491a100e`,
 confirms exit0, MainPID0, the original invocation and an empty recursive cgroup.
@@ -277,10 +330,10 @@ direct-detail array, preserving its order and duplicate value. Views, ordinary
 item lists, other collection types and generic projection switches are unchanged.
 Other DTO differences and the specific cause of the prior client `includes`
 error remain unproven. Source55 targeted/full verification, publication and
-candidate deployment passed. The fresh client v1 passed its final bindings,
-guards and preflight but failed before login; its failed scope is now
-independently sealed. Finish TOOL02/v2 repairs and verification before a
-separate new live scope.
+candidate deployment passed. Client v1 failed before login and is independently
+sealed. The later v2 passed setup/login but did not observe the target Movies
+card; its failed scope is independently sealed. Complete TOOL03/v3 continuation
+binding and diagnostics before a separately verified new live scope.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -2658,7 +2711,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Source55 verification, publication and schema28 candidate deployment passed; candidate remains PID1458051 at upgrade authority `7b61f5c9...` with 75 sessions/64 devices/167 audits, while primary stays source32/schema27. Original-client v1 passed final TOOL05 bindings, loader315/driver52/controller59 guards and Python preflight, then failed setup before browser/login with zero business delta; its failed scope is independently sealed. TOOL02/v2 passed 59 controller guards remotely; finish its JavaScript repairs and remaining verification before a new navigation/automatic-refresh run. Main deployment and broader M2-M6 work remain open. Consumed UI/full/upgrade/client scopes cannot be replayed; other DTO fields, global projections, events, subtitles and NextUp remain open. |
+| P1 — M2/M3 / catalog and client acceptance | Source55 verification, publication and schema28 candidate deployment passed; candidate remains PID1458051, now with 76 sessions/65 devices/169 audits at independently sealed snapshot `6dfe6cbb...`; primary stays source32/schema27. Upgrade authority `7b61f5c9...` is historical state evidence. Client v1 and v2 are independently sealed; v2 passed guards/preflight/setup/login but failed target-card discovery with +1 session/+1 device/+2 audits and no metadata write. Bind TOOL03/v3 to the complete v2 terminal and continuation ledger, and verify bounded DOM/API/screenshot diagnostics before a fresh navigation/automatic-refresh run. The [main upgrade plan](main-schema28-upgrade-plan.md) is published, but its four tools are still in implementation without verification or deployment. Broader M2-M6 work remains open. Consumed scopes cannot be replayed; other DTO fields, global projections, events, subtitles and NextUp remain open. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

@@ -24,8 +24,8 @@ The broader M2-M6 acceptance obligations and existing M7 deferred scope remain
 unchanged. Source55 verification, product publication and the independently
 [attested candidate schema28 deployment](client-schema28-accepted-attestation.json)
 are complete. Fresh original-client acceptance remains pending.
-Its v1 attempt failed during discovery before browser creation or login;
-the [failed scope is now independently sealed](client-library-changed-source55-v1-terminal.json).
+Its v2 attempt completed setup and B login but failed to observe the target card
+after Movies navigation; the [failed scope is independently sealed](client-library-changed-source55-v2-terminal.json).
 The accepted UI gate retains its actual source54 frozen inputs below.
 
 | Scope | Observed outcome | Current disposition |
@@ -387,8 +387,8 @@ and ordinary rehearsal disposal, baseline revalidation before shutdown, one
 stop, [transactional migration](client-schema28-accepted-migration.json), an
 independent 58-asset web copy at `/opt/goby-client-m3e/admin`, one start and five
 anonymous GETs before attestation. All old columns in 35 tables, five sequences,
-ACLs, credentials and recovery state were preserved. Counts remain 75 sessions,
-64 devices and 167 audits. The four roots remain at revision 1 with the new
+ACLs, credentials and recovery state were preserved. At upgrade completion,
+counts were 75 sessions, 64 devices and 167 audits. The four roots remain at revision 1 with the new
 binding fields NULL; historical audit fields have their migration defaults.
 The absent master key remains absent with no application keys. The primary
 remains source32/schema27 at PID `762090`; shared web and proxy state are unchanged.
@@ -399,7 +399,11 @@ remains source32/schema27 at PID `762090`; shared web and proxy state are unchan
 | Upgrade controller invocation | `3821d3052fc24aa0ad23a3194300cd6b` |
 | STATE SHA256 | `bb78a846d2d4b69b7e2550ed9e367549cbe2d0b763e2b69270ea98bed6570d82` |
 | Runtime SHA256 | `1f245cd8f8c19dbe0b96b803dc8c60dd0cd4b7b7e2a8d99ccc2541e9430c4a7b` |
-| `after-full.json` SHA256 | `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d` |
+| Upgrade authority `after-full.json` SHA256 | `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d` |
+| Run-v2 `after-full.json` SHA256 | `a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc` |
+| Latest independent post-v2 full snapshot SHA256 | `6dfe6cbbf2288b21a66466719067b2c0d063bb588e693e06479d20da4feb9cd4` |
+| [Independent v2 failed terminal](client-library-changed-source55-v2-terminal.json) SHA256 | `b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6` |
+| Latest candidate counts | 76 sessions, 65 devices, 169 audits |
 | [Upgrade report](client-schema28-accepted.json) SHA256 | `328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832` |
 | [Independent attestation](client-schema28-accepted-attestation.json) SHA256 | `ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032` |
 
@@ -426,26 +430,70 @@ MainPID0 and empty recursive cgroups, the browser directory is absent, and
 cleanup was `not_required`. Old rows, sequences, private files, media, candidate
 and primary were preserved. Its independent snapshot `569bb377...` has the same
 logical state apart from `captured_at`; `7b61f5...` remains the upgrade authority.
-V1 is consumed and must not be replayed. Candidate source55/schema28 and primary
-source32/schema27 remain unchanged, and no original-client acceptance is established.
+V1 is consumed and must not be replayed. It preserved the candidate and primary,
+and established no original-client acceptance.
 
 The [setup diagnosis](client-library-changed-source55-v1-setup-diagnosis.json)
 identified loader assumptions that rejected frozen catalog/manifest files with
 mode `0600` while expecting `0644`, and misclassified legitimate index/sequence
-columns as ordinary table columns. The actual driver's `checkedHomeFile` path
-uses ordinary `JSON.parse`, which can round large integers. A separate pure
+columns as ordinary table columns. The v1 driver's `checkedHomeFile` path
+used ordinary `JSON.parse`, which can round large integers. A separate pure
 diagnostic using lossless JSON exposed an incompatible BigInt clone path; that
-is not an actual v1 BigInt exception. The replacement original-client TOOL02/v2
-controller [passed 59 remote guards](client-library-changed-source55-v2-controller-guards.json), while its JavaScript repairs and remaining
-verification are unfinished. No v2 live acceptance is established.
+is not an actual v1 BigInt exception.
 
-1. Complete the file-mode, catalog-column and lossless-integer JavaScript fixes in the
-   new TOOL02/v2 scope. Bind its complete tool/input closure to the accepted
-   TOOL05 upgrade and current candidate authority, then complete remaining guards
-   and preflight on `test-env` before live admission.
-2. Complete navigation and automatic-refresh acceptance in that fresh admitted
+TOOL02/v2 passed [348 loader and 54 driver guards](client-library-changed-source55-v2-guards.json),
+[127 actor guards](client-library-changed-source55-v2-actor-guards.json) and
+[59 controller guards](client-library-changed-source55-v2-controller-guards.json).
+Its [seven real-document checks](client-library-changed-source55-v2-real-documents.json)
+used retained immutable records, the narrow current reader and mode `0600` inputs.
+Only the v2 scope envelope was rebound for those checks; they do not constitute
+an actual fresh before-snapshot. The separate
+[fresh Python preflight](client-library-changed-source55-v2-preflight.json) passed.
+Eight client tools and six safe evidence files were published in commit
+`93e88dc2250d8ccfc094cee6a24e2e5e0da25740`; product authority remains
+`16d75c38064008680fa60839c637efee2f12f2ae`.
+
+The [actual v2 controller report](client-library-changed-source55-v2.json) and
+[browser report](client-library-changed-source55-v2-browser.json) record successful
+setup and B login, followed by Movies navigation and two physical/two frame
+catalog observations. The target card was not observed within 25 seconds,
+producing `library_changed_target_card_not_observed`. The report lacks the last
+discovery DOM and corresponding API projections, so the root cause is unknown
+and a DTO defect has not been established. No native administrator operation or
+metadata write was dispatched. The ledger records +1 session, +1 device,
++2 audits and revision delta 0, preserving old rows, sequences and private data;
+restoration was not required. The
+[independent v2 failed terminal](client-library-changed-source55-v2-terminal.json)
+now records `failed_scope_sealed` and reconfirms B revocation, UI logout and token
+rejection, capability registration and browser/context/proxy closure. Complete
+v2 root/tool files and the old v1 inventory are unchanged; candidate, primary,
+media, old rows, sequences and private data are preserved. No further cleanup
+was required. The failed scope is independently closed, with client acceptance
+still false.
+
+The latest independent state is 76 sessions, 65 devices and 169 audits at
+`6dfe6cbb...`; the run-v2 snapshot `a13f976b...` differs only in `captured_at`.
+`7b61f5...` remains upgrade authority only and cannot
+serve as a current zero-delta database baseline. V3 TOOL03/ROOTv3 is under
+development: its admission must bind the independent v2 terminal and the exact
++1/+1/+2 ledger, not merely change expected counts. It will add bounded final
+discovery DOM, read/API projections and a safe screenshot without relaxing the
+target-card matching rule. No M3 acceptance or primary-environment upgrade is
+claimed.
+
+The reviewed [main schema28 upgrade plan](main-schema28-upgrade-plan.md) was
+published in commit `933257c913cd36a57c26c72bb324f73b57441ecd`. Its four main
+upgrade tools are being implemented and have not been verified or deployed.
+
+1. Bind v3 to the complete independently sealed v2 terminal, its exact
+   +1/+1/+2 owned ledger and latest independent full snapshot, including the
+   unchanged scope/tool inventory. Keep sealed v1 immutable and do not replay it.
+2. Finish the bounded discovery diagnostics and TOOL03/ROOTv3 implementation,
+   then complete its remaining guards and preflight on `test-env` using the
+   actual current authority before a fresh live run.
+3. Complete navigation and automatic-refresh acceptance in that fresh admitted
    original-client scope with new owned sessions and independent cleanup/terminal
    proof. Native administrator UI acceptance and deployment do not establish
    those client outcomes.
-3. Keep broader M2-M6 acceptance open and retain the existing M7 deferred scope;
+4. Keep broader M2-M6 acceptance open and retain the existing M7 deferred scope;
    this accepted storage-binding gate does not reduce either scope.
