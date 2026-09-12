@@ -35,11 +35,11 @@ import urllib.parse
 
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'client-library-changed-source55-tool-06b'
-ROOT = WORK / 'client-library-changed-ui-source55-v6'
+TOOL = WORK / 'client-library-changed-source55-tool-07'
+ROOT = WORK / 'client-library-changed-ui-source55-v7'
 BROWSER_ROOT = ROOT / 'browser'
-WORKER_UNIT = 'goby-client-library-changed-ui-source55-v6.service'
-CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v6.service'
+WORKER_UNIT = 'goby-client-library-changed-ui-source55-v7.service'
+CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v7.service'
 CGROUP = '/system.slice/' + WORKER_UNIT
 MARKER = 'goby-client-library-changed-observation-v1'
 INPUT_MARKER = 'goby-client-library-changed-input-v1'
@@ -218,6 +218,545 @@ HISTORY_V5_GUARDS = {
     'retained_passed_counts': {'actor': 127, 'driver': 64, 'loader': 559},
     'runtime_controller_source': HISTORY_V5_SEAL_RECORDS['controller_source'], 'runtime_sources_unchanged': True,
 }
+HISTORY_V6_PINS = {
+    "input": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/input.json",
+        "sha256": "db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e"
+    },
+    "browser_report": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/browser/report.json",
+        "sha256": "91bf25713d2b173fc4f6d337a792aeeb7cebbcf1ac38881ced9fa7346a6e61d9"
+    },
+    "controller_report": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/report.json",
+        "sha256": "1ffdfab90a9231d7d387a4d2d90f61bdccdffe246b3f1d10a303467d810cfb5e"
+    },
+    "terminal": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/failed-terminal.json",
+        "sha256": "7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d"
+    },
+    "before_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/before-full.json",
+        "sha256": "8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9"
+    },
+    "after_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json",
+        "sha256": "185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3"
+    }
+}
+HISTORY_V6_INDEPENDENT = {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/independent-after-full.json",
+    "sha256": "b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93"
+}
+HISTORY_V6_NATIVE_PIN = {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-native-identity-06/report.json",
+    "sha256": "05109498040178f8de306c5830c3522792ae89a6c8a68c71ac64b4d45aff8be4"
+}
+HISTORY_V6_DISCOVERY = {
+    "accepted": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/accepted-stage-discovery.json",
+        "sha256": "54f8e01e1156b9898f4bd5b3e5e24f25bf6c1addf5c794fa2416a779e2561140"
+    },
+    "stage": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/browser/stage-discovery.json",
+        "sha256": "f8499f240bf4e3968c252e89d476216570ac3a27bbc8eb43bd32bf44e2d7cd60"
+    },
+    "session_private": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/browser/session-private.json",
+        "sha256": "86732ce8bb705ae8a766c63734e9ab217e57186c047d92f9033f5fc19bfb1aed"
+    },
+    "abort": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/abort.json",
+        "sha256": "119c8068409ece1a84a5716bef805f62d9de3c700014752c299972109985a44f"
+    },
+    "browser_abort": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/browser/abort.json",
+        "sha256": "b6025b624f8b9db49cd38745dd7a9f016533c86c55be0e2cfe13c52b5d6e9cfe"
+    },
+    "close": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/control-close.json",
+        "sha256": "3198438bcdb50363e35dd101ab9ce27e094b69dacb59127992c62e4346a48183"
+    }
+}
+HISTORY_V6_TERMINAL_FIXED = {
+    "accepted_browser_stages": [
+        "discovery"
+    ],
+    "all_prior_scopes_preserved": True,
+    "automatic_retry": False,
+    "auxiliary_units": {
+        "goby-client-library-changed-source55-dom-v6.service": {
+            "properties": {
+                "ActiveState": "failed",
+                "ControlGroup": "",
+                "ExecMainStatus": "1",
+                "InvocationID": "877ce871b5a74b5fa0f83ca7464d7bbc",
+                "MainPID": "0",
+                "Result": "exit-code",
+                "SubState": "failed"
+            },
+            "receipt": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06/failed-terminal.json",
+                "sha256": "c05cfb5546db18631e437ccd75323dd593124d29788d5206a42fa7e5beb9b2f6"
+            },
+            "recursive_cgroup": {
+                "exists": False,
+                "files_checked": 0,
+                "path": "/sys/fs/cgroup/system.slice/goby-client-library-changed-source55-dom-v6.service",
+                "processes": 0
+            }
+        },
+        "goby-client-library-changed-source55-dom-v6b.service": {
+            "properties": {
+                "ActiveState": "active",
+                "ControlGroup": "",
+                "ExecMainStatus": "0",
+                "InvocationID": "668d72b627214f9ca11a999283b27052",
+                "MainPID": "0",
+                "Result": "success",
+                "SubState": "exited"
+            },
+            "receipt": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06b/terminal.json",
+                "sha256": "1b25b5ed9c8d6b1ce63ef8ac72aa2eed5c474d6450e8cb1f36155c58a1bce45f"
+            },
+            "recursive_cgroup": {
+                "exists": False,
+                "files_checked": 0,
+                "path": "/sys/fs/cgroup/system.slice/goby-client-library-changed-source55-dom-v6b.service",
+                "processes": 0
+            }
+        }
+    },
+    "baseline_chain_verified": True,
+    "before_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/before-full.json",
+        "sha256": "8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9"
+    },
+    "browser": {
+        "browser_closed": True,
+        "capabilities_verified": True,
+        "capability_requests": 1,
+        "context_closed": True,
+        "failure": "library_changed_controller_aborted",
+        "failure_counters": {
+            "observer_errors": 0,
+            "page_errors": 0,
+            "proxy_failed": 0,
+            "proxy_rejected": 0,
+            "websocket_failed": 0
+        },
+        "http_pending": 0,
+        "login_proven": True,
+        "owned_session_revoked": True,
+        "proxy_closed": True,
+        "result": "failed",
+        "sockets_remaining": 0,
+        "ui_logout_and_token_rejection_proven": True,
+        "websocket_active": 0,
+        "websocket_closed": 1,
+        "websocket_opened": 1,
+        "websocket_pending": 0
+    },
+    "browser_report": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/browser/report.json",
+        "sha256": "91bf25713d2b173fc4f6d337a792aeeb7cebbcf1ac38881ced9fa7346a6e61d9"
+    },
+    "candidate_preserved": True,
+    "cleanup": "owned_sessions_already_closed",
+    "cleanup_needed": False,
+    "cleanup_performed": False,
+    "client_acceptance": False,
+    "controller_source": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-06b/observe-client-library-changed-source55.py",
+        "sha256": "aebd74bea66f02ffdb054e2cc671a343fe6c81cc1fd918cabbc187257aa41334"
+    },
+    "cumulative_totals": {
+        "activity_entries": 179,
+        "devices": 69,
+        "sessions": 81
+    },
+    "current_matches_prior_after": True,
+    "dispatched_native_intents": [
+        "login",
+        "logout",
+        "exact401"
+    ],
+    "exact_owned_additions_retained": True,
+    "failure": {
+        "failure_type": "ObservationError",
+        "reason": "A timestamp is not UTC.",
+        "stage": "execution_discovery"
+    },
+    "full_m3_complete": False,
+    "history_preservation": [
+        {
+            "after_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v2/after-full.json",
+                "sha256": "a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc"
+            },
+            "independent_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-02/independent-after-full.json",
+                "sha256": "6dfe6cbbf2288b21a66466719067b2c0d063bb588e693e06479d20da4feb9cd4"
+            },
+            "ledger": {
+                "metadata_revision_delta": 0,
+                "new_audits": 2,
+                "new_devices": 1,
+                "new_sessions": 1,
+                "old_rows_sequences_private_preserved": True,
+                "owned_sessions_closed": True
+            },
+            "version": 2
+        },
+        {
+            "after_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v3/after-full.json",
+                "sha256": "a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd"
+            },
+            "independent_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-03/independent-after-full.json",
+                "sha256": "668975cd51c66888fb363ba273fe15dec70646d87e9549adf0fbe79c20b4f3f0"
+            },
+            "ledger": {
+                "metadata_revision_delta": 0,
+                "new_audits": 2,
+                "new_devices": 1,
+                "new_sessions": 1,
+                "old_rows_sequences_private_preserved": True,
+                "owned_sessions_closed": True
+            },
+            "version": 3
+        },
+        {
+            "after_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v4/after-full.json",
+                "sha256": "bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f"
+            },
+            "independent_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-04/independent-after-full.json",
+                "sha256": "5ceeb7916191ceaa223a27062ed399614e906481528a9038400eed3c64c882f1"
+            },
+            "ledger": {
+                "metadata_revision_delta": 0,
+                "new_audits": 2,
+                "new_devices": 1,
+                "new_sessions": 1,
+                "old_rows_sequences_private_preserved": True,
+                "owned_sessions_closed": True
+            },
+            "version": 4
+        },
+        {
+            "after_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v5/after-full.json",
+                "sha256": "a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6"
+            },
+            "independent_snapshot": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/independent-after-full.json",
+                "sha256": "6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5"
+            },
+            "ledger": {
+                "metadata_revision_delta": 0,
+                "new_audits": 2,
+                "new_devices": 1,
+                "new_sessions": 1,
+                "old_rows_sequences_private_preserved": True,
+                "owned_sessions_closed": True
+            },
+            "version": 5
+        }
+    ],
+    "http_requests": 0,
+    "independent_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/independent-after-full.json",
+        "sha256": "b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93"
+    },
+    "input": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/input.json",
+        "sha256": "db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e"
+    },
+    "ledger": {
+        "metadata_revision_delta": 0,
+        "new_audits": 4,
+        "new_devices": 1,
+        "new_sessions": 2,
+        "old_rows_sequences_private_preserved": True,
+        "owned_sessions_closed": True
+    },
+    "library_changed_client_acceptance": False,
+    "marker": "goby-source55-failed-ui-terminal-v6",
+    "media_fact_sha256": "0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d",
+    "media_preserved": True,
+    "metadata_requests": 0,
+    "native_authentication": {
+        "exact401_status": 401,
+        "login_response_complete": True,
+        "logout_status": 204,
+        "metadata_requests": 0,
+        "native_login_failure_type": "ObservationError",
+        "native_login_validation_passed": False,
+        "owned_session_closed": True,
+        "private": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-session-private.json",
+            "sha256": "c4f7dfcdc31031e03205b37e1be7d03c2106881b736342155bb88346c46bc41f"
+        },
+        "received_cookie_owned": True,
+        "received_header": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-cookie-received-private.json",
+            "sha256": "d82b0aae258c72eb8b486259b0d1ba9087f808e244e8d2b869e79e81b63b51fe"
+        },
+        "requests": {
+            "exact401": {
+                "complete": True,
+                "intent": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-intent.json",
+                    "sha256": "c803161d8fbfad1038ed6583801ea0429cd9300cee301fdc15445d0c814ad23b"
+                },
+                "result": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-result.json",
+                    "sha256": "fcc3b23cf61075cc79e25df1a21f46de765a0e467111e05caa74253f8d7ea701"
+                },
+                "status": 401
+            },
+            "login": {
+                "complete": True,
+                "intent": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-intent.json",
+                    "sha256": "7b5e170e0fa6f9b2804bd275e0c0915cef6887beb5605d02b1c26b338bff085c"
+                },
+                "result": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-result.json",
+                    "sha256": "a47b15514956048dd329c544b1c39fd2d366c56d4fa4d87adcedf4590ee921b2"
+                },
+                "status": 200
+            },
+            "logout": {
+                "complete": True,
+                "intent": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-intent.json",
+                    "sha256": "0e9de3666eda24eacece40cc4eb794cf2f75e46b3a134badf9258e72a4f39c85"
+                },
+                "result": {
+                    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-result.json",
+                    "sha256": "3b4a26aedffe4d19d78d291684aeb1b3ce949e72fb40f077c4c2e700893cac67"
+                },
+                "status": 204
+            }
+        }
+    },
+    "observed_run_status": "failed",
+    "old_rows_sequences_private_preserved": True,
+    "owned_sessions_closed": True,
+    "phase": "discovery",
+    "predecessor_inventories": [
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-01/failed-scope-files.json",
+            "sha256": "62cc954df4141a3ddb3faf9e99772a9055f7c5f864f68ee1d30728ae00144872"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-02/failed-scope-files.json",
+            "sha256": "3ef622b6f1724c996177ab7a2673b34c9d16a41608957f8546c0ac24d2085eaf"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-03/failed-scope-files.json",
+            "sha256": "a27ba50b166ef0752e466960d4eab94c457e699228daf65eeed366305b5a287f"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-04/failed-scope-files.json",
+            "sha256": "2618849ab3caa0d8756f372e0a3c9022f6d3bc7b2ef325a8e623bcd27172e407"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/failed-scope-files.json",
+            "sha256": "190b6ea5aaad2d4cb7ab8184623b5abfd42dc5493a6c640e5de4836399ae3970"
+        }
+    ],
+    "predecessor_terminals": [
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-01/failed-terminal.json",
+            "sha256": "ecdc5fdf48bf7d471676e6786d52ed61ce1be3053537ce36fde5d44a3d1552a6"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-02/failed-terminal.json",
+            "sha256": "b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-03/failed-terminal.json",
+            "sha256": "e53e9777337c8c0b33a0cc86dad2e22c79d5e7f2601aa64dd68c6ed91cd9ecf1"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-04/failed-terminal.json",
+            "sha256": "021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012"
+        },
+        {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/failed-terminal.json",
+            "sha256": "348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d"
+        }
+    ],
+    "predecessor_units_preserved": True,
+    "prerequisites": {
+        "pure_guards": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-final-verification-06b/guards-report.json",
+            "sha256": "6fe209c8913fba976e9c2fe86ce943bf4b0d23a57af26cb112adbbb4c82af5f6"
+        },
+        "python_preflight": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-preflight-06b/report.json",
+            "sha256": "54cd34c57ccb715d1b64284b11eec7cd2ae2fbe04daaf0d2374843c3f3e19102"
+        },
+        "real_documents": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-setup-diagnosis-07/stdout.json",
+            "sha256": "d0829b4c50ded8e050ad9d3836477189f844fe1a637473fee3193c96aaaf1cda"
+        },
+        "real_dom": {
+            "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06b/terminal.json",
+            "sha256": "1b25b5ed9c8d6b1ce63ef8ac72aa2eed5c474d6450e8cb1f36155c58a1bce45f"
+        }
+    },
+    "primary_fact_sha256": "0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a",
+    "primary_invocation_id": "bb94d74b475f4382a6ec6f6df181dd74",
+    "primary_preserved": True,
+    "primary_process": {
+        "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7",
+        "pid": 762090,
+        "start_ticks": 7637121
+    },
+    "prior_after_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json",
+        "sha256": "185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3"
+    },
+    "prior_baseline": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/independent-after-full.json",
+        "sha256": "6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5"
+    },
+    "prior_failed_verification_preserved": True,
+    "report": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/report.json",
+        "sha256": "1ffdfab90a9231d7d387a4d2d90f61bdccdffe246b3f1d10a303467d810cfb5e"
+    },
+    "reserved_native_intents": [
+        "login",
+        "logout",
+        "exact401"
+    ],
+    "restoration": "not_required",
+    "schema": 28,
+    "scope": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6",
+    "scope_files": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/failed-scope-files.json",
+        "sha256": "ac5150779b1e8b5e8467ca929729773ad80c575c299b58d50bcaa857fb67630d"
+    },
+    "scope_files_unchanged": True,
+    "seal_script": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/seal-failed-terminal.py",
+        "sha256": "ecbba4bbaa685f95db96178c707200b76aee8c605e1bf40603ceb42bb83f38a7"
+    },
+    "service_writes": 0,
+    "sql_business_writes": False,
+    "status": "failed_scope_sealed",
+    "tool": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-06b",
+    "version": 1
+}
+HISTORY_V6_NATIVE_FIXED = {
+    "after_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json",
+        "sha256": "185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3"
+    },
+    "automatic_retry": False,
+    "before_snapshot": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/before-full.json",
+        "sha256": "8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9"
+    },
+    "client_acceptance": False,
+    "exact401_status": 401,
+    "full_m3_complete": False,
+    "header_status": 200,
+    "http_requests": 0,
+    "input": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/input.json",
+        "sha256": "db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e"
+    },
+    "kind": "admin",
+    "library_changed_client_acceptance": False,
+    "lifetime_hours": 24,
+    "login_response_complete": True,
+    "logout_status": 204,
+    "marker": "goby-source55-native-identity-v1",
+    "native_audits_verified": True,
+    "native_login_failure_type": "ObservationError",
+    "native_login_validation_passed": False,
+    "native_private": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-session-private.json",
+        "sha256": "c4f7dfcdc31031e03205b37e1be7d03c2106881b736342155bb88346c46bc41f"
+    },
+    "new_administrator_sessions": 1,
+    "owned_session_closed": True,
+    "projection_source": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-native-identity-06/project-native-identity.py",
+        "sha256": "83f90e3029362bcc6fd40ad8c0ea421891da1cfc775b9ccdb2e975e28246f866"
+    },
+    "received_cookie_owned": True,
+    "received_header": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-cookie-received-private.json",
+        "sha256": "d82b0aae258c72eb8b486259b0d1ba9087f808e244e8d2b869e79e81b63b51fe"
+    },
+    "requests": {
+        "exact401": {
+            "body_bytes": 149,
+            "body_sha256": "4350d3bf9c7f84a0507a0bcadc414bf7e7de40648527e4543a9a394463f7f12b",
+            "complete": True,
+            "intent": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-intent.json",
+                "sha256": "c803161d8fbfad1038ed6583801ea0429cd9300cee301fdc15445d0c814ad23b"
+            },
+            "result": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-result.json",
+                "sha256": "fcc3b23cf61075cc79e25df1a21f46de765a0e467111e05caa74253f8d7ea701"
+            },
+            "status": 401
+        },
+        "login": {
+            "body_bytes": 272,
+            "body_sha256": "78f9c5001ee426b92c26dd797df7fb93f89714878d6b1b24d1f735706164de6b",
+            "complete": True,
+            "intent": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-intent.json",
+                "sha256": "7b5e170e0fa6f9b2804bd275e0c0915cef6887beb5605d02b1c26b338bff085c"
+            },
+            "result": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-result.json",
+                "sha256": "a47b15514956048dd329c544b1c39fd2d366c56d4fa4d87adcedf4590ee921b2"
+            },
+            "status": 200
+        },
+        "logout": {
+            "body_bytes": 0,
+            "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "complete": True,
+            "intent": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-intent.json",
+                "sha256": "0e9de3666eda24eacece40cc4eb794cf2f75e46b3a134badf9258e72a4f39c85"
+            },
+            "result": {
+                "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-result.json",
+                "sha256": "3b4a26aedffe4d19d78d291684aeb1b3ce949e72fb40f077c4c2e700893cac67"
+            },
+            "status": 204
+        }
+    },
+    "scope": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6",
+    "service_writes": 0,
+    "session_id": "71020063951971eff0bb5699d87eb0e0",
+    "source_files_unchanged": True,
+    "sql_queries": 0,
+    "status": "verified",
+    "terminal": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/failed-terminal.json",
+        "sha256": "7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d"
+    },
+    "token_sha256": "ca0338fefd06d4c5fb08797eecfad55f03e37731a8514fddc1482881d9a7c6dd",
+    "user_id": "0dd576d477e8acea871cb4b06cb11153",
+    "version": 1
+}
 FIXTURE = {
     'profile_receipt': (WORK / 'client-special-features-protocol-finalization-v1/completed.json', 'b443e5f6d5faceb3486d68644298b0a1527f6dcc1e4ac1109ff6d0c252fdfb36'),
     'profile_report': (WORK / 'client-special-features-protocol-finalization-v1/report.json', '929e6b6fc0014e6b3afc7ce023ea981b749ce884ed6eb33c34b3617ac116855d'),
@@ -312,6 +851,28 @@ def instant(value):
     return result
 
 
+def native_created_at_matches(public_value, stored_value):
+    """Compare only native User.CreatedAt RFC3339 output with a strict UTC row."""
+    pattern = r'([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|[+-][0-9]{2}:[0-9]{2})'
+    match = re.fullmatch(pattern, public_value) if isinstance(public_value, str) else None
+    require(match is not None, 'The native public creation timestamp is not strict RFC3339.')
+    zone = match.group(8)
+    offset = dt.timedelta(0)
+    if zone != 'Z':
+        hours, minutes = int(zone[1:3]), int(zone[4:6])
+        require(hours <= 23 and minutes <= 59 and zone != '-00:00',
+                'The native public creation timestamp has an invalid or unknown offset.')
+        offset = dt.timedelta(minutes=(hours * 60 + minutes) * (-1 if zone[0] == '-' else 1))
+    try:
+        public_second = dt.datetime(*(int(match.group(index)) for index in range(1, 7)),
+            tzinfo=dt.timezone(offset)).astimezone(dt.timezone.utc)
+    except (ValueError, OverflowError) as error:
+        raise ObservationError('The native public creation timestamp has invalid calendar fields.') from error
+    nanoseconds = int((match.group(7) or '').ljust(9, '0'))
+    stored = instant(stored_value)
+    return public_second == stored.replace(microsecond=0) and nanoseconds == stored.microsecond * 1000
+
+
 def revision(value):
     require(isinstance(value, str) and re.fullmatch('[1-9][0-9]{0,18}', value) and int(value) <= 9223372036854775807,
             'A metadata revision is not a bounded canonical string.')
@@ -391,7 +952,7 @@ def artifact_descriptor(value):
 
 
 def history_scope(version):
-    require(type(version) is int and version in (2, 3, 4, 5), 'Only the four sealed predecessor scopes may be read.')
+    require(type(version) is int and version in (2, 3, 4, 5, 6), 'Only the five sealed predecessor scopes may be read.')
     if version == 2:
         return {'root': PRIOR_ROOT, 'tool': PRIOR_TOOL, 'worker': PRIOR_WORKER, 'controller': PRIOR_CONTROLLER,
                 'pins': {name: PRIOR_PINS[key] for name, key in HISTORY_NAMES.items()}}
@@ -403,9 +964,13 @@ def history_scope(version):
         return {'root': WORK / 'client-library-changed-ui-source55-v4', 'tool': WORK / 'client-library-changed-source55-tool-04',
             'worker': 'goby-client-library-changed-ui-source55-v4.service',
             'controller': 'goby-client-library-changed-ui-source55-controller-v4.service', 'pins': HISTORY_V4_PINS}
-    return {'root': WORK / 'client-library-changed-ui-source55-v5', 'tool': WORK / 'client-library-changed-source55-tool-05',
+    if version == 5:
+        return {'root': WORK / 'client-library-changed-ui-source55-v5', 'tool': WORK / 'client-library-changed-source55-tool-05',
             'worker': 'goby-client-library-changed-ui-source55-v5.service',
             'controller': 'goby-client-library-changed-ui-source55-controller-v5.service', 'pins': HISTORY_V5_PINS}
+    return {'root': WORK / 'client-library-changed-ui-source55-v6', 'tool': WORK / 'client-library-changed-source55-tool-06b',
+            'worker': 'goby-client-library-changed-ui-source55-v6.service',
+            'controller': 'goby-client-library-changed-ui-source55-controller-v6.service', 'pins': HISTORY_V6_PINS}
 
 
 def validate_history_entry(entry, version):
@@ -434,8 +999,12 @@ def history_seal(version):
     if version == 4:
         return {'independent': HISTORY_V4_INDEPENDENT, 'records': HISTORY_V4_SEAL_RECORDS,
             'controller_invocation': '6e2d992e43414cdc9aaf0f37be3ee688', 'worker_invocation': '8886fd825c644124ab82696979db2e73'}
-    return {'independent': HISTORY_V5_INDEPENDENT, 'records': HISTORY_V5_SEAL_RECORDS,
+    if version == 5:
+        return {'independent': HISTORY_V5_INDEPENDENT, 'records': HISTORY_V5_SEAL_RECORDS,
             'controller_invocation': 'f47dfd37b99d435d95458d1401f215cd', 'worker_invocation': 'b8531eeb770e48559a5e3d42f2f4e6f0'}
+    return {'independent': HISTORY_V6_INDEPENDENT,
+            'records': {key: HISTORY_V6_TERMINAL_FIXED[key] for key in ('scope_files', 'seal_script', 'controller_source')},
+            'controller_invocation': 'aff7b1018c7542358bff7a52af59479d', 'worker_invocation': '04a5a5e520e54dad98bf3e551a88a706'}
 
 
 def validate_authority_input(value):
@@ -463,9 +1032,9 @@ def validate_authority_input(value):
     require(isinstance(authority, dict) and set(authority) == AUTHORITY_KEYS, 'Only the exact upgrade authority chain may admit this run.')
     for key in UPGRADE_AUTHORITY_KEYS:
         artifact_descriptor(authority[key])
-    require(isinstance(authority['history'], list) and len(authority['history']) == 4,
+    require(isinstance(authority['history'], list) and len(authority['history']) == 5,
             'Exactly the ordered sealed v2, v3, v4 and v5 history is required.')
-    for entry, version in zip(authority['history'], (2, 3, 4, 5)):
+    for entry, version in zip(authority['history'], (2, 3, 4, 5, 6)):
         validate_history_entry(entry, version)
     require(authority['upgrade_intent']['path'] == str(UPGRADE_TOOL / 'intent.json'), 'The upgrade intent is outside its frozen tool.')
     output = Path(authority['upgrade_report']['path']).parent
@@ -1603,14 +2172,14 @@ def validate_prior_ledger(baseline, before, after, proof):
     return result
 
 
-def validate_prior_documents(candidate, authority, prior_input, controller, browser, baseline, before, after, version=2):
+def validate_prior_documents(candidate, authority, prior_input, controller, browser, baseline, before, after, version=2, native_identity=None):
     scope = history_scope(version)
     root, tool, worker_unit, controller_unit = (scope[key] for key in ('root', 'tool', 'worker', 'controller'))
     expected_authority = {key: authority[key] for key in UPGRADE_AUTHORITY_KEYS}
     if version == 3:
         expected_authority.update(PRIOR_PINS)
-    elif version in (4, 5):
-        predecessors = (2, 3) if version == 4 else (2, 3, 4)
+    elif version in (4, 5, 6):
+        predecessors = {4: (2, 3), 5: (2, 3, 4), 6: (2, 3, 4, 5)}[version]
         expected_authority['history'] = [{'version': number, **history_scope(number)['pins']} for number in predecessors]
     expected_browser_authority = {**expected_authority, 'before_snapshot': authority['prior_before_snapshot']}
     require(isinstance(prior_input, dict) and set(prior_input) == {'marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate',
@@ -1632,29 +2201,33 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
             type(outer['pid']) is int and outer['pid'] > 1 and outer['boot_id'] == BOOT and
             isinstance(outer['start_ticks'], str) and re.fullmatch('[1-9][0-9]*', outer['start_ticks']),
             'The predecessor does not bind its one B actor and failed controller process.')
+    native_intents = ['login', 'logout', 'exact401'] if version == 6 else []
     require(controller.get('marker') == MARKER and type(controller.get('version')) is int and controller['version'] == 1 and
             controller.get('mode') == MODE and controller.get('status') == 'failed' and controller.get('phase') == 'discovery' and
             controller.get('input_sha256') == input_sha and controller.get('source_closure_sha256') == closure_sha and
             same(controller.get('authority'), expected_authority) and same(controller.get('controller'), outer) and
             same(controller.get('candidate_process'), candidate['process']) and controller.get('candidate_invocation') == candidate['invocation_id'] and
-            controller.get('state_sha256') == candidate['state_sha256'] and controller.get('reserved_native_intents') == [] and
-            controller.get('dispatched_native_intents') == [] and controller.get('restoration') == 'not_required' and
+            controller.get('state_sha256') == candidate['state_sha256'] and controller.get('reserved_native_intents') == native_intents and
+            controller.get('dispatched_native_intents') == native_intents and controller.get('restoration') == 'not_required' and
             all(controller.get(key) is False for key in ('restoration_required', 'browser_fallback_used', 'automatic_retry', 'sql_business_writes',
                 'candidate_or_primary_service_writes', 'worker_chain_ledger_passed', 'acceptance_ready_for_outer_terminal',
                 'library_changed_client_acceptance', 'client_acceptance', 'full_m3_complete')) and
-            isinstance(controller.get('errors'), list) and controller['errors'], 'The predecessor controller is not the retained pre-native failure.')
+            isinstance(controller.get('errors'), list) and controller['errors'], 'The predecessor controller changed its retained failure or native intent scope.')
     for key, name in (('prior_input', 'input.json'), ('prior_browser_report', 'browser-report.json'),
                       ('prior_before_snapshot', 'before-full.json'), ('prior_after_snapshot', 'after-full.json')):
         require(same(controller.get('evidence', {}).get(name), authority[key]), 'A predecessor evidence descriptor changed.')
     worker = controller.get('node_process', {})
     require(browser.get('marker') == 'goby-client-library-changed-report-v1' and type(browser.get('version')) is int and browser['version'] == 1 and
             browser.get('mode') == MODE and browser.get('result') == browser.get('outcome') == 'failed' and
-            browser.get('failure') == 'library_changed_target_card_not_observed' and browser.get('input_sha256') == input_sha and
+            browser.get('failure') == ('library_changed_controller_aborted' if version == 6 else 'library_changed_target_card_not_observed') and
+            browser.get('input_sha256') == input_sha and
             browser.get('source_closure_sha256') == closure_sha and same(browser.get('controller'), outer) and
             same(browser.get('node_process'), worker) and worker.get('cgroup') == '/system.slice/' + worker_unit and
             same(browser.get('candidate'), candidate) and same(browser.get('authority'), expected_browser_authority) and
-            same(browser.get('target'), prior_input['target']) and browser.get('stages') == browser.get('controls') == [] and
-            all(browser.get(key) is None for key in ('discovery', 'armed', 'forward', 'restore_armed', 'restored')) and
+            same(browser.get('target'), prior_input['target']) and browser.get('controls') == [] and
+            (same(browser.get('stages'), [{'name': 'discovery', **HISTORY_V6_DISCOVERY['stage']}]) if version == 6 else browser.get('stages') == []) and
+            all(browser.get(key) is None for key in (('armed', 'forward', 'restore_armed', 'restored') if version == 6 else
+                                                    ('discovery', 'armed', 'forward', 'restore_armed', 'restored'))) and
             all(browser.get(key) is False for key in ('library_changed_client_acceptance', 'client_acceptance', 'full_m3_complete')) and
             browser.get('restoration') == 'not_required', 'The predecessor browser failure was changed into an accepted UI stage.')
     profile = target_profile(before)
@@ -1683,7 +2256,8 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
             capabilities['request_count'] == 1 and required_digest(capabilities['last_successful_body_sha256']) and
             same({key: capabilities[key] for key in ('path', 'sha256')}, controller['evidence'].get('browser-capabilities-private.json')),
             'The predecessor capability receipt changed its observed single request.')
-    result = validate_prior_ledger(baseline, before, after, proof)
+    result = validate_history_six_ledger(baseline, before, after, proof, native_identity) if version == 6 else \
+        validate_prior_ledger(baseline, before, after, proof)
     require(same(controller.get('ledger'), result), 'The predecessor summary disagrees with the complete independently recomputed delta.')
     if version == 3:
         require(same(controller.get('prior_failure_preservation'), result), 'The v3 report lost its separately validated v2 predecessor result.')
@@ -1692,6 +2266,11 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
         expected_history = [{'version': number, 'ledger': result, 'after_snapshot': history_scope(number)['pins']['after_snapshot'],
                              'independent_snapshot': history_seal(number)['independent']} for number in predecessors]
         require(same(controller.get('history_preservation'), expected_history), 'A predecessor report changed its original bounded preservation history.')
+    elif version == 6:
+        require(same(controller.get('history_preservation'), HISTORY_V6_TERMINAL_FIXED['history_preservation']) and
+                same(controller.get('errors'), [HISTORY_V6_TERMINAL_FIXED['failure']]) and
+                controller.get('outer_controller_terminal_required') is True,
+                'The v6 report relabelled its timestamp failure or earlier one-login histories.')
     return result
 
 
@@ -1801,21 +2380,166 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
             'The independent failure snapshot postdates its seal.')
 
 
+def validate_history_six_ledger(baseline, before, after, proof, identity_record):
+    """Retain v6's two closed logins without granting any metadata allowance."""
+    compare_fixed_snapshot(baseline, before)
+    validate_login(proof)
+    require(isinstance(identity_record, dict) and set(identity_record) == {'session_id', 'token_sha256', 'user_id', 'kind'} and
+            same(identity_record, {key: HISTORY_V6_NATIVE_FIXED[key] for key in ('session_id', 'token_sha256', 'user_id', 'kind')}),
+            'The v6 native session lacks its independently sealed safe identity.')
+    ordinary = owned_session(before, after, proof)
+    require(same(ordinary['client_capabilities'], normalize_capabilities(canonical(ordinary['client_capabilities']))) and
+            ordinary['revoked_at'] is not None and ordinary['device_registry_id'] is not None,
+            'The v6 ordinary session is not closed with its bounded capabilities and own device.')
+    token_hash = '\\x' + identity_record['token_sha256']
+    require(all(row['id'] != identity_record['session_id'] and row['token_hash'] != token_hash for row in before['database']['tables']['sessions']),
+            'The v6 provisional native identity reuses a prior credential.')
+    matches = [row for row in after['database']['tables']['sessions'] if row['id'] == identity_record['session_id']]
+    require(len(matches) == 1, 'The v6 native identity does not select exactly one new complete row.')
+    native = matches[0]
+    expected = {'id': identity_record['session_id'], 'user_id': ADMIN, 'token_hash': token_hash, 'kind': 'admin',
+        'client_name': 'Goby Dashboard', 'device_id': 'goby-dashboard', 'device_name': 'Web browser',
+        'client_version': native['client_version'], 'created_at': native['created_at'], 'expires_at': native['expires_at'],
+        'last_seen_at': native['created_at'], 'revoked_at': native['revoked_at'], 'client_capabilities': {}, 'device_registry_id': None}
+    require(same(native, expected) and native['revoked_at'] is not None and safe_text(native['client_version'], 256) and
+            native['id'] != ordinary['id'] and native['token_hash'] != ordinary['token_hash'] and
+            len([row for row in before['database']['tables']['users'] if row['id'] == ADMIN and
+                 row['is_administrator'] is True and row['is_disabled'] is False]) == 1,
+            'The v6 native issuance has another account, client, Touch, capability or closure shape.')
+    result = validate_ledger(before, after, target_profile(before), browser=proof, administrator=native, phase='original', closed=True)
+    require(same(result, HISTORY_V6_TERMINAL_FIXED['ledger']), 'The v6 delta exceeds its two closed logins and four audits.')
+    for row in after['database']['tables']['activity_entries']:
+        if row['resource_id'] == native['id']:
+            require(instant(native['created_at']) <= instant(row['created_at']), 'A v6 native audit predates its issued session.')
+    return result
+
+
+def validate_history_six_native(value, terminal, candidate, prior_input, report):
+    require(isinstance(value, dict) and set(value) == set(HISTORY_V6_NATIVE_FIXED) | {'candidate_process', 'controller', 'captured_at'} and
+            all(same(value[key], expected) for key, expected in HISTORY_V6_NATIVE_FIXED.items()) and
+            same(value['candidate_process'], candidate['process']) and same(value['controller'], prior_input['controller']),
+            'The v6 safe native identity projection differs from its exact sealed transport and ownership facts.')
+    require(instant(value['captured_at']) >= instant(terminal['captured_at']), 'The safe native projection predates the sealed terminal.')
+    auth = terminal['native_authentication']
+    require(same(value['native_private'], auth['private']) and same(value['received_header'], auth['received_header']) and
+            same(report['evidence'].get('native-session-private.json'), value['native_private']) and
+            same(report['evidence'].get('native-cookie-received-private.json'), value['received_header']),
+            'The v6 native identity changed the original private receipt descriptors.')
+    for name in ('login', 'logout', 'exact401'):
+        request = value['requests'][name]
+        require(same({key: request[key] for key in ('complete', 'intent', 'result', 'status')}, auth['requests'][name]) and
+                all(same(report['evidence'].get('native-' + name + '-' + key + '.json'), request[key]) for key in ('intent', 'result')),
+                'The safe native identity does not retain the exact complete login, logout and original-cookie rejection receipts.')
+    return {key: value[key] for key in ('session_id', 'token_sha256', 'user_id', 'kind')}
+
+
+def validate_history_six_discovery(record, prior_input, report, browser):
+    pins, proof = HISTORY_V6_DISCOVERY, browser['login_proof']
+    require(isinstance(record, dict) and set(record) == {'path', 'sha256', 'value'} and
+            same({key: record[key] for key in ('path', 'sha256')}, pins['stage']) and
+            same(report['evidence'].get('accepted-stage-discovery.json'), pins['accepted']),
+            'The v6 accepted discovery wrapper changed its original stage descriptor.')
+    value = record['value']
+    require(isinstance(value, dict) and set(value) == {'marker', 'version', 'input_sha256', 'source_closure_sha256', 'controller',
+            'node_process', 'name', 'token_sha256', 'session_private', 'previous_control_sha256', 'observation'} and
+            value['marker'] == 'goby-client-library-changed-stage-v1' and type(value['version']) is int and value['version'] == 1 and
+            value['name'] == 'discovery' and value['input_sha256'] == HISTORY_V6_PINS['input']['sha256'] and
+            value['source_closure_sha256'] == sha(canonical(prior_input['source_closure'])) and
+            same(value['controller'], prior_input['controller']) and same(value['node_process'], browser['node_process']) and
+            value['previous_control_sha256'] is None and value['token_sha256'] == proof['token_sha256'] and
+            same(value['session_private'], pins['session_private']) and same(browser.get('session_private'), pins['session_private']) and
+            same(report['evidence'].get('browser-session-private.json'), pins['session_private']) and same(value['observation'], browser['discovery']),
+            'The v6 stage does not retain its original root, process, private receipt and public observation.')
+    observation = value['observation']
+    require(isinstance(observation, dict) and set(observation) == {'home', 'dom', 'reads', 'query_allowlist', 'socket',
+            'collection_folder_reads', 'collection_folder', 'navigation'} and len(observation['reads']) == len(observation['collection_folder_reads']) == 1,
+            'The v6 discovery changed its two bounded catalog observations.')
+    discovery_identity(observation, prior_input, proof['token_sha256'])
+    navigation_evidence(observation, prior_input, proof['token_sha256'])
+    home = observation['home']
+    require(home.get('passed') is True and home.get('media_inactive') is True and
+            home.get('location', {}).get('route') == 'home' and home['location'].get('same_origin') is True and
+            home['location'].get('supported_path') is True and isinstance(home.get('libraries'), list) and len(home['libraries']) == 4 and
+            all(len([row for row in home['libraries'] if row.get('id') == expected['id'] and row.get('name') == expected['name'] and
+                row.get('visible_card_count') == 1 and row.get('card_id_present') is True and row.get('card_id_matches') is True and
+                row.get('passed') is True]) == 1 for expected in prior_input['expected_libraries']),
+            'The accepted v6 discovery lacks its four visible original library identities.')
+    attempts = browser.get('stage_publication_attempts')
+    require(isinstance(attempts, list) and len(attempts) == 1 and set(attempts[0]) == {'name', 'path', 'sha256', 'publication_started_elapsed_ms', 'completed'} and
+            attempts[0]['name'] == 'discovery' and attempts[0]['completed'] is True and
+            same({key: attempts[0][key] for key in ('path', 'sha256')}, pins['stage']) and
+            numeric(attempts[0]['publication_started_elapsed_ms']) and attempts[0]['publication_started_elapsed_ms'] >= 0,
+            'The v6 discovery does not have exactly one completed original publication.')
+    require(same(browser.get('abort'), pins['browser_abort']) and same(report['evidence'].get('browser-abort.json'), pins['browser_abort']),
+            'The failed v6 worker lost its original abort receipt.')
+    common = {'version': 1, 'input_sha256': value['input_sha256'], 'source_closure_sha256': value['source_closure_sha256'],
+              'controller': value['controller'], 'node_process': value['node_process'], 'previous_stage_sha256': pins['stage']['sha256']}
+    for key, pin, expected in (
+        ('controller_abort', pins['abort'], {**common, 'marker': 'goby-client-library-changed-abort-v1', 'name': 'discovery',
+            'failure': 'library_changed_controller_failed', 'previous_control_sha256': None,
+            'token_sha256': proof['token_sha256'], 'session_private': pins['session_private']}),
+        ('control_close', pins['close'], {**common, 'marker': 'goby-client-library-changed-control-v1', 'name': 'close',
+            'reservation': None, 'commit': None, 'restoration': 'not_required'})):
+        actual = browser.get(key)
+        require(isinstance(actual, dict) and set(actual) == {'path', 'sha256', 'value'} and
+                same({name: actual[name] for name in ('path', 'sha256')}, pin) and same(actual['value'], expected) and
+                same(report['evidence'].get('abort.json' if key == 'controller_abort' else 'control-close.json'), pin),
+                'The v6 abort or close control changed its accepted discovery linkage.')
+
+
+def validate_history_six_terminal(candidate, authority, report, browser, terminal, after, independent):
+    scope, seal = history_scope(6), history_seal(6)
+    def properties(unit, process, invocation, working, live=False):
+        return {'ActiveState': 'active' if live else 'failed', 'ControlGroup': '/system.slice/' + unit if live else '',
+            'DropInPaths': '', 'ExecMainCode': '0' if live else '1', 'ExecMainStatus': '0' if live else '1',
+            'FragmentPath': ('/etc/systemd/system/' if live else '/run/systemd/transient/') + unit,
+            'Group': 'goby' if live else 'root', 'Id': unit, 'InvocationID': invocation, 'LoadState': 'loaded',
+            'MainPID': str(process['pid']) if live else '0', 'Restart': 'no', 'Result': 'success' if live else 'exit-code',
+            'SubState': 'running' if live else 'failed', 'Transient': 'no' if live else 'yes',
+            'User': 'goby' if live else 'root', 'WorkingDirectory': working}
+    failed = {}
+    for unit, source, invocation, working in ((scope['controller'], report['controller'], seal['controller_invocation'], str(scope['tool'])),
+            (scope['worker'], report['node_process'], seal['worker_invocation'], str(scope['root']))):
+        process = {'pid': source['pid'], 'start_ticks': int(source['start_ticks']), 'boot_id': source['boot_id']}
+        failed[unit] = {'old_process': process, 'old_process_gone': True, 'properties': properties(unit, process, invocation, working),
+            'recursive_cgroup': {'exists': False, 'files_checked': 0, 'path': '/sys/fs/cgroup/system.slice/' + unit, 'processes': 0}}
+    expected = {**HISTORY_V6_TERMINAL_FIXED, 'captured_at': terminal.get('captured_at'),
+        'upgrade_authority_snapshot': authority['current_snapshot'], 'failed_units': failed,
+        'candidate': {**{key: candidate[key] for key in ('binary_sha256', 'invocation_id', 'process')},
+            'properties': properties('goby-client-m3e.service', candidate['process'], candidate['invocation_id'], '/var/lib/goby-test/client-m3e', True)}}
+    require(same(terminal, expected) and same(report['worker_terminal'], {**failed[scope['worker']]['properties'], 'cgroup_empty': True}) and
+            same(report['ledger'], terminal['ledger']) and same(report['history_preservation'], terminal['history_preservation']) and
+            browser['failure'] == terminal['browser']['failure'] and
+            same(terminal['cumulative_totals'], {key: len(after['database']['tables'][key]) for key in ('sessions', 'devices', 'activity_entries')}),
+            'The v6 terminal changed its exact failed lifetimes, prerequisites, ownership, scope inventory or cumulative ledger.')
+    compare_fixed_snapshot(after, independent)
+    require(instant(independent['database']['metadata']['captured_at']) <= instant(terminal['captured_at']),
+            'The v6 independent snapshot postdates its failure seal.')
+
+
 def validate_history_documents(candidate, authority, documents, upgraded):
-    """Validate only the four retained original formats in their fixed order."""
-    require(isinstance(documents, list) and len(documents) == 4 and isinstance(authority.get('history'), list) and
-            len(authority['history']) == 4, 'The complete four-entry history is required.')
+    """Validate the five original histories, keeping v6 native cleanup distinct."""
+    require(isinstance(documents, list) and len(documents) == 5 and isinstance(authority.get('history'), list) and
+            len(authority['history']) == 5, 'The complete five-entry history is required.')
     baseline, latest, results = upgraded, upgraded, []
-    for entry, document, version in zip(authority['history'], documents, (2, 3, 4, 5)):
+    for entry, document, version in zip(authority['history'], documents, (2, 3, 4, 5, 6)):
         validate_history_entry(entry, version)
-        require(isinstance(document, dict) and set(document) == {*HISTORY_NAMES, 'independent_snapshot'},
+        require(isinstance(document, dict) and set(document) == {*HISTORY_NAMES, 'independent_snapshot'} |
+                ({'discovery', 'native_identity'} if version == 6 else set()),
                 'A history document bundle omitted an original artifact.')
         flat = history_entry_authority(authority, entry)
         compare_fixed_snapshot(latest, document['before_snapshot'])
+        native = validate_history_six_native(document['native_identity'], document['terminal'], candidate, document['input'],
+            document['controller_report']) if version == 6 else None
         result = validate_prior_documents(candidate, flat, document['input'], document['controller_report'], document['browser_report'],
-            baseline, document['before_snapshot'], document['after_snapshot'], version)
-        validate_prior_terminal(candidate, flat, document['controller_report'], document['browser_report'], document['terminal'],
-            document['after_snapshot'], document['independent_snapshot'], version)
+            baseline, document['before_snapshot'], document['after_snapshot'], version, native)
+        if version == 6:
+            validate_history_six_discovery(document['discovery'], document['input'], document['controller_report'], document['browser_report'])
+            validate_history_six_terminal(candidate, flat, document['controller_report'], document['browser_report'], document['terminal'],
+                document['after_snapshot'], document['independent_snapshot'])
+        else:
+            validate_prior_terminal(candidate, flat, document['controller_report'], document['browser_report'], document['terminal'],
+                document['after_snapshot'], document['independent_snapshot'], version)
         baseline, latest = document['after_snapshot'], document['independent_snapshot']
         results.append({'version': version, 'ledger': result, 'after_snapshot': entry['after_snapshot'],
                         'independent_snapshot': history_seal(version)['independent']})
@@ -1994,6 +2718,10 @@ class Run:
         history = []
         for entry in self.authority['history']:
             document = {name: read_record(entry[name]) for name in HISTORY_NAMES}
+            if entry['version'] == 6:
+                for name, descriptor in (('discovery', HISTORY_V6_DISCOVERY['accepted']), ('native_identity', HISTORY_V6_NATIVE_PIN)):
+                    self.artifacts[descriptor['path']] = descriptor['sha256']
+                    document[name] = read_record(descriptor)
             independent = history_seal(entry['version'])['independent']
             require(same(document['terminal'].get('independent_snapshot'), independent), 'A history seal requested another independent snapshot.')
             self.artifacts[independent['path']] = independent['sha256']
@@ -2251,7 +2979,7 @@ class Run:
         public = data['User']
         require(isinstance(public, dict) and set(public) == {'Id', 'Name', 'IsAdministrator', 'IsDisabled', 'HasPassword', 'CreatedAt'} and
             public['Id'] == ADMIN and public['Name'] == user['name'] and public['IsAdministrator'] is True and public['IsDisabled'] is False and
-            public['HasPassword'] is True and instant(public['CreatedAt']) == instant(user['created_at']), 'The native login belongs to another account.')
+            public['HasPassword'] is True and native_created_at_matches(public['CreatedAt'], user['created_at']), 'The native login belongs to another account.')
         self.capture_native_cookie(cookie)
         require(data['CSRFToken'] == self.csrf,
                 'The native CSRF value does not derive from the exact received cookie.')

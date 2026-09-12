@@ -1,0 +1,38 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-I",
+    "-B",
+    "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-07/test-observe-client-library-changed-source55.py"
+  ],
+  "client_acceptance": false,
+  "exit_code": 0,
+  "library_changed_client_acceptance": false,
+  "marker": "goby-source55-v7-python-guards-v1",
+  "report": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "5851d14bbcb360cb453313c884348a00c78ee14d6cb73508e81e8eef231dbca5",
+    "operator_sha256": "ed703fd3a6b9c01dfae6944c7b5db7d897bd14019fd4992fda932653550291fc",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-source55-controller-guards",
+    "test_count": 87
+  },
+  "source_transfer_sha256": "8e689a274de5a857e0bbba3d5e0c605ca37300043510ad8bfd1b6ad433d22aca",
+  "status": "passed",
+  "stderr_sha256": "6f14a674e6647a1da177c97aafb61724971232ff0278f9ea68a0684206175598",
+  "stdout_sha256": "beea2650a717f3d83e8d0f3aa66a4f8376dcc118561877ab9ba1af9f37829ec6",
+  "syntax": [
+    {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-07/observe-client-library-changed-source55.py",
+      "sha256": "ed703fd3a6b9c01dfae6944c7b5db7d897bd14019fd4992fda932653550291fc",
+      "status": "passed"
+    },
+    {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-07/test-observe-client-library-changed-source55.py",
+      "sha256": "5851d14bbcb360cb453313c884348a00c78ee14d6cb73508e81e8eef231dbca5",
+      "status": "passed"
+    }
+  ]
+}

@@ -18,7 +18,7 @@ import { CHANGED_ROOT as ROOT, CHANGED_OUTPUT as OUTPUT, CHANGED_UNIT, CHANGED_C
 import { collectLibraryChangedPublicDOM, observeLibraryChangedViewport, libraryChangedSecretVariants,
   libraryChangedResponseDiagnostic, bindLibraryChangedDOM, libraryChangedFullMovieQuery } from './client-browser-library-changed-source55.mjs';
 
-const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-06b';
+const WORK = '/opt/goby-test/exec-work-m3e', TOOL = WORK + '/client-library-changed-source55-tool-07';
 const SYNTHETIC_UPGRADE = WORK + '/client-schema28-source55-upgrade-20260912_120000_c0ffee123456';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738', ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
@@ -73,7 +73,10 @@ export function libraryChangedInputFixture() {
           'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'],
         ['093dfa5fc0d82ba509a0092c425ce64d33eebf3625441751427248065bdf2176', '86e0dafc48e8e9a54b83c4588f7a06cabf951eab4a7d250b3d326cd9271d2abe',
           '154bd9857248eec76e921b2f34f3896e9a1fa73aeb078a64d03d06b54ca7e444', '348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d',
-          '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6']
+          '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6'],
+        ['db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e', '91bf25713d2b173fc4f6d337a792aeeb7cebbcf1ac38881ced9fa7346a6e61d9',
+          '1ffdfab90a9231d7d387a4d2d90f61bdccdffe246b3f1d10a303467d810cfb5e', '7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d',
+          '8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9', '185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3']
       ].map((hashes, index) => {
         const version = index + 2, root = WORK + '/client-library-changed-ui-source55-v' + version;
         return { version, input: descriptor(root + '/input.json', hashes[0]), browser_report: descriptor(root + '/browser/report.json', hashes[1]),
@@ -90,7 +93,7 @@ function binding(input = libraryChangedInputFixture()) {
       executable_path: '/synthetic/node', executable_sha256: '3'.repeat(64), cgroup: '/system.slice/' + CHANGED_UNIT } };
 }
 export function libraryChangedReservationFixture() {
-  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v6]',
+  return { target_id: ITEM, library_id: LIBRARY, revision: '1', original_name: 'M3e Client Movie', marker_name: 'M3e Client Movie [LC source55 v7]',
     original_controls_sha256: '4'.repeat(64), forward_body_sha256: '5'.repeat(64), restore_body_sha256: '6'.repeat(64) };
 }
 function controlFixture(name = 'reserved', bound = binding()) {
@@ -223,9 +226,9 @@ test('source55 input binds the exact seven-file new scope', () => {
   for (const change of [value => { value.candidate.process.pid = 1; }, value => { value.candidate.source = WORK + '/source-attempt-44'; },
     value => { value.candidate.state_sha256 = '0'.repeat(64); }, value => { delete value.authority.upgrade_attestation; },
     value => { value.actor.credentials.path = WORK + '/browser.json'; }, value => { value.actor.admin = {}; },
-    value => { value.root = ROOT.replace('source55-v6', 'source55-v5'); },
+    value => { value.root = ROOT.replace('source55-v7', 'source55-v6'); },
     value => { value.source_closure = Object.fromEntries(Object.entries(value.source_closure)
-      .map(([filename, hash]) => [filename.replace('source55-tool-06b', 'source55-tool-06'), hash])); },
+      .map(([filename, hash]) => [filename.replace('source55-tool-07', 'source55-tool-06b'), hash])); },
     value => { value.source_closure[TOOL + '/unexpected.mjs'] = 'a'.repeat(64); }, value => { delete value.source_closure[TOOL + '/client-browser-goby-fixture.mjs']; },
     value => { value.target.id = USER; }, value => { value.controller.unit = CHANGED_UNIT; }]) {
     const input = libraryChangedInputFixture(); change(input); rejects(() => validateLibraryChangedInput(input));
@@ -239,13 +242,15 @@ test('source55 requires future process and upgrade authority inputs without defa
   for (const key of ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot']) {
     const input = libraryChangedInputFixture(); delete input.authority[key]; rejects(() => validateLibraryChangedInput(input));
   }
-  for (const index of [0, 1, 2, 3]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
+  for (const index of [0, 1, 2, 3, 4]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
     const input = libraryChangedInputFixture(); input.authority.history[index][key].sha256 = sha('synthetic-foreign-prior'); rejects(() => validateLibraryChangedInput(input));
   }
   const reordered = libraryChangedInputFixture(); reordered.authority.history.reverse(); rejects(() => validateLibraryChangedInput(reordered));
   for (const mutate of [value => { value.candidate.publication = 'pending'; }, value => { value.candidate.publication = 'a'.repeat(40); },
     value => { value.candidate.invocation_id = '0'.repeat(32); }, value => { value.candidate.process.start_ticks = 0; },
     value => { value.candidate.process.extra = true; }, value => { value.authority.current_snapshot.path = ROOT + '/before-full.json'; },
+    value => { value.authority.history.pop(); },
+    value => { value.authority.history[4].terminal.path = WORK + '/client-library-changed-source55-execution-06b/failed-terminal.json'; },
     value => { value.authority.upgrade_intent.path = WORK + '/client-schema28-source55-tool-02/intent.json'; },
     value => { value.authority.upgrade_intent.path = WORK + '/client-fixture.json'; },
     value => { value.authority.upgrade_report.path = WORK + '/synthetic-source55-upgrade/report.json'; },
@@ -352,9 +357,9 @@ test('the complete before ledger must match current authority and its target', (
     'play_sessions', 'scan_jobs', 'schema_migrations', 'server_settings', 'sessions', 'task_definitions', 'task_occurrences', 'task_run_children',
     'task_run_requests', 'task_runs', 'task_triggers', 'theme_owner_ids', 'theme_reserved_paths', 'user_item_data', 'user_settings', 'users'];
   const tables = Object.fromEntries(names.map(name => [name, []]));
-  tables.sessions = Array.from({ length: 79 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
-  tables.devices = Array.from({ length: 68 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
-  for (const [name, count] of [['activity_entries', 175], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
+  tables.sessions = Array.from({ length: 81 }, (_, index) => ({ id: String(index).padStart(32, '0'), token_hash: '\\x' + String(index).padStart(64, '0') }));
+  tables.devices = Array.from({ length: 69 }, (_, index) => ({ reported_device_id: 'old-device-' + index }));
+  for (const [name, count] of [['activity_entries', 179], ['play_sessions', 26], ['user_item_data', 7]]) tables[name] = Array.from({ length: count }, () => ({}));
   tables.libraries = clone(input.expected_libraries); tables.users = [{ id: USER, is_disabled: false, is_administrator: false, management_revision: 5 }];
   tables.items = [{ ...input.target, is_folder: false }, ...Array.from({ length: 21 }, () => ({}))]; tables.item_metadata_state = [{ item_id: ITEM }];
   const sequences = Object.fromEntries(['activity_entries_id_seq', 'application_keys_id_seq', 'catalog_entities_id_seq',
@@ -365,7 +370,7 @@ test('the complete before ledger must match current authority and its target', (
   current.database.sequences.activity_entries_id_seq.last_value = 9007199254740993n;
   tables.items[0].file_size = 9007199254740995n;
   const before = clone(current); before.database.metadata.captured_at = new Date(START + 1000).toISOString();
-  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 79);
+  check(validateLibraryChangedBaseline(input, before, current).session_ids.length === 81);
   for (const change of [value => { value.database.tables.items[0].name = 'Foreign Name'; }, value => { value.database.tables.devices.pop(); },
     value => { value.database.sequences.unknown = 1; }, value => { value.schema = 27; },
     value => { delete value.database.tables.library_roots[0].binding_revision; },
@@ -383,7 +388,7 @@ test('the complete before ledger must match current authority and its target', (
   rejects(() => validateLibraryChangedBaseline(input, duplicateBefore, duplicate));
   duplicate.database.tables.items[1].library_id = input.expected_libraries[1].id;
   const otherLibraryBefore = clone(duplicate); otherLibraryBefore.database.metadata.captured_at = before.database.metadata.captured_at;
-  check(validateLibraryChangedBaseline(input, otherLibraryBefore, duplicate).session_ids.length === 79);
+  check(validateLibraryChangedBaseline(input, otherLibraryBefore, duplicate).session_ids.length === 81);
 });
 
 test('discovery identity requires the full singleton query and complete matching wire', () => {
@@ -446,8 +451,8 @@ test('only the three sealed snapshots reach the lossless reader without numeric 
     await rejectsAsync(() => readLibraryChangedSnapshot(input, key, read));
   }
   for (const mutate of [value => { value.authority.current_snapshot.path = WORK + '/client-fixture.json'; },
-    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v6', 'source55-v5') + '/before-full.json'; },
-    value => { value.root = ROOT.replace('source55-v6', 'source55-v5'); }]) {
+    value => { value.authority.before_snapshot.path = ROOT.replace('source55-v7', 'source55-v6') + '/before-full.json'; },
+    value => { value.root = ROOT.replace('source55-v7', 'source55-v6'); }]) {
     const altered = clone(input); mutate(altered);
     await rejectsAsync(() => readLibraryChangedSnapshot(altered, 'current_snapshot', read));
   }
@@ -679,7 +684,7 @@ test('driver and shared transport agree on the single library and exact target s
     [`/Items?ParentId=${USER}&Ids=${ITEM}`, false], [`/Users/${USER}/Items?ParentId=${USER}`, false]]) {
     const url = 'http://127.0.0.1:18196/emby' + route;
     check(Boolean(libraryChangedCatalogRequest(url, 'GET', input)) === expected);
-    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v6')) === expected);
+    check(Boolean(coreCatalogRequest(url, 'GET', USER, 'library-changed-ui-source55-v7')) === expected);
   }
 });
 

@@ -1,0 +1,401 @@
+{
+  "checks": [
+    {
+      "argv": [
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source55-js-tool-07/test-client-browser-cross-user.mjs"
+      ],
+      "exit_code": 0,
+      "expected": 127,
+      "name": "actor",
+      "report": {
+        "counts": {
+          "executed": 127,
+          "failed": 0,
+          "passed": 127
+        },
+        "failed": [],
+        "harness_guards_only": true,
+        "mode": "pure",
+        "result": "passed"
+      },
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "c96d564ac4a9ceab78aec3865ffc5d2a660d1177e381d0457ac06bc37b05fcbd",
+      "verified_pass": true
+    },
+    {
+      "argv": [
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source55-js-tool-07/test-client-browser-library-changed-source55.mjs"
+      ],
+      "exit_code": 0,
+      "expected": 66,
+      "name": "driver",
+      "report": {
+        "browser": false,
+        "database": false,
+        "failures": 0,
+        "marker": "goby-client-library-changed-browser-guards-v1",
+        "network": false,
+        "result": "passed",
+        "results": [
+          {
+            "name": "source55 input binds the exact seven-file new scope",
+            "result": "passed"
+          },
+          {
+            "name": "source55 requires future process and upgrade authority inputs without defaults",
+            "result": "passed"
+          },
+          {
+            "name": "source55 CollectionFolder capture requires the exact real response fields",
+            "result": "passed"
+          },
+          {
+            "name": "source55 navigation rebinds the exact completed frame and physical exchange",
+            "result": "passed"
+          },
+          {
+            "name": "source55 accepts only the two routes actually observed around the library click",
+            "result": "passed"
+          },
+          {
+            "name": "source55 CollectionFolder reads retain the existing owned worker provenance rule",
+            "result": "passed"
+          },
+          {
+            "name": "source55 navigation cannot stand in for either automatic refresh window",
+            "result": "passed"
+          },
+          {
+            "name": "source55 keeps CollectionFolder query shapes separate after discovery",
+            "result": "passed"
+          },
+          {
+            "name": "CLI and viewer export cannot adopt consumed scopes or administrator credentials",
+            "result": "passed"
+          },
+          {
+            "name": "the complete before ledger must match current authority and its target",
+            "result": "passed"
+          },
+          {
+            "name": "discovery identity requires the full singleton query and complete matching wire",
+            "result": "passed"
+          },
+          {
+            "name": "restoration cannot reuse the initial response and exact target refresh still binds",
+            "result": "passed"
+          },
+          {
+            "name": "DOM proof timestamps cannot move beyond the actual sample",
+            "result": "passed"
+          },
+          {
+            "name": "only the three sealed snapshots reach the lossless reader without numeric conversion",
+            "result": "passed"
+          },
+          {
+            "name": "setup failures retain only the safe phase and original owned source locations",
+            "result": "passed"
+          },
+          {
+            "name": "failed discovery keeps evidence without creating a successful stage and cannot block cleanup",
+            "result": "passed"
+          },
+          {
+            "name": "failure screenshots require proven safe login and remain one bounded viewport image",
+            "result": "passed"
+          },
+          {
+            "name": "viewport collector reads visible ranges and alternate identity keys without input values",
+            "result": "passed"
+          },
+          {
+            "name": "viewport redacts encoded credentials across leaves while keeping other public text",
+            "result": "passed"
+          },
+          {
+            "name": "DTO diagnostics expose bounded safe field names and no private values",
+            "result": "passed"
+          },
+          {
+            "name": "public candidate diagnostics retain duplicate siblings and redact private text",
+            "result": "passed"
+          },
+          {
+            "name": "stage and control barriers bind exact phase, native receipt and reservation",
+            "result": "passed"
+          },
+          {
+            "name": "abort permits only a bound cleanup close with a proven restoration state",
+            "result": "passed"
+          },
+          {
+            "name": "controller abort is a bound stop signal and cannot confirm restoration",
+            "result": "passed"
+          },
+          {
+            "name": "only complete bounded strict public JSON messages are projected",
+            "result": "passed"
+          },
+          {
+            "name": "physical catalog scopes are fixed and never export token carriers",
+            "result": "passed"
+          },
+          {
+            "name": "driver and shared transport agree on the single library and exact target scope",
+            "result": "passed"
+          },
+          {
+            "name": "real ordered forward and restoration evidence pass independently",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: no original-client receive",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: no physical server delivery",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: HTTP started before the message",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: HTTP response arrives after the window",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: only a cached page response",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: DOM updates without HTTP",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: stale automatic response",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: a different HTTP token",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: an iframe mislabeled as the page",
+            "result": "passed"
+          },
+          {
+            "name": "incomplete chain is never accepted: no visible final card",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: unforwarded server payload",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: partial message fragment",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: new handshake",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: window click",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: window reload",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: route changed",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: document changed",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: new connection identity",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: foreign event token",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: late event",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: duplicate event",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: missing sample coverage",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: tampered projection hash",
+            "result": "passed"
+          },
+          {
+            "name": "invalid bound evidence fails closed: message size overflow",
+            "result": "passed"
+          },
+          {
+            "name": "worker-originated physical reads require an explicit worker identity",
+            "result": "passed"
+          },
+          {
+            "name": "identical concurrent requests cannot share a physical exchange proof",
+            "result": "passed"
+          },
+          {
+            "name": "window pair references must exactly match independent full-array pairing",
+            "result": "passed"
+          },
+          {
+            "name": "ambiguous pair references retain null outcomes and cannot prove automatic refresh",
+            "result": "passed"
+          },
+          {
+            "name": "a callback cannot substitute transport counters or partial buffers for protocol identity",
+            "result": "passed"
+          },
+          {
+            "name": "page requests must be the actual main frame rather than a sibling frame",
+            "result": "passed"
+          },
+          {
+            "name": "an armed observer rejects recorded actions and complete state changes",
+            "result": "passed"
+          },
+          {
+            "name": "a browser-side socket close invalidates the held physical handshake immediately",
+            "result": "passed"
+          },
+          {
+            "name": "visible card and title remain unbound until the matching complete wire proves identity",
+            "result": "passed"
+          },
+          {
+            "name": "failure screenshot publication is exclusive bounded PNG with no JSON encoding",
+            "result": "passed"
+          },
+          {
+            "name": "exclusive IPC publication rejects partial and foreign ownership states",
+            "result": "passed"
+          },
+          {
+            "name": "full reports have a separate bounded budget while IPC remains small",
+            "result": "passed"
+          },
+          {
+            "name": "publication and disposal failures still clear owned in-memory credentials",
+            "result": "passed"
+          },
+          {
+            "name": "cancelled or missing controllers cannot leave an unbounded control loop",
+            "result": "passed"
+          }
+        ],
+        "tests": 66
+      },
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "b5bd41448c178fa5eb03381c3d48c30978002831931420891b0fde89a55ba1e3",
+      "verified_pass": true
+    },
+    {
+      "argv": [
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+        "/opt/goby-test/exec-work-m3e/client-library-changed-source55-js-tool-07/test-client-library-changed-source55-fixture.mjs",
+        "--pure",
+        "--catalog",
+        "/opt/goby-test/exec-work-m3e/source-attempt-55/internal/backuppg/catalogs/schema-28-postgresql-17.json",
+        "--catalog-sha256",
+        "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b"
+      ],
+      "exit_code": 0,
+      "expected": 672,
+      "name": "loader",
+      "report": {
+        "counts": {
+          "executed": 672,
+          "failed": 0,
+          "passed": 672
+        },
+        "external_effect_attempts": {
+          "filesystem": 0,
+          "http": 0,
+          "other": 0,
+          "process": 0
+        },
+        "external_effect_scope": "fenced_guard_execution",
+        "failed": [],
+        "metadata_input_count": 1,
+        "metadata_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b",
+        "mode": "pure",
+        "result": "passed"
+      },
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4fa550b84ec0faef3633a209a4b5fe283005b13a2b43306f2368d4c9cdd43aef",
+      "verified_pass": true
+    }
+  ],
+  "client_acceptance": false,
+  "library_changed_client_acceptance": false,
+  "marker": "goby-source55-v7-js-guards-v1",
+  "source_transfer_sha256": "6ff711b97e76ddc5493a60f1db2357df338eeee66ad26a2ec431e8e8af319a43",
+  "sources": {
+    "client-browser-cross-user.mjs": {
+      "bytes": 159992,
+      "sha256": "60dea05efc3091cc8574f08867d92eff8472a256747fb9a521cb667190197d4e"
+    },
+    "client-browser-goby-fixture.mjs": {
+      "bytes": 52042,
+      "sha256": "551312bb5b55f2b1330631b10fbc12000d96ffa5a9113b179e71f1fb2dc489b3"
+    },
+    "client-browser-library-changed-source55.mjs": {
+      "bytes": 140302,
+      "sha256": "39e4aa077c6007b3964469f4791174875b280d99659282a6656d77846bf485d0"
+    },
+    "client-browser-library-home.mjs": {
+      "bytes": 56668,
+      "sha256": "6041b19eb719a829e4b8235fd5c168fc98f3e80f17b032be126202a70ada125c"
+    },
+    "client-browser-session-proof.mjs": {
+      "bytes": 18036,
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    "client-browser-special-features-fixture.mjs": {
+      "bytes": 50409,
+      "sha256": "e083eb8925804b85c9f9b9fb8fdf7d8b91aa9c15ecb5a9c2a34b85eb272156b7"
+    },
+    "client-library-changed-source55-fixture.mjs": {
+      "bytes": 151946,
+      "sha256": "9477e1ccf216768fbad453d398eaf7746dcaae6dd60d695ee556bfe04b63823e"
+    },
+    "test-client-browser-cross-user.mjs": {
+      "bytes": 176390,
+      "sha256": "b9651b78b6a381746459c8a3a5c2b8bb31de0536c009ba26a81af520f47839bb"
+    },
+    "test-client-browser-library-changed-source55-dom.mjs": {
+      "bytes": 17069,
+      "sha256": "b197a4903f931d6717fc4bcad78a7a4ed574884f6f84eeb7c2c5deb44c31cf7b"
+    },
+    "test-client-browser-library-changed-source55.mjs": {
+      "bytes": 87600,
+      "sha256": "0067d2dfcadd4266bfe6beb495801cbbf7cd61cd3120c397933903c2bf957a6d"
+    },
+    "test-client-library-changed-source55-fixture.mjs": {
+      "bytes": 149770,
+      "sha256": "90978a6ff5ed96dcdab6f1a633765a3dcff14fb95cd73f34da77bbaf58f27d57"
+    }
+  },
+  "status": "passed"
+}

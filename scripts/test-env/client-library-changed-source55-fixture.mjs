@@ -7,8 +7,8 @@ import { TextDecoder } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-changed-ui-source55-v6';
-const TOOL = WORK + '/client-library-changed-source55-tool-06b';
+const ROOT = WORK + '/client-library-changed-ui-source55-v7';
+const TOOL = WORK + '/client-library-changed-source55-tool-07';
 const PRIOR_ROOT = WORK + '/client-library-changed-ui-source55-v2';
 const PRIOR_TOOL = WORK + '/client-library-changed-source55-tool-02';
 const HISTORY_V3_ROOT = WORK + '/client-library-changed-ui-source55-v3';
@@ -17,6 +17,13 @@ const HISTORY_V4_ROOT = WORK + '/client-library-changed-ui-source55-v4';
 const HISTORY_V4_TOOL = WORK + '/client-library-changed-source55-tool-04';
 const HISTORY_V5_ROOT = WORK + '/client-library-changed-ui-source55-v5';
 const HISTORY_V5_TOOL = WORK + '/client-library-changed-source55-tool-05';
+const HISTORY_V6_ROOT = WORK + '/client-library-changed-ui-source55-v6';
+const HISTORY_V6_TOOL = WORK + '/client-library-changed-source55-tool-06b';
+const HISTORY_V6_NATIVE_PIN = Object.freeze({ path: WORK + '/client-library-changed-source55-native-identity-06/report.json',
+  sha256: '05109498040178f8de306c5830c3522792ae89a6c8a68c71ac64b4d45aff8be4' });
+const HISTORY_V6_NATIVE_IDENTITY = Object.freeze({ session_id: '71020063951971eff0bb5699d87eb0e0',
+  token_sha256: 'ca0338fefd06d4c5fb08797eecfad55f03e37731a8514fddc1482881d9a7c6dd',
+  user_id: '0dd576d477e8acea871cb4b06cb11153', kind: 'admin' });
 const STATE = WORK + '/client-fixture.json';
 const SELF = fileURLToPath(import.meta.url);
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
@@ -30,7 +37,7 @@ const SOURCE_SHA = '7d2548603e209ebce6154853321147aeec33ccbb40cc12b3ca37418ad765
 const CATALOG_SHA = '8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b';
 const UPGRADE_TOOL = WORK + '/client-schema28-source55-tool-05';
 const UPGRADE_MARKER = 'goby-client-schema28-source55-upgrade-v1';
-const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v6.service';
+const CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v7.service';
 const PRIOR_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v2.service';
 const PRIOR_WORKER_UNIT = 'goby-client-library-changed-ui-source55-v2.service';
 const UPGRADE_ROOT = WORK + '/client-schema28-source55-upgrade-20260912_100845_47bff13c329b';
@@ -178,8 +185,303 @@ const HISTORY_V5_GUARD_EVIDENCE = Object.freeze({
   runtime_controller_source: HISTORY_V5_TERMINAL_PINS.controller_source,
   runtime_sources_unchanged: true,
 });
-const HISTORY_ENTRIES = Object.freeze([2, 3, 4, 5].map(version => {
-  const pins = version === 2 ? PRIOR_PINS : version === 3 ? HISTORY_V3_PINS : version === 4 ? HISTORY_V4_PINS : HISTORY_V5_PINS;
+const HISTORY_V6_PINS = Object.freeze({
+  prior_input: { path: HISTORY_V6_ROOT + '/input.json', sha256: 'db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e' },
+  prior_browser_report: { path: HISTORY_V6_ROOT + '/browser/report.json', sha256: '91bf25713d2b173fc4f6d337a792aeeb7cebbcf1ac38881ced9fa7346a6e61d9' },
+  prior_controller_report: { path: HISTORY_V6_ROOT + '/report.json', sha256: '1ffdfab90a9231d7d387a4d2d90f61bdccdffe246b3f1d10a303467d810cfb5e' },
+  prior_terminal: { path: WORK + '/client-library-changed-source55-execution-06/failed-terminal.json',
+    sha256: '7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d' },
+  prior_before_snapshot: { path: HISTORY_V6_ROOT + '/before-full.json', sha256: '8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9' },
+  prior_after_snapshot: { path: HISTORY_V6_ROOT + '/after-full.json', sha256: '185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3' },
+});
+const HISTORY_V6_TERMINAL_PINS = Object.freeze({
+  independent_snapshot: { path: WORK + '/client-library-changed-source55-execution-06/independent-after-full.json',
+    sha256: 'b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93' },
+  scope_files: { path: WORK + '/client-library-changed-source55-execution-06/failed-scope-files.json',
+    sha256: 'ac5150779b1e8b5e8467ca929729773ad80c575c299b58d50bcaa857fb67630d' },
+  seal_script: { path: WORK + '/client-library-changed-source55-execution-06/seal-failed-terminal.py',
+    sha256: 'ecbba4bbaa685f95db96178c707200b76aee8c605e1bf40603ceb42bb83f38a7' },
+  controller_source: { path: HISTORY_V6_TOOL + '/observe-client-library-changed-source55.py',
+    sha256: 'aebd74bea66f02ffdb054e2cc671a343fe6c81cc1fd918cabbc187257aa41334' },
+});
+const HISTORY_V6_DISCOVERY = Object.freeze({
+  accepted: { path: HISTORY_V6_ROOT + '/accepted-stage-discovery.json', sha256: '54f8e01e1156b9898f4bd5b3e5e24f25bf6c1addf5c794fa2416a779e2561140' },
+  stage: { path: HISTORY_V6_ROOT + '/browser/stage-discovery.json', sha256: 'f8499f240bf4e3968c252e89d476216570ac3a27bbc8eb43bd32bf44e2d7cd60' },
+  session_private: { path: HISTORY_V6_ROOT + '/browser/session-private.json', sha256: '86732ce8bb705ae8a766c63734e9ab217e57186c047d92f9033f5fc19bfb1aed' },
+  abort: { path: HISTORY_V6_ROOT + '/abort.json', sha256: '119c8068409ece1a84a5716bef805f62d9de3c700014752c299972109985a44f' },
+  browser_abort: { path: HISTORY_V6_ROOT + '/browser/abort.json', sha256: 'b6025b624f8b9db49cd38745dd7a9f016533c86c55be0e2cfe13c52b5d6e9cfe' },
+});
+const HISTORY_V6_PREDECESSORS = Object.freeze({
+  predecessor_terminals: [...HISTORY_V5_PREDECESSORS.predecessor_terminals, HISTORY_V5_PINS.prior_terminal],
+  predecessor_inventories: [...HISTORY_V5_PREDECESSORS.predecessor_inventories, HISTORY_V5_TERMINAL_PINS.scope_files],
+});
+const HISTORY_V6_TERMINAL_FACTS = Object.freeze({
+  "auxiliary_units": {
+    "goby-client-library-changed-source55-dom-v6.service": {
+      "properties": {
+        "ActiveState": "failed",
+        "ControlGroup": "",
+        "ExecMainStatus": "1",
+        "InvocationID": "877ce871b5a74b5fa0f83ca7464d7bbc",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "receipt": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06/failed-terminal.json",
+        "sha256": "c05cfb5546db18631e437ccd75323dd593124d29788d5206a42fa7e5beb9b2f6"
+      },
+      "recursive_cgroup": {
+        "exists": false,
+        "files_checked": 0,
+        "path": "/sys/fs/cgroup/system.slice/goby-client-library-changed-source55-dom-v6.service",
+        "processes": 0
+      }
+    },
+    "goby-client-library-changed-source55-dom-v6b.service": {
+      "properties": {
+        "ActiveState": "active",
+        "ControlGroup": "",
+        "ExecMainStatus": "0",
+        "InvocationID": "668d72b627214f9ca11a999283b27052",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "exited"
+      },
+      "receipt": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06b/terminal.json",
+        "sha256": "1b25b5ed9c8d6b1ce63ef8ac72aa2eed5c474d6450e8cb1f36155c58a1bce45f"
+      },
+      "recursive_cgroup": {
+        "exists": false,
+        "files_checked": 0,
+        "path": "/sys/fs/cgroup/system.slice/goby-client-library-changed-source55-dom-v6b.service",
+        "processes": 0
+      }
+    }
+  },
+  "failure": {
+    "failure_type": "ObservationError",
+    "reason": "A timestamp is not UTC.",
+    "stage": "execution_discovery"
+  },
+  "native_authentication": {
+    "exact401_status": 401,
+    "login_response_complete": true,
+    "logout_status": 204,
+    "metadata_requests": 0,
+    "native_login_failure_type": "ObservationError",
+    "native_login_validation_passed": false,
+    "owned_session_closed": true,
+    "private": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-session-private.json",
+      "sha256": "c4f7dfcdc31031e03205b37e1be7d03c2106881b736342155bb88346c46bc41f"
+    },
+    "received_cookie_owned": true,
+    "received_header": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-cookie-received-private.json",
+      "sha256": "d82b0aae258c72eb8b486259b0d1ba9087f808e244e8d2b869e79e81b63b51fe"
+    },
+    "requests": {
+      "exact401": {
+        "complete": true,
+        "intent": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-intent.json",
+          "sha256": "c803161d8fbfad1038ed6583801ea0429cd9300cee301fdc15445d0c814ad23b"
+        },
+        "result": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-result.json",
+          "sha256": "fcc3b23cf61075cc79e25df1a21f46de765a0e467111e05caa74253f8d7ea701"
+        },
+        "status": 401
+      },
+      "login": {
+        "complete": true,
+        "intent": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-intent.json",
+          "sha256": "7b5e170e0fa6f9b2804bd275e0c0915cef6887beb5605d02b1c26b338bff085c"
+        },
+        "result": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-result.json",
+          "sha256": "a47b15514956048dd329c544b1c39fd2d366c56d4fa4d87adcedf4590ee921b2"
+        },
+        "status": 200
+      },
+      "logout": {
+        "complete": true,
+        "intent": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-intent.json",
+          "sha256": "0e9de3666eda24eacece40cc4eb794cf2f75e46b3a134badf9258e72a4f39c85"
+        },
+        "result": {
+          "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-result.json",
+          "sha256": "3b4a26aedffe4d19d78d291684aeb1b3ce949e72fb40f077c4c2e700893cac67"
+        },
+        "status": 204
+      }
+    }
+  },
+  "prerequisites": {
+    "pure_guards": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-final-verification-06b/guards-report.json",
+      "sha256": "6fe209c8913fba976e9c2fe86ce943bf4b0d23a57af26cb112adbbb4c82af5f6"
+    },
+    "python_preflight": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-preflight-06b/report.json",
+      "sha256": "54cd34c57ccb715d1b64284b11eec7cd2ae2fbe04daaf0d2374843c3f3e19102"
+    },
+    "real_documents": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-setup-diagnosis-07/stdout.json",
+      "sha256": "d0829b4c50ded8e050ad9d3836477189f844fe1a637473fee3193c96aaaf1cda"
+    },
+    "real_dom": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-dom-verification-06b/terminal.json",
+      "sha256": "1b25b5ed9c8d6b1ce63ef8ac72aa2eed5c474d6450e8cb1f36155c58a1bce45f"
+    }
+  }
+});
+const HISTORY_V6_TERMINAL_KEYS = Object.freeze(["accepted_browser_stages","all_prior_scopes_preserved","automatic_retry","auxiliary_units","baseline_chain_verified","before_snapshot","browser","browser_report","candidate","candidate_preserved","captured_at","cleanup","cleanup_needed","cleanup_performed","client_acceptance","controller_source","cumulative_totals","current_matches_prior_after","dispatched_native_intents","exact_owned_additions_retained","failed_units","failure","full_m3_complete","history_preservation","http_requests","independent_snapshot","input","ledger","library_changed_client_acceptance","marker","media_fact_sha256","media_preserved","metadata_requests","native_authentication","observed_run_status","old_rows_sequences_private_preserved","owned_sessions_closed","phase","predecessor_inventories","predecessor_terminals","predecessor_units_preserved","prerequisites","primary_fact_sha256","primary_invocation_id","primary_preserved","primary_process","prior_after_snapshot","prior_baseline","prior_failed_verification_preserved","report","reserved_native_intents","restoration","schema","scope","scope_files","scope_files_unchanged","seal_script","service_writes","sql_business_writes","status","tool","upgrade_authority_snapshot","version"]);
+const HISTORY_V6_TERMINAL_SCALARS = Object.freeze({
+  "all_prior_scopes_preserved": true,
+  "automatic_retry": false,
+  "baseline_chain_verified": true,
+  "candidate_preserved": true,
+  "cleanup": "owned_sessions_already_closed",
+  "cleanup_needed": false,
+  "cleanup_performed": false,
+  "client_acceptance": false,
+  "current_matches_prior_after": true,
+  "exact_owned_additions_retained": true,
+  "full_m3_complete": false,
+  "http_requests": 0,
+  "library_changed_client_acceptance": false,
+  "marker": "goby-source55-failed-ui-terminal-v6",
+  "media_fact_sha256": "0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d",
+  "media_preserved": true,
+  "metadata_requests": 0,
+  "observed_run_status": "failed",
+  "old_rows_sequences_private_preserved": true,
+  "owned_sessions_closed": true,
+  "phase": "discovery",
+  "predecessor_units_preserved": true,
+  "primary_fact_sha256": "0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a",
+  "primary_invocation_id": "bb94d74b475f4382a6ec6f6df181dd74",
+  "primary_preserved": true,
+  "prior_failed_verification_preserved": true,
+  "restoration": "not_required",
+  "schema": 28,
+  "scope": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6",
+  "scope_files_unchanged": true,
+  "service_writes": 0,
+  "sql_business_writes": false,
+  "status": "failed_scope_sealed",
+  "tool": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-tool-06b",
+  "version": 1
+});
+const HISTORY_V6_NATIVE_FACTS = Object.freeze({
+  "after_snapshot": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json",
+    "sha256": "185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3"
+  },
+  "automatic_retry": false,
+  "before_snapshot": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/before-full.json",
+    "sha256": "8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9"
+  },
+  "captured_at": "2026-09-12T13:35:36.931398+00:00",
+  "client_acceptance": false,
+  "exact401_status": 401,
+  "full_m3_complete": false,
+  "header_status": 200,
+  "http_requests": 0,
+  "input": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/input.json",
+    "sha256": "db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e"
+  },
+  "kind": "admin",
+  "library_changed_client_acceptance": false,
+  "lifetime_hours": 24,
+  "login_response_complete": true,
+  "logout_status": 204,
+  "marker": "goby-source55-native-identity-v1",
+  "native_audits_verified": true,
+  "native_login_failure_type": "ObservationError",
+  "native_login_validation_passed": false,
+  "native_private": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-session-private.json",
+    "sha256": "c4f7dfcdc31031e03205b37e1be7d03c2106881b736342155bb88346c46bc41f"
+  },
+  "new_administrator_sessions": 1,
+  "owned_session_closed": true,
+  "projection_source": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-native-identity-06/project-native-identity.py",
+    "sha256": "83f90e3029362bcc6fd40ad8c0ea421891da1cfc775b9ccdb2e975e28246f866"
+  },
+  "received_cookie_owned": true,
+  "received_header": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-cookie-received-private.json",
+    "sha256": "d82b0aae258c72eb8b486259b0d1ba9087f808e244e8d2b869e79e81b63b51fe"
+  },
+  "requests": {
+    "exact401": {
+      "body_bytes": 149,
+      "body_sha256": "4350d3bf9c7f84a0507a0bcadc414bf7e7de40648527e4543a9a394463f7f12b",
+      "complete": true,
+      "intent": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-intent.json",
+        "sha256": "c803161d8fbfad1038ed6583801ea0429cd9300cee301fdc15445d0c814ad23b"
+      },
+      "result": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-exact401-result.json",
+        "sha256": "fcc3b23cf61075cc79e25df1a21f46de765a0e467111e05caa74253f8d7ea701"
+      },
+      "status": 401
+    },
+    "login": {
+      "body_bytes": 272,
+      "body_sha256": "78f9c5001ee426b92c26dd797df7fb93f89714878d6b1b24d1f735706164de6b",
+      "complete": true,
+      "intent": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-intent.json",
+        "sha256": "7b5e170e0fa6f9b2804bd275e0c0915cef6887beb5605d02b1c26b338bff085c"
+      },
+      "result": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-login-result.json",
+        "sha256": "a47b15514956048dd329c544b1c39fd2d366c56d4fa4d87adcedf4590ee921b2"
+      },
+      "status": 200
+    },
+    "logout": {
+      "body_bytes": 0,
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "complete": true,
+      "intent": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-intent.json",
+        "sha256": "0e9de3666eda24eacece40cc4eb794cf2f75e46b3a134badf9258e72a4f39c85"
+      },
+      "result": {
+        "path": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/native-logout-result.json",
+        "sha256": "3b4a26aedffe4d19d78d291684aeb1b3ce949e72fb40f077c4c2e700893cac67"
+      },
+      "status": 204
+    }
+  },
+  "scope": "/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6",
+  "service_writes": 0,
+  "session_id": "71020063951971eff0bb5699d87eb0e0",
+  "source_files_unchanged": true,
+  "sql_queries": 0,
+  "status": "verified",
+  "terminal": {
+    "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/failed-terminal.json",
+    "sha256": "7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d"
+  },
+  "token_sha256": "ca0338fefd06d4c5fb08797eecfad55f03e37731a8514fddc1482881d9a7c6dd",
+  "user_id": "0dd576d477e8acea871cb4b06cb11153",
+  "version": 1
+});
+const HISTORY_ENTRIES = Object.freeze([2, 3, 4, 5, 6].map(version => {
+  const pins = version === 2 ? PRIOR_PINS : version === 3 ? HISTORY_V3_PINS : version === 4 ? HISTORY_V4_PINS : version === 5 ? HISTORY_V5_PINS : HISTORY_V6_PINS;
   return Object.freeze({ version, input: pins.prior_input, browser_report: pins.prior_browser_report,
     controller_report: pins.prior_controller_report, terminal: pins.prior_terminal,
     before_snapshot: pins.prior_before_snapshot, after_snapshot: pins.prior_after_snapshot });
@@ -249,7 +551,7 @@ function freeze(value) {
 }
 
 function historyScope(version) {
-  need(version === 2 || version === 3 || version === 4 || version === 5);
+  need(version === 2 || version === 3 || version === 4 || version === 5 || version === 6);
   if (version === 2) return {
     version, root: PRIOR_ROOT, tool: PRIOR_TOOL, pins: PRIOR_PINS, terminalPins: PRIOR_TERMINAL_PINS,
     controllerUnit: PRIOR_CONTROLLER_UNIT, workerUnit: PRIOR_WORKER_UNIT,
@@ -266,17 +568,21 @@ function historyScope(version) {
     controllerUnit: 'goby-client-library-changed-ui-source55-controller-v4.service', workerUnit: 'goby-client-library-changed-ui-source55-v4.service',
     controllerInvocation: '6e2d992e43414cdc9aaf0f37be3ee688', workerInvocation: '8886fd825c644124ab82696979db2e73',
     beforeCounts: { sessions: 77, devices: 66, activity_entries: 171 }, afterCounts: { sessions: 78, devices: 67, activity_entries: 173 } };
-  return { version, root: HISTORY_V5_ROOT, tool: HISTORY_V5_TOOL, pins: HISTORY_V5_PINS, terminalPins: HISTORY_V5_TERMINAL_PINS,
+  if (version === 5) return { version, root: HISTORY_V5_ROOT, tool: HISTORY_V5_TOOL, pins: HISTORY_V5_PINS, terminalPins: HISTORY_V5_TERMINAL_PINS,
     controllerUnit: 'goby-client-library-changed-ui-source55-controller-v5.service', workerUnit: 'goby-client-library-changed-ui-source55-v5.service',
     controllerInvocation: 'f47dfd37b99d435d95458d1401f215cd', workerInvocation: 'b8531eeb770e48559a5e3d42f2f4e6f0',
     beforeCounts: { sessions: 78, devices: 67, activity_entries: 173 }, afterCounts: { sessions: 79, devices: 68, activity_entries: 175 } };
+  return { version, root: HISTORY_V6_ROOT, tool: HISTORY_V6_TOOL, pins: HISTORY_V6_PINS, terminalPins: HISTORY_V6_TERMINAL_PINS,
+    controllerUnit: 'goby-client-library-changed-ui-source55-controller-v6.service', workerUnit: 'goby-client-library-changed-ui-source55-v6.service',
+    controllerInvocation: 'aff7b1018c7542358bff7a52af59479d', workerInvocation: '04a5a5e520e54dad98bf3e551a88a706',
+    beforeCounts: { sessions: 79, devices: 68, activity_entries: 175 }, afterCounts: { sessions: 81, devices: 69, activity_entries: 179 } };
 }
 
 function historicalControllerAuthority(version) {
   historyScope(version);
   if (version === 2) return { ...UPGRADE_PINS };
   if (version === 3) return { ...UPGRADE_PINS, ...PRIOR_PINS };
-  return { ...UPGRADE_PINS, history: HISTORY_ENTRIES.slice(0, version === 4 ? 2 : 3) };
+  return { ...UPGRADE_PINS, history: HISTORY_ENTRIES.slice(0, version === 4 ? 2 : version === 5 ? 3 : 4) };
 }
 
 function historicalInputAuthority(version) {
@@ -379,7 +685,7 @@ export function validateLibraryChangedSource55Input(input) {
     input.actor.credentials.path === ROOT + '/viewer-credentials.json');
   const authority = input.authority;
   need(exact(authority, [...Object.keys(UPGRADE_PINS), 'history', 'before_snapshot']) && descriptor(authority.before_snapshot) &&
-    Object.entries(UPGRADE_PINS).every(([key, value]) => same(authority[key], value)) && Array.isArray(authority.history) && authority.history.length === 4 &&
+    Object.entries(UPGRADE_PINS).every(([key, value]) => same(authority[key], value)) && Array.isArray(authority.history) && authority.history.length === 5 &&
     authority.history.every((entry, index) => exact(entry, ['version', 'input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) &&
       entry.version === index + 2 && ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot'].every(key => descriptor(entry[key])) &&
       same(entry, HISTORY_ENTRIES[index])));
@@ -551,6 +857,7 @@ function validatePriorLogin(proof) {
 
 function validatePriorSnapshotDelta(before, after, browser, version = 2) {
   const scope = historyScope(version);
+  need(scope.version !== 6);
   const proof = browser.login_proof; validatePriorLogin(proof);
   need(record(before) && record(after) && before.schema === 28 && after.schema === 28 &&
     same(Object.keys(before).sort(), Object.keys(after).sort()) &&
@@ -621,6 +928,100 @@ function validatePriorSnapshotDelta(before, after, browser, version = 2) {
   }
   need(Object.hasOwn(left.sequences, 'devices_id_seq') && Object.hasOwn(left.sequences, 'activity_entries_id_seq'));
   return { new_sessions: 1, new_devices: 1, new_audits: 2, metadata_revision_delta: 0,
+    old_rows_sequences_private_preserved: true, owned_sessions_closed: true };
+}
+
+function validateHistorySixSnapshotDelta(before, after, browser, identity) {
+  const scope = historyScope(6);
+  const proof = browser.login_proof; validatePriorLogin(proof);
+  need(record(before) && record(after) && before.schema === 28 && after.schema === 28 &&
+    same(Object.keys(before).sort(), Object.keys(after).sort()) &&
+    Object.keys(before).filter(key => key !== 'database').every(key => same(before[key], after[key])));
+  const left = before.database, right = after.database;
+  need(record(left) && record(right) && same(Object.keys(left).sort(), Object.keys(right).sort()) &&
+    Object.keys(left).filter(key => !['tables', 'sequences', 'metadata'].includes(key)).every(key => same(left[key], right[key])) &&
+    record(left.metadata) && record(right.metadata) && same(Object.keys(left.metadata).sort(), Object.keys(right.metadata).sort()) &&
+    Object.keys(left.metadata).filter(key => key !== 'captured_at').every(key => same(left.metadata[key], right.metadata[key])) &&
+    record(left.tables) && record(right.tables) && Object.keys(left.tables).length === 35 &&
+    same(Object.keys(left.tables).sort(), Object.keys(right.tables).sort()));
+  const start = ledgerInstant(left.metadata.captured_at), end = ledgerInstant(right.metadata.captured_at);
+  need(start < end && ledgerInstant(browser.started_at) >= start && ledgerInstant(browser.completed_at) <= end &&
+    ledgerInstant(browser.started_at) <= ledgerInstant(browser.completed_at));
+  const additions = Object.create(null);
+  for (const [name, rows] of Object.entries(left.tables)) {
+    const current = right.tables[name], columns = left.metadata.columns[name];
+    need(Array.isArray(rows) && Array.isArray(current) && Array.isArray(columns) &&
+      [...rows, ...current].every(row => exact(row, columns)));
+    if (!['sessions', 'devices', 'activity_entries'].includes(name)) {
+      need(same(rows, current)); continue;
+    }
+    const remaining = new Map();
+    for (const row of rows) { const key = canonical(row); remaining.set(key, (remaining.get(key) ?? 0) + 1); }
+    const added = [];
+    for (const row of current) {
+      const key = canonical(row), count = remaining.get(key) ?? 0;
+      if (count > 0) remaining.set(key, count - 1); else added.push(row);
+    }
+    need([...remaining.values()].every(value => value === 0) && new Set(added.map(canonical)).size === added.length);
+    additions[name] = added;
+  }
+  need(Object.entries(scope.beforeCounts).every(([name, count]) => left.tables[name].length === count) &&
+    Object.entries(scope.afterCounts).every(([name, count]) => right.tables[name].length === count) &&
+    additions.sessions.length === 2 && additions.devices.length === 1 && additions.activity_entries.length === 4);
+  const session = additions.sessions.find(row => row.id === proof.session_id), device = additions.devices[0];
+  need(session);
+  const integral = value => typeof value === 'bigint' || Number.isSafeInteger(value);
+  need(left.tables.sessions.every(row => row.id !== proof.session_id && row.token_hash !== '\\x' + proof.token_sha256) &&
+    session.id === proof.session_id && session.token_hash === '\\x' + proof.token_sha256 && session.user_id === USER && session.kind === 'emby' &&
+    session.device_id === proof.device_id && ['client_name', 'device_name', 'client_version'].every(key => session[key] === proof[key]) &&
+    ledgerInstant(session.created_at) === ledgerInstant(proof.created_at) && record(session.client_capabilities) && integral(session.device_registry_id));
+  const issued = ledgerInstant(session.created_at), touched = ledgerInstant(session.last_seen_at), revoked = ledgerInstant(session.revoked_at);
+  need(start <= issued && issued <= touched && touched <= end && issued <= revoked && revoked <= end &&
+    ledgerInstant(browser.started_at) <= issued && revoked <= ledgerInstant(browser.completed_at) &&
+    ledgerInstant(session.expires_at) === issued + 30n * 24n * 60n * 60n * 1000000n);
+  need(integral(device.id) && same(device.id, session.device_registry_id) &&
+    left.tables.devices.every(row => row.id !== device.id && row.reported_device_id !== proof.device_id) &&
+    device.reported_device_id === proof.device_id && device.reported_name === proof.device_name && device.app_name === proof.client_name &&
+    device.app_version === proof.client_version && device.last_user_id === USER && device.ip_address === '127.0.0.1' &&
+    device.custom_name === null && device.deleted_at === null && device.revision === 1 &&
+    start <= ledgerInstant(device.created_at) && ledgerInstant(device.created_at) <= issued &&
+    ledgerInstant(device.created_at) <= ledgerInstant(device.last_seen_at) && ledgerInstant(device.last_seen_at) <= end);
+  const audits = additions.activity_entries.filter(row => row.resource_id === session.id);
+  need(audits.length === 2 && same(audits.map(row => row.action).sort(), ['session.login', 'session.revoked']) &&
+    audits.every(row => integral(row.id) && row.severity === 'Info' && row.source === 'emby' && row.actor_kind === 'user' &&
+      row.actor_id === USER && row.actor_credential_id === session.id && row.resource_kind === 'session' && row.resource_id === session.id &&
+      row.revision === 0 && row.affected_count === 1 && row.request_id === '' && row.state === '' && same(row.changed_fields, []) &&
+      row.previous_revision === 0 && row.observation_fingerprint === '' && start <= ledgerInstant(row.created_at) && ledgerInstant(row.created_at) <= end));
+  need(exact(identity, ['session_id', 'token_sha256', 'user_id', 'kind']) && ID.test(identity.session_id) && digest(identity.token_sha256) &&
+    identity.user_id === '0dd576d477e8acea871cb4b06cb11153' && identity.kind === 'admin');
+  const administrator = additions.sessions.find(row => row.id === identity.session_id);
+  need(administrator && administrator !== session && administrator.token_hash === '\\x' + identity.token_sha256 &&
+    left.tables.sessions.every(row => row.id !== administrator.id && row.token_hash !== administrator.token_hash) &&
+    administrator.token_hash !== session.token_hash && administrator.user_id === identity.user_id && administrator.kind === 'admin' &&
+    administrator.client_name === 'Goby Dashboard' && administrator.device_id === 'goby-dashboard' && administrator.device_name === 'Web browser' &&
+    administrator.device_registry_id === null && same(administrator.client_capabilities, {}) && administrator.last_seen_at === administrator.created_at &&
+    left.tables.users.filter(row => row.id === identity.user_id && row.is_administrator === true && row.is_disabled === false).length === 1);
+  const nativeIssued = ledgerInstant(administrator.created_at), nativeRevoked = ledgerInstant(administrator.revoked_at);
+  need(start <= nativeIssued && nativeIssued <= nativeRevoked && nativeRevoked <= end &&
+    ledgerInstant(administrator.expires_at) === nativeIssued + 24n * 60n * 60n * 1000000n);
+  const nativeAudits = additions.activity_entries.filter(row => row.resource_id === administrator.id);
+  need(nativeAudits.length === 2 && same(nativeAudits.map(row => row.action).sort(), ['session.login', 'session.revoked']) &&
+    nativeAudits.every(row => integral(row.id) && row.severity === 'Info' && row.source === 'native' && row.actor_kind === 'user' &&
+      row.actor_id === administrator.user_id && row.actor_credential_id === administrator.id && row.resource_kind === 'session' && row.resource_id === administrator.id &&
+      row.revision === 0 && row.affected_count === 1 && row.request_id === '' && row.state === '' && same(row.changed_fields, []) &&
+      row.previous_revision === 0 && row.observation_fingerprint === '' && nativeIssued <= ledgerInstant(row.created_at) && ledgerInstant(row.created_at) <= end));
+  need(record(left.sequences) && record(right.sequences) && same(Object.keys(left.sequences).sort(), Object.keys(right.sequences).sort()));
+  for (const [name, initial] of Object.entries(left.sequences)) {
+    const current = right.sequences[name], table = { devices_id_seq: 'devices', activity_entries_id_seq: 'activity_entries' }[name];
+    need(exact(initial, ['last_value', 'is_called']) && exact(current, ['last_value', 'is_called']) &&
+      integral(initial.last_value) && integral(current.last_value) && typeof initial.is_called === 'boolean' && typeof current.is_called === 'boolean');
+    if (!table) { need(same(initial, current)); continue; }
+    const added = additions[table], first = BigInt(initial.last_value) + 1n;
+    need(initial.is_called === true && current.is_called === true && BigInt(current.last_value) === BigInt(initial.last_value) + BigInt(added.length) &&
+      same(added.map(row => BigInt(row.id)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0), added.map((_, index) => first + BigInt(index))));
+  }
+  need(Object.hasOwn(left.sequences, 'devices_id_seq') && Object.hasOwn(left.sequences, 'activity_entries_id_seq'));
+  return { new_sessions: 2, new_devices: 1, new_audits: 4, metadata_revision_delta: 0,
     old_rows_sequences_private_preserved: true, owned_sessions_closed: true };
 }
 
@@ -713,7 +1114,67 @@ function validatePriorTerminal(input, terminal, priorInput, browser, report, led
     same(observed.failure_counters, { observer_errors: 0, page_errors: 0, proxy_failed: 0, proxy_rejected: 0, websocket_failed: 0 }));
 }
 
+function validateHistorySixTerminal(input, terminal, priorInput, browser, report, ledger, scope) {
+  need(scope.version === 6 && exact(terminal, HISTORY_V6_TERMINAL_KEYS) &&
+    Object.entries(HISTORY_V6_TERMINAL_SCALARS).every(([key, value]) => same(terminal[key], value)) &&
+    Object.entries(HISTORY_V6_TERMINAL_FACTS).every(([key, value]) => same(terminal[key], value)) &&
+    Object.entries(HISTORY_V6_PREDECESSORS).every(([key, value]) => same(terminal[key], value)) &&
+    same(terminal.accepted_browser_stages, ['discovery']) && same(terminal.reserved_native_intents, ['login', 'logout', 'exact401']) &&
+    same(terminal.dispatched_native_intents, ['login', 'logout', 'exact401']) && same(terminal.ledger, ledger) &&
+    same(terminal.cumulative_totals, scope.afterCounts) && same(terminal.history_preservation, report.history_preservation) &&
+    same(terminal.prior_baseline, HISTORY_V5_TERMINAL_PINS.independent_snapshot));
+  ledgerInstant(terminal.captured_at);
+  for (const [key, expected] of Object.entries({ input: scope.pins.prior_input, report: scope.pins.prior_controller_report,
+    browser_report: scope.pins.prior_browser_report, before_snapshot: scope.pins.prior_before_snapshot,
+    prior_after_snapshot: scope.pins.prior_after_snapshot, upgrade_authority_snapshot: UPGRADE_PINS.current_snapshot, ...scope.terminalPins }))
+    need(same(terminal[key], expected));
+  const native = terminal.native_authentication;
+  need(same(native.private, report.evidence['native-session-private.json']) &&
+    same(native.received_header, report.evidence['native-cookie-received-private.json']));
+  for (const name of ['login', 'logout', 'exact401']) for (const kind of ['intent', 'result'])
+    need(same(native.requests[name][kind], report.evidence['native-' + name + '-' + kind + '.json']));
+  need(same(terminal.primary_process, { pid: PRIMARY.pid, start_ticks: PRIMARY.start_ticks, boot_id: BOOT }) &&
+    terminal.primary_invocation_id === PRIMARY.invocation &&
+    terminal.primary_fact_sha256 === '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a' &&
+    terminal.media_fact_sha256 === '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d');
+  const serviceKeys = ['ActiveState', 'ControlGroup', 'DropInPaths', 'ExecMainCode', 'ExecMainStatus', 'FragmentPath', 'Group', 'Id',
+    'InvocationID', 'LoadState', 'MainPID', 'Restart', 'Result', 'SubState', 'Transient', 'User', 'WorkingDirectory'];
+  const candidate = terminal.candidate, live = candidate?.properties;
+  need(exact(candidate, ['binary_sha256', 'invocation_id', 'process', 'properties']) &&
+    candidate.binary_sha256 === input.candidate.binary_sha256 && candidate.invocation_id === input.candidate.invocation_id &&
+    same(candidate.process, input.candidate.process) && exact(live, serviceKeys) &&
+    same(live, { ActiveState: 'active', ControlGroup: '/system.slice/goby-client-m3e.service', DropInPaths: '', ExecMainCode: '0', ExecMainStatus: '0',
+      FragmentPath: '/etc/systemd/system/goby-client-m3e.service', Group: 'goby', Id: 'goby-client-m3e.service',
+      InvocationID: input.candidate.invocation_id, LoadState: 'loaded', MainPID: String(input.candidate.process.pid), Restart: 'no',
+      Result: 'success', SubState: 'running', Transient: 'no', User: 'goby', WorkingDirectory: '/var/lib/goby-test/client-m3e' }));
+  need(exact(terminal.failed_units, [scope.controllerUnit, scope.workerUnit]));
+  for (const [unit, original, invocation, directory] of [
+    [scope.controllerUnit, priorInput.controller, scope.controllerInvocation, scope.tool],
+    [scope.workerUnit, browser.node_process, scope.workerInvocation, scope.root],
+  ]) {
+    const failure = terminal.failed_units[unit], expected = { pid: original.pid, start_ticks: Number(original.start_ticks), boot_id: BOOT };
+    need(exact(failure, ['old_process', 'old_process_gone', 'properties', 'recursive_cgroup']) && same(failure.old_process, expected) &&
+      failure.old_process_gone === true && exact(failure.properties, serviceKeys) && same(failure.properties, {
+        ActiveState: 'failed', ControlGroup: '', DropInPaths: '', ExecMainCode: '1', ExecMainStatus: '1',
+        FragmentPath: '/run/systemd/transient/' + unit, Group: 'root', Id: unit, InvocationID: invocation, LoadState: 'loaded', MainPID: '0',
+        Restart: 'no', Result: 'exit-code', SubState: 'failed', Transient: 'yes', User: 'root', WorkingDirectory: directory }) &&
+      same(failure.recursive_cgroup, { exists: false, files_checked: 0, path: '/sys/fs/cgroup/system.slice/' + unit, processes: 0 }));
+  }
+  need(same(report.worker_terminal, { ...terminal.failed_units[scope.workerUnit].properties, cgroup_empty: true }));
+  const observed = terminal.browser;
+  need(exact(observed, ['browser_closed', 'capabilities_verified', 'capability_requests', 'context_closed', 'failure', 'failure_counters',
+    'http_pending', 'login_proven', 'owned_session_revoked', 'proxy_closed', 'result', 'sockets_remaining',
+    'ui_logout_and_token_rejection_proven', 'websocket_active', 'websocket_closed', 'websocket_opened', 'websocket_pending']) &&
+    observed.result === 'failed' && observed.failure === 'library_changed_controller_aborted' && observed.capability_requests === 1 &&
+    ['browser_closed', 'capabilities_verified', 'context_closed', 'login_proven', 'owned_session_revoked', 'proxy_closed',
+      'ui_logout_and_token_rejection_proven'].every(key => observed[key] === true) &&
+    ['http_pending', 'sockets_remaining', 'websocket_active', 'websocket_pending'].every(key => observed[key] === 0) &&
+    observed.websocket_opened === 1 && observed.websocket_closed === 1 &&
+    same(observed.failure_counters, { observer_errors: 0, page_errors: 0, proxy_failed: 0, proxy_rejected: 0, websocket_failed: 0 }));
+}
+
 function validateHistoryRecord(input, documents, scope) {
+  if (scope.version === 6) return validateHistorySixRecord(input, documents, scope);
   const { input: priorInput, browser_report: browser, controller_report: report, terminal: priorTerminal, before: priorBefore, after: priorAfter, independent: priorIndependent } = documents;
   need(exact(priorInput, ['marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate', 'fixture', 'expected_libraries', 'target',
     'source_closure', 'authority', 'controller']) && priorInput.marker === input.marker && priorInput.version === 1 && priorInput.mode === input.mode &&
@@ -809,12 +1270,191 @@ function validateHistoryRecord(input, documents, scope) {
   return ledger;
 }
 
+function validateHistorySixNativeIdentity(value, terminal, input, priorInput) {
+  need(exact(value, [...Object.keys(HISTORY_V6_NATIVE_FACTS), 'candidate_process', 'controller']) &&
+    Object.entries(HISTORY_V6_NATIVE_FACTS).every(([key, expected]) => same(value[key], expected)) &&
+    same(value.candidate_process, input.candidate.process) && same(value.controller, priorInput.controller) &&
+    same(value.native_private, terminal.native_authentication.private) && same(value.received_header, terminal.native_authentication.received_header));
+  for (const name of ['login', 'logout', 'exact401']) {
+    const { body_sha256: ignoredHash, body_bytes: ignoredBytes, ...transport } = value.requests[name];
+    need(same(transport, terminal.native_authentication.requests[name]));
+  }
+  return HISTORY_V6_NATIVE_IDENTITY;
+}
+
+function validateHistorySixDiscovery(discovery, browser, report, priorInput) {
+  const pins = HISTORY_V6_DISCOVERY, value = discovery?.value, observed = browser.discovery, token = browser.login_proof.token_sha256;
+  need(exact(discovery, ['path', 'sha256', 'value']) && same({ path: discovery.path, sha256: discovery.sha256 }, pins.stage) &&
+    same(report.evidence['accepted-stage-discovery.json'], pins.accepted) &&
+    exact(value, ['controller', 'input_sha256', 'marker', 'name', 'node_process', 'observation', 'previous_control_sha256',
+      'session_private', 'source_closure_sha256', 'token_sha256', 'version']) &&
+    value.marker === 'goby-client-library-changed-stage-v1' && value.version === 1 && value.name === 'discovery' &&
+    value.input_sha256 === HISTORY_V6_PINS.prior_input.sha256 && value.source_closure_sha256 === browser.source_closure_sha256 &&
+    same(value.controller, priorInput.controller) && same(value.node_process, browser.node_process) && value.previous_control_sha256 === null &&
+    value.token_sha256 === token && same(value.session_private, pins.session_private) && same(browser.session_private, pins.session_private) &&
+    same(report.evidence['browser-session-private.json'], pins.session_private) && same(value.observation, observed) &&
+    exact(observed, ['collection_folder', 'collection_folder_reads', 'dom', 'home', 'navigation', 'query_allowlist', 'reads', 'socket']));
+  need(Array.isArray(browser.stage_publication_attempts) && browser.stage_publication_attempts.length === 1);
+  const published = browser.stage_publication_attempts[0];
+  need(exact(published, ['name', 'path', 'sha256', 'publication_started_elapsed_ms', 'completed']) &&
+    published.name === 'discovery' && published.path === pins.stage.path && published.sha256 === pins.stage.sha256 && published.completed === true &&
+    Number.isFinite(published.publication_started_elapsed_ms) && published.publication_started_elapsed_ms >= 0);
+  need(same(browser.abort, pins.browser_abort) && same(report.evidence['browser-abort.json'], pins.browser_abort) &&
+    same(report.evidence['abort.json'], pins.abort) && exact(browser.controller_abort, ['path', 'sha256', 'value']) &&
+    same({ path: browser.controller_abort.path, sha256: browser.controller_abort.sha256 }, pins.abort));
+  const aborted = browser.controller_abort.value;
+  need(exact(aborted, ['controller', 'failure', 'input_sha256', 'marker', 'name', 'node_process', 'previous_control_sha256',
+    'previous_stage_sha256', 'session_private', 'source_closure_sha256', 'token_sha256', 'version']) &&
+    aborted.marker === 'goby-client-library-changed-abort-v1' && aborted.version === 1 && aborted.name === 'discovery' &&
+    aborted.failure === 'library_changed_controller_failed' && aborted.input_sha256 === value.input_sha256 &&
+    aborted.source_closure_sha256 === value.source_closure_sha256 && aborted.token_sha256 === token &&
+    same(aborted.controller, value.controller) && same(aborted.node_process, value.node_process) &&
+    same(aborted.session_private, value.session_private) && aborted.previous_control_sha256 === null && aborted.previous_stage_sha256 === pins.stage.sha256);
+  const dom = observed.dom, home = observed.home, target = priorInput.target;
+  const route = '/web/index.html#!/videos?serverId=' + SERVER + '&parentId=' + LIBRARY;
+  need(record(dom) && dom.route === route && text(dom.document_id) && dom.target_id === ITEM && dom.expected_name === target.name &&
+    dom.observed_title === target.name && dom.identity_mode === 'singleton-movie-list-wire-and-card' &&
+    Number.isSafeInteger(dom.visible_items_containers) && dom.visible_items_containers >= 0 && dom.visible_items_containers <= 32 &&
+    ['visible_card_containers', 'visible_cards', 'visible_title_buttons', 'visible_target_cards', 'target_title_count'].every(key => dom[key] === 1) &&
+    dom.forbidden_title_count === 0 && ['explicit_identity_consistent', 'identity_proven', 'media_inactive', 'passed'].every(key => dom[key] === true) &&
+    record(home) && home.passed === true && home.media_inactive === true && home.location?.route === 'home' &&
+    home.location.same_origin === true && home.location.supported_path === true && Array.isArray(home.libraries) && home.libraries.length === 4 &&
+    priorInput.expected_libraries.every(expected => home.libraries.filter(library => library.id === expected.id && library.name === expected.name &&
+      library.visible_card_count === 1 && library.card_id_present === true && library.card_id_matches === true && library.passed === true).length === 1));
+  const pairs = [observed.reads, observed.collection_folder_reads];
+  need(pairs.every(items => Array.isArray(items) && items.length === 1));
+  for (const [index, items] of pairs.entries()) {
+    const pair = items[0], frame = pair?.frame, physical = pair?.physical, kind = index === 0 ? 'items' : 'collection-folder';
+    const requestRoute = '/Users/' + USER + '/Items' + (index === 0 ? '' : '/' + LIBRARY);
+    need(exact(pair, ['frame', 'physical', 'unambiguous', 'complete']) && pair.unambiguous === true && pair.complete === true &&
+      record(frame) && record(physical) && Number.isSafeInteger(frame.index) && frame.index >= 0 && Number.isSafeInteger(physical.id) && physical.id >= 0 &&
+      [frame, physical].every(part => part.kind === kind && part.route === requestRoute && part.phase === 'discovery' && part.token_sha256 === token &&
+        part.status === 200 && digest(part.shape_sha256) && digest(part.request_sha256)) &&
+      frame.shape_sha256 === physical.shape_sha256 && frame.request_sha256 === physical.request_sha256 && frame.main_frame === true &&
+      frame.document_id === dom.document_id && frame.page_route === route && frame.finished === true && frame.failed === false && frame.from_service_worker === false &&
+      physical.method === 'GET' && physical.completed === true && physical.terminal === 'completed' && physical.terminal_status === 200 &&
+      record(physical.projection) && physical.projection.count === 1 && digest(physical.projection.body_sha256) &&
+      Number.isSafeInteger(physical.projection.body_bytes) && physical.projection.body_bytes > 0 &&
+      physical.response_bytes === physical.projection.body_bytes && Array.isArray(physical.query));
+    if (index === 0) {
+      const query = new Map(physical.query);
+      need(query.size === physical.query.length && !query.has('Ids') && query.get('ParentId') === LIBRARY && query.get('IncludeItemTypes') === 'Movie' &&
+        query.get('Recursive') === 'true' && query.get('StartIndex') === '0' && query.get('Limit') === '50' &&
+        same(physical.projection.target, { Id: ITEM, Name: target.name, Type: 'Movie' }) &&
+        same(dom.wire_identity, { phase: 'discovery', physical_exchange_id: physical.id, frame_request_index: frame.index,
+          body_sha256: physical.projection.body_sha256, shape_sha256: physical.shape_sha256, request_sha256: physical.request_sha256,
+          token_sha256: token, message_id: null }) &&
+        same(observed.query_allowlist, [{ kind, route: requestRoute, query: physical.query, shape_sha256: physical.shape_sha256 }]));
+    } else {
+      const collection = physical.projection.collection_folder;
+      need(same(physical.query, []) && collection?.Id === LIBRARY && collection.Type === 'CollectionFolder' &&
+        collection.Name === priorInput.expected_libraries.find(library => library.id === LIBRARY).name &&
+        same(collection.Subviews, ['movies', 'movies', 'folders']) &&
+        same(observed.collection_folder, { id: LIBRARY, type: 'CollectionFolder', subviews: collection.Subviews,
+          physical_exchange_id: physical.id, frame_request_index: frame.index, passed: true }));
+    }
+  }
+  need(exact(observed.socket, ['connection_id', 'token_sha256', 'seen', 'opened']) && text(observed.socket.connection_id) &&
+    observed.socket.token_sha256 === token && observed.socket.seen === 1 && observed.socket.opened === 1 &&
+    observed.navigation?.before_route === '/web/index.html#!/home' && observed.navigation.after_route === route);
+}
+
+function validateHistorySixRecord(input, documents, scope) {
+  need(scope.version === 6);
+  const { input: priorInput, browser_report: browser, controller_report: report, terminal: priorTerminal, before: priorBefore, after: priorAfter, independent: priorIndependent } = documents;
+  need(exact(priorInput, ['marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate', 'fixture', 'expected_libraries', 'target',
+    'source_closure', 'authority', 'controller']) && priorInput.marker === input.marker && priorInput.version === 1 && priorInput.mode === input.mode &&
+    priorInput.root === scope.root && priorInput.output === scope.root + '/browser' && same(priorInput.candidate, input.candidate) &&
+    same(priorInput.fixture, FIXTURES) && same(priorInput.expected_libraries, input.expected_libraries) && same(priorInput.target, input.target) &&
+    same(priorInput.authority, historicalInputAuthority(scope.version)) &&
+    exact(priorInput.source_closure, SOURCES.map(name => scope.tool + '/' + name)) && Object.values(priorInput.source_closure).every(digest));
+  const actor = priorInput.actor, controller = priorInput.controller;
+  need(exact(actor, ['slot', 'user_id', 'credentials', 'account_key', 'source_credentials_sha256']) && actor.slot === 'B' && actor.user_id === USER &&
+    actor.account_key === 'viewer' && actor.source_credentials_sha256 === SOURCE_CREDENTIALS_SHA && descriptor(actor.credentials) &&
+    actor.credentials.path === scope.root + '/viewer-credentials.json' &&
+    exact(controller, ['pid', 'start_ticks', 'boot_id', 'unit']) && Number.isSafeInteger(controller.pid) && controller.pid > 1 &&
+    typeof controller.start_ticks === 'string' && /^[1-9]\d*$/.test(controller.start_ticks) && Number.isSafeInteger(Number(controller.start_ticks)) &&
+    controller.boot_id === BOOT && controller.unit === scope.controllerUnit);
+  const closureSHA = hash(canonical(priorInput.source_closure)), node = browser?.node_process;
+  need(record(browser) && browser.marker === 'goby-client-library-changed-report-v1' && browser.version === 1 && browser.mode === input.mode &&
+    browser.result === 'failed' && browser.outcome === 'failed' && browser.failure === 'library_changed_controller_aborted' &&
+    browser.input_sha256 === scope.pins.prior_input.sha256 && browser.source_closure_sha256 === closureSHA &&
+    same(browser.controller, controller) && same(browser.candidate, input.candidate) && same(browser.authority, priorInput.authority) &&
+    same(browser.target, input.target) && ['client_acceptance', 'library_changed_client_acceptance', 'full_m3_complete'].every(key => browser[key] === false) &&
+    ['armed', 'forward', 'restore_armed', 'restored'].every(key => browser[key] === null) &&
+    same(browser.stages, [{ name: 'discovery', ...HISTORY_V6_DISCOVERY.stage }]) && same(browser.controls, []) && browser.restoration === 'not_required' &&
+    exact(node, ['pid', 'start_ticks', 'boot_id', 'uid', 'gid', 'executable_path', 'executable_sha256', 'cgroup']) &&
+    Number.isSafeInteger(node.pid) && node.pid > 1 && typeof node.start_ticks === 'string' && /^[1-9]\d*$/.test(node.start_ticks) &&
+    Number.isSafeInteger(Number(node.start_ticks)) && node.boot_id === BOOT && node.uid === 0 && node.gid === 0 &&
+    node.executable_path === WORK + '/client-library-changed-source44-tool-01/node' &&
+    node.executable_sha256 === '3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327' && node.cgroup === '/system.slice/' + scope.workerUnit);
+  validatePriorLogin(browser.login_proof);
+  const observedActor = browser.actor, proof = browser.login_proof, token = proof.token_sha256;
+  need(record(observedActor) && observedActor.slot === 'B' && observedActor.id === USER && observedActor.credentials_sha256 === actor.credentials.sha256 &&
+    observedActor.ordinary_authority_confirmed === true && observedActor.closed === true && observedActor.token_fingerprint === token &&
+    same(observedActor.cleanup_failures, []) && same(observedActor.login, { status: 200, request_count: 1, attempted: true, credentials_filled: true }) &&
+    same(observedActor.logout, { status: 204, login_view_visible: true, attempted: true }) &&
+    same(observedActor.proxy_logout, { source: 'physical-http-forwarding-proxy-request', token_fingerprint: token, status: 204, completed: true }));
+  validatePriorClosure(browser.closure); validatePriorClosure(observedActor.home_closure);
+  const logoutProof = observedActor.session_proof, entry = logoutProof?.entries?.[0], verification = entry?.verification, ui = entry?.ui_request;
+  need(record(logoutProof) && logoutProof.format === 1 && logoutProof.outcome === 'all_observed_logout_tokens_rejected' &&
+    Array.isArray(logoutProof.entries) && logoutProof.entries.length === 1 && logoutProof.logout_overflow === 0 && logoutProof.observer_errors === 0 &&
+    entry.index === 0 && entry.token_fingerprint === token && entry.result === 'logout_token_rejected' &&
+    same(entry.token_sources, ['query:x-emby-token']) && ui?.method === 'POST' && ui.route === '/emby/Sessions/Logout' && ui.response_status === 204 &&
+    ui.client_request_finished === true && ui.client_request_failed === false &&
+    verification?.source === 'independent-node-http-post-logout-verification' && verification.is_ui_request === false &&
+    verification.method === 'GET' && verification.route === '/emby/System/Info' && verification.status === 401 &&
+    verification.eligible_at_request_start === true && verification.result === 'token_rejected' && verification.trigger === 'ui_logout_response');
+  const times = [ui.elapsed_ms, ui.response_elapsed_ms, verification.started_elapsed_ms, verification.finished_elapsed_ms];
+  need(times.every(value => Number.isSafeInteger(value) && value >= 0 && value <= 600000) &&
+    times.every((value, index) => index === 0 || value >= times[index - 1]));
+  const capabilities = browser.capabilities_private;
+  need(exact(capabilities, ['path', 'sha256', 'request_count', 'last_successful_body_sha256']) &&
+    capabilities.path === scope.root + '/browser/capabilities-private.json' && digest(capabilities.sha256) &&
+    capabilities.request_count === 1 && digest(capabilities.last_successful_body_sha256));
+  need(!Object.hasOwn(browser, 'diagnostics'));
+  need(record(report) && report.marker === 'goby-client-library-changed-observation-v1' && report.version === 1 && report.mode === input.mode &&
+    report.status === 'failed' && report.phase === 'discovery' && report.input_sha256 === scope.pins.prior_input.sha256 &&
+    report.source_closure_sha256 === closureSHA && same(report.controller, controller) && same(report.node_process, node) &&
+    same(report.candidate_process, input.candidate.process) && report.candidate_invocation === input.candidate.invocation_id &&
+    report.state_sha256 === input.candidate.state_sha256 && same(report.authority, historicalControllerAuthority(scope.version)) &&
+    same(report.reserved_native_intents, ['login', 'logout', 'exact401']) && same(report.dispatched_native_intents, ['login', 'logout', 'exact401']) && report.restoration === 'not_required' &&
+    ['automatic_retry', 'browser_fallback_used', 'candidate_or_primary_service_writes', 'client_acceptance', 'full_m3_complete',
+      'library_changed_client_acceptance', 'restoration_required', 'sql_business_writes', 'worker_chain_ledger_passed',
+      'acceptance_ready_for_outer_terminal'].every(key => report[key] === false) && report.outer_controller_terminal_required === true && record(report.evidence));
+  for (const [name, expected] of Object.entries({ 'input.json': scope.pins.prior_input, 'browser-report.json': scope.pins.prior_browser_report,
+    'before-full.json': scope.pins.prior_before_snapshot, 'after-full.json': scope.pins.prior_after_snapshot,
+    'browser-capabilities-private.json': { path: capabilities.path, sha256: capabilities.sha256 } })) need(same(report.evidence[name], expected));
+  const close = browser.control_close, value = close?.value;
+  need(exact(close, ['path', 'sha256', 'value']) && close.path === scope.root + '/control-close.json' && digest(close.sha256) &&
+    same(report.evidence['control-close.json'], { path: close.path, sha256: close.sha256 }) &&
+    exact(value, ['marker', 'version', 'name', 'input_sha256', 'source_closure_sha256', 'controller', 'node_process',
+      'previous_stage_sha256', 'reservation', 'commit', 'restoration']) && value.marker === 'goby-client-library-changed-control-v1' &&
+    value.version === 1 && value.name === 'close' && value.input_sha256 === scope.pins.prior_input.sha256 && value.source_closure_sha256 === closureSHA &&
+    same(value.controller, controller) && same(value.node_process, node) && value.previous_stage_sha256 === HISTORY_V6_DISCOVERY.stage.sha256 && value.reservation === null &&
+    value.commit === null && value.restoration === 'not_required');
+  validateHistorySixDiscovery(documents.discovery, browser, report, priorInput);
+  const identity = validateHistorySixNativeIdentity(documents.native_identity, priorTerminal, input, priorInput);
+  const ledger = validateHistorySixSnapshotDelta(priorBefore, priorAfter, browser, identity);
+  need(same(report.ledger, ledger) && same(report.errors, [HISTORY_V6_TERMINAL_FACTS.failure]) &&
+    same(report.history_preservation, [2, 3, 4, 5].map(version => {
+      const previous = historyScope(version);
+      return { version, ledger: { new_sessions: 1, new_devices: 1, new_audits: 2, metadata_revision_delta: 0,
+        old_rows_sequences_private_preserved: true, owned_sessions_closed: true },
+        after_snapshot: previous.pins.prior_after_snapshot, independent_snapshot: previous.terminalPins.independent_snapshot };
+    })));
+  validateHistorySixTerminal(input, priorTerminal, priorInput, browser, report, ledger, scope);
+  identicalSnapshotWithLaterCapture(priorAfter, priorIndependent);
+  need(ledgerInstant(priorIndependent.database.metadata.captured_at) <= ledgerInstant(priorTerminal.captured_at));
+  return ledger;
+}
+
 function validatePriorDocuments(input, documents) {
-  need(Array.isArray(documents.history) && documents.history.length === 4);
+  need(Array.isArray(documents.history) && documents.history.length === 5);
   let previous = documents.current, independent = null;
   const summaries = [];
   for (const [index, entry] of documents.history.entries()) {
-    need(exact(entry, ['version', 'input', 'browser_report', 'controller_report', 'terminal', 'before', 'after', 'independent']) && entry.version === index + 2);
+    need(exact(entry, ['version', 'input', 'browser_report', 'controller_report', 'terminal', 'before', 'after', 'independent', ...(entry.version === 6 ? ['discovery', 'native_identity'] : [])]) && entry.version === index + 2);
     const scope = historyScope(entry.version);
     identicalSnapshotWithLaterCapture(previous, entry.before);
     if (independent !== null) need(ledgerInstant(entry.before.database.metadata.captured_at) > ledgerInstant(independent.database.metadata.captured_at));
@@ -952,7 +1592,7 @@ export function validateLibraryChangedSource55Documents(input, documents) {
   need(proxy?.pid === PROXY_PROCESS.pid && String(proxy.start_ticks) === String(PROXY_PROCESS.start_ticks) &&
     proxy.reference_only === false && Array.isArray(proxy.listen) && proxy.listen.length <= 4 &&
     proxy.listen.filter(value => value === '127.0.0.1:18196').length === 1);
-  need(Array.isArray(documents.history) && documents.history.length === 4);
+  need(Array.isArray(documents.history) && documents.history.length === 5);
   validateSchema28Snapshots(current, documents.history[0].before, catalog, candidate);
   validatePriorDocuments(input, documents);
   const tables = before.database.tables;
@@ -1068,7 +1708,7 @@ export async function readLibraryChangedSource55Snapshot(input, key) {
     need(key === 'current_snapshot' || key === 'history_after_snapshot' || key === 'before_snapshot');
     need(process.platform === 'linux' && process.getuid?.() === 0 && process.getgid?.() === 0 &&
       SELF === TOOL + '/client-library-changed-source55-fixture.mjs');
-    const item = key === 'history_after_snapshot' ? input.authority.history[3].after_snapshot : input.authority[key];
+    const item = key === 'history_after_snapshot' ? input.authority.history[4].after_snapshot : input.authority[key];
     const file = await protectedFile(item.path, item.sha256, new Map(), true, SNAPSHOT_LIMIT, [0o600n]);
     need(record(file.value));
     return file.value;
@@ -1198,7 +1838,8 @@ export async function loadLibraryChangedSource55Fixture(options = {}) {
       history.push({ version: entry.version, input: await read(entry.input), browser_report: await read(entry.browser_report),
         controller_report: await read(entry.controller_report), terminal: await read(entry.terminal),
         before: await read(entry.before_snapshot, true, SNAPSHOT_LIMIT), after: await read(entry.after_snapshot, true, SNAPSHOT_LIMIT),
-        independent: await read(historical.terminalPins.independent_snapshot, true, SNAPSHOT_LIMIT) });
+        independent: await read(historical.terminalPins.independent_snapshot, true, SNAPSHOT_LIMIT),
+        ...(entry.version === 6 ? { discovery: await read(HISTORY_V6_DISCOVERY.accepted), native_identity: await read(HISTORY_V6_NATIVE_PIN) } : {}) });
     }
     const documents = {
       state: await read({ path: STATE, sha256: candidate.state_sha256 }),
@@ -1224,7 +1865,9 @@ export async function loadLibraryChangedSource55Fixture(options = {}) {
       candidate_invocation_id: candidate.invocation_id, input_sha256: options.inputSHA256,
       source_closure_sha256: hash(canonical(input.source_closure)), authority: { ...input.authority },
       history: HISTORY_ENTRIES.map(entry => ({ version: entry.version, status: 'failed_scope_sealed', terminal: entry.terminal,
-        after_snapshot: entry.after_snapshot, retained_additions: { sessions: 1, devices: 1, activity_entries: 2, metadata_revision: 0 } })),
+        after_snapshot: entry.after_snapshot, retained_additions: entry.version === 6
+          ? { sessions: 2, devices: 1, activity_entries: 4, metadata_revision: 0 }
+          : { sessions: 1, devices: 1, activity_entries: 2, metadata_revision: 0 } })),
       historical_anchors: FIXTURES, account_id: USER, credentials_sha256: input.actor.credentials.sha256,
       proxy_process: { ...PROXY_PROCESS }, primary_process: { pid: PRIMARY.pid, start_ticks: PRIMARY.start_ticks, boot_id: BOOT },
       boundary: 'Read-only Goby files, source closure, process lifetimes and two listener owners; live database deltas belong to the controller ledger' });

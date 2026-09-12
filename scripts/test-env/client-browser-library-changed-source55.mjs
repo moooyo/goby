@@ -14,10 +14,10 @@ import { loadLibraryChangedSource55Fixture, readLibraryChangedSource55Snapshot,
   libraryChangedSetupDiagnostic } from './client-library-changed-source55-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v6';
+export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v7';
 export const CHANGED_OUTPUT = CHANGED_ROOT + '/browser';
-export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v6.service';
-export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v6.service';
+export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v7.service';
+export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v7.service';
 const ROOT = CHANGED_ROOT, OUTPUT = CHANGED_OUTPUT;
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
@@ -140,8 +140,11 @@ export function validateLibraryChangedInput(input) {
       'f37fe8d9134a98cc780ecafb20053a0c140429efc18df47f5e4106ffefa501f9', 'bd992669d5c9ade22768f210009e983b46384c2611a8d8d91986cb729f41236f'],
     ['093dfa5fc0d82ba509a0092c425ce64d33eebf3625441751427248065bdf2176', '86e0dafc48e8e9a54b83c4588f7a06cabf951eab4a7d250b3d326cd9271d2abe',
       '154bd9857248eec76e921b2f34f3896e9a1fa73aeb078a64d03d06b54ca7e444', '348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d',
-      '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6'] ];
-  need(Array.isArray(input.authority.history) && input.authority.history.length === 4);
+      '6bd9998f16407711b5b3cb46a4f3b233822a7147203f353ff55bb2092950e46e', 'a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6'],
+    ['db95204f33d2a7b5549ee5561fefa8ec074747b924489781e6266f1b08566b6e', '91bf25713d2b173fc4f6d337a792aeeb7cebbcf1ac38881ced9fa7346a6e61d9',
+      '1ffdfab90a9231d7d387a4d2d90f61bdccdffe246b3f1d10a303467d810cfb5e', '7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d',
+      '8041cea998a0bb065c54cdf0694b097ba4702cdaf345fe56400ed41235efb5c9', '185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3'] ];
+  need(Array.isArray(input.authority.history) && input.authority.history.length === 5);
   input.authority.history.forEach((entry, index) => {
     const version = index + 2, historicalRoot = WORK + '/client-library-changed-ui-source55-v' + version;
     need(exact(entry, ['version', ...historyKeys]) && entry.version === version);
@@ -155,7 +158,7 @@ export function validateLibraryChangedInput(input) {
   need(record(input.source_closure) && Object.keys(input.source_closure).length === SOURCES.length &&
     Object.entries(input.source_closure).every(([filename, hash]) => descriptor({ path: filename, sha256: hash })));
   const scripts = Object.keys(input.source_closure).filter(filename => filename.endsWith('.mjs'));
-  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-06b/' + name).sort()));
+  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-07/' + name).sort()));
   return input;
 }
 
@@ -178,8 +181,8 @@ export function validateLibraryChangedBaseline(input, before, current) {
   need(same(captured(before), captured(current)) && instant(first.metadata.captured_at) > instant(previous.metadata.captured_at));
   const tables = first.tables;
   need(Object.keys(tables).length === 35 && Object.values(tables).every(Array.isArray) && Object.keys(first.sequences).length === 5 &&
-    tables.sessions.length === 79 && tables.devices.length === 68 &&
-    tables.activity_entries.length === 175 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
+    tables.sessions.length === 81 && tables.devices.length === 69 &&
+    tables.activity_entries.length === 179 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
     tables.libraries.length === 4 && tables.items.length === 22 && tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0);
   const user = tables.users.find(row => row.id === USER), target = tables.items.find(row => row.id === ITEM);
   const scopedMovies = tables.items.filter(row => row.library_id === LIBRARY && row.type === 'Movie' && row.is_folder === false);

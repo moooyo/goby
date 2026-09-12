@@ -385,7 +385,8 @@ def authority_fixture():
             'history': [{'version': 2, **{name: copy.deepcopy(CONTROLLER.PRIOR_PINS[key]) for name, key in CONTROLLER.HISTORY_NAMES.items()}},
                         {'version': 3, **copy.deepcopy(CONTROLLER.HISTORY_V3_PINS)},
                         {'version': 4, **copy.deepcopy(CONTROLLER.HISTORY_V4_PINS)},
-                        {'version': 5, **copy.deepcopy(CONTROLLER.HISTORY_V5_PINS)}]}}
+                        {'version': 5, **copy.deepcopy(CONTROLLER.HISTORY_V5_PINS)},
+                        {'version': 6, **copy.deepcopy(CONTROLLER.HISTORY_V6_PINS)}]}}
 
 
 def schema_state():
@@ -933,11 +934,122 @@ def history_documents_fixture():
         return {'input': value['prior_input'], 'browser_report': value['browser'], 'controller_report': value['controller'],
                 'terminal': terminal, 'before_snapshot': value['before'], 'after_snapshot': value['after'], 'independent_snapshot': independent}
     return authority, first['baseline'], [bundle(first, terminal2, independent2), bundle(second, terminal3, independent3),
-                                         bundle(third, terminal4, independent4), bundle(fourth, terminal5, independent5)]
+                                         bundle(third, terminal4, independent4), bundle(fourth, terminal5, independent5),
+                                         history_six_fixture(authority, fourth)]
+
+
+def history_six_fixture(authority, previous):
+    """Keep v6's accepted discovery and provisional native cleanup distinct."""
+    value = copy.deepcopy(previous)
+    scope, seal, pins = CONTROLLER.history_scope(6), CONTROLLER.history_seal(6), CONTROLLER.HISTORY_V6_DISCOVERY
+    flat = CONTROLLER.history_entry_authority(authority, authority['history'][4])
+    before = copy.deepcopy(previous['after'])
+    before['database']['metadata']['captured_at'] = at(61)
+    after = copy.deepcopy(before)
+    after['database']['metadata']['captured_at'] = at(76)
+    rows, sequences = after['database']['tables'], after['database']['sequences']
+    proof = dict(ordinary_proof(), session_id='bf' * 16, token_sha256=hashlib.sha256(b'fifth synthetic closed session').hexdigest(),
+                 device_id='fifth-synthetic-browser', created_at=at(62))
+    device_id = sequences['devices_id_seq']['last_value'] + 1
+    ordinary = session_row(proof['session_id'], CONTROLLER.B, proof['token_sha256'], 'emby', 62,
+                          device_id=proof['device_id'], device_registry_id=device_id)
+    ordinary.update(last_seen_at=at(72), revoked_at=at(73), client_capabilities={'PlayableMediaTypes': ['Video']})
+    native_facts = CONTROLLER.HISTORY_V6_NATIVE_FIXED
+    native = session_row(native_facts['session_id'], CONTROLLER.ADMIN, native_facts['token_sha256'], 'admin', 64)
+    native['revoked_at'] = at(74)
+    rows['sessions'].extend([ordinary, native])
+    rows['devices'].append(dict(rows['devices'][-1], id=device_id, reported_device_id=proof['device_id'], created_at=at(61.5), last_seen_at=at(72)))
+    next_audit = sequences['activity_entries_id_seq']['last_value'] + 1
+    for offset, row, action, moment in ((0, ordinary, 'session.login', 62), (1, native, 'session.login', 64),
+                                       (2, ordinary, 'session.revoked', 73), (3, native, 'session.revoked', 74)):
+        rows['activity_entries'].append(audit_row(next_audit + offset, action, row['user_id'], row['id'], 'session', row['id'], moment,
+            source='emby' if row['kind'] == 'emby' else 'native'))
+    sequences['devices_id_seq'] = {'last_value': device_id, 'is_called': True}
+    sequences['activity_entries_id_seq'] = {'last_value': next_audit + 3, 'is_called': True}
+    original_authority = {**{key: flat[key] for key in CONTROLLER.UPGRADE_AUTHORITY_KEYS}, 'history': copy.deepcopy(authority['history'][:4])}
+    input_authority = dict(original_authority, before_snapshot=flat['prior_before_snapshot'])
+    sources = {str(scope['tool'] / name): hashlib.sha256(('v6-' + name).encode()).hexdigest() for name in CONTROLLER.JS_NAMES}
+    source_sha = digest(sources)
+    outer = dict(value['controller']['controller'], pid=310063, start_ticks='210063', unit=scope['controller'])
+    worker = dict(value['controller']['node_process'], pid=310064, start_ticks='210064', cgroup='/system.slice/' + scope['worker'])
+    prior_input, report, browser = value['prior_input'], value['controller'], value['browser']
+    prior_input.update(root=str(scope['root']), output=str(scope['root'] / 'browser'), authority=input_authority,
+                       source_closure=sources, controller=outer)
+    prior_input['actor']['credentials']['path'] = str(scope['root'] / 'viewer-credentials.json')
+    report.update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=original_authority,
+        controller=outer, node_process=worker, history_preservation=copy.deepcopy(CONTROLLER.HISTORY_V6_TERMINAL_FIXED['history_preservation']),
+        ledger=copy.deepcopy(CONTROLLER.HISTORY_V6_TERMINAL_FIXED['ledger']), errors=[copy.deepcopy(CONTROLLER.HISTORY_V6_TERMINAL_FIXED['failure'])],
+        reserved_native_intents=['login', 'logout', 'exact401'], dispatched_native_intents=['login', 'logout', 'exact401'],
+        outer_controller_terminal_required=True)
+    for name, key in (('input.json', 'prior_input'), ('browser-report.json', 'prior_browser_report'),
+                       ('before-full.json', 'prior_before_snapshot'), ('after-full.json', 'prior_after_snapshot')):
+        report['evidence'][name] = flat[key]
+    browser.update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=input_authority,
+        controller=outer, node_process=worker, login_proof=proof, failure='library_changed_controller_aborted', started_at=at(61), completed_at=at(75),
+        stages=[{'name': 'discovery', **copy.deepcopy(pins['stage'])}], session_private=copy.deepcopy(pins['session_private']),
+        abort=copy.deepcopy(pins['browser_abort']), stage_publication_attempts=[{'name': 'discovery', **copy.deepcopy(pins['stage']),
+            'publication_started_elapsed_ms': 300, 'completed': True}])
+    browser['capabilities_private']['path'] = str(scope['root'] / 'browser/capabilities-private.json')
+    report['evidence']['browser-capabilities-private.json']['path'] = browser['capabilities_private']['path']
+    actor = browser['actor']
+    actor['token_fingerprint'] = actor['proxy_logout']['token_fingerprint'] = actor['session_proof']['entries'][0]['token_fingerprint'] = proof['token_sha256']
+    observation = stage_observation('discovery', prior_input)
+    for pair in observation['reads'] + observation['collection_folder_reads']:
+        pair['physical']['token_sha256'] = pair['frame']['token_sha256'] = proof['token_sha256']
+    observation['dom']['wire_identity']['token_sha256'] = observation['socket']['token_sha256'] = proof['token_sha256']
+    observation['home'] = {'passed': True, 'media_inactive': True,
+        'location': {'route': 'home', 'same_origin': True, 'supported_path': True},
+        'libraries': [{'id': row['id'], 'name': row['name'], 'visible_card_count': 1, 'card_id_present': True,
+                       'card_id_matches': True, 'passed': True} for row in prior_input['expected_libraries']]}
+    browser['discovery'] = observation
+    stage_value = {'marker': 'goby-client-library-changed-stage-v1', 'version': 1, 'name': 'discovery',
+        'input_sha256': flat['prior_input']['sha256'], 'source_closure_sha256': source_sha, 'controller': outer, 'node_process': worker,
+        'previous_control_sha256': None, 'token_sha256': proof['token_sha256'], 'session_private': copy.deepcopy(pins['session_private']),
+        'observation': observation}
+    discovery = {**copy.deepcopy(pins['stage']), 'value': stage_value}
+    common = {'version': 1, 'input_sha256': flat['prior_input']['sha256'], 'source_closure_sha256': source_sha,
+              'controller': outer, 'node_process': worker, 'previous_stage_sha256': pins['stage']['sha256']}
+    browser['controller_abort'] = {**copy.deepcopy(pins['abort']), 'value': {**common,
+        'marker': 'goby-client-library-changed-abort-v1', 'name': 'discovery', 'failure': 'library_changed_controller_failed',
+        'previous_control_sha256': None, 'token_sha256': proof['token_sha256'], 'session_private': copy.deepcopy(pins['session_private'])}}
+    browser['control_close'] = {**copy.deepcopy(pins['close']), 'value': {**common,
+        'marker': 'goby-client-library-changed-control-v1', 'name': 'close', 'reservation': None, 'commit': None, 'restoration': 'not_required'}}
+    report['evidence'].update({'accepted-stage-discovery.json': pins['accepted'], 'browser-session-private.json': pins['session_private'],
+        'abort.json': pins['abort'], 'browser-abort.json': pins['browser_abort'], 'control-close.json': pins['close'],
+        'native-session-private.json': native_facts['native_private'], 'native-cookie-received-private.json': native_facts['received_header']})
+    for name, request in native_facts['requests'].items():
+        for key in ('intent', 'result'):
+            report['evidence']['native-' + name + '-' + key + '.json'] = request[key]
+    native_identity = {**copy.deepcopy(native_facts), 'candidate_process': copy.deepcopy(CANDIDATE['process']),
+                       'controller': outer, 'captured_at': at(79)}
+    def properties(unit, process, invocation, working, live=False):
+        return {'ActiveState': 'active' if live else 'failed', 'ControlGroup': '/system.slice/' + unit if live else '',
+            'DropInPaths': '', 'ExecMainCode': '0' if live else '1', 'ExecMainStatus': '0' if live else '1',
+            'FragmentPath': ('/etc/systemd/system/' if live else '/run/systemd/transient/') + unit,
+            'Group': 'goby' if live else 'root', 'Id': unit, 'InvocationID': invocation, 'LoadState': 'loaded',
+            'MainPID': str(process['pid']) if live else '0', 'Restart': 'no', 'Result': 'success' if live else 'exit-code',
+            'SubState': 'running' if live else 'failed', 'Transient': 'no' if live else 'yes',
+            'User': 'goby' if live else 'root', 'WorkingDirectory': working}
+    failed = {}
+    for unit, process, invocation, working in ((scope['controller'], outer, seal['controller_invocation'], str(scope['tool'])),
+            (scope['worker'], worker, seal['worker_invocation'], str(scope['root']))):
+        failed[unit] = {'old_process': {'pid': process['pid'], 'start_ticks': int(process['start_ticks']), 'boot_id': process['boot_id']},
+            'old_process_gone': True, 'properties': properties(unit, process, invocation, working),
+            'recursive_cgroup': {'exists': False, 'files_checked': 0, 'path': '/sys/fs/cgroup/system.slice/' + unit, 'processes': 0}}
+    report['worker_terminal'] = dict(failed[scope['worker']]['properties'], cgroup_empty=True)
+    terminal = {**copy.deepcopy(CONTROLLER.HISTORY_V6_TERMINAL_FIXED), 'captured_at': at(78), 'failed_units': failed,
+        'upgrade_authority_snapshot': copy.deepcopy(flat['current_snapshot']),
+        'candidate': {**{key: copy.deepcopy(CANDIDATE[key]) for key in ('binary_sha256', 'invocation_id', 'process')},
+            'properties': properties('goby-client-m3e.service', CANDIDATE['process'], CANDIDATE['invocation_id'], '/var/lib/goby-test/client-m3e', True)}}
+    independent = copy.deepcopy(after)
+    independent['database']['metadata']['captured_at'] = at(77)
+    return {'input': prior_input, 'browser_report': browser, 'controller_report': report, 'terminal': terminal,
+        'before_snapshot': before, 'after_snapshot': after, 'independent_snapshot': independent,
+        'discovery': discovery, 'native_identity': native_identity}
 
 
 class Source55OrderedHistoryGuards(GuardTestCase):
-    def test_only_four_ordered_original_history_formats_are_admitted(self):
+    def test_only_five_ordered_original_history_formats_are_admitted(self):
         value = authority_fixture()
         CONTROLLER.validate_authority_input(value)
         for history in ([], list(reversed(value['authority']['history'])), [value['authority']['history'][0]] * 2,
@@ -947,15 +1059,16 @@ class Source55OrderedHistoryGuards(GuardTestCase):
             with self.subTest(length=len(history)):
                 self.reject(lambda: CONTROLLER.validate_authority_input(changed))
 
-    def test_four_complete_failed_ledgers_preserve_the_upgrade_and_all_closed_sessions(self):
+    def test_five_complete_failed_ledgers_preserve_the_upgrade_and_all_closed_sessions(self):
         authority, upgraded, documents = history_documents_fixture()
         original = copy.deepcopy((authority, upgraded, documents))
         after, independent, results = CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded)
-        self.assertEqual([value['version'] for value in results], [2, 3, 4, 5])
-        self.assertTrue(all(value['ledger']['new_sessions'] == 1 and value['ledger']['metadata_revision_delta'] == 0 for value in results))
+        self.assertEqual([value['version'] for value in results], [2, 3, 4, 5, 6])
+        self.assertTrue(all(value['ledger']['new_sessions'] == 1 and value['ledger']['metadata_revision_delta'] == 0 for value in results[:4]))
+        self.assertEqual(results[4]['ledger'], CONTROLLER.HISTORY_V6_TERMINAL_FIXED['ledger'])
         self.assertEqual((authority, upgraded, documents), original)
         fresh = copy.deepcopy(independent)
-        fresh['database']['metadata']['captured_at'] = at(58)
+        fresh['database']['metadata']['captured_at'] = at(80)
         CONTROLLER.compare_fixed_snapshot(after, fresh)
         CONTROLLER.compare_fixed_snapshot(independent, fresh)
         self.reject(lambda: CONTROLLER.compare_fixed_snapshot(upgraded, fresh))
@@ -999,6 +1112,96 @@ class Source55OrderedHistoryGuards(GuardTestCase):
                 terminal['old_v4_scope_preserved'] = False
             else:
                 terminal['guard_evidence_preserved'] = False
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded))
+
+    def test_v6_safe_native_identity_rejects_relabelled_login_and_unbound_transport(self):
+        for mutation in ('session', 'token', 'public-passed', 'complete', 'body', 'request-pin', 'private-pin', 'source-key', 'missing-identity'):
+            authority, upgraded, documents = history_documents_fixture()
+            document = documents[4]
+            identity = document['native_identity']
+            if mutation == 'session':
+                identity['session_id'] = SESSION
+            elif mutation == 'token':
+                identity['token_sha256'] = TOKEN_SHA
+            elif mutation == 'public-passed':
+                identity['native_login_validation_passed'] = True
+            elif mutation == 'complete':
+                identity['login_response_complete'] = False
+            elif mutation == 'body':
+                identity['requests']['exact401']['body_bytes'] = 0
+            elif mutation == 'request-pin':
+                document['controller_report']['evidence']['native-logout-result.json'] = {'path': '/foreign', 'sha256': '98' * 32}
+            elif mutation == 'private-pin':
+                document['terminal']['native_authentication']['private']['sha256'] = '98' * 32
+            elif mutation == 'source-key':
+                identity['source'] = identity.pop('projection_source')
+            else:
+                del document['native_identity']
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded))
+
+    def test_v6_accepted_discovery_cannot_be_dropped_rebound_or_promoted_to_a_window(self):
+        for mutation in ('wrapper', 'old-root', 'wire', 'unpublished', 'abort-link', 'close-link', 'no-discovery', 'armed', 'native-intent'):
+            authority, upgraded, documents = history_documents_fixture()
+            document = documents[4]
+            browser = document['browser_report']
+            if mutation == 'wrapper':
+                document['discovery']['sha256'] = '98' * 32
+            elif mutation == 'old-root':
+                document['discovery']['value']['session_private'] = {'path': str(CONTROLLER.BROWSER_ROOT / 'session-private.json'), 'sha256': '98' * 32}
+            elif mutation == 'wire':
+                browser['discovery']['dom']['wire_identity']['physical_exchange_id'] = 99
+            elif mutation == 'unpublished':
+                browser['stage_publication_attempts'][0]['completed'] = False
+            elif mutation == 'abort-link':
+                browser['controller_abort']['value']['previous_stage_sha256'] = '98' * 32
+            elif mutation == 'close-link':
+                browser['control_close']['value']['previous_stage_sha256'] = None
+            elif mutation == 'no-discovery':
+                browser['discovery'] = None
+                browser['stages'] = []
+            elif mutation == 'armed':
+                browser['armed'] = {'passed': True}
+            else:
+                document['controller_report']['dispatched_native_intents'].insert(1, 'original')
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded))
+
+    def test_v6_two_closed_logins_preserve_complete_old_rows_and_exact_four_audits(self):
+        for mutation in ('old-user', 'old-session', 'target', 'native-touch', 'native-open', 'native-kind', 'native-capabilities',
+                         'native-token', 'browser-open', 'audit', 'sequence', 'summary', 'terminal-state'):
+            authority, upgraded, documents = history_documents_fixture()
+            document = documents[4]
+            tables = document['after_snapshot']['database']['tables']
+            native = next(row for row in tables['sessions'] if row['id'] == CONTROLLER.HISTORY_V6_NATIVE_FIXED['session_id'])
+            ordinary = next(row for row in tables['sessions'] if row['id'] == document['browser_report']['login_proof']['session_id'])
+            if mutation == 'old-user':
+                tables['users'][0]['name'] = 'Changed old account'
+            elif mutation == 'old-session':
+                tables['sessions'][0]['last_seen_at'] = at(70)
+            elif mutation == 'target':
+                tables['items'][0]['name'] = 'Unowned new title'
+            elif mutation == 'native-touch':
+                native['last_seen_at'] = at(65)
+            elif mutation == 'native-open':
+                native['revoked_at'] = None
+            elif mutation == 'native-kind':
+                native['kind'] = 'emby'
+            elif mutation == 'native-capabilities':
+                native['client_capabilities'] = {'PlayableMediaTypes': ['Video']}
+            elif mutation == 'native-token':
+                native['token_hash'] = ordinary['token_hash']
+            elif mutation == 'browser-open':
+                ordinary['revoked_at'] = None
+            elif mutation == 'audit':
+                tables['activity_entries'][-1]['source'] = 'emby'
+            elif mutation == 'sequence':
+                document['after_snapshot']['database']['sequences']['activity_entries_id_seq']['last_value'] += 1
+            elif mutation == 'summary':
+                document['controller_report']['ledger'] = copy.deepcopy(documents[3]['controller_report']['ledger'])
+            else:
+                document['terminal']['native_authentication']['native_login_validation_passed'] = True
             with self.subTest(mutation=mutation):
                 self.reject(lambda: CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded))
 
@@ -1077,10 +1280,10 @@ class Source55PriorFailureGuards(GuardTestCase):
 
 class Source55AuthorityGuards(GuardTestCase):
     def test_cli_requires_the_exact_authority_and_new_driver_paths(self):
-        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-06b")
-        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v6")
-        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v6.service")
-        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v6.service")
+        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-07")
+        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v7")
+        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v7.service")
+        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v7.service")
         values = ["--script-sha256", "12" * 32, "--driver", str(CONTROLLER.TOOL / CONTROLLER.JS_NAMES[0]),
             "--source-closure", str(CONTROLLER.TOOL / "sources.json"), "--source-closure-sha256", "23" * 32,
             "--authority", str(CONTROLLER.TOOL / "authority.json"), "--authority-sha256", "34" * 32,
@@ -1090,7 +1293,7 @@ class Source55AuthorityGuards(GuardTestCase):
         changed = list(values)
         changed[changed.index("--authority") + 1] = str(CONTROLLER.WORK / "authority.json")
         self.reject(lambda: CONTROLLER.arguments(changed))
-        for previous in ("client-library-changed-source55-tool-05", "client-library-changed-source55-tool-06"):
+        for previous in ("client-library-changed-source55-tool-05", "client-library-changed-source55-tool-06", "client-library-changed-source55-tool-06b"):
             previous_tool = CONTROLLER.WORK / previous
             for option, name in (("--driver", CONTROLLER.JS_NAMES[0]), ("--authority", "authority.json"), ("--source-closure", "sources.json")):
                 changed = list(values)
@@ -1190,6 +1393,40 @@ class Source55AuthorityGuards(GuardTestCase):
                 reader.validate_theme_state = deny
             with self.subTest(mutation=mutation):
                 self.reject(lambda: CONTROLLER.validate_schema28_snapshot(changed, state, catalog, reader))
+
+
+class NativePublicTimestampGuards(GuardTestCase):
+    def test_public_created_at_normalizes_explicit_offsets_without_losing_fractional_precision(self):
+        stored = '2026-09-12T00:30:10.123456+00:00'
+        for value in ('2026-09-12T00:30:10.123456Z', '2026-09-12T08:30:10.123456+08:00',
+                      '2026-09-11T19:00:10.123456-05:30', '2026-09-12T00:30:10.123456000+00:00'):
+            with self.subTest(value=value):
+                self.assertTrue(CONTROLLER.native_created_at_matches(value, stored))
+        self.assertTrue(CONTROLLER.native_created_at_matches('2026-09-12T08:30:10+08:00', '2026-09-12T00:30:10Z'))
+        self.assertTrue(CONTROLLER.native_created_at_matches('2026-09-11T06:42:57.432877+08:00',
+            '2026-09-10T22:42:57.432877+00:00'))
+
+    def test_public_created_at_rejects_another_instant_including_submicrosecond_changes(self):
+        stored = '2026-09-12T00:30:10.123456Z'
+        for value in ('2026-09-12T08:30:11.123456+08:00', '2026-09-12T00:30:10.123457Z',
+                      '2026-09-12T00:30:10.123456001Z', '2026-09-12T08:30:10.123456+07:00'):
+            with self.subTest(value=value):
+                self.assertFalse(CONTROLLER.native_created_at_matches(value, stored))
+
+    def test_public_created_at_rejects_naive_malformed_calendar_and_unknown_offsets(self):
+        for value in (None, 1, '2026-09-12T00:30:10', '2026-09-12 00:30:10Z', '2026-09-12T00:30Z',
+                      '2026-09-12T00:30:10z', '2026-09-12T00:30:10.Z', '2026-09-12T00:30:10.1234567890Z',
+                      '2026-09-12T00:30:10+0800', '2026-09-12T00:30:10+24:00', '2026-09-12T00:30:10+08:60',
+                      '2026-09-12T00:30:10-00:00', '2026-02-30T00:30:10Z', '2026-09-12T24:00:00Z',
+                      '2026-09-12T00:30:60Z', '2026-09-12T00:30:10Z\n'):
+            with self.subTest(value=value):
+                self.reject(lambda: CONTROLLER.native_created_at_matches(value, '2026-09-12T00:30:10Z'))
+
+    def test_database_and_evidence_timestamps_still_require_utc(self):
+        for value in ('2026-09-12T08:30:10+08:00', '2026-09-12T00:30:10'):
+            with self.subTest(value=value):
+                self.reject(lambda: CONTROLLER.instant(value))
+                self.reject(lambda: CONTROLLER.native_created_at_matches('2026-09-12T00:30:10Z', value))
 
 
 class MetadataProjectionGuards(GuardTestCase):
@@ -2406,6 +2643,12 @@ class MemoryRunEnvironment:
             payload = {"User": {"Id": CONTROLLER.ADMIN, "Name": user["name"], "IsAdministrator": True,
                 "IsDisabled": False, "HasPassword": True, "CreatedAt": user["created_at"]},
                 "CSRFToken": CONTROLLER.sha(("goby:admin:csrf:" + NATIVE_TOKEN).encode())}
+            if self.fault == "login-offset-created-at":
+                payload["User"]["CreatedAt"] = datetime.datetime.fromisoformat(user["created_at"].replace('Z', '+00:00')).astimezone(
+                    datetime.timezone(datetime.timedelta(hours=8))).isoformat()
+            elif self.fault == "login-wrong-created-at":
+                payload["User"]["CreatedAt"] = (datetime.datetime.fromisoformat(user["created_at"].replace('Z', '+00:00')) +
+                    datetime.timedelta(seconds=1)).isoformat()
             raw = CONTROLLER.canonical(payload)
             cookie = "goby_session=" + NATIVE_TOKEN + "; Path=/; HttpOnly; SameSite=Strict"
             response_headers = {"Set-Cookie": cookie, "Content-Type": "application/json", "Content-Length": str(len(raw))}
@@ -2523,6 +2766,17 @@ class ActualRunGuards(GuardTestCase):
             self.assertIn(name, run.records)
         final = filesystem.json("after-full.json")["database"]["tables"]
         self.assertEqual((len(final["sessions"]), len(final["devices"]), len(final["activity_entries"])), (77, 65, 173))
+
+    def test_native_public_offset_authenticates_only_the_same_stored_instant(self):
+        environment, report = self.execute_memory("login-offset-created-at")
+        self.assertEqual(report["status"], "passed", report.get("errors"))
+        self.assertTrue(environment.run.native_login_validated)
+        self.assertEqual([row["label"] for row in environment.exchanges if row["method"] == "PUT"], ["forward", "restore"])
+        environment, report = self.execute_memory("login-wrong-created-at")
+        self.assertEqual(report["status"], "failed")
+        self.assertFalse(environment.run.native_login_validated)
+        self.assertEqual(environment.run.dispatched, ["login", "logout", "exact401"])
+        self.assertTrue(environment.native_revoked and environment.browser_revoked)
 
     def test_native_intent_publication_failure_consumes_intent_without_dispatch_or_restore(self):
         environment, report = self.execute_memory(failures=(("open", "native-forward-intent.json"),))
