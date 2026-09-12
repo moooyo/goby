@@ -10,9 +10,10 @@ Its actual catalog generation has subsequently passed. After source47's two
 fixture assertions were corrected and its exact retained pair disposed,
 source48 passed all 143 targeted PostgreSQL checks. Source49 full regression
 ended with 2,105 passes and two historical encrypted recovery fixture failures;
-recoverydb and Linux build were not reached. The failed pair remains retained.
-Source50 fixes current audit writes during historical fixture preparation and
-passed source preflight; PostgreSQL verification remains pending.
+recoverydb and Linux build were not reached. The exact empty failed pair has
+been disposed with original evidence preserved. Source50 fixes current audit
+writes during historical fixture preparation; it is included in the currently
+running source54 PostgreSQL target, alongside scanner/music/notification cases.
 The later source45 binding read/write, native route and per-root anchor drafts
 passed [36 selected non-database race checks](storage-binding-workflow-pure-verification.json).
 The later source48 targeted run includes database write/HTTP/archive checks;
@@ -21,11 +22,11 @@ dialog passed typecheck/build and [68 decoder/browser checks](storage-binding-wo
 including long-path narrow-screen layout and complete accessible descriptions.
 These browser APIs are mocked. Source46 also passed 46 non-database race checks
 including initial registration capture and capability fallback. Missing-file
-reconciliation is drafted but not verified. Source53 passed 20 selected race
-checks for original-root recovery and directory evidence without database access.
-The later scanner/cascade implementation is adding a shared music-readiness gate
-before deletion so later album completeness warnings cannot follow a committed
-delete pass. End-to-end scanning, mount recovery and deletion acceptance remain.
+reconciliation is drafted. Source53 passed 20 selected race checks for original-root
+recovery and directory evidence without database access. Source54 integrates
+scanning, cascade deletion and a shared music-readiness gate before deletion;
+28 non-database race checks and related package compilation passed. End-to-end
+PostgreSQL scanning, mount recovery and deletion acceptance remain.
 The reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 passed at 2026-09-12 04:42:59 UTC, preserving business data and media. Candidate
 now runs source44/schema27, PID1264063, ready/complete. The original pre-stop

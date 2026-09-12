@@ -1,0 +1,21 @@
+{
+  "attestation_sha256": "818e71ddc6a4f393d308ba06ae9d2c3045829f48d58e49a35872a6d21e691aed",
+  "catalog_unchanged": true,
+  "original_receipt_sha256": "b5a891eb63d1d7adae6e841a4162b408bf9e1e183b8ddc0773404c38e9dfc684",
+  "pair_identities_absent": {
+    "goby_backup_m3e_source": true,
+    "goby_backup_m3e_target": true
+  },
+  "recursive_cgroup_empty": true,
+  "report_sha256": "1caceb68ca04571dae791d9aaafe57022872ec2561a60b6589bb8696fbb3f0cc",
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "0460fe72ee9e44ddbe34e69ce7a1046e",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "status": "disposed",
+  "unit": "goby-source49-disposal-v1.service"
+}

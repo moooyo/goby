@@ -1,0 +1,145 @@
+{
+  "marker": "goby-source49-disposal-readonly-inspection-v1",
+  "run_id": "20260912_042841_89ef5954034a",
+  "status": "observed",
+  "transport": "ssh test-env",
+  "scope": "The exact retained source49 pair, its evidence and cluster catalog metadata only.",
+  "database_mutations": false,
+  "service_mutations": false,
+  "remote_file_mutations": false,
+  "tests_or_builds_executed": false,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/source-attempt-49",
+    "manifest_sha256": "a22a89b460a1bf5d4033336ea57fd7a8e69975c01bf883ad54fccf1cd5c6ee3a",
+    "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+    "schema": 28,
+    "catalog_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b"
+  },
+  "receipt": {
+    "path": "/opt/goby-test/postgres-workspace-v1/client-backup-pair.json",
+    "sha256": "b5a891eb63d1d7adae6e841a4162b408bf9e1e183b8ddc0773404c38e9dfc684",
+    "phase": "retained",
+    "mode": "full",
+    "cleanup_complete": false
+  },
+  "report": {
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_042841_89ef5954034a/report.json",
+    "sha256": "4d61ae8737438ccf03a11b43983898cb23a60a0f3ec2b64781b7ea1fc49f03be",
+    "status": "failed",
+    "cleanup": {
+      "hba_restored_exactly": true,
+      "receipt_saved": true,
+      "unit_terminal": true
+    }
+  },
+  "log": {
+    "path": "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_042841_89ef5954034a/go.log",
+    "sha256": "138e48ed7d890e3bd26203a31fdec8220c8a49d7d559d4846f96536d5a5d0f5c",
+    "bytes": 9406631,
+    "top_level_passes": 2105,
+    "top_level_failures": 2,
+    "top_level_skips": 0,
+    "failed_tests": [
+      "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+      "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback"
+    ],
+    "passed_packages": 23,
+    "failed_packages": ["github.com/moooyo/goby/internal/recovery"],
+    "recoverydb_executed": false,
+    "data_race_warning": false,
+    "linux_build_artifact_exists": false
+  },
+  "terminal": {
+    "path": "/opt/goby-test/exec-work-m3e/storage-binding-schema28-full-execution-01/terminal.json",
+    "sha256": "a6dde10cb27f1408a28faaaf12c7d0904f6fa72758bbaf68fe8777a808db92c5",
+    "outer_unit": "goby-storage-binding-schema28-full-controller-v1.service",
+    "outer_invocation": "769e7b698560419d906a7df1838f8781",
+    "outer_exec_main_pid": 1252471,
+    "inner_unit": "goby-client-backup-20260912-042841-89ef5954034a.service",
+    "inner_invocation": "f9cf1ffaf283452ebf58d23e2b1a6b8c",
+    "inner_exec_main_pid": 1252659,
+    "inner_start_ticks": 11018776,
+    "both_main_pid_zero": true,
+    "both_result": "exit-code",
+    "both_exec_main_status": 1,
+    "both_substate": "failed",
+    "recursive_cgroup_processes": [],
+    "original_inner_process_exists": false
+  },
+  "cluster": {
+    "system_identifier": "7684040109719526738",
+    "process": {
+      "pid": 327173,
+      "start_ticks": 289359,
+      "boot_id": "6bdfc486-7bc8-412f-82b5-70095a09dde7"
+    },
+    "owner_sha256": "610b3dcdafa8b6bb960a26946c398b98c02357d61c9c7fdf9b5a8b8504b9d5af",
+    "catalog_before_sha256": "ce62d3df80d4eb2b1595d712eeb30df38a9521c285722b2ca335daf90bb5d376",
+    "catalog_without_pair_matches_before": true,
+    "original_and_live_hba_sha256": "6571fe86239d7bec6f5e9de9ebefbeda56f0e7df43cdbc58a3dc064e41e958fd"
+  },
+  "pair_observations": [
+    {
+      "name": "goby_backup_m3e_source",
+      "role_oid": 16410704,
+      "database_oid": 16410705,
+      "phase": "owned",
+      "identity_sha256": "348c359b8daa7f6d7172db09995612174920bf2f518aa33341d5c99468eea946",
+      "public_oid": 2200,
+      "public_owner": "pg_database_owner",
+      "public_acl": ["pg_database_owner=UC/pg_database_owner", "=U/pg_database_owner"],
+      "public_comment": "standard public schema",
+      "catalog_objects": [],
+      "public_identities": [],
+      "post_init_objects": [],
+      "local_role_dependencies": [],
+      "sessions": {"activity": [], "prepared": 0, "slots": 0},
+      "casts_sha256": "571c35d40ff27b9972b3275e878fac303ec17df99663c72a04801f9c973926ef",
+      "table_row_counts": {},
+      "sequence_states": {},
+      "isolated_role_guard_passed": true
+    },
+    {
+      "name": "goby_backup_m3e_target",
+      "role_oid": 16410706,
+      "database_oid": 16410707,
+      "phase": "owned",
+      "identity_sha256": "79246172f5c5944dd06a2a06d851861f8d253e173d3412886de4e34809903e99",
+      "receipt_public_oid": 2200,
+      "public_oid": 17186575,
+      "public_owner": "pg_database_owner",
+      "public_acl": ["pg_database_owner=UC/pg_database_owner", "=U/pg_database_owner"],
+      "public_comment": "standard public schema",
+      "catalog_objects": [],
+      "public_identities": [],
+      "post_init_objects": [],
+      "local_role_dependencies": [],
+      "sessions": {"activity": [], "prepared": 0, "slots": 0},
+      "casts_sha256": "571c35d40ff27b9972b3275e878fac303ec17df99663c72a04801f9c973926ef",
+      "table_row_counts": {},
+      "sequence_states": {},
+      "isolated_role_guard_passed": true
+    }
+  ],
+  "preserved_trees": {
+    "/opt/goby-test/exec-work-m3e/source-attempt-49": {
+      "entries": 4289,
+      "sha256": "a18e3df758f17774cdebb1fe07ba2bbe1693180358cb833fac01b29fc9478c89"
+    },
+    "/opt/goby-test/exec-work-m3e/client-backup-run-20260912_042841_89ef5954034a": {
+      "entries": 28,
+      "sha256": "4eb53dc7ba188b3342a898a30a140c17cb903658394f2c68f8ea2b8f1ee08ea8",
+      "device": 2049,
+      "inode": 2504671
+    },
+    "/opt/goby-test/exec-work-m3e/storage-binding-schema28-full-execution-01": {
+      "entries": 6,
+      "sha256": "c8431a96d3291935732c7f96d8ad16786a0ae1245963e292fd97723ffc7d7f0e"
+    }
+  },
+  "limitations": [
+    "These are point-in-time read-only observations. The disposal operator must recheck them under the workspace lock.",
+    "No reference database, primary application data or candidate application data was queried.",
+    "No test suite, build, HBA reload, database close/drop or service mutation was executed."
+  ]
+}

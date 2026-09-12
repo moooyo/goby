@@ -1,0 +1,13 @@
+{
+  "exit_code": 1,
+  "files": {
+    "dispose-source49-binding-full-failed-pair.py": "ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4",
+    "test-dispose-source49-binding-full-failed-pair.py": "6885f7a61833d1e0b0f77fc8133ac4e13259c9883369641d1827f28b632ce045"
+  },
+  "guards": {
+    "status": "invalid_report",
+    "stdout_tail": ""
+  },
+  "status": "failed",
+  "syntax_files": 2
+}

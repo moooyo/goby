@@ -1,0 +1,16 @@
+{
+  "database_access": false,
+  "recursive_cgroup_empty": true,
+  "report_sha256": "3c5c5e750f7329cb77dfa166fdde137ade8622e8818b6d1e6da6bbfb0a9c712b",
+  "scanner_integrated": true,
+  "state": {
+    "ControlGroup": "",
+    "ExecMainStatus": "0",
+    "InvocationID": "889340e82ce942228a00dd6e1488591c",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "exited"
+  },
+  "status": "passed",
+  "unit": "goby-scan-reconciliation-integration-pure-v1.service"
+}

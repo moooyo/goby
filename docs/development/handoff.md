@@ -11,9 +11,10 @@ two fixture assertions. Source49 full regression is terminal: 2,105 top-level
 passes and two failures in the schema23/schema24 encrypted recovery transition
 tests, both at historical administrator bootstrap. The current audit INSERT
 uses schema28-only columns against the historical fixture. Source50 isolates
-the test adapter fix and passed source preflight, but has not run PostgreSQL
-verification. The exact failed pair remains retained pending independently
-reviewed disposal; do not overlap that pair or replay source49.
+the test adapter fix and passed source preflight. The exact failed pair has
+subsequently been disposed with original evidence preserved. A combined
+source54 PostgreSQL target is now running; it includes that fixture fix and
+the new scanner implementation. Do not overlap its pair or replay source49.
 
 The separately reviewed [source44 candidate continuation](m3e-source44-candidate-continuation.json)
 **passed** at 2026-09-12 04:42:59 UTC. Candidate now runs source44/schema27,
@@ -36,12 +37,12 @@ remains open; the two readiness GETs are not client acceptance.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
-selected non-database race checks. All-roots scanner orchestration, cache-hit
-tracking, positive absence, cascade validation, transactional deletion and
-notification publication are now drafted but unverified. Review found that
-music completeness warnings can arise only during later album aggregation; a
-shared read-only music readiness gate is being added before deletion while
-actual album publication remains after it. Do not claim complete reconciliation.
+selected non-database race checks. Source54 integrates all-roots orchestration,
+cache-hit tracking, positive absence, cascade validation, transactional deletion
+and notifications. A shared music-readiness gate checks proposed surviving
+members before deletion; actual album publication remains afterward. Its 28
+selected race checks and related test-package compilation passed without
+database access. PostgreSQL scanning/deletion acceptance remains pending.
 
 The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
@@ -389,7 +390,34 @@ the report SHA-256 is
 `4d61ae8737438ccf03a11b43983898cb23a60a0f3ec2b64781b7ea1fc49f03be`.
 Both controllers have MainPID0, exit1 and empty cgroups; inner invocation is
 `f9cf1ffaf283452ebf58d23e2b1a6b8c`. HBA restoration passed; pair evidence remains.
-Do not infer that the retained databases are empty from the test names.
+The subsequent [read-only inspection](storage-binding-schema28-source49-disposal-inspection.json)
+established that both exact databases were empty. Source role/database OIDs
+were 16410704/16410705 and target OIDs were 16410706/16410707. The target public
+namespace had been recreated as OID17186575, while source remained OID2200;
+the disposal used these actual identities without normalization.
+
+The separate source49 disposal [guards passed all 27 cases](storage-binding-schema28-source49-guards-03.json)
+and two syntax checks, with zero live database commands or filesystem mutations.
+The first guard launch omitted its required operator argument and rejected
+before any test. The second ran 26 cases but one malformed-JSON case hit
+CPython's lazy decoder import under the strict effect fence. The corrected
+guard uses a private standard-library Python scanner/string/object decoder;
+no import allowance or production operator change was introduced. Both earlier
+guard records remain preserved. Final operator SHA-256 is
+`ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4`;
+guard SHA-256 `e78c27cb2e11faabbae397d48b87cac97412c8189cfea4574ead4a462f5d332c`.
+
+The [actual disposal](storage-binding-schema28-source49-disposal.json) passed,
+report SHA-256 `1caceb68ca04571dae791d9aaafe57022872ec2561a60b6589bb8696fbb3f0cc`.
+Both identities are absent, all preexisting catalog metadata is unchanged, and
+all original evidence and retained receipt bytes are preserved. The separate
+[attestation](storage-binding-schema28-source49-disposal-attestation.json) has
+SHA-256 `818e71ddc6a4f393d308ba06ae9d2c3045829f48d58e49a35872a6d21e691aed`.
+The [disposal controller terminal](storage-binding-schema28-source49-disposal-terminal.json)
+has SHA-256 `6fe2bc625b54fe68884e24c1fade54f8dae368a4c01c1b12d103c567c21b5c66`,
+invocation `0460fe72ee9e44ddbe34e69ce7a1046e`, exit0/MainPID0/empty cgroup.
+Never replay that consumed disposal. A subsequent runner may replace the live
+control receipt only after validating its separate attestation.
 
 Source50 changes only manager_schema23_transition_integration_test.go. A private
 fixture view and INSERT trigger route neutral current audit fields into the
@@ -417,6 +445,27 @@ access. Recovery test code compiled only. Report SHA-256:
 The full scanner and deletion transaction are not part of frozen source53.
 Repeated stat observations do not reveal an intervening change if the final
 identity and timestamps are identical; they are not an atomic filesystem lock.
+
+Source54 adds ten scanner/transaction/music files to source53. Its
+[source preflight](storage-binding-scan-source54-preflight.json) covers 4,243
+files, manifest `c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3`.
+Five Go files were formatted on test-env and copied back only after confirming
+their original local hashes had not changed. The [28 selected race checks](storage-binding-scan-source54-pure.json)
+passed with zero failures/skips; recovery/server test packages compiled only.
+Report SHA-256 `3c5c5e750f7329cb77dfa166fdde137ade8622e8818b6d1e6da6bbfb0a9c712b`;
+[terminal](storage-binding-scan-source54-pure-terminal.json) SHA-256
+`2a6410ae2f16b80ad7cde61914db007ac1cb98b3d62b71fa5615883a9759ee47`.
+The combined PostgreSQL target is running source50's historical archive repair,
+source54 root recovery/scanner/cascade/music tests, existing scan notifications
+and both unchanged capacity regressions. Controller:
+`goby-scan-reconciliation-postgresql-controller-v1.service`, invocation
+`84e777b5356d45adbb834ea393a08039`, PID1292882; execution directory
+`/opt/goby-test/exec-work-m3e/scan-reconciliation-postgresql-execution-01`.
+Run ID `20260912_053050_ec4b750c19e5` has reached phase=running, inner unit
+`goby-client-backup-20260912-053050-ec4b750c19e5.service`. The original source49
+receipt is historical and preserved; the live receipt now belongs to source54.
+Poll this exact controller/run and do not start another fixed-pair job.
+The inert mount helper is excluded and is not actual mount-namespace acceptance.
 
 Candidate deployment preparation found that old prepare-client-fixture.py
 upgrade paths require empty Extras and a 24-package product report. Preserve
@@ -449,6 +498,10 @@ scope with a real catalog trigger; the older policy gate depended on reloads
 and policy updates do not emit this catalog notification. Do not inspect original
 Emby/client source, JavaScript handlers or reference databases, including frozen
 assets. Use existing public protocol/UI recordings and permitted black-box UI.
+The [concrete candidate-only acceptance plan](library-changed-client-acceptance-plan.md)
+defines native title change/restoration and the unbroken WebSocket, automatic
+HTTP and visible-DOM chain. It has not executed; current Movies selectors must
+first be established from permitted visible UI/DOM discovery.
 
 The [storage binding plan](storage-root-bindings-plan.md) distinguishes the
 verified adapter and targeted persistence acceptance from pending full scanner

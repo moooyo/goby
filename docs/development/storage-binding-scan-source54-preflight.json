@@ -1,0 +1,28 @@
+{
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-53",
+  "changed_files": {
+    "internal/library/metadata_music_scan.go": "20345f13346a41f2e6fa162b643e4a6bb34046ed0ce12561d5d9763eb39d2ccf",
+    "internal/library/scan.go": "f1e61423813ce921142799f3e5f410230abc65f8ca0afd67078d17be7a5c08a3",
+    "internal/library/scan_reconciliation.go": "54467c510cdcba3542c92d2f6e0281a98ebe2fcf8ff19f03a4c4623077d71d91",
+    "internal/library/scan_reconciliation_commit.go": "24ef71bdea03bf1352cd697b10201456a53a01fed2c2f94ea27b2ff61a8391b9",
+    "internal/library/scan_reconciliation_commit_integration_test.go": "78d97d69274b6c70f848fb0db7deef6730ee681975d508b3714d1ae5542a476d",
+    "internal/library/scan_reconciliation_commit_test.go": "458d04cb7b18c1fb9b110c3c36441f68dff5b852e5a877ce7402661ce97cd5ab",
+    "internal/library/scan_reconciliation_music.go": "4e9937ccdc6a2ed30e15559c2c71836f1da5e56c048b0b8c43c2a1742eebf1d4",
+    "internal/library/scan_reconciliation_music_integration_test.go": "f9a8a301aa6398aa20ad1864fc1b311dae79b2e7124951563ca956e797b2a5b9",
+    "internal/library/scan_reconciliation_scan_integration_test.go": "afbc5b22a456f8d8e9c9bd67cd8baa752bef7b4e868d80a5281cf3d634e4c02c",
+    "internal/library/scan_reconciliation_test.go": "ecd866f16da8896634e5746e50e434869da0d2cea9ad6f44dfad799c7ca74145"
+  },
+  "file_count": 4243,
+  "formatted_changes": [
+    "internal/library/metadata_music_scan.go",
+    "internal/library/scan_reconciliation.go",
+    "internal/library/scan_reconciliation_commit.go",
+    "internal/library/scan_reconciliation_commit_test.go",
+    "internal/library/scan_reconciliation_test.go"
+  ],
+  "preflight": "passed",
+  "scanner_integrated": true,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-54",
+  "source_manifest_sha256": "c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3"
+}

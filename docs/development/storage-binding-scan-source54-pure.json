@@ -1,0 +1,150 @@
+{
+  "compile_only_packages": [
+    "./internal/recovery",
+    "./internal/server"
+  ],
+  "counts": {
+    "pass": 28
+  },
+  "database_access": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T05:18:56Z",
+  "go_log_sha256": "dc7cd7abec7cec986f91b685738e7eee9bba66e0b4a751e0b29355ac6248ae71",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    }
+  ],
+  "private_network": true,
+  "scanner_integrated": true,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-54",
+  "source_manifest_sha256": "c5a5cf6bf0afa973fbd2c087d300dbe6bd3079f92c7237b5a108d76ef8ae6fc3",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T05:18:26Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestRootBindingScanFilesystemClonesObservedRegisteredRootAcrossTransientReplacement",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingScanObservationClassificationKeepsTransactionFailuresFatal",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingScanCaptureClosesIndependentRootAndRejectsUnverifiedEvidence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationObservationClassificationPreservesFatalErrors",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationPhysicalMembersRequireExactCurrentScope",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationMusicAncestorsSurviveRemovedIntermediateParents",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationRejectsCyclesAndExcessiveHierarchyDepth",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationBudgetsRejectRatherThanTruncateProof",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceStableCompleteMembershipAndAbsence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceOwnedClonesOutliveBorrowedWalkRoot",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRequiresEveryWalkToComplete",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRejectsUnobservedAndNonDirectoryAncestors",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceKeepsSpecialRawMembers",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidencePreviouslyPresentEntriesCannotBecomeAbsence",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRevalidatesNamedDirectoryChain",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceDetectsEntryRewriteWithRestoredMtime",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRequiresCompleteStableInitialListing",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceDetectsChangesDuringFinalRead",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceCancellationAndUnavailableHandles",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceBudgetsAreSharedAcrossRoots",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceCannotReplaceAnEarlierObservation",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceRejectsUnavailableChangeTime",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidencePhysicalPaths",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceInvalidBudgetsAndEmptyPass",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationEvidenceSeenIDsAreDistinctAndIrreversible",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationDirectoryReadCompleteRawMembership",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationDirectoryReadLimitsNeverReturnPartialEntries",
+      "status": "pass"
+    },
+    {
+      "name": "TestScanReconciliationDirectoryReadCancellationPrecedesIO",
+      "status": "pass"
+    }
+  ],
+  "verification": "full-scan-reconciliation-pure-race-and-package-compilation"
+}

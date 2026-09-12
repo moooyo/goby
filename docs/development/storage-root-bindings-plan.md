@@ -5,15 +5,18 @@ observations have bounded remote verification. Schema28 persistence, structural
 backup checks and audit fields are drafted; the actual PostgreSQL catalog was
 generated. Source48 feature/migration/archive acceptance passed all 143 targeted
 tests after two fixture corrections. Source49 full regression ended with 2,105
-passes and two historical recovery fixture failures; source50's fixture repair
-passed source preflight and awaits PostgreSQL rerun.
+passes and two historical recovery fixture failures. The exact failed pair was
+disposed with evidence preserved; source50's fixture repair is now included in
+the running source54 PostgreSQL target.
 Native binding/rebind, per-root
 anchor publication and administrator UI are drafted; source45 passed 36 selected
 non-database race checks and the UI passed 68 decoder/mocked-browser checks.
 New-registration automatic binding passed its selected non-database checks.
 Source53's original-root recovery and directory-evidence helpers passed 20
-selected race checks without database access. The full scanner/delete path is
-drafted but unverified, with a shared music-completeness gate still in progress.
+selected race checks without database access. The full scanner/delete path and
+shared music-completeness gate are integrated in source54 and passed 28 selected
+non-database race checks and related package compilation. PostgreSQL deletion
+and actual mount-recovery acceptance remain pending.
 Source44's repair of the
 source41 scan-throughput regression passed its 2,002-test full run and is published.
 

@@ -1,0 +1,66 @@
+{
+  "exit_code": 0,
+  "files": {
+    "dispose-source49-binding-full-failed-pair.py": "ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4",
+    "test-dispose-source49-binding-full-failed-pair.py": "e78c27cb2e11faabbae397d48b87cac97412c8189cfea4574ead4a462f5d332c"
+  },
+  "guards": {
+    "blocked_effect_details": [
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "os.stat"
+      },
+      {
+        "effect": "builtins.open"
+      },
+      {
+        "effect": "subprocess.run"
+      },
+      {
+        "effect": "socket.socket"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "json"
+      },
+      {
+        "effect": "importlib.import_module"
+      },
+      {
+        "effect": "builtins.exec"
+      },
+      {
+        "effect": "audit:open"
+      },
+      {
+        "effect": "audit:subprocess.Popen"
+      },
+      {
+        "effect": "audit:socket.connect"
+      }
+    ],
+    "database_commands": 0,
+    "errors": 0,
+    "failures": 0,
+    "fence_self_test_blocks": 12,
+    "filesystem_mutations": 0,
+    "fixtures": "two-source-reads-then-audit-fenced-memory-only",
+    "initial_source_reads": 2,
+    "operator_sha256": "ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4",
+    "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+    "skips": 0,
+    "status": "passed",
+    "suite": "source49-disposal-guards",
+    "summaries": [],
+    "tests": 27
+  },
+  "status": "passed",
+  "syntax_files": 2
+}

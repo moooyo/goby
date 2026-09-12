@@ -1,0 +1,72 @@
+{
+  "exit_code": 1,
+  "files": {
+    "dispose-source49-binding-full-failed-pair.py": "ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4",
+    "test-dispose-source49-binding-full-failed-pair.py": "6885f7a61833d1e0b0f77fc8133ac4e13259c9883369641d1827f28b632ce045"
+  },
+  "guards": {
+    "blocked_effect_details": [
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "ntpath"
+      },
+      {
+        "effect": "os.stat"
+      },
+      {
+        "effect": "builtins.open"
+      },
+      {
+        "effect": "subprocess.run"
+      },
+      {
+        "effect": "socket.socket"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "json"
+      },
+      {
+        "effect": "importlib.import_module"
+      },
+      {
+        "effect": "builtins.exec"
+      },
+      {
+        "effect": "audit:open"
+      },
+      {
+        "effect": "audit:subprocess.Popen"
+      },
+      {
+        "effect": "audit:socket.connect"
+      },
+      {
+        "effect": "builtins.__import__",
+        "module": "json.decoder"
+      }
+    ],
+    "database_commands": 0,
+    "errors": 1,
+    "failures": 0,
+    "fence_self_test_blocks": 13,
+    "filesystem_mutations": 0,
+    "fixtures": "two-source-reads-then-audit-fenced-memory-only",
+    "initial_source_reads": 2,
+    "operator_sha256": "ceccddd403adb48a7dadacc08da46cde4e026603710a3c93a135b3b889a508c4",
+    "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+    "skips": 0,
+    "status": "failed",
+    "suite": "source49-disposal-guards",
+    "summaries": [
+      "{\"error_type\": \"EffectBlocked\", \"frames\": [{\"file\": \"/usr/lib/python3.13/unittest/case.py\", \"function\": \"testPartExecutor\", \"line\": 58}, {\"file\": \"/usr/lib/python3.13/unittest/case.py\", \"function\": \"subTest\", \"line\": 556}, {\"file\": \"/opt/goby-test/exec-work-m3e/source49-disposal-tool-01/test-dispose-source49-binding-full-failed-pair.py\", \"function\": \"test_log_parser_rejects_empty_nonbytes_and_malformed_records\", \"line\": 386}, {\"file\": \"<memory-only-reviewed-ast>\", \"function\": \"full_log_summary\", \"line\": 163}, {\"file\": \"/usr/lib/python3.13/json/__init__.py\", \"function\": \"loads\", \"line\": 346}, {\"file\": \"/usr/lib/python3.13/json/decoder.py\", \"function\": \"decode\", \"line\": 345}, {\"file\": \"/usr/lib/python3.13/json/decoder.py\", \"function\": \"raw_decode\", \"line\": 361}, {\"file\": \"/opt/goby-test/exec-work-m3e/source49-disposal-tool-01/test-dispose-source49-binding-full-failed-pair.py\", \"function\": \"denied\", \"line\": 112}], \"message\": \"The memory-only fence blocked builtins.__import__.\", \"test\": \"__main__.DisposalGuards.test_log_parser_rejects_empty_nonbytes_and_malformed_records\"}"
+    ],
+    "tests": 26
+  },
+  "status": "failed",
+  "syntax_files": 2
+}
