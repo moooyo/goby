@@ -1,0 +1,221 @@
+{
+  "binary": {
+    "bytes": 33033191,
+    "path": "/opt/goby-test/exec-work-m3e/storage-binding-model-go-verification-01/library.test",
+    "sha256": "7a48a84d4283f784c21d61c59df941e52944c3ef133cca79296133b5549ff15a"
+  },
+  "counts": {
+    "pass": 46
+  },
+  "database_setup_performed": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T02:19:42Z",
+  "go_log_sha256": "3585c9b916a5e4ad823d77e44cd90710cf1e896ab18567dac035c3522e691132",
+  "mount_helper_executed": false,
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    }
+  ],
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-42",
+  "source_manifest_sha256": "1dc0bc3d1eafb1f867ac5b7d09459ff63f3f7ee29bc958c97ab0f900219444a6",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T02:19:16Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestRootStorageIdentityRejectsNonDirectoryAndClosedFiles",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentitySurvivesNewOpenAndOrdinaryContentChanges",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityDistinguishesNamedReplacementAndOriginalRestoration",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityAcrossObserverProcesses",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityProcessHelper",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityProfileConstants",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityValidateCanonicalFieldsAndHandleBounds",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityEqualRequiresEveryStableField",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityEqualUsesCompleteUUIDAndMaximumHandle",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityEqualNeverAcceptsInvalidOrZeroValues",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityEqualityDoesNotIncludeLiveWitness",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootStorageIdentityAndObservationJSONRoundTripPreservesEveryField",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemCaptureRetainsIndependentWitnesses",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemRejectsRegisteredReplacementWithoutRebinding",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemReopensApprovedAnchorInsteadOfTrustingLease",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFilesystemRejectsSymlinkAndChecksMappingAndCancellation",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyLiveComparisonDoesNotConfuseStableAndCurrentIdentity",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyMountNamespaceHelper",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoDecodesEscapesOnceAndRetainsOptions",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoAcceptsObservedExternalNamespaceBindMounts",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoNamespaceRootsRemainStrictlyTyped",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsNamespaceDentriesWithinEveryRelevantRole",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoRejectsMalformedOrIncompleteRecords",
+      "status": "pass"
+    },
+    {
+      "name": "TestParseRootMountInfoEnforcesByteLineEntryAndDecodedPathBounds",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsUsesDescriptorIDsAndKeepsOnlyDeterministicRelevantRecords",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsExcludesStackedAncestorsBeforeTheApprovedPath",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsRelatedUnknownOptionalFields",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsMissingDescriptorsInvalidMappingsAndBrokenChains",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsRejectsStackedAndAncestorHiddenMounts",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsCannotAdoptCorridorMountThroughANestedParentChain",
+      "status": "pass"
+    },
+    {
+      "name": "TestPlanRootMountsBoundsNestedMountsAndDirectRecordInputs",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintIsCanonicalAndExcludesLiveWitnesses",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintIncludesEveryApprovedIdentityAndBoundary",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyFingerprintRejectsPartialOrUnboundedSnapshots",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootTopologyCaptureCopiesSnapshotsAndClosedWitnessesCannotRevalidate",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingAliasesPreserveLibraryAPI",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingModelIdentityContract",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingModelSnapshotCanonicalJSONAndFingerprint",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingModelRejectsPartialAndOversizedSnapshots",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingModelCloneOwnsEveryHandleAndBoundary",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingModelPathMappingKeepsCanonicalContainment",
+      "status": "pass"
+    },
+    {
+      "name": "TestLibraryNotifierChildrenFlagsProjectFolderAndCollectionChanges",
+      "status": "pass"
+    },
+    {
+      "name": "TestLibraryNotifierChildrenFlagsDeduplicateFieldsAndKeepLibraryScopes",
+      "status": "pass"
+    },
+    {
+      "name": "TestLibraryNotifierChildrenFlagsRejectInvalidKindsAndLeafFacts",
+      "status": "pass"
+    },
+    {
+      "name": "TestLibraryNotifierChildrenFlagsConflictRequiresWholeBatchResync",
+      "status": "pass"
+    },
+    {
+      "name": "TestLibraryNotifierChildrenFlagsCopyAndRetainExistingByteBudget",
+      "status": "pass"
+    }
+  ],
+  "verification": "shared-storage-model-race"
+}

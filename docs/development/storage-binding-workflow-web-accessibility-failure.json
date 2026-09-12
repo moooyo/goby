@@ -1,0 +1,63 @@
+{
+  "database_access": false,
+  "error": "AssertionError: Browser/decoder checks did not meet all gates",
+  "expected_tests": 68,
+  "finished_at": "2026-09-12T03:44:11Z",
+  "live_api_acceptance": false,
+  "overlay_files": {
+    "web/admin/e2e/root-binding-api.spec.ts": "0a7afa1a7bdf0755b5e351105926354e8e2c8382d06502a5a00de61850135fb3",
+    "web/admin/e2e/root-binding-workflow.spec.ts": "d756be9485fcbb550c2c03a7805fb820d850b798f379d199e5c85db421a18ef3",
+    "web/admin/src/LibrariesPage.tsx": "59073f070170532699567625a9adb6747ac111ac9434e1a176b09d1a5008047c",
+    "web/admin/src/RootBindingDialog.tsx": "42a32bdf696d865001fb78c3ce7507402509d2d5b99b3ecffba19e6f72b41ddb",
+    "web/admin/src/rootBindingsApi.ts": "0b838d39cad386488a099ca9d53f357aa2cffb2c507e17884c2464dd6dff9caa"
+  },
+  "preview_exit_code": 143,
+  "preview_pid": 1216914,
+  "private_network": true,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-45",
+  "source_manifest_sha256": "e4ff472e027ff87e50b6e1a4f97b2d2d34ff2cdc31a29fb6e5cf6ba120882d48",
+  "started_at": "2026-09-12T03:43:38Z",
+  "status": "failed",
+  "steps": [
+    {
+      "exit_code": 0,
+      "name": "install",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "c581c59650479f5c60daffd1c674aa867893071cd25a05e00e35c243610e1cff"
+    },
+    {
+      "exit_code": 0,
+      "name": "typecheck",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "6b167bcfbe7072c9235eff5e10d71b0148a4b71f39620d1ff836afeffba471c1"
+    },
+    {
+      "exit_code": 0,
+      "name": "build",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "198da83e6a1932bedc17f12845403c8824d040adc51f8216dfc1f1fc3705cf33"
+    },
+    {
+      "exit_code": 0,
+      "name": "test-inventory",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "8b59ce96c363372194b25de8b12f2d1886e825ea4b805920b57680bb15c8dd84"
+    },
+    {
+      "exit_code": 1,
+      "name": "browser-workflow",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "c046bdb320f30c12c7f1b9ca412073e87ae9af3cefb643b0bd086183ac409827"
+    }
+  ],
+  "tests": {
+    "duration": 19063.101,
+    "expected": 67,
+    "flaky": 0,
+    "skipped": 0,
+    "startTime": "2026-09-12T03:43:52.707Z",
+    "unexpected": 1
+  },
+  "verification": "root-binding-frontend-build-decoder-and-browser-workflow",
+  "web_input_sha256": "0311d894d717a2318e6185e7fe8aa1b5adaac37de82f9f32a4678c49304b9d8d"
+}

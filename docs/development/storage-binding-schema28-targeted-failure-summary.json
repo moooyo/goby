@@ -1,0 +1,22 @@
+{
+  "unit": "goby-storage-binding-schema28-controller-v1.service",
+  "state": {
+    "MainPID": "0",
+    "Result": "exit-code",
+    "ExecMainStatus": "1",
+    "ControlGroup": "",
+    "SubState": "failed",
+    "InvocationID": "6693db24aa2d4c778d8872713701a4ec"
+  },
+  "recursive_cgroup_empty": true,
+  "run_id": "20260912_040039_8ec465c99d0b",
+  "report_sha256": "9bcf5a32a626b1aea89216b6f809e859ac9e758032dc0db5bc63bf433ca2efe1",
+  "go_log_sha256": "88ebe7f72a95f10de52fe422ebb99e6475825080845ce416c4f794e7126d9870",
+  "go_log_bytes": 843636,
+  "top_level_passes": 141,
+  "top_level_failures": 2,
+  "failed_tests": [
+    "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection",
+    "TestRootBindingWriteIntegrationReplacementCommitPublishesExactAnchorBeforeScan"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "run_id": "20260912_031154_10da2d3df9f3",
+  "source_manifest_sha256": "c2c9492589360b058c6533d0719219cf85ab5bc056bd76290cee51e7dc897f8b",
+  "outer": {
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ControlGroup": "",
+    "SubState": "exited",
+    "InvocationID": "787656ba3d9b449f8cd8ccd4204fcb1a",
+    "recursive_cgroup_empty": true
+  },
+  "inner": {
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ControlGroup": "",
+    "SubState": "dead",
+    "InvocationID": "",
+    "recursive_cgroup_empty": true
+  },
+  "report_sha256": "565da128365d8eebd994c81255ace550c4bb6b54c4704c456707496e414bf403",
+  "test_elapsed_seconds": {
+    "TestHTTPLibraryNotifierNativeAuxiliaryScansRespectMovieOwnershipAndCurrentACL": 19.41,
+    "TestHTTPLibraryRefreshDurablyQueuesEveryLibraryBeyondScannerCapacity": 6.4,
+    "TestManagerRetriesCapacityAndIndependentScansBeyondTerminalPage": 8.09
+  }
+}

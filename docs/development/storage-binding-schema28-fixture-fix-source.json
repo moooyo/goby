@@ -1,0 +1,15 @@
+{
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-48",
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-47",
+  "schema": 28,
+  "file_count": 4227,
+  "source_manifest_sha256": "128201c5e098d0253c52566901a12d7461543f758b76b06f35d857b7b28a8e96",
+  "preflight": "passed",
+  "changed_test_files": {
+    "internal/library/metadata_migration_integration_test.go": "cb797dcffe11d22a62ca7e45f5c85413cf3c282b103a2e7229b252f0289aa8a8",
+    "internal/library/root_bindings_write_linux_test.go": "4fa87116f3deaf3a8e81f9353249f2487ac18ff4fd95c5ff90378964184ff1b0"
+  },
+  "formatted_changes": [],
+  "production_source_unchanged": true,
+  "catalog_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b"
+}

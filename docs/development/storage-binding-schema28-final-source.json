@@ -1,0 +1,13 @@
+{
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-47",
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-46",
+  "schema": 28,
+  "catalog_bootstrap": false,
+  "file_count": 4227,
+  "source_manifest_sha256": "a0bb8413680da27cee7f2159bf34eda1405ddff4ae57f2564747717f03bf8831",
+  "catalog_sha256": "8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b",
+  "catalog_generation_run_id": "20260912_035604_e246403236db",
+  "catalog_generation_report_sha256": "a3dfa24749d8003739b8f51e5db1070a72f45ffb989cbaa47a0ca12b81baa786",
+  "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+  "preflight": "passed"
+}

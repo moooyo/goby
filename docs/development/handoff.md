@@ -1,11 +1,13 @@
 # Development handoff
 
-Current verification boundary: **source38 passed its full 24-package regression
-with 1,953 top-level tests, zero failures, zero skips and all six PostgreSQL
-cleanup checks true and is published as
-`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`. Source40 passed 169 PostgreSQL
-targeted tests. Corrected topology passed 22 race tests; combined source41 full
-regression is running.**
+Current verification boundary: **source44 passed 2,002 full-suite tests across
+25 packages, the Linux build and all six cleanup checks. Its exact 27-file
+increment is published on main as `35ae3d000f812fa18d234921cedb3c33d88190e0`.**
+Source41's failed staging was replaced only after its repair passed full
+verification. Source38 (`c3fb084d2740cbeebc3499bacc8513f5077cd5ea`, 1,953 passes)
+is the previous product checkpoint. Schema28 binding code remains unpublished.
+Source47's PostgreSQL run passed 141 tests and failed two fixture assertions;
+source48 corrects those tests and awaits disposal of the retained test pair.
 SSH is restored. Primary and candidate remain on source32/schema27; neither
 notification increment has been deployed, and original-client UI acceptance
 remains open.
@@ -131,18 +133,208 @@ Unit `goby-root-topology-go-v2.service`, invocation
 terminal SHA-256 `311113cb569f57454904c7f4087186b0eaed11a38b83ff748e41f4dd5fe20e66`.
 Real nested-mount, system-reboot and binding acceptance remain open.
 
-The 19 source41 Go files are staged and their Git blobs match the frozen remote
-source. Its full regression is running under
-`goby-library-changed-resources-full-controller-v1.service`, PID1050857,
+The 19 source41 Go files were staged but never published in that form because
+its [full report](m3e-library-changed-resources-full-failure.json) is **failed**.
+Controller `goby-library-changed-resources-full-controller-v1.service`,
 invocation `ac1f59aa96004757acd921e1469241db`, execution directory
 `/opt/goby-test/exec-work-m3e/library-changed-resources-full-execution-01`.
-Run ID `20260912_021111_a558c977634d`; pending report:
+Run ID `20260912_021111_a558c977634d`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_021111_a558c977634d/report.json`.
-Recheck this exact handle; it owns the fixed disposable pair. Do not restart on
-an observation timeout. No full-suite success or deployment is claimed.
-Keep subsequent working-tree changes out of this staged increment: shared
-storagebinding model extraction, a mount-namespace helper and real auxiliary
-HTTP/WebSocket acceptance are separate ongoing work, not verified source41.
+The controller is terminal with exit1, MainPID0 and an empty cgroup; PID1050857
+is historical. Report SHA-256:
+`c32a2114c1ee5dda25dee095d60c230cae13db6b9fd893352829fc365df57118`.
+Terminal SHA-256: `46dbe57ab11e1ebe01be92740e57a39fa754ecfb6258d345a41b137f6a1b5d87`.
+The [failure summary](m3e-library-changed-resources-full-failure-summary.json)
+records 1,981 passed and two failed top-level events across the first 23
+packages. The follow-on recoverydb run and Linux build were not reached.
+`TestHTTPLibraryRefreshDurablyQueuesEveryLibraryBeyondScannerCapacity` and
+`TestManagerRetriesCapacityAndIndependentScansBeyondTerminalPage` timed out.
+The original report, final Go log, receipt and evidence trees are retained.
+No full-suite success or deployment is claimed.
+
+Inspection found two unnecessary complete auxiliary snapshot queries for every
+empty collection-theme publication. Source44 skips that work only when both
+the expected and retired resource populations are empty; existing transaction
+checks and deadlines remain intact. It also adds bounded, failure-only task
+diagnostics. Its [preflight](m3e-library-changed-capacity-source-preflight.json)
+passed for 4,186 files, schema27, manifest
+`c2c9492589360b058c6533d0719219cf85ab5bc056bd76290cee51e7dc897f8b`.
+Source44 is based on source42, not the newer schema28 draft. Its
+[targeted PostgreSQL run](m3e-library-changed-capacity-verification.json) passed
+all three tests, zero failures/skips and all six cleanup checks. Run ID:
+`20260912_031154_10da2d3df9f3`; report SHA-256:
+`565da128365d8eebd994c81255ace550c4bb6b54c4704c456707496e414bf403`.
+The capacity cases completed in 6.40 and 8.09 seconds without changing deadlines;
+the real HTTP/WebSocket case completed in 19.41 seconds. The
+[terminal record](m3e-library-changed-capacity-terminal.json) confirms controller
+invocation `787656ba3d9b449f8cd8ccd4204fcb1a`, exit0, MainPID0 and empty cgroups.
+Its SHA-256 is `2a6d5426dfd519909b456f1583b33b9a06fd631770bd819a4042cec55f219c65`.
+An independent static review found no actionable issue in the empty-theme guard
+or failure-only diagnostics. The later full pass allowed replacement of the old
+source41 staging by all 27 exact source44 Git blobs before publication.
+
+Source41's retained empty test pair was removed by its independently reviewed
+operator; the original failure evidence and receipt were preserved. Disposal
+report SHA-256: `ff5b1b9d602bcbfc7f33f52770616edee2d5feff838ce781a7be8c9784b5c65a`;
+control attestation SHA-256:
+`976c1a877bafa2a2b46e8603099965a21c1bebbf392343acc4d1022a05dc42bb`.
+Do not replay that disposal scope.
+
+Source44 [full verification](m3e-library-changed-capacity-full-verification.json) passed under
+`goby-library-changed-capacity-full-controller-v2.service`, invocation
+`d18910a201d44bbfa9bbb77cd9cb8c25`, execution directory
+`/opt/goby-test/exec-work-m3e/library-changed-capacity-full-execution-02`.
+Run ID: `20260912_032033_aeb954fd9c60`; 2,002 top-level passes across 25 packages,
+zero failures/skips and all six cleanup checks true. Report SHA-256:
+`2d82c22f5d335314373cd042de5f8a75f66706e5dae87d7126ec05427c79fe16`.
+The controller is exit0/MainPID0 with an empty cgroup; terminal SHA-256:
+`46eeeda58a44b691a05346f9db9c38a6b8f363dc0e7deb4ba0d8db8b01c86a86`.
+Its 28,357,495-byte Linux binary has SHA-256
+`cd67f2e71ff1b63e3c138cdba1f9c9d1e584e2788b47964a332b38311cda0e2d`.
+It is retained at the run's `tmp/goby-linux-amd64`.
+The first launch in `library-changed-capacity-full-execution-01` failed before
+database preparation because its unit did not inherit `SSH_CONNECTION`.
+That failed launch is terminal and preserved; v2 forwards the authentic SSH
+connection environment. Both launch scopes are terminal. Publication is complete;
+deployment remains pending. Candidate and primary still run source32/schema27.
+
+Source42's [shared model and alias checks](storage-binding-model-go-verification.json)
+passed 46 race tests; report SHA-256
+`b7427669617a66cc283fce6b011198746c5d9b98da5cefae58fda9f6ebe680c4`.
+Its [real isolated bind-mount acceptance](root-topology-mount-verification.json)
+passed six phases: nested capture, loss, replacement, original-source remount,
+addition and stacked-mount rejection. Host mountinfo and namespace were unchanged
+and the owned fixture was removed. Report SHA-256:
+`8e3588a232a9838523485c587769e8d8a57bef28cacd31f6cefc6f96a800eb40`.
+System reboot and other filesystems remain unverified.
+
+Source43 is the separate schema28 bootstrap draft, [4,198 files](storage-binding-schema28-bootstrap-source.json),
+manifest `b6f987c100ff28dc2bc1600fcdb778e7bd52691b7d20dd407ddd09cb18e97585`.
+It adds binding columns, strict shared document validation, backup validation,
+dedicated audit facts and current-schema test updates. Its [20 pure tests](storage-binding-schema28-pure-verification.json),
+[frontend typecheck/build and 31 mocked API tests](storage-binding-audit-web-verification.json),
+and [112 runner guards](storage-binding-schema28-runner-guards.json) passed.
+The subsequent catalog generation below completed; this draft's pure/frontend
+checks alone did not establish PostgreSQL acceptance.
+Source45 subsequently includes the archive integration test, source44 fix,
+read/write binding services, native routes, root-specific anchor publication and
+dedicated tests. Its [bootstrap preflight](storage-binding-workflow-bootstrap-source.json)
+covers 4,215 files, manifest
+`e4ff472e027ff87e50b6e1a4f97b2d2d34ff2cdc31a29fb6e5cf6ba120882d48`.
+It still has no catalog28 and is not a PostgreSQL-accepted final snapshot.
+
+Source45 [passed 36 selected race checks](storage-binding-workflow-pure-verification.json)
+for read projections, real named-directory observations, input validation,
+per-root anchor lifetime/isolation and HTTP decoding/DTOs. The backuppg and
+recoverydb test packages compiled without running database tests. This run used
+no database and an isolated network namespace. Report SHA-256:
+`830b08477a777c2f08a35371d138071ba271ae6e25930f595c39ef405e9bcb81`.
+Controller `goby-storage-binding-workflow-pure-v1.service`, invocation
+`bf74d340826741ef98a731b2e5078279`, is exit0/MainPID0 with an empty cgroup;
+terminal SHA-256 `67adb7a2d8ebd791e97a3907b92626f15f17df7b4da3fc6eb355e97b150075ad`.
+
+The implemented native update independently captures current storage, compares
+an exact revision/fingerprint, rejects active scans, rechecks current native
+administrator authority, and commits binding plus audit atomically. It installs
+the retained anchor for only that root while scan/media admission remains locked;
+other roots sharing the configured path retain their original anchors. This
+code and its database/real HTTP integration tests still await PostgreSQL acceptance.
+Automatic binding during new-library registration is a later source46 increment,
+described below. Ordinary missing-file reconciliation remains unimplemented.
+
+Two post-source45 test corrections must enter the final snapshot: native
+authorization failures after middleware expect the existing `401/unauthorized`
+mapping, and the recovery reset identity case changes only `storage_binding`
+so a revision change cannot mask incomplete fingerprint coverage. Source45's
+36 selected checks did not execute these corrected database cases.
+
+The administrator dialog and separate API decoder passed the first
+[68-check frontend run](storage-binding-workflow-web-verification.json): 58
+decoder cases and 10 mocked browser workflows, with typecheck/build success.
+Visual review then found an excessively tall selected-value control on narrow
+screens with long paths. The control was clamped, complete details retained,
+and storage status plus refresh moved before those details. The second
+[run failed one new accessibility assertion](storage-binding-workflow-web-accessibility-failure.json):
+MUI exposes the field label as its accessible name. Complete selected values are
+now linked through the accessible description, preserving the standard label.
+
+The final [frontend and accessibility verification](storage-binding-workflow-web-accessibility-verification.json)
+passed all 68 checks, zero failures/flaky/skipped, typecheck/build, unchanged
+source/input hashes and desktop/narrow-screen visual inspection. Controller
+`goby-storage-binding-workflow-web-v3.service`, invocation
+`f8598a81c74545c49c06e5ddb79b54b3`, is exit0/MainPID0 with an empty cgroup.
+Execution directory: `/opt/goby-test/exec-work-m3e/storage-binding-workflow-web-03`.
+Report SHA-256: `2b33e2805afb7422eeb8486db9c4f531cd074a636e4dcddc08c91c8d0808a9d7`;
+terminal SHA-256: `223053d30128dae16fa1bb96fc0577492ce2c33aa613a8a13ee2e05808f1a61b`.
+The verified external web distribution is that directory's `dist`; Goby's Go
+binary does not embed it. This used an isolated network namespace and mocked
+every native API request; live binding, scan deletion and deployment remain open.
+
+Source46 adds initial registration capture at revision1, typed historical actors,
+fresh per-root handles and atomic commit/publication to native, Emby and trusted
+system registration. Only explicitly classified unsupported capability or
+topology limits can remain unbound; unrelated I/O, cancellation, changed names
+and invalid mappings cannot enter that fallback. Existing unbound fixtures were
+made explicit. Its [bootstrap preflight](storage-binding-registration-bootstrap-source.json)
+covers 4,226 files, manifest
+`d901d94b1bfb0f369c1119d3238cf20e486af448ae04c15bb5cc1e4a6a760a15`.
+The [46 selected non-database race checks](storage-binding-registration-pure-verification.json)
+passed, with both backup test packages compiled only. Report SHA-256:
+`fe6f01e47899fb49ab30cd8d3ff78757920c2d6070d49ba48c7ddc0f22798292`;
+terminal SHA-256 `5cd512592a355060be2ab55c16c22c74790d5ac0a451e80588675b0db2df9f86`.
+
+The actual schema28 [catalog generation](storage-binding-schema28-catalog-verification.json)
+passed using source43's unchanged migration chain, with all six cleanup checks.
+Run `20260912_035604_e246403236db`, controller
+`goby-storage-binding-schema28-catalog-controller-v1.service`, invocation
+`da709ecc7b2b40dfaa7a1a55e3c73ae4`, is terminal exit0/MainPID0/empty cgroup.
+Report SHA-256: `a3dfa24749d8003739b8f51e5db1070a72f45ffb989cbaa47a0ca12b81baa786`;
+terminal SHA-256: `97051b65b30f51fb2d47fe3e5be0fb6b33d37750e4e86e7feb25cf003901d3fa`.
+Generated `internal/backuppg/catalogs/schema-28-postgresql-17.json` SHA-256:
+`8e7569c8fe2073ee2ed4c51147f9abc21061d1aac9554843101b826fa5a1cc2b`.
+Historical schema23-27 catalogs remain unchanged.
+
+Source47 combines source46 with that exact catalog and passed the final
+[source preflight](storage-binding-schema28-final-source.json): 4,227 files,
+manifest `a0bb8413680da27cee7f2159bf34eda1405ddff4ae57f2564747717f03bf8831`.
+Its PostgreSQL integration run failed under
+`goby-storage-binding-schema28-controller-v1.service`, invocation
+`6693db24aa2d4c778d8872713701a4ec`, execution directory
+`/opt/goby-test/exec-work-m3e/storage-binding-schema28-execution-01`.
+Run `20260912_040039_8ec465c99d0b` is terminal exit1/MainPID0/empty cgroup.
+The [failure report](storage-binding-schema28-targeted-failure.json) and
+[summary](storage-binding-schema28-targeted-failure-summary.json) retain 141
+passes and two failures. Database, backuppg, activity, server and tasks packages
+passed; the library package failed its old schema27 metadata-migration assertion
+and a new media-open fixture lacking the current probe version and ctime.
+The complete original log SHA-256 is
+`88ebe7f72a95f10de52fe422ebb99e6475825080845ce416c4f794e7126d9870`;
+report SHA-256 `9bcf5a32a626b1aea89216b6f809e859ac9e758032dc0db5bc63bf433ca2efe1`;
+terminal SHA-256 `8a76222c25bf9c6dfecbd34d070df25b30edc44cb790fc2239ebca291921bfb9`.
+The retained pair receipt SHA-256 is
+`57ade271512651ff8a9179f1453385f684c877e5a64febcf9c58f28e4c79b423`.
+Do not launch another fixed-pair run until the exact reviewed disposal completes.
+
+Source48 changes only the two test fixtures: the historical migration comparison
+now expects schema28, preserves every old root field and checks the new unbound
+defaults; the rebind/media fixture uses the existing mediaSourceTestProber to
+record the current version and real file ctime. Production source is unchanged.
+Its [preflight](storage-binding-schema28-fixture-fix-source.json) passed for
+4,227 files, manifest
+`128201c5e098d0253c52566901a12d7461543f758b76b06f35d857b7b28a8e96`.
+Repeat the same targeted scope, then full regression. Recoverydb runtime tests
+remain reserved for that full run's isolated final package step.
+
+Candidate deployment preparation found that old prepare-client-fixture.py
+upgrade paths require empty Extras and a 24-package product report. Preserve
+those historical guards. A separate source44 candidate-only same-schema operator
+is being prepared for the existing positive Extras and the accepted 25-package
+report, retaining full database/media/credential/primary-state comparisons.
+Original-client automatic-refresh acceptance needs a fresh black-box candidate
+scope with a real catalog trigger; the older policy gate depended on reloads
+and policy updates do not emit this catalog notification. Do not inspect original
+Emby/client source, JavaScript handlers or reference databases, including frozen
+assets. Use existing public protocol/UI recordings and permitted black-box UI.
 
 The [storage binding plan](storage-root-bindings-plan.md) now distinguishes the
 implemented low-level adapter from unimplemented persistence and reconciliation.
@@ -151,9 +343,9 @@ report SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207
 The [actual Go helper](root-identity-go-unprivileged.json) also obtained the same
 identity as uid995 with empty capabilities and NoNewPrivileges, report SHA-256
 `0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
-No schema28 binding, rebind workflow or deletion authorization exists yet.
-System reboot, nested mounts, other filesystems and the complete service sandbox
-remain unverified. The user's untracked
+Schema28 persistence and native rebind are drafted but unverified against
+PostgreSQL; missing-file deletion is not implemented. System reboot, other filesystems
+and the complete service sandbox remain unverified. The user's untracked
 `scripts/test-env/upgrade-main-schema25.py` remains untouched and excluded.
 
 Historical verification increment: **source35 passed the full 24-package run
@@ -248,8 +440,10 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: finish source41 full regression, real nested-mount and auxiliary
-HTTP/WebSocket checks, then deploy and complete original-client UI acceptance.
+Next: complete the reviewed retained-pair disposal, source44 capacity/auxiliary
+HTTP checks and a fresh full regression. Generate the actual schema28 catalog
+and verify binding/audit/archive behavior before wiring native rebind and safe
+missing-file reconciliation. Deployment and original-client UI acceptance remain open.
 Finish complete theme/extra resource-change
 notifications and global entity projection invalidation. Safe missing-file
 reconciliation requires durable
@@ -1865,7 +2059,7 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Finish source41 full regression and real mount/client checks; deploy and complete original-client automatic refresh acceptance; implement global entity notifications, persistent root binding and safe missing-file reconciliation; then broaden events/subscriptions, subtitles and global NextUp. |
+| P1 — M2/M3 / catalog and client acceptance | Reverify source48 fixture fixes and complete schema28 acceptance and safe reconciliation; deploy and verify original-client automatic refresh; then broaden global projections, events, subtitles and NextUp. Source44 capacity/full regression and publication are complete. |
 | P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |

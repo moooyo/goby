@@ -1,0 +1,226 @@
+{
+  "catalog_bootstrap": true,
+  "compile_only_packages": [
+    "./internal/backuppg",
+    "./internal/recoverydb"
+  ],
+  "counts": {
+    "pass": 46
+  },
+  "database_access": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T03:55:15Z",
+  "go_log_sha256": "002e1509e1a35837cf046bdb3d4b2cf5be2c42341796b3b6a30594a96808c8ad",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverydb",
+      "status": "pass"
+    }
+  ],
+  "private_network": true,
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-46",
+  "source_manifest_sha256": "d901d94b1bfb0f369c1119d3238cf20e486af448ae04c15bb5cc1e4a6a760a15",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T03:54:45Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestRootBindingPathsReplacementIsScopedAndRetainsIndependentHandles",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingPathsInstallationRetainsThePreparedAnchor",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingPathsRejectMappingAndConfigurationChanges",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingPathsInstallationKeepsNewOpensBehindAdmission",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingPathsStoreCloseRetiresAnchorsAndPreservesLeases",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationUnsupportedKernelFailuresHaveNoIOFallback",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationUnsupportedRejectsLaterSymlinks",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationAuthorizationResolvesSuppliedSymlinksBeforeContainment",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationUnsupportedRetainsAuthorizedDirectories",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationUnsupportedStillRejectsNamedReplacement",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationAuthorizationPreservesInputAndConfigurationRules",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationCaptureRejectsCancellationAndInvalidMapping",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationCapabilityFallbackPreservesCancellationAndLimits",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationUnboundFallbackRejectsUnrelatedFailures",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRegistrationActorIdentifiesUsersApplicationsAndSystem",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadFilesystemUsesNewNamedAnchorWithoutChangingCache",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadFilesystemUsesNewNamedRegisteredRoot",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadFilesystemRejectsMissingSymlinkUnconfiguredAndClosedRoots",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitRequestIdentifiersFailBeforeDatabaseAccess",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitMappingAcceptsCanonicalAndLegacySelfRoots",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitMappingRejectsInvalidCatalogRows",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitMappingPreservesValidCatalogIdentifiers",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitValidationRequiresCompleteBindingMetadata",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitValidationRejectsInvalidDocumentsPrivately",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitValidationBoundsTimestampYears",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitInfoPreservesExactRevision",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitRowsCompareEveryRevalidatedField",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitProjectionReportsObservationState",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitProjectionRejectsInvalidApproval",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitProjectionJSONContainsOnlyIdentitySummaries",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitTopologySummarySortsCompleteBoundaries",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitTopologySummaryEnforcesCompleteBounds",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingReadUnitIdentitySummaryDigestIncludesOpaqueIdentity",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingWriteUnitRejectsInvalidApprovalBeforeDatabaseAccess",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingWriteUnitPreservesExactRevisionAndRejectsOverflow",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeRegisteredRootProjectsOnlyPublicFieldsWithExactRevision",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeRootBindingOmitsAbsentOptionalFieldsAndKeepsStatus",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeRootBindingProjectsSafeTopologyFieldsAndUTCTime",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdatePreservesStringsForBackendValidation",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdateRequiresExactNonNullFieldTypes",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdateRejectsAmbiguousAndInvalidJSON",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdateEnforcesActualFourKiBBodyLimit",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdateRejectsBodyReadFailure",
+      "status": "pass"
+    },
+    {
+      "name": "TestDecodeRootBindingUpdateRequiresJSONMediaType",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingRejectsAllQueryParameters",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingConflictIsMappedAndSanitizedWhenWrapped",
+      "status": "pass"
+    }
+  ],
+  "verification": "root-binding-registration-read-write-path-and-http-pure-race"
+}

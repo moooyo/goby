@@ -1,0 +1,30 @@
+{
+  "counts": {
+    "fail": 2,
+    "pass": 1981
+  },
+  "failed_tests": [
+    {
+      "Elapsed": 32.63,
+      "Package": "github.com/moooyo/goby/internal/server",
+      "Test": "TestHTTPLibraryRefreshDurablyQueuesEveryLibraryBeyondScannerCapacity",
+      "Time": "2026-09-12T10:41:11.42182319+08:00"
+    },
+    {
+      "Elapsed": 38.19,
+      "Package": "github.com/moooyo/goby/internal/tasks",
+      "Test": "TestManagerRetriesCapacityAndIndependentScansBeyondTerminalPage",
+      "Time": "2026-09-12T10:45:15.815769574+08:00"
+    }
+  ],
+  "go_log_sha256": "3b24a82bb9f8061231615f910732222cbf40ac8e5ad624ac4bc874ae1d44977c",
+  "packages": {
+    "fail": 2,
+    "pass": 21
+  },
+  "pair_retained": true,
+  "report_sha256": "c32a2114c1ee5dda25dee095d60c230cae13db6b9fd893352829fc365df57118",
+  "run_id": "20260912_021111_a558c977634d",
+  "status": "failed",
+  "terminal_sha256": "46dbe57ab11e1ebe01be92740e57a39fa754ecfb6258d345a41b137f6a1b5d87"
+}

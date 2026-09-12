@@ -1,0 +1,121 @@
+{
+  "catalog_bootstrap": true,
+  "counts": {
+    "pass": 20
+  },
+  "database_access": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T02:41:41Z",
+  "go_log_sha256": "f2217e10fa3c9426e839ae9e4184a0d391459b1db7da2d377d42fb6c2b046898",
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/activity",
+      "status": "pass"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "status": "pass"
+    }
+  ],
+  "schema": 28,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-43",
+  "source_manifest_sha256": "b6f987c100ff28dc2bc1600fcdb778e7bd52691b7d20dd407ddd09cb18e97585",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T02:41:18Z",
+  "status": "passed",
+  "tests": [
+    {
+      "name": "TestStorageBindingDocumentCanonicalRoundTrip",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingDocumentRejectsNonExactObjectKeys",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingDocumentRequiresEveryTypedField",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingDocumentPreservesOpaqueHandlesAndRequiresCanonicalBase64",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingDocumentRejectsMalformedInputAndInvalidModelsPrivately",
+      "status": "pass"
+    },
+    {
+      "name": "TestStorageBindingDocumentEnforcesRawCountAndCanonicalByteLimits",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateRootBindingStateHistoricalSchemas",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateRootBindingStateChecksCompleteMapping",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateRootBindingStatePreservesReadErrorsAndCancellation",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateRootBindingStatePreservesContextAndErrorClassification",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateResourceStateAddsRootBindingsOnlyAtSchema28",
+      "status": "pass"
+    },
+    {
+      "name": "TestValidateResourceStateStopsAtTheFirstInvalidSchema28Population",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingActivityAcceptsAdjacentRevisionsWithoutRounding",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingActivityRejectsInvalidOrUnrelatedFactsBeforeStorage",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingActivityJSONOmitsNewFieldsForLegacyEvents",
+      "status": "pass"
+    },
+    {
+      "name": "TestRootBindingActivityQueryRetainsSafeSummaryFacts",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeActivityRootBindingDTORetainsExactRevisionFacts",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeActivityLegacyDTOOmitsRootBindingFacts",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeActivityDTORejectsNegativePreviousRevisionWithoutPartialPage",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeActivityDTORejectsInconsistentRootBindingFacts",
+      "status": "pass"
+    }
+  ],
+  "verification": "binding-document-and-audit-pure-race"
+}

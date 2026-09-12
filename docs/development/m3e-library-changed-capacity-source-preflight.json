@@ -1,0 +1,15 @@
+{
+  "base_manifest_sha256": "1dc0bc3d1eafb1f867ac5b7d09459ff63f3f7ee29bc958c97ab0f900219444a6",
+  "database_setup_performed": false,
+  "files": 4186,
+  "formal_source_preflight": "passed",
+  "format_changed": [],
+  "formatted_archive_sha256": "a5199a8d867ab01ad6613ba2711ff74798ce13918e150867a1c7bc1f5b0eae12",
+  "formatted_files": {
+    "internal/library/themes_scan.go": "071a40468e0f018baf8bdf5eada37b620a738907b778f9d9a2d42cec0a1b34dc",
+    "internal/server/scheduled_tasks_integration_test.go": "3f81231841a80a6b6da64169dff0630ca240716c57d96938e42671a3856d506a"
+  },
+  "manifest_sha256": "c2c9492589360b058c6533d0719219cf85ab5bc056bd76290cee51e7dc897f8b",
+  "schema": 27,
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-44"
+}

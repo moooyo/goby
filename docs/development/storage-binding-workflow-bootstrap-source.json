@@ -1,0 +1,40 @@
+{
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-45",
+  "base": "/opt/goby-test/exec-work-m3e/source-attempt-43",
+  "schema": 28,
+  "catalog_bootstrap": true,
+  "file_count": 4215,
+  "source_manifest_sha256": "e4ff472e027ff87e50b6e1a4f97b2d2d34ff2cdc31a29fb6e5cf6ba120882d48",
+  "preflight": "passed",
+  "overlay_files": {
+    "internal/library/themes_scan.go": "071a40468e0f018baf8bdf5eada37b620a738907b778f9d9a2d42cec0a1b34dc",
+    "internal/server/scheduled_tasks_integration_test.go": "3f81231841a80a6b6da64169dff0630ca240716c57d96938e42671a3856d506a",
+    "internal/backuppg/root_binding_archive_integration_test.go": "3fc6268809dd1217896f693dc49457380b12851cd7011ca665a45e3b45f86602",
+    "internal/library/root_bindings_read.go": "49514c2b007127b2d73bdc9eac01ae830278e05c74811cd6d132c21ea284c533",
+    "internal/library/root_bindings_read_test.go": "61eebe49abfccc0d6371de15cf653cfc3e1cd2c7a5d4aca43dccc0dd2a27362d",
+    "internal/library/root_bindings_read_integration_test.go": "121bf2d1748faa801f1b4b29adea95351f5f60433c941787db9caa00d23d41ab",
+    "internal/library/root_bindings_read_linux_test.go": "bfae6996d818e66bf1bed13faf135295229664f8382fdd1cd14be880bf0e5a40",
+    "internal/library/root_bindings_write.go": "deb5d90c990ff9abae805b41cc6a9645a98c0ff07f6c632499a23b6477c87d08",
+    "internal/library/root_bindings_write_test.go": "8992ed5a8f662ec8aaf7ae4fb7b5865a7bc929007675e251c94c55e4ead9e245",
+    "internal/library/root_bindings_write_integration_test.go": "36e59971afb379e629c1e239ad001d703132eced1ad2568f64aa1cad6d254bcf",
+    "internal/library/root_bindings_write_linux_test.go": "54869e628d03535becf950e272ba74ca1cfff8e0e5fcf544e90fdd159bcd10c2",
+    "internal/library/library.go": "9b6403d11277b0bf6dfb7799dae7052783e20775112e9e31a250b048bf00d532",
+    "internal/library/paths.go": "a15c1ff594d00c05d72636f71fb537f707dcb8f764acc8ca2e81cff0f89b6019",
+    "internal/library/store.go": "3c162e01d41e2f20c76f2b67648d2c9f54aae1463a558f606857c2e0284962a0",
+    "internal/library/root_binding_paths.go": "ac5400596087ccdab14b3ede50d3f35628179a55421d05fce2168c89b62ac1f5",
+    "internal/library/root_binding_paths_test.go": "372860a9d50edfad1a81b6bb9619b2e5ebbd0177a4770aa5cb71d80d431916f8",
+    "internal/library/root_binding_paths_integration_test.go": "955863314085df63dba67720c51f9f02685f4ef44c584771216243a96388276b",
+    "internal/server/libraries.go": "dddf2d8d64d3687a27099d2765038c73c618f249201d67cf8a5f552cf03784e0",
+    "internal/server/root_bindings.go": "35c683d51dd42e12054fda5f7717c4b80db52205fa197f28119983bf8973a125",
+    "internal/server/root_bindings_test.go": "e91c7852af9120eb6b023b1d9c25cc352f622f4d386016f081faa44cb7243c7d",
+    "internal/server/root_bindings_integration_test.go": "0a671dd469c38d078ccc6a9a3b6f8e0201d0911d9ddb49f6aaff4d9407c6d2d7",
+    "internal/server/root_bindings_auth_integration_test.go": "7b47300681743c12d5c47905e06401d72768ef442b968543e1d24db3c53b237b",
+    "internal/recoverydb/root_binding_integration_test.go": "11d12c58001bebd7d1addd799f8e9430e384f8827c48a6a9ce459ac5b213192a",
+    "internal/recoverydb/store_integration_test.go": "9a647a639b4469b968ba2719a2267a05534ca94c30eedb060f3c2c56996f8ae1"
+  },
+  "formatted_changes": [
+    "internal/recoverydb/root_binding_integration_test.go"
+  ],
+  "runner_sha256": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+  "database_access": false
+}

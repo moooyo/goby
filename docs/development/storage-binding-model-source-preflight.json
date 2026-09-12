@@ -1,0 +1,23 @@
+{
+  "base_manifest_sha256": "7f43c30bcd7dcfb81523e9c683030f6d4a3c0e869d3dadfa6cef3bf2727cbc26",
+  "database_setup_performed": false,
+  "files": 4186,
+  "formal_source_preflight": "passed",
+  "format_changed": [
+    "internal/storagebinding/model_test.go",
+    "internal/library/root_topology_mount_namespace_test.go"
+  ],
+  "formatted_archive_sha256": "18e5b4bf3e46978329613903e74b9dbda96bc92a267665384b4bd8a0d63dc713",
+  "formatted_files": {
+    "internal/library/root_identity.go": "ff0c7d084612edfbede598a8a462aec80662dbe99edf3df30c086ce53ab66a27",
+    "internal/library/root_topology.go": "a7474c4783a733c3dbbc1e6778d020d336b65e506c0f05777758bf22c823e8ed",
+    "internal/library/root_topology_mount_namespace_test.go": "ad6a3fcc226a326aa498aeafdff67ecccd1f85ff4e688304769f6b7fc81b3ffe",
+    "internal/library/storagebinding_alias_test.go": "f8450927d5a92e17fc7c8bede36a8799c7e8b1153a5f56f20da423370446e5a4",
+    "internal/server/library_notifier_auxiliary_integration_test.go": "5eb8c362cac5630021bfe06586995e7d158e9b3e336e51877b7507fbbd24dccd",
+    "internal/storagebinding/identity.go": "976c3ff39d96c84eae90793c6b53c40caf71537a4868635a9e58986f3ef0a2e9",
+    "internal/storagebinding/model_test.go": "7018036eaf171fd8f92d0ba564bcecd58915eb5017f1de97cc547f346bace292",
+    "internal/storagebinding/topology.go": "f8da18664f8ec845a2e8ce3f34ffe082c0421d1f935edd98e7eb0aea137d1d0c"
+  },
+  "manifest_sha256": "1dc0bc3d1eafb1f867ac5b7d09459ff63f3f7ee29bc958c97ab0f900219444a6",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-42"
+}

@@ -1,10 +1,22 @@
 # Implementation progress
 
-Current boundary: **source38 passed its full regression: 24 packages, 1,953
-top-level tests, zero failures, zero skips and all six PostgreSQL cleanup checks
-true, published as `c3fb084d2740cbeebc3499bacc8513f5077cd5ea`. Source40 passed
-169 PostgreSQL checks; corrected topology passed 22 race tests. Combined
-source41 full regression is running. Client UI acceptance and deployment remain open.**
+Current boundary: **source44 is published as `35ae3d000f812fa18d234921cedb3c33d88190e0`
+after 2,002 full-suite passes across 25 packages, a Linux build and all six
+cleanup checks. Source41's two capacity failures were repaired and reverified.**
+Source40 passed 169 targeted checks; source42 passed 46 model/alias race tests
+and six real isolated mount phases. Source43 schema28 has passed 20 pure tests,
+frontend build/typecheck and 31 mocked API checks, plus 112 runner guards;
+Its actual catalog generation has subsequently passed. Source47 PostgreSQL
+acceptance passed 141 tests but failed two fixture assertions; source48 contains
+the corrections and awaits exact disposal of the retained test pair.
+The later source45 binding read/write, native route and per-root anchor drafts
+passed [36 selected non-database race checks](storage-binding-workflow-pure-verification.json).
+Database write/HTTP/archive/reset-proof cases remain pending. The administrator
+dialog passed typecheck/build and [68 decoder/browser checks](storage-binding-workflow-web-accessibility-verification.json),
+including long-path narrow-screen layout and complete accessible descriptions.
+These browser APIs are mocked. Source46 also passed 46 non-database race checks
+including initial registration capture and capability fallback. Missing-file
+reconciliation is not implemented. Neither source44 nor schema28 is deployed.
 Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
 report SHA-256 `8933a1df780bae0b1ccd3c728865dfcbd75b0b82fe2cb32aa169cbba19b98be3`.
 The subsequent [runner failure](m3e-library-changed-scan-manifest-failure.json)
@@ -84,20 +96,40 @@ Source39 root topology observation instead [failed its first remote run](root-to
 passed [22 race tests on source41](root-topology-go-verification.json), report
 SHA-256 `52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
 Source41 combines the notification and corrected topology files. Full run
-`20260912_021111_a558c977634d` is active under
+`20260912_021111_a558c977634d` failed under
 `goby-library-changed-resources-full-controller-v1.service`, invocation
-`ac1f59aa96004757acd921e1469241db`. Its staged 19-file increment awaits this
-full result; subsequent model extraction and acceptance helpers are separate.
+`ac1f59aa96004757acd921e1469241db`, now exit1/MainPID0/empty cgroup.
+Its [failure report](m3e-library-changed-resources-full-failure.json) and
+[failed-test summary](m3e-library-changed-resources-full-failure-summary.json)
+are retained. The failed 19-file increment was not published in that form. Source44 removes
+unnecessary complex snapshots from empty theme publication and preserves the
+existing completion deadlines. After its
+[preflight](m3e-library-changed-capacity-source-preflight.json), the
+[targeted PostgreSQL run](m3e-library-changed-capacity-verification.json) passed
+all three tests, zero failures/skips and all six cleanup checks. The two capacity
+cases completed in 6.40 and 8.09 seconds. Run ID:
+`20260912_031154_10da2d3df9f3`; report SHA-256:
+`565da128365d8eebd994c81255ace550c4bb6b54c4704c456707496e414bf403`.
+The reviewed disposal of source41's retained empty pair is complete.
+The [full verification](m3e-library-changed-capacity-full-verification.json) passed under
+`goby-library-changed-capacity-full-controller-v2.service`, invocation
+`d18910a201d44bbfa9bbb77cd9cb8c25`: 2,002 passes, 25 packages, zero failures/skips,
+six cleanup checks and Linux build success. The first launch failed before database
+preparation because SSH environment propagation was missing; its evidence is
+preserved and v2 forwards the authentic connection environment.
 
-Persistent bindings, rebind and safe missing-file reconciliation remain at the
-[implementation-plan stage](storage-root-bindings-plan.md). The low-level
+Persistent bindings and native rebind are drafted; PostgreSQL acceptance,
+new-registration automatic binding and safe missing-file reconciliation remain
+open in the [implementation plan](storage-root-bindings-plan.md). The low-level
 adapter passed [14 remote race tests](root-identity-go-verification.json),
 report SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
 Its [actual Go helper](root-identity-go-unprivileged.json) also obtained the same
 identity as uid995 with empty capabilities and NoNewPrivileges, report SHA-256
 `0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
-Schema28 binding is not implemented. System reboot, nested mounts, other
-filesystems and the complete service sandbox remain unverified.
+Schema28 persistence and audit support are drafted; actual migration/archive
+acceptance, native rebind and safe reconciliation remain pending. Source42 passed
+the separate real isolated mount checks. System reboot, other filesystems and
+the complete service sandbox remain unverified.
 
 Historical product checkpoint: **source35 passed 43 targeted notification tests, with
 zero failures, zero skips and all six cleanup checks true.** The
@@ -145,10 +177,10 @@ bounded negative observation. Neither old scope nor the continuation may be
 replayed. See the [study](../research/library-changed-reference.md) and
 [current handoff](handoff.md).
 
-Next work includes source38 full-suite verification,
-original-client UI acceptance, complete theme/extra resource-change notifications,
-global entity projection invalidation, persistent storage-root binding/rebind
-and safe missing-file reconciliation. Repeated empty scans must not
+Next work includes source47 PostgreSQL and full-suite acceptance, safe missing-file
+reconciliation, then deployment and original-client automatic-refresh acceptance.
+Global entity projection invalidation and broader client coverage remain open.
+Repeated empty scans must not
 authorize deletion of old catalog rows when a mount disappeared or changed
 across restart. These safeguards have not been implemented or verified.
 Complete M3/M4/M5/M6 remain open; M7 remains deferred.
@@ -595,11 +627,11 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source32/schema27 deployed; Movie A/B, restriction API and explicit-reload permission UI passed | [Active record](client-acceptance-m3e.md) and [handoff](handoff.md) retain scoped client, deployment and historical failure evidence. Home showed four/three/four libraries after explicit reloads; passive refresh was not observed in two ten-second windows. Source37's [ordinary scan/move notification increment](library-change-notifications.md) passed 80 targeted checks and its 1,920-test/24-package full run, but is not deployed. Source38 image/subtitle and derived-album notifications passed 95 PostgreSQL checks; its full-suite result is pending. Complete theme/extra notifications, global entity projection invalidation, persisted binding/rebind, safe reconciliation and original-client acceptance remain open |
+| M3e real-client acceptance | In progress; source32/schema27 deployed; Movie A/B, restriction API and explicit-reload permission UI passed | [Active record](client-acceptance-m3e.md) and [handoff](handoff.md) retain scoped client, deployment and failure evidence. Passive refresh was not observed in the earlier permission windows. Source44 publishes scan, image/subtitle, album and theme/extra notifications after 2,002 full-suite passes across 25 packages; deployment and original-client automatic refresh remain open. Schema28 binding/registration is under acceptance, with safe reconciliation, global projections and broader client coverage still incomplete |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
-| M2a media ingestion and browse | Foundation increment complete; safe missing-file reconciliation pending | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md). Persistent root/storage binding and ordinary missing-file cleanup are not implemented; repeated empty scans must not authorize deletion after a lost or replaced mount |
+| M2a media ingestion and browse | Foundation increment complete; binding acceptance and safe missing-file reconciliation pending | Pushed `90b7c2e`: safe ffprobe, bounded scans, PostgreSQL catalog/ownership, library ACL queries and React/MUI Libraries/Tasks; [verification report](verification-m2a.md). Persistent binding, registration, rebind and administrator UI are drafted with bounded verification; ordinary missing-file cleanup is not implemented. Repeated empty scans must not authorize deletion after a lost or replaced mount |
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |

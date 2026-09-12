@@ -1,0 +1,33 @@
+{
+  "binary": {
+    "bytes": 33033191,
+    "path": "/opt/goby-test/exec-work-m3e/storage-binding-model-go-verification-01/library.test",
+    "sha256": "7a48a84d4283f784c21d61c59df941e52944c3ef133cca79296133b5549ff15a"
+  },
+  "database_access": false,
+  "exit_code": 0,
+  "finished_at": "2026-09-12T02:22:08Z",
+  "fixture_directory_empty": true,
+  "helper_log_sha256": "8cd7b6800fc39229101d7e7061d9cba61ddb20eb5c73e01acbdb68a0117d16d9",
+  "host_mountinfo_after_sha256": "15a63f16644f6364af87acea1527d516f33a4b7d98d3abcedb3312551a63bfcb",
+  "host_mountinfo_before_sha256": "15a63f16644f6364af87acea1527d516f33a4b7d98d3abcedb3312551a63bfcb",
+  "host_mountinfo_unchanged": true,
+  "host_namespace": "mnt:[4026531841]",
+  "host_namespace_unchanged": true,
+  "phases": {
+    "boundary_added": true,
+    "boundary_lost": true,
+    "boundary_replaced": true,
+    "nested_bind": true,
+    "original_source_remounted": true,
+    "stacked_mount": true
+  },
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-42",
+  "source_manifest_sha256": "1dc0bc3d1eafb1f867ac5b7d09459ff63f3f7ee29bc958c97ab0f900219444a6",
+  "source_unchanged": true,
+  "started_at": "2026-09-12T02:22:07Z",
+  "status": "passed",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "system_reboot_tested": false,
+  "verification": "isolated-real-bind-mount-topology"
+}

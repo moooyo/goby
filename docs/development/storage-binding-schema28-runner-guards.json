@@ -1,0 +1,14 @@
+{
+  "database_access": false,
+  "exit_code": 0,
+  "files": {
+    "run-client-backup-tests.py": "4c76cfa22fd1915a270756d82e313ce6e7bbf3a5bcc857339fd6d254f5c894a2",
+    "test-run-client-backup-tests.py": "bf63a1e2f15f9770b4bcef38aa1b817a4201b3e3f825377dddb2da1478b0a221"
+  },
+  "finished_at": "2026-09-12T02:35:25Z",
+  "guard_methods": 112,
+  "started_at": "2026-09-12T02:35:24Z",
+  "status": "passed",
+  "stderr_sha256": "adcceb7f042242fdd8375aae0fbd1334ce7179489e307babca2d44babde86aac",
+  "syntax_checks": 2
+}

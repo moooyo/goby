@@ -1,10 +1,16 @@
 # Storage root bindings and missing-file reconciliation
 
-Status: the underlying Go root identity adapter is implemented and has bounded
-remote verification. Persistent binding and reconciliation remain an
-implementation plan: schema28, the native binding/rebind API and ordinary
-missing-file deletion have not been implemented or verified. Those integrations
-are required before a completed scan can remove catalog rows for absent files.
+Status: the identity/topology adapters, shared model and real isolated mount
+observations have bounded remote verification. Schema28 persistence, structural
+backup checks and audit fields are drafted; the actual PostgreSQL catalog was
+generated. Source47 feature/migration/archive acceptance passed 141 tests and
+failed two fixture assertions; source48 corrects them and awaits a fresh run.
+Native binding/rebind, per-root
+anchor publication and administrator UI are drafted; source45 passed 36 selected
+non-database race checks and the UI passed 68 decoder/mocked-browser checks.
+New-registration automatic binding passed its selected non-database checks;
+ordinary missing-file deletion remains unimplemented. Source44's repair of the
+source41 scan-throughput regression passed its 2,002-test full run and is published.
 
 The [first remote capability observation](root-binding-capability-v1.json)
 established that `FS_IOC_GETFSUUID` and `name_to_handle_at` both work for one
@@ -50,8 +56,38 @@ parser fix subsequently passed [22 tests on source41](root-topology-go-verificat
 with zero failures/skips and unchanged source files. Report SHA-256:
 `52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
 External nsfs namespace names are parsed narrowly; related namespace dentries
-still fail explicitly. Combined source41 full regression is running. Persistent
-bindings, rebind, real nested-mount loss acceptance and deletion remain open.
+still fail explicitly. Source41 full regression later failed two capacity cases.
+Source44 removes unnecessary empty-theme snapshot work and passed both cases plus
+real auxiliary HTTP/WebSocket acceptance in its
+[targeted run](m3e-library-changed-capacity-verification.json). Full regression
+remains pending.
+
+Source42 passed [46 shared-model/alias race tests](storage-binding-model-go-verification.json).
+Its [real mount namespace helper](root-topology-mount-verification.json) verified
+owned ext4 bind-mount capture, loss, replacement, original-source remount,
+additional boundaries and stacked-mount rejection. The host mountinfo and
+namespace were unchanged; all owned fixture mounts and files were cleaned up.
+This is separate from system reboot and other-filesystem evidence.
+
+Source43's [bootstrap preflight](storage-binding-schema28-bootstrap-source.json),
+[20 pure validation/audit tests](storage-binding-schema28-pure-verification.json),
+[frontend checks](storage-binding-audit-web-verification.json) and
+[112 runner guards](storage-binding-schema28-runner-guards.json) passed.
+The actual schema28 catalog subsequently passed
+[generation](storage-binding-schema28-catalog-verification.json). Source47 includes
+it together with the archive integration test, source44 repair, binding workflow,
+initial registration and verified UI. Database feature acceptance is running.
+
+Source45 adds the read/write services, native routes, root-specific retained
+anchor installation and archive/reset-proof tests. Its
+[36 selected race checks](storage-binding-workflow-pure-verification.json)
+passed without database access; this verifies bounded projections, directory
+observations, input parsing and handle isolation/lifetime, not the binding write
+transaction or migration/archive workflows. The administrator dialog passed
+[68 decoder/mocked browser checks](storage-binding-workflow-web-accessibility-verification.json)
+and desktop/narrow-screen visual review. Current work still needs PostgreSQL
+integration, complete-scan reconciliation, live browser
+acceptance and deployment before this plan can be marked complete.
 
 ## Problem and acceptance boundary
 
@@ -117,6 +153,14 @@ not acquire `Store.mu`. Audit only the root ID, revisions, and fingerprint,
 without opaque handles. The administrator page must make the affected root and
 storage-boundary changes reviewable before the rebind request.
 
+The existing Store caches the initial approved-root descriptor. Binding reads
+and explicit rebind must observe the current configured pathname independently
+of a stale cached anchor. Restoring or replacing an approved-root mount can
+leave the old descriptor attached to a detached mount. The implementation must
+also ensure subsequent scans and media opens use the accepted current storage,
+while preserving descriptor lifetime, active-scan exclusion and lock ordering.
+An API that can only accept a replacement after a process restart is incomplete.
+
 ## Reconciliation sequence
 
 1. Validate the approved binding and current pathname chain, and retain live
@@ -161,3 +205,40 @@ archive restoration. Cross-system-reboot identity is a separate evidence gate;
 a same-process descriptor comparison cannot satisfy it. Reuse the unavailable
 root, cross-root rename, theme directory replacement, and backup round-trip
 fixtures before adding privileged mount fixtures.
+
+## Pending scanner integration details
+
+The current scanner neither reads persisted binding columns nor retains a
+complete ordinary-item seen set. Keep additions and updates in their existing
+transactions; build a separate bounded reconciliation evidence object per
+library. Capture every root's approved row, revision and mapping before walking,
+retain its independent handles/topology and directory observations until the
+final phase, and disable the entire library's deletion pass on any incomplete
+root, warning, cancellation, changing directory or evidence-budget overflow.
+Cache hits must enter the seen set. Re-read candidates only after all roots have
+finished, because existing per-file identity matching can accept a cross-root
+move in a later root.
+
+Run the final phase after collection-theme completion and warning aggregation,
+before derived music-album refresh. Preserve surviving MusicAlbum ancestors
+before deleting intermediate audio parents. Candidate selection must exclude
+CollectionFolder and synthetic hierarchy paths. Expand every parent_id cascade
+without a library filter, then validate each descendant's scope, root, role,
+seen state and independent absence evidence: the SQL foreign key itself can
+otherwise cascade into corrupt cross-library children hidden by a filtered
+validation query. Include theme/extra owner relationships in that inspection.
+
+Owned transactions protect their own context from request cancellation. The
+delete pass must explicitly check the original scan context and roll back on
+cancellation; use the protected context for SQL without acquiring Store.mu
+inside ownership.mu. Retained descriptors and repeated observations are not an
+atomic filesystem/PostgreSQL lock; retain that limitation in evidence claims.
+Tests should control changes throughout walking and final validation rather
+than substituting a same-process descriptor comparison for complete scan proof.
+
+Original-storage recovery also needs a dedicated path: an old cached anchor may
+remain on a detached mount after the original source is remounted. Only a fresh
+complete snapshot matching the persisted approval may install the current anchor
+without changing revision or approval. A replacement identity must still require
+explicit rebind. Verify this in the isolated mount namespace, in addition to
+ordinary directory rename/restore tests.
