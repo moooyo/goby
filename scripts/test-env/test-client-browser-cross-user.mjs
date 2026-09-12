@@ -31,7 +31,8 @@ const CORE_NAMES = ['parseCrossUserArguments', 'bindCrossUserCredentials', 'clas
   'sanitizeBrowserMessage', 'browserEventDiagnostic', 'recordBrowserPageError', 'resanitizeBrowserDiagnostics',
   'requirePreparationFixture', 'ownSpecialFeaturesRequest', 'specialFeaturesResponseEvidence',
   'captureSpecialFeaturesResponse', 'specialFeaturesEvidence', 'websocketHandshakeBudget', 'websocketLifetimeBudget',
-  'libraryChangedCatalogRequest', 'libraryChangedSocketAuthority', 'libraryChangedSocketMatch', 'createLibraryChangedBrowserActor'];
+  'libraryChangedCatalogRequest', 'libraryChangedSocketAuthority', 'libraryChangedSocketMatch', 'createLibraryChangedBrowserActor',
+  'createLibraryChangedSource55BrowserActor'];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const syntheticHash = label => hash(`synthetic-cross-user:${label}`);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -2179,6 +2180,53 @@ export async function runCrossUserGuards(source) {
     check(entry.browser_handshake_observed === true && actor.libraryChangedDocumentID === 'document-1');
     socket.emit('close'); check(entry.browser_closed === true && entry.closed === false);
     rejected(() => api.createLibraryChangedBrowserActor({ account: { slot: 'B', id: A_ID }, pin: () => {}, report: {}, observer }));
+  });
+  const source55Scope = 'library-changed-ui-source55-v2';
+  test('source55_catalog_scope_is_explicit_and_does_not_expand_source44', () => {
+    for (const prefix of ['', '/emby']) {
+      for (const route of [`/Items/${changedLibrary}`, `/Users/${changedUser}/Items/${changedLibrary}`]) {
+        const url = ORIGIN + prefix + route;
+        check(api.libraryChangedCatalogRequest(url, 'GET', changedUser, source55Scope));
+        check(!api.libraryChangedCatalogRequest(url, 'POST', changedUser, source55Scope));
+        check(!api.libraryChangedCatalogRequest(url, 'GET', changedUser));
+        check(!api.libraryChangedCatalogRequest(url, 'GET', changedUser, changedScope));
+      }
+    }
+    for (const route of [`/Items?Ids=${changedLibrary}`, `/Items/${changedLibrary}/PlaybackInfo`,
+      `/Items/${changedLibrary}/Images/Primary`, `/Items/${'1'.repeat(32)}`, `/Users/${A_ID}/Items/${changedLibrary}`]) {
+      check(!api.libraryChangedCatalogRequest(ORIGIN + route, 'GET', changedUser, source55Scope));
+    }
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}?UserId=${A_ID}`, 'GET', changedUser, source55Scope));
+    rejected(() => api.libraryChangedCatalogRequest(DIRECT + `/Items/${changedLibrary}`, 'GET', changedUser, source55Scope));
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v1'));
+    rejected(() => api.libraryChangedCatalogRequest(ORIGIN + `/Items/${changedLibrary}`, 'GET', changedUser, 'library-changed-ui-source55-v3'));
+  });
+  test('source55_keeps_existing_websocket_budgets_and_wire_delivery', async () => {
+    rejected(() => api.websocketHandshakeBudget('library-changed-ui-source55-v1'));
+    rejected(() => api.websocketLifetimeBudget('library-changed-ui-source55-v1'));
+    check(api.websocketHandshakeBudget(source55Scope) === 2 && api.websocketLifetimeBudget(source55Scope) === 480000);
+    check(api.websocketHandshakeBudget(changedScope) === 2 && api.websocketLifetimeBudget(changedScope) === 480000);
+    const observed = [], bytes = wireFrame(changedBytes);
+    const active = startSocket({ scope: source55Scope, onLibraryChanged: (value, body) => observed.push({ ...value, body: Buffer.from(body) }) });
+    await upgradeSocket(active); active.client.autoWrite = false; active.peer.receive(bytes);
+    check(observed.length === 0); active.client.flushWrites();
+    check(observed.length === 1 && observed[0].forwarded === true && observed[0].body.equals(changedBytes) && active.client.writes.at(-1).equals(bytes));
+    active.flags.logoutInProgress = true; active.peer.emit('end'); await finishSocket(active);
+  });
+  test('source55_actor_passes_its_scope_to_passive_physical_capture', () => {
+    const captured = [], observer = Object.fromEntries(['admitLogin', 'physicalRequest', 'physicalResponse', 'physicalFinished',
+      'frameRequest', 'frameResponse', 'frameFinished', 'catalogRequest', 'catalogResponse', 'catalogFinished',
+      'physicalLibraryChanged', 'browserLibraryChanged'].map(name => [name, () => {}]));
+    observer.catalogRequest = value => captured.push(value);
+    const options = () => ({ account: { slot: 'B', id: changedUser, password: B_PASSWORD }, pin: () => {}, report: {}, observer });
+    const old = api.createLibraryChangedBrowserActor(options()), current = api.createLibraryChangedSource55BrowserActor(options());
+    const request = { url: ORIGIN + `/Users/${changedUser}/Items/${changedLibrary}`, rawHeaders: ['X-Emby-Token', B_TOKEN] };
+    old.observeLibraryChangedCatalog(request, { method: 'GET' }); check(captured.length === 0 && old.catalogPhysicalCount === 0);
+    current.observeLibraryChangedCatalog(request, { method: 'GET' });
+    check(captured.length === 1 && captured[0].url === request.url && current.catalogPhysicalCount === 1 &&
+      old.websocketScope === changedScope && current.websocketScope === source55Scope &&
+      current.report.websocket_handshake_budget === 2 && current.report.websocket_lifetime_ms === 480000);
+    rejected(() => api.createLibraryChangedSource55BrowserActor({ ...options(), account: { slot: 'A', id: A_ID } }));
   });
   const report = { format: 1, mode: 'pure', result: 'blocked', harness_guards_only: true, client_acceptance: false,
     source_sha256: hash(source), planned_test_count: cases.length, tests: [] };

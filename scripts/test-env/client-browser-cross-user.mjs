@@ -24,6 +24,7 @@ const B_CREDENTIALS = `${ROOT}/browser.json`;
 const PREPARATION_ITEM = '268051d3ca734aefcf94e245fb25ad55';
 const PREPARATION_SCOPE = 'schema27-original-movie-01';
 const LIBRARY_CHANGED_SCOPE = 'library-changed-ui-source44-v1';
+const LIBRARY_CHANGED_SOURCE55_SCOPE = 'library-changed-ui-source55-v2';
 const LIBRARY_CHANGED_USER = 'ecbbe4cb82403879bc4b4f78894c5738';
 const LIBRARY_CHANGED_LIBRARY = 'a9993591e72f0f2e7babcbf8b9c50790';
 const LIMIT = 2 * 1024 * 1024;
@@ -503,17 +504,19 @@ const WS_RESERVATIONS = new WeakSet();
 
 /** Only the fixed permission workflow needs initial login plus two reload handshakes. */
 export function websocketHandshakeBudget(scope = undefined) {
-  requireThat(scope === undefined || scope === 'library-permission-ui-v1' || scope === LIBRARY_CHANGED_SCOPE);
+  requireThat(scope === undefined || scope === 'library-permission-ui-v1' || scope === LIBRARY_CHANGED_SCOPE ||
+    scope === LIBRARY_CHANGED_SOURCE55_SCOPE);
   return scope === 'library-permission-ui-v1' ? 3 : WS_LIMITS.handshakes;
 }
 
 export function websocketLifetimeBudget(scope = undefined) {
   websocketHandshakeBudget(scope);
-  return scope === LIBRARY_CHANGED_SCOPE ? 480000 : WS_LIMITS.lifetimeMs;
+  return scope === LIBRARY_CHANGED_SCOPE || scope === LIBRARY_CHANGED_SOURCE55_SCOPE ? 480000 : WS_LIMITS.lifetimeMs;
 }
 
 /** Select only the fixed Movie list or exact target reads for passive capture. */
-export function libraryChangedCatalogRequest(raw, method, userId) {
+export function libraryChangedCatalogRequest(raw, method, userId, scope = undefined) {
+  requireThat(scope === undefined || scope === LIBRARY_CHANGED_SCOPE || scope === LIBRARY_CHANGED_SOURCE55_SCOPE);
   requireThat(userId === LIBRARY_CHANGED_USER && typeof raw === 'string' && Buffer.byteLength(raw) <= 16384);
   if (method !== 'GET') return false;
   const url = new URL(raw), route = url.pathname.replace(/^\/emby(?=\/)/i, '');
@@ -522,6 +525,8 @@ export function libraryChangedCatalogRequest(raw, method, userId) {
   const users = values('userid');
   requireThat(users.length <= 1 && (!users.length || users[0] === userId));
   if ([`/Users/${userId}/Items/${PREPARATION_ITEM}`, `/Items/${PREPARATION_ITEM}`].includes(route)) return true;
+  if (scope === LIBRARY_CHANGED_SOURCE55_SCOPE &&
+    [`/Users/${userId}/Items/${LIBRARY_CHANGED_LIBRARY}`, `/Items/${LIBRARY_CHANGED_LIBRARY}`].includes(route)) return true;
   if (![`/Users/${userId}/Items`, '/Items'].includes(route)) return false;
   const parents = values('parentid'), ids = values('ids');
   requireThat(parents.length <= 1 && ids.length <= 1);
@@ -830,7 +835,7 @@ export function forwardBrowserWebSocket(request, client, head, policy, transport
     let lifeTimer, idleTimer, flushTimer, queued = 0;
     const buffers = new Set(), blockedSources = new Set(), clientFrames = websocketFrameState('client'), serverFrames = websocketFrameState('server');
     const libraryMessages = new Map();
-    const libraryChanged = policy.handshakeScope === LIBRARY_CHANGED_SCOPE;
+    const libraryChanged = policy.handshakeScope === LIBRARY_CHANGED_SCOPE || policy.handshakeScope === LIBRARY_CHANGED_SOURCE55_SCOPE;
     const captureLibraryChanged = libraryChanged ? (value, bytes) => {
       requireThat(typeof policy.onLibraryChanged === 'function' && libraryMessages.size < WS_LIMITS.framesTotal);
       const retained = Buffer.from(bytes); buffers.add(retained);
@@ -1486,7 +1491,7 @@ class BrowserActor {
     kind === 'capabilities' ? body : undefined);
   }
   observeLibraryChangedCatalog(request, plan) {
-    if (!this.libraryChangedObserver || !libraryChangedCatalogRequest(request.url, plan.method, this.account.id)) return;
+    if (!this.libraryChangedObserver || !libraryChangedCatalogRequest(request.url, plan.method, this.account.id, this.websocketScope)) return;
     requireThat(++this.catalogPhysicalCount <= 80);
     const selected = { id: this.catalogPhysicalCount, kind: 'catalog' };
     this.catalogPhysicalEntries.set(request, selected);
@@ -2112,6 +2117,14 @@ export function createLibraryChangedBrowserActor(options) {
   actor.catalogPhysicalCount = 0; actor.catalogPhysicalEntries = new WeakMap();
   actor.libraryChangedBrowserSockets = new Map();
   actor.libraryChangedDocumentNumber = 0; actor.libraryChangedDocumentID = 'document-0';
+  return actor;
+}
+
+/** Source55 adds only the fixed Movies CollectionFolder to passive capture. */
+export function createLibraryChangedSource55BrowserActor(options) {
+  const actor = createLibraryChangedBrowserActor(options);
+  actor.websocketScope = LIBRARY_CHANGED_SOURCE55_SCOPE;
+  actor.report.websocket_lifetime_ms = websocketLifetimeBudget(LIBRARY_CHANGED_SOURCE55_SCOPE);
   return actor;
 }
 
