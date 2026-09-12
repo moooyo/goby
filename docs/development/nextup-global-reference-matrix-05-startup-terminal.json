@@ -1,0 +1,211 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualFailedStatePreserved": true,
+  "afterPreservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/preservation-after.json",
+    "sha256": "a93d68a96af00d61aff312973284ea6a7dfcb114e2126bdda4ffaef8547c4bbe"
+  },
+  "attestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/attestation.json",
+    "sha256": "e11d824a35b24b4c9901b32aec632c7e7f8088587406901d844b3a6c044ec5e3"
+  },
+  "auditBusinessHttpRequests": 0,
+  "auditOriginalImplementationBytesRead": false,
+  "auditReferenceDatabaseRead": false,
+  "beforePreservation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/preservation-before.json",
+    "sha256": "a4d01e46836960dacb33a38ff162e74c7eed21789bb121e60e52294785c206a3"
+  },
+  "capturedAt": "2026-09-12T23:15:19.803114+00:00",
+  "clientAcceptance": false,
+  "controlFlowFunctions": {
+    "observer.verify_completed_evidence": {
+      "astSha256": "7c25a1f7e672b4a64f889111c428701caa9e82899a68b1b1e7ee7e78181e48ae",
+      "endLine": 1201,
+      "line": 1072
+    },
+    "operator.Admission._replay": {
+      "astSha256": "6be3f7bc7b43773162f2e3f81448aa4a6beb68e330f8a0743c7811fe04368195",
+      "endLine": 581,
+      "line": 530
+    },
+    "operator.execute": {
+      "astSha256": "50a783bd4f1eebb65251c76f3cd7d3485dafe3cd322ea9a4ba8b9b767b86029a",
+      "endLine": 749,
+      "line": 691
+    },
+    "operator.main": {
+      "astSha256": "5b7d0370d003c441395c86c93686fc13407a1fa27084212e5803c4536a591541",
+      "endLine": 765,
+      "line": 752
+    },
+    "transport.Journal.__init__": {
+      "astSha256": "c6101061cb2b25e1f4486a0e128d9643428320c7b94b750012a796d9be4c1445",
+      "endLine": 562,
+      "line": 538
+    },
+    "transport.Journal.close": {
+      "astSha256": "8aa5504f27f8418a15caf695f4a08469b244f2e98a85950bfb9311289c51fed5",
+      "endLine": 601,
+      "line": 598
+    },
+    "transport.TransportRunner.__init__": {
+      "astSha256": "782a529932123fa706f084280f7e842ae4b1185c05caa695794890dee2d944de",
+      "endLine": 748,
+      "line": 717
+    },
+    "transport.TransportRunner.run": {
+      "astSha256": "9d860e075e2c1854761a25c870819a80bb3a5ce784b2bae1d2c358c8ad13fad3",
+      "endLine": 956,
+      "line": 909
+    }
+  },
+  "exactAdmissionRejectionStageDiagnosed": false,
+  "execution": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/published-execution.json",
+    "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+  },
+  "finalizedUnit": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/unit-finalized.json",
+    "sha256": "27292516de7ef47a85ed64e9f4cf7fed3464367448bef47de62467a0c0848ee5"
+  },
+  "gobyAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/goby-after.json",
+    "sha256": "a357c5334c6440c23d30203e25f7cb73fc21e95a2b49b079eaecf53c70025f0b"
+  },
+  "gobyBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/goby-before.json",
+    "sha256": "62d9789ad8bb6e9f93a0203facf70706fc45c2a24b62b36268e36227d95702c1"
+  },
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "helper": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/check-matrix05-startup-failure-01.py",
+    "sha256": "0af3571fc40435084da4c34726a2bf6c9a13f9d08f464acf725ebe567d33bf22"
+  },
+  "kind": "nextup-global-matrix-startup-failure-independent",
+  "launchIntent": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/launch-intent.json",
+    "sha256": "16b3d2f4967f3228a4da6e3976833b77698734f14ec1e4d3dfc4955f307c1aa0"
+  },
+  "launchResult": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-05/launch-result.json",
+    "sha256": "b6ba5ae6121926d857a6f9a5090f74cbecea20f7e3981c40701029cb40940a04"
+  },
+  "matrixAcceptance": false,
+  "matrixProtocolExecuted": false,
+  "networkPacketCapturePerformed": false,
+  "operatorAdmissionCompletionProven": false,
+  "outputAndProcessAbsence": {
+    "cgroupAbsent": true,
+    "cgroupPath": "/sys/fs/cgroup/system.slice/goby-nextup-global-reference-matrix-05.service",
+    "formerPid": 1679323,
+    "formerPidAbsent": true,
+    "matrixParentEmpty": true,
+    "matrixRoot": "/opt/goby-test/exec-work-m3e/nextup-global-reference-runs-05/matrix-05",
+    "matrixRootAbsent": true,
+    "operatorParentEntries": [
+      "unit-stderr.log",
+      "unit-stdout.log"
+    ],
+    "operatorRoot": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-05/operator-05",
+    "operatorRootAbsent": true
+  },
+  "pinnedRootServiceAndMainFileReportsEqual": true,
+  "protectedRootCount": 168,
+  "referenceDatabaseComparisonPerformed": false,
+  "referenceDatabaseUnchangedClaimed": false,
+  "resumeOrRetryAllowed": false,
+  "retainedCompleteGobySnapshotsEqualExceptCaptureTime": true,
+  "runId": "nextup-global-reference-20260913-05",
+  "schemaVersion": 1,
+  "sources": {
+    "matrix": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/nextup-global-matrix.py",
+      "sha256": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d"
+    },
+    "observer": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-02/observe-nextup-preparation04-baseline.py",
+      "sha256": "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6"
+    },
+    "operator": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py",
+      "sha256": "8c9ebe40bdc6224670b54298927a4ad0cff90450b3f05bd47963086fb0d3251e"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/prepare-nextup-global-reference.py",
+      "sha256": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7"
+    },
+    "transport": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/nextup-global-transport.py",
+      "sha256": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+    }
+  },
+  "status": "failed_startup_before_persistent_operator_journal",
+  "stderr": {
+    "bytes": 139,
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-05/unit-stderr.log",
+    "safeJson": {
+      "businessHttpStatus": "requires_independent_review",
+      "failureType": "OperatorError",
+      "resumeOrRetryAllowed": false,
+      "status": "operator_failed"
+    },
+    "sha256": "bec8caef6cf798d1c8d2e58df9b1de14a08b748f379ac2528bc3ff150e746ae0"
+  },
+  "stdout": {
+    "bytes": 0,
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-05/unit-stdout.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "unit": {
+    "invocationId": "48b19d7cd45045e7a856bd56ae5d7bde",
+    "name": "goby-nextup-global-reference-matrix-05.service",
+    "properties": {
+      "ActiveState": "failed",
+      "ControlGroup": "",
+      "ExecMainCode": "1",
+      "ExecMainPID": "1679323",
+      "ExecMainStatus": "2",
+      "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py --attestation /opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/attestation.json --attestation-sha256 e11d824a35b24b4c9901b32aec632c7e7f8088587406901d844b3a6c044ec5e3 ; ignore_errors=no ; start_time=[Sun 2026-09-13 07:03:41 CST] ; stop_time=[Sun 2026-09-13 07:03:50 CST] ; pid=1679323 ; code=exited ; status=2 }",
+      "FragmentPath": "/run/systemd/system/goby-nextup-global-reference-matrix-05.service",
+      "Id": "goby-nextup-global-reference-matrix-05.service",
+      "InvocationID": "48b19d7cd45045e7a856bd56ae5d7bde",
+      "LimitNOFILE": "4096",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "1073741824",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "no",
+      "PrivateTmp": "yes",
+      "ProtectHome": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-05 /opt/goby-test/exec-work-m3e/nextup-global-reference-runs-05 /opt/goby-test/exec-work-m3e/reference.lock",
+      "RemainAfterExit": "yes",
+      "Restart": "no",
+      "Result": "exit-code",
+      "SubState": "failed",
+      "TasksMax": "64",
+      "TimeoutStartUSec": "30min",
+      "Type": "oneshot",
+      "UMask": "0077",
+      "User": "root"
+    }
+  },
+  "unitFile": {
+    "path": "/run/systemd/system/goby-nextup-global-reference-matrix-05.service",
+    "sha256": "a756138a22846bb8205204ee5957fec6cfbc4f2b8fc18b3aed049d63d0371b38"
+  },
+  "zeroHttpBasis": [
+    "The exact frozen entry completes admission before execute.",
+    "Admission replays only retained responses through its injected ReplayTransport.",
+    "The nested completed-observer verifier injects WireReplay and no-op runtime authority; it does not launch its live entry.",
+    "execute checks admission and creates its persistent operator Journal before constructing or running TransportRunner.",
+    "Journal construction persists its root; failure close only closes descriptors and does not delete roots.",
+    "Both persistent output roots are absent after this failed invocation; only the exact outer OperatorError JSON was written."
+  ],
+  "zeroHttpDetermination": "frozen source control flow combined with actual logs, unit closure, and output-root absence"
+}

@@ -1,0 +1,113 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualFailedInvocation": {
+    "invocationId": "48b19d7cd45045e7a856bd56ae5d7bde",
+    "pid": 1679323,
+    "unitName": "goby-nextup-global-reference-matrix-05.service"
+  },
+  "admissionUnitReads": [
+    {
+      "fields": [
+        "ActiveState",
+        "ControlGroup",
+        "ExecMainCode",
+        "ExecMainStatus",
+        "ExecStart",
+        "InvocationID",
+        "MainPID",
+        "RemainAfterExit",
+        "Result",
+        "SubState"
+      ],
+      "propertiesSha256": "497e6794f3a6f91124c6549b617ef11c1374746cd042a006bbd1d149429c21a5",
+      "unitName": "goby-nextup-global-reference-preparation-05.service"
+    },
+    {
+      "fields": [
+        "ActiveState",
+        "ControlGroup",
+        "ExecMainPID",
+        "ExecMainStatus",
+        "ExecStart",
+        "Id",
+        "InvocationID",
+        "LoadState",
+        "MainPID",
+        "RemainAfterExit",
+        "Result",
+        "SubState",
+        "Type"
+      ],
+      "propertiesSha256": "354bf064869d836840d73298e2c042cd1a4af02c07b041f166ef372146739060",
+      "unitName": "goby-nextup-preparation04-baseline-observer-03.service"
+    }
+  ],
+  "attestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/attestation.json",
+    "sha256": "e11d824a35b24b4c9901b32aec632c7e7f8088587406901d844b3a6c044ec5e3"
+  },
+  "blockedIOAttempts": {
+    "http": 0,
+    "originalRead": 0
+  },
+  "diagnosticRuntimeIsOriginalInvocation": false,
+  "executeCalled": false,
+  "expectedDiagnosticRuntimeRejection": false,
+  "failureMessage": "The completed baseline observer unit differs from its raw-bound accepted invocation.",
+  "failureType": "OperatorError",
+  "frames": [
+    {
+      "filename": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-01/diagnose.py",
+      "function": "<module>",
+      "line": 126
+    },
+    {
+      "filename": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py",
+      "function": "__init__",
+      "line": 260
+    },
+    {
+      "filename": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py",
+      "function": "_observer_shutdown",
+      "line": 645
+    },
+    {
+      "filename": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py",
+      "function": "require",
+      "line": 53
+    }
+  ],
+  "kind": "nextup-matrix05-readonly-admission-diagnostic",
+  "operator": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/run-nextup-global-reference.py",
+    "sha256": "8c9ebe40bdc6224670b54298927a4ad0cff90450b3f05bd47963086fb0d3251e"
+  },
+  "runtimeDiagnosticCannotReplaceOriginalRuntime": true,
+  "schemaVersion": 1,
+  "status": "admission_rejected",
+  "unitComparisons": [
+    {
+      "actualPropertiesSha256": "497e6794f3a6f91124c6549b617ef11c1374746cd042a006bbd1d149429c21a5",
+      "differences": [],
+      "equal": true,
+      "expectedPropertiesSha256": "497e6794f3a6f91124c6549b617ef11c1374746cd042a006bbd1d149429c21a5",
+      "label": "completed-preparation",
+      "unitName": "goby-nextup-global-reference-preparation-05.service"
+    },
+    {
+      "actualPropertiesSha256": "354bf064869d836840d73298e2c042cd1a4af02c07b041f166ef372146739060",
+      "differences": [
+        {
+          "actual": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-02/observe-nextup-preparation04-baseline.py observe --manifest /opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-03/input.json --manifest-sha256 cc59138eda23e99832263d3d85feda89f92a39fda69e7c4146a0609e8ee4a320 --plan-sha256 60ea6d44c9389239370ad56ac5885b70126d29fd0804a52fe76a4519e174a309 ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }",
+          "expected": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-preparation04-baseline-observer-tool-01/revision-02/observe-nextup-preparation04-baseline.py observe --manifest /opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-03/input.json --manifest-sha256 cc59138eda23e99832263d3d85feda89f92a39fda69e7c4146a0609e8ee4a320 --plan-sha256 60ea6d44c9389239370ad56ac5885b70126d29fd0804a52fe76a4519e174a309 ; ignore_errors=no ; start_time=[Sun 2026-09-13 06:03:24 CST] ; stop_time=[Sun 2026-09-13 06:03:36 CST] ; pid=1515339 ; code=exited ; status=0 }",
+          "property": "ExecStart"
+        }
+      ],
+      "equal": false,
+      "expectedPropertiesSha256": "5ddf017470797f3e1bdd3f1fcd4a22047d1fb654f4780071bf7359b9fada74e7",
+      "label": "accepted-baseline-observer",
+      "unitName": "goby-nextup-preparation04-baseline-observer-03.service"
+    }
+  ],
+  "unitStartCalls": 0
+}

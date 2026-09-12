@@ -1,5 +1,21 @@
 # Implementation progress
 
+Latest execution checkpoint: `2026-09-12T23:44:52Z`. Matrix06 passed actual
+restricted operator admission and the 269-request preparation replay, then
+failed before matrix journal creation or business HTTP at target identity.
+Only endpoint.exe changed from `/usr/bin/python3.13` to the same path with
+` (deleted)`. The running proxy retains its bound device/inode, now with zero
+links; the pathname names a different object. All other process metadata and
+the proxy source remain exact. The original commit stays recovery_required;
+independent diagnostics prove zero business HTTP and preservation of 176 roots
+and the complete Goby state. See [matrix06](nextup-global-reference-matrix-06.md).
+The preceding observer ExecStart repair passed 80 guards/two compile checks,
+269 actual requests and 829 authoritative private-file comparisons; it is
+proven by matrix06's live admission. A new explicitly recorded identity rule
+for the proxy display difference is designed but not yet implemented. Preserve
+all failed scopes, the existing proxy and preparation05; no scope is replayed.
+The matrix output is still absent. Full M2-M6 remain open; M7 remains deferred.
+
 Execution state checkpoint: `2026-09-12T22:48:41Z`. Preparation05 completed all
 four actual playback calibrations: 269 requests, including six successful
 cleanup requests. Three tokens are revoked, pending/uncertain responsibility
@@ -1625,7 +1641,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; preparation05 worker completed four calibrations; independent replay/matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. The release-v3 producer passed 181 guards and actual observer/Grant replay; the final operator passed 73 guards. Actual preparation05 completed 269 requests, four calibrations, four DELETE attempts and three exact token closures, with exit0/MainPID0 and no pending/uncertain responsibility. All 163 protected roots and full Goby 83/70/185 match before/after captures. Independent full raw replay, fixture release and NextUp matrix remain pending. Automatic-refresh v4/v7 controls remain negative. Primary upgrade needs positive client acceptance and a fresh independently attested upgrade. See [preparation05](nextup-global-reference-preparation-05.md). |
+| M3e real-client acceptance | In progress; preparation05 replay and restricted operator admission passed; target identity/matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. Preparation05 completed four calibrations, 269 requests and three exact token closures. OP04 passed 80 guards/two compile checks and reproduced all 269 actual requests and 829 authoritative private files. Matrix05 failed at observer command annotations; that repair passed actual matrix06 admission. Matrix06 then rejected only the proxy interpreter's deleted display suffix while the running device/inode and other metadata remain equal. Both attempts sent zero business HTTP; 176 protected roots and full Goby 83/70/185 remain unchanged. A recorded identity resolver, actual reference matrix and Goby comparison remain pending. Automatic-refresh v4/v7 controls remain negative. Primary upgrade still needs positive client acceptance and a fresh independently attested upgrade. See [matrix06](nextup-global-reference-matrix-06.md). |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

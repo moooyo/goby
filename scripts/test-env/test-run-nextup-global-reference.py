@@ -1018,6 +1018,100 @@ class BaselineObservationGuards(GuardCase):
         self.fixture.observer_pid_absent = False
         self.reject(pattern="baseline observer former process is present")
 
+    def observer_reset(self):
+        recorded = self.fixture.observer_unit["properties"]["ExecStart"]
+        prefix, separator, unused_suffix = recorded.partition(" ; start_time=[")
+        self.assertTrue(separator)
+        return prefix + " ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }"
+
+    def test_observer_exact_recorded_reset_is_admitted_and_preserved_at_checkpoint(self):
+        recorded = self.fixture.observer_unit["properties"]["ExecStart"]
+        self.fixture.unit_values[self.fixture.observer_unit["name"]]["ExecStart"] = self.observer_reset()
+        admission = self.fixture.admit()
+        self.assertEqual(admission.observer_unit["properties"]["ExecStart"], recorded)
+        self.assertEqual(self.fixture.prepared.observer_fixture.independent["unit"]["properties"]["ExecStart"], recorded)
+        admission.checkpoint()
+        admission.checkpoint()
+        self.assertFalse(self.fixture.operator_output.exists())
+        self.assertFalse(self.fixture.matrix_output.exists())
+
+    def test_observer_reset_keeps_the_complete_recorded_command_prefix_exact(self):
+        admission = self.fixture.admit()
+        observer = self.fixture.prepared.observer_fixture
+        reset = self.observer_reset()
+        changes = ((" -I ", " "), (" -B ", " "), (" observe ", " plan "),
+                   (observer.manifest["sources"]["observer"]["path"], str(observer.root / "different-observer.py")),
+                   (observer.input_descriptor["path"], str(observer.root / "different-input.json")),
+                   ("--manifest-sha256 " + observer.input_descriptor["sha256"], "--manifest-sha256 " + "0" * 64),
+                   ("--plan-sha256 " + observer.runner.plan_sha256, "--plan-sha256 " + "0" * 64),
+                   (" ; ignore_errors=no", " ; ignore_errors=yes"))
+        for original, replacement in changes:
+            with self.subTest(fragment=original):
+                changed = reset.replace(original, replacement, 1)
+                self.assertNotEqual(changed, reset)
+                self.fixture.unit_values[self.fixture.observer_unit["name"]]["ExecStart"] = changed
+                with self.assertRaisesRegex(self.O.OperatorError, "baseline observer unit differs"):
+                    admission.checkpoint()
+
+    def test_observer_reset_rejects_mixed_unknown_and_wrong_pid_suffixes(self):
+        admission = self.fixture.admit()
+        reset = self.observer_reset()
+        changes = (("start_time=[n/a]", "start_time=[Tue 2026-09-15 00:01:40 UTC]"),
+                   ("stop_time=[n/a]", "stop_time=[Tue 2026-09-15 00:02:00 UTC]"),
+                   ("pid=0", "pid=" + str(self.fixture.observer_former_pid)),
+                   ("code=(null)", "code=exited"), ("status=0/0", "status=0"),
+                   ("status=0/0 }", "status=0/0 ; unknown=yes }"), (" ; pid=0 ;", "; pid=0 ;"))
+        for original, replacement in changes:
+            with self.subTest(fragment=original):
+                self.fixture.unit_values[self.fixture.observer_unit["name"]]["ExecStart"] = reset.replace(original, replacement, 1)
+                with self.assertRaisesRegex(self.O.OperatorError, "baseline observer unit differs"):
+                    admission.checkpoint()
+
+    def test_observer_reset_candidate_requires_recorded_completed_pid_and_suffix(self):
+        recorded = self.fixture.observer_unit["properties"]["ExecStart"]
+        former_pid = self.fixture.observer_former_pid
+        changed = recorded.replace(" ; pid=" + str(former_pid) + " ;", " ; pid=" + str(former_pid + 1) + " ;")
+        self.assertNotEqual(changed, recorded)
+        for value, pid in ((changed, former_pid), (recorded, former_pid + 1),
+                           (recorded.replace("code=exited", "code=(null)"), former_pid),
+                           (recorded.replace("status=0 }", "status=0/0 }"), former_pid),
+                           (recorded.replace("ignore_errors=no", "ignore_errors=yes"), former_pid)):
+            with self.subTest(recorded=value, formerPid=pid):
+                self.assertEqual(self.O.allowed_observer_exec_starts(value, pid), (value,))
+                self.assertNotIn(self.observer_reset(), self.O.allowed_observer_exec_starts(value, pid))
+
+    def test_observer_unchanged_accepted_representation_keeps_its_exact_path(self):
+        recorded = self.fixture.observer_unit["properties"]["ExecStart"]
+        prefix = recorded.partition(" ; start_time=[")[0]
+        for value in (recorded, self.observer_reset(), prefix + " ; }", recorded.replace("code=exited", "code=(null)")):
+            with self.subTest(recorded=value):
+                self.assertIn(value, self.O.allowed_observer_exec_starts(value, self.fixture.observer_former_pid))
+        self.assertEqual(self.O.allowed_observer_exec_starts(self.observer_reset(), self.fixture.observer_former_pid), (self.observer_reset(),))
+
+    def test_observer_reset_keeps_all_other_current_unit_properties_exact(self):
+        admission = self.fixture.admit()
+        name = self.fixture.observer_unit["name"]
+        base = {**deepcopy(self.fixture.unit_values[name]), "ExecStart": self.observer_reset()}
+        changes = ({"InvocationID": "d" * 32}, {"ExecMainPID": str(self.fixture.observer_former_pid + 1)},
+                   {"MainPID": "1"}, {"ExecMainStatus": "1"}, {"Result": "exit-code"},
+                   {"SubState": "running"}, {"ControlGroup": "/system.slice/another-observer.service"})
+        for change in changes:
+            with self.subTest(change=change):
+                self.fixture.unit_values[name] = {**deepcopy(base), **change}
+                with self.assertRaisesRegex(self.O.OperatorError, "baseline observer unit differs"):
+                    admission.checkpoint()
+
+    def test_observer_reset_still_requires_empty_cgroup_and_absent_former_process(self):
+        self.fixture.unit_values[self.fixture.observer_unit["name"]]["ExecStart"] = self.observer_reset()
+        admission = self.fixture.admit()
+        self.fixture.observer_cgroup_empty = False
+        with self.assertRaisesRegex(self.O.OperatorError, "baseline observer cgroup is not empty"):
+            admission.checkpoint()
+        self.fixture.observer_cgroup_empty = True
+        self.fixture.observer_pid_absent = False
+        with self.assertRaisesRegex(self.O.OperatorError, "baseline observer former process is present"):
+            admission.checkpoint()
+
     def test_checkpoint_rejects_observer_reactivation_or_mutable_closure_facts(self):
         admission = self.fixture.admit()
         self.fixture.observer_pid_absent = False

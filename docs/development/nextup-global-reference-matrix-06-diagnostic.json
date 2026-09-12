@@ -1,0 +1,191 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "admission": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-06/operator-06/private/admission.json",
+    "replayedPreparationRequests": 269,
+    "sha256": "b4545edd44ca0c5f3ebb2beba0a0825755727a53b9e89e775157152ba0d72e20"
+  },
+  "attestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-06/attestation.json",
+    "sha256": "a16f833b942cbd0f7020a9eb2350ec86b7b7ffa3dac57831f0763799c6317de7"
+  },
+  "boundProcessUnits": {
+    "application": {
+      "ActiveState": "active",
+      "ControlGroup": "/system.slice/goby-emby-client-m3e.service",
+      "ExecMainCode": "0",
+      "ExecMainPID": "332054",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/systemd/transient/goby-emby-client-m3e.service",
+      "Id": "goby-emby-client-m3e.service",
+      "InvocationID": "aa59e192c1c846459bc3f218bd923364",
+      "LoadState": "loaded",
+      "MainPID": "332054",
+      "RemainAfterExit": "no",
+      "Restart": "no",
+      "Result": "success",
+      "SubState": "running"
+    },
+    "endpoint": {
+      "ActiveState": "active",
+      "ControlGroup": "/system.slice/goby-client-proxy-m3e-fresh.service",
+      "ExecMainCode": "0",
+      "ExecMainPID": "334022",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/systemd/transient/goby-client-proxy-m3e-fresh.service",
+      "Id": "goby-client-proxy-m3e-fresh.service",
+      "InvocationID": "7fdc742e0cfc4590ba644727d3424114",
+      "LoadState": "loaded",
+      "MainPID": "334022",
+      "RemainAfterExit": "no",
+      "Restart": "no",
+      "Result": "success",
+      "SubState": "running"
+    }
+  },
+  "businessHttpEvidenceBasis": {
+    "bytes": 32433,
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-03/source-control-flow.json",
+    "sha256": "42e51bc9ac13b55ab1bd86cf0c54cd80693c51e37af37bc63bdd6de39f6ffa67"
+  },
+  "capturedAt": "2026-09-12T23:40:16.783936+00:00",
+  "cmdlineHashes": {
+    "application": {
+      "actual": "535f2a1a0f42e394bfa95efc19b70398f9c71f6c24ab3aae2f245ff03671a292",
+      "expected": "535f2a1a0f42e394bfa95efc19b70398f9c71f6c24ab3aae2f245ff03671a292"
+    },
+    "endpoint": {
+      "actual": "c66aad2da000efc76d95871b4d07fea8ac19d4545d9d8a38a3e13fbd1759898e",
+      "expected": "c66aad2da000efc76d95871b4d07fea8ac19d4545d9d8a38a3e13fbd1759898e"
+    }
+  },
+  "commit": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-06/operator-06/private/commit.json",
+    "sha256": "45eca7afa6fdbbbb6b5075bb46008822123d8304a43241e7c6fe4f1b99fa5825",
+    "status": "recovery_required"
+  },
+  "currentExecutablePathIsRunningFileObject": false,
+  "currentExecutablePathMetadata": {
+    "bytes": 6832784,
+    "ctimeNs": 1789253832934654380,
+    "device": 2049,
+    "executableBytesRead": false,
+    "gid": 0,
+    "inode": 368,
+    "links": 1,
+    "mode": 33261,
+    "mtimeNs": 1786363619000000000,
+    "path": "/usr/bin/python3.13",
+    "uid": 0
+  },
+  "deletedMarkerIgnored": false,
+  "diagnosticNetworkAttempts": 0,
+  "evidenceIndex": {
+    "bytes": 6122,
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-03/evidence-index.json",
+    "sha256": "7b08aba6e2b197e8d39f9a61422dded9bb7bdd0562721fd960b1a6353b585dc9"
+  },
+  "kind": "nextup-global-matrix-process-diagnostic",
+  "liveRuntimeReAdmissionGranted": false,
+  "matrixFixtureAccepted": false,
+  "matrixParentEmpty": true,
+  "matrixRestarted": false,
+  "matrixRootAbsent": true,
+  "matrixStateAbsent": true,
+  "operatorScopeMembers": [
+    "export",
+    "export/terminal.json",
+    "private",
+    "private/admission.json",
+    "private/commit.json",
+    "private/terminal.json"
+  ],
+  "operatorSource": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-04/revision-01/run-nextup-global-reference.py",
+    "sha256": "e392591224e909d7f48b6af731d2808bde8641674a67f48dbd305464eca060e2"
+  },
+  "originalOperatorOutcome": "recovery_required",
+  "originalOrExecutableByteReadAttempts": 0,
+  "originalOutcomeUnchanged": true,
+  "outsideScopeWriteAttempts": 0,
+  "processDifferenceCount": 1,
+  "processDifferences": [
+    {
+      "actual": "/usr/bin/python3.13 (deleted)",
+      "expected": "/usr/bin/python3.13",
+      "path": "endpoint.exe"
+    }
+  ],
+  "proxyRestarted": false,
+  "proxySource": {
+    "path": "/opt/goby-test/exec-work-m3e/client-acceptance-proxy.py",
+    "sha256": "256017d62eb98b39a1e026516e6c29ced0a3f599fd961a3c9e0ee9b4d878d99b"
+  },
+  "proxySourceBytesMatch": true,
+  "rawObservation": {
+    "bytes": 10881,
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-03/private-process-observation.json",
+    "sha256": "0a9484033eb9490e79991408639171fc60cd39fbf5de2ba8f64af797fd083024"
+  },
+  "referenceDatabaseComparisonClaim": false,
+  "referenceDatabaseRead": false,
+  "runningExecutableMetadata": {
+    "bytes": 6828688,
+    "ctimeNs": 1789253832946653864,
+    "device": 2049,
+    "executableBytesRead": false,
+    "gid": 0,
+    "inode": 397,
+    "links": 0,
+    "mode": 33261,
+    "mtimeNs": 1781360281000000000,
+    "path": "/proc/334022/exe",
+    "uid": 0
+  },
+  "sameBoundRunningFileObject": true,
+  "schemaVersion": 1,
+  "status": "observed_process_metadata_mismatch_before_transport_http",
+  "terminal": {
+    "candidateStatus": "recovery_required",
+    "cleanupComplete": false,
+    "exportSha256": "d9ccbdf387ffbf17dcb4f7f8209b12457237c68e502e3949129023a6471bd149",
+    "failure": {
+      "message": "The bound target process or namespace changed.",
+      "type": "TransportError"
+    },
+    "operatorCommitPresent": true,
+    "privateSha256": "27a12b2675f1398b1c7b20a5222ecd32fbb5bfa3ae63554cec9cf823737c52f5",
+    "storedStatus": "awaiting_operator_commit",
+    "transportResultIsNull": true
+  },
+  "transportSource": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/nextup-global-transport.py",
+    "sha256": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "unexpectedSubprocessAttempts": 0,
+  "unit": {
+    "argvExact": true,
+    "argvSha256": "abb84dc20f0e29e55a73651e41f8495463f22ea6064cdc5ad0fef3b9f0921642",
+    "cgroupAbsent": true,
+    "formerPid": 1680741,
+    "formerPidAbsent": true,
+    "invocationId": "6e9846ad7a6a4c9987f55e5c9aab5441",
+    "name": "goby-nextup-global-reference-matrix-06.service",
+    "properties": {
+      "ActiveState": "failed",
+      "ControlGroup": "",
+      "ExecMainCode": "1",
+      "ExecMainPID": "1680741",
+      "ExecMainStatus": "2",
+      "FragmentPath": "/run/systemd/system/goby-nextup-global-reference-matrix-06.service",
+      "Id": "goby-nextup-global-reference-matrix-06.service",
+      "InvocationID": "6e9846ad7a6a4c9987f55e5c9aab5441",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "RemainAfterExit": "yes",
+      "Restart": "no",
+      "Result": "exit-code",
+      "SubState": "failed"
+    }
+  }
+}

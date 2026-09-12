@@ -1,0 +1,103 @@
+{
+  "actualAuthoritativePrivateFileCount": 829,
+  "actualBusinessHttpRequests": 0,
+  "actualOriginalBytesRead": 0,
+  "actualUnitObservationsUsed": true,
+  "admissionConstructorReturned": false,
+  "authoritativePrivateOutputsByteExact": true,
+  "capturedAt": "2026-09-12T23:24:31.292904+00:00",
+  "changedFields": [
+    "scope.attestationRoot",
+    "scope.sourceRoot",
+    "sources.operator",
+    "execution",
+    "preparation.wireIndex"
+  ],
+  "clientAcceptance": false,
+  "currentRuntimeOrUnitObservationsSubstituted": false,
+  "deniedAttempts": {
+    "httpAttempts": 0,
+    "originalReadAttempts": 0,
+    "outsideWriteAttempts": 0,
+    "socketAttempts": 0,
+    "unexpectedProcessAttempts": 0
+  },
+  "diagnosticAttestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-02/attestation.json",
+    "sha256": "5f82ff8116adf63b90491e86dfe573aa4ebf59a58ad27d377954c8128b685327"
+  },
+  "diagnosticExecution": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-02/execution.json",
+    "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+  },
+  "diagnosticOnly": true,
+  "diagnosticWireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-02/preparation-wire-index.json",
+    "sha256": "30e67d5bd9f637caa094bd1a7dae1d17dbc561bc2b3a0eaa87ba15a8f6a042fb"
+  },
+  "executeCalled": false,
+  "executionAndWireBytesUnchanged": true,
+  "expectedActualRequests": 269,
+  "expectedDiagnosticRuntimeRejection": true,
+  "exportByteExactReplayClaimed": false,
+  "helper": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-02/replay.py",
+    "sha256": "176a84948d81b6605d9a19fd39625c1930a8fa375a2acb30afccf1b626842ede"
+  },
+  "kind": "nextup-global-reference-actual-operator-replay-diagnostic",
+  "matrixAcceptance": false,
+  "matrixRunnerExecuted": false,
+  "mediaFilesVerifiedBeforeReplay": true,
+  "observedExceptionType": "OperatorError",
+  "operatorLiveAdmissionGranted": false,
+  "originalAttestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/attestation.json",
+    "sha256": "e11d824a35b24b4c9901b32aec632c7e7f8088587406901d844b3a6c044ec5e3"
+  },
+  "originalExecution": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/published-execution.json",
+    "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+  },
+  "originalOutputRootsRemainAbsent": true,
+  "originalWireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-05/wire-index.json",
+    "sha256": "30e67d5bd9f637caa094bd1a7dae1d17dbc561bc2b3a0eaa87ba15a8f6a042fb"
+  },
+  "passedPreparationAndObserverShutdown": true,
+  "passedProducerInputsAndReplay": true,
+  "privateFileSetMatchedByOperatorReplay": true,
+  "producerDataAndRuntimeBindingsUnchanged": true,
+  "referenceDatabaseComparisonPerformed": false,
+  "referenceDatabaseRead": false,
+  "rejectionStage": "_runtime",
+  "replayedActualRequests": 269,
+  "runtimeLiveAdmissionGranted": false,
+  "schemaVersion": 1,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-04/revision-01/run-nextup-global-reference.py",
+    "sha256": "e392591224e909d7f48b6af731d2808bde8641674a67f48dbd305464eca060e2"
+  },
+  "staticFramesWithoutLocals": [
+    {
+      "file": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-02/replay.py",
+      "function": "main",
+      "line": 163
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-04/revision-01/run-nextup-global-reference.py",
+      "function": "__init__",
+      "line": 273
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-04/revision-01/run-nextup-global-reference.py",
+      "function": "_runtime",
+      "line": 667
+    },
+    {
+      "file": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-04/revision-01/run-nextup-global-reference.py",
+      "function": "require",
+      "line": 53
+    }
+  ],
+  "status": "actual_private_replay_completed_expected_runtime_rejection"
+}

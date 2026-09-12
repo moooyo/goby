@@ -102,9 +102,18 @@ preparation records remain immutable. Existing proxy behavior is unchanged;
 the proxy's own internal executable hashing is outside the helper's
 no-original-implementation-read statement.
 
-Next: independently reconstruct all actual preparation requests and outputs,
-verify unit closure and fixture restoration, then release the matrix execution
-through the validated operator. The original-reference NextUp matrix and Goby
-comparison remain pending. Do not rerun this consumed preparation scope.
+The [bounded terminal check](nextup-global-reference-preparation-05-worker-terminal.json),
+SHA-256 `a663b44cd65f1dc3a8e1167f6181c22400b0ad070712398b81cff553749a3674`,
+independently confirms unit shutdown, former-PID absence, retained calibration
+and draft bindings, and preservation reports. It does not substitute for a
+complete raw replay. The subsequent [matrix05 startup](nextup-global-reference-matrix-05.md)
+failed before business HTTP because the observer's ExecStart execution
+annotation had changed while its command and main process facts remained equal.
+That failed scope is independently sealed and its precise compatibility repair
+passed 80 guards, two compile checks and actual preparation replay. The later
+[matrix06 run](nextup-global-reference-matrix-06.md) passed actual operator
+admission, then rejected a distinct proxy executable-display change before
+business HTTP. The original-reference NextUp matrix and Goby comparison remain
+pending. Do not rerun this consumed preparation scope.
 The positive original-client gate, primary upgrade, and full M2-M6 acceptance
 remain open; M7 remains deferred.

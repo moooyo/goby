@@ -1,5 +1,21 @@
 # Development handoff
 
+Latest execution checkpoint: `2026-09-12T23:44:52Z`. Matrix06 passed actual
+restricted operator admission and the 269-request preparation replay, then
+failed before matrix journal creation or business HTTP at target identity.
+Only endpoint.exe changed from `/usr/bin/python3.13` to the same path with
+` (deleted)`. The running proxy retains its bound device/inode, now with zero
+links; the pathname names a different object. All other process metadata and
+the proxy source remain exact. The original commit stays recovery_required;
+independent diagnostics prove zero business HTTP and preservation of 176 roots
+and the complete Goby state. See [matrix06](nextup-global-reference-matrix-06.md).
+The preceding observer ExecStart repair passed 80 guards/two compile checks,
+269 actual requests and 829 authoritative private-file comparisons; it is
+proven by matrix06's live admission. A new explicitly recorded identity rule
+for the proxy display difference is designed but not yet implemented. Preserve
+all failed scopes, the existing proxy and preparation05; no scope is replayed.
+The matrix output is still absent. Full M2-M6 remain open; M7 remains deferred.
+
 Execution state checkpoint: `2026-09-12T22:48:41Z`. Preparation05 completed all
 four actual playback calibrations: 269 requests, including six successful
 cleanup requests. Three tokens are revoked, pending/uncertain responsibility

@@ -177,6 +177,18 @@ def process_absent(pid):
     return not os.path.lexists("/proc/" + str(pid))
 
 
+def allowed_observer_exec_starts(recorded, former_pid):
+    """Allow only the original command or its observed daemon-reload reset suffix."""
+    if not isinstance(recorded, str) or type(former_pid) is not int or former_pid <= 1 or "\r" in recorded or "\n" in recorded:
+        return (recorded,)
+    match = re.fullmatch(r"(?P<prefix>.+ ; ignore_errors=no) ; start_time=\[(?P<start>[^\[\]\r\n]+)\]"
+                         r" ; stop_time=\[(?P<stop>[^\[\]\r\n]+)\] ; pid=(?P<pid>[1-9][0-9]*) ; code=exited ; status=0 }", recorded)
+    if match is None or match.group("start") == "n/a" or match.group("stop") == "n/a" or int(match.group("pid")) != former_pid:
+        return (recorded,)
+    reset = match.group("prefix") + " ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }"
+    return recorded, reset
+
+
 def duration_seconds(value):
     require(isinstance(value, str) and value and value != "infinity", "The execution unit needs a finite start timeout.")
     pieces = re.findall(r"([0-9]+(?:\.[0-9]+)?)(us|ms|s|min|h|d)", value)
@@ -642,7 +654,9 @@ class Admission:
                 "The completed baseline observer must retain its distinct unit identity.")
         if full:
             actual = self.unit_probe(row["name"], set(row["properties"]) | {"InvocationID"})
-            require(same(actual, {"InvocationID": row["invocationId"], **row["properties"]}),
+            expected = {"InvocationID": row["invocationId"], **row["properties"]}
+            commands = allowed_observer_exec_starts(expected["ExecStart"], self.observer_former_pid)
+            require(actual.get("ExecStart") in commands and same({**actual, "ExecStart": expected["ExecStart"]}, expected),
                     "The completed baseline observer unit differs from its raw-bound accepted invocation.")
         require(self.cgroup_probe(row["cgroupPath"]), "The completed baseline observer cgroup is not empty.")
         require(self.pid_absence_probe(self.observer_former_pid), "The completed baseline observer former process is present.")
