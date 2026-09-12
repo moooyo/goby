@@ -47,18 +47,44 @@ confirmed equal JSON values and passed
 `TestPlaybackInfoRetainsRecordedVideoIndexZeroExtensionCompatibility` in a
 separate remote copy with 807 Go inputs. This supplementary single test is not
 added to the 2,173 full-suite count, and the 849 inputs are not all raw-byte-exact.
-Live verification tools and current evidence documentation remain a separate
-publication group.
-Independent static review of candidate schema28 upgrade tooling is complete:
-`upgrade-client-schema28.py`, `migrate-client-schema28.go` and its Python guards
-are undergoing remote helper-build/guard verification. Runtime admission and
-the candidate upgrade have not occurred.
+The nine accepted live-verification tools and 47 evidence/documentation files
+were subsequently pushed as `ec186aa46291125d2f5d9839019d5bf232b88fb2`.
+Candidate schema28 upgrade tooling has passed remote helper builds and guards,
+but the candidate upgrade remains incomplete. TOOL01 passed 60 guards and then
+[rejected its read-only preflight](client-schema28-tool01-preflight.json) because
+it expected complete test lists in the independent full terminal, which retains
+strict count summaries. TOOL02 fixed that consumer and passed
+[64 guards](client-schema28-tool02-guards.json), its
+[helper build](client-schema28-tool02-helper-build.json), and
+[actual preflight](client-schema28-tool02-preflight.json).
+Its first [actual run](client-schema28-attempt1.json),
+`20260912_093201_12f03b28b9a1`, stopped during private backup-material preparation.
+The fixture config points to `/var/lib/goby-test/client-m3e/master.key`, but the
+file is absent and the complete candidate has zero application keys, key-device
+rows and application-key sessions. The operator incorrectly required a copied
+master key for this existing empty-key state.
+The [independent failed terminal](client-schema28-attempt1-terminal.json),
+SHA-256 `d3005e2fb7c3e751770edc7ac242fee66ac5752d13e56303a1865d0986697bfb`,
+confirms exit1/MainPID0 and an empty cgroup for invocation
+`3740096ebffd4c1b9854ec676fef1a2d`. All rows, sequences, catalog, credentials,
+recovery state, candidate/primary processes, media, host, HBA and HISTORY remain
+unchanged. No helper execution, pair creation or service action occurred. The
+recorded pair is `{database_oid: null, role_oid: null, phase: "absent"}`; no
+disposal is needed. Preserve TOOL01, TOOL02 and the partial private backup
+materials; never replay the failed actual scope.
+Its private terminal, after-state and complete failed-file inventory are under
+`/opt/goby-test/exec-work-m3e/client-schema28-source55-execution-02`.
+TOOL03 is being implemented to preserve the explicitly verified absent-master
+state only when all application-key state is empty. It must not generate a key
+or accept a missing key for populated application-key state. The Go helper
+source remains `379d810f7753a79af991f9877936abcd5bcfb0fb62f2ae77ddf5eb04561a775e`.
 The helper must build in a separate source55 copy. The candidate upgrade must
 complete its schema27 backup and independent schema28 restore rehearsal before
 stopping the existing candidate, and install the accepted frontend under
 `/opt/goby-client-m3e/admin` while preserving the primary's shared frontend.
-Fresh source55 original-client tooling is being implemented in parallel and
-has not been verified. It needs a schema28 loader and complete
+Fresh source55 original-client tooling has completed static implementation,
+but awaits the final successful upgrade authority and remote verification.
+Its final fixed upgrade-tool binding is deliberately pending. It needs a schema28 loader and complete
 snapshot/audit validation, bound to the actual upgrade terminal and after-state.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.

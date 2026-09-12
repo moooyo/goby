@@ -1,0 +1,20 @@
+{
+  "exit_code": 1,
+  "intent": {
+    "path": "/opt/goby-test/exec-work-m3e/client-schema28-source55-tool-01/intent.json",
+    "sha256": "2521e1597bf678ba13dd1f7e4cc756e0a1ddb4c3c70d26a7bb93a79978659095"
+  },
+  "marker": "goby-client-schema28-preflight-evidence-v1",
+  "operator_sha256": "5777e7d61b9a99a6497d0dcaf87cf66eb96dcfaa9766e2ff0d7e1d4291c22cdc",
+  "result": {
+    "automatic_retry": false,
+    "automatic_rollback": false,
+    "client_acceptance": false,
+    "failure_type": "Failure",
+    "marker": "goby-client-schema28-source55-upgrade-v1",
+    "status": "failed"
+  },
+  "run_id": "20260912_092259_548457808528",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "c3d22392b754a1ea7a1f58e4aad81f4e247ed8f56296cbcbb428ea4fa3f17f3c"
+}

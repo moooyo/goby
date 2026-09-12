@@ -44,6 +44,22 @@ confirmed equal JSON values and passed
 remote copy containing 807 Go inputs. This is additional compatibility evidence,
 not an increase to the 2,173 count or a claim that all 849 raw files match.
 
+The accepted live-verification tooling and evidence were pushed in
+`ec186aa46291125d2f5d9839019d5bf232b88fb2`. Candidate upgrade TOOL02 passed
+[64 guards](client-schema28-tool02-guards.json), the
+[helper build](client-schema28-tool02-helper-build.json) and
+[read-only preflight](client-schema28-tool02-preflight.json), after TOOL01's
+terminal-summary contract rejection. The first actual upgrade attempt then
+failed while collecting private backup materials because the existing fixture
+has no master-key file and no application-key state. The
+[failed terminal](client-schema28-attempt1-terminal.json) proves complete old
+state preservation, an absent rehearsal pair, and no helper or service action.
+The failed scope and partial private materials remain retained and must not be
+replayed. TOOL03 is being implemented to preserve that explicitly verified
+empty-key state without creating a key or weakening populated-key requirements.
+Candidate source44/schema27 and primary source32/schema27 remain running.
+Fresh client tooling awaits a successful upgrade and its final authority pins.
+
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
 storage remount recovery in a private ext4 bind-mount namespace. Replacement
