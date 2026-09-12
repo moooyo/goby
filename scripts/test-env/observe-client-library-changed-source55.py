@@ -34,11 +34,11 @@ import unicodedata
 
 
 WORK = Path('/opt/goby-test/exec-work-m3e')
-TOOL = WORK / 'client-library-changed-source55-tool-03'
-ROOT = WORK / 'client-library-changed-ui-source55-v3'
+TOOL = WORK / 'client-library-changed-source55-tool-04'
+ROOT = WORK / 'client-library-changed-ui-source55-v4'
 BROWSER_ROOT = ROOT / 'browser'
-WORKER_UNIT = 'goby-client-library-changed-ui-source55-v3.service'
-CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v3.service'
+WORKER_UNIT = 'goby-client-library-changed-ui-source55-v4.service'
+CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v4.service'
 CGROUP = '/system.slice/' + WORKER_UNIT
 MARKER = 'goby-client-library-changed-observation-v1'
 INPUT_MARKER = 'goby-client-library-changed-input-v1'
@@ -72,7 +72,10 @@ PRIOR_WORKER = 'goby-client-library-changed-ui-source55-v2.service'
 PRIOR_CONTROLLER = 'goby-client-library-changed-ui-source55-controller-v2.service'
 PRIOR_KEYS = frozenset(('prior_input', 'prior_browser_report', 'prior_controller_report', 'prior_terminal',
                         'prior_before_snapshot', 'prior_after_snapshot'))
-AUTHORITY_KEYS = UPGRADE_AUTHORITY_KEYS | PRIOR_KEYS
+AUTHORITY_KEYS = UPGRADE_AUTHORITY_KEYS | {'history'}
+HISTORY_FIELDS = {'version', 'input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot'}
+HISTORY_NAMES = {'input': 'prior_input', 'browser_report': 'prior_browser_report', 'controller_report': 'prior_controller_report',
+                 'terminal': 'prior_terminal', 'before_snapshot': 'prior_before_snapshot', 'after_snapshot': 'prior_after_snapshot'}
 PRIOR_PINS = {
     'prior_input': {'path': str(PRIOR_ROOT / 'input.json'), 'sha256': 'c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73'},
     'prior_browser_report': {'path': str(PRIOR_ROOT / 'browser/report.json'), 'sha256': 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743'},
@@ -91,6 +94,40 @@ PRIOR_SEAL_RECORDS = {
                     'sha256': '3f9bcdbf83c62b5e5cd5ead3fc77d9398b9754ca255ca3e97298cf79fb8d2c8c'},
     'controller_source': {'path': str(PRIOR_TOOL / 'observe-client-library-changed-source55.py'),
                     'sha256': '57fe02b0fc32d335bb08a89e3f5c31c9121a7af44997c31e1329761b82701f25'},
+}
+HISTORY_V3_PINS = {
+    'input': {'path': str(WORK / 'client-library-changed-ui-source55-v3/input.json'),
+              'sha256': 'eab8c899d06b525271afec345d4137b3e0adec70bb5e8ecf911fdf4dae7e9f6e'},
+    'browser_report': {'path': str(WORK / 'client-library-changed-ui-source55-v3/browser/report.json'),
+              'sha256': '9360e3b5c60b16f714b80b2da3f1f7a31d58313e196abee99dfbb4f8e3bc9d1f'},
+    'controller_report': {'path': str(WORK / 'client-library-changed-ui-source55-v3/report.json'),
+              'sha256': 'e9b931c568c98e4438917d8c204922267b0931a2de4c9f6bba40f2155c196fb4'},
+    'before_snapshot': {'path': str(WORK / 'client-library-changed-ui-source55-v3/before-full.json'),
+              'sha256': '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897'},
+    'after_snapshot': {'path': str(WORK / 'client-library-changed-ui-source55-v3/after-full.json'),
+              'sha256': 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'},
+    'terminal': {'path': str(WORK / 'client-library-changed-source55-execution-03/failed-terminal.json'),
+              'sha256': 'e53e9777337c8c0b33a0cc86dad2e22c79d5e7f2601aa64dd68c6ed91cd9ecf1'},
+}
+HISTORY_V3_INDEPENDENT = {'path': str(WORK / 'client-library-changed-source55-execution-03/independent-after-full.json'),
+                         'sha256': '668975cd51c66888fb363ba273fe15dec70646d87e9549adf0fbe79c20b4f3f0'}
+HISTORY_V3_SEAL_RECORDS = {
+    'scope_files': {'path': str(WORK / 'client-library-changed-source55-execution-03/failed-scope-files.json'),
+                    'sha256': 'a27ba50b166ef0752e466960d4eab94c457e699228daf65eeed366305b5a287f'},
+    'seal_script': {'path': str(WORK / 'client-library-changed-source55-execution-03/seal-failed-terminal.py'),
+                    'sha256': '525caf668f68d365599b067d07d8f5e635df1bd011359d8c807014697e87c41d'},
+    'controller_source': {'path': str(WORK / 'client-library-changed-source55-tool-03/observe-client-library-changed-source55.py'),
+                    'sha256': '68753cc567ceb138b1a2cfd693020b42556448cc5da0821c4ead1f8cf93700f2'},
+}
+HISTORY_V3_PREDECESSORS = {
+    'predecessor_terminals': [
+        {'path': str(WORK / 'client-library-changed-source55-execution-01/failed-terminal.json'),
+         'sha256': 'ecdc5fdf48bf7d471676e6786d52ed61ce1be3053537ce36fde5d44a3d1552a6'}, PRIOR_PINS['prior_terminal']],
+    'predecessor_inventories': [
+        {'path': str(WORK / 'client-library-changed-source55-execution-01/failed-scope-files.json'),
+         'sha256': '62cc954df4141a3ddb3faf9e99772a9055f7c5f864f68ee1d30728ae00144872'}, PRIOR_SEAL_RECORDS['scope_files']],
+    'discovery_failure': {'path': str(WORK / 'client-library-changed-ui-source55-v3/browser/discovery-failure.json'),
+         'sha256': '23b42c459572f25fd17f18b86eacc3b75c7553020521df6ea0ab6ec43bfb609f'},
 }
 FIXTURE = {
     'profile_receipt': (WORK / 'client-special-features-protocol-finalization-v1/completed.json', 'b443e5f6d5faceb3486d68644298b0a1527f6dcc1e4ac1109ff6d0c252fdfb36'),
@@ -264,6 +301,40 @@ def artifact_descriptor(value):
     return value
 
 
+def history_scope(version):
+    require(type(version) is int and version in (2, 3), 'Only the two sealed predecessor scopes may be read.')
+    if version == 2:
+        return {'root': PRIOR_ROOT, 'tool': PRIOR_TOOL, 'worker': PRIOR_WORKER, 'controller': PRIOR_CONTROLLER,
+                'pins': {name: PRIOR_PINS[key] for name, key in HISTORY_NAMES.items()}}
+    return {'root': WORK / 'client-library-changed-ui-source55-v3', 'tool': WORK / 'client-library-changed-source55-tool-03',
+            'worker': 'goby-client-library-changed-ui-source55-v3.service',
+            'controller': 'goby-client-library-changed-ui-source55-controller-v3.service', 'pins': HISTORY_V3_PINS}
+
+
+def validate_history_entry(entry, version):
+    require(isinstance(entry, dict) and set(entry) == HISTORY_FIELDS and type(entry['version']) is int and entry['version'] == version,
+            'The sealed history order or exact entry shape changed.')
+    pins = history_scope(version)['pins']
+    require(set(pins) == set(HISTORY_NAMES), 'The predecessor has no complete independently sealed input pins.')
+    for name in HISTORY_NAMES:
+        artifact_descriptor(entry[name])
+        require(same(entry[name], pins[name]), 'A predecessor descriptor differs from its exact sealed scope.')
+
+
+def history_entry_authority(authority, entry):
+    return {**{key: authority[key] for key in UPGRADE_AUTHORITY_KEYS},
+            **{target: entry[name] for name, target in HISTORY_NAMES.items()}}
+
+
+def history_seal(version):
+    history_scope(version)
+    if version == 2:
+        return {'independent': PRIOR_INDEPENDENT, 'records': PRIOR_SEAL_RECORDS,
+                'controller_invocation': 'd6376750d8ff4fc08c97c69ac993f1e6', 'worker_invocation': '40884584c2784e3da2a91f816f563b45'}
+    return {'independent': HISTORY_V3_INDEPENDENT, 'records': HISTORY_V3_SEAL_RECORDS,
+            'controller_invocation': 'bb72fff9517e4f41baa01fbd3e86bf40', 'worker_invocation': 'e1296ab3a25a41d6964e577831df4152'}
+
+
 def validate_authority_input(value):
     require(isinstance(value, dict) and set(value) == {'marker', 'version', 'candidate', 'authority'} and
             value['marker'] == 'goby-client-library-changed-source55-authority-v1' and type(value['version']) is int and value['version'] == 1,
@@ -287,10 +358,12 @@ def validate_authority_input(value):
             not same(process, PREVIOUS_PROCESS), 'The candidate process is not an independent new source55 process.')
     authority = value['authority']
     require(isinstance(authority, dict) and set(authority) == AUTHORITY_KEYS, 'Only the exact upgrade authority chain may admit this run.')
-    for descriptor in authority.values():
-        artifact_descriptor(descriptor)
-    require(all(same(authority[key], descriptor) for key, descriptor in PRIOR_PINS.items()),
-            'The predecessor inputs are not the exact retained failed-v2 artifacts.')
+    for key in UPGRADE_AUTHORITY_KEYS:
+        artifact_descriptor(authority[key])
+    require(isinstance(authority['history'], list) and len(authority['history']) == 2,
+            'Exactly the ordered sealed v2 and v3 history is required.')
+    for entry, version in zip(authority['history'], (2, 3)):
+        validate_history_entry(entry, version)
     require(authority['upgrade_intent']['path'] == str(UPGRADE_TOOL / 'intent.json'), 'The upgrade intent is outside its frozen tool.')
     output = Path(authority['upgrade_report']['path']).parent
     require(output.parent == WORK and re.fullmatch('client-schema28-source55-upgrade-[0-9]{8}_[0-9]{6}_[0-9a-f]{12}', output.name) and
@@ -1271,9 +1344,9 @@ def ui_logout_proven(report, proof):
         rows[0].get('result') == 'logout_token_rejected' and rows[0].get('token_fingerprint') == proof['token_sha256'])
 
 
-def validate_prior_ledger(upgraded, before, after, proof):
+def validate_prior_ledger(baseline, before, after, proof):
     """Retain the failed attempt as a closed one-login delta, never UI success."""
-    compare_fixed_snapshot(upgraded, before)
+    compare_fixed_snapshot(baseline, before)
     validate_login(proof)
     session = owned_session(before, after, proof)
     require(same(session['client_capabilities'], normalize_capabilities(canonical(session['client_capabilities']))) and
@@ -1294,25 +1367,29 @@ def validate_prior_ledger(upgraded, before, after, proof):
     return result
 
 
-def validate_prior_documents(candidate, authority, prior_input, controller, browser, upgraded, before, after):
+def validate_prior_documents(candidate, authority, prior_input, controller, browser, baseline, before, after, version=2):
+    scope = history_scope(version)
+    root, tool, worker_unit, controller_unit = (scope[key] for key in ('root', 'tool', 'worker', 'controller'))
     expected_authority = {key: authority[key] for key in UPGRADE_AUTHORITY_KEYS}
+    if version == 3:
+        expected_authority.update(PRIOR_PINS)
     expected_browser_authority = {**expected_authority, 'before_snapshot': authority['prior_before_snapshot']}
     require(isinstance(prior_input, dict) and set(prior_input) == {'marker', 'version', 'mode', 'root', 'output', 'actor', 'candidate',
                 'fixture', 'expected_libraries', 'target', 'source_closure', 'authority', 'controller'} and
             prior_input['marker'] == INPUT_MARKER and type(prior_input['version']) is int and prior_input['version'] == 1 and
-            prior_input['mode'] == MODE and prior_input['root'] == str(PRIOR_ROOT) and prior_input['output'] == str(PRIOR_ROOT / 'browser') and
+            prior_input['mode'] == MODE and prior_input['root'] == str(root) and prior_input['output'] == str(root / 'browser') and
             same(prior_input['candidate'], candidate) and same(prior_input['authority'], expected_browser_authority) and
             same(prior_input['fixture'], {key: {'path': str(path), 'sha256': digest} for key, (path, digest) in FIXTURE.items()}),
-            'The predecessor input changed its exact v2 candidate, fixture or upgrade baseline.')
+            'The predecessor input changed its original candidate, fixture or historical authority format.')
     source_closure = prior_input['source_closure']
-    require(isinstance(source_closure, dict) and set(source_closure) == {str(PRIOR_TOOL / name) for name in JS_NAMES} and
+    require(isinstance(source_closure, dict) and set(source_closure) == {str(tool / name) for name in JS_NAMES} and
             all(required_digest(value) for value in source_closure.values()), 'The predecessor has another JavaScript closure.')
     input_sha, closure_sha = authority['prior_input']['sha256'], sha(canonical(source_closure))
     actor, outer = prior_input['actor'], prior_input['controller']
     require(isinstance(actor, dict) and set(actor) == {'slot', 'user_id', 'credentials', 'account_key', 'source_credentials_sha256'} and
             actor['slot'] == 'B' and actor['user_id'] == B and actor['account_key'] == 'viewer' and actor['source_credentials_sha256'] == CREDENTIALS_SHA and
-            actor['credentials'].get('path') == str(PRIOR_ROOT / 'viewer-credentials.json') and required_digest(actor['credentials'].get('sha256')) and
-            isinstance(outer, dict) and set(outer) == {'pid', 'start_ticks', 'boot_id', 'unit'} and outer['unit'] == PRIOR_CONTROLLER and
+            actor['credentials'].get('path') == str(root / 'viewer-credentials.json') and required_digest(actor['credentials'].get('sha256')) and
+            isinstance(outer, dict) and set(outer) == {'pid', 'start_ticks', 'boot_id', 'unit'} and outer['unit'] == controller_unit and
             type(outer['pid']) is int and outer['pid'] > 1 and outer['boot_id'] == BOOT and
             isinstance(outer['start_ticks'], str) and re.fullmatch('[1-9][0-9]*', outer['start_ticks']),
             'The predecessor does not bind its one B actor and failed controller process.')
@@ -1335,7 +1412,7 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
             browser.get('mode') == MODE and browser.get('result') == browser.get('outcome') == 'failed' and
             browser.get('failure') == 'library_changed_target_card_not_observed' and browser.get('input_sha256') == input_sha and
             browser.get('source_closure_sha256') == closure_sha and same(browser.get('controller'), outer) and
-            same(browser.get('node_process'), worker) and worker.get('cgroup') == '/system.slice/' + PRIOR_WORKER and
+            same(browser.get('node_process'), worker) and worker.get('cgroup') == '/system.slice/' + worker_unit and
             same(browser.get('candidate'), candidate) and same(browser.get('authority'), expected_browser_authority) and
             same(browser.get('target'), prior_input['target']) and browser.get('stages') == browser.get('controls') == [] and
             all(browser.get(key) is None for key in ('discovery', 'armed', 'forward', 'restore_armed', 'restored')) and
@@ -1363,16 +1440,20 @@ def validate_prior_documents(candidate, authority, prior_input, controller, brow
             closure.get('cleanup_failures') == [], 'The failed predecessor retains a browser, proxy or socket lifetime.')
     capabilities = browser.get('capabilities_private', {})
     require(set(capabilities) == {'path', 'sha256', 'request_count', 'last_successful_body_sha256'} and
-            capabilities['path'] == str(PRIOR_ROOT / 'browser/capabilities-private.json') and required_digest(capabilities['sha256']) and
+            capabilities['path'] == str(root / 'browser/capabilities-private.json') and required_digest(capabilities['sha256']) and
             capabilities['request_count'] == 1 and required_digest(capabilities['last_successful_body_sha256']) and
             same({key: capabilities[key] for key in ('path', 'sha256')}, controller['evidence'].get('browser-capabilities-private.json')),
             'The predecessor capability receipt changed its observed single request.')
-    result = validate_prior_ledger(upgraded, before, after, proof)
+    result = validate_prior_ledger(baseline, before, after, proof)
     require(same(controller.get('ledger'), result), 'The predecessor summary disagrees with the complete independently recomputed delta.')
+    if version == 3:
+        require(same(controller.get('prior_failure_preservation'), result), 'The v3 report lost its separately validated v2 predecessor result.')
     return result
 
 
-def validate_prior_terminal(candidate, authority, controller, browser, terminal, after, independent):
+def validate_prior_terminal(candidate, authority, controller, browser, terminal, after, independent, version=2):
+    scope, seal = history_scope(version), history_seal(version)
+    root, tool, worker_unit, controller_unit = (scope[key] for key in ('root', 'tool', 'worker', 'controller'))
     keys = {'automatic_retry', 'before_snapshot', 'browser', 'browser_report', 'candidate', 'candidate_preserved', 'captured_at',
         'cleanup', 'cleanup_needed', 'cleanup_performed', 'client_acceptance', 'controller_source', 'current_matches_prior_after',
         'dispatched_native_intents', 'exact_owned_additions_retained', 'failed_units', 'full_m3_complete', 'http_requests',
@@ -1381,10 +1462,13 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
         'primary_fact_sha256', 'primary_invocation_id', 'primary_preserved', 'primary_process', 'prior_after_snapshot', 'report',
         'reserved_native_intents', 'restoration', 'schema', 'scope', 'scope_files', 'scope_files_unchanged', 'seal_script',
         'service_writes', 'sql_business_writes', 'status', 'tool', 'upgrade_authority_snapshot', 'version'}
-    require(isinstance(terminal, dict) and set(terminal) == keys and terminal['marker'] == 'goby-source55-failed-ui-terminal-v2' and
+    if version == 3:
+        keys |= {'baseline_chain_verified', 'cumulative_totals', 'discovery_failure', 'old_v2_scope_preserved',
+                 'predecessor_inventories', 'predecessor_terminals', 'prior_baseline', 'prior_failure_preservation'}
+    require(isinstance(terminal, dict) and set(terminal) == keys and terminal['marker'] == 'goby-source55-failed-ui-terminal-v' + str(version) and
             type(terminal['version']) is int and terminal['version'] == 1 and type(terminal['schema']) is int and terminal['schema'] == 28 and
             terminal['status'] == 'failed_scope_sealed' and terminal['observed_run_status'] == 'failed' and terminal['phase'] == 'discovery' and
-            terminal['scope'] == str(PRIOR_ROOT) and terminal['tool'] == str(PRIOR_TOOL) and terminal['cleanup'] == terminal['restoration'] == 'not_required' and
+            terminal['scope'] == str(root) and terminal['tool'] == str(tool) and terminal['cleanup'] == terminal['restoration'] == 'not_required' and
             terminal['reserved_native_intents'] == terminal['dispatched_native_intents'] == [],
             'The predecessor terminal is not the exact sealed failed scope.')
     require(all(terminal[key] is True for key in ('candidate_preserved', 'current_matches_prior_after', 'exact_owned_additions_retained',
@@ -1398,8 +1482,8 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
                       ('input', 'prior_input'), ('browser_report', 'prior_browser_report'), ('report', 'prior_controller_report'),
                       ('upgrade_authority_snapshot', 'current_snapshot')):
         require(same(terminal[key], authority[name]), 'The failure seal points to another predecessor artifact.')
-    require(same(terminal['independent_snapshot'], PRIOR_INDEPENDENT) and
-            all(same(terminal[key], value) for key, value in PRIOR_SEAL_RECORDS.items()) and
+    require(same(terminal['independent_snapshot'], seal['independent']) and
+            all(same(terminal[key], value) for key, value in seal['records'].items()) and
             terminal['media_fact_sha256'] == '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d' and
             terminal['primary_fact_sha256'] == '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a' and
             same(terminal['primary_process'], PRIMARY_PROCESS) and terminal['primary_invocation_id'] == PRIMARY_INVOCATION,
@@ -1415,10 +1499,10 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
         'Id': 'goby-client-m3e.service', 'InvocationID': candidate['invocation_id'], 'LoadState': 'loaded', 'MainPID': str(candidate['process']['pid']),
         'Restart': 'no', 'Result': 'success', 'SubState': 'running', 'Transient': 'no', 'User': 'goby', 'WorkingDirectory': '/var/lib/goby-test/client-m3e'}
     require(same(live['properties'], expected_live), 'The failure seal candidate is not the exact unchanged live service.')
-    require(isinstance(terminal['failed_units'], dict) and set(terminal['failed_units']) == {PRIOR_CONTROLLER, PRIOR_WORKER},
+    require(isinstance(terminal['failed_units'], dict) and set(terminal['failed_units']) == {controller_unit, worker_unit},
             'The failure seal lacks the two exact independent failed service lifetimes.')
-    for unit, source, invocation, working in ((PRIOR_CONTROLLER, controller['controller'], 'd6376750d8ff4fc08c97c69ac993f1e6', str(PRIOR_TOOL)),
-            (PRIOR_WORKER, controller['node_process'], '40884584c2784e3da2a91f816f563b45', str(PRIOR_ROOT))):
+    for unit, source, invocation, working in ((controller_unit, controller['controller'], seal['controller_invocation'], str(tool)),
+            (worker_unit, controller['node_process'], seal['worker_invocation'], str(root))):
         value = terminal['failed_units'][unit]
         process = {'pid': source['pid'], 'start_ticks': int(source['start_ticks']), 'boot_id': source['boot_id']}
         require(isinstance(value, dict) and set(value) == {'old_process', 'old_process_gone', 'properties', 'recursive_cgroup'} and
@@ -1430,7 +1514,7 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
             'LoadState': 'loaded', 'MainPID': '0', 'Restart': 'no', 'Result': 'exit-code', 'SubState': 'failed', 'Transient': 'yes',
             'User': 'root', 'WorkingDirectory': working}
         require(set(value['properties']) == properties and same(value['properties'], expected), 'A prior failed service was replaced, restarted or adopted.')
-        if unit == PRIOR_WORKER:
+        if unit == worker_unit:
             require(same(controller.get('worker_terminal'), {**expected, 'cgroup_empty': True}), 'The controller and independent worker terminal disagree.')
     expected_browser = {'browser_closed': True, 'capabilities_verified': True, 'capability_requests': 1, 'context_closed': True,
         'failure': 'library_changed_target_card_not_observed', 'failure_counters': {'observer_errors': 0, 'page_errors': 0, 'proxy_failed': 0,
@@ -1439,9 +1523,38 @@ def validate_prior_terminal(candidate, authority, controller, browser, terminal,
         'websocket_active': 0, 'websocket_closed': 1, 'websocket_opened': 1, 'websocket_pending': 0}
     require(same(terminal['browser'], expected_browser) and browser['result'] == terminal['browser']['result'],
             'The independent browser closure does not retain the actual failed observation.')
+    if version == 3:
+        require(terminal['baseline_chain_verified'] is True and terminal['old_v2_scope_preserved'] is True and
+                same(terminal['prior_baseline'], PRIOR_INDEPENDENT) and
+                all(same(terminal[key], descriptor) for key, descriptor in HISTORY_V3_PREDECESSORS.items()) and
+                same(terminal['prior_failure_preservation'], controller['prior_failure_preservation']) and
+                same(terminal['cumulative_totals'], {'sessions': 77, 'devices': 66, 'activity_entries': 171}) and
+                same(terminal['cumulative_totals'], {key: len(after['database']['tables'][key]) for key in ('sessions', 'devices', 'activity_entries')}),
+                'The v3 failure seal lost its ordered predecessor chain or exact cumulative population.')
     compare_fixed_snapshot(after, independent)
     require(instant(independent['database']['metadata']['captured_at']) <= instant(terminal['captured_at']),
             'The independent failure snapshot postdates its seal.')
+
+
+def validate_history_documents(candidate, authority, documents, upgraded):
+    """Validate only the two retained original formats in their fixed order."""
+    require(isinstance(documents, list) and len(documents) == 2 and isinstance(authority.get('history'), list) and
+            len(authority['history']) == 2, 'The complete two-entry history is required.')
+    baseline, latest, results = upgraded, upgraded, []
+    for entry, document, version in zip(authority['history'], documents, (2, 3)):
+        validate_history_entry(entry, version)
+        require(isinstance(document, dict) and set(document) == {*HISTORY_NAMES, 'independent_snapshot'},
+                'A history document bundle omitted an original artifact.')
+        flat = history_entry_authority(authority, entry)
+        compare_fixed_snapshot(latest, document['before_snapshot'])
+        result = validate_prior_documents(candidate, flat, document['input'], document['controller_report'], document['browser_report'],
+            baseline, document['before_snapshot'], document['after_snapshot'], version)
+        validate_prior_terminal(candidate, flat, document['controller_report'], document['browser_report'], document['terminal'],
+            document['after_snapshot'], document['independent_snapshot'], version)
+        baseline, latest = document['after_snapshot'], document['independent_snapshot']
+        results.append({'version': version, 'ledger': result, 'after_snapshot': entry['after_snapshot'],
+                        'independent_snapshot': history_seal(version)['independent']})
+    return baseline, latest, results
 
 
 class Run:
@@ -1596,7 +1709,9 @@ class Run:
         self.artifacts = {str(self.args.source_closure): self.args.source_closure_sha256, str(CREDENTIALS): CREDENTIALS_SHA,
             str(self.args.authority): self.args.authority_sha256, str(CATALOG): CATALOG_SHA,
             str(SOURCE / 'backup-source-inputs.json'): MANIFEST_SHA,
-            **{value['path']: value['sha256'] for value in self.authority.values()}, **{str(path): digest for path, digest in FIXTURE.values()}}
+            **{self.authority[key]['path']: self.authority[key]['sha256'] for key in UPGRADE_AUTHORITY_KEYS},
+            **{entry[name]['path']: entry[name]['sha256'] for entry in self.authority['history'] for name in HISTORY_NAMES},
+            **{str(path): digest for path, digest in FIXTURE.values()}}
         intent, report, attestation = (read_record(self.authority[key]) for key in ('upgrade_intent', 'upgrade_report', 'upgrade_attestation'))
         validate_upgrade_authority(self.candidate, self.authority, intent, report, attestation, self.state)
         previous_state = artifact_descriptor(report.get('evidence', {}).get('before-state.json'))
@@ -1611,18 +1726,18 @@ class Run:
         require(all(len(self.current_authority['database']['tables'][name]) == count for name, count in
                 (('sessions', 75), ('devices', 64), ('activity_entries', 167), ('items', 22), ('libraries', 4), ('library_roots', 4))),
                 'The independently attested source55 snapshot is not the sealed upgraded population.')
-        prior = {key: read_record(self.authority[key]) for key in PRIOR_KEYS}
-        for key in ('prior_before_snapshot', 'prior_after_snapshot'):
-            validate_schema28_snapshot(prior[key], self.state, self.catalog, self.op)
-        self.prior_ledger = validate_prior_documents(self.candidate, self.authority, prior['prior_input'], prior['prior_controller_report'],
-            prior['prior_browser_report'], self.current_authority, prior['prior_before_snapshot'], prior['prior_after_snapshot'])
-        self.prior_after = prior['prior_after_snapshot']
-        require(same(prior['prior_terminal'].get('independent_snapshot'), PRIOR_INDEPENDENT), 'The failure seal requested another independent snapshot.')
-        self.artifacts[PRIOR_INDEPENDENT['path']] = PRIOR_INDEPENDENT['sha256']
-        self.prior_independent = read_record(PRIOR_INDEPENDENT)
-        validate_schema28_snapshot(self.prior_independent, self.state, self.catalog, self.op)
-        validate_prior_terminal(self.candidate, self.authority, prior['prior_controller_report'], prior['prior_browser_report'],
-            prior['prior_terminal'], self.prior_after, self.prior_independent)
+        history = []
+        for entry in self.authority['history']:
+            document = {name: read_record(entry[name]) for name in HISTORY_NAMES}
+            independent = history_seal(entry['version'])['independent']
+            require(same(document['terminal'].get('independent_snapshot'), independent), 'A history seal requested another independent snapshot.')
+            self.artifacts[independent['path']] = independent['sha256']
+            document['independent_snapshot'] = read_record(independent)
+            for name in ('before_snapshot', 'after_snapshot', 'independent_snapshot'):
+                validate_schema28_snapshot(document[name], self.state, self.catalog, self.op)
+            history.append(document)
+        self.prior_after, self.prior_independent, self.prior_ledger = validate_history_documents(
+            self.candidate, self.authority, history, self.current_authority)
         self.lock = os.open(self.op.LOCK, os.O_RDONLY | os.O_NOFOLLOW)
         require(self.op.identity(os.fstat(self.lock)) == self.op.identity(self.op.regular(self.op.LOCK)), 'The existing fixture lock changed identity.')
         fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1662,8 +1777,8 @@ class Run:
             os.close(parent)
         self.save('intent.json', {'marker': MARKER, 'version': 1, 'mode': MODE, 'root': str(ROOT), 'controller': controller,
             'controller_invocation': props['InvocationID'], 'worker_unit': WORKER_UNIT, 'sources': self.sources, 'authority': self.authority,
-            'native_maximum': 12, 'metadata_put_maximum': 2, 'before_authority': self.authority['prior_after_snapshot'],
-            'prior_failure_preservation': self.prior_ledger,
+            'native_maximum': 12, 'metadata_put_maximum': 2, 'before_authority': self.authority['history'][-1]['after_snapshot'],
+            'history_preservation': self.prior_ledger,
             'no_automatic_replay': True, 'no_service_or_sql_business_mutation': True})
         before = self.save('before-full.json', self.before)
         self.save('media-before.json', self.media)
@@ -2426,7 +2541,7 @@ class Run:
             'library_changed_client_acceptance': False, 'client_acceptance': False, 'full_m3_complete': False,
             'candidate_process': self.candidate['process'], 'candidate_invocation': self.candidate['invocation_id'], 'state_sha256': self.candidate['state_sha256'],
             'input_sha256': self.input_sha, 'source_closure_sha256': sha(canonical(self.js_sources)), 'authority': self.authority,
-            'prior_failure_preservation': self.prior_ledger,
+            'history_preservation': self.prior_ledger,
             'controller': self.input['controller'] if self.input else None, 'node_process': self.child, 'worker_terminal': self.terminal,
             'restoration': self.restoration, 'restoration_required': self.restoration == 'restoration_required',
             'reserved_native_intents': self.fence.reserved, 'dispatched_native_intents': self.dispatched,
@@ -2442,8 +2557,8 @@ class Run:
             if self.args.check_only:
                 return {'marker': MARKER, 'status': 'preflight_passed', 'http_requests': 0, 'evidence_writes': 0, 'service_writes': 0,
                     'candidate_process': self.candidate['process'], 'state_sha256': self.candidate['state_sha256'], 'target': self.profile['target'],
-                    'current_authority': self.authority['prior_after_snapshot'], 'upgrade_authority': self.authority['current_snapshot'],
-                    'prior_failure_preservation': self.prior_ledger, 'library_changed_client_acceptance': False}
+                    'current_authority': self.authority['history'][-1]['after_snapshot'], 'upgrade_authority': self.authority['current_snapshot'],
+                    'history_preservation': self.prior_ledger, 'library_changed_client_acceptance': False}
             self.prepare()
             try:
                 self.execute()

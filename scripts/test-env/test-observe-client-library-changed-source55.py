@@ -381,7 +381,8 @@ def authority_fixture():
         "authority": {**{key: {"path": str(path), "sha256": hashlib.sha256(key.encode()).hexdigest()} for key, path in (
             ("upgrade_intent", CONTROLLER.UPGRADE_TOOL / "intent.json"), ("upgrade_report", output / "report.json"),
             ("upgrade_attestation", output / "attestation.json"), ("current_snapshot", output / "after-full.json"))},
-            **copy.deepcopy(CONTROLLER.PRIOR_PINS)}}
+            'history': [{'version': 2, **{name: copy.deepcopy(CONTROLLER.PRIOR_PINS[key]) for name, key in CONTROLLER.HISTORY_NAMES.items()}},
+                        {'version': 3, **copy.deepcopy(CONTROLLER.HISTORY_V3_PINS)}]}}
 
 
 def schema_state():
@@ -668,7 +669,8 @@ def prior_documents_fixture():
     after["database"]["sequences"]["activity_entries_id_seq"] = {"last_value": first + 1, "is_called": True}
     upgraded = copy.deepcopy(before)
     upgraded["database"]["metadata"]["captured_at"] = at(-1)
-    authority = authority_fixture()["authority"]
+    current_authority = authority_fixture()["authority"]
+    authority = CONTROLLER.history_entry_authority(current_authority, current_authority['history'][0])
     upgrade_authority = {key: authority[key] for key in CONTROLLER.UPGRADE_AUTHORITY_KEYS}
     outer = {"pid": 310055, "start_ticks": "210055", "boot_id": CONTROLLER.BOOT, "unit": CONTROLLER.PRIOR_CONTROLLER}
     worker = {"pid": 310056, "start_ticks": "210056", "boot_id": CONTROLLER.BOOT, "uid": 0, "gid": 0,
@@ -714,11 +716,12 @@ def prior_documents_fixture():
         "closure": {"context_closed": True, "browser_closed": True, "proxy_closed": True, "http_pending": 0, "websocket_pending": 0,
                     "websocket_active": 0, "sockets_remaining": 0, "websocket_opened": 1, "websocket_closed": 1, "cleanup_failures": []}}
     return {"candidate": copy.deepcopy(CANDIDATE), "authority": authority, "prior_input": prior_input, "controller": controller,
-            "browser": browser, "upgraded": upgraded, "before": before, "after": after}
+            "browser": browser, "baseline": upgraded, "before": before, "after": after}
 
 
-def prior_terminal_fixture(value):
+def prior_terminal_fixture(value, version=2):
     candidate, authority, controller = value['candidate'], value['authority'], value['controller']
+    scope, seal = CONTROLLER.history_scope(version), CONTROLLER.history_seal(version)
     def properties(unit, process, invocation, working, live=False):
         return {'ActiveState': 'active' if live else 'failed', 'ControlGroup': '/system.slice/' + unit if live else '',
             'DropInPaths': '', 'ExecMainCode': '0' if live else '1', 'ExecMainStatus': '0' if live else '1',
@@ -728,16 +731,16 @@ def prior_terminal_fixture(value):
             'SubState': 'running' if live else 'failed', 'Transient': 'no' if live else 'yes',
             'User': 'goby' if live else 'root', 'WorkingDirectory': working}
     failed = {}
-    for unit, source, invocation, working in ((CONTROLLER.PRIOR_CONTROLLER, controller['controller'], 'd6376750d8ff4fc08c97c69ac993f1e6', str(CONTROLLER.PRIOR_TOOL)),
-            (CONTROLLER.PRIOR_WORKER, controller['node_process'], '40884584c2784e3da2a91f816f563b45', str(CONTROLLER.PRIOR_ROOT))):
+    for unit, source, invocation, working in ((scope['controller'], controller['controller'], seal['controller_invocation'], str(scope['tool'])),
+            (scope['worker'], controller['node_process'], seal['worker_invocation'], str(scope['root']))):
         process = {'pid': source['pid'], 'start_ticks': int(source['start_ticks']), 'boot_id': source['boot_id']}
         failed[unit] = {'old_process': process, 'old_process_gone': True,
             'properties': properties(unit, process, invocation, working),
             'recursive_cgroup': {'exists': False, 'files_checked': 0, 'path': '/sys/fs/cgroup/system.slice/' + unit, 'processes': 0}}
-    controller['worker_terminal'] = dict(failed[CONTROLLER.PRIOR_WORKER]['properties'], cgroup_empty=True)
-    terminal = {'marker': 'goby-source55-failed-ui-terminal-v2', 'version': 1, 'schema': 28, 'status': 'failed_scope_sealed',
-        'observed_run_status': 'failed', 'phase': 'discovery', 'scope': str(CONTROLLER.PRIOR_ROOT), 'tool': str(CONTROLLER.PRIOR_TOOL),
-        'captured_at': at(12), 'cleanup': 'not_required', 'restoration': 'not_required', 'cleanup_needed': False, 'cleanup_performed': False,
+    controller['worker_terminal'] = dict(failed[scope['worker']]['properties'], cgroup_empty=True)
+    terminal = {'marker': 'goby-source55-failed-ui-terminal-v' + str(version), 'version': 1, 'schema': 28, 'status': 'failed_scope_sealed',
+        'observed_run_status': 'failed', 'phase': 'discovery', 'scope': str(scope['root']), 'tool': str(scope['tool']),
+        'captured_at': at(12 if version == 2 else 27), 'cleanup': 'not_required', 'restoration': 'not_required', 'cleanup_needed': False, 'cleanup_performed': False,
         'automatic_retry': False, 'client_acceptance': False, 'full_m3_complete': False, 'library_changed_client_acceptance': False,
         'sql_business_writes': False, 'http_requests': 0, 'service_writes': 0, 'reserved_native_intents': [], 'dispatched_native_intents': [],
         'candidate_preserved': True, 'current_matches_prior_after': True, 'exact_owned_additions_retained': True, 'media_preserved': True,
@@ -745,7 +748,7 @@ def prior_terminal_fixture(value):
         'primary_preserved': True, 'scope_files_unchanged': True, 'ledger': copy.deepcopy(controller['ledger']),
         'before_snapshot': authority['prior_before_snapshot'], 'prior_after_snapshot': authority['prior_after_snapshot'],
         'input': authority['prior_input'], 'browser_report': authority['prior_browser_report'], 'report': authority['prior_controller_report'],
-        'upgrade_authority_snapshot': authority['current_snapshot'], 'independent_snapshot': copy.deepcopy(CONTROLLER.PRIOR_INDEPENDENT),
+        'upgrade_authority_snapshot': authority['current_snapshot'], 'independent_snapshot': copy.deepcopy(seal['independent']),
         'media_fact_sha256': '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d',
         'primary_fact_sha256': '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a',
         'primary_process': copy.deepcopy(CONTROLLER.PRIMARY_PROCESS), 'primary_invocation_id': CONTROLLER.PRIMARY_INVOCATION,
@@ -756,10 +759,112 @@ def prior_terminal_fixture(value):
                 'proxy_rejected': 0, 'websocket_failed': 0}, 'http_pending': 0, 'login_proven': True, 'owned_session_revoked': True,
             'proxy_closed': True, 'result': 'failed', 'sockets_remaining': 0, 'ui_logout_and_token_rejection_proven': True,
             'websocket_active': 0, 'websocket_closed': 1, 'websocket_opened': 1, 'websocket_pending': 0},
-        **copy.deepcopy(CONTROLLER.PRIOR_SEAL_RECORDS)}
+        **copy.deepcopy(seal['records'])}
+    if version == 3:
+        terminal.update(baseline_chain_verified=True, old_v2_scope_preserved=True, prior_baseline=copy.deepcopy(CONTROLLER.PRIOR_INDEPENDENT),
+            prior_failure_preservation=copy.deepcopy(controller['prior_failure_preservation']),
+            cumulative_totals={'activity_entries': 171, 'devices': 66, 'sessions': 77}, **copy.deepcopy(CONTROLLER.HISTORY_V3_PREDECESSORS))
     independent = copy.deepcopy(value['after'])
-    independent['database']['metadata']['captured_at'] = at(11)
+    independent['database']['metadata']['captured_at'] = at(11 if version == 2 else 26)
     return terminal, independent
+
+
+def history_documents_fixture():
+    first = prior_documents_fixture()
+    terminal2, independent2 = prior_terminal_fixture(first)
+    authority = authority_fixture()['authority']
+    second = copy.deepcopy(first)
+    second['version'] = 3
+    second['authority'] = CONTROLLER.history_entry_authority(authority, authority['history'][1])
+    second['baseline'] = copy.deepcopy(first['after'])
+    second['before'] = copy.deepcopy(first['after'])
+    second['before']['database']['metadata']['captured_at'] = at(15)
+    second['after'] = copy.deepcopy(second['before'])
+    second['after']['database']['metadata']['captured_at'] = at(25)
+    rows, sequences = second['after']['database']['tables'], second['after']['database']['sequences']
+    proof = dict(ordinary_proof(), session_id='bc' * 16, token_sha256=hashlib.sha256(b'second synthetic closed session').hexdigest(),
+                 device_id='second-synthetic-browser', created_at=at(16))
+    device_id = sequences['devices_id_seq']['last_value'] + 1
+    session = session_row(proof['session_id'], CONTROLLER.B, proof['token_sha256'], 'emby', 16,
+                          device_id=proof['device_id'], device_registry_id=device_id)
+    session.update(last_seen_at=at(23), revoked_at=at(24), client_capabilities={'PlayableMediaTypes': ['Video']})
+    rows['sessions'].append(session)
+    rows['devices'].append(dict(rows['devices'][-1], id=device_id, reported_device_id=proof['device_id'],
+                                created_at=at(15.5), last_seen_at=at(23)))
+    next_audit = sequences['activity_entries_id_seq']['last_value'] + 1
+    for offset, action, moment in ((0, 'session.login', 16), (1, 'session.revoked', 24)):
+        rows['activity_entries'].append(audit_row(next_audit + offset, action, CONTROLLER.B, proof['session_id'],
+            'session', proof['session_id'], moment, source='emby'))
+    sequences['devices_id_seq'] = {'last_value': device_id, 'is_called': True}
+    sequences['activity_entries_id_seq'] = {'last_value': next_audit + 1, 'is_called': True}
+    scope, flat = CONTROLLER.history_scope(3), second['authority']
+    original_authority = {**{key: flat[key] for key in CONTROLLER.UPGRADE_AUTHORITY_KEYS}, **copy.deepcopy(CONTROLLER.PRIOR_PINS)}
+    input_authority = dict(original_authority, before_snapshot=flat['prior_before_snapshot'])
+    sources = {str(scope['tool'] / name): hashlib.sha256(('v3-' + name).encode()).hexdigest() for name in CONTROLLER.JS_NAMES}
+    outer = dict(second['controller']['controller'], pid=310057, start_ticks='210057', unit=scope['controller'])
+    worker = dict(second['controller']['node_process'], pid=310058, start_ticks='210058', cgroup='/system.slice/' + scope['worker'])
+    source_sha = CONTROLLER.sha(CONTROLLER.canonical(sources))
+    second['prior_input'].update(root=str(scope['root']), output=str(scope['root'] / 'browser'), authority=input_authority,
+                                  source_closure=sources, controller=outer)
+    second['prior_input']['actor']['credentials']['path'] = str(scope['root'] / 'viewer-credentials.json')
+    second['controller'].update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=original_authority,
+        controller=outer, node_process=worker, prior_failure_preservation=copy.deepcopy(first['controller']['ledger']))
+    for name, key in (('input.json', 'prior_input'), ('browser-report.json', 'prior_browser_report'),
+                       ('before-full.json', 'prior_before_snapshot'), ('after-full.json', 'prior_after_snapshot')):
+        second['controller']['evidence'][name] = flat[key]
+    second['browser'].update(input_sha256=flat['prior_input']['sha256'], source_closure_sha256=source_sha, authority=input_authority,
+        controller=outer, node_process=worker, login_proof=proof)
+    second['browser']['capabilities_private']['path'] = str(scope['root'] / 'browser/capabilities-private.json')
+    second['controller']['evidence']['browser-capabilities-private.json']['path'] = second['browser']['capabilities_private']['path']
+    actor = second['browser']['actor']
+    actor['token_fingerprint'] = actor['proxy_logout']['token_fingerprint'] = actor['session_proof']['entries'][0]['token_fingerprint'] = proof['token_sha256']
+    terminal3, independent3 = prior_terminal_fixture(second, 3)
+    def bundle(value, terminal, independent):
+        return {'input': value['prior_input'], 'browser_report': value['browser'], 'controller_report': value['controller'],
+                'terminal': terminal, 'before_snapshot': value['before'], 'after_snapshot': value['after'], 'independent_snapshot': independent}
+    return authority, first['baseline'], [bundle(first, terminal2, independent2), bundle(second, terminal3, independent3)]
+
+
+class Source55OrderedHistoryGuards(GuardTestCase):
+    def test_only_two_ordered_original_history_formats_are_admitted(self):
+        value = authority_fixture()
+        CONTROLLER.validate_authority_input(value)
+        for history in ([], list(reversed(value['authority']['history'])), [value['authority']['history'][0]] * 2,
+                        value['authority']['history'] + [value['authority']['history'][1]]):
+            changed = copy.deepcopy(value)
+            changed['authority']['history'] = history
+            with self.subTest(length=len(history)):
+                self.reject(lambda: CONTROLLER.validate_authority_input(changed))
+
+    def test_two_complete_failed_ledgers_preserve_the_upgrade_and_all_closed_sessions(self):
+        authority, upgraded, documents = history_documents_fixture()
+        original = copy.deepcopy((authority, upgraded, documents))
+        after, independent, results = CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded)
+        self.assertEqual([value['version'] for value in results], [2, 3])
+        self.assertTrue(all(value['ledger']['new_sessions'] == 1 and value['ledger']['metadata_revision_delta'] == 0 for value in results))
+        self.assertEqual((authority, upgraded, documents), original)
+        fresh = copy.deepcopy(independent)
+        fresh['database']['metadata']['captured_at'] = at(28)
+        CONTROLLER.compare_fixed_snapshot(after, fresh)
+        CONTROLLER.compare_fixed_snapshot(independent, fresh)
+        self.reject(lambda: CONTROLLER.compare_fixed_snapshot(upgraded, fresh))
+
+    def test_history_reordering_relabelled_inputs_and_unowned_predecessor_changes_fail(self):
+        for mutation in ('relabel', 'old-row', 'prior-baseline', 'predecessor-order', 'before-time'):
+            authority, upgraded, documents = history_documents_fixture()
+            value = documents[1]
+            if mutation == 'relabel':
+                value['input']['authority'] = {**authority, 'before_snapshot': authority['history'][1]['before_snapshot']}
+            elif mutation == 'old-row':
+                value['after_snapshot']['database']['tables']['sessions'][0]['last_seen_at'] = at(20)
+            elif mutation == 'prior-baseline':
+                value['terminal']['prior_baseline'] = CONTROLLER.HISTORY_V3_INDEPENDENT
+            elif mutation == 'predecessor-order':
+                value['terminal']['predecessor_terminals'].reverse()
+            else:
+                value['before_snapshot']['database']['metadata']['captured_at'] = at(9)
+            with self.subTest(mutation=mutation):
+                self.reject(lambda: CONTROLLER.validate_history_documents(CANDIDATE, authority, documents, upgraded))
 
 
 class Source55PriorFailureGuards(GuardTestCase):
@@ -795,7 +900,7 @@ class Source55PriorFailureGuards(GuardTestCase):
         fresh = copy.deepcopy(value["after"])
         fresh["database"]["metadata"]["captured_at"] = at(12)
         CONTROLLER.compare_fixed_snapshot(value["after"], fresh)
-        self.reject(lambda: CONTROLLER.compare_fixed_snapshot(value["upgraded"], fresh))
+        self.reject(lambda: CONTROLLER.compare_fixed_snapshot(value["baseline"], fresh))
 
     def test_prior_failure_cannot_be_upgraded_to_ui_success_or_native_activity(self):
         for document, key, replacement in (("controller", "status", "passed"), ("controller", "reserved_native_intents", ["login"]),
@@ -836,10 +941,10 @@ class Source55PriorFailureGuards(GuardTestCase):
 
 class Source55AuthorityGuards(GuardTestCase):
     def test_cli_requires_the_exact_authority_and_new_driver_paths(self):
-        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-03")
-        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v3")
-        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v3.service")
-        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v3.service")
+        self.assertEqual(CONTROLLER.TOOL, CONTROLLER.WORK / "client-library-changed-source55-tool-04")
+        self.assertEqual(CONTROLLER.ROOT, CONTROLLER.WORK / "client-library-changed-ui-source55-v4")
+        self.assertEqual(CONTROLLER.WORKER_UNIT, "goby-client-library-changed-ui-source55-v4.service")
+        self.assertEqual(CONTROLLER.CONTROLLER_UNIT, "goby-client-library-changed-ui-source55-controller-v4.service")
         values = ["--script-sha256", "12" * 32, "--driver", str(CONTROLLER.TOOL / CONTROLLER.JS_NAMES[0]),
             "--source-closure", str(CONTROLLER.TOOL / "sources.json"), "--source-closure-sha256", "23" * 32,
             "--authority", str(CONTROLLER.TOOL / "authority.json"), "--authority-sha256", "34" * 32,
@@ -849,7 +954,7 @@ class Source55AuthorityGuards(GuardTestCase):
         changed = list(values)
         changed[changed.index("--authority") + 1] = str(CONTROLLER.WORK / "authority.json")
         self.reject(lambda: CONTROLLER.arguments(changed))
-        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-02"
+        previous_tool = CONTROLLER.WORK / "client-library-changed-source55-tool-03"
         for option, name in (("--driver", CONTROLLER.JS_NAMES[0]), ("--authority", "authority.json"), ("--source-closure", "sources.json")):
             changed = list(values)
             changed[changed.index(option) + 1] = str(previous_tool / name)
@@ -879,7 +984,7 @@ class Source55AuthorityGuards(GuardTestCase):
         changed = authority_fixture()
         changed["authority"]["upgrade_intent"]["path"] = str(CONTROLLER.WORK / "client-schema28-source55-tool-02" / "intent.json")
         self.reject(lambda: CONTROLLER.validate_authority_input(changed))
-        for name in CONTROLLER.AUTHORITY_KEYS:
+        for name in CONTROLLER.UPGRADE_AUTHORITY_KEYS:
             changed = authority_fixture()
             changed["authority"][name]["path"] = str(CONTROLLER.WORK / "foreign" / "input.json")
             with self.subTest(descriptor=name):

@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-const ROOT = WORK + '/client-library-changed-ui-source55-v3';
-const TOOL = WORK + '/client-library-changed-source55-tool-03';
+const ROOT = WORK + '/client-library-changed-ui-source55-v4';
+const TOOL = WORK + '/client-library-changed-source55-tool-04';
 const MODULE = TOOL + '/client-library-changed-source55-fixture.mjs';
 const SELF = fileURLToPath(import.meta.url);
 const LOADER = fileURLToPath(new URL('./client-library-changed-source55-fixture.mjs', import.meta.url));
@@ -100,10 +100,10 @@ function inputExample(pins) {
       name: 'Synthetic Source55 Movie', type: 'Movie', parent_id: 'a'.repeat(32), root_id: 'b'.repeat(32),
       relative_path: 'Synthetic Source55 Movie/Synthetic Source55 Movie.mp4' },
     source_closure: Object.fromEntries(pins.SOURCES.map(name => [TOOL + '/' + name, syntheticHash(name)])),
-    authority: { ...clone(pins.UPGRADE_PINS), ...clone(pins.PRIOR_PINS),
+    authority: { ...clone(pins.UPGRADE_PINS), history: clone(pins.HISTORY_ENTRIES),
       before_snapshot: { path: ROOT + '/before-full.json', sha256: syntheticHash('before') } },
     controller: { pid: 900001, start_ticks: '10001', boot_id: pins.BOOT,
-      unit: 'goby-client-library-changed-ui-source55-controller-v3.service' } };
+      unit: 'goby-client-library-changed-ui-source55-controller-v4.service' } };
 }
 
 function inputCases(test, loaded) {
@@ -175,7 +175,7 @@ function inputCases(test, loaded) {
   for (const key of Object.keys(inputExample(loaded.pins).candidate)) test('input_requires_candidate_' + key, () => {
     const input = inputExample(loaded.pins); delete input.candidate[key]; rejects(() => valid(input), loaded);
   });
-  for (const key of Object.keys(inputExample(loaded.pins).authority)) {
+  for (const key of [...Object.keys(loaded.pins.UPGRADE_PINS), 'before_snapshot']) {
     test('input_requires_authority_' + key, () => {
       const input = inputExample(loaded.pins); delete input.authority[key]; rejects(() => valid(input), loaded);
     });
@@ -184,6 +184,30 @@ function inputCases(test, loaded) {
       rejects(() => valid(input), loaded);
     });
   }
+  for (const index of [0, 1]) for (const key of ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot']) {
+    test('input_requires_history_v' + (index + 2) + '_' + key, () => {
+      const input = inputExample(loaded.pins); delete input.authority.history[index][key]; rejects(() => valid(input), loaded);
+    });
+    test('input_pins_history_v' + (index + 2) + '_' + key + '_hash', () => {
+      const input = inputExample(loaded.pins); input.authority.history[index][key].sha256 = syntheticHash('foreign'); rejects(() => valid(input), loaded);
+    });
+    test('input_pins_history_v' + (index + 2) + '_' + key + '_path', () => {
+      const input = inputExample(loaded.pins); input.authority.history[index][key].path = WORK + '/foreign/' + path.posix.basename(input.authority.history[index][key].path);
+      rejects(() => valid(input), loaded);
+    });
+  }
+  for (const [name, mutate] of [
+    ['missing', value => { delete value.history; }],
+    ['extra_entry', value => { value.history.push(clone(value.history[1])); }],
+    ['reversed', value => { value.history.reverse(); }],
+    ['duplicate', value => { value.history[1] = clone(value.history[0]); }],
+    ['string_version', value => { value.history[1].version = '3'; }],
+    ['unknown_version', value => { value.history[1].version = 4; }],
+    ['extra_entry_field', value => { value.history[1].private = {}; }],
+    ['old_flat_carrier', value => { Object.assign(value, clone(loaded.pins.PRIOR_PINS)); }],
+  ]) test('input_rejects_history_' + name, () => {
+    const input = inputExample(loaded.pins); mutate(input.authority); rejects(() => valid(input), loaded);
+  });
   for (const key of Object.keys(loaded.pins.FIXTURES)) test('input_retains_historical_' + key, () => {
     const input = inputExample(loaded.pins); input.fixture[key].sha256 = syntheticHash('foreign'); rejects(() => valid(input), loaded);
   });
@@ -395,56 +419,65 @@ function documentsExample(pins, input = inputExample(pins)) {
       columns: clone(projections) },
       catalog: clone(catalog.objects), unsupported: false,
       sequences: Object.fromEntries(sequenceNames.map((name, index) => [name, { last_value: index === 0 ? 64 : index === 1 ? 167 : 100 + index, is_called: true }])), tables } };
-  return { state, beforeState, intent, report, attestation, publication, catalog, current, ...priorExample(pins, input, current),
+  return { state, beforeState, intent, report, attestation, publication, catalog, current, ...historyExample(pins, input, current),
     profileReceipt, profileReport, profileInspection, musicChain, musicScanReceipt,
     proxy: { pid: pins.PROXY_PROCESS.pid, start_ticks: String(pins.PROXY_PROCESS.start_ticks), reference_only: false,
       listen: ['127.0.0.1:18196', '127.0.0.1:18197'] } };
 }
 
-function priorExample(pins, input, current) {
-  const priorInput = { ...clone(input), root: pins.PRIOR_ROOT, output: pins.PRIOR_ROOT + '/browser',
-    actor: { ...clone(input.actor), credentials: { ...clone(input.actor.credentials), path: pins.PRIOR_ROOT + '/viewer-credentials.json' } },
-    source_closure: Object.fromEntries(pins.SOURCES.map(name => [pins.PRIOR_TOOL + '/' + name, syntheticHash('prior-source-' + name)])),
-    authority: { ...clone(pins.UPGRADE_PINS), before_snapshot: clone(pins.PRIOR_PINS.prior_before_snapshot) },
-    controller: { pid: 1462458, start_ticks: '13310272', boot_id: pins.BOOT, unit: pins.PRIOR_CONTROLLER_UNIT } };
-  const proof = { token_sha256: syntheticHash('prior-browser-token'), session_id: syntheticHash('prior-browser-session').slice(0, 32),
-    user_id: input.actor.user_id, client_name: 'Emby Web', device_id: 'synthetic-v2-device', device_name: 'HeadlessChrome Linux', client_version: '4.9.5.0',
-    server_id: input.candidate.server_id, created_at: '2026-09-12T12:06:00.123456Z', created_at_source: 'SessionInfo.LastActivityDate', kind: 'emby', slot: 'B',
+function priorExample(pins, input, current, version = 2) {
+  check(version === 2 || version === 3);
+  const scope = version === 2 ? { root: pins.PRIOR_ROOT, tool: pins.PRIOR_TOOL, pins: pins.PRIOR_PINS, terminalPins: pins.PRIOR_TERMINAL_PINS,
+    controllerUnit: pins.PRIOR_CONTROLLER_UNIT, workerUnit: pins.PRIOR_WORKER_UNIT,
+    controllerInvocation: 'd6376750d8ff4fc08c97c69ac993f1e6', workerInvocation: '40884584c2784e3da2a91f816f563b45' }
+    : { root: pins.HISTORY_V3_ROOT, tool: pins.HISTORY_V3_TOOL, pins: pins.HISTORY_V3_PINS, terminalPins: pins.HISTORY_V3_TERMINAL_PINS,
+      controllerUnit: 'goby-client-library-changed-ui-source55-controller-v3.service', workerUnit: 'goby-client-library-changed-ui-source55-v3.service',
+      controllerInvocation: 'bb72fff9517e4f41baa01fbd3e86bf40', workerInvocation: 'e1296ab3a25a41d6964e577831df4152' };
+  const clock = (value, date = '2026-09-12') => date + 'T12:' + String(Number(value.slice(0, 2)) + (version - 2) * 10).padStart(2, '0') + value.slice(2);
+  const nextDevice = current.database.sequences.devices_id_seq.last_value + 1, nextAudit = current.database.sequences.activity_entries_id_seq.last_value + 1;
+  const priorInput = { ...clone(input), root: scope.root, output: scope.root + '/browser',
+    actor: { ...clone(input.actor), credentials: { ...clone(input.actor.credentials), path: scope.root + '/viewer-credentials.json' } },
+    source_closure: Object.fromEntries(pins.SOURCES.map(name => [scope.tool + '/' + name, syntheticHash('prior-source-' + name)])),
+    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : {}), before_snapshot: clone(scope.pins.prior_before_snapshot) },
+    controller: { pid: version === 2 ? 1462458 : 1465143, start_ticks: version === 2 ? '13310272' : '13494073', boot_id: pins.BOOT, unit: scope.controllerUnit } };
+  const proof = { token_sha256: syntheticHash('prior-browser-token-' + version), session_id: syntheticHash('prior-browser-session-' + version).slice(0, 32),
+    user_id: input.actor.user_id, client_name: 'Emby Web', device_id: 'synthetic-v' + version + '-device', device_name: 'HeadlessChrome Linux', client_version: '4.9.5.0',
+    server_id: input.candidate.server_id, created_at: clock('06:00.123456Z'), created_at_source: 'SessionInfo.LastActivityDate', kind: 'emby', slot: 'B',
     frame_login_finished: true, physical_login_completed: true, request_metadata_matches: true };
-  const priorBefore = clone(current); priorBefore.database.metadata.captured_at = '2026-09-12T12:05:00Z';
-  const priorAfter = clone(priorBefore); priorAfter.database.metadata.captured_at = '2026-09-12T12:08:00Z';
+  const priorBefore = clone(current); priorBefore.database.metadata.captured_at = clock('05:00Z');
+  const priorAfter = clone(priorBefore); priorAfter.database.metadata.captured_at = clock('08:00Z');
   const session = { ...clone(current.database.tables.sessions[0]), id: proof.session_id, token_hash: '\\x' + proof.token_sha256,
-    device_id: proof.device_id, created_at: proof.created_at, expires_at: '2026-10-12T12:06:00.123456Z',
-    last_seen_at: '2026-09-12T12:06:20.123457Z', revoked_at: '2026-09-12T12:06:25.123458Z',
-    client_capabilities: { PlayableMediaTypes: ['Video'] }, device_registry_id: 65 };
+    device_id: proof.device_id, created_at: proof.created_at, expires_at: clock('06:00.123456Z', '2026-10-12'),
+    last_seen_at: clock('06:20.123457Z'), revoked_at: clock('06:25.123458Z'),
+    client_capabilities: { PlayableMediaTypes: ['Video'] }, device_registry_id: nextDevice };
   priorAfter.database.tables.sessions.push(session);
-  priorAfter.database.tables.devices.push({ ...clone(current.database.tables.devices[0]), id: 65, reported_device_id: proof.device_id,
-    created_at: '2026-09-12T12:06:00.123455Z', last_seen_at: '2026-09-12T12:06:20.123457Z' });
+  priorAfter.database.tables.devices.push({ ...clone(current.database.tables.devices[0]), id: nextDevice, reported_device_id: proof.device_id,
+    created_at: clock('06:00.123455Z'), last_seen_at: clock('06:20.123457Z') });
   for (const [index, action] of ['session.login', 'session.revoked'].entries()) priorAfter.database.tables.activity_entries.push({
-    ...clone(current.database.tables.activity_entries[0]), id: 168 + index, action, actor_credential_id: proof.session_id, resource_id: proof.session_id,
-    created_at: index === 0 ? '2026-09-12T12:06:00.123459Z' : '2026-09-12T12:06:25.123459Z' });
-  priorAfter.database.sequences.devices_id_seq.last_value = 65;
-  priorAfter.database.sequences.activity_entries_id_seq.last_value = 169;
-  const priorIndependent = clone(priorAfter); priorIndependent.database.metadata.captured_at = '2026-09-12T12:09:00Z';
-  const before = clone(priorAfter); before.database.metadata.captured_at = '2026-09-12T12:10:00Z';
+    ...clone(current.database.tables.activity_entries[0]), id: nextAudit + index, action, actor_credential_id: proof.session_id, resource_id: proof.session_id,
+    created_at: index === 0 ? clock('06:00.123459Z') : clock('06:25.123459Z') });
+  priorAfter.database.sequences.devices_id_seq.last_value = nextDevice;
+  priorAfter.database.sequences.activity_entries_id_seq.last_value = nextAudit + 1;
+  const priorIndependent = clone(priorAfter); priorIndependent.database.metadata.captured_at = clock('09:00Z');
+  const before = clone(priorAfter); before.database.metadata.captured_at = clock('10:00Z');
   const closure = { context_closed: true, browser_closed: true, proxy_closed: true, http_pending: 0, websocket_pending: 0,
     websocket_active: 0, websocket_opened: 1, websocket_closed: 1, sockets_remaining: 0, cleanup_failures: [] };
-  const node = { pid: 1462519, start_ticks: '13310370', boot_id: pins.BOOT, uid: 0, gid: 0,
+  const node = { pid: version === 2 ? 1462519 : 1465203, start_ticks: version === 2 ? '13310370' : '13494210', boot_id: pins.BOOT, uid: 0, gid: 0,
     executable_path: WORK + '/client-library-changed-source44-tool-01/node',
-    executable_sha256: '3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327', cgroup: '/system.slice/' + pins.PRIOR_WORKER_UNIT };
+    executable_sha256: '3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327', cgroup: '/system.slice/' + scope.workerUnit };
   const closureSHA = hash(JSON.stringify(ordered(priorInput.source_closure)));
   const control = { marker: 'goby-client-library-changed-control-v1', version: 1, name: 'close',
-    input_sha256: pins.PRIOR_PINS.prior_input.sha256, source_closure_sha256: closureSHA, controller: clone(priorInput.controller), node_process: clone(node),
+    input_sha256: scope.pins.prior_input.sha256, source_closure_sha256: closureSHA, controller: clone(priorInput.controller), node_process: clone(node),
     previous_stage_sha256: null, reservation: null, commit: null, restoration: 'not_required' };
   const priorBrowserReport = { marker: 'goby-client-library-changed-report-v1', version: 1, mode: input.mode, result: 'failed', outcome: 'failed',
-    failure: 'library_changed_target_card_not_observed', input_sha256: pins.PRIOR_PINS.prior_input.sha256, source_closure_sha256: closureSHA,
+    failure: 'library_changed_target_card_not_observed', input_sha256: scope.pins.prior_input.sha256, source_closure_sha256: closureSHA,
     controller: clone(priorInput.controller), node_process: clone(node), candidate: clone(input.candidate), authority: clone(priorInput.authority),
     target: clone(input.target), client_acceptance: false, library_changed_client_acceptance: false, full_m3_complete: false,
     discovery: null, armed: null, forward: null, restore_armed: null, restored: null, stages: [], controls: [], restoration: 'not_required',
-    started_at: '2026-09-12T12:05:30Z', completed_at: '2026-09-12T12:07:00Z', login_proof: proof, closure: clone(closure),
-    capabilities_private: { path: pins.PRIOR_ROOT + '/browser/capabilities-private.json', sha256: syntheticHash('prior-capabilities'),
+    started_at: clock('05:30Z'), completed_at: clock('07:00Z'), login_proof: proof, closure: clone(closure),
+    capabilities_private: { path: scope.root + '/browser/capabilities-private.json', sha256: syntheticHash('prior-capabilities'),
       request_count: 1, last_successful_body_sha256: syntheticHash('prior-capability-body') },
-    control_close: { path: pins.PRIOR_ROOT + '/control-close.json', sha256: syntheticHash('prior-close'), value: control },
+    control_close: { path: scope.root + '/control-close.json', sha256: syntheticHash('prior-close'), value: control },
     actor: { slot: 'B', id: input.actor.user_id, credentials_sha256: priorInput.actor.credentials.sha256,
       ordinary_authority_confirmed: true, closed: true, token_fingerprint: proof.token_sha256, cleanup_failures: [],
       login: { status: 200, request_count: 1, attempted: true, credentials_filled: true },
@@ -459,35 +492,35 @@ function priorExample(pins, input, current) {
   const ledger = { new_sessions: 1, new_devices: 1, new_audits: 2, metadata_revision_delta: 0,
     old_rows_sequences_private_preserved: true, owned_sessions_closed: true };
   const priorControllerReport = { marker: 'goby-client-library-changed-observation-v1', version: 1, mode: input.mode, status: 'failed', phase: 'discovery',
-    input_sha256: pins.PRIOR_PINS.prior_input.sha256, source_closure_sha256: closureSHA, controller: clone(priorInput.controller), node_process: clone(node),
+    input_sha256: scope.pins.prior_input.sha256, source_closure_sha256: closureSHA, controller: clone(priorInput.controller), node_process: clone(node),
     candidate_process: clone(input.candidate.process), candidate_invocation: input.candidate.invocation_id, state_sha256: input.candidate.state_sha256,
-    authority: clone(pins.UPGRADE_PINS), reserved_native_intents: [], dispatched_native_intents: [], restoration: 'not_required',
+    authority: { ...clone(pins.UPGRADE_PINS), ...(version === 3 ? clone(pins.PRIOR_PINS) : {}) }, reserved_native_intents: [], dispatched_native_intents: [], restoration: 'not_required',
     automatic_retry: false, browser_fallback_used: false, candidate_or_primary_service_writes: false, client_acceptance: false, full_m3_complete: false,
     library_changed_client_acceptance: false, restoration_required: false, sql_business_writes: false, worker_chain_ledger_passed: false,
     acceptance_ready_for_outer_terminal: false, outer_controller_terminal_required: true, ledger: clone(ledger), evidence: {
-      'input.json': clone(pins.PRIOR_PINS.prior_input), 'browser-report.json': clone(pins.PRIOR_PINS.prior_browser_report),
-      'before-full.json': clone(pins.PRIOR_PINS.prior_before_snapshot), 'after-full.json': clone(pins.PRIOR_PINS.prior_after_snapshot),
+      'input.json': clone(scope.pins.prior_input), 'browser-report.json': clone(scope.pins.prior_browser_report),
+      'before-full.json': clone(scope.pins.prior_before_snapshot), 'after-full.json': clone(scope.pins.prior_after_snapshot),
       'browser-capabilities-private.json': { path: priorBrowserReport.capabilities_private.path, sha256: priorBrowserReport.capabilities_private.sha256 },
       'control-close.json': { path: priorBrowserReport.control_close.path, sha256: priorBrowserReport.control_close.sha256 } } };
   const failedUnits = {};
-  for (const [unit, original, invocation, directory] of [[pins.PRIOR_CONTROLLER_UNIT, priorInput.controller, 'd6376750d8ff4fc08c97c69ac993f1e6', pins.PRIOR_TOOL],
-    [pins.PRIOR_WORKER_UNIT, node, '40884584c2784e3da2a91f816f563b45', pins.PRIOR_ROOT]]) failedUnits[unit] = {
+  for (const [unit, original, invocation, directory] of [[scope.controllerUnit, priorInput.controller, scope.controllerInvocation, scope.tool],
+    [scope.workerUnit, node, scope.workerInvocation, scope.root]]) failedUnits[unit] = {
       old_process: { pid: original.pid, start_ticks: Number(original.start_ticks), boot_id: pins.BOOT }, old_process_gone: true,
       properties: { ActiveState: 'failed', ControlGroup: '', DropInPaths: '', ExecMainCode: '1', ExecMainStatus: '1', FragmentPath: '/run/systemd/transient/' + unit,
         Group: 'root', Id: unit, InvocationID: invocation, LoadState: 'loaded', MainPID: '0', Restart: 'no', Result: 'exit-code', SubState: 'failed',
         Transient: 'yes', User: 'root', WorkingDirectory: directory },
       recursive_cgroup: { exists: false, files_checked: 0, path: '/sys/fs/cgroup/system.slice/' + unit, processes: 0 } };
-  priorControllerReport.worker_terminal = { ...clone(failedUnits[pins.PRIOR_WORKER_UNIT].properties), cgroup_empty: true };
-  const priorTerminal = { marker: 'goby-source55-failed-ui-terminal-v2', version: 1, status: 'failed_scope_sealed', observed_run_status: 'failed',
-    phase: 'discovery', schema: 28, scope: pins.PRIOR_ROOT, tool: pins.PRIOR_TOOL, cleanup: 'not_required', restoration: 'not_required',
-    http_requests: 0, service_writes: 0, captured_at: '2026-09-12T12:09:01+00:00', candidate_preserved: true, current_matches_prior_after: true,
+  priorControllerReport.worker_terminal = { ...clone(failedUnits[scope.workerUnit].properties), cgroup_empty: true };
+  const priorTerminal = { marker: 'goby-source55-failed-ui-terminal-v' + version, version: 1, status: 'failed_scope_sealed', observed_run_status: 'failed',
+    phase: 'discovery', schema: 28, scope: scope.root, tool: scope.tool, cleanup: 'not_required', restoration: 'not_required',
+    http_requests: 0, service_writes: 0, captured_at: clock('09:01+00:00'), candidate_preserved: true, current_matches_prior_after: true,
     exact_owned_additions_retained: true, media_preserved: true, old_rows_sequences_private_preserved: true, old_v1_scope_preserved: true,
     owned_session_closed: true, primary_preserved: true, scope_files_unchanged: true, automatic_retry: false, cleanup_needed: false, cleanup_performed: false,
     client_acceptance: false, full_m3_complete: false, library_changed_client_acceptance: false, sql_business_writes: false,
-    reserved_native_intents: [], dispatched_native_intents: [], ledger: clone(ledger), input: clone(pins.PRIOR_PINS.prior_input),
-    report: clone(pins.PRIOR_PINS.prior_controller_report), browser_report: clone(pins.PRIOR_PINS.prior_browser_report),
-    before_snapshot: clone(pins.PRIOR_PINS.prior_before_snapshot), prior_after_snapshot: clone(pins.PRIOR_PINS.prior_after_snapshot),
-    upgrade_authority_snapshot: clone(pins.UPGRADE_PINS.current_snapshot), ...clone(pins.PRIOR_TERMINAL_PINS),
+    reserved_native_intents: [], dispatched_native_intents: [], ledger: clone(ledger), input: clone(scope.pins.prior_input),
+    report: clone(scope.pins.prior_controller_report), browser_report: clone(scope.pins.prior_browser_report),
+    before_snapshot: clone(scope.pins.prior_before_snapshot), prior_after_snapshot: clone(scope.pins.prior_after_snapshot),
+    upgrade_authority_snapshot: clone(pins.UPGRADE_PINS.current_snapshot), ...clone(scope.terminalPins),
     primary_process: { pid: pins.PRIMARY.pid, start_ticks: pins.PRIMARY.start_ticks, boot_id: pins.BOOT }, primary_invocation_id: pins.PRIMARY.invocation,
     primary_fact_sha256: '0882d96f8b61c5586ce514a4c320a9bc933c2610cf55f24bfbec80237e77da3a',
     media_fact_sha256: '0f21473c43a050ad54f8985ee57e98addc6420e0cf33d6ee115db8cf8c0eff7d', failed_units: failedUnits,
@@ -500,7 +533,22 @@ function priorExample(pins, input, current) {
       context_closed: true, login_proven: true, owned_session_revoked: true, proxy_closed: true, ui_logout_and_token_rejection_proven: true,
       http_pending: 0, sockets_remaining: 0, websocket_active: 0, websocket_pending: 0, websocket_opened: 1, websocket_closed: 1,
       failure_counters: { observer_errors: 0, page_errors: 0, proxy_failed: 0, proxy_rejected: 0, websocket_failed: 0 } } };
+  if (version === 3) {
+    priorControllerReport.prior_failure_preservation = clone(ledger);
+    priorBrowserReport.diagnostics = { discovery_failure: { ...clone(pins.HISTORY_V3_PREDECESSORS.discovery_failure), bytes: 9503 },
+      screenshot: null, status: 'saved', reason: null };
+    Object.assign(priorTerminal, { baseline_chain_verified: true, old_v2_scope_preserved: true,
+      cumulative_totals: { sessions: 77, devices: 66, activity_entries: 171 }, prior_failure_preservation: clone(ledger),
+      prior_baseline: clone(pins.PRIOR_TERMINAL_PINS.independent_snapshot), ...clone(pins.HISTORY_V3_PREDECESSORS) });
+  }
   return { priorInput, priorBrowserReport, priorControllerReport, priorTerminal, priorBefore, priorAfter, priorIndependent, before };
+}
+
+function historyExample(pins, input, current) {
+  const first = priorExample(pins, input, current, 2), second = priorExample(pins, input, first.priorAfter, 3);
+  return { history: [first, second].map((entry, index) => ({ version: index + 2, input: entry.priorInput, browser_report: entry.priorBrowserReport,
+    controller_report: entry.priorControllerReport, terminal: entry.priorTerminal, before: entry.priorBefore, after: entry.priorAfter,
+    independent: entry.priorIndependent })), before: second.before };
 }
 
 function documentCases(test, loaded) {
@@ -658,105 +706,161 @@ function priorCases(test, loaded) {
   test('v3_prior_authority_retains_failed_scope_without_relabelling_upgrade_or_acceptance', () => {
     const value = example(), { input, documents } = value;
     check(valid(value) === true && input.authority.current_snapshot.sha256 === loaded.pins.UPGRADE_PINS.current_snapshot.sha256 &&
-      input.authority.current_snapshot.sha256 !== input.authority.prior_after_snapshot.sha256 &&
-      documents.current.database.tables.sessions.length === 75 && documents.before.database.tables.sessions.length === 76 &&
-      documents.priorTerminal.status === 'failed_scope_sealed' && documents.priorTerminal.client_acceptance === false); noEffects(loaded);
+      input.authority.current_snapshot.sha256 !== input.authority.history[0].after_snapshot.sha256 &&
+      documents.current.database.tables.sessions.length === 75 && documents.before.database.tables.sessions.length === 77 &&
+      documents.history[0].terminal.status === 'failed_scope_sealed' && documents.history[0].terminal.client_acceptance === false); noEffects(loaded);
   });
   for (const [name, mutate] of [
-    ['upgrade_replaced_by_prior_after', v => { v.input.authority.current_snapshot = clone(v.input.authority.prior_after_snapshot); }],
-    ['prior_input_claims_v3_root', v => { v.documents.priorInput.root = ROOT; }],
-    ['prior_input_candidate_changed', v => { v.documents.priorInput.candidate.process.pid += 1; }],
-    ['prior_input_target_changed', v => { v.documents.priorInput.target.name = 'foreign'; }],
-    ['prior_browser_claims_passed', v => { v.documents.priorBrowserReport.result = 'passed'; }],
-    ['prior_browser_different_failure', v => { v.documents.priorBrowserReport.failure = 'foreign'; }],
-    ['prior_browser_native_stage', v => { v.documents.priorBrowserReport.stages.push({ name: 'forward' }); }],
-    ['prior_browser_control_intent', v => { v.documents.priorBrowserReport.controls.push({ name: 'arm' }); }],
-    ['prior_browser_capabilities_count', v => { v.documents.priorBrowserReport.capabilities_private.request_count = 2; }],
-    ['prior_browser_capabilities_descriptor', v => { v.documents.priorBrowserReport.capabilities_private.sha256 = syntheticHash('foreign'); }],
-    ['prior_browser_not_logged_out', v => { v.documents.priorBrowserReport.actor.logout.status = 200; }],
-    ['prior_browser_token_still_valid', v => { v.documents.priorBrowserReport.actor.session_proof.entries[0].verification.status = 200; }],
-    ['prior_browser_token_proof_changed', v => { v.documents.priorBrowserReport.actor.session_proof.entries[0].token_fingerprint = syntheticHash('foreign'); }],
-    ['prior_browser_open_socket', v => { v.documents.priorBrowserReport.closure.sockets_remaining = 1; }],
-    ['prior_controller_claims_passed', v => { v.documents.priorControllerReport.status = 'passed'; }],
-    ['prior_controller_native_intent', v => { v.documents.priorControllerReport.dispatched_native_intents.push('forward'); }],
-    ['prior_controller_revision_delta', v => { v.documents.priorControllerReport.ledger.metadata_revision_delta = 1; }],
-    ['prior_controller_after_descriptor', v => { v.documents.priorControllerReport.evidence['after-full.json'].sha256 = syntheticHash('foreign'); }],
-    ['prior_terminal_missing', v => { delete v.documents.priorTerminal; }],
-    ['prior_terminal_claims_passed', v => { v.documents.priorTerminal.status = 'passed'; }],
-    ['prior_terminal_claims_ui_acceptance', v => { v.documents.priorTerminal.library_changed_client_acceptance = true; }],
-    ['prior_terminal_scope_relabelled', v => { v.documents.priorTerminal.scope = ROOT; }],
-    ['prior_terminal_current_relabelled', v => { v.documents.priorTerminal.upgrade_authority_snapshot = clone(v.input.authority.prior_after_snapshot); }],
-    ['prior_terminal_independent_descriptor', v => { v.documents.priorTerminal.independent_snapshot.sha256 = syntheticHash('foreign'); }],
-    ['prior_terminal_worker_alive', v => { v.documents.priorTerminal.failed_units[loaded.pins.PRIOR_WORKER_UNIT].old_process_gone = false; }],
-    ['prior_terminal_controller_cgroup', v => { v.documents.priorTerminal.failed_units[loaded.pins.PRIOR_CONTROLLER_UNIT].recursive_cgroup.processes = 1; }],
-    ['prior_terminal_worker_invocation', v => { v.documents.priorTerminal.failed_units[loaded.pins.PRIOR_WORKER_UNIT].properties.InvocationID = syntheticHash('foreign').slice(0, 32); }],
-    ['prior_terminal_candidate_invocation', v => { v.documents.priorTerminal.candidate.properties.InvocationID = syntheticHash('foreign').slice(0, 32); }],
-    ['prior_terminal_private_history_not_preserved', v => { v.documents.priorTerminal.old_rows_sequences_private_preserved = false; }],
-    ['prior_terminal_sealer_descriptor', v => { v.documents.priorTerminal.seal_script.sha256 = syntheticHash('foreign'); }],
-    ['prior_before_does_not_equal_upgrade', v => { v.documents.priorBefore.database.tables.items[0].name = 'foreign'; }],
-    ['prior_independent_row_changed', v => { v.documents.priorIndependent.database.tables.sessions[0].client_version = 'foreign'; }],
-    ['prior_independent_predates_after', v => { v.documents.priorIndependent.database.metadata.captured_at = '2026-09-12T12:07:59Z'; }],
-    ['prior_independent_after_seal', v => { v.documents.priorIndependent.database.metadata.captured_at = '2026-09-12T12:09:02Z'; }],
+    ['upgrade_replaced_by_prior_after', v => { v.input.authority.current_snapshot = clone(v.input.authority.history[0].after_snapshot); }],
+    ['prior_input_claims_v3_root', v => { v.documents.history[0].input.root = ROOT; }],
+    ['prior_input_candidate_changed', v => { v.documents.history[0].input.candidate.process.pid += 1; }],
+    ['prior_input_target_changed', v => { v.documents.history[0].input.target.name = 'foreign'; }],
+    ['prior_browser_claims_passed', v => { v.documents.history[0].browser_report.result = 'passed'; }],
+    ['prior_browser_different_failure', v => { v.documents.history[0].browser_report.failure = 'foreign'; }],
+    ['prior_browser_native_stage', v => { v.documents.history[0].browser_report.stages.push({ name: 'forward' }); }],
+    ['prior_browser_control_intent', v => { v.documents.history[0].browser_report.controls.push({ name: 'arm' }); }],
+    ['prior_browser_capabilities_count', v => { v.documents.history[0].browser_report.capabilities_private.request_count = 2; }],
+    ['prior_browser_capabilities_descriptor', v => { v.documents.history[0].browser_report.capabilities_private.sha256 = syntheticHash('foreign'); }],
+    ['prior_browser_not_logged_out', v => { v.documents.history[0].browser_report.actor.logout.status = 200; }],
+    ['prior_browser_token_still_valid', v => { v.documents.history[0].browser_report.actor.session_proof.entries[0].verification.status = 200; }],
+    ['prior_browser_token_proof_changed', v => { v.documents.history[0].browser_report.actor.session_proof.entries[0].token_fingerprint = syntheticHash('foreign'); }],
+    ['prior_browser_open_socket', v => { v.documents.history[0].browser_report.closure.sockets_remaining = 1; }],
+    ['prior_controller_claims_passed', v => { v.documents.history[0].controller_report.status = 'passed'; }],
+    ['prior_controller_native_intent', v => { v.documents.history[0].controller_report.dispatched_native_intents.push('forward'); }],
+    ['prior_controller_revision_delta', v => { v.documents.history[0].controller_report.ledger.metadata_revision_delta = 1; }],
+    ['prior_controller_after_descriptor', v => { v.documents.history[0].controller_report.evidence['after-full.json'].sha256 = syntheticHash('foreign'); }],
+    ['prior_terminal_missing', v => { delete v.documents.history[0].terminal; }],
+    ['prior_terminal_claims_passed', v => { v.documents.history[0].terminal.status = 'passed'; }],
+    ['prior_terminal_claims_ui_acceptance', v => { v.documents.history[0].terminal.library_changed_client_acceptance = true; }],
+    ['prior_terminal_scope_relabelled', v => { v.documents.history[0].terminal.scope = ROOT; }],
+    ['prior_terminal_current_relabelled', v => { v.documents.history[0].terminal.upgrade_authority_snapshot = clone(v.input.authority.history[0].after_snapshot); }],
+    ['prior_terminal_independent_descriptor', v => { v.documents.history[0].terminal.independent_snapshot.sha256 = syntheticHash('foreign'); }],
+    ['prior_terminal_worker_alive', v => { v.documents.history[0].terminal.failed_units[loaded.pins.PRIOR_WORKER_UNIT].old_process_gone = false; }],
+    ['prior_terminal_controller_cgroup', v => { v.documents.history[0].terminal.failed_units[loaded.pins.PRIOR_CONTROLLER_UNIT].recursive_cgroup.processes = 1; }],
+    ['prior_terminal_worker_invocation', v => { v.documents.history[0].terminal.failed_units[loaded.pins.PRIOR_WORKER_UNIT].properties.InvocationID = syntheticHash('foreign').slice(0, 32); }],
+    ['prior_terminal_candidate_invocation', v => { v.documents.history[0].terminal.candidate.properties.InvocationID = syntheticHash('foreign').slice(0, 32); }],
+    ['prior_terminal_private_history_not_preserved', v => { v.documents.history[0].terminal.old_rows_sequences_private_preserved = false; }],
+    ['prior_terminal_sealer_descriptor', v => { v.documents.history[0].terminal.seal_script.sha256 = syntheticHash('foreign'); }],
+    ['prior_before_does_not_equal_upgrade', v => { v.documents.history[0].before.database.tables.items[0].name = 'foreign'; }],
+    ['prior_independent_row_changed', v => { v.documents.history[0].independent.database.tables.sessions[0].client_version = 'foreign'; }],
+    ['prior_independent_predates_after', v => { v.documents.history[0].independent.database.metadata.captured_at = '2026-09-12T12:07:59Z'; }],
+    ['prior_independent_after_seal', v => { v.documents.history[0].independent.database.metadata.captured_at = '2026-09-12T12:09:02Z'; }],
     ['fresh_before_predates_independent', v => { v.documents.before.database.metadata.captured_at = '2026-09-12T12:08:30Z'; }],
     ['fresh_before_old_counts_only', v => { v.documents.before = clone(v.documents.current); v.documents.before.database.metadata.captured_at = '2026-09-12T12:10:00Z'; }],
     ['fresh_before_private_drift', v => { v.documents.before.recovery.record = 'foreign'; }],
   ]) test('v3_prior_chain_rejects_' + name, () => {
     const value = example(); mutate(value); rejects(() => valid(value), loaded);
   });
-  const delta = documents => loaded.api.validatePriorSnapshotDelta(documents.priorBefore, documents.priorAfter, documents.priorBrowserReport);
+  const delta = documents => loaded.api.validatePriorSnapshotDelta(documents.history[0].before, documents.history[0].after, documents.history[0].browser_report);
   test('prior_delta_is_exactly_one_closed_b_session_one_device_two_audits', () => {
-    const { documents } = example(); check(same(delta(documents), documents.priorControllerReport.ledger)); noEffects(loaded);
+    const { documents } = example(); check(same(delta(documents), documents.history[0].controller_report.ledger)); noEffects(loaded);
   });
   for (const [name, mutate] of [
-    ['old_session_row_changed', d => { d.priorAfter.database.tables.sessions[0].last_seen_at = '2026-09-12T12:06:30Z'; }],
-    ['old_device_row_changed', d => { d.priorAfter.database.tables.devices[0].revision = 2; }],
-    ['old_audit_row_changed', d => { d.priorAfter.database.tables.activity_entries[0].severity = 'Warning'; }],
-    ['old_item_metadata_changed', d => { d.priorAfter.database.tables.items[0].name = 'foreign'; }],
-    ['unrelated_table_addition', d => { d.priorAfter.database.tables.synthetic_table_1.push({ id: 1 }); }],
-    ['private_recovery_changed', d => { d.priorAfter.recovery.record = 'foreign'; }],
-    ['private_credentials_changed', d => { d.priorAfter.added_viewer_credentials.record = 'foreign'; }],
-    ['catalog_changed', d => { d.priorAfter.database.catalog.push({ kind: 'foreign' }); }],
-    ['columns_changed', d => { d.priorAfter.database.metadata.columns.sessions.push('foreign'); }],
-    ['new_session_missing', d => { d.priorAfter.database.tables.sessions.pop(); }],
-    ['new_device_missing', d => { d.priorAfter.database.tables.devices.pop(); }],
-    ['new_audit_missing', d => { d.priorAfter.database.tables.activity_entries.pop(); }],
-    ['new_session_extra', d => { d.priorAfter.database.tables.sessions.push(clone(d.priorAfter.database.tables.sessions.at(-1))); }],
-    ['session_foreign_user', d => { d.priorAfter.database.tables.sessions.at(-1).user_id = 'f'.repeat(32); }],
-    ['session_native_kind', d => { d.priorAfter.database.tables.sessions.at(-1).kind = 'admin'; }],
-    ['session_token_conflict', d => { d.priorAfter.database.tables.sessions.at(-1).token_hash = '\\x' + syntheticHash('foreign'); }],
-    ['session_reuses_old_id', d => { d.priorAfter.database.tables.sessions.at(-1).id = d.priorBefore.database.tables.sessions[0].id; }],
-    ['session_capabilities_not_object', d => { d.priorAfter.database.tables.sessions.at(-1).client_capabilities = []; }],
-    ['session_registry_conflict', d => { d.priorAfter.database.tables.sessions.at(-1).device_registry_id = 64; }],
-    ['session_last_seen_before_issue', d => { d.priorAfter.database.tables.sessions.at(-1).last_seen_at = '2026-09-12T12:06:00.123455Z'; }],
-    ['session_expiry_microsecond_changed', d => { d.priorAfter.database.tables.sessions.at(-1).expires_at = '2026-10-12T12:06:00.123455Z'; }],
-    ['session_issue_microsecond_changed', d => { d.priorAfter.database.tables.sessions.at(-1).created_at = '2026-09-12T12:06:00.123455Z'; }],
-    ['session_unrevoked', d => { d.priorAfter.database.tables.sessions.at(-1).revoked_at = null; }],
-    ['session_revoked_after_scope', d => { d.priorAfter.database.tables.sessions.at(-1).revoked_at = '2026-09-12T12:08:01Z'; }],
-    ['device_reuses_reported_identity', d => { d.priorAfter.database.tables.devices.at(-1).reported_device_id = d.priorBefore.database.tables.devices[0].reported_device_id; }],
-    ['device_custom_name', d => { d.priorAfter.database.tables.devices.at(-1).custom_name = 'foreign'; }],
-    ['device_deleted', d => { d.priorAfter.database.tables.devices.at(-1).deleted_at = '2026-09-12T12:06:01Z'; }],
-    ['device_revision', d => { d.priorAfter.database.tables.devices.at(-1).revision = 2; }],
-    ['device_foreign_last_user', d => { d.priorAfter.database.tables.devices.at(-1).last_user_id = 'f'.repeat(32); }],
-    ['device_foreign_ip', d => { d.priorAfter.database.tables.devices.at(-1).ip_address = '127.0.0.2'; }],
-    ['device_created_after_session', d => { d.priorAfter.database.tables.devices.at(-1).created_at = '2026-09-12T12:06:00.123457Z'; }],
-    ['audit_native_source', d => { d.priorAfter.database.tables.activity_entries.at(-1).source = 'native'; }],
-    ['audit_metadata_action', d => { d.priorAfter.database.tables.activity_entries.at(-1).action = 'metadata.updated'; }],
-    ['audit_foreign_actor', d => { d.priorAfter.database.tables.activity_entries.at(-1).actor_id = 'f'.repeat(32); }],
-    ['audit_foreign_credential', d => { d.priorAfter.database.tables.activity_entries.at(-1).actor_credential_id = 'f'.repeat(32); }],
-    ['audit_changed_fields', d => { d.priorAfter.database.tables.activity_entries.at(-1).changed_fields = ['Name']; }],
-    ['audit_revision', d => { d.priorAfter.database.tables.activity_entries.at(-1).revision = 1; }],
-    ['audit_previous_revision', d => { d.priorAfter.database.tables.activity_entries.at(-1).previous_revision = 1; }],
-    ['audit_affected_count', d => { d.priorAfter.database.tables.activity_entries.at(-1).affected_count = 0; }],
-    ['audit_fingerprint', d => { d.priorAfter.database.tables.activity_entries.at(-1).observation_fingerprint = syntheticHash('foreign'); }],
-    ['audit_request_id', d => { d.priorAfter.database.tables.activity_entries.at(-1).request_id = 'foreign'; }],
-    ['devices_sequence_not_advanced', d => { d.priorAfter.database.sequences.devices_id_seq.last_value = 64; }],
-    ['audit_sequence_extra_advance', d => { d.priorAfter.database.sequences.activity_entries_id_seq.last_value = 170; }],
-    ['audit_ids_not_contiguous', d => { d.priorAfter.database.tables.activity_entries.at(-1).id = 170; }],
-    ['unrelated_sequence_advanced', d => { d.priorAfter.database.sequences.third.last_value += 1; }],
-    ['sequence_called_flag_changed', d => { d.priorAfter.database.sequences.devices_id_seq.is_called = false; }],
-    ['sequence_integer_type_changed', d => { d.priorAfter.database.sequences.devices_id_seq.last_value = '65'; }],
+    ['old_session_row_changed', d => { d.history[0].after.database.tables.sessions[0].last_seen_at = '2026-09-12T12:06:30Z'; }],
+    ['old_device_row_changed', d => { d.history[0].after.database.tables.devices[0].revision = 2; }],
+    ['old_audit_row_changed', d => { d.history[0].after.database.tables.activity_entries[0].severity = 'Warning'; }],
+    ['old_item_metadata_changed', d => { d.history[0].after.database.tables.items[0].name = 'foreign'; }],
+    ['unrelated_table_addition', d => { d.history[0].after.database.tables.synthetic_table_1.push({ id: 1 }); }],
+    ['private_recovery_changed', d => { d.history[0].after.recovery.record = 'foreign'; }],
+    ['private_credentials_changed', d => { d.history[0].after.added_viewer_credentials.record = 'foreign'; }],
+    ['catalog_changed', d => { d.history[0].after.database.catalog.push({ kind: 'foreign' }); }],
+    ['columns_changed', d => { d.history[0].after.database.metadata.columns.sessions.push('foreign'); }],
+    ['new_session_missing', d => { d.history[0].after.database.tables.sessions.pop(); }],
+    ['new_device_missing', d => { d.history[0].after.database.tables.devices.pop(); }],
+    ['new_audit_missing', d => { d.history[0].after.database.tables.activity_entries.pop(); }],
+    ['new_session_extra', d => { d.history[0].after.database.tables.sessions.push(clone(d.history[0].after.database.tables.sessions.at(-1))); }],
+    ['session_foreign_user', d => { d.history[0].after.database.tables.sessions.at(-1).user_id = 'f'.repeat(32); }],
+    ['session_native_kind', d => { d.history[0].after.database.tables.sessions.at(-1).kind = 'admin'; }],
+    ['session_token_conflict', d => { d.history[0].after.database.tables.sessions.at(-1).token_hash = '\\x' + syntheticHash('foreign'); }],
+    ['session_reuses_old_id', d => { d.history[0].after.database.tables.sessions.at(-1).id = d.history[0].before.database.tables.sessions[0].id; }],
+    ['session_capabilities_not_object', d => { d.history[0].after.database.tables.sessions.at(-1).client_capabilities = []; }],
+    ['session_registry_conflict', d => { d.history[0].after.database.tables.sessions.at(-1).device_registry_id = 64; }],
+    ['session_last_seen_before_issue', d => { d.history[0].after.database.tables.sessions.at(-1).last_seen_at = '2026-09-12T12:06:00.123455Z'; }],
+    ['session_expiry_microsecond_changed', d => { d.history[0].after.database.tables.sessions.at(-1).expires_at = '2026-10-12T12:06:00.123455Z'; }],
+    ['session_issue_microsecond_changed', d => { d.history[0].after.database.tables.sessions.at(-1).created_at = '2026-09-12T12:06:00.123455Z'; }],
+    ['session_unrevoked', d => { d.history[0].after.database.tables.sessions.at(-1).revoked_at = null; }],
+    ['session_revoked_after_scope', d => { d.history[0].after.database.tables.sessions.at(-1).revoked_at = '2026-09-12T12:08:01Z'; }],
+    ['device_reuses_reported_identity', d => { d.history[0].after.database.tables.devices.at(-1).reported_device_id = d.history[0].before.database.tables.devices[0].reported_device_id; }],
+    ['device_custom_name', d => { d.history[0].after.database.tables.devices.at(-1).custom_name = 'foreign'; }],
+    ['device_deleted', d => { d.history[0].after.database.tables.devices.at(-1).deleted_at = '2026-09-12T12:06:01Z'; }],
+    ['device_revision', d => { d.history[0].after.database.tables.devices.at(-1).revision = 2; }],
+    ['device_foreign_last_user', d => { d.history[0].after.database.tables.devices.at(-1).last_user_id = 'f'.repeat(32); }],
+    ['device_foreign_ip', d => { d.history[0].after.database.tables.devices.at(-1).ip_address = '127.0.0.2'; }],
+    ['device_created_after_session', d => { d.history[0].after.database.tables.devices.at(-1).created_at = '2026-09-12T12:06:00.123457Z'; }],
+    ['audit_native_source', d => { d.history[0].after.database.tables.activity_entries.at(-1).source = 'native'; }],
+    ['audit_metadata_action', d => { d.history[0].after.database.tables.activity_entries.at(-1).action = 'metadata.updated'; }],
+    ['audit_foreign_actor', d => { d.history[0].after.database.tables.activity_entries.at(-1).actor_id = 'f'.repeat(32); }],
+    ['audit_foreign_credential', d => { d.history[0].after.database.tables.activity_entries.at(-1).actor_credential_id = 'f'.repeat(32); }],
+    ['audit_changed_fields', d => { d.history[0].after.database.tables.activity_entries.at(-1).changed_fields = ['Name']; }],
+    ['audit_revision', d => { d.history[0].after.database.tables.activity_entries.at(-1).revision = 1; }],
+    ['audit_previous_revision', d => { d.history[0].after.database.tables.activity_entries.at(-1).previous_revision = 1; }],
+    ['audit_affected_count', d => { d.history[0].after.database.tables.activity_entries.at(-1).affected_count = 0; }],
+    ['audit_fingerprint', d => { d.history[0].after.database.tables.activity_entries.at(-1).observation_fingerprint = syntheticHash('foreign'); }],
+    ['audit_request_id', d => { d.history[0].after.database.tables.activity_entries.at(-1).request_id = 'foreign'; }],
+    ['devices_sequence_not_advanced', d => { d.history[0].after.database.sequences.devices_id_seq.last_value = 64; }],
+    ['audit_sequence_extra_advance', d => { d.history[0].after.database.sequences.activity_entries_id_seq.last_value = 170; }],
+    ['audit_ids_not_contiguous', d => { d.history[0].after.database.tables.activity_entries.at(-1).id = 170; }],
+    ['unrelated_sequence_advanced', d => { d.history[0].after.database.sequences.third.last_value += 1; }],
+    ['sequence_called_flag_changed', d => { d.history[0].after.database.sequences.devices_id_seq.is_called = false; }],
+    ['sequence_integer_type_changed', d => { d.history[0].after.database.sequences.devices_id_seq.last_value = '65'; }],
   ]) test('prior_delta_rejects_' + name, () => {
     const { documents } = example(); mutate(documents); rejects(() => delta(documents), loaded);
+  });
+}
+
+function historyCases(test, loaded) {
+  const example = () => { const input = inputExample(loaded.pins); return { input, documents: documentsExample(loaded.pins, input) }; };
+  const valid = value => loaded.api.validateLibraryChangedSource55Documents(value.input, value.documents);
+  test('history_keeps_v2_flat_five_v3_flat_eleven_and_current_six_authority_fields', () => {
+    const value = example(), { input, documents } = value;
+    check(valid(value) === true && Object.keys(input.authority).length === 6 &&
+      Object.keys(documents.history[0].input.authority).length === 5 && Object.keys(documents.history[1].input.authority).length === 11 &&
+      !Object.hasOwn(documents.history[0].input.authority, 'history') && !Object.hasOwn(documents.history[1].input.authority, 'history') &&
+      documents.current.database.tables.sessions.length === 75 && documents.history[0].after.database.tables.sessions.length === 76 &&
+      documents.history[1].after.database.tables.sessions.length === 77 && documents.before.database.tables.sessions.length === 77); noEffects(loaded);
+  });
+  test('history_second_delta_uses_only_explicit_v3_counts_and_preserves_v2_rows', () => {
+    const { documents } = example(), second = documents.history[1];
+    check(same(loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, 3), second.controller_report.ledger)); noEffects(loaded);
+  });
+  for (const [name, mutate] of [
+    ['missing_record', v => { v.documents.history.pop(); }],
+    ['reordered_records', v => { v.documents.history.reverse(); }],
+    ['string_record_version', v => { v.documents.history[1].version = '3'; }],
+    ['v2_input_rewritten_as_history', v => { v.documents.history[0].input.authority.history = clone(v.input.authority.history); }],
+    ['v3_input_prior_terminal_omitted', v => { delete v.documents.history[1].input.authority.prior_terminal; }],
+    ['v3_controller_authority_rewritten', v => { v.documents.history[1].controller_report.authority.history = clone(v.input.authority.history); }],
+    ['v3_controller_lost_predecessor_ledger', v => { v.documents.history[1].controller_report.prior_failure_preservation.metadata_revision_delta = 1; }],
+    ['v3_browser_diagnostics_omitted', v => { delete v.documents.history[1].browser_report.diagnostics; }],
+    ['v3_browser_discovery_digest', v => { v.documents.history[1].browser_report.diagnostics.discovery_failure.sha256 = syntheticHash('foreign'); }],
+    ['v3_terminal_marker', v => { v.documents.history[1].terminal.marker = 'goby-source55-failed-ui-terminal-v2'; }],
+    ['v3_terminal_new_flag_missing', v => { delete v.documents.history[1].terminal.baseline_chain_verified; }],
+    ['v3_terminal_chain_not_verified', v => { v.documents.history[1].terminal.baseline_chain_verified = false; }],
+    ['v3_terminal_old_v2_not_preserved', v => { v.documents.history[1].terminal.old_v2_scope_preserved = false; }],
+    ['v3_terminal_cumulative_totals', v => { v.documents.history[1].terminal.cumulative_totals.sessions = 76; }],
+    ['v3_terminal_prior_baseline_is_upgrade', v => { v.documents.history[1].terminal.prior_baseline = clone(v.input.authority.current_snapshot); }],
+    ['v3_terminal_prior_ledger', v => { v.documents.history[1].terminal.prior_failure_preservation.new_sessions = 0; }],
+    ['v3_terminal_predecessor_order', v => { v.documents.history[1].terminal.predecessor_terminals.reverse(); }],
+    ['v3_terminal_predecessor_inventory', v => { v.documents.history[1].terminal.predecessor_inventories[0].sha256 = syntheticHash('foreign'); }],
+    ['v3_terminal_discovery_descriptor', v => { v.documents.history[1].terminal.discovery_failure.sha256 = syntheticHash('foreign'); }],
+    ['v3_terminal_controller_invocation', v => {
+      v.documents.history[1].terminal.failed_units['goby-client-library-changed-ui-source55-controller-v3.service'].properties.InvocationID = syntheticHash('foreign').slice(0, 32);
+    }],
+    ['v3_before_relabelled_upgrade', v => { v.documents.history[1].before = clone(v.documents.current); v.documents.history[1].before.database.metadata.captured_at = '2026-09-12T12:15:00Z'; }],
+    ['v3_before_predates_v2_independent', v => { v.documents.history[1].before.database.metadata.captured_at = '2026-09-12T12:08:30Z'; }],
+    ['v3_after_changes_v2_session', v => { v.documents.history[1].after.database.tables.sessions[75].client_version = 'foreign'; }],
+    ['v3_after_missing_new_session', v => { v.documents.history[1].after.database.tables.sessions.pop(); }],
+    ['v3_independent_relabelled_v2', v => { v.documents.history[1].independent = clone(v.documents.history[0].independent); v.documents.history[1].independent.database.metadata.captured_at = '2026-09-12T12:19:00Z'; }],
+    ['fresh_before_uses_v2_after', v => { v.documents.before = clone(v.documents.history[0].after); v.documents.before.database.metadata.captured_at = '2026-09-12T12:20:00Z'; }],
+    ['fresh_before_predates_v3_independent', v => { v.documents.before.database.metadata.captured_at = '2026-09-12T12:18:30Z'; }],
+  ]) test('history_rejects_' + name, () => {
+    const value = example(); mutate(value); rejects(() => valid(value), loaded);
+  });
+  test('history_delta_rejects_unbound_or_mismatched_count_scope', () => {
+    const { documents } = example(), first = documents.history[0], second = documents.history[1];
+    for (const version of ['3', 4, null]) rejects(() => loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, version), loaded);
+    rejects(() => loaded.api.validatePriorSnapshotDelta(first.before, first.after, first.browser_report, 3), loaded);
+    rejects(() => loaded.api.validatePriorSnapshotDelta(second.before, second.after, second.browser_report, 2), loaded);
   });
 }
 
@@ -865,10 +969,15 @@ async function runtimeExample(raw, observeEffects = () => {}, configure = () => 
   for (const [filename, digest] of Object.entries(input.source_closure)) memory.put(filename, 'synthetic source: ' + filename, digest);
   memory.put(pins.STATE, JSON.stringify(documents.state), input.candidate.state_sha256);
   for (const [key, name] of [['upgrade_intent', 'intent'], ['upgrade_report', 'report'], ['upgrade_attestation', 'attestation'],
-    ['current_snapshot', 'current'], ['before_snapshot', 'before'], ['prior_input', 'priorInput'], ['prior_browser_report', 'priorBrowserReport'],
-    ['prior_controller_report', 'priorControllerReport'], ['prior_terminal', 'priorTerminal'], ['prior_before_snapshot', 'priorBefore'], ['prior_after_snapshot', 'priorAfter']])
+    ['current_snapshot', 'current'], ['before_snapshot', 'before']])
     memory.put(input.authority[key].path, JSON.stringify(documents[name]), input.authority[key].sha256);
-  memory.put(pins.PRIOR_TERMINAL_PINS.independent_snapshot.path, JSON.stringify(documents.priorIndependent), pins.PRIOR_TERMINAL_PINS.independent_snapshot.sha256);
+  for (const [index, entry] of input.authority.history.entries()) {
+    for (const [key, name] of [['input', 'input'], ['browser_report', 'browser_report'], ['controller_report', 'controller_report'],
+      ['terminal', 'terminal'], ['before_snapshot', 'before'], ['after_snapshot', 'after']])
+      memory.put(entry[key].path, JSON.stringify(documents.history[index][name]), entry[key].sha256);
+    const terminalPins = index === 0 ? pins.PRIOR_TERMINAL_PINS : pins.HISTORY_V3_TERMINAL_PINS;
+    memory.put(terminalPins.independent_snapshot.path, JSON.stringify(documents.history[index].independent), terminalPins.independent_snapshot.sha256);
+  }
   memory.put(documents.report.evidence['before-state.json'].path, JSON.stringify(documents.beforeState), pins.PREVIOUS.state_sha256);
   memory.put(documents.intent.source.publication.path, JSON.stringify(documents.publication), documents.intent.source.publication.sha256);
   memory.put(pins.PINS.catalog.path, JSON.stringify(documents.catalog), pins.PINS.catalog.sha256, 0o100600);
@@ -992,7 +1101,8 @@ function runtimeCases(test, raw, observeEffects) {
       fixture.evidence.candidate_invocation_id === value.input.candidate.invocation_id && Object.isFrozen(fixture.evidence));
     for (const filename of [ROOT + '/input.json', value.loaded.pins.STATE, value.input.authority.upgrade_report.path,
       value.input.authority.upgrade_attestation.path, value.input.authority.current_snapshot.path, value.input.actor.credentials.path,
-      ...Object.values(value.loaded.pins.PRIOR_PINS).map(item => item.path), value.loaded.pins.PRIOR_TERMINAL_PINS.independent_snapshot.path,
+      ...value.input.authority.history.flatMap(entry => Object.entries(entry).filter(([key]) => key !== 'version').map(([, item]) => item.path)),
+      value.loaded.pins.PRIOR_TERMINAL_PINS.independent_snapshot.path, value.loaded.pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot.path,
       ...Object.keys(value.input.source_closure)])
       check(memory.trace.filter(item => item.operation === 'open' && item.path === filename).length >= 4);
     scope(value);
@@ -1002,9 +1112,11 @@ function runtimeCases(test, raw, observeEffects) {
     ['input_content_changed', v => { v.memory.content(ROOT + '/input.json', JSON.stringify({ ...v.input, version: 2 })); }],
     ['report_inode_replaced', v => { v.memory.files.get(v.input.authority.upgrade_report.path).info.ino += 1n; }],
     ['attestation_bytes_changed', v => { v.memory.content(v.input.authority.upgrade_attestation.path, '{"status":"passed"}'); }],
-    ['prior_terminal_bytes_changed', v => { v.memory.content(v.input.authority.prior_terminal.path, '{"status":"failed_scope_sealed"}'); }],
-    ['prior_after_inode_replaced', v => { v.memory.files.get(v.input.authority.prior_after_snapshot.path).info.ino += 1n; }],
+    ['prior_terminal_bytes_changed', v => { v.memory.content(v.input.authority.history[0].terminal.path, '{"status":"failed_scope_sealed"}'); }],
+    ['prior_after_inode_replaced', v => { v.memory.files.get(v.input.authority.history[0].after_snapshot.path).info.ino += 1n; }],
     ['prior_independent_bytes_changed', v => { v.memory.content(v.loaded.pins.PRIOR_TERMINAL_PINS.independent_snapshot.path, '{"schema":28}'); }],
+    ['v3_terminal_bytes_changed', v => { v.memory.content(v.input.authority.history[1].terminal.path, '{"status":"failed_scope_sealed"}'); }],
+    ['v3_independent_bytes_changed', v => { v.memory.content(v.loaded.pins.HISTORY_V3_TERMINAL_PINS.independent_snapshot.path, '{"schema":28}'); }],
     ['before_state_inode_replaced', v => { v.memory.files.get(v.documents.report.evidence['before-state.json'].path).info.ino += 1n; }],
     ['catalog_bytes_changed', v => { v.memory.content(v.loaded.pins.PINS.catalog.path, '{"version":27}'); }],
     ['current_snapshot_bytes_changed', v => { v.memory.content(v.input.authority.current_snapshot.path, '{"schema":28,"changed":true}'); }],
@@ -1209,16 +1321,17 @@ function snapshotReaderCases(test, loaded, raw, observeEffects) {
   test('snapshot_reader_rejects_invalid_inputs_and_keys_before_external_effects', async () => {
     for (const input of [undefined, null, {}, { ...inputExample(loaded.pins), root: WORK + '/client-library-changed-ui-source55-v1' }])
       await rejectsAsync(() => loaded.api.readLibraryChangedSource55Snapshot(input, 'before_snapshot'), loaded);
-    for (const key of [undefined, null, 0, {}, '../before-full.json', 'upgrade_report'])
+    for (const key of [undefined, null, 0, {}, '../before-full.json', 'upgrade_report', 'prior_after_snapshot'])
       await rejectsAsync(() => loaded.api.readLibraryChangedSource55Snapshot(inputExample(loaded.pins), key), loaded);
   });
   test('snapshot_reader_reads_only_each_declared_snapshot', async () => {
     const value = await runtimeExample(raw, observeEffects);
-    for (const [key, expected] of [['current_snapshot', value.documents.current], ['prior_after_snapshot', value.documents.priorAfter],
+    for (const [key, expected] of [['current_snapshot', value.documents.current], ['history_after_snapshot', value.documents.history[1].after],
       ['before_snapshot', value.documents.before]]) {
       const start = value.memory.trace.length, snapshot = await value.loaded.api.readLibraryChangedSource55Snapshot(value.input, key);
       const opened = value.memory.trace.slice(start).filter(item => item.operation === 'open').map(item => item.path);
-      check(same(snapshot, expected) && same(opened, [value.input.authority[key].path]));
+      const item = key === 'history_after_snapshot' ? value.input.authority.history[1].after_snapshot : value.input.authority[key];
+      check(same(snapshot, expected) && same(opened, [item.path]));
     }
     check(value.memory.handles.size === 0); noEffects(value.loaded);
   });
@@ -1244,7 +1357,7 @@ export async function runLibraryChangedSource55FixtureGuards(raw, metadata) {
   const runtimeEffects = [];
   const test = (name, action) => { check(!cases.some(value => value.name === name)); cases.push({ name, action }); };
   inputCases(test, loaded); viewerCases(test, loaded); jsonCases(test, loaded);
-  documentCases(test, loaded); priorCases(test, loaded); proxyCases(test, loaded); protectedFileCases(test, raw, value => runtimeEffects.push(value));
+  documentCases(test, loaded); priorCases(test, loaded); historyCases(test, loaded); proxyCases(test, loaded); protectedFileCases(test, raw, value => runtimeEffects.push(value));
   runtimeCases(test, raw, value => runtimeEffects.push(value));
   realCatalogCases(test, loaded, metadata); diagnosticCases(test, loaded, raw);
   snapshotReaderCases(test, loaded, raw, value => runtimeEffects.push(value));

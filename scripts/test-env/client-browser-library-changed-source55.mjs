@@ -14,10 +14,10 @@ import { loadLibraryChangedSource55Fixture, readLibraryChangedSource55Snapshot,
   libraryChangedSetupDiagnostic } from './client-library-changed-source55-fixture.mjs';
 
 const WORK = '/opt/goby-test/exec-work-m3e';
-export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v3';
+export const CHANGED_ROOT = WORK + '/client-library-changed-ui-source55-v4';
 export const CHANGED_OUTPUT = CHANGED_ROOT + '/browser';
-export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v3.service';
-export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v3.service';
+export const CHANGED_UNIT = 'goby-client-library-changed-ui-source55-v4.service';
+export const CHANGED_CONTROLLER_UNIT = 'goby-client-library-changed-ui-source55-controller-v4.service';
 const ROOT = CHANGED_ROOT, OUTPUT = CHANGED_OUTPUT;
 const ORIGIN = 'http://127.0.0.1:18196', DIRECT = 'http://127.0.0.1:18198';
 const USER = 'ecbbe4cb82403879bc4b4f78894c5738';
@@ -40,7 +40,8 @@ export const CHANGED_LIMITS = Object.freeze({ work_ms: 390000, cleanup_ms: 90000
   message_bytes: 65536, json_bytes: 2 * 1024 * 1024, record_bytes: 512 * 1024,
   report_bytes: 4 * 1024 * 1024, publication_wait_ms: 5000 });
 export const CHANGED_DIAGNOSTIC_LIMITS = Object.freeze({ capture_ms: 3000, publish_ms: 3000,
-  screenshot_bytes: 4 * 1024 * 1024, target_nodes: 24, structure_nodes: 96, text_chars: 256 });
+  screenshot_bytes: 4 * 1024 * 1024, target_nodes: 24, structure_nodes: 96, text_chars: 256,
+  viewport_elements: 4096, viewport_text_nodes: 2048, viewport_chars: 8192, masks: 24 });
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const clone = value => Array.isArray(value) ? value.map(clone) : record(value)
   ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, clone(child)])) : value;
@@ -116,9 +117,8 @@ export function validateLibraryChangedInput(input) {
     safeText(input.target.relative_path, 4096) && !input.target.relative_path.startsWith('/') &&
     !input.target.relative_path.includes('\\') && path.posix.normalize(input.target.relative_path) === input.target.relative_path &&
     !input.target.relative_path.split('/').some(value => value === '..' || value === '.' || value === ''));
-  need(exact(input.authority, ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot',
-    'prior_input', 'prior_browser_report', 'prior_controller_report', 'prior_terminal', 'prior_before_snapshot', 'prior_after_snapshot']) &&
-    Object.values(input.authority).every(descriptor));
+  need(exact(input.authority, ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot', 'history']) &&
+    ['upgrade_intent', 'upgrade_report', 'upgrade_attestation', 'current_snapshot', 'before_snapshot'].every(key => descriptor(input.authority[key])));
   const upgradeRoot = path.posix.dirname(input.authority.upgrade_report.path);
   need(path.posix.dirname(upgradeRoot) === WORK &&
     /^client-schema28-source55-upgrade-\d{8}_\d{6}_[0-9a-f]{12}$/.test(path.posix.basename(upgradeRoot)) &&
@@ -127,23 +127,29 @@ export function validateLibraryChangedInput(input) {
     input.authority.upgrade_attestation.path === upgradeRoot + '/attestation.json' &&
     input.authority.current_snapshot.path === upgradeRoot + '/after-full.json' &&
     input.authority.before_snapshot.path === ROOT + '/before-full.json');
-  const priorRoot = WORK + '/client-library-changed-ui-source55-v2';
-  for (const [key, [suffix, digest]] of Object.entries({
-    prior_input: ['/input.json', 'c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73'],
-    prior_browser_report: ['/browser/report.json', 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743'],
-    prior_controller_report: ['/report.json', '467f473ef20b1b05bfc76c863b41f69eeb77f1f2a783f57d6549beaa46f28104'],
-    prior_before_snapshot: ['/before-full.json', '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f'],
-    prior_after_snapshot: ['/after-full.json', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc'] }))
-    need(input.authority[key].path === priorRoot + suffix && input.authority[key].sha256 === digest);
-  need(input.authority.prior_terminal.path === WORK + '/client-library-changed-source55-execution-02/failed-terminal.json' &&
-    input.authority.prior_terminal.sha256 === 'b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6');
+  const historyKeys = ['input', 'browser_report', 'controller_report', 'terminal', 'before_snapshot', 'after_snapshot'];
+  const historyHashes = [
+    ['c88794dbd9bdedcb6c16fea4dd8a7d8af2d09012728084b30e24701db5872c73', 'c980edd73bbf08c6190391f2c5368abd7973c5c1381bcec70d7be93477f8c743',
+      '467f473ef20b1b05bfc76c863b41f69eeb77f1f2a783f57d6549beaa46f28104', 'b23a1a156e781c771e3bb4b1ba31bfb048e29e77504569d129397c79445265d6',
+      '36ff8634f85a58841c1c6e4558de5e4dcfea1a842bae8e40a26c1d37c12ff32f', 'a13f976b7097e33337527ef2cf10ad9203d755e0fd2cec43307edfa6efbfe8bc'],
+    ['eab8c899d06b525271afec345d4137b3e0adec70bb5e8ecf911fdf4dae7e9f6e', '9360e3b5c60b16f714b80b2da3f1f7a31d58313e196abee99dfbb4f8e3bc9d1f',
+      'e9b931c568c98e4438917d8c204922267b0931a2de4c9f6bba40f2155c196fb4', 'e53e9777337c8c0b33a0cc86dad2e22c79d5e7f2601aa64dd68c6ed91cd9ecf1',
+      '10563f9b12e62a321bbda67c49bfbfc1a6e3d2c2e304d3c2e1e7d64502b2c897', 'a84e5e480a70b7d84e49001aaae791a522cd38c6b1055dcb503f0312f933c2dd'] ];
+  need(Array.isArray(input.authority.history) && input.authority.history.length === 2);
+  input.authority.history.forEach((entry, index) => {
+    const version = index + 2, historicalRoot = WORK + '/client-library-changed-ui-source55-v' + version;
+    need(exact(entry, ['version', ...historyKeys]) && entry.version === version);
+    const filenames = [historicalRoot + '/input.json', historicalRoot + '/browser/report.json', historicalRoot + '/report.json',
+      WORK + '/client-library-changed-source55-execution-0' + version + '/failed-terminal.json', historicalRoot + '/before-full.json', historicalRoot + '/after-full.json'];
+    historyKeys.forEach((key, at) => need(descriptor(entry[key]) && entry[key].path === filenames[at] && entry[key].sha256 === historyHashes[index][at]));
+  });
   need(exact(input.controller, ['pid', 'start_ticks', 'boot_id', 'unit']) && Number.isSafeInteger(input.controller.pid) && input.controller.pid > 1 &&
     /^[1-9]\d*$/.test(input.controller.start_ticks) && input.controller.boot_id === candidate.process.boot_id &&
     input.controller.unit === CHANGED_CONTROLLER_UNIT);
   need(record(input.source_closure) && Object.keys(input.source_closure).length === SOURCES.length &&
     Object.entries(input.source_closure).every(([filename, hash]) => descriptor({ path: filename, sha256: hash })));
   const scripts = Object.keys(input.source_closure).filter(filename => filename.endsWith('.mjs'));
-  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-03/' + name).sort()));
+  need(same(scripts.sort(), SOURCES.map(name => WORK + '/client-library-changed-source55-tool-04/' + name).sort()));
   return input;
 }
 
@@ -166,8 +172,8 @@ export function validateLibraryChangedBaseline(input, before, current) {
   need(same(captured(before), captured(current)) && instant(first.metadata.captured_at) > instant(previous.metadata.captured_at));
   const tables = first.tables;
   need(Object.keys(tables).length === 35 && Object.values(tables).every(Array.isArray) && Object.keys(first.sequences).length === 5 &&
-    tables.sessions.length === 76 && tables.devices.length === 65 &&
-    tables.activity_entries.length === 169 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
+    tables.sessions.length === 77 && tables.devices.length === 66 &&
+    tables.activity_entries.length === 171 && tables.play_sessions.length === 26 && tables.user_item_data.length === 7 &&
     tables.libraries.length === 4 && tables.items.length === 22 && tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0);
   const user = tables.users.find(row => row.id === USER), target = tables.items.find(row => row.id === ITEM);
   need(user && user.is_disabled === false && user.is_administrator === false && user.management_revision === 5 && target &&
@@ -186,7 +192,7 @@ export function validateLibraryChangedBaseline(input, before, current) {
 /** Read only the three declared snapshot paths without rounding PostgreSQL integers. */
 export async function readLibraryChangedSnapshot(input, key, read = readLibraryChangedSource55Snapshot) {
   validateLibraryChangedInput(input);
-  need(['current_snapshot', 'before_snapshot', 'prior_after_snapshot'].includes(key) && typeof read === 'function');
+  need(['current_snapshot', 'before_snapshot', 'history_after_snapshot'].includes(key) && typeof read === 'function');
   return read(input, key);
 }
 
@@ -339,6 +345,30 @@ export function projectLibraryChangedItems(bytes, kind, targetID = ITEM) {
   const target = selected[0]; need(target.Type === 'Movie' && target.IsFolder !== true);
   return { target: { Id: target.Id, Name: target.Name, Type: target.Type }, count: items.length,
     body_sha256: sha(bytes), body_bytes: bytes.length };
+}
+
+/** Project only a public DTO field outline beside the unchanged acceptance projection. */
+export function libraryChangedResponseDiagnostic(bytes, kind, secrets = []) {
+  if (!['items', 'target'].includes(kind)) return null;
+  const value = parseLibraryChangedJSON(bytes), items = kind === 'target' ? [value] : value.Items;
+  need(Array.isArray(items) && items.length <= 128);
+  const item = items.find(value => record(value) && value.Id === ITEM); if (!item) return null;
+  const type = value => value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+  const fields = ['Id', 'Name', 'Type', 'ServerId', 'LocationType', 'IsFolder', 'MediaType', 'ImageTags', 'UserData',
+    'MediaSources', 'Path', 'ProviderIds', 'RunTimeTicks', 'ProductionYear', 'Overview', 'ParentId', 'ChildCount', 'IsVirtualItem'];
+  const outline = Object.fromEntries(fields.map(key => [key, { present: Object.hasOwn(item, key), type: Object.hasOwn(item, key) ? type(item[key]) : 'missing' }]));
+  const variants = libraryChangedSecretVariants(secrets), keys = Object.keys(item);
+  const topLevelFields = keys.slice(0, 128).map(key => ({ key: /token|password|secret|credential|authorization|path/i.test(key) ? '[sensitive-key]'
+    : !/^[A-Z][A-Za-z0-9]{0,63}$/.test(key) || knownDiagnosticSecret(key, variants) ? '[redacted-key]'
+      : sanitizeLibraryChangedText(key, secrets, variants), type: type(item[key]) }));
+  const unknown = {};
+  for (const key of Object.keys(item)) if (!fields.includes(key)) { const category = type(item[key]); unknown[category] = (unknown[category] ?? 0) + 1; }
+  return { target_id: ITEM, top_level_count: keys.length, top_level_fields: topLevelFields, fields_truncated: keys.length > topLevelFields.length,
+    fields: outline, unknown_field_types: unknown,
+    public_values: { ServerId: item.ServerId === SERVER ? SERVER : null,
+      LocationType: ['FileSystem', 'Virtual', 'Remote', 'Offline'].includes(item.LocationType) ? item.LocationType : null,
+      IsFolder: typeof item.IsFolder === 'boolean' ? item.IsFolder : null,
+      MediaType: ['Video', 'Audio', 'Photo', 'Book', 'Game'].includes(item.MediaType) ? item.MediaType : null } };
 }
 
 export function libraryChangedRoute(raw) {
@@ -591,6 +621,7 @@ export class LibraryChangedObserver {
     Object.assign(this, { input, login, now, monotonic });
     this.sequence = 0; this.origin = monotonic(); this.started = now(); this.phase = 'initial';
     this.physical = []; this.frames = []; this.wireMessages = []; this.browserMessages = []; this.lifecycle = []; this.actions = [];
+    this.responseDiagnostics = [];
     this.frameMap = new WeakMap(); this.workerMap = new WeakMap(); this.workers = 0;
     this.documentEpoch = 0; this.route = null; this.failure = null; this.disposed = false;
     this.discovery = null; this.window = null; this.actor = null;
@@ -658,7 +689,17 @@ export class LibraryChangedObserver {
   catalogResponse(value, bytes) {
     const entry = this.physical.find(item => item.id === value.id); need(entry && entry.status === null);
     const stamp = this.stamp(); entry.status = value.status; entry.response_elapsed_ms = stamp.elapsed_ms;
-    if (value.status === 200) entry.projection = projectLibraryChangedItems(bytes, entry.kind);
+    if (value.status === 200) {
+      entry.projection = projectLibraryChangedItems(bytes, entry.kind);
+      try {
+        const diagnostic = libraryChangedResponseDiagnostic(bytes, entry.kind, this.actor?.diagnosticSecrets?.() ?? []);
+        if (diagnostic && this.responseDiagnostics.length < CHANGED_LIMITS.catalog_total)
+          this.responseDiagnostics.push({ physical_exchange_id: entry.id, ...diagnostic });
+      } catch {
+        if (this.responseDiagnostics.length < CHANGED_LIMITS.catalog_total)
+          this.responseDiagnostics.push({ physical_exchange_id: entry.id, reason: 'response_diagnostic_unavailable' });
+      }
+    }
   }
   catalogFinished(value) {
     const entry = this.physical.find(item => item.id === value.id); need(entry && !entry.terminal);
@@ -866,6 +907,7 @@ export async function observeLibraryChangedDOM(page, target, expectedName, forbi
 
 /** Keep bounded public structure for diagnosis without changing the acceptance matcher. */
 export async function observeLibraryChangedCandidates(page, secrets = []) {
+  const variants = libraryChangedSecretVariants(secrets);
   const locator = page.locator(`[data-id="${ITEM}"]`);
   const total = await locator.count();
   need(Number.isSafeInteger(total) && total >= 0 && total <= 256, 'library_changed_diagnostic_dom_limit');
@@ -904,51 +946,177 @@ export async function observeLibraryChangedCandidates(page, secrets = []) {
   need(record(value) && Array.isArray(value.entries) && value.entries.length <= CHANGED_DIAGNOSTIC_LIMITS.structure_nodes &&
     Array.isArray(value.targets) && value.targets.length <= CHANGED_DIAGNOSTIC_LIMITS.target_nodes);
   for (const entry of value.entries) {
-    entry.text = entry.text === null ? '[text omitted]' : sanitizeBrowserMessage(entry.text, secrets);
-    entry.classes = entry.classes.map(value => sanitizeBrowserMessage(value, secrets));
+    entry.text = entry.text === null ? '[text omitted]' : sanitizeLibraryChangedText(entry.text, secrets, variants);
+    entry.classes = entry.classes.map(value => sanitizeLibraryChangedText(value, secrets, variants));
   }
   return { target_id: ITEM, total_target_nodes: total, ...value };
 }
 
-export async function captureLibraryChangedFailureScreenshot(actor, login, secrets, publish = publishLibraryChangedScreenshot) {
-  const omitted = reason => ({ status: 'omitted', reason, artifact: null });
+export function libraryChangedSecretVariants(secrets) {
+  need(Array.isArray(secrets) && secrets.length <= 128);
+  const variants = new Set();
+  for (const secret of secrets) {
+    if (secret === null || secret === undefined || secret === '') continue;
+    need(typeof secret === 'string' && secret.length <= 4096);
+    const bytes = Buffer.from(secret), encoded = encodeURIComponent(secret);
+    const percent = [...bytes].map(value => '%' + value.toString(16).padStart(2, '0')).join('');
+    for (const value of [secret, encoded, encodeURIComponent(encoded), percent, encodeURIComponent(percent),
+      JSON.stringify(secret).slice(1, -1), bytes.toString('base64'), bytes.toString('base64').replace(/=+$/, ''),
+      bytes.toString('base64url'), bytes.toString('hex'), [...bytes].map(value => '\\x' + value.toString(16).padStart(2, '0')).join(''),
+      [...secret].map(value => '\\u' + value.charCodeAt(0).toString(16).padStart(4, '0')).join('')]) {
+      variants.add(value); variants.add(JSON.stringify(value).slice(1, -1));
+    }
+  }
+  need([...variants].reduce((total, value) => total + value.length, 0) <= 1024 * 1024);
+  return [...variants].sort((left, right) => right.length - left.length);
+}
+
+function knownDiagnosticSecret(text, variants) {
+  const lower = text.toLowerCase(); return variants.some(value => value && lower.includes(value.toLowerCase()));
+}
+
+function sanitizeLibraryChangedText(text, secrets, variants) {
+  for (const value of variants) text = text.replace(new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '[secret]');
+  return sanitizeBrowserMessage(text, secrets);
+}
+
+/** Read public text ranges and identity-carrier categories; never inspect form values. */
+export function collectLibraryChangedPublicDOM(bodies, limits) {
+  if (bodies.length !== 1) return { fragments: [], structures: [], target_name_matches: [], target_id_carriers: [],
+    flags: { viewport_valid: false, elements_truncated: true, text_truncated: true, password_visible: false, iframe_count: 0, visible_iframe_count: 0 } };
+  const body = bodies[0], elements = [], elementWalker = document.createTreeWalker(body, NodeFilter.SHOW_ELEMENT);
+  let nextElement;
+  while (elements.length < limits.viewport_elements && (nextElement = elementWalker.nextNode())) elements.push(nextElement);
+  const elementsTruncated = elementWalker.nextNode() !== null;
+  const indexes = new Map(elements.map((element, index) => [element, index]));
+  const boxVisible = box => box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth;
+  const visible = element => { const style = getComputedStyle(element); return boxVisible(element.getBoundingClientRect()) && style.display !== 'none' && style.visibility !== 'hidden'; };
+  const fragments = [], groups = new Map(), carriers = [], structures = new Map();
+  let textCount = 0, chars = 0, textTruncated = false, passwordVisible = false, iframeCount = 0, visibleIframes = 0;
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT); let textNode;
+  while ((textNode = walker.nextNode())) {
+    if (++textCount > limits.viewport_text_nodes) { textTruncated = true; break; }
+    const owner = textNode.parentElement;
+    if (!owner || owner !== body && !indexes.has(owner) || owner.closest('input, textarea, [contenteditable], [data-userid], [data-user-id], script, style, noscript, template') || !visible(owner)) continue;
+    const text = textNode.nodeValue; if (typeof text !== 'string' || !text.trim()) continue;
+    const range = document.createRange(); range.selectNodeContents(textNode); const inViewport = boxVisible(range.getBoundingClientRect()); range.detach();
+    if (!inViewport) continue;
+    if (text.length > limits.viewport_chars || chars + text.length + 1 > limits.viewport_chars) { textTruncated = true; continue; }
+    const index = indexes.get(owner) ?? null; chars += text.length + 1;
+    fragments.push({ element_index: index, leaf_owner: owner !== body && owner.childElementCount === 0, text });
+    if (index !== null) { const values = groups.get(index) ?? []; values.push(text); groups.set(index, values); }
+  }
+  const keyClass = key => ['id', 'itemid', 'item-id', 'parentid', 'parent-id'].includes(key.toLowerCase()) ? key.toLowerCase() : 'other';
+  for (const element of elements) {
+    const tag = element.tagName.toLowerCase(), index = indexes.get(element);
+    if (tag === 'input' && element.getAttribute('type')?.toLowerCase() === 'password' && visible(element)) passwordVisible = true;
+    if (tag === 'iframe') { iframeCount++; if (visible(element)) visibleIframes++; }
+    if (carriers.length >= 64) continue;
+    for (let at = 0; at < Math.min(element.attributes.length, 64); at++) { const attribute = element.attributes[at];
+      if (!attribute.name.startsWith('data-') || attribute.value !== limits.target_id) continue;
+      const name = attribute.name.toLowerCase();
+      carriers.push({ element_index: index, kind: 'data-attribute', key: ['data-id', 'data-itemid', 'data-item-id', 'data-parentid', 'data-parent-id'].includes(name) ? name : 'data-other',
+        key_name: /^data-[A-Za-z][A-Za-z0-9-]{0,58}$/.test(attribute.name) ? attribute.name : null, target_match: true });
+      if (carriers.length >= 64) break;
+    }
+    const href = element.getAttribute('href');
+    if (carriers.length < 64 && typeof href === 'string' && href.length <= 4096) try {
+      const url = new URL(href, location.href), hashQuery = url.hash.includes('?') ? url.hash.slice(url.hash.indexOf('?') + 1) : '';
+      for (const query of [url.searchParams, new URLSearchParams(hashQuery)]) for (const [key, value] of [...query].slice(0, 64))
+        if (value === limits.target_id && carriers.length < 64) carriers.push({ element_index: index, kind: 'href-query', key: keyClass(key),
+          key_name: /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(key) ? key : null, target_match: true });
+    } catch { /* Malformed public links supply no identity evidence. */ }
+  }
+  const names = [...groups].filter(([, values]) => values.join(' ').replace(/\s+/g, ' ').trim() === limits.target_name).map(([index]) => index).slice(0, 24);
+  const describe = element => {
+    const index = indexes.get(element); if (index === undefined || structures.has(index) || structures.size >= limits.structure_nodes) return;
+    const box = element.getBoundingClientRect(), tag = element.tagName.toLowerCase(), type = element.getAttribute('data-type');
+    const number = value => Number.isFinite(value) ? Math.max(-100000, Math.min(100000, Math.round(value * 10) / 10)) : null;
+    structures.set(index, { element_index: index, parent_index: indexes.get(element.parentElement) ?? null,
+      tag: /^(?:div|span|a|button|img|h[1-6]|p|section|li|ul|ol|article)$/.test(tag) ? tag : 'other',
+      classes: Array.from({ length: Math.min(element.classList.length, 24) }, (_, at) => element.classList[at])
+        .filter(value => /^(?:card|item|emby|button|text|section|list)[A-Za-z0-9_-]{0,58}$/.test(value)).slice(0, 12),
+      visible: visible(element), rect: { x: number(box.x), y: number(box.y), width: number(box.width), height: number(box.height) },
+      data_type_present: type !== null, type_matches_expected: type === 'Movie', type_casefold_matches_movie: typeof type === 'string' && type.toLowerCase() === 'movie' });
+  };
+  for (const index of [...names, ...carriers.map(value => value.element_index)]) {
+    const element = elements[index]; let parent = element;
+    for (let depth = 0; parent && depth < 4; depth++, parent = parent.parentElement) describe(parent);
+    describe(element.closest('.card, .cardBox, [role="listitem"], li'));
+    describe(element.closest('[role="list"], ul, ol, .itemsContainer'));
+  }
+  return { fragments, structures: [...structures.values()], target_name_matches: names, target_id_carriers: carriers,
+    flags: { viewport_valid: innerWidth > 0 && innerHeight > 0, elements_truncated: elementsTruncated,
+      text_truncated: textTruncated, password_visible: passwordVisible, iframe_count: iframeCount, visible_iframe_count: visibleIframes },
+    element_count: elements.length + (elementsTruncated ? 1 : 0), text_nodes_scanned: Math.min(textCount, limits.viewport_text_nodes), visible_text_chars: chars };
+}
+
+export async function observeLibraryChangedViewport(page, targetName, secrets) {
+  need(safeText(targetName, 256)); const variants = libraryChangedSecretVariants(secrets);
+  const raw = await page.locator('body').evaluateAll(collectLibraryChangedPublicDOM, { ...CHANGED_DIAGNOSTIC_LIMITS, target_id: ITEM, target_name: targetName });
+  try {
+    need(record(raw) && Array.isArray(raw.fragments) && raw.fragments.length <= CHANGED_DIAGNOSTIC_LIMITS.viewport_text_nodes &&
+      raw.fragments.every(value => record(value) && typeof value.text === 'string' && value.text.length <= CHANGED_DIAGNOSTIC_LIMITS.viewport_chars));
+    const joined = raw.fragments.map(value => value.text).join(' '), compact = raw.fragments.map(value => value.text).join('');
+    need(joined.length <= CHANGED_DIAGNOSTIC_LIMITS.viewport_chars && Array.isArray(raw.structures) && raw.structures.length <= 96 &&
+      Array.isArray(raw.target_name_matches) && raw.target_name_matches.length <= 24 && Array.isArray(raw.target_id_carriers) && raw.target_id_carriers.length <= 64);
+    const affected = new Set();
+    for (const separator of ['', ' ']) {
+      const text = separator ? joined : compact, lower = text.toLowerCase(), ranges = []; let offset = 0;
+      for (const value of raw.fragments) { ranges.push([offset, offset + value.text.length]); offset += value.text.length + separator.length; }
+      for (const variant of variants) {
+        let at = lower.indexOf(variant.toLowerCase());
+        while (at >= 0) {
+          for (let index = 0; index < ranges.length; index++) if (ranges[index][0] < at + variant.length && ranges[index][1] > at) affected.add(index);
+          at = lower.indexOf(variant.toLowerCase(), at + Math.max(1, variant.length));
+        }
+      }
+    }
+    const found = affected.size > 0;
+    const masks = new Set(); let unmaskable = false;
+    for (const value of raw.fragments) if (/\b[A-Za-z0-9][A-Za-z0-9_+/.=-]{23,}\b|\b(?:password|authorization|api[_-]?key|access[_-]?token)\b/i.test(value.text)) {
+      if (value.leaf_owner && Number.isSafeInteger(value.element_index) && value.element_index >= 0) masks.add(value.element_index); else unmaskable = true;
+    }
+    const fragments = raw.fragments.map((value, index) => ({ element_index: value.element_index,
+      text: affected.has(index) ? '[text redacted: known credential]' : sanitizeLibraryChangedText(value.text, secrets, variants) }));
+    const structures = raw.structures.map(value => ({ ...value, classes: value.classes.map(text => sanitizeLibraryChangedText(text, secrets, variants)) }));
+    const carriers = raw.target_id_carriers.map(value => ({ ...value, key_name: typeof value.key_name === 'string'
+      ? sanitizeLibraryChangedText(value.key_name, secrets, variants) : '[redacted-key]' }));
+    const result = { fragments, structures, target_name_matches: raw.target_name_matches, target_id_carriers: carriers,
+      flags: { ...raw.flags, known_secret_found: found, unmaskable_text: unmaskable, mask_limit_exceeded: masks.size > CHANGED_DIAGNOSTIC_LIMITS.masks,
+        masked_text_nodes: masks.size }, element_count: raw.element_count, text_nodes_scanned: raw.text_nodes_scanned, visible_text_chars: raw.visible_text_chars };
+    return { public: result, mask_indices: [...masks], stability: canonical({ structures, fragments, masks: [...masks], count: raw.element_count }) };
+  } finally { for (const value of raw.fragments ?? []) value.text = null; }
+}
+
+export async function captureLibraryChangedFailureScreenshot(actor, login, secrets, publish = publishLibraryChangedScreenshot, observe = observeLibraryChangedViewport) {
+  let flags = { login_proven: false, pre_post_stable: false, viewport_valid: null, password_visible: null,
+    iframe_count: null, visible_iframe_count: null, known_secret_found: null, elements_truncated: null,
+    text_truncated: null, unmaskable_text: null, mask_limit_exceeded: null, masked_text_nodes: 0 };
+  const omitted = reason => ({ status: 'omitted', reason, flags, artifact: null });
   if (!actor?.proven || !actor.page || !login?.bound || typeof actor.token !== 'string' || sha(actor.token) !== login.bound.token_sha256)
     return omitted('login_not_proven');
+  flags.login_proven = true;
   let bytes;
   try {
-    need(Array.isArray(secrets) && secrets.length <= 128 && secrets.every(value => value === null || typeof value === 'string' && value.length <= 4096));
-    const variants = secrets.filter(Boolean).flatMap(value => [value, encodeURIComponent(value), Buffer.from(value).toString('base64'), Buffer.from(value).toString('hex')]);
     const route = libraryChangedRoute(actor.page.url()), documentID = actor.libraryChangedDocumentID;
-    const safe = async () => {
-      const observation = await actor.page.locator('body').evaluateAll(bodies => {
-        if (bodies.length !== 1) return { visible_text: null, password_visible: true, embedded_content: true, viewport_valid: false };
-        const visible = element => { const box = element.getBoundingClientRect(), style = getComputedStyle(element);
-          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth &&
-            style.display !== 'none' && style.visibility !== 'hidden'; };
-        const passwords = [...document.querySelectorAll('input[type="password"]')], text = bodies[0].innerText;
-        return { visible_text: typeof text === 'string' && text.length <= 65536 ? text : null,
-          password_visible: passwords.length > 32 || passwords.some(visible), embedded_content: document.querySelectorAll('iframe').length > 0,
-          viewport_valid: innerWidth > 0 && innerHeight > 0 };
-      });
-      try {
-        if (!record(observation) || observation.password_visible !== false || observation.embedded_content !== false ||
-          observation.viewport_valid !== true || typeof observation.visible_text !== 'string' || observation.visible_text.length > 65536) return false;
-        const text = observation.visible_text;
-        if (/\b(?:api[_-]?key|access[_-]?token|authorization|password|token|credential|csrf|secret)\b/i.test(text) ||
-          /\b[A-Za-z0-9][A-Za-z0-9_+/.=-]{23,}\b/.test(text)) return false;
-        const lower = text.toLowerCase();
-        return !variants.some(value => value && lower.includes(value.toLowerCase()));
-      } finally { if (record(observation)) observation.visible_text = null; }
-    };
-    if (!await bounded(safe(), CHANGED_DIAGNOSTIC_LIMITS.capture_ms)) return omitted('visible_content_not_safe');
-    const mask = [actor.page.locator('input, textarea, [contenteditable], [data-userid], [data-user-id]'),
-      actor.page.getByText('m3e-client-viewer', { exact: true })];
+    const before = await bounded(observe(actor.page, actor.libraryChangedTargetName, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms);
+    flags = { ...flags, ...before.public.flags };
+    const rejection = value => !value.viewport_valid ? 'viewport_unavailable' : value.known_secret_found ? 'known_credential_visible'
+      : value.elements_truncated || value.text_truncated ? 'viewport_scan_incomplete'
+        : value.unmaskable_text ? 'text_mask_unavailable' : value.mask_limit_exceeded ? 'text_mask_limit' : null;
+    const reason = rejection(flags); if (reason) return omitted(reason);
+    const mask = [actor.page.locator('input, textarea, [contenteditable], [data-userid], [data-user-id], iframe'),
+      actor.page.getByText('m3e-client-viewer', { exact: true }), ...before.mask_indices.map(index => actor.page.locator('body *').nth(index))];
     bytes = await bounded(actor.page.screenshot({ type: 'png', fullPage: false, timeout: 2000, mask }), CHANGED_DIAGNOSTIC_LIMITS.capture_ms);
-    if (libraryChangedRoute(actor.page.url()) !== route || actor.libraryChangedDocumentID !== documentID ||
-      !await bounded(safe(), CHANGED_DIAGNOSTIC_LIMITS.capture_ms)) return omitted('visible_content_changed');
+    const after = await bounded(observe(actor.page, actor.libraryChangedTargetName, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms);
+    flags = { ...flags, ...after.public.flags, pre_post_stable: libraryChangedRoute(actor.page.url()) === route &&
+      actor.libraryChangedDocumentID === documentID && before.stability === after.stability };
+    if (rejection(flags)) return omitted(rejection(flags));
+    if (!flags.pre_post_stable) return omitted('visible_content_changed');
     if (!Buffer.isBuffer(bytes) || bytes.length > CHANGED_DIAGNOSTIC_LIMITS.screenshot_bytes) return omitted('screenshot_size_limit');
     const artifact = await bounded(publish(bytes), CHANGED_DIAGNOSTIC_LIMITS.publish_ms);
-    return { status: 'saved', reason: null, artifact };
+    return { status: 'saved', reason: null, flags, artifact };
   } catch { return omitted('screenshot_unavailable'); }
   finally { bytes?.fill(0); }
 }
@@ -1067,13 +1235,15 @@ export class LibraryChangedWorkflow {
     if (values.dom !== undefined) {
       previous.dom = clone(values.dom);
       if (previous.dom?.selector?.card_class) previous.dom.selector.card_class =
-        sanitizeBrowserMessage(previous.dom.selector.card_class, this.actor.diagnosticSecrets?.() ?? []);
+        sanitizeLibraryChangedText(previous.dom.selector.card_class, this.actor.diagnosticSecrets?.() ?? [],
+          libraryChangedSecretVariants(this.actor.diagnosticSecrets?.() ?? []));
     }
     if (values.before_route !== undefined) previous.navigation.before_route = values.before_route;
     if (values.before_sequence !== undefined) previous.navigation.before_sequence = values.before_sequence;
     try { previous.navigation.current_route = libraryChangedRoute(this.actor.page.url()); } catch { /* Keep the last safe route. */ }
     previous.catalog.physical = clone(this.observer.physical.slice(0, CHANGED_LIMITS.catalog_total));
     previous.catalog.frames = clone(this.observer.frames.slice(0, CHANGED_LIMITS.catalog_total * 2));
+    previous.catalog.response_diagnostics = clone((this.observer.responseDiagnostics ?? []).slice(0, CHANGED_LIMITS.catalog_total));
     try { previous.catalog.pairs = pairLibraryChangedReads(previous.catalog.physical, previous.catalog.frames).map(pair => ({
       frame_request_index: pair.frame.index, physical_exchange_id: pair.physical?.id ?? null,
       unambiguous: pair.unambiguous, complete: pair.complete })); }
@@ -1083,23 +1253,27 @@ export class LibraryChangedWorkflow {
     if (this.failureDiagnosticsAttempted) return;
     this.failureDiagnosticsAttempted = true;
     const candidates = dependencies.candidates ?? observeLibraryChangedCandidates;
+    const viewport = dependencies.viewport ?? observeLibraryChangedViewport;
     const screenshot = dependencies.screenshot ?? captureLibraryChangedFailureScreenshot;
     const publish = dependencies.publish ?? this.publish;
     const result = { discovery_failure: null, screenshot: null, status: 'unavailable', reason: null };
     this.report.diagnostics = result;
     try {
       this.retainDiscovery();
-      let targetCandidates = null, candidatesReason = null;
+      let targetCandidates = null, candidatesReason = null, publicViewport = null, viewportReason = null;
       try { targetCandidates = await bounded(candidates(this.actor.page, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms); }
       catch { candidatesReason = 'target_candidates_unavailable'; }
+      try { publicViewport = (await bounded(viewport(this.actor.page, this.input.target.name, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms)).public; }
+      catch { viewportReason = 'viewport_diagnostic_unavailable'; }
       const capture = await bounded(screenshot(this.actor, this.observer.login, secrets), CHANGED_DIAGNOSTIC_LIMITS.capture_ms * 4 + CHANGED_DIAGNOSTIC_LIMITS.publish_ms)
         .catch(() => ({ status: 'omitted', reason: 'screenshot_unavailable', artifact: null }));
       result.screenshot = capture.artifact;
       const value = { marker: 'goby-client-library-changed-discovery-failure-v1', version: 1,
         phase: 'discovery', failure: /^library_changed_[a-z_]+$/.test(failure) ? failure : 'library_changed_discovery_failed',
-        last: clone(this.lastDiscovery), target_candidates: targetCandidates, candidates_reason: candidatesReason, screenshot: capture };
+        last: clone(this.lastDiscovery), target_candidates: targetCandidates, candidates_reason: candidatesReason,
+        viewport: publicViewport, viewport_reason: viewportReason, screenshot: capture };
       const encoded = encodeLibraryChangedRecord(value), size = encoded.length;
-      try { need(size <= CHANGED_LIMITS.record_bytes && secrets.every(secret => !secret || !encoded.includes(Buffer.from(secret)))); }
+      try { need(size <= CHANGED_LIMITS.record_bytes && !knownDiagnosticSecret(encoded.toString('utf8'), libraryChangedSecretVariants(secrets))); }
       finally { encoded.fill(0); }
       const artifact = await bounded(publish(OUTPUT + '/discovery-failure.json', value), CHANGED_DIAGNOSTIC_LIMITS.publish_ms);
       result.discovery_failure = { ...artifact, bytes: size }; result.status = 'saved';
@@ -1281,7 +1455,7 @@ export async function runLibraryChanged(options) {
     setupPhase = 'source_closure'; need(Object.hasOwn(input.source_closure, SELF));
     for (const [filename, hash] of Object.entries(input.source_closure)) await checkedHomeFile(filename, hash, 2 * 1024 * 1024, false, false);
     setupPhase = 'baseline';
-    const current = await readLibraryChangedSnapshot(input, 'prior_after_snapshot');
+    const current = await readLibraryChangedSnapshot(input, 'history_after_snapshot');
     const before = await readLibraryChangedSnapshot(input, 'before_snapshot');
     baseline = validateLibraryChangedBaseline(input, before, current);
     need(Date.now() >= instant(before.database.metadata.captured_at) && Date.now() - instant(before.database.metadata.captured_at) <= 180000);
@@ -1325,6 +1499,7 @@ export async function runLibraryChanged(options) {
     need(same(await libraryChangedProcessIdentity(input), node)); await fixture.assertPinned();
   };
   actor = createLibraryChangedSource55BrowserActor({ account, pin, report: report.actor, observer: observer.hooks() }); observer.setActor(actor);
+  actor.libraryChangedTargetName = input.target.name;
   actor.diagnosticSecrets = () => secrets;
   actor.rememberSecret = value => { if (!secrets.includes(value)) secrets.push(value); };
   actor.authorizeSocket = async () => {
@@ -1342,6 +1517,10 @@ export async function runLibraryChanged(options) {
     await flow.abort(reason);
   } finally {
     try {
+      if (flow.phase === 'discovery' && !flow.failureDiagnosticsAttempted) {
+        try { await flow.captureFailureDiagnostics('library_changed_discovery_failed', secrets); }
+        catch { report.diagnostics = { status: 'unavailable', reason: 'failure_diagnostic_unavailable', discovery_failure: null, screenshot: null }; }
+      }
       login.phase = 'cleanup'; observer.phase = 'cleanup'; observer.window = null; flow.disposed = true;
       try { await bounded(actor.close(), CHANGED_LIMITS.cleanup_ms, 'library_changed_cleanup_timeout'); }
       catch { report.failure ??= 'library_changed_browser_close_failed'; }

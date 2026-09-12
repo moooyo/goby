@@ -1,0 +1,20 @@
+{
+  "exit_code": 0,
+  "name": "controller",
+  "report": {
+    "errors": 0,
+    "failures": 0,
+    "guard_sha256": "2b5d00af4c87764b1cc8d16fb6a250285bda051ee43589e931c2cc6ac7654c27",
+    "operator_sha256": "9fcfc06b6c9e2922064849db65e4a13c05b2b3f13835cf7b28e9a6b3a78a953b",
+    "skips": 0,
+    "status": "passed",
+    "suite": "client-library-changed-source55-controller-guards",
+    "test_count": 67
+  },
+  "sources": {
+    "observe-client-library-changed-source55.py": "9fcfc06b6c9e2922064849db65e4a13c05b2b3f13835cf7b28e9a6b3a78a953b",
+    "test-observe-client-library-changed-source55.py": "2b5d00af4c87764b1cc8d16fb6a250285bda051ee43589e931c2cc6ac7654c27"
+  },
+  "stderr_sha256": "5179d60409eb4caf132c0e1e5f514fdfa5dc487441105c0512d118c12385d4c8",
+  "stdout_sha256": "2f9ad3d366bce77bbdfad86a0493c6485e195ebb8a89bcefa537498934d70f0c"
+}
