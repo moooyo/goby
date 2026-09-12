@@ -1,6 +1,15 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T19:25:04+00:00`. Reference baseline observer02 completed all 34 requests and passed independent attestation. The complete baseline is usable for a fresh preparation; no matrix fixture is released. All actual observer and recovery processes are closed. SSH and Git publication are available.
+Execution state checkpoint: `2026-09-12T19:38:45+00:00`. Actual preparation03 created two owned libraries, two ordinary accounts and six media copies, then stopped at P's own-token Views gate after 107 requests. All acknowledged sessions are independently confirmed closed, its process has exited, and all 132 historical roots and the full Goby state are preserved. Complete public-snapshot reconstruction and the final failed-scope seal remain pending. SSH is restored; no matrix fixture is released.
+
+The [preparation03 record](nextup-global-reference-preparation-03.md) records
+64 normal and 43 cleanup requests, with zero playback calibrations. P's profile
+acknowledges folder grants `101` and `103`, but its actual Views response is an
+empty Items array. The failure is a real visibility mismatch, not a pagination
+count error. The correct original-server grant identity remains unresolved;
+native roots `102` and `104` are not yet proven valid alternatives. The retained
+accounts and libraries mean the historical observer02 baseline below cannot be
+reused as a current six-user/eight-library baseline for another preparation.
 
 The [accepted observer02](nextup-global-baseline-observer-02.md) used frozen
 TOOL04 source `5436668b824c3432fe52b6f250faea6626f4fa6dc13fc33955fa152337487228`.
@@ -40,14 +49,14 @@ published as `c2291d9`; the preparation repair and actual failed-run evidence
 were published as `00bd1c5`. The operator now checks all 16 media files and nine
 required directories and excludes read-only authority from writable parents.
 
-Next: use the accepted observer02 baseline and closure for a new preparation03
-input, plan and admission under TOOL06. Preserve all consumed roots and check
-the completed prior units. Freeze a dedicated future matrix evidence parent
-such as `/opt/goby-test/exec-work-m3e/nextup-global-reference-runs-03`, with
-`matrix-03` and `operator-03` as separate children and attestation outside that
-writable parent. Do not grant the whole fixture root or `/` as ReadWritePaths.
-This layout must be set before the preparation draft is produced. Actual new
-preparation, four calibrations, reference matrix and client playback remain open.
+Next: independently reconstruct preparation03's before/cleanup public snapshots
+and seal the consumed failed scope. Investigate the original public folder-grant
+contract from retained owned evidence before any new bounded live observation.
+Do not replay preparation03, silently substitute native root IDs, or launch a
+new preparation against the stale six-user/eight-library baseline. Four playback
+calibrations, usable matrix inputs, the reference matrix, actual client playback
+and the positive automatic-refresh gate remain open. The dedicated future
+matrix parent remains empty; no matrix or operator unit has been dispatched.
 
 The reference v4 and Goby v7 automatic-refresh observations remain negative;
 normalized public payload equality establishes no Goby-specific defect. The

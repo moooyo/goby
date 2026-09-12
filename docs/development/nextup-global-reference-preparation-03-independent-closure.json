@@ -1,0 +1,77 @@
+{
+  "QLoginDispatched": false,
+  "actualClientAcceptance": false,
+  "all107WireResponsesComplete": true,
+  "allKnownTokensClosed": true,
+  "authenticationClosures": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-03/known-authentication-closures.json",
+    "sha256": "b896a31480f7d8eea4732ddd5d7634306708bb8e7bb054a137525cda0b5b25c9"
+  },
+  "businessHttpByAudit": 0,
+  "calibrationsCompleted": 0,
+  "capturedAt": "2026-09-12T19:38:26.654906+00:00",
+  "cleanupRequestCount": 43,
+  "closedActors": [
+    "P",
+    "admin"
+  ],
+  "completePublicSnapshotReconstructionPending": true,
+  "fullFailedScopeSealPending": true,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "gobyPreserved": true,
+  "kind": "nextup-global-failed-preparation-closure-audit",
+  "matrixInputsUsable": false,
+  "normalRequestCount": 64,
+  "old132RootsPreserved": true,
+  "originalImplementationBytesRead": false,
+  "originalPidAbsent": true,
+  "playbackRequests": 0,
+  "preservationAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-03/preservation-after.json",
+    "sha256": "029a0a3da689bf776f6935c2bff79d7d2e0259f4365725ea38d86af6aabd938a"
+  },
+  "preservationBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-03/preservation-before.json",
+    "sha256": "e16d97b633d5da7a8a6571fc71b05e2994253778d6b8e77410bb0770604fa228"
+  },
+  "producerTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-03/private/terminal.json",
+    "sha256": "b6775e4dba0c0cabd780e3f9d3bad15bdef12e084467d7e32f7801194bf2c065"
+  },
+  "recursiveCgroupEmpty": true,
+  "referenceDatabaseRead": false,
+  "requestCount": 107,
+  "retainedOwnedAccounts": 2,
+  "retainedOwnedLibraries": 2,
+  "runId": "nextup-global-reference-20260913-03",
+  "schemaVersion": 1,
+  "state": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-03/private/state.json",
+    "sha256": "8638504b6aa59c897b54e7bd130b1654e71bc76d6f54274a4672c416d8ae5aed"
+  },
+  "status": "known_sessions_closed_independently_confirmed",
+  "unit": {
+    "name": "goby-nextup-global-reference-preparation-03.service",
+    "properties": {
+      "ActiveState": "failed",
+      "ControlGroup": "",
+      "ExecMainPID": "1508049",
+      "ExecMainStatus": "2",
+      "ExecStart": "{ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 -I -B /opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-06/prepare-nextup-global-reference.py prepare --manifest /opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-03/input.json --manifest-sha256 b8c9c03d6571a759b8e7d0a61d1751f0c43114a8b61cdd30c4b7009973300b1e --plan-sha256 a76e81d0f8e66c6ab651097aca4cb3f6ce1f984b1ef6b45d79ea9ae2fd715ef5 ; ignore_errors=no ; start_time=[Sun 2026-09-13 03:36:01 CST] ; stop_time=[Sun 2026-09-13 03:36:10 CST] ; pid=1508049 ; code=exited ; status=2 }",
+      "InvocationID": "f7050bfe84fc410e814aa86f498a428a",
+      "MainPID": "0",
+      "RemainAfterExit": "yes",
+      "Result": "exit-code",
+      "SubState": "failed",
+      "Type": "oneshot"
+    }
+  },
+  "wireIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-03/wire-index.json",
+    "sha256": "e2e21bb6ffd76a3e5076924da25c9476bfc11688748c247ac3128a54d5dd3cc5"
+  }
+}
