@@ -1,5 +1,8 @@
 # Implementation progress
 
+Execution state checkpoint: 2026-09-12 13:35 UTC. Restored SSH authentication
+has been confirmed by a fresh `ssh test-env` connection.
+
 Current verification boundary: **source55 passed 2,173 full-suite tests across
 25 packages, zero failures/skips, the Linux build and six cleanup checks. Its
 98 product-file changes are committed and pushed to `origin/main`, and the
@@ -14,12 +17,15 @@ binds 4,243 files to manifest
 The preceding source54 full verification checkpoint passed 2,173 tests across
 25 packages, the Linux build, six cleanup checks and actual private-mount
 recovery. Schema28 and the scanner are now published and deployed to the candidate.
-The latest original-client v5 run failed on a tool enumeration assumption:
-three geometrically visible `itemsContainer` elements prevented the collector
-from enumerating the visibly present unique target card. V1-v5 are independently
-sealed and consumed. V6 is correcting card/container ownership
-and adding a real-browser regression over owned HTML. LibraryChanged acceptance
-remains open, with no native edit performed in v5.
+The latest original-client v6 run passed real Movies discovery with three
+visible containers, one owning container, one card and one title button bound
+to the correct Movie wire response. The tool then rejected a valid `+08:00`
+native-login `CreatedAt` as non-UTC. No rename or metadata request ran, and
+LibraryChanged remains false. V1-v6 are independently sealed. V7's narrow public
+timestamp comparison and two-session history binding are in development,
+without freeze, remote verification or an actual run.
+The main preparation has expired and requires a fresh scope/input/prepare.
+Full M2-M6 remain open; M7 remains deferred.
 The final real management UI gate is accepted and all four preceding failed
 scopes have independent ordinary disposal evidence. The
 [source55 targeted result](collection-folder-source55-target.json), SHA-256
@@ -69,6 +75,10 @@ V5's eight frozen tools and nine safe records followed in the 17-file commit
 verified 05b version; production controller/runtime bytes and the original failed
 TOOL05 guard are preserved. This excludes the independent v5 terminal and does
 not change product authority or establish client acceptance.
+The final 06b nine-source tool set and 16 safe records were then published as
+`a4c4ab8e9b68be87d9e5e505dcc6de64e79f7651` (25 files), retaining initial TOOL06
+failures, successful 06b prerequisites, actual v6 and native identity evidence.
+V7 working files were not overwritten; product authority remains `16d75c3...`.
 The final candidate upgrade passed
 TOOL05 run `20260912_100845_47bff13c329b`. Its
 [controller report](client-schema28-accepted.json), SHA-256
@@ -89,15 +99,16 @@ runtime SHA-256 is
 Accepted upgrade authority is
 `/opt/goby-test/exec-work-m3e/client-schema28-source55-upgrade-20260912_100845_47bff13c329b/after-full.json`,
 SHA-256 `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d`.
-The upgrade preserved 75 sessions/64 devices/167 audits. V2-v5 each added
-one closed session, one device and two audits, giving current counts of
-**79 sessions/68 devices/175 audits**. The actual v5 private
-`/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v5/after-full.json`
-has SHA-256 `a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6`.
+The upgrade preserved 75 sessions/64 devices/167 audits. V2-v5 each added one
+closed session, one device and two audits; v6 added two closed sessions, one
+device and four audits. Current counts are **81 sessions/69 devices/179 audits**,
+with no metadata revision change. The actual v6 private
+`/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json`
+has SHA-256 `185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3`.
 The current independent snapshot is
-`/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/independent-after-full.json`,
-SHA-256 `6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5`.
-Only `captured_at` differs from the actual v5 after-state. V3 independent snapshot
+`/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/independent-after-full.json`,
+SHA-256 `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93`.
+Only `captured_at` differs from the actual v6 after-state. V3 independent snapshot
 `668975cd51c66888fb363ba273fe15dec70646d87e9549adf0fbe79c20b4f3f0` is retained
 as predecessor evidence, not current state. `7b61f5c9...` is upgrade
 authority, not the current database snapshot with zero session/device/audit delta. The old `2659...`
@@ -295,14 +306,45 @@ state remain preserved, with no additional cleanup needed. Inventory SHA-256 is
 `190b6ea5aaad2d4cb7ab8184623b5abfd42dc5493a6c640e5de4836399ae3970`.
 V1-v5 are independently sealed and consumed; no LibraryChanged acceptance is claimed.
 
-V6 will bind the complete sealed v5 terminal, ledger and current independent
-snapshot, and retain total container counts while enumerating all truly visible cards
-and their closest owning containers, requiring exactly one card and one
-card-owning container. Empty containers will be allowed; extra cards and duplicate
-titles remain invalid. Complete wire/MessageId proof is retained. A real-browser
-regression over owned HTML with three containers, two empty and one target,
-is being added without reference implementation or network access. Verification
-and a fresh LibraryChanged run remain open.
+V6 corrected enumeration while retaining complete wire/MessageId proof. Initial
+TOOL06 [pure-guard failure](client-library-changed-source55-tool06-guards-failed.json),
+[DOM failure](client-library-changed-source55-tool06-dom-failed.json),
+[failed DOM terminal](client-library-changed-source55-tool06-dom-failed-terminal.json)
+and [diagnosis](client-library-changed-source55-tool06-diagnosis.json) remain intact.
+Separate 06b tools passed [877 guards](client-library-changed-source55-v6-guards.json):
+127 actor/66 driver/605 loader/79 controller. All
+[13 real-browser owned-HTML DOM cases](client-library-changed-source55-v6-dom.json)
+and the [independent DOM terminal](client-library-changed-source55-v6-dom-terminal.json)
+passed without reference implementation or network access; so did
+[preflight](client-library-changed-source55-v6-preflight.json) and
+[real-document checks](client-library-changed-source55-v6-setup-diagnosis.json).
+
+The [actual v6 run](client-library-changed-source55-v6.json),
+[bound input](client-library-changed-source55-v6-input.json) and
+[browser report](client-library-changed-source55-v6-browser.json) establish
+[real discovery success](client-library-changed-source55-v6-discovery.json):
+three visible containers, one owning container, one card and one title button,
+with correct complete Movie wire identity. The native login then hit the
+tool error `A timestamp is not UTC.` The
+[preserved-fact diagnosis](client-library-changed-source55-v6-time-diagnosis.json)
+shows public `CreatedAt` `2026-09-11T06:42:57.432877+08:00` and stored
+`2026-09-10T22:42:57.432877+00:00` represent the same instant. The format is
+valid; the tool's strict UTC requirement was wrong for that public field.
+No rename or metadata request ran, and both LibraryChanged windows remain untested.
+The [independent terminal](client-library-changed-source55-v6-terminal.json),
+SHA-256 `7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d`,
+seals +2 sessions/+1 device/+4 audits/revision delta0, both sessions closed and
+old rows/sequences/private state preserved. Cleanup is
+`owned_sessions_already_closed`, with no further cleanup needed. V1-v6 are
+sealed and consumed, without LibraryChanged acceptance.
+
+V7 is being implemented to compare public `CreatedAt` by instant, accepting
+equivalent RFC3339 offsets without relaxing generic UTC or `LastEditedAt` rules.
+Its H6 history binding must preserve the complete two-session failure. The
+[read-only native-identity preparation](client-library-changed-source55-v6-native-identity.json)
+rechecks identity, two administrator audits, login200/validationfalse,
+logout204/exact401 from sealed material with no new HTTP, SQL or service mutation.
+That prepares historical inputs; v7 is not frozen, remotely verified or executed.
 The reviewed [main schema28 upgrade plan](main-schema28-upgrade-plan.md) is
 published as `933257c913cd36a57c26c72bb324f73b57441ecd`. The two Go helper source
 files, plan and four safe reports were then pushed as
@@ -358,13 +400,19 @@ failed preparation remain preserved. There were zero business SQL, HBA or
 service writes. The input retains null `main_baseline` and `client_gate`,
 `client_gate_checked` is false, and no deployment output exists.
 
-The input deadline is `2026-09-12T13:17:42Z`, with at least 900 seconds remaining
-required. Expiry requires a fresh scope/input; do not extend or rewrite the old
-input. Await a successful Movies and LibraryChanged independent terminal before
+This successful preparation is historical evidence: its deadline
+`2026-09-12T13:17:42Z` has expired, and the required 900-second remaining-time
+margin cannot be met. A fresh scope, input and read-only preparation are
+mandatory; do not extend or rewrite the expired input. Await a successful
+Movies and LibraryChanged independent terminal before
 fresh checks, backup/restore rehearsal, one main upgrade and attestation. This
 is read-only preparation success; main remains source32/schema27 and neither
-the client gate nor main deployment has passed. V5 failed before native edits;
-the corrected v6 collector and its real-browser regression are still in development.
+the client gate nor main deployment has passed. V6 passed discovery but failed
+native-login timestamp validation before any metadata request; v7 is in development.
+The [GPU capability inventory](m4-gpu-test-env-capabilities.md), published as
+`8604901`, records no usable GPU exposed on `test-env`. Compiled FFmpeg hardware
+interfaces are not execution evidence. No suitable remote GPU environment has
+yet been supplied; actual hardware decode and encode remain outstanding.
 
 The [actual mount v2 report](storage-binding-scan-mount-v2.json) and
 [terminal](storage-binding-scan-mount-v2-terminal.json) establish original
@@ -495,7 +543,7 @@ HTTP tests and the full regression/build passed; both product increments are
 published and deployed to the candidate.
 The reference capture used only its existing public proxy; it makes
 no reference-database preservation or complete original-browser-profile
-equivalence claim. V6 enumeration and change-window verification, other DTO
+equivalence claim. V7 public-time/history binding and change-window verification, other DTO
 differences and original-client navigation / automatic-refresh acceptance remain open.
 
 The following records describe earlier verification and deployment checkpoints.
@@ -1131,7 +1179,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v5 collector failure is independently sealed; main read-only preparation passed | Candidate remains PID1458051; primary stays source32/schema27. V1-v5 are sealed. V5's three visible containers triggered a tool precondition that skipped card enumeration despite the visibly present unique Movie and complete correct wire response. Its [terminal](client-library-changed-source55-v5-terminal.json) seals +1 session/+1 device/+2 audits/revision delta0 and preservation; current counts are 79/68/175 at independent snapshot `6724f398...`. No native edit or LibraryChanged acceptance occurred. Bind v6 to the complete v5 terminal/ledger/snapshot, then verify one-card/one-owning-container proof and a real-browser owned-HTML regression while retaining full wire/MessageId binding. V6 is not yet frozen or verified. Main TOOL02's [second read-only preparation](main-schema28-prepare-passed.json) passed with private baseline `4390cd27...` and zero business SQL/HBA/service writes; client gate remains unchecked and deployment output absent. Await successful Movies/LibraryChanged independent acceptance, then fresh checks, backup/restore rehearsal, one upgrade and attestation. Deadline `2026-09-12T13:17:42Z` requires at least 900 seconds remaining; expiry needs a fresh scope/input. Full M3 and broader M2-M6 remain open |
+| M3e real-client acceptance | In progress; source55/schema28 candidate accepted; v6 real discovery passed, subsequent tool timestamp failure is independently sealed | Candidate remains PID1458051; primary stays source32/schema27. V6 passed 877 guards/13 owned-HTML browser cases and real Movies discovery, then rejected valid native `CreatedAt` `+08:00` as non-UTC before any rename/metadata request. Its [terminal](client-library-changed-source55-v6-terminal.json) seals +2 sessions/+1 device/+4 audits/revision delta0 with both sessions closed; current counts are 81/69/179 at `b5d792af...`. V1-v6 are sealed. V7's public-time instant comparison and complete two-session H6 binding remain unfrozen/unverified/unexecuted; generic UTC/LastEditedAt rules remain strict. LibraryChanged remains false. Main read-only preparation passed historically but expired at `2026-09-12T13:17:42Z`; a fresh scope/input/prepare is mandatory before later fresh checks, backup/restore rehearsal, one upgrade and attestation after client acceptance. No main deployment occurred. Full M3 and broader M2-M6 remain open |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |
@@ -1139,7 +1187,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | M2b metadata and artwork | Local NFO, entities, and local artwork increments complete | Pushed NFO increment `6011377`; persistent entity navigation/filtering and bounded image delivery pass full Linux race tests and deployed checks; [NFO verification](verification-m2b-nfo.md), [artwork/entity verification](verification-m2b-artwork-entities.md). Generated/embedded artwork, broader metadata/query coverage and reconciliation remain |
 | Startup and migration time budgets | Complete | Configurable `GOBY_STARTUP_TIMEOUT`, migration-local SQL timeout override, cancellation and connection-setting restoration verified; [verification](verification-startup-timeouts.md) |
 | M3 initial client playback | Original playback/state, client sessions/NextUp, external SRT/WebVTT, and user-state events/remote-control increments complete; milestone incomplete | Full Linux race tests and deployed workflows passed; [M3a](verification-m3a-original-playback.md), [M3b](verification-m3b-sessions-nextup.md), [M3c](verification-m3c-subtitles.md), [M3d](verification-m3d-events.md). Additional events/subscriptions, broader subtitle handling, global NextUp parity and real-client acceptance remain |
-| M4 conversion and hardware pipeline | Engine, HLS VOD, progressive audio/video, ordered profiles and verified video restart increments complete; milestone incomplete | [M4a](verification-m4a-engine.md), [M4b](verification-m4b-hls.md), [M4c](verification-m4c-audio.md), [M4d](verification-m4d-audio-profiles.md) and [M4e](verification-m4e-video-and-users.md) establish the preceding conversion and clock behavior. [M4f](verification-m4f-video-seek.md) adds probe 6 private restart evidence, software-decoder proof with actual threads, and independent linear audio. All 940 top-level race tests and five deployed library upgrades passed with real fast producer observation. [M4g](verification-m4g-media-refresh.md) adds explicit media re-probing, schema-15 task modes, real same-version index reconstruction and five deployed forced scans; all 969 top-level race tests pass. Nonzero copied-video seeking, efficient audio I/O, additional tracks/formats, aggregate resource isolation, actual GPU execution and full client acceptance remain |
+| M4 conversion and hardware pipeline | Engine, HLS VOD, progressive audio/video, ordered profiles and verified video restart increments complete; milestone incomplete | [M4a](verification-m4a-engine.md), [M4b](verification-m4b-hls.md), [M4c](verification-m4c-audio.md), [M4d](verification-m4d-audio-profiles.md) and [M4e](verification-m4e-video-and-users.md) establish the preceding conversion and clock behavior. [M4f](verification-m4f-video-seek.md) adds probe 6 private restart evidence, software-decoder proof with actual threads, and independent linear audio. All 940 top-level race tests and five deployed library upgrades passed with real fast producer observation. [M4g](verification-m4g-media-refresh.md) adds explicit media re-probing, schema-15 task modes, real same-version index reconstruction and five deployed forced scans; all 969 top-level race tests pass. Nonzero copied-video seeking, efficient audio I/O, additional tracks/formats, aggregate resource isolation, actual GPU execution and full client acceptance remain. The [published GPU inventory](m4-gpu-test-env-capabilities.md) confirms no usable exposed device on `test-env`; a GPU-capable remote environment is still required |
 | M5 administrator completion | User, metadata, login-session, application-key, device, scheduled-task, native settings, bounded configuration compatibility, activity/log, and native backup/recovery increments complete; milestone incomplete | [M5a](verification-m4e-video-and-users.md), [M5b](verification-m5b-metadata.md), [M5c](verification-m5c-sessions.md), [M5d](verification-m5d-application-keys.md), [M5e](verification-m5e-devices.md), [M5f](verification-m5f-tasks.md), and [M5g](verification-m5g-settings.md) retain prior acceptance. [M5h](verification-m5h-configuration.md) passes its complete configuration acceptance. [M5i activity/log acceptance](observability.md) adds 1380 race tests, real browser/restarts, protected schema-22 deployment, and the main-service workflow. Additional task executors, full policies, providers, broader configuration fields/sections, and broader wire/client parity remain |
 | M5f scheduled tasks | Initial library executor and scheduling increment complete | [Verification](verification-m5f-tasks.md): 1190 full-race tests, isolated browser acceptance with two restarts, schema-19 deployment, and a successful main-service run/replay/schedule workflow. Eight [native task routes](../api/tasks.md) and six compatibility operations use durable receipts, owned children, typed schedules and recovery. [Reference read](../research/scheduled-tasks-reference.md) and [mutation](../research/scheduled-tasks-mutation-reference.md) studies retain their narrower evidence; timer/reference parity, more executors, and complete client acceptance remain broader work |
 | M5g native settings | Native increment complete | [Verification](verification-m5g-settings.md): 1222 full-race tests across fourteen packages, browser with two exact 28-table restarts, protected schema-20 deployment, and first-pass settings/restore workflow on the main service. Its three native routes managed five nullable overrides with CAS and atomic publication. The later M5h increment adds the bounded adapter; the [read](../research/configuration-reference.md) and [fresh mutation](../research/configuration-mutation-reference.md) studies retain their historical scope |

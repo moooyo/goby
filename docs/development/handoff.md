@@ -1,17 +1,23 @@
 # Development handoff
 
+Execution state checkpoint: 2026-09-12 13:35 UTC. SSH authentication has been
+restored and a fresh `ssh test-env` connection succeeded.
+
 Current verified and published source: **source55 passed 2,173 full-suite tests
 across 25 packages, zero failures/skips, the Linux build and all six cleanup
 checks. Its 98 product-file changes are committed and pushed to `origin/main`,
 and the candidate now runs source55/schema28 after a successful independently
 attested upgrade. The primary remains source32/schema27.** The real storage-binding management UI gate also
 passed its fifth run with all 15 checks, ten IPC stages and complete cleanup.
-The latest source55 original-client v5 run failed on another tool assumption:
-the collector only enumerated cards when exactly one visible `itemsContainer`
-existed. It observed three containers and incorrectly recorded zero cards,
-although the unique target card was visibly present. V1-v5 are independently
-sealed and consumed. V6 is correcting container/card enumeration
-with a real-browser regression over owned HTML. LibraryChanged acceptance is open.
+The latest source55 original-client v6 run passed real Movies discovery: three
+visible containers, one owning container, one card and one title button matched
+the correct Movie wire response. The tool then rejected a valid `+08:00`
+native-login `CreatedAt` value as non-UTC. No rename or metadata request ran.
+V1-v6 are independently sealed and consumed; LibraryChanged acceptance remains
+false. V7's narrow timestamp comparison and two-session history binding are
+being implemented, without freeze, remote verification or an actual run.
+The main preparation has expired and requires a fresh scope/input/prepare.
+Full M2-M6 remain open; M7 remains deferred.
 Source55 adds the two-file Movies CollectionFolder direct-detail `Subviews`
 repair. Remote gofmt made no changes and formal source preflight passed. The
 [preparation receipt](collection-folder-source55-preparation.json)
@@ -73,6 +79,11 @@ separately verified 05b version; the production controller and other runtime
 files retain their actual v5 bytes, and the original failed TOOL05 guard remains
 preserved. This commit excludes the independent v5 terminal and does not change
 product authority or establish client acceptance.
+The final 06b nine-source tool set and 16 safe records were published in
+`a4c4ab8e9b68be87d9e5e505dcc6de64e79f7651` (25 files), preserving the initial
+TOOL06 failures and successful 06b prerequisites alongside actual v6 and native
+identity evidence. The v7 working files were not overwritten; product authority
+remains `16d75c3...`.
 The candidate schema28 upgrade **passed** in TOOL05 run
 `20260912_100845_47bff13c329b`, with evidence under
 `/opt/goby-test/exec-work-m3e/client-schema28-source55-upgrade-20260912_100845_47bff13c329b`.
@@ -93,15 +104,16 @@ runtime SHA-256 is
 `1f245cd8f8c19dbe0b96b803dc8c60dd0cd4b7b7e2a8d99ccc2541e9430c4a7b`.
 The accepted upgrade authority is the successful run's `after-full.json`, SHA-256
 `7b61f5c94c440e5f6fefc58f0ef04ee2bd3c8f118510ea727f6741c46488412d`.
-The upgrade preserved 75 sessions, 64 devices and 167 audits. V2-v5 each
-added one closed session, one device and two audits, so current counts are
-**79 sessions, 68 devices and 175 audits**. The actual v5 private
-`/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v5/after-full.json`
-has SHA-256 `a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6`.
+The upgrade preserved 75 sessions, 64 devices and 167 audits. V2-v5 each added
+one closed session, one device and two audits; v6 added two closed sessions,
+one device and four audits. Current counts are **81 sessions, 69 devices and
+179 audits**, with no metadata revision change. The actual v6 private
+`/opt/goby-test/exec-work-m3e/client-library-changed-ui-source55-v6/after-full.json`
+has SHA-256 `185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3`.
 The current independent snapshot is
-`/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-05/independent-after-full.json`,
-SHA-256 `6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5`.
-Only `captured_at` differs from the actual v5 after-state. The v3 snapshot
+`/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-06/independent-after-full.json`,
+SHA-256 `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93`.
+Only `captured_at` differs from the actual v6 after-state. The v3 snapshot
 `668975cd51c66888fb363ba273fe15dec70646d87e9549adf0fbe79c20b4f3f0` is predecessor
 evidence, not current state. `7b61f5c9...` remains upgrade
 evidence, not a current database snapshot with zero session/device/audit delta. The older
@@ -351,15 +363,48 @@ The v5 inventory SHA-256 is
 V5 is independently sealed and consumed and must not be replayed. No
 LibraryChanged acceptance is claimed.
 
-V6 is being implemented against the complete sealed v5 terminal, ledger and
-current independent snapshot. It will record the total container count, enumerate every
-truly visible card and its closest owning container, and require exactly one
-card and one card-owning container. Empty containers do not invalidate that
-proof; additional cards or duplicate titles still do. Complete wire and
-MessageId proof remain required. A real-browser regression using owned HTML
-with three containers, two empty and one target card, is being added without
-reference implementation or network access. Its verification and a fresh live
-LibraryChanged run remain pending.
+V6 corrected enumeration while retaining complete wire/MessageId proof. The
+initial TOOL06 [pure-guard failure](client-library-changed-source55-tool06-guards-failed.json),
+[owned-HTML DOM failure](client-library-changed-source55-tool06-dom-failed.json),
+[failed DOM terminal](client-library-changed-source55-tool06-dom-failed-terminal.json)
+and [diagnosis](client-library-changed-source55-tool06-diagnosis.json) are preserved.
+The separate 06b tools passed [877 guards](client-library-changed-source55-v6-guards.json):
+127 actor, 66 driver, 605 loader and 79 controller cases. All
+[13 real-browser owned-HTML DOM cases](client-library-changed-source55-v6-dom.json)
+and their [independent terminal](client-library-changed-source55-v6-dom-terminal.json)
+passed without reference implementation or network access. The
+[preflight](client-library-changed-source55-v6-preflight.json) and
+[real-document checks](client-library-changed-source55-v6-setup-diagnosis.json) passed.
+
+The [actual v6 report](client-library-changed-source55-v6.json),
+[bound input](client-library-changed-source55-v6-input.json) and
+[browser evidence](client-library-changed-source55-v6-browser.json) establish
+successful [real Movies discovery](client-library-changed-source55-v6-discovery.json):
+three visible containers, one card-owning container, one card and one title
+button, with the correct unique Movie response. The subsequent native login
+failed tool validation with `A timestamp is not UTC.` The
+[preserved-fact time diagnosis](client-library-changed-source55-v6-time-diagnosis.json)
+shows that `2026-09-11T06:42:57.432877+08:00` is the same instant as the stored
+`2026-09-10T22:42:57.432877+00:00`. The response format is valid; the strict UTC
+check in the observation tool was inappropriate for public `CreatedAt`.
+No rename or metadata request occurred, and neither LibraryChanged window ran.
+
+The [independent v6 terminal](client-library-changed-source55-v6-terminal.json),
+SHA-256 `7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d`,
+records `failed_scope_sealed` with two new sessions, one device, four audits and
+zero metadata revision delta. Both sessions are closed; old rows, sequences
+and private state are preserved. Cleanup records `owned_sessions_already_closed`,
+with no additional cleanup needed. V1-v6 are consumed; the real discovery pass
+does not establish LibraryChanged acceptance.
+
+V7 is being implemented to compare public `CreatedAt` by instant, accepting
+equivalent RFC3339 offsets while retaining generic UTC and `LastEditedAt`
+requirements. Its H6 binding must preserve the complete two-session failed-run
+history. The [read-only native-identity preparation](client-library-changed-source55-v6-native-identity.json)
+rechecks the native identity, two administrator audits, login200 with validation
+false, logout204 and exact401 from sealed material without new HTTP, SQL or
+service mutation. This is history-input preparation; v7 is not frozen,
+remotely verified or executed.
 The [main schema28 upgrade plan](main-schema28-upgrade-plan.md) was reviewed and
 published as `933257c913cd36a57c26c72bb324f73b57441ecd`. The two Go helper source
 files, plan and four safe reports were then published as
@@ -417,12 +462,19 @@ SHA-256 `4390cd27b77a28b732438a0a63d7f26b3e610e96d976ccb2f106f26918fbe2aa`.
 The input's `main_baseline` and `client_gate` remain null,
 `client_gate_checked` is false, and the deployment output does not exist.
 
-This input has deadline `2026-09-12T13:17:42Z` and requires at least 900 seconds
-remaining. Expiry requires a fresh scope and input; do not extend or rewrite
-the old input. Main remains source32/schema27. Wait for a successful
+The successful preparation is historical evidence. Its deadline
+`2026-09-12T13:17:42Z` has expired at this checkpoint; the required 900-second
+remaining-time margin cannot be met. A fresh scope, input and read-only
+preparation are mandatory; do not extend or rewrite the expired input.
+Main remains source32/schema27. Wait for a successful
 Movies and LibraryChanged run with its independent terminal, then perform fresh
 checks, backup/restore rehearsal, one upgrade and independent attestation.
 Read-only preparation is not client-gate or main-deployment acceptance.
+The [GPU capability inventory](m4-gpu-test-env-capabilities.md), published as
+`8604901`, confirms no usable GPU device is exposed on `test-env`. Compiled
+FFmpeg hardware interfaces do not establish execution. A GPU-capable remote
+environment has not yet been supplied, so actual decode and encode acceptance
+remain outstanding alongside the broader M2-M6 work. M7 remains deferred.
 The consumed source44 browser scope and its older population counts cannot be
 reused by changing only process or binary pins.
 The preceding source44 product checkpoint passed 2,002 tests;
@@ -509,10 +561,11 @@ item lists, other collection types and generic projection switches are unchanged
 Other DTO differences and the specific cause of the prior client `includes`
 error remain unproven. Source55 targeted/full verification, publication and
 candidate deployment passed. V4 identified the incorrect `data-id` assumption;
-v5 identified the collector's incorrect total-container precondition. V1-v5
-are independently sealed. Complete v6 binding, enumeration and real-browser
-DOM regression before a fresh LibraryChanged scope. The native edit and
-automatic-refresh stages have not yet passed.
+v5 identified the collector's incorrect total-container precondition. V6 passed
+real discovery and then failed native-login timestamp validation. V1-v6 are
+independently sealed. Complete v7's narrow `CreatedAt` comparison and H6 history
+binding, then remote verification and a fresh LibraryChanged scope. Rename and
+automatic-refresh acceptance remain open.
 
 Later scan reconciliation work is separate from frozen source49. Source53's
 original-storage recovery and bounded directory-evidence helpers passed 20
@@ -2890,8 +2943,8 @@ each increment still needs its own source, runtime and publication evidence.
 
 | Suggested later priority | Still open |
 | --- | --- |
-| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051 with 79 sessions/68 devices/175 audits at independently sealed v5 snapshot `6724f398...`; primary stays source32/schema27. V1-v5 are sealed. V5 again failed in tool discovery: three visible containers prevented card enumeration although the unique Movie is visibly present and its complete wire response is correct. No native edit or LibraryChanged acceptance occurred. Bind v6 to the complete sealed v5 terminal/ledger/snapshot, then verify one-visible-card/one-owning-container proof and a real-browser owned-HTML regression while preserving full wire/MessageId binding. V6 is not yet frozen or verified. Main TOOL02's second read-only preparation passed with private baseline `4390cd27...` and zero business SQL/HBA/service writes. Await successful Movies/LibraryChanged independent acceptance, then fresh checks, backup/restore rehearsal, one upgrade and attestation. Deadline `2026-09-12T13:17:42Z` requires at least 900 seconds remaining; expiry needs a fresh scope/input. No client gate or main deployment has passed. Broader M2-M6 work remains open; consumed scopes cannot be replayed. |
-| P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. |
+| P1 — M2/M3 / catalog and client acceptance | Candidate remains source55/schema28/PID1458051 with 81 sessions/69 devices/179 audits at independently sealed v6 snapshot `b5d792af...`; primary stays source32/schema27. V6 passed real Movies discovery, then the tool rejected valid `+08:00` native-login `CreatedAt`; no rename/metadata request or LibraryChanged acceptance occurred. V1-v6 are sealed. Implement v7's public-time instant comparison and complete two-session H6 binding, preserving generic UTC/LastEditedAt rules, then freeze, remotely verify and run a fresh scope. Main TOOL02's read-only preparation passed historically but expired at `2026-09-12T13:17:42Z`; fresh scope/input/prepare are mandatory before subsequent fresh checks, backup/restore rehearsal, one upgrade and attestation after client acceptance. No main deployment has passed. Broader M2-M6 work remains open; consumed scopes cannot be replayed. |
+| P2 — M4 | Nonzero copied-video seeking, efficient audio I/O, more tracks/formats, aggregate isolation and actual GPU decode **and** encode. The [published inventory](m4-gpu-test-env-capabilities.md) confirms no usable exposed GPU on `test-env`; a suitable remote GPU environment is still required. |
 | P3 — remaining M5 / metadata | More task executors, full policies, providers, broader configuration fields/sections and metadata/artwork reconciliation. |
 | P4 — M6 | Differential client/reference coverage, Linux distribution/architecture/GPU matrix, large-catalog upgrades, operations and recovery coverage. |
 

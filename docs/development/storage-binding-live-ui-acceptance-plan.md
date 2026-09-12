@@ -1,5 +1,7 @@
 # Storage binding live administrator UI acceptance
 
+Current checkpoint: 2026-09-12 13:35 UTC.
+
 Status: accepted. Run5, `20260912_083703_5a77d18d2ae0`, completed all
 [15 browser checks and 10 IPC stages](storage-binding-live-ui-accepted-browser.json)
 against the real schema28 backend. Playwright passed one test in 16.133s with zero
@@ -24,9 +26,10 @@ The broader M2-M6 acceptance obligations and existing M7 deferred scope remain
 unchanged. Source55 verification, product publication and the independently
 [attested candidate schema28 deployment](client-schema28-accepted-attestation.json)
 are complete. Fresh original-client acceptance remains pending.
-Its v5 discovery failed because the collector skipped card enumeration when
-three containers were geometrically visible. The target card is present;
-[v5 is independently sealed](client-library-changed-source55-v5-terminal.json), and LibraryChanged windows have not run.
+Its v6 discovery passed, then a strict UTC validator rejected the native login's
+valid public `CreatedAt` with a `+08:00` offset. The
+[failed v6 scope is independently sealed](client-library-changed-source55-v6-terminal.json);
+no rename/metadata request or LibraryChanged window ran.
 The accepted UI gate retains its actual source54 frozen inputs below.
 
 | Scope | Observed outcome | Current disposition |
@@ -412,10 +415,13 @@ remains source32/schema27 at PID `762090`; shared web and proxy state are unchan
 | [Independent v4 failed terminal](client-library-changed-source55-v4-terminal.json) SHA256 | `021a36cc9e6311107acf751b1bba7ca6b2bf1e6618c4a32b6b48c17866404012` |
 | V4 complete scope inventory SHA256 | `2618849ab3caa0d8756f372e0a3c9022f6d3bc7b2ef325a8e623bcd27172e407` |
 | Run-v5 `after-full.json` SHA256 | `a3d633f0d351001eff02d013c2ccc224adec9c5f5a659cab7bad3f4e9a4a20d6` |
-| Latest independent post-v5 full snapshot SHA256 | `6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5` |
+| Sealed v5 independent full snapshot SHA256 | `6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5` |
 | [Independent v5 failed terminal](client-library-changed-source55-v5-terminal.json) SHA256 | `348be31960bb19a9905c4cef2b6f19df9af25466e28959f00d1bd5e0a6a2183d` |
 | V5 complete scope inventory SHA256 | `190b6ea5aaad2d4cb7ab8184623b5abfd42dc5493a6c640e5de4836399ae3970` |
-| Latest candidate counts | 79 sessions, 68 devices, 175 audits |
+| Run-v6 `after-full.json` SHA256 | `185ea8df81cc228c329f108354cfaa098824a863a4db1a24a7e2acacdf376fa3` |
+| Latest independent post-v6 full snapshot SHA256 | `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93` |
+| [Independent v6 failed terminal](client-library-changed-source55-v6-terminal.json) SHA256 | `7ea63700f72924318e21e84c061fe1cda3f6d7f04373eaddf78a7f5abea1012d` |
+| Latest candidate counts | 81 sessions, 69 devices, 179 audits |
 | [Upgrade report](client-schema28-accepted.json) SHA256 | `328bc6abbf4d2fe0559a34ed62d9e7d9cf7b77c075c583f9070d7aa9761c8832` |
 | [Independent attestation](client-schema28-accepted-attestation.json) SHA256 | `ec20d286a1998f0b27667603819853129e88b91579a97a25141bd6258e450032` |
 
@@ -579,22 +585,51 @@ records `failed_scope_sealed`, with the exact closed 1/1/2/+0 ledger and no
 required cleanup. Complete v1-v4 root/tool inventories and their eight units
 were preserved, as were four additional guard/prerequisite directories under
 strong before/after comparison. Candidate, primary, media, old rows, sequences
-and private data were preserved. The current independent full snapshot is
+and private data were preserved. V5's independent full snapshot is
 `WORK/client-library-changed-source55-execution-05/independent-after-full.json`,
 SHA256 `6724f398e0aa0303005b2f77c629491b1444c21f78deb021849b67eb7a4d1fe5`;
 it differs from run-v5 `a3d633f0...` only in `captured_at`. All v1-v5 attempts
 are consumed and must not be replayed. No native edit occurred, and
 LibraryChanged acceptance remains incomplete.
 
-V6 remains unfrozen and unverified. It is being implemented to retain the actual
-total container count, enumerate
-all truly visible cards and each card's closest owning container, and require
-one card and one container that owns it. Empty containers must not cause a false
-rejection; extra cards and duplicate titles must still be rejected. A real browser
-DOM regression using self-authored HTML with three containers, two empty and
-one target, is planned without reading original-client code or using the network;
-no verified pass is claimed yet. Complete wire and MessageId correlation remain
-required.
+The initial TOOL06 [pure guard failure](client-library-changed-source55-tool06-guards-failed.json),
+[DOM failure](client-library-changed-source55-tool06-dom-failed.json),
+[failed DOM terminal](client-library-changed-source55-tool06-dom-failed-terminal.json)
+and [diagnosis](client-library-changed-source55-tool06-diagnosis.json) remain preserved.
+The separate [06b verification](client-library-changed-source55-v6-guards.json)
+passed 877 guards: 127 actor, 66 driver, 605 loader and 79 controller cases.
+All [13 real browser cases using owned HTML](client-library-changed-source55-v6-dom.json)
+passed with an [independent DOM terminal](client-library-changed-source55-v6-dom-terminal.json),
+along with [fresh preflight](client-library-changed-source55-v6-preflight.json)
+and [actual-document checks](client-library-changed-source55-v6-setup-diagnosis.json).
+The final 06b nine frozen sources and 16 safe evidence files were published as
+25 files in commit `a4c4ab8e9b68be87d9e5e505dcc6de64e79f7651`, preserving the
+initial TOOL06 failures and v7 working edits; product authority remains `16d75c3...`.
+
+The [actual v6 discovery](client-library-changed-source55-v6-discovery.json)
+passed: three geometrically visible containers, one card-owning container,
+one card and one title button matched the complete correct Movie wire response.
+The [run](client-library-changed-source55-v6.json) then failed when native login's
+public `CreatedAt` used a valid `+08:00` offset and the validator demanded UTC
+spelling. The [read-only time diagnosis](client-library-changed-source55-v6-time-diagnosis.json)
+confirmed that the returned representation denotes the same UTC instant.
+No rename or metadata request was sent, and LibraryChanged acceptance remains false.
+The [independent v6 terminal](client-library-changed-source55-v6-terminal.json)
+sealed two closed sessions, one new device, four audits and revision delta0.
+Current totals are 81 sessions, 69 devices and 179 audits. The current independent
+snapshot is
+`WORK/client-library-changed-source55-execution-06/independent-after-full.json`,
+SHA256 `b5d792af3b3f8dc854b58bdabc7cfaec0ec87ee4382c0d85250b1b38af693c93`;
+run-v6 `185ea8df...` differs only in `captured_at`. Earlier scopes, candidate,
+primary, media, old rows, sequences and private data were preserved.
+
+V7 is being implemented to compare only public `CreatedAt` by instant, accepting
+the valid offset while keeping generic UTC validation and `LastEditedAt` strict.
+It must bind H6's complete two-session failed history rather than reuse the
+earlier one-session allowance. Read-only
+[native identity input preparation from sealed v6 material](client-library-changed-source55-v6-native-identity.json)
+is complete; this does not establish v7 verification. V7 remains unfrozen,
+remotely unverified and unrun. Complete wire and MessageId correlation remain required.
 Observation windows retain the original same-library Items route or the exact
 target `/Users/{UserId}/Items/{TargetId}` route, bound to MessageId, route,
 document and token. This adds no detail-page navigation, PlaybackInfo, media or
@@ -654,17 +689,23 @@ SHA256 `4390cd27b77a28b732438a0a63d7f26b3e610e96d976ccb2f106f26918fbe2aa`.
 The prepare input SHA256 is
 `343a283642b754648e148aef1020faec7c1003948c54f279dae53b9809d29a44`.
 Its `main_baseline` and `client_gate` inputs were null, `client_gate_checked`
-remains false, and no deployment output exists. The deadline is
-`2026-09-12T13:17:42Z`, with at least 900 seconds required to remain at admission;
-an expired scope requires a fresh scope, not a changed old input. Main remains
+remains false, and no deployment output exists. Its deadline was
+`2026-09-12T13:17:42Z`, with at least 900 seconds required to remain at admission.
+At the 13:35 UTC checkpoint that scope is expired. A new scope, input and
+read-only prepare are required; do not modify or reuse the expired input. Main remains
 source32/schema27 with no source55 deployment or schema28 upgrade.
 
-1. Bind v6's actual pins to the complete sealed v5 terminal, exact owned ledger,
-   current independent full snapshot and every history/scope/tool inventory,
-   including the guard/prerequisite directories. Do not substitute count
-   changes for this proof or replay consumed attempts.
-2. Finish and verify the v6 card/container ownership logic and real browser HTML
-   regression, preserving complete wire evidence, MessageId/document/token
+SSH access has been restored and confirmed with a fresh connection. The
+[GPU capability inventory](m4-gpu-test-env-capabilities.md), published in
+commit `8604901`, records no exposed GPU suitable for hardware acceptance on
+`test-env`. The user has not supplied a GPU environment, so actual GPU acceptance
+remains outstanding.
+
+1. Bind v7's actual pins to the complete sealed v6 terminal, its two-session
+   ledger, current independent full snapshot and every history/scope/tool
+   inventory. Preserve earlier failures and do not replay consumed attempts.
+2. Finish and verify the narrowly scoped public `CreatedAt` instant comparison
+   and H6 history binding, preserving complete wire evidence, MessageId/document/token
    correlation, both observation routes and the 2/1/6/+2 allowance. Complete
    fresh preflight on `test-env` before a live run.
 3. Complete navigation and automatic-refresh acceptance in that fresh admitted
@@ -672,10 +713,10 @@ source32/schema27 with no source55 deployment or schema28 upgrade.
    proof. Native administrator UI acceptance and deployment do not establish
    those client outcomes.
 4. Wait for an independent terminal proving actual Movies navigation and both
-   LibraryChanged windows. Then recheck the current main state and prepared
-   scope validity before backup/restore rehearsal, the single upgrade and
-   independent attestation. If the deadline or remaining-time bound no longer
-   holds, create a fresh scope without changing the consumed or expired inputs;
-   successful prepare alone does not establish the client gate or deployment admission.
+   LibraryChanged windows. The old main prepare has expired: create a fresh
+   scope/input/prepare and recheck current state before backup/restore rehearsal,
+   the single upgrade and independent attestation. Preserve the deadline and
+   remaining-time admission bounds; successful prepare alone does not establish
+   the client gate or deployment admission.
 5. Keep broader M2-M6 acceptance open and retain the existing M7 deferred scope;
    this accepted storage-binding gate does not reduce either scope.
