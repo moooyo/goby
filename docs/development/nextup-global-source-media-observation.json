@@ -1,0 +1,60 @@
+{
+  "approvedManifest": {
+    "identity": {
+      "ctimeNs": 1789079976708869068,
+      "device": 2049,
+      "gid": 0,
+      "inode": 2424060,
+      "links": 1,
+      "mode": 420,
+      "mtimeNs": 1789079976708869068,
+      "sizeBytes": 1972,
+      "uid": 0
+    },
+    "path": "/opt/goby-fixtures/client-m3e/manifest.json",
+    "sha256": "d071081ea17decbc07d3191ddddd4ab5415717ac907f7e86c5c8c302878bc064"
+  },
+  "businessHttp": false,
+  "capturedAt": "2026-09-12T17:12:32.973214+00:00",
+  "existingLock": {
+    "exclusiveLockObserved": true,
+    "identity": {
+      "ctimeNs": 1789080707204603600,
+      "device": 2049,
+      "gid": 0,
+      "inode": 2424193,
+      "links": 1,
+      "mode": 384,
+      "mtimeNs": 1789080707204603600,
+      "sizeBytes": 0,
+      "uid": 0
+    },
+    "path": "/opt/goby-test/exec-work-m3e/reference.lock"
+  },
+  "kind": "nextup-global-source-media-observation",
+  "newMediaCreated": false,
+  "originalImplementationRead": false,
+  "profile": {
+    "audio": "aac",
+    "durationSeconds": 600,
+    "fps": 30,
+    "video": "h264"
+  },
+  "schemaVersion": 1,
+  "source": {
+    "identity": {
+      "ctimeNs": 1789079975144926266,
+      "device": 2049,
+      "gid": 0,
+      "inode": 2424045,
+      "links": 4,
+      "mode": 420,
+      "mtimeNs": 1789079975136926558,
+      "sizeBytes": 48786888,
+      "uid": 0
+    },
+    "path": "/opt/goby-fixtures/client-m3e/Movies/M3e Client Movie.mp4",
+    "sha256": "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088"
+  },
+  "sourceModified": false
+}

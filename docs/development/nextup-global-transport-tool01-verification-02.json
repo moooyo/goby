@@ -1,0 +1,21 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic transport and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "c5fc75681c3677faa2c81728cd61e5c4f70338bcb1ba61cc0bb254c608667b81",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "transport": "e40c9b072354b186ae34f9dd424b6df835670269f0c2af3cf9bda00af8a7a2e3"
+  },
+  "suite": "nextup-global-transport-guards",
+  "testsRun": 68
+}

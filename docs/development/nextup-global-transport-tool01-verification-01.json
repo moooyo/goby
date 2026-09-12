@@ -1,0 +1,38 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "classification": "synthetic transport and persistence guards; not reference or client acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [
+    {
+      "test": "__main__.TransportGuards.test_complete_plain_text_401_can_prove_owned_logout_and_token_rejection",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-transport-tool-01/nextup-global-transport-guards.py\", line 616, in test_complete_plain_text_401_can_prove_owned_logout_and_token_rejection\n    self.assertEqual(result[\"mode\"], \"closed-with-observation-failure\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'recovery-required' != 'closed-with-observation-failure'\n- recovery-required\n+ closed-with-observation-failure\n\n"
+    },
+    {
+      "test": "__main__.TransportGuards.test_known_detail_failure_reconciles_acknowledged_stop_without_repeating_it",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-transport-tool-01/nextup-global-transport-guards.py\", line 672, in test_known_detail_failure_reconciles_acknowledged_stop_without_repeating_it\n    self.assertEqual(result[\"mode\"], \"closed-with-observation-failure\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'recovery-required' != 'closed-with-observation-failure'\n- recovery-required\n+ closed-with-observation-failure\n\n"
+    },
+    {
+      "test": "__main__.TransportGuards.test_known_progress_failure_stops_reconciles_then_deletes",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-transport-tool-01/nextup-global-transport-guards.py\", line 659, in test_known_progress_failure_stops_reconciles_then_deletes\n    self.assertEqual(result[\"mode\"], \"closed-with-observation-failure\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'recovery-required' != 'closed-with-observation-failure'\n- recovery-required\n+ closed-with-observation-failure\n\n"
+    },
+    {
+      "test": "__main__.TransportGuards.test_logout_401_and_rejection_use_exact_original_actor_token",
+      "traceback": "Traceback (most recent call last):\n  File \"/opt/goby-test/exec-work-m3e/nextup-global-transport-tool-01/nextup-global-transport-guards.py\", line 598, in test_logout_401_and_rejection_use_exact_original_actor_token\n    self.assertEqual(result[\"mode\"], \"closed-with-observation-failure\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'recovery-required' != 'closed-with-observation-failure'\n- recovery-required\n+ closed-with-observation-failure\n\n"
+    }
+  ],
+  "failures": 4,
+  "liveAcceptanceClaim": false,
+  "passed": false,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "guards": "1b1e8f7f164f45253cdf5571304f40aa1178d973a61c4bead608dfbb317c8c8e",
+    "matrix": "da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259",
+    "transport": "d8bbc986b03e2b9316cd2350cc0281a61aab0fdf285e06d8ed21f577ed5696b0"
+  },
+  "suite": "nextup-global-transport-guards",
+  "testsRun": 67
+}
