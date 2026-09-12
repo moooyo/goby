@@ -36,15 +36,17 @@ import uuid
 
 sys.dont_write_bytecode = True
 TRANSPORT_SHA256 = "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+BASELINE_OBSERVER_SHA256 = "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6"
+CLOSED_AUTH_FIELDS = ("userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection")
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 SUMMARIES = ("A", "AS1", "AS2", "B", "BS1", "BS2")
 CALIBRATIONS = (("P", "A1", "partial"), ("P", "A1", "complete"),
                 ("Q", "B1", "partial"), ("Q", "B1", "complete"))
 FIELDS = "Path,ParentId,SortName,MediaSources,MediaStreams,Overview,Genres,Tags,People,Studios,ProviderIds,DateCreated,ProductionYear"
 RUNTIME, PARTIAL = 6_000_000_000, 1_200_000_000
-MAX_REQUESTS, NORMAL_LIMIT, CLEANUP_RESERVE = 380, 280, 100
-PHASE_LIMITS = {"before": 44, "libraries": 42, "mapping": 6, "accounts": 8,
-                "baseline": 36, "calibration": 44, "zero": 28, "after": 49, "cleanup": 89}
+MAX_REQUESTS, NORMAL_LIMIT, CLEANUP_RESERVE = 440, 320, 120
+PHASE_LIMITS = {"before": 62, "libraries": 42, "mapping": 6, "accounts": 8,
+                "baseline": 36, "calibration": 44, "zero": 28, "after": 67, "cleanup": 107}
 
 
 class PreparationError(ValueError):
@@ -237,18 +239,18 @@ def validate_manifest(value):
     for key in ("name", "seriesName"):
         require(value["libraries"]["LA"][key].casefold() != value["libraries"]["LB"][key].casefold(), "Library and series names must be distinct.")
     preserve = value["preservation"]
-    require(set(preserve) == {"userIds", "libraryIds", "detailRoutes"} and len(preserve["userIds"]) == 8 and len(preserve["libraryIds"]) == 10 and
-            len(set(preserve["userIds"])) == 8 and len(set(preserve["libraryIds"])) == 10 and
+    require(set(preserve) == {"userIds", "libraryIds", "detailRoutes"} and len(preserve["userIds"]) == 10 and len(preserve["libraryIds"]) == 12 and
+            len(set(preserve["userIds"])) == 10 and len(set(preserve["libraryIds"])) == 12 and
             all(identifier(item) for item in preserve["userIds"] + preserve["libraryIds"]) and
-            value["actors"]["admin"]["userId"] in preserve["userIds"] and len(preserve["detailRoutes"]) == 12,
-            "The frozen eight-user/ten-library and twelve-detail preservation scope is required.")
+            value["actors"]["admin"]["userId"] in preserve["userIds"] and len(preserve["detailRoutes"]) == 24,
+            "The frozen ten-user/twelve-library and twenty-four-detail preservation scope is required.")
     for row in preserve["detailRoutes"]:
         require(set(row) == {"group", "userId", "itemId"} and identifier(row["group"]) and row["userId"] in preserve["userIds"] and identifier(row["itemId"]),
                 "Each old full-detail route needs its exact actor and item.")
-    require(len({(row["group"], row["itemId"]) for row in preserve["detailRoutes"]}) == 12, "Old detail routes cannot repeat.")
+    require(len({(row["group"], row["itemId"]) for row in preserve["detailRoutes"]}) == 24, "Old detail routes cannot repeat.")
     limits = {"requestSeconds": (1, 15), "normalSeconds": (1, 1200), "cleanupSeconds": (1, 600),
               "requestBytes": (1024, 32768), "responseBytes": (1024, 1024 * 1024),
-              "totalResponseBytes": (4096, 384 * 1024 * 1024), "cleanupResponseBytes": (1024, 101 * 1024 * 1024)}
+              "totalResponseBytes": (4096, 384 * 1024 * 1024), "cleanupResponseBytes": (1024, 121 * 1024 * 1024)}
     for name in ("budgets", "matrixBudgets"):
         budget = value[name]
         require(isinstance(budget, dict) and set(budget) == set(limits), "Every finite time and byte budget must be explicit.")
@@ -269,7 +271,7 @@ def frozen_plan(manifest):
     return {"schemaVersion": 1, "classification": "planned preparation; no execution", "runId": value["runId"],
             "manifestSha256": digest(canonical(value).encode()), "maximumRequests": MAX_REQUESTS,
             "normalLimit": NORMAL_LIMIT, "cleanupReserve": CLEANUP_RESERVE, "phaseMaximums": deepcopy(PHASE_LIMITS),
-            "normalMaximum": 257, "successMaximumIncludingLogout": 263, "cleanupMaximum": 89,
+            "normalMaximum": 293, "successMaximumIncludingLogout": 299, "cleanupMaximum": 107,
             "calibrations": [list(row) for row in CALIBRATIONS], "scanRounds": 12,
             "terminal": "awaiting_independent_attestation", "catalogDisposition": "retained"}
 
@@ -349,7 +351,7 @@ def validate_public_baseline(value, manifest):
     detail_keys = {(group, item) for group, rows in value["details"].items() if isinstance(rows, dict) for item in rows}
     expected = {(row["group"], row["itemId"]) for row in manifest["preservation"]["detailRoutes"]}
     require(detail_keys == expected and all(isinstance(rows, dict) and all(isinstance(row, dict) and row.get("Id") == item for item, row in rows.items())
-            for rows in value["details"].values()), "All twelve retained explicit detail witnesses are required.")
+            for rows in value["details"].values()), "All twenty-four retained explicit detail witnesses are required.")
     require(len(value["devices"]) <= 256 and all(identifier(key) and isinstance(row, dict) and row.get("Id") == key and
             isinstance(row.get("ReportedDeviceId"), str) and 0 < len(row["ReportedDeviceId"]) <= 512 for key, row in value["devices"].items()) and
             len({row["ReportedDeviceId"] for row in value["devices"].values()}) == len(value["devices"]),
@@ -399,24 +401,43 @@ class Authority:
                 "The freshly approved synthetic source identity changed.")
         require(digest(read_owned(source["path"], links=True, maximum=128 * 1024 * 1024)) == source["sha256"], "The owned synthetic bytes differ.")
 
-    def _evidence(self, row, *, sealed=False):
+    def _evidence_bytes(self, row, *, sealed=True):
+        """Read one exact owned historical descriptor and retain every byte/identity pin."""
         descriptor(row)
         candidate = Path(row["path"])
         roots = self.manifest["sealedRoots"] if sealed else [self.manifest["scope"]["inputRoot"], *self.manifest["sealedRoots"]]
-        require(candidate.suffix == ".json" and any(Path(root) in candidate.parents for root in roots) and
+        proxy = self.manifest.get("sources", {}).get("proxy")
+        require(candidate.suffix in (".json", ".py") and
+                (any(Path(root) in candidate.parents for root in roots) or candidate.suffix == ".py" and row == proxy) and
                 all(candidate != Path(root) and Path(root) not in candidate.parents for root in self.manifest["forbiddenOriginalRoots"]),
-                "A historical proof escaped its exact owned JSON evidence roots.")
-        raw = read_owned(row["path"], private=True)
+                "A historical proof escaped its exact owned evidence roots.")
+        if not hasattr(self, "evidence_hashes"):
+            self.evidence_hashes = {}
+        require(self.evidence_hashes.get(row["path"], row["sha256"]) == row["sha256"],
+                "One historical evidence path cannot have conflicting byte pins.")
+        private = candidate.suffix == ".json"
+        identity = file_identity(protected(row["path"], private=private))
+        raw = read_owned(row["path"], private=private)
         require(digest(raw) == row["sha256"], "A sealed or closed-token proof changed.")
+        require(file_identity(protected(row["path"], private=private)) == identity,
+                "A historical evidence path changed between its byte read and identity binding.")
         if not hasattr(self, "evidence_identities"):
             self.evidence_identities = {}
-        self.evidence_identities[row["path"]] = file_identity(protected(row["path"], private=True))
+        require(self.evidence_identities.get(row["path"], identity) == identity,
+                "A historical evidence identity changed between descriptor reads.")
+        self.evidence_hashes[row["path"]] = row["sha256"]
+        self.evidence_identities[row["path"]] = identity
+        return raw
+
+    def _evidence(self, row, *, sealed=False):
+        require(isinstance(row, dict) and Path(row.get("path", "")).suffix == ".json", "Historical JSON evidence needs an explicit JSON descriptor.")
+        raw = self._evidence_bytes(row, sealed=sealed)
         return strict_json(raw)
 
     def _inputs(self):
         value, release = self.manifest, self.release
-        require(set(release) == {"schemaVersion", "kind", "runId", "process", "lock", "sealedRoots", "releasedAt", "sealed", "units", "closedAuthentication", "grantVerification"} and
-                release["schemaVersion"] == 2 and release["kind"] == "nextup-global-preparation-release" and release["runId"] == value["runId"] and
+        require(set(release) == {"schemaVersion", "kind", "runId", "process", "lock", "sealedRoots", "releasedAt", "sealed", "units", "closedAuthentication", "grantVerification", "baselineObservation"} and
+                release["schemaVersion"] == 3 and release["kind"] == "nextup-global-preparation-release" and release["runId"] == value["runId"] and
                 same(release["process"], value["process"]) and same(release["lock"], value["lock"]) and
                 same(release["sealedRoots"], value["sealedRoots"]), "The release proof does not bind this exact new run.")
         instant(release["releasedAt"])
@@ -452,14 +473,13 @@ class Authority:
             require(control_group in ("", expected_group) and row["cgroupPath"] == "/sys/fs/cgroup" + expected_group,
                     "An empty-cgroup proof cannot select another unit's cgroup.")
         validate_public_baseline(self.baseline, value)
+        self._baseline_observation()
+        self._grant_verification()
         require(isinstance(release["closedAuthentication"], list), "Recorded prior logout windows must be explicit.")
         for row in release["closedAuthentication"]:
-            require(set(row) in ({"userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection"},
-                                {"userId", "reportedDeviceId", "tokenSha256", "from", "through", "logout", "rejection", "login"}) and
+            require(set(row) == set(CLOSED_AUTH_FIELDS) and
                     row["userId"] in value["preservation"]["userIds"] and identifier(row["reportedDeviceId"]) and sha(row["tokenSha256"]) and
                     instant(row["from"]) <= instant(row["through"]), "A prior closed authentication window is malformed.")
-            if "login" in row:
-                continue
             for name, expected_status in (("logout", 204), ("rejection", 401)):
                 proof = row[name]
                 require(set(proof) == {"record", "intent", "status", "tokenSha256", "completedAt"} and type(proof["status"]) is int and proof["status"] == expected_status and
@@ -478,7 +498,6 @@ class Authority:
                     row["logout"]["record"]["sha256"] != row["rejection"]["record"]["sha256"] and
                     any(item.get("ReportedDeviceId") == row["reportedDeviceId"] and item.get("LastUserId") == row["userId"] for item in self.baseline["devices"].values()),
                     "A prior closed-token window does not bind one retained device and ordered distinct responses.")
-        self._grant_verification()
         credential_record = self.records["credentials"]
         require(set(credential_record) == {"schemaVersion", "runId", "accounts"} and credential_record["schemaVersion"] == 1 and
                 credential_record["runId"] == value["runId"] and set(credential_record["accounts"]) == {"admin", "P", "Q"},
@@ -504,16 +523,83 @@ class Authority:
                 isinstance(media_manifest.get("files"), dict) and media_manifest["files"].get(relative) == value["media"]["source"]["sha256"],
                 "The actual approved media manifest does not bind these source bytes and profile.")
 
+    def _baseline_observation(self):
+        """Rebuild the current baseline through the fixed completed-observer verifier."""
+        evidence = self.release["baselineObservation"]
+        require(isinstance(evidence, dict) and set(evidence) == {"manifest", "independent"},
+                "The current baseline needs its actual observer manifest and independent terminal.")
+        observer_manifest = self._evidence(evidence["manifest"], sealed=True)
+        source = observer_manifest["sources"]["observer"]
+        descriptor(source)
+        require(Path(source["path"]).name == "observe-nextup-preparation04-baseline.py" and
+                source["sha256"] == BASELINE_OBSERVER_SHA256 and
+                any(Path(root) in Path(source["path"]).parents for root in self.manifest["sealedRoots"]),
+                "The completed baseline verifier must be the exact reviewed owned observer source.")
+        self._evidence_bytes(source, sealed=True)
+        observer = load_owned(source, "preparation_baseline_observer")
+        verified = observer.verify_completed_evidence(deepcopy(evidence), read_bytes=self._evidence_bytes)
+        require(isinstance(verified, dict) and set(verified) == {"schemaVersion", "kind", "manifest", "independent", "afterPublic",
+                    "closedAuthentication", "requestCount", "normalRequestCount", "cleanupRequestCount", "baseline"} and
+                verified["schemaVersion"] == 1 and verified["kind"] == "nextup-preparation04-baseline-verified-evidence" and
+                verified["manifest"] == evidence["manifest"] and verified["independent"] == evidence["independent"] and
+                (verified["requestCount"], verified["normalRequestCount"], verified["cleanupRequestCount"]) == (64, 62, 2) and
+                verified["afterPublic"] == self.manifest["inputs"]["publicBaseline"] and same(verified["baseline"], self.baseline),
+                "Only the exact 64-response reconstructed observer baseline may supply preparation input.")
+        require(all(same(observer_manifest[key], self.manifest[key]) for key in ("server", "process", "endpoint", "lock", "preservation")) and
+                observer_manifest["sources"]["proxy"] == self.manifest["sources"]["proxy"] and
+                all(observer_manifest["admin"][key] == self.manifest["actors"]["admin"][key] for key in ("userId", "username")) and
+                (len(self.baseline["roster"]), len(self.baseline["libraries"]), len(self.baseline["devices"]),
+                 sum(len(rows) for rows in self.baseline["details"].values())) == (10, 12, 98, 24),
+                "The completed observer and next preparation have different target, account, or full public scope.")
+        independent = self._evidence(evidence["independent"], sealed=True)
+        require(independent["afterPublic"] == verified["afterPublic"] and independent["closedAuthentication"] == verified["closedAuthentication"] and
+                independent["source"] == source and independent["manifest"] == evidence["manifest"],
+                "The observer's independently accepted descriptors differ from its actual verified outputs.")
+        parent_seal = self._evidence(observer_manifest["inputs"]["parentSeal"], sealed=True)
+        parent_manifest = self._evidence(parent_seal["manifest"], sealed=True)
+        parent_release = self._evidence(parent_manifest["inputs"]["release"], sealed=True)
+        require(parent_release.get("schemaVersion") == 2 and parent_release.get("kind") == "nextup-global-preparation-release" and
+                parent_release.get("runId") == parent_manifest["runId"] and
+                parent_release.get("grantVerification") == self.release["grantVerification"] and
+                same(parent_release.get("sealed"), self.release["sealed"]) and same(parent_release.get("units"), self.release["units"]) and
+                all(same(parent_manifest[key], self.manifest[key]) for key in ("server", "process", "endpoint", "lock")) and
+                same(parent_release["process"], self.manifest["process"]) and same(parent_release["lock"], self.manifest["lock"]) and
+                instant(parent_release["releasedAt"]) <= instant(self.release["releasedAt"]),
+                "The new observer does not descend from the actual preparation release and unchanged v4/Guid anchors.")
+        closure = self._evidence(verified["closedAuthentication"], sealed=True)
+        require(set(closure) == {*CLOSED_AUTH_FIELDS, "login", "deviceObservation"} and
+                closure["userId"] == observer_manifest["admin"]["userId"] and
+                closure["reportedDeviceId"] == observer_manifest["admin"]["deviceId"] and
+                instant(closure["through"]) <= instant(self.release["releasedAt"]),
+                "The current observer closure must retain its verified login and device observations.")
+        require(isinstance(parent_release["closedAuthentication"], list), "The actual predecessor release closure population is missing.")
+        legacy = [deepcopy(row) for row in parent_release["closedAuthentication"] if "login" not in row]
+        require(all(set(row) == set(CLOSED_AUTH_FIELDS) for row in legacy), "A retained legacy closure has an unsupported shape.")
+        normalized = {key: deepcopy(closure[key]) for key in CLOSED_AUTH_FIELDS}
+        expected_closures = [*legacy, normalized]
+        require(same(self.release["closedAuthentication"], expected_closures) and
+                len({row["reportedDeviceId"] for row in expected_closures}) == len(expected_closures),
+                "Current closure windows must be exactly retained legacy facts plus the newly verified observer token.")
+        unit = observer.validate_closed_unit(independent["unit"], failed=False)
+        require(unit["name"] not in {row["name"] for row in self.release["units"]} and
+                type(independent["formerPid"]) is int and independent["formerPid"] > 1 and
+                unit["properties"].get("ExecMainPID") == str(independent["formerPid"]),
+                "The latest observer needs its distinct completed unit and actual former process.")
+        self.observer_manifest, self.observer_independent, self.observer_verified = observer_manifest, independent, verified
+        self.parent_manifest, self.parent_release = parent_manifest, parent_release
+        self.observer_former_pid = independent["formerPid"]
+        self.observer_unit = {**deepcopy(unit), "properties": {key: value for key, value in unit["properties"].items() if key != "InvocationID"}}
+
     def _grant_verification(self):
         """Reconcile the accepted Guid experiment against all actual raw attempts."""
         independent = self._evidence(self.release["grantVerification"], sealed=True)
         require(independent.get("schemaVersion") == 1 and independent.get("kind") == "nextup-folder-grant-independent-terminal" and
                 independent.get("status") == "folder_guid_grants_independently_verified_and_policy_restored" and
                 independent.get("referenceCounts") == {"users": 8, "libraries": 10, "devices": 93, "detailWitnesses": 12} and
-                independent.get("afterPublic") == self.manifest["inputs"]["publicBaseline"] and
+                independent.get("afterPublic") == self.parent_manifest["inputs"]["publicBaseline"] and
                 (independent.get("requestCount"), independent.get("normalRequestCount"), independent.get("cleanupRequestCount")) == (109, 59, 50) and
                 instant(independent["capturedAt"]) <= instant(self.release["releasedAt"]),
-                "The latest independent Guid terminal does not bind the exact retained population and baseline.")
+                "The historical Guid terminal does not bind the actual predecessor preparation baseline.")
         require(all(independent.get(key) is True for key in ("allKnownTokensClosed", "originalPolicyRestored", "fullPublicRoundtripPreserved",
                 "allPrivateBytesMatched", "allExportBytesMatched", "recursiveCgroupEmpty", "grantSemanticsProven")) and
                 independent.get("originalImplementationBytesRead") is False and independent.get("referenceDatabaseRead") is False,
@@ -526,14 +612,12 @@ class Authority:
         require(source == prior["source"] and source["sha256"] == "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971" and
                 Path(source["path"]).suffix == ".py" and any(Path(root) in Path(source["path"]).parents for root in self.manifest["sealedRoots"]) and
                 all(Path(root) not in Path(source["path"]).parents for root in self.manifest["forbiddenOriginalRoots"]) and
-                digest(read_owned(source["path"])) == source["sha256"], "The successful Guid worker source is not its exact reviewed owned implementation.")
-        if not hasattr(self, "evidence_identities"):
-            self.evidence_identities = {}
-        self.evidence_identities[source["path"]] = file_identity(protected(source["path"]))
+                digest(self._evidence_bytes(source, sealed=True)) == source["sha256"], "The successful Guid worker source is not its exact reviewed owned implementation.")
         require(prior["runId"] == independent["runId"] == terminal["runId"] == index["runId"] == closures["runId"] and
                 prior["process"] == self.manifest["process"] and prior["endpoint"] == self.manifest["endpoint"] and prior["lock"] == self.manifest["lock"] and
-                prior["preservation"] == self.manifest["preservation"] and same(documents["afterPublic"], self.baseline),
-                "The successful Guid experiment and new preparation have different target or preserved-scope identities.")
+                prior["preservation"] == self.parent_manifest["preservation"] and
+                same(documents["afterPublic"], self._evidence(self.parent_manifest["inputs"]["publicBaseline"], sealed=True)),
+                "The Guid experiment does not bind its exact historical predecessor scope and baseline.")
         require(terminal.get("status") == "awaiting_independent_attestation" and terminal.get("failure") is None and
                 terminal.get("pendingPresent") is False and terminal.get("uncertain") is False and
                 all(terminal.get(key) is True for key in ("grantSemanticsProven", "originalPolicyRestored", "publicPreserved", "allKnownTokensClosed")) and
@@ -631,8 +715,8 @@ class Authority:
                     ledger["logout-" + actor]["index"]["ordinal"] < ledger["rejection-" + actor]["index"]["ordinal"] and
                     instant(row["through"]) <= instant(self.release["releasedAt"]), "The actual closure window is not exact and ordered.")
             actual_closed.append(normalized)
-        require([row for row in self.release["closedAuthentication"] if "login" in row] == actual_closed,
-                "The new release closures must be the exact indexed Guid worker facts.")
+        require([row for row in self.parent_release["closedAuthentication"] if "login" in row] == actual_closed,
+                "The predecessor release closures must be the exact indexed historical Guid worker facts.")
         original, target = documents["originalPolicy"], documents["targetPolicy"]
         require(set(original) == set(target) and [key for key in sorted(original) if not same(original[key], target[key])] == ["EnabledFolders"] and
                 target.get("EnableAllFolders") is False and target.get("IsAdministrator") is False and
@@ -746,9 +830,10 @@ class Authority:
                 "The independently completed unit did not execute the exact recorded owned source and input.")
         self.grant_unit = {"name": unit["name"], "invocationId": properties["InvocationID"], "cgroupPath": unit["cgroupPath"],
             "properties": {key: properties[key] for key in ("ActiveState", "SubState", "MainPID", "Result", "ControlGroup", "ExecMainStatus", "RemainAfterExit", "Type", "ExecStart")}}
+        require(self.grant_unit["name"] != self.observer_unit["name"], "Historical Guid and current observer unit identities cannot coincide.")
 
-    def _units(self):
-        for row in [*self.release["units"], self.grant_unit]:
+    def _check_units(self, rows):
+        for row in rows:
             names = ("InvocationID", *row["properties"])
             result = subprocess.run(["/usr/bin/systemctl", "show", row["name"], *[part for name in names for part in ("-p", name)]],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15, check=False,
@@ -761,6 +846,15 @@ class Authority:
                 paths = [root, *(path for path in root.rglob("*") if path.is_dir())]
                 require(len(paths) <= 128 and all(not stat.S_ISLNK(path.lstat().st_mode) and not (path / "cgroup.procs").read_text().strip() for path in paths),
                         "A released explicit worker/controller cgroup is not empty.")
+
+    def _observer_current(self):
+        self._check_units([self.observer_unit])
+        require(not os.path.lexists("/proc/" + str(self.observer_former_pid)),
+                "The independently completed observer's former process is still present.")
+
+    def _units(self):
+        self._check_units([*self.release["units"], self.grant_unit])
+        self._observer_current()
 
     def acquire(self):
         require(self.lock_fd is None, "The existing fixture lock cannot be reacquired.")
@@ -784,6 +878,7 @@ class Authority:
         opened, named = os.fstat(self.lock_fd), protected(lock["path"], private=True)
         require((opened.st_dev, opened.st_ino) == (named.st_dev, named.st_ino) == (lock["device"], lock["inode"]), "The held fixture lock was replaced.")
         require(self.support.process_identity(self.manifest["process"]) == self.manifest["process"], "The original metadata or existing proxy identity changed.")
+        self._observer_current()
         for row in (*self.manifest["sources"].values(), *self.manifest["inputs"].values()):
             require(digest(read_owned(row["path"])) == row["sha256"], "A frozen owned input changed during preparation.")
         for path, expected in self.evidence_identities.items():

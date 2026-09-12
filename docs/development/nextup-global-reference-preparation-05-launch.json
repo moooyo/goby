@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-09-12T22:46:48.061718+00:00",
+  "intent": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-execution-05/launch-intent.json",
+    "sha256": "4862b846a973bc4b2468a00f4a3a6bc7ca6b3a56f2a1d0a77429b1a56f853114"
+  },
+  "launchReturnCode": 0,
+  "launchStderr": "Running as unit: goby-nextup-global-reference-preparation-05.service\n",
+  "launchStdout": "",
+  "properties": {
+    "ActiveState": "activating",
+    "ControlGroup": "/system.slice/goby-nextup-global-reference-preparation-05.service",
+    "ExecMainPID": "1517493",
+    "ExecMainStatus": "0",
+    "Id": "goby-nextup-global-reference-preparation-05.service",
+    "InvocationID": "cf198945fa894c6c93d23cd53d1798bf",
+    "LoadState": "loaded",
+    "MainPID": "1517493",
+    "Result": "success",
+    "SubState": "start"
+  },
+  "schemaVersion": 1
+}

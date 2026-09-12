@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-observation-03/private/public-baseline.json",
+    "sha256": "518bf101500b94c1b1c07c2c90934f96ee741265b5058e16a4103b4d45439a0f"
+  },
+  "baselineObservation": {
+    "independent": {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-baseline-execution-03/independent-terminal.json",
+      "sha256": "f5b2521936e18b00787c4d8ec068410d6d142363f74dfba9051577016005bba1"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-baseline-inputs-03/input.json",
+      "sha256": "cc59138eda23e99832263d3d85feda89f92a39fda69e7c4146a0609e8ee4a320"
+    }
+  },
+  "businessHttpRequests": 0,
+  "currentProcessAndCompletedUnitsVerified": true,
+  "existingLockAcquiredAndReleased": true,
+  "input": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-preparation-inputs-05/input.json",
+    "sha256": "aea806c70aa7e0f84c55bdbac3eab4c436ccce41c4769532ee53c5751a5bdea5"
+  },
+  "kind": "nextup-global-preparation-admission",
+  "mediaStaged": false,
+  "passed": true,
+  "planSha256": "2fff709c64b7e1747a120cf03f1e222302879c4c4f7ac020d07a221a3c53e6d5",
+  "preparationExecuted": false,
+  "schemaVersion": 1,
+  "sealedRootCount": 163,
+  "source": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/prepare-nextup-global-reference.py",
+    "sha256": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7"
+  },
+  "trackedEvidenceFiles": 1005
+}

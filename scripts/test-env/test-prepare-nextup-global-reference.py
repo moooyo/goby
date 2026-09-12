@@ -34,6 +34,11 @@ sys.dont_write_bytecode = True
 PREPARATION_SOURCE = None
 TRANSPORT_SOURCE = None
 MATRIX_SOURCE = None
+OBSERVER_SOURCE = None
+OBSERVER_GUARDS_SOURCE = None
+OBSERVER_TRANSPORT_SOURCE = None
+OBSERVER_SHA256 = "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6"
+OBSERVER_GUARDS_SHA256 = "b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28"
 ACTORS = ("P", "Q")
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 SUMMARIES = ("A", "AS1", "AS2", "B", "BS1", "BS2")
@@ -163,8 +168,8 @@ class PreparationFixture:
             testcase.addCleanup(sys.modules.pop, module.__name__, None)
         self.server_id = "synthetic-reference"
         self.actor_ids = {"admin": "old-user-0", "P": "synthetic-user-P", "Q": "synthetic-user-Q"}
-        self.old_user_ids = ["old-user-" + str(index) for index in range(8)]
-        self.old_library_ids = ["old-library-" + str(index) for index in range(10)]
+        self.old_user_ids = ["old-user-" + str(index) for index in range(10)]
+        self.old_library_ids = ["old-library-" + str(index) for index in range(12)]
         self.library_ids = {library: "synthetic-library-" + library for library in ("LA", "LB")}
         self.policy_guids = {"LA": "a123456789abcdef0123456789abcdef", "LB": "b123456789abcdef0123456789abcdef"}
         self.view_ids = {library: "synthetic-view-" + library for library in ("LA", "LB")}
@@ -192,7 +197,7 @@ class PreparationFixture:
         info = executable.stat()
         application = {"pid": 54321, "startTicks": "123456", "bootId": "synthetic-boot", "uid": 0,
             "exe": str(executable), "exeDevice": info.st_dev, "exeInode": info.st_ino,
-            "cmdline": [str(executable), "--synthetic-only"], "networkNamespace": "net:[54321]",
+            "cmdline": [str(executable), "-programdata", str(self.root / "forbidden-data")], "networkNamespace": "net:[54321]",
             "cgroup": "0::/synthetic-application\n"}
         endpoint = deepcopy(application)
         endpoint.update(pid=54322, startTicks="123457", networkNamespace="net:[54322]",
@@ -207,6 +212,7 @@ class PreparationFixture:
         sealed = self.root / "synthetic-sealed-history"
         sealed.mkdir(mode=0o700)
         self.baseline = self.make_baseline()
+        self.historical_baseline = self.make_baseline(historical=True)
         self.release = {"closedAuthentication": [], "releasedAt": STAMP}
         input_root = Path(self.scope["fixtureRoot"]) / "synthetic-inputs"
         input_root.mkdir(mode=0o700)
@@ -237,21 +243,26 @@ class PreparationFixture:
                 actors[actor]["matrixDeviceId"] = "synthetic-matrix-device-" + actor
         budgets = {"requestSeconds": 5, "normalSeconds": 1200, "cleanupSeconds": 600,
                    "requestBytes": 32768, "responseBytes": 65536,
-                   "totalResponseBytes": 24 * 1024 * 1024, "cleanupResponseBytes": 7 * 1024 * 1024}
+                   "totalResponseBytes": 32 * 1024 * 1024, "cleanupResponseBytes": 8 * 1024 * 1024}
         self.manifest = {"schemaVersion": 1, "runId": "synthetic-preparation", "target": "reference", "ownerUid": 0,
             "server": {"id": self.server_id, "version": "synthetic-version"},
             "endpoint": {"scheme": "http", "host": "127.0.0.1", "port": 18197}, "process": self.process,
             "lock": self.lock, "sources": {key: self.descriptor(path) for key, path in self.paths.items()},
-            "inputs": inputs, "scope": self.scope, "sealedRoots": [str(sealed)], "forbiddenOriginalRoots": [str(executable)],
+            "inputs": inputs, "scope": self.scope, "sealedRoots": [str(sealed)],
+            "forbiddenOriginalRoots": [str(executable), str(self.root / "forbidden-data")],
             "media": {"source": media_source, "ownedRoot": str(input_root), "approvedReceipt": approved_descriptor,
                       "approvedReceiptSha256": approved_descriptor["sha256"],
                       "roots": {library: self.media[library]["rootPath"] for library in ("LA", "LB")}},
             "actors": actors, "libraries": {library: {"name": self.library_names[library],
                                                      "seriesName": self.series_names[library]} for library in ("LA", "LB")},
             "preservation": {"userIds": self.old_user_ids, "libraryIds": self.old_library_ids,
-                "detailRoutes": [{"group": group, "userId": "old-user-0" if group == "admin" else "old-user-6" if group == "grant-P" else "old-user-1", "itemId": item}
+                "detailRoutes": [{"group": group, "userId": "old-user-0" if group == "admin" else "old-user-6" if group == "grant-P" else
+                                 "old-user-8" if group == "preparation04-P" else "old-user-9" if group == "preparation04-Q" else "old-user-1", "itemId": item}
                                  for group, rows in self.baseline["details"].items() for item in rows]},
             "budgets": budgets, "matrixBudgets": deepcopy(budgets), "lifecycleSeparationSeconds": 2}
+        self.historical_preservation = {"userIds": self.old_user_ids[:8], "libraryIds": self.old_library_ids[:10],
+            "detailRoutes": [deepcopy(row) for row in self.manifest["preservation"]["detailRoutes"]
+                             if not row["group"].startswith("preparation04-")]}
 
     @staticmethod
     def write(path, raw):
@@ -269,25 +280,27 @@ class PreparationFixture:
                        "EnabledFolders": [] if actor == "admin" else list(self.policy_guids.values()), "IsDisabled": False},
             "Configuration": {"Order": ["tv"]}}
 
-    def make_baseline(self):
+    def make_baseline(self, *, historical=False):
+        user_ids = self.old_user_ids[:8] if historical else self.old_user_ids
+        library_ids = self.old_library_ids[:10] if historical else self.old_library_ids
         roster = {user: {"Id": user, "Name": self.credentials["admin"]["username"] if index == 0 else "Old User " + str(index),
             "Policy": {"IsAdministrator": index == 0, "EnableAllFolders": True, "EnabledFolders": [], "IsDisabled": False},
-            "Configuration": {"Order": ["movies"]}} for index, user in enumerate(self.old_user_ids)}
+            "Configuration": {"Order": ["movies"]}} for index, user in enumerate(user_ids)}
         libraries = {library: {"ItemId": library, "Name": "Old Library " + str(index), "CollectionType": "movies",
             "Locations": [str(self.root / ("old-media-" + str(index)))],
             "LibraryOptions": {"SaveLocalMetadata": False, "MetadataSavers": []}}
-                     for index, library in enumerate(self.old_library_ids)}
+                     for index, library in enumerate(library_ids)}
         items = {"old-item-" + str(index): {"Id": "old-item-" + str(index), "Name": "Old Movie " + str(index),
             "Type": "Movie", "ParentId": library, "IsFolder": False, "UserData": zero_state("old-" + str(index)),
             "Path": str(self.root / ("old-media-" + str(index)) / "old-movie.mp4")}
-                 for index, library in enumerate(self.old_library_ids)}
-        return {"marker": "synthetic-public-baseline", "version": 1, "captured_at": STAMP,
+                 for index, library in enumerate(library_ids)}
+        value = {"marker": "synthetic-public-baseline", "version": 1, "captured_at": STAMP,
             "server": {"Id": self.server_id, "Version": "synthetic-version"}, "roster": roster,
             "configuration": {"SyntheticConfiguration": {"preserve": True}}, "libraries": libraries,
             "catalog_by_library": {library: {"old-item-" + str(index): deepcopy(items["old-item-" + str(index)])}
-                                   for index, library in enumerate(self.old_library_ids)},
-            "items_by_user": {user: deepcopy(items) for user in self.old_user_ids},
-            "preferences": {user: {"SyntheticPreference": index} for index, user in enumerate(self.old_user_ids)},
+                                   for index, library in enumerate(library_ids)},
+            "items_by_user": {user: deepcopy(items) for user in user_ids},
+            "preferences": {user: {"SyntheticPreference": index} for index, user in enumerate(user_ids)},
             "details": {"admin": {key: deepcopy(items[key]) for key in list(items)[:4]},
                         "viewer": {key: deepcopy(items[key]) for key in list(items)[:2]},
                         "grant-P": {key: deepcopy(items[key]) for key in list(items)[:6]}},
@@ -297,6 +310,14 @@ class PreparationFixture:
                 "DateLastActivity": STAMP}},
             "credential_context": {"channel": "controller_api", "authenticated_user_id": self.actor_ids["admin"],
                 "token_sha256": "b" * 64, "user_id_semantics": "subject_projection"}}
+        if not historical:
+            for actor in ACTORS:
+                value["details"]["preparation04-" + actor] = {key: deepcopy(items[key]) for key in list(items)[:6]}
+            for index in range(1, 98):
+                key = "old-device-" + str(index)
+                value["devices"][key] = {**deepcopy(value["devices"]["old-device-0"]),
+                    "Id": key, "ReportedDeviceId": "old-reported-device-" + str(index)}
+        return value
 
     def views(self, actor):
         return [{"Id": self.view_ids[library], "Name": self.library_names[library], "Type": "CollectionFolder",
@@ -616,12 +637,14 @@ class PlanGuards(GuardCase):
         observed["actors"]["P"]["username"] = "Changed Only In Returned Copy"
         self.assertNotEqual(observed, original)
         self.assertFalse(self.fixture.output.exists())
-        self.assertEqual(plan["maximumRequests"], 380)
-        self.assertEqual(plan["normalLimit"], 280)
-        self.assertEqual(plan["cleanupReserve"], 100)
-        self.assertEqual(plan["normalMaximum"], 257)
-        self.assertEqual(plan["successMaximumIncludingLogout"], 263)
-        self.assertEqual(plan["cleanupMaximum"], 89)
+        self.assertEqual(plan["maximumRequests"], 440)
+        self.assertEqual(plan["normalLimit"], 320)
+        self.assertEqual(plan["cleanupReserve"], 120)
+        self.assertEqual(plan["normalMaximum"], 293)
+        self.assertEqual(plan["successMaximumIncludingLogout"], 299)
+        self.assertEqual(plan["cleanupMaximum"], 107)
+        self.assertEqual(plan["phaseMaximums"], {"before": 62, "libraries": 42, "mapping": 6, "accounts": 8,
+            "baseline": 36, "calibration": 44, "zero": 28, "after": 67, "cleanup": 107})
         self.assertEqual(plan["calibrations"], [["P", "A1", "partial"], ["P", "A1", "complete"],
                                                 ["Q", "B1", "partial"], ["Q", "B1", "complete"]])
 
@@ -690,7 +713,8 @@ class PlanGuards(GuardCase):
                     with self.subTest(family=family, key=key, value=value):
                         self.reject(lambda manifest: manifest[family].update({key: value}))
         self.reject(lambda manifest: manifest["budgets"].update(responseBytes=1024 * 1024 + 1))
-        self.reject(lambda manifest: manifest["budgets"].update(cleanupResponseBytes=100 * manifest["budgets"]["responseBytes"]))
+        self.reject(lambda manifest: manifest["budgets"].update(cleanupResponseBytes=120 * manifest["budgets"]["responseBytes"]))
+        self.reject(lambda manifest: manifest["budgets"].update(cleanupResponseBytes=121 * 1024 * 1024 + 1))
         self.reject(lambda manifest: manifest["matrixBudgets"].update(totalResponseBytes=384 * 1024 * 1024))
         self.reject(lambda manifest: manifest["matrixBudgets"].update(cleanupResponseBytes=81 * 1024 * 1024))
 
@@ -717,8 +741,8 @@ class PipelineGuards(GuardCase):
         self.assertEqual(result["status"], "awaiting_independent_attestation")
         self.assertIsNone(result["ownershipPending"])
         self.assertFalse(result["uncertain"])
-        self.assertLessEqual(result["requestCount"], 263)
-        self.assertLessEqual(result["normalRequestCount"], 257)
+        self.assertLessEqual(result["requestCount"], 299)
+        self.assertLessEqual(result["normalRequestCount"], 293)
         self.assertEqual(result["cleanupRequestCount"], 6)
         self.assertEqual(len(wire.calls), result["requestCount"])
         self.assertEqual(wire.revoked, {"admin", "P", "Q"})
@@ -1302,7 +1326,8 @@ class DevicesSnapshotGuards(GuardCase):
         runner, wire, unused_authority = self.runner(response_hook=exact)
         result = runner.run()
         self.assertTrue(result["completed"], result)
-        self.assertEqual(counts, [2, 4])
+        baseline_count = len(self.fixture.baseline["devices"])
+        self.assertEqual(counts, [baseline_count + 1, baseline_count + 3])
 
     def test_snapshot_cannot_omit_a_preserved_old_device(self):
         self.corrupt_devices(lambda body: {**body, "Items": [row for row in body["Items"] if row["Id"] != "old-device-0"]})
@@ -1734,8 +1759,8 @@ class DispatchBudgetGuards(GuardCase):
 
     def test_normal_count_cannot_spend_reserved_cleanup_capacity(self):
         runner, wire, unused_authority = self.prepared_dispatch()
-        runner.normal_count = 280
-        runner.count = 280
+        runner.normal_count = 320
+        runner.count = 320
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1744,7 +1769,7 @@ class DispatchBudgetGuards(GuardCase):
         runner, wire, unused_authority = self.prepared_dispatch()
         runner.phase = "cleanup"
         runner.cleanup_started = self.clock()
-        runner.count = 380
+        runner.count = 440
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1753,14 +1778,14 @@ class DispatchBudgetGuards(GuardCase):
         runner, wire, unused_authority = self.prepared_dispatch()
         runner.phase = "cleanup"
         runner.cleanup_started = self.clock()
-        runner.cleanup_count = 100
+        runner.cleanup_count = 120
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
 
     def test_phase_limit_cannot_use_unused_other_phase_slots(self):
         runner, wire, unused_authority = self.prepared_dispatch()
-        runner.phase_counts["before"] = 44
+        runner.phase_counts["before"] = 62
         with self.assertRaises(self.P.PreparationError):
             self.login_dispatch(runner)
         self.assertEqual(len(wire.calls), 0)
@@ -1907,8 +1932,8 @@ def add_grant_verification_fixture(fixture, release):
         return fixture.descriptor(path)
 
     manifest = fixture.manifest
-    baseline = deepcopy(fixture.baseline)
-    preservation = manifest["preservation"]
+    baseline = deepcopy(fixture.historical_baseline)
+    preservation = deepcopy(fixture.historical_preservation)
     assert len(preservation["userIds"]) == 8
     assert len(preservation["libraryIds"]) == 10
     assert len(preservation["detailRoutes"]) == 12
@@ -2212,14 +2237,125 @@ def add_grant_verification_fixture(fixture, release):
     release_time = datetime.fromisoformat(release["releasedAt"].replace("Z", "+00:00"))
     grant_time = datetime.fromisoformat(independent["capturedAt"])
     assert grant_time <= release_time
-    fixture.baseline = deepcopy(after)
+    fixture.historical_baseline = deepcopy(after)
     fixture.release = release
-    manifest["inputs"]["publicBaseline"] = deepcopy(descriptors["afterPublic"])
-    manifest["inputs"]["release"] = save(Path(manifest["scope"]["inputRoot"]) / "synthetic-grant-release.json", release)
     fixture.grant_verification = {"root": root, "private": private, "documents": documents, "descriptors": descriptors,
         "independent": independent, "independentDescriptor": independent_descriptor, "records": records, "actors": actors,
         "normalizedClosures": normalized, "chargedResponseBytes": charged}
     return fixture.grant_verification
+
+
+def add_baseline_observation_fixture(fixture, release, testcase):
+    """Produce real observer journals with only historical input authority synthetic.
+
+    The fixed parent-seal pin is a deliberately synthetic historical boundary.
+    Its case-owned parent manifest and release remain ordinary pinned JSON files.
+    Every observer source byte, raw event, generated journal, fresh baseline and
+    closure is retained and replayed by the unmodified completed verifier.
+    """
+    testcase.assertEqual(digest(OBSERVER_SOURCE.read_bytes()), OBSERVER_SHA256)
+    testcase.assertEqual(digest(OBSERVER_GUARDS_SOURCE.read_bytes()), OBSERVER_GUARDS_SHA256)
+    guards = load_source(OBSERVER_GUARDS_SOURCE, "preparation_observer_guards")
+    testcase.addCleanup(sys.modules.pop, guards.__name__, None)
+    guards.SUBJECT, guards.SUPPORT = OBSERVER_SOURCE, OBSERVER_TRANSPORT_SOURCE
+    observer = guards.Fixture(testcase)
+    testcase.assertEqual(digest(OBSERVER_TRANSPORT_SOURCE.read_bytes()), observer.module.TRANSPORT_SHA256)
+    fixture.observer_guards, fixture.observer_fixture = guards, observer
+    observer.users, observer.libraries = list(fixture.old_user_ids), list(fixture.old_library_ids)
+    observer.credentials = {**deepcopy(fixture.credentials["admin"]), "userId": fixture.actor_ids["admin"]}
+    observer.admin = {key: value for key, value in observer.credentials.items() if key != "password"}
+    observer.admin["deviceId"] = "fresh-baseline-observer-device"
+    observer.old_routes = deepcopy(fixture.historical_preservation["detailRoutes"])
+    observer.new_routes = [{"group": "preparation04-" + actor, "userId": observer.users[index], "itemId": item["id"]}
+        for actor, index in (("P", 8), ("Q", 9)) for item in observer.items.values()]
+    observer.manifest.update(server=deepcopy(fixture.manifest["server"]), process=deepcopy(fixture.manifest["process"]),
+        lock=deepcopy(fixture.manifest["lock"]), endpoint=deepcopy(fixture.manifest["endpoint"]), admin=deepcopy(observer.admin),
+        forbiddenOriginalRoots=deepcopy(fixture.manifest["forbiddenOriginalRoots"]),
+        preservation={"userIds": observer.users, "libraryIds": observer.libraries,
+                      "detailRoutes": observer.old_routes + observer.new_routes})
+    observer.manifest["scope"]["fixtureRoot"] = fixture.manifest["scope"]["fixtureRoot"]
+    observer.manifest["scope"]["proxySourceRoot"] = fixture.manifest["scope"]["proxySourceRoot"]
+    observer.manifest["sources"]["proxy"] = deepcopy(fixture.manifest["sources"]["proxy"])
+    observer.output = Path(observer.manifest["scope"]["fixtureRoot"]) / "completed-synthetic-observer"
+    observer.manifest["scope"]["outputRoot"] = str(observer.output)
+    observer.manifest["inputs"]["credentials"] = guards.write_json(Path(observer.manifest["inputs"]["credentials"]["path"]),
+        {"schemaVersion": 1, "runId": observer.manifest["runId"], "admin": observer.credentials})
+    observer.input_descriptor = guards.write_json(observer.input_path, observer.manifest)
+    observer.baseline = observer.make_baseline()
+    observer.baseline["roster"][observer.users[0]]["Name"] = observer.admin["username"]
+    for index, row in enumerate(entry for entry in release["closedAuthentication"] if "login" not in entry):
+        retained = observer.baseline["devices"][str(1000 + index)]
+        retained.update(ReportedDeviceId=row["reportedDeviceId"], LastUserId=row["userId"])
+    for row in observer.baseline["devices"].values():
+        row["LastUserName"] = observer.baseline["roster"][row["LastUserId"]]["Name"]
+    observer.baseline_descriptor = guards.write_json(observer.sealed / "parent-public.json", observer.baseline)
+    observer.restored_subject, observer.restored_item = observer.users[8], observer.items["A1"]["id"]
+    observer.recovery_login["actor"].update(userId=observer.restored_subject,
+        username=observer.baseline["roster"][observer.restored_subject]["Name"])
+    observer.closed_device_windows = {key: {"from": guards.BASE_TIME, "through": "2026-09-15T00:00:40+00:00",
+        "userId": observer.baseline["devices"][key]["LastUserId"], "reportedDeviceId": observer.baseline["devices"][key]["ReportedDeviceId"]}
+        for key in ("1093", "1094", "1095")}
+    observer.user_windows = {observer.restored_subject: [{"from": observer.recovery_login["from"], "through": observer.recovery_login["through"],
+        "fields": {"LastLoginDate", "LastActivityDate"}}]}
+    observer.authority = guards.FakeAuthority(observer)
+    terminal = observer.run()
+    testcase.assertEqual(terminal["status"], "awaiting_independent_attestation")
+    testcase.assertEqual((terminal["requestCount"], terminal["normalRequestCount"], terminal["cleanupRequestCount"]), (64, 62, 2))
+    evidence = observer.completed_evidence()
+    fixture.observer_evidence = deepcopy(evidence)
+    fixture.parent_release = deepcopy(release)
+    fixture.parent_manifest = deepcopy(fixture.manifest)
+    fixture.parent_manifest["preservation"] = deepcopy(fixture.historical_preservation)
+    fixture.parent_manifest["inputs"]["publicBaseline"] = deepcopy(fixture.grant_verification["descriptors"]["afterPublic"])
+    fixture.parent_manifest["inputs"]["release"] = guards.write_json(observer.sealed / "parent-release.json", fixture.parent_release)
+    fixture.parent_manifest_descriptor = guards.write_json(observer.sealed / "parent-manifest.json", fixture.parent_manifest)
+    fixture.observer_parent_seal = {"manifest": deepcopy(fixture.parent_manifest_descriptor),
+        "afterPreservation": deepcopy(observer.parent_preservation_descriptor)}
+    fixture.baseline = guards.read_json(Path(observer.independent["afterPublic"]["path"]))
+    fixture.manifest["preservation"] = deepcopy(observer.manifest["preservation"])
+    fixture.manifest["inputs"]["publicBaseline"] = deepcopy(observer.independent["afterPublic"])
+    fixture.manifest["sealedRoots"].extend([str(observer.root), str(observer.output), str(observer.independent_path.parent)])
+    closure = guards.read_json(Path(observer.independent["closedAuthentication"]["path"]))
+    common = {key: value for key, value in closure.items() if key not in ("login", "deviceObservation")}
+    release.update(schemaVersion=3, baselineObservation=deepcopy(evidence),
+        releasedAt="2026-09-15T00:04:00+00:00", sealedRoots=deepcopy(fixture.manifest["sealedRoots"]),
+        closedAuthentication=[deepcopy(row) for row in fixture.parent_release["closedAuthentication"] if "login" not in row] + [common])
+    fixture.release = release
+    fixture.manifest["inputs"]["release"] = guards.write_json(Path(fixture.manifest["scope"]["inputRoot"]) / "synthetic-observer-release.json", release)
+    fixture.clock.base = datetime(2026, 9, 15, 1, tzinfo=timezone.utc)
+    return observer
+
+
+def install_synthetic_observer_boundaries(fixture, testcase, *, preparation=None):
+    """Install two explicit historical seams while keeping completed replay real."""
+    preparation, observer = preparation or fixture.module, fixture.observer_fixture
+    original_load, original_evidence = preparation.load_owned, preparation.Authority._evidence
+    fixture.observer_modules, fixture.synthetic_boundary_reads = [], []
+
+    def load_with_historical_inputs(source, label):
+        module = original_load(source, label)
+        if source == observer.manifest["sources"]["observer"]:
+            testcase.assertEqual(digest(Path(source["path"]).read_bytes()), OBSERVER_SHA256)
+            class SyntheticInputEvidence(SimpleNamespace):
+                def __init__(self, manifest, reader):
+                    testcase.assertEqual(manifest, observer.manifest)
+                    super().__init__(**observer.evidence_fields())
+                    self.baseline = reader.record(observer.baseline_descriptor)
+            module.InputEvidence = SyntheticInputEvidence
+            fixture.observer_modules.append(module)
+        return module
+
+    def historical_parent_seal(authority, row, *, sealed=False):
+        if row == observer.manifest["inputs"]["parentSeal"]:
+            fixture.synthetic_boundary_reads.append(deepcopy(row))
+            return deepcopy(fixture.observer_parent_seal)
+        return original_evidence(authority, row, sealed=sealed)
+
+    for target, name, replacement in ((preparation, "load_owned", load_with_historical_inputs),
+                                       (preparation.Authority, "_evidence", historical_parent_seal)):
+        boundary = patch.object(target, name, replacement)
+        boundary.start()
+        testcase.addCleanup(boundary.stop)
 
 
 class ActualAuthorityGuards(unittest.TestCase):
@@ -2230,6 +2366,7 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.P = self.fixture.module
         self.manifest = self.fixture.manifest
         self.units_checked = []
+        self.observer_current_checks = []
         self.process_checked = []
         self.network_attempts = []
         self.loaded_modules = set(sys.modules)
@@ -2293,8 +2430,12 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.replace_input("release", self.release)
         self.fixture.baseline["devices"]["synthetic-prior-registry"] = {"Id": "synthetic-prior-registry",
             "ReportedDeviceId": "synthetic-prior-device", "LastUserId": "old-user-1"}
+        self.fixture.historical_baseline["devices"]["synthetic-prior-registry"] = deepcopy(
+            self.fixture.baseline["devices"]["synthetic-prior-registry"])
         self.replace_input("publicBaseline", self.fixture.baseline)
         add_grant_verification_fixture(self.fixture, self.release)
+        add_baseline_observation_fixture(self.fixture, self.release, self)
+        install_synthetic_observer_boundaries(self.fixture, self)
         self.refresh_media_approval()
 
     def refresh_media_approval(self):
@@ -2306,7 +2447,7 @@ class ActualAuthorityGuards(unittest.TestCase):
 
     def clean_loaded_modules(self):
         for name in set(sys.modules) - self.loaded_modules:
-            if name.startswith(("preparation_transport_", "preparation_matrix_")):
+            if name.startswith(("preparation_transport_", "preparation_matrix_", "preparation_observer_", "preparation_baseline_observer_")):
                 sys.modules.pop(name, None)
 
     def replace_input(self, name, value):
@@ -2319,11 +2460,14 @@ class ActualAuthorityGuards(unittest.TestCase):
         authority = self.P.Authority(self.manifest)
         self.addCleanup(authority.close)
         def fake_units():
-            self.units_checked.append(deepcopy(authority.release["units"]))
+            self.units_checked.append(deepcopy([*authority.release["units"], authority.grant_unit, authority.observer_unit]))
+        def fake_observer_current():
+            self.observer_current_checks.append({"unit": deepcopy(authority.observer_unit), "formerPid": authority.observer_former_pid})
         def fake_process(expected):
             self.process_checked.append(deepcopy(expected))
             return deepcopy(expected)
         authority._units = fake_units
+        authority._observer_current = fake_observer_current
         patcher = patch.object(authority.support, "process_identity", side_effect=fake_process)
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -2355,6 +2499,14 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.assertTrue(all(Path(row["path"]).read_bytes() == self.fixture.media_bytes for row in files))
         self.assertTrue(all(row["sha256"] == digest(self.fixture.media_bytes) for row in files))
         self.assertEqual(len(self.units_checked), 1)
+        self.assertEqual(len(self.units_checked[0]), 4)
+        self.assertTrue(self.observer_current_checks)
+        self.assertEqual((authority.observer_verified["requestCount"], authority.observer_verified["normalRequestCount"],
+                          authority.observer_verified["cleanupRequestCount"]), (64, 62, 2))
+        self.assertEqual((len(authority.baseline["roster"]), len(authority.baseline["libraries"]),
+                          sum(map(len, authority.baseline["details"].values())), len(authority.baseline["devices"])), (10, 12, 24, 98))
+        self.assertTrue(self.fixture.observer_modules)
+        self.assertTrue(self.fixture.synthetic_boundary_reads)
         self.assertTrue(self.process_checked)
         self.assertEqual(self.network_attempts, [])
         self.assertFalse(Path(self.manifest["scope"]["matrixEvidenceRoot"]).exists())
@@ -2371,10 +2523,185 @@ class ActualAuthorityGuards(unittest.TestCase):
         self.assertEqual(authority.grant_unit["invocationId"], "3" * 32)
         self.assertEqual(self.network_attempts, [])
 
+    def refresh_observer_evidence(self):
+        self.release["baselineObservation"] = deepcopy(self.fixture.observer_fixture.evidence)
+        self.replace_input("release", self.release)
+
+    def test_completed_observer_source_requires_its_fixed_reviewed_pin(self):
+        observer = self.fixture.observer_fixture
+        observer.manifest["sources"]["observer"]["sha256"] = "0" * 64
+        observer.input_descriptor = self.fixture.observer_guards.write_json(observer.input_path, observer.manifest)
+        observer.evidence["manifest"] = deepcopy(observer.input_descriptor)
+        observer.independent["manifest"] = deepcopy(observer.input_descriptor)
+        observer.reseal_independent()
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_completed_observer_requires_every_raw_response(self):
+        observer = self.fixture.observer_fixture
+        index = self.fixture.observer_guards.read_json(observer.index_path)
+        Path(index["requests"][32]["response"]["path"]).unlink()
+        self.reject_constructor()
+
+    def test_completed_observer_rejects_truncated_raw_response(self):
+        observer = self.fixture.observer_fixture
+        observer.replace_wire("configuration", "response", lambda value: value.update(retainedRawTruncated=True))
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_completed_observer_rejects_reordered_raw_ledger(self):
+        observer = self.fixture.observer_fixture
+        index = self.fixture.observer_guards.read_json(observer.index_path)
+        index["requests"][10], index["requests"][11] = index["requests"][11], index["requests"][10]
+        observer.reseal_index(index)
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_completed_observer_rejects_changed_journal_closure(self):
+        observer = self.fixture.observer_fixture
+        path = Path(observer.independent["closedAuthentication"]["path"])
+        value = self.fixture.observer_guards.read_json(path)
+        value["reportedDeviceId"] = "another-observer-device"
+        observer.independent["closedAuthentication"] = self.fixture.observer_guards.write_json(path, value)
+        observer.reseal_independent()
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_current_closure_requires_exact_common_seven_fields(self):
+        self.release["closedAuthentication"][-1]["tokenSha256"] = "e" * 64
+        self.replace_input("release", self.release)
+        self.reject_constructor()
+
+    def test_historical_grant_closures_cannot_be_current_observer_closures(self):
+        self.release["closedAuthentication"] = deepcopy(self.fixture.parent_release["closedAuthentication"])
+        self.replace_input("release", self.release)
+        self.reject_constructor()
+
+    def test_current_baseline_cannot_be_the_historical_grant_snapshot(self):
+        self.manifest["inputs"]["publicBaseline"] = deepcopy(self.fixture.grant_verification["descriptors"]["afterPublic"])
+        self.reject_constructor()
+
+    def test_current_baseline_cannot_be_copied_to_another_path(self):
+        original = Path(self.manifest["inputs"]["publicBaseline"]["path"])
+        copied = Path(self.manifest["scope"]["inputRoot"]) / "copied-observer-baseline.json"
+        self.fixture.write(copied, original.read_bytes())
+        self.manifest["inputs"]["publicBaseline"] = self.fixture.descriptor(copied)
+        self.reject_constructor()
+
+    def test_observer_unit_requires_actual_completed_command_context(self):
+        observer = self.fixture.observer_fixture
+        observer.independent["unit"]["properties"].pop("ExecStart")
+        observer.reseal_independent()
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_observer_unit_requires_its_former_process_identity(self):
+        observer = self.fixture.observer_fixture
+        observer.independent["formerPid"] += 1
+        observer.reseal_independent()
+        self.refresh_observer_evidence()
+        self.reject_constructor()
+
+    def test_current_observer_unit_is_rechecked_before_each_checkpoint(self):
+        authority = self.authority()
+        authority.acquire()
+        before = len(self.observer_current_checks)
+        authority.check()
+        self.assertEqual(len(self.observer_current_checks), before + 1)
+        with patch.object(authority, "_observer_current", side_effect=self.P.PreparationError("Synthetic current observer drift.")):
+            with self.assertRaises(self.P.PreparationError):
+                authority.check()
+        self.assertFalse(self.fixture.output.exists())
+
+    def test_initial_unit_check_includes_observer_and_absent_former_pid(self):
+        authority = self.authority()
+        checked, paths = [], []
+        def absent(path):
+            paths.append(path)
+            return False
+        with patch.object(authority, "_check_units", side_effect=lambda rows: checked.extend(deepcopy(rows))), \
+             patch.object(authority, "_observer_current", side_effect=lambda: self.P.Authority._observer_current(authority)), \
+             patch.object(self.P.os.path, "lexists", side_effect=absent):
+            self.P.Authority._units(authority)
+        self.assertEqual(checked, [*authority.release["units"], authority.grant_unit, authority.observer_unit])
+        self.assertEqual(paths, ["/proc/" + str(authority.observer_former_pid)])
+
+    def test_current_observer_rejects_a_present_former_pid(self):
+        authority = self.authority()
+        with patch.object(authority, "_check_units"), patch.object(self.P.os.path, "lexists", return_value=True):
+            with self.assertRaises(self.P.PreparationError):
+                self.P.Authority._observer_current(authority)
+        self.assertEqual(self.network_attempts, [])
+
+    def test_current_target_context_cannot_drift_from_verified_observer(self):
+        self.manifest["process"]["application"]["startTicks"] = "777777"
+        self.release["process"] = deepcopy(self.manifest["process"])
+        self.replace_input("release", self.release)
+        self.reject_constructor()
+
+    def test_parent_release_requires_the_same_historical_grant_descriptor(self):
+        parent = deepcopy(self.fixture.parent_release)
+        parent["grantVerification"]["sha256"] = "0" * 64
+        path = Path(self.fixture.parent_manifest["inputs"]["release"]["path"])
+        self.fixture.parent_manifest["inputs"]["release"] = self.fixture.observer_guards.write_json(path, parent)
+        parent_path = Path(self.fixture.parent_manifest_descriptor["path"])
+        self.fixture.parent_manifest_descriptor = self.fixture.observer_guards.write_json(parent_path, self.fixture.parent_manifest)
+        self.fixture.observer_parent_seal["manifest"] = deepcopy(self.fixture.parent_manifest_descriptor)
+        self.reject_constructor()
+
+    def test_observer_provenance_identity_drift_is_rejected_at_checkpoint(self):
+        authority = self.authority()
+        authority.acquire()
+        observer = self.fixture.observer_fixture
+        path = Path(observer.independent["wireIndex"]["path"])
+        retained = path.with_name("retained-original-wire-index.json")
+        path.rename(retained)
+        self.fixture.write(path, retained.read_bytes())
+        with self.assertRaises(self.P.PreparationError):
+            authority.check()
+        self.assertFalse(self.fixture.output.exists())
+
+    def test_byte_callback_rejects_forbidden_descriptor_before_reading(self):
+        authority = self.authority()
+        forbidden = Path(self.manifest["forbiddenOriginalRoots"][0])
+        attempts = []
+        original = self.P.read_owned
+        def reader(path, **kwargs):
+            attempts.append(str(path))
+            return original(path, **kwargs)
+        with patch.object(self.P, "read_owned", side_effect=reader):
+            with self.assertRaises(self.P.PreparationError):
+                authority._evidence_bytes({"path": str(forbidden), "sha256": "0" * 64})
+        self.assertNotIn(str(forbidden), attempts)
+
+    def test_byte_callback_rejects_conflicting_pins_for_one_path(self):
+        authority = self.authority()
+        row = deepcopy(self.fixture.observer_fixture.independent["wireIndex"])
+        row["sha256"] = "0" * 64
+        with self.assertRaises(self.P.PreparationError):
+            authority._evidence_bytes(row)
+        self.assertEqual(self.network_attempts, [])
+
+    def test_byte_callback_rejects_same_bytes_replaced_during_first_read(self):
+        authority = self.authority()
+        path = Path(self.manifest["sealedRoots"][0]) / "synthetic-read-race.json"
+        self.fixture.write(path, encoded({"synthetic": "stable bytes with a replaced inode"}))
+        row = self.fixture.descriptor(path)
+        original = self.P.read_owned
+        def replace_after_read(candidate, **kwargs):
+            raw = original(candidate, **kwargs)
+            if Path(candidate) == path:
+                path.rename(path.with_name("synthetic-read-race-retained.json"))
+                self.fixture.write(path, raw)
+            return raw
+        with patch.object(self.P, "read_owned", side_effect=replace_after_read):
+            with self.assertRaises(self.P.PreparationError):
+                authority._evidence_bytes(row)
+        self.assertNotIn(str(path), authority.evidence_identities)
+        self.assertEqual(self.network_attempts, [])
+
     def reject_raw_release(self, mutate):
-        checker = object.__new__(self.P.Authority)
-        checker.manifest, checker.release, checker.baseline = self.manifest, self.release, self.fixture.baseline
-        checker.support, checker.planner = self.fixture.support, self.fixture.planner
+        checker = self.authority()
         def evidence(row, *, sealed=False):
             value = self.P.strict_json(self.P.read_owned(row["path"], private=True))
             mutate(row, value)
@@ -2628,7 +2955,9 @@ class PreservationOrderingGuards(unittest.TestCase):
                 unused_report = root / ("unused-worker-%02d.json" % index)
                 command = ["/usr/bin/python3", "-I", "-B", str(Path(__file__).absolute()),
                     "--preparation-source", str(PREPARATION_SOURCE), "--transport-source", str(TRANSPORT_SOURCE),
-                    "--matrix-source", str(MATRIX_SOURCE), "--report-path", str(unused_report), "--preservation-order-worker"]
+                    "--matrix-source", str(MATRIX_SOURCE), "--observer-source", str(OBSERVER_SOURCE),
+                    "--observer-guards-source", str(OBSERVER_GUARDS_SOURCE), "--observer-transport-source", str(OBSERVER_TRANSPORT_SOURCE),
+                    "--report-path", str(unused_report), "--preservation-order-worker"]
                 environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "PYTHONHASHSEED": "0"}
                 for name in ("SSH_CONNECTION", "SSH_TTY"):
                     if os.environ.get(name):
@@ -2695,6 +3024,8 @@ def verify_actual_grant_release(independent_path, independent_sha):
     checker.release = {"grantVerification": independent_descriptor, "releasedAt": independent["capturedAt"], "units": [],
         "closedAuthentication": normalized}
     checker.baseline, checker.support, checker.planner = baseline, support, planner
+    checker.parent_manifest, checker.parent_release = deepcopy(checker.manifest), deepcopy(checker.release)
+    checker.observer_unit = {"name": "historical-only-audit-no-observer.service"}
     def forbidden(*args, **kwargs):
         raise AssertionError("Completed-evidence audit cannot perform HTTP or process probes.")
     with patch.object(socket, "socket", side_effect=forbidden), patch.object(socket, "create_connection", side_effect=forbidden), \
@@ -2706,8 +3037,68 @@ def verify_actual_grant_release(independent_path, independent_sha):
         "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "livePreparationAcceptanceClaim": False}
 
 
+def verify_actual_baseline_release(manifest_path, manifest_sha, independent_path, independent_sha):
+    """Replay explicitly pinned actual observer and historical grant evidence only."""
+    preparation = load_source(PREPARATION_SOURCE, "actual_baseline_release_preparation")
+    support = load_source(TRANSPORT_SOURCE, "actual_baseline_release_transport")
+    planner = load_source(MATRIX_SOURCE, "actual_baseline_release_matrix")
+    preparation.require(digest(OBSERVER_SOURCE.read_bytes()) == OBSERVER_SHA256,
+                        "The explicit observer dependency is not the reviewed completed verifier.")
+
+    def read(row):
+        preparation.descriptor(row)
+        preparation.require(Path(row["path"]).suffix == ".json", "Actual audit inputs must be explicitly pinned JSON evidence.")
+        raw = preparation.read_owned(row["path"], private=True)
+        preparation.require(digest(raw) == row["sha256"], "An explicitly pinned actual evidence file changed.")
+        return preparation.strict_json(raw)
+
+    evidence = {"manifest": {"path": str(manifest_path), "sha256": manifest_sha},
+                "independent": {"path": str(independent_path), "sha256": independent_sha}}
+    observed = read(evidence["manifest"])
+    independent = read(evidence["independent"])
+    preparation.require(observed["sources"]["observer"]["sha256"] == OBSERVER_SHA256 and
+                        observed["sources"]["transport"]["sha256"] == digest(OBSERVER_TRANSPORT_SOURCE.read_bytes()),
+                        "The actual observer dependencies differ from the explicit reviewed sources.")
+    seal = read(observed["inputs"]["parentSeal"])
+    parent = read(seal["manifest"])
+    parent_release = read(parent["inputs"]["release"])
+    baseline = read(independent["afterPublic"])
+    closure = read(independent["closedAuthentication"])
+    checker = object.__new__(preparation.Authority)
+    roots = [*parent_release["sealedRoots"], *observed["sealedRoots"],
+        *(observed["scope"][key] for key in ("inputRoot", "sourceRoot", "outputRoot")), str(independent_path.parent)]
+    checker.manifest = {key: deepcopy(observed[key]) for key in ("server", "process", "endpoint", "lock", "preservation", "forbiddenOriginalRoots")}
+    checker.manifest.update(inputs={"publicBaseline": deepcopy(independent["afterPublic"])},
+        sources={"proxy": deepcopy(observed["sources"]["proxy"])},
+        actors={"admin": {"userId": observed["admin"]["userId"], "username": observed["admin"]["username"]}},
+        sealedRoots=list(dict.fromkeys(roots)), scope={"inputRoot": observed["scope"]["inputRoot"]})
+    checker.release = deepcopy(parent_release)
+    checker.release.update(schemaVersion=3, baselineObservation=deepcopy(evidence), releasedAt=closure["through"],
+        sealedRoots=deepcopy(checker.manifest["sealedRoots"]),
+        closedAuthentication=[deepcopy(row) for row in parent_release["closedAuthentication"] if "login" not in row] +
+            [{key: deepcopy(closure[key]) for key in preparation.CLOSED_AUTH_FIELDS}])
+    checker.baseline, checker.support, checker.planner = baseline, support, planner
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Actual completed-evidence audit cannot perform HTTP or process probes.")
+
+    with patch.object(socket, "socket", side_effect=forbidden), patch.object(socket, "create_connection", side_effect=forbidden), \
+         patch.object(support.HTTPTransport, "send", side_effect=forbidden), patch.object(support, "process_identity", side_effect=forbidden), \
+         patch.object(preparation.subprocess, "run", side_effect=forbidden):
+        checker._baseline_observation()
+        checker._grant_verification()
+    return {"suite": "completed-baseline-release-raw-reconstruction", "passed": True,
+        "observerManifestSha256": manifest_sha, "observerIndependentSha256": independent_sha,
+        "rawObserverRequestsVerified": 64, "rawObserverResponsesVerified": 64,
+        "historicalGrantRequestsVerified": 109, "historicalGrantResponsesVerified": 109,
+        "baselinePopulation": {"users": len(checker.baseline["roster"]), "libraries": len(checker.baseline["libraries"]),
+                               "details": sum(map(len, checker.baseline["details"].values())), "devices": len(checker.baseline["devices"])},
+        "syntheticHistoricalBoundaryUsed": False, "actualBusinessHttpRequests": 0, "actualProcessProbes": 0,
+        "currentUnitCheckpointPerformed": False, "livePreparationAcceptanceClaim": False}
+
+
 def main():
-    global PREPARATION_SOURCE, TRANSPORT_SOURCE, MATRIX_SOURCE
+    global PREPARATION_SOURCE, TRANSPORT_SOURCE, MATRIX_SOURCE, OBSERVER_SOURCE, OBSERVER_GUARDS_SOURCE, OBSERVER_TRANSPORT_SOURCE
     if (sys.platform != "linux" or not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY")) or
             os.geteuid() != 0 or not sys.flags.isolated or not sys.flags.dont_write_bytecode):
         print(json.dumps({"suite": "prepare-nextup-global-reference-guards", "status": "blocked",
@@ -2717,16 +3108,27 @@ def main():
     parser.add_argument("--preparation-source", required=True, type=Path)
     parser.add_argument("--transport-source", required=True, type=Path)
     parser.add_argument("--matrix-source", required=True, type=Path)
+    parser.add_argument("--observer-source", required=True, type=Path)
+    parser.add_argument("--observer-guards-source", required=True, type=Path)
+    parser.add_argument("--observer-transport-source", required=True, type=Path)
     parser.add_argument("--report-path", required=True, type=Path)
     parser.add_argument("--preservation-order-worker", action="store_true",
                         help="Run one bounded synthetic comparator observation; never perform preparation or write a report.")
     parser.add_argument("--verify-grant-independent", type=Path,
                         help="Read only the explicitly pinned completed Guid evidence through the new raw-release adapter.")
     parser.add_argument("--grant-independent-sha256")
+    parser.add_argument("--verify-baseline-manifest", type=Path,
+                        help="Audit the actual completed observer and predecessor grant chain without preparation or HTTP.")
+    parser.add_argument("--baseline-manifest-sha256")
+    parser.add_argument("--verify-baseline-independent", type=Path)
+    parser.add_argument("--baseline-independent-sha256")
     arguments = parser.parse_args()
     PREPARATION_SOURCE = arguments.preparation_source.resolve(strict=True)
     TRANSPORT_SOURCE = arguments.transport_source.resolve(strict=True)
     MATRIX_SOURCE = arguments.matrix_source.resolve(strict=True)
+    OBSERVER_SOURCE = arguments.observer_source.resolve(strict=True)
+    OBSERVER_GUARDS_SOURCE = arguments.observer_guards_source.resolve(strict=True)
+    OBSERVER_TRANSPORT_SOURCE = arguments.observer_transport_source.resolve(strict=True)
     if arguments.preservation_order_worker:
         preparation = load_source(PREPARATION_SOURCE, "isolated_preservation_order_subject")
         observed = preservation_order_probe(preparation)
@@ -2738,13 +3140,32 @@ def main():
     source_hashes = {"preparation": digest(PREPARATION_SOURCE.read_bytes()),
                      "transport": digest(TRANSPORT_SOURCE.read_bytes()),
                      "matrix": digest(MATRIX_SOURCE.read_bytes()),
+                     "observer": digest(OBSERVER_SOURCE.read_bytes()),
+                     "observerGuards": digest(OBSERVER_GUARDS_SOURCE.read_bytes()),
+                     "observerTransport": digest(OBSERVER_TRANSPORT_SOURCE.read_bytes()),
                      "guards": digest(Path(__file__).read_bytes())}
+    if arguments.verify_baseline_manifest is not None or arguments.verify_baseline_independent is not None:
+        try:
+            if arguments.verify_baseline_manifest is None or arguments.verify_baseline_independent is None:
+                raise ValueError("The actual audit requires both explicit observer evidence descriptors.")
+            report = verify_actual_baseline_release(arguments.verify_baseline_manifest, arguments.baseline_manifest_sha256,
+                arguments.verify_baseline_independent, arguments.baseline_independent_sha256)
+        except Exception as error:
+            report = {"suite": "completed-baseline-release-raw-reconstruction", "passed": False, "errorType": type(error).__name__,
+                "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "syntheticHistoricalBoundaryUsed": False}
+        report["sourceSha256"] = source_hashes
+        with report_path.open("x", encoding="utf-8") as handle:
+            json.dump(report, handle, sort_keys=True, indent=2)
+            handle.write("\n")
+        report_path.chmod(0o600)
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["passed"] else 1
     if arguments.verify_grant_independent is not None:
         try:
             report = verify_actual_grant_release(arguments.verify_grant_independent, arguments.grant_independent_sha256)
         except Exception as error:
             report = {"suite": "completed-grant-release-raw-reconstruction", "passed": False,
-                "errorType": type(error).__name__, "reason": str(error), "actualBusinessHttpRequests": 0, "actualProcessProbes": 0}
+                "errorType": type(error).__name__, "actualBusinessHttpRequests": 0, "actualProcessProbes": 0}
         report["sourceSha256"] = source_hashes
         with report_path.open("x", encoding="utf-8") as handle:
             json.dump(report, handle, sort_keys=True, indent=2)
@@ -2761,6 +3182,8 @@ def main():
         "errorDetails": [{"test": case.id(), "traceback": details} for case, details in result.errors],
         "skipDetails": [{"test": case.id(), "reason": reason} for case, reason in result.skipped],
         "actualBusinessHttpRequests": 0, "actualProcessProbes": 0, "liveAcceptanceClaim": False,
+        "syntheticHistoricalBoundaries": ["observer InputEvidence", "exact fixed parentSeal descriptor"],
+        "completedObserverReplay": "unchanged 64-event verifier and exact generated journal bytes",
         "preservationOrderProbe": PRESERVATION_ORDER_OBSERVATION}
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("x", encoding="utf-8") as handle:

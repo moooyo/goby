@@ -1,0 +1,30 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "baselinePopulation": {
+    "details": 24,
+    "devices": 98,
+    "libraries": 12,
+    "users": 10
+  },
+  "currentUnitCheckpointPerformed": false,
+  "historicalGrantRequestsVerified": 109,
+  "historicalGrantResponsesVerified": 109,
+  "livePreparationAcceptanceClaim": false,
+  "observerIndependentSha256": "f5b2521936e18b00787c4d8ec068410d6d142363f74dfba9051577016005bba1",
+  "observerManifestSha256": "cc59138eda23e99832263d3d85feda89f92a39fda69e7c4146a0609e8ee4a320",
+  "passed": true,
+  "rawObserverRequestsVerified": 64,
+  "rawObserverResponsesVerified": 64,
+  "sourceSha256": {
+    "guards": "2ff164c6dcb972087e6bacd172b744cf9fe9d88bace196a1f3e385803fa0da5b",
+    "matrix": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "observer": "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6",
+    "observerGuards": "b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28",
+    "observerTransport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1",
+    "preparation": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7",
+    "transport": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "suite": "completed-baseline-release-raw-reconstruction",
+  "syntheticHistoricalBoundaryUsed": false
+}

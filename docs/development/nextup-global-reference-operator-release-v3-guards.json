@@ -1,0 +1,35 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "blockedRealIOAttempts": {
+    "authority": 0,
+    "http": 0,
+    "originalRead": 0,
+    "process": 0
+  },
+  "classification": "synthetic source-bound admission, replay, transport, and persistence guards; not live acceptance evidence",
+  "errorDetails": [],
+  "errors": 0,
+  "failureDetails": [],
+  "failures": 0,
+  "liveAcceptanceClaim": false,
+  "originalImplementationBytesRead": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skipDetails": [],
+  "skips": 0,
+  "sourceSha256": {
+    "grant-worker": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971",
+    "guards": "f3aa39cb0ce696fe9a712f79c9ad14d691ae6404682d07699be7a1bf93a276e4",
+    "matrix": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "observer": "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6",
+    "observer-guards": "b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28",
+    "observer-transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1",
+    "operator": "8c9ebe40bdc6224670b54298927a4ad0cff90450b3f05bd47963086fb0d3251e",
+    "preparation": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7",
+    "preparation-guards": "2ff164c6dcb972087e6bacd172b744cf9fe9d88bace196a1f3e385803fa0da5b",
+    "transport": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "suite": "run-nextup-global-reference-guards",
+  "testsRun": 73
+}

@@ -172,6 +172,11 @@ def runtime_identity():
             "isolated": bool(sys.flags.isolated), "noBytecode": bool(sys.flags.dont_write_bytecode), "uid": os.geteuid()}
 
 
+def process_absent(pid):
+    require(type(pid) is int and pid > 1, "The completed observer needs its exact former process ID.")
+    return not os.path.lexists("/proc/" + str(pid))
+
+
 def duration_seconds(value):
     require(isinstance(value, str) and value and value != "infinity", "The execution unit needs a finite start timeout.")
     pieces = re.findall(r"([0-9]+(?:\.[0-9]+)?)(us|ms|s|min|h|d)", value)
@@ -205,9 +210,11 @@ class MemoryJournal:
 
 class Admission:
     """Read and continuously pin an external attestation and real producer ledger."""
-    def __init__(self, path, checksum, *, unit_probe=read_unit, cgroup_probe=empty_cgroup, self_probe=runtime_identity):
+    def __init__(self, path, checksum, *, unit_probe=read_unit, cgroup_probe=empty_cgroup, self_probe=runtime_identity,
+                 pid_absence_probe=process_absent):
         self.unit_probe, self.cgroup_probe, self.self_probe = unit_probe, cgroup_probe, self_probe
-        self.files, self.directories = {}, {}
+        self.pid_absence_probe = pid_absence_probe
+        self.files, self.directories, self.descriptor_digests = {}, {}, {}
         self.attestation_path = absolute(path)
         require(self.attestation_path.suffix == ".json" and sha(checksum), "An exact private attestation JSON descriptor is required.")
         raw = self._read(path)
@@ -247,9 +254,10 @@ class Admission:
                 setattr(self, role, module)
         self.support = self.transport
         self._producer_inputs()
-        self._runtime_contract()
         self._replay()
+        self._runtime_contract()
         self._shutdown(full=True)
+        self._observer_shutdown(full=True)
         self._runtime(full=True)
         self._fresh_outputs()
         self.frozen_inputs = canonical({"attestation": self.value, "execution": self.execution, "manifest": self.manifest})
@@ -269,6 +277,8 @@ class Admission:
             raw = stream.read(maximum + 1)
             require(len(raw) <= maximum and identity(os.fstat(stream.fileno())) == identity(before), "A file changed during its bounded read.")
         require(identity(path.lstat()) == identity(before), "A pinned path changed during reading.")
+        require(str(path) not in self.files or self.files[str(path)][0] == identity(before),
+                "A previously admitted file changed during nested evidence reading.")
         self.files[str(path)] = (identity(before), private, links)
         return raw
 
@@ -276,8 +286,11 @@ class Admission:
         require(isinstance(row, dict) and set(row) == {"path", "sha256"} and sha(row["sha256"]), "An actual path and SHA-256 descriptor is required.")
         path = absolute(row["path"])
         require(any(root in path.parents for root in roots), "A descriptor escaped its explicit owned root.")
+        require(str(path) not in self.descriptor_digests or self.descriptor_digests[str(path)] == row["sha256"],
+                "A repeated evidence path identifies another descriptor digest.")
         raw = self._read(path, private=private)
         require(digest(raw) == row["sha256"], "A pinned evidence digest differs.")
+        self.descriptor_digests[str(path)] = row["sha256"]
         return raw
 
     def _producer_inputs(self):
@@ -315,15 +328,22 @@ class Admission:
         checker.manifest, checker.records = self.manifest, self.inputs
         checker.release, checker.baseline = self.inputs["release"], self.inputs["publicBaseline"]
         checker.support, checker.planner = self.support, self.matrix
-        def evidence(row, *, sealed=False):
+        def evidence_bytes(row, *, sealed=True):
             roots = [Path(root) for root in self.manifest["sealedRoots"]]
             if not sealed:
                 roots.insert(0, input_root)
-            require(Path(row["path"]).suffix == ".json", "Referenced release evidence must be an owned JSON record.")
-            return strict_json(self._descriptor(row, roots))
-        checker._evidence = evidence
+            candidate = absolute(row["path"])
+            require(candidate.suffix in (".json", ".py"), "Referenced release evidence must be owned JSON or Python source.")
+            if same(row, self.manifest["sources"]["proxy"]):
+                roots.append(candidate.parent)
+            return self._descriptor(row, roots, private=candidate.suffix != ".py")
+        checker._evidence_bytes = evidence_bytes
         self._descriptor(self.manifest["media"]["approvedReceipt"], [Path(self.manifest["media"]["ownedRoot"])], private=False)
         checker._inputs()
+        self.input_authority = checker
+        self.observer_unit = deepcopy(checker.observer_unit)
+        self.observer_former_pid = checker.observer_former_pid
+        self.observer_shutdown_frozen = canonical({"unit": self.observer_unit, "formerPid": self.observer_former_pid})
         self.execution = strict_json(self._descriptor(value["execution"], [self.attestation_root]))
         draft = self.documents["draftExecution"]
         require(same(draft["matrix"], self.documents["draftMatrix"]) and draft["matrix"]["binding"]["fixtureReleased"] is False,
@@ -542,8 +562,8 @@ class Admission:
         def stage_media(journal):
             journal.save("media-tree.json", self.documents["mediaTree"])
             return deepcopy(self.media)
-        authority = SimpleNamespace(support=support, planner=self.matrix, credentials=deepcopy(self.inputs["credentials"]["accounts"]),
-            baseline=deepcopy(self.inputs["publicBaseline"]), release=deepcopy(self.inputs["release"]), acquire=lambda: None, check=lambda: None,
+        authority = SimpleNamespace(support=support, planner=self.matrix, credentials=deepcopy(self.input_authority.credentials),
+            baseline=deepcopy(self.input_authority.baseline), release=deepcopy(self.input_authority.release), acquire=lambda: None, check=lambda: None,
             close=lambda: None, stage_media=stage_media)
         replay = self.preparation.PreparationRunner(self.manifest, authority=authority, transport=ReplayTransport(),
             journal_factory=lambda root, uid: memory, monotonic=monotonic, sleeper=sleeper, utc_now=lambda: next(captured))
@@ -614,6 +634,19 @@ class Admission:
             require(same(actual, {"InvocationID": row["invocationId"], **properties}), "The current preparation unit differs from its attested completion.")
         require(self.cgroup_probe(row["cgroupPath"]), "The completed preparation cgroup is not empty.")
 
+    def _observer_shutdown(self, *, full):
+        require(canonical({"unit": self.observer_unit, "formerPid": self.observer_former_pid}) == self.observer_shutdown_frozen,
+                "The verified baseline observer closure authority changed in memory.")
+        row = self.observer_unit
+        require(row["name"] not in (self.value["runtime"]["unitName"], self.value["shutdown"]["units"][0]["name"]),
+                "The completed baseline observer must retain its distinct unit identity.")
+        if full:
+            actual = self.unit_probe(row["name"], set(row["properties"]) | {"InvocationID"})
+            require(same(actual, {"InvocationID": row["invocationId"], **row["properties"]}),
+                    "The completed baseline observer unit differs from its raw-bound accepted invocation.")
+        require(self.cgroup_probe(row["cgroupPath"]), "The completed baseline observer cgroup is not empty.")
+        require(self.pid_absence_probe(self.observer_former_pid), "The completed baseline observer former process is present.")
+
     def _runtime(self, *, full):
         current = self.self_probe()
         name = self.value["runtime"]["unitName"]
@@ -650,6 +683,7 @@ class Admission:
             info = protected(path, directory=True, private=False)
             require((info.st_dev, info.st_ino, info.st_uid, info.st_gid, stat.S_IMODE(info.st_mode)) == expected, "An admission directory identity changed.")
         self._media_membership()
+        self._observer_shutdown(full=full)
         self._shutdown(full=full)
         self._runtime(full=full)
 

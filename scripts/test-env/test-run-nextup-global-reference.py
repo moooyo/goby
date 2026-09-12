@@ -40,6 +40,9 @@ sys.dont_write_bytecode = True
 SOURCE_BYTES = {}
 PREPARATION_GUARDS = None
 GRANT_WORKER_SHA256 = "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971"
+OBSERVER_SHA256 = "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6"
+OBSERVER_GUARDS_SHA256 = "b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28"
+OBSERVER_TRANSPORT_SHA256 = "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1"
 ACTORS = ("P", "Q")
 EPISODES = ("A1", "A2", "A3", "B1", "B2", "B3")
 RUNTIME_TICKS = 6_000_000_000
@@ -84,7 +87,7 @@ def zero_state(item):
             "IsFavorite": False}
 
 
-def complete_preparation_inputs(fixture):
+def complete_preparation_inputs(fixture, testcase):
     """Retain the full synthetic release schema used by ActualAuthorityGuards."""
     manifest = fixture.manifest
     sealed_root = Path(manifest["sealedRoots"][0])
@@ -124,6 +127,7 @@ def complete_preparation_inputs(fixture):
         "units": units, "closedAuthentication": [closed]}
     fixture.baseline["devices"]["synthetic-prior-registry"] = {"Id": "synthetic-prior-registry",
         "ReportedDeviceId": "synthetic-prior-device", "LastUserId": "old-user-1"}
+    fixture.historical_baseline["devices"]["synthetic-prior-registry"] = deepcopy(fixture.baseline["devices"]["synthetic-prior-registry"])
     approval = {"schemaVersion": 1, "kind": "nextup-global-preparation-media-approval",
         "source": deepcopy(manifest["media"]["source"]), "ownedRoot": manifest["media"]["ownedRoot"],
         "approvedReceipt": deepcopy(manifest["media"]["approvedReceipt"]),
@@ -132,6 +136,7 @@ def complete_preparation_inputs(fixture):
     for name, value in (("release", fixture.release), ("publicBaseline", fixture.baseline), ("mediaApproval", approval)):
         manifest["inputs"][name] = write_json(manifest["inputs"][name]["path"], value)
     PREPARATION_GUARDS.add_grant_verification_fixture(fixture, fixture.release)
+    PREPARATION_GUARDS.add_baseline_observation_fixture(fixture, fixture.release, testcase)
 
 
 class IOBoundary:
@@ -175,7 +180,7 @@ class IOBoundary:
         self.testcase.addCleanup(active.stop)
 
     def module(self, module):
-        for name in ("process_identity", "_process_metadata", "read_unit", "empty_cgroup", "runtime_identity"):
+        for name in ("process_identity", "_process_metadata", "read_unit", "empty_cgroup", "runtime_identity", "process_absent"):
             if hasattr(module, name):
                 self.block(module, name, "process")
         if hasattr(module, "HTTPTransport"):
@@ -196,7 +201,7 @@ class OperatorFixture:
         run_scope = {"evidenceParent": str(matrix_parent), "matrixEvidenceRoot": str(matrix_parent / "matrix-03")}
         fixture.scope.update(run_scope)
         fixture.manifest["scope"].update(run_scope)
-        complete_preparation_inputs(fixture)
+        complete_preparation_inputs(fixture, testcase)
         self.root, self.producer_root = fixture.root, fixture.output
         self.private = self.producer_root / "private"
         self.operator_source = Path(fixture.scope["sourceRoot"]) / "run-nextup-global-reference.py"
@@ -230,15 +235,35 @@ class OperatorFixture:
                 return fixture.support.WireResponse(response.status, response.headers, encoded(body), response.complete_http, response.completed_at, response.failure)
             return response
 
-        self.preparation_wire = PREPARATION_GUARDS.FakeWire(fixture, response_hook=observed_scan_progress)
+        retained_details = {}
+        for row in fixture.manifest["preservation"]["detailRoutes"]:
+            route = "/emby/Users/" + row["userId"] + "/Items/" + row["itemId"]
+            body = fixture.baseline["details"][row["group"]][row["itemId"]]
+            if route in retained_details:
+                testcase.assertEqual(retained_details[route], body, "One exact retained detail route cannot have two different DTOs.")
+            retained_details[route] = deepcopy(body)
+
+        class ContextBoundPreparationWire(PREPARATION_GUARDS.FakeWire):
+            def respond(self, request, headers, payload):
+                if request.method == "GET" and request.route in retained_details:
+                    actor = self.actor(headers)
+                    if actor != "admin" or actor in self.revoked or payload is not None:
+                        raise AssertionError("A retained detail witness requires its exact active administrator-token context.")
+                    return self.wire(200, deepcopy(retained_details[request.route]))
+                return super().respond(request, headers, payload)
+
+        self.preparation_wire = ContextBoundPreparationWire(fixture, response_hook=observed_scan_progress)
         self.preparation_runner = fixture.module.PreparationRunner(fixture.manifest,
             authority=self.preparation_authority, transport=self.preparation_wire,
             journal_factory=lambda root, uid: fixture.support.Journal(root, uid=uid),
             monotonic=fixture.clock, sleeper=fixture.clock.sleep, utc_now=fixture.clock.utc_now)
         testcase.addCleanup(self.preparation_authority.close)
         self.terminal = self.preparation_runner.run()
+        setup_diagnostic = {key: self.terminal.get(key) for key in ("status", "failure", "requestCount", "normalRequestCount",
+            "cleanupRequestCount", "phaseRequestCounts", "cleanupComplete", "uncertain")}
+        setup_diagnostic["blockedRealIOAttempts"] = dict(boundary.attempts)
         testcase.assertEqual(self.terminal["status"], "awaiting_independent_attestation",
-                             "The actual synthetic producer must succeed before admission is exercised.")
+                             "The actual synthetic producer must succeed before admission is exercised: " + json.dumps(setup_diagnostic, sort_keys=True))
         testcase.assertTrue(self.terminal["completed"])
         testcase.assertEqual(self.terminal["requestCount"], len(self.preparation_wire.calls))
         testcase.assertEqual(len(read_json(self.private / "media-tree.json")["files"]), 16)
@@ -276,7 +301,7 @@ class OperatorFixture:
             "UMask": "0077", "NoNewPrivileges": "yes", "ProtectSystem": "strict", "ProtectHome": "yes",
             "PrivateTmp": "yes", "PrivateNetwork": "no", "TimeoutStartUSec": "30min", "MemoryMax": "536870912",
             "TasksMax": "32", "LimitNOFILE": "4096", "ReadWritePaths": self.writable_paths(self.operator_parent)}
-        self.current = {"pid": 45678, "invocationId": "c" * 32,
+        self.current = {"pid": 56789, "invocationId": "c" * 32,
             "cgroup": "0::/system.slice/" + self.matrix_unit + "\n", "ssh": True,
             "isolated": True, "noBytecode": True, "uid": 0}
         self.unit_values = {
@@ -284,20 +309,25 @@ class OperatorFixture:
             self.matrix_unit: {**runtime_properties, "InvocationID": self.current["invocationId"],
                 "MainPID": str(self.current["pid"]), "ActiveState": "activating", "SubState": "start",
                 "ControlGroup": "/system.slice/" + self.matrix_unit}}
-        self.unit_calls, self.cgroup_calls, self.self_calls, self.target_calls = [], [], [], []
+        observer = fixture.observer_fixture.independent
+        self.observer_unit = deepcopy(observer["unit"])
+        self.observer_former_pid = observer["formerPid"]
+        self.unit_values[self.observer_unit["name"]] = deepcopy(self.observer_unit["properties"])
+        self.unit_calls, self.cgroup_calls, self.self_calls, self.target_calls, self.pid_calls = [], [], [], [], []
         self.cgroup_empty = True
+        self.observer_cgroup_empty, self.observer_pid_absent = True, True
         self.factory_calls = 0
         self.runners, self.matrix_wires = [], []
         self.attestation_path = self.attestation_root / "attestation.json"
         self.attestation = {"schemaVersion": 1, "kind": "nextup-global-reference-matrix-attestation",
-            "runId": fixture.manifest["runId"], "attestedAt": "2026-09-13T02:00:00Z",
+            "runId": fixture.manifest["runId"], "attestedAt": "2026-09-15T03:00:00Z",
             "execution": descriptor(self.execution_path),
             "sources": {"operator": descriptor(self.operator_source),
                 **{role: descriptor(fixture.paths[role]) for role in ("preparation", "transport", "matrix")}},
             "preparation": {"root": str(self.producer_root), "inputManifest": descriptor(self.input_manifest),
                 "wireIndex": descriptor(self.index_path),
                 **{key: descriptor(self.private / filename) for key, filename in self.operator.PREPARATION_FILES.items()}},
-            "shutdown": {"observedAt": "2026-09-13T01:59:00Z", "units": [{"name": self.preparation_unit,
+            "shutdown": {"observedAt": "2026-09-15T02:59:00Z", "units": [{"name": self.preparation_unit,
                 "invocationId": "b" * 32, "properties": shutdown_properties,
                 "cgroupPath": "/sys/fs/cgroup/system.slice/" + self.preparation_unit}]},
             "runtime": {"unitName": self.matrix_unit, "properties": runtime_properties},
@@ -316,14 +346,19 @@ class OperatorFixture:
         return shlex.join(sorted(writable))
 
     def unit_probe(self, name, fields):
-        self.testcase.assertIn(name, (self.preparation_unit, self.matrix_unit))
+        self.testcase.assertIn(name, (self.preparation_unit, self.matrix_unit, self.observer_unit["name"]))
         self.unit_calls.append((name, set(fields)))
         return {key: self.unit_values[name][key] for key in fields}
 
     def cgroup_probe(self, path):
-        self.testcase.assertEqual(path, "/sys/fs/cgroup/system.slice/" + self.preparation_unit)
+        self.testcase.assertIn(path, ("/sys/fs/cgroup/system.slice/" + self.preparation_unit, self.observer_unit["cgroupPath"]))
         self.cgroup_calls.append(path)
-        return self.cgroup_empty
+        return self.observer_cgroup_empty if path == self.observer_unit["cgroupPath"] else self.cgroup_empty
+
+    def pid_absence_probe(self, pid):
+        self.testcase.assertEqual(pid, self.observer_former_pid)
+        self.pid_calls.append(pid)
+        return self.observer_pid_absent
 
     def self_probe(self):
         self.self_calls.append(deepcopy(self.current))
@@ -355,8 +390,14 @@ class OperatorFixture:
 
     def admit(self, *, checksum=None):
         actual = self.save_attestation()
-        admission = self.operator.Admission(str(self.attestation_path), checksum or actual,
-            unit_probe=self.unit_probe, cgroup_probe=self.cgroup_probe, self_probe=self.self_probe)
+        original = self.operator.Admission._producer_inputs
+        def with_historical_boundary(admission):
+            PREPARATION_GUARDS.install_synthetic_observer_boundaries(self.prepared, self.testcase, preparation=admission.preparation)
+            return original(admission)
+        with patch.object(self.operator.Admission, "_producer_inputs", with_historical_boundary):
+            admission = self.operator.Admission(str(self.attestation_path), checksum or actual,
+                unit_probe=self.unit_probe, cgroup_probe=self.cgroup_probe, self_probe=self.self_probe,
+                pid_absence_probe=self.pid_absence_probe)
         for module in (admission.preparation, admission.transport, admission.matrix):
             self.testcase.addCleanup(sys.modules.pop, module.__name__, None)
         self.boundary.module(admission.support)
@@ -596,6 +637,12 @@ class AdmissionGuards(GuardCase):
         self.assertFalse(self.fixture.target_calls)
         self.assertFalse(self.fixture.operator_output.exists())
         self.assertFalse(self.fixture.matrix_output.exists())
+        details = read_json(self.fixture.private / "before-public.json")["details"]
+        self.assertEqual(details, self.fixture.prepared.baseline["details"])
+        shared = set(details["admin"]) & set(details["viewer"]) & set(details["grant-P"])
+        self.assertTrue(shared)
+        for item in shared:
+            self.assertEqual(len({details[group][item]["PreservedOpaque"]["subject"] for group in ("admin", "viewer", "grant-P")}), 3)
         admission.checkpoint(full=True)
 
     def test_short_success_uses_source_limits_without_requiring_maximum_count(self):
@@ -603,7 +650,8 @@ class AdmissionGuards(GuardCase):
         plan = admission.preparation.frozen_plan(admission.manifest)
         self.assertEqual((admission.producer_normal_maximum, admission.producer_success_maximum),
                          (plan["normalMaximum"], plan["successMaximumIncludingLogout"]))
-        self.assertEqual((plan["normalMaximum"], plan["successMaximumIncludingLogout"]), (257, 263))
+        self.assertEqual((plan["normalMaximum"], plan["successMaximumIncludingLogout"]), (293, 299))
+        self.assertEqual((plan["normalLimit"], plan["cleanupReserve"], plan["maximumRequests"]), (320, 120, 440))
         self.assertLess(self.fixture.terminal["requestCount"], plan["successMaximumIncludingLogout"])
         self.assertEqual(self.fixture.terminal["requestCount"], self.fixture.terminal["normalRequestCount"] + 6)
         self.assertEqual(admission.replay_count, self.fixture.terminal["requestCount"])
@@ -622,7 +670,7 @@ class AdmissionGuards(GuardCase):
 
     def test_source_plan_success_limits_require_integer_capacity_and_six_closures(self):
         plan = self.fixture.prepared.module.frozen_plan(self.fixture.prepared.manifest)
-        changes = ({"normalMaximum": True}, {"normalMaximum": 0}, {"successMaximumIncludingLogout": "263"},
+        changes = ({"normalMaximum": True}, {"normalMaximum": 0}, {"successMaximumIncludingLogout": "299"},
                    {"normalMaximum": plan["normalLimit"] + 1}, {"cleanupReserve": 5},
                    {"successMaximumIncludingLogout": plan["normalMaximum"] + 5},
                    {"successMaximumIncludingLogout": plan["normalMaximum"] + 7},
@@ -635,6 +683,7 @@ class AdmissionGuards(GuardCase):
         original = read_json(self.fixture.private / "frozen-plan.json")
         for change in ({"normalMaximum": original["normalMaximum"] + 1, "successMaximumIncludingLogout": original["successMaximumIncludingLogout"] + 1},
                        {"normalMaximum": 232, "successMaximumIncludingLogout": 238},
+                       {"normalMaximum": 257, "successMaximumIncludingLogout": 263},
                        {"normalMaximum": original["normalMaximum"] - 1, "successMaximumIncludingLogout": original["successMaximumIncludingLogout"] - 1}):
             with self.subTest(change=change):
                 self.fixture.replace_document("plan", {**deepcopy(original), **change})
@@ -714,7 +763,7 @@ class AdmissionGuards(GuardCase):
                    if read_json(row["intent"]["path"])["request"]["route"] == "/emby/System/Configuration")
         response = read_json(row["response"]["path"])
         body = json.loads(base64.b64decode(response["rawBase64"]))
-        body["SyntheticConfiguration"]["preserve"] = False
+        body["UnrelatedReplayTamper"] = True
         raw = encoded(body)
         response.update(rawBase64=base64.b64encode(raw).decode(), observedRawBytes=len(raw))
         self.fixture.replace_wire(row, "response", response)
@@ -782,7 +831,7 @@ class AdmissionGuards(GuardCase):
         original = read_json(row["response"]["path"])
         for change in ({"completeHttp": False}, {"failure": "synthetic lost response"},
                        {"retainedRawTruncated": True}, {"status": True}, {"observedRawBytes": 0},
-                       {"payloadBase64": None}, {"completedAt": "2026-09-13T03:00:00Z"}):
+                       {"payloadBase64": None}, {"completedAt": "2026-09-15T03:01:00Z"}):
             with self.subTest(change=change):
                 candidate = deepcopy(original)
                 candidate.update(change)
@@ -877,14 +926,114 @@ class FullScanBudgetGuards(GuardCase):
         plan, terminal = admission.documents["plan"], self.fixture.terminal
         self.assertEqual(terminal["normalRequestCount"], plan["normalMaximum"])
         self.assertEqual(terminal["requestCount"], plan["successMaximumIncludingLogout"])
-        self.assertGreater(terminal["normalRequestCount"], 232)
-        self.assertGreater(terminal["requestCount"], 238)
+        self.assertEqual((terminal["normalRequestCount"], terminal["requestCount"]), (293, 299))
         self.assertEqual(terminal["cleanupRequestCount"], 6)
         self.assertEqual(admission.replay_count, len(self.fixture.index["requests"]))
         self.assertEqual(admission.replay_count, terminal["requestCount"])
         self.assertEqual((admission.matrix.MAX_REQUESTS, admission.matrix.NORMAL_LIMIT, admission.matrix.CLEANUP_RESERVE), (300, 220, 80))
         self.assertFalse(self.fixture.operator_output.exists())
         self.assertFalse(self.fixture.matrix_output.exists())
+
+
+class BaselineObservationGuards(GuardCase):
+    """Replay the frozen observer and continuously pin every nested authority."""
+
+    def test_completed_observer_raw_replay_and_separate_legacy_source_are_pinned(self):
+        admission = self.fixture.admit()
+        prepared, observer = self.fixture.prepared, self.fixture.prepared.observer_fixture
+        verified = admission.input_authority.observer_verified
+        self.assertEqual((verified["requestCount"], verified["normalRequestCount"], verified["cleanupRequestCount"]), (64, 62, 2))
+        baseline = verified["baseline"]
+        self.assertEqual((len(baseline["roster"]), len(baseline["libraries"]), len(baseline["devices"]),
+                          sum(len(rows) for rows in baseline["details"].values())), (10, 12, 98, 24))
+        self.assertEqual(baseline, admission.input_authority.baseline)
+        self.assertEqual(admission.input_authority.release["schemaVersion"], 3)
+        self.assertTrue(prepared.observer_modules and prepared.synthetic_boundary_reads)
+        index = read_json(observer.index_path)
+        self.assertEqual(len(index["requests"]), 64)
+        for row in index["requests"]:
+            for kind in ("intent", "reserved", "response"):
+                self.assertIn(row[kind]["path"], admission.files)
+                self.assertEqual(admission.descriptor_digests[row[kind]["path"]], row[kind]["sha256"])
+        for row in observer.manifest["sources"].values():
+            self.assertIn(row["path"], admission.files)
+            self.assertEqual(admission.descriptor_digests[row["path"]], row["sha256"])
+        self.assertEqual(observer.manifest["sources"]["transport"]["sha256"], OBSERVER_TRANSPORT_SHA256)
+        self.assertNotEqual(observer.manifest["sources"]["transport"]["sha256"], admission.value["sources"]["transport"]["sha256"])
+        self.assertIn(observer.independent["closedAuthentication"]["path"], admission.files)
+        self.assertTrue(self.fixture.pid_calls)
+        admission.checkpoint()
+
+    def test_missing_or_changed_nested_response_prevents_admission(self):
+        observer = self.fixture.prepared.observer_fixture
+        row = read_json(observer.index_path)["requests"][1]["response"]
+        path, original = Path(row["path"]), Path(row["path"]).read_bytes()
+        path.unlink()
+        self.reject()
+        self.fixture.prepared.write(path, original + b" ")
+        self.reject(pattern="digest differs")
+
+    def test_resealed_observer_summary_cannot_replace_complete_raw_replay(self):
+        observer = self.fixture.prepared.observer_fixture
+        observer.independent["requestCount"] = 63
+        observer.reseal_independent()
+        manifest = read_json(self.fixture.private / "manifest.json")
+        release = read_json(manifest["inputs"]["release"]["path"])
+        release["baselineObservation"] = deepcopy(observer.evidence)
+        manifest["inputs"]["release"] = write_json(manifest["inputs"]["release"]["path"], release)
+        self.fixture.replace_document("manifest", manifest)
+        self.fixture.attestation["preparation"]["inputManifest"] = write_json(self.fixture.input_manifest, manifest)
+        self.fixture.replace_document("plan", self.fixture.prepared.module.frozen_plan(manifest))
+        self.reject(pattern="completed receipt does not match the derived request budget")
+
+    def test_checkpoint_rejects_same_byte_nested_response_replacement(self):
+        admission = self.fixture.admit()
+        observer = self.fixture.prepared.observer_fixture
+        row = read_json(observer.index_path)["requests"][-1]["response"]
+        path, original = Path(row["path"]), Path(row["path"]).read_bytes()
+        path.rename(path.with_name("held-original-response.json"))
+        self.fixture.prepared.write(path, original)
+        self.assertEqual(digest(original), row["sha256"])
+        with self.assertRaisesRegex(self.O.OperatorError, "pinned admission source or evidence record changed"):
+            admission.checkpoint()
+        self.assertEqual(self.fixture.factory_calls, 0)
+
+    def test_checkpoint_rejects_nested_legacy_source_change(self):
+        admission = self.fixture.admit()
+        source = Path(self.fixture.prepared.observer_fixture.manifest["sources"]["transport"]["path"])
+        source.write_bytes(source.read_bytes() + b"\n")
+        with self.assertRaisesRegex(self.O.OperatorError, "pinned admission source or evidence record changed"):
+            admission.checkpoint()
+        self.assertEqual(self.fixture.factory_calls, 0)
+
+    def test_observer_current_unit_cgroup_and_former_process_are_checked(self):
+        name = self.fixture.observer_unit["name"]
+        original = deepcopy(self.fixture.unit_values[name])
+        self.fixture.unit_values[name]["InvocationID"] = "d" * 32
+        self.reject(pattern="baseline observer unit differs")
+        self.fixture.unit_values[name] = original
+        self.fixture.observer_cgroup_empty = False
+        self.reject(pattern="baseline observer cgroup is not empty")
+        self.fixture.observer_cgroup_empty = True
+        self.fixture.observer_pid_absent = False
+        self.reject(pattern="baseline observer former process is present")
+
+    def test_checkpoint_rejects_observer_reactivation_or_mutable_closure_facts(self):
+        admission = self.fixture.admit()
+        self.fixture.observer_pid_absent = False
+        with self.assertRaisesRegex(self.O.OperatorError, "baseline observer former process is present"):
+            admission.checkpoint()
+        self.fixture.observer_pid_absent = True
+        admission.observer_former_pid += 1
+        with self.assertRaisesRegex(self.O.OperatorError, "closure authority changed in memory"):
+            admission.checkpoint()
+
+    def test_observer_evidence_parent_cannot_become_a_writable_output_parent(self):
+        parent = self.fixture.prepared.observer_fixture.root
+        def change(value):
+            value["scope"]["operatorEvidenceRoot"] = str(parent / "future-operator")
+            value["runtime"]["properties"]["ReadWritePaths"] = self.fixture.writable_paths(parent)
+        self.reject_attestation(change, pattern="writable evidence parent would cover")
 
 
 class MediaMembershipGuards(GuardCase):
@@ -1123,7 +1272,7 @@ class RuntimeGuards(GuardCase):
         self.fixture.cgroup_empty = False
         self.reject(pattern="cgroup is not empty")
         self.fixture.cgroup_empty = True
-        for wrong in ("2026-09-13T00:59:00Z", "2026-09-13T02:01:00Z"):
+        for wrong in ("2026-09-15T00:59:00Z", "2026-09-15T03:01:00Z"):
             with self.subTest(observed=wrong):
                 self.reject_attestation(lambda value: value["shutdown"].update(observedAt=wrong), pattern="times are out of order")
 
@@ -1393,13 +1542,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     names = {"operator": "run-nextup-global-reference.py", "preparation": "prepare-nextup-global-reference.py",
         "preparation-guards": "test-prepare-nextup-global-reference.py", "transport": "nextup-global-transport.py",
-        "matrix": "nextup-global-matrix.py"}
+        "matrix": "nextup-global-matrix.py", "observer": "observe-nextup-preparation04-baseline.py",
+        "observer-guards": "test-observe-nextup-preparation04-baseline.py", "observer-transport": "nextup-global-transport.py"}
     for role in names:
         parser.add_argument("--" + role + "-source", required=True, type=Path)
     parser.add_argument("--report-path", required=True, type=Path)
     arguments = parser.parse_args()
     SOURCE_BYTES = {role: source_bytes(getattr(arguments, role.replace("-", "_") + "_source"), name)
                     for role, name in names.items()}
+    for role, expected in (("observer", OBSERVER_SHA256), ("observer-guards", OBSERVER_GUARDS_SHA256),
+                           ("observer-transport", OBSERVER_TRANSPORT_SHA256)):
+        if digest(SOURCE_BYTES[role]) != expected:
+            raise ValueError("The completed observer fixture requires its exact separate frozen dependency: " + role)
     grant_source = arguments.preparation_source.with_name("verify-folder-grant-01.py")
     SOURCE_BYTES["grant-worker"] = source_bytes(grant_source, "verify-folder-grant-01.py")
     if digest(SOURCE_BYTES["grant-worker"]) != GRANT_WORKER_SHA256:
@@ -1414,7 +1568,9 @@ def main():
         snapshot = Path(temporary)
         snapshots = {}
         for role, name in names.items():
-            path = snapshot / name
+            parent = snapshot / "observer-legacy" if role == "observer-transport" else snapshot
+            parent.mkdir(mode=0o700, exist_ok=True)
+            path = parent / name
             with path.open("xb") as handle:
                 handle.write(SOURCE_BYTES[role])
             path.chmod(0o600)
@@ -1423,6 +1579,9 @@ def main():
         PREPARATION_GUARDS.PREPARATION_SOURCE = snapshots["preparation"]
         PREPARATION_GUARDS.TRANSPORT_SOURCE = snapshots["transport"]
         PREPARATION_GUARDS.MATRIX_SOURCE = snapshots["matrix"]
+        PREPARATION_GUARDS.OBSERVER_SOURCE = snapshots["observer"]
+        PREPARATION_GUARDS.OBSERVER_GUARDS_SOURCE = snapshots["observer-guards"]
+        PREPARATION_GUARDS.OBSERVER_TRANSPORT_SOURCE = snapshots["observer-transport"]
         suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
         result = unittest.TextTestRunner(verbosity=2).run(suite)
     report = {"schemaVersion": 1, "suite": "run-nextup-global-reference-guards",

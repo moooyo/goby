@@ -1,6 +1,18 @@
 # Implementation progress
 
-Execution state checkpoint: `2026-09-12T22:11:05+00:00`. The dedicated
+Execution state checkpoint: `2026-09-12T22:48:41Z`. Preparation05 completed all
+four actual playback calibrations: 269 requests, including six successful
+cleanup requests. Three tokens are revoked, pending/uncertain responsibility
+is absent, and the worker unit exited0/MainPID0. Before/after captures preserve
+all 163 protected roots and the complete Goby state. Independent full raw
+replay remains pending; no matrix fixture or client acceptance is released.
+The release-v3 producer passed 181 guards and actual observer/Grant replay;
+the final operator passed 73 guards. Admission tracked 1,005 evidence files
+with zero business HTTP before this single actual run. See the
+[preparation05 checkpoint](nextup-global-reference-preparation-05.md) for exact
+source/input pins, retained failed verification scopes, and the next actions.
+
+Accepted baseline checkpoint: `2026-09-12T22:11:05+00:00`. The dedicated
 preparation04 baseline observer completed all 64 actual requests and passed
 independent exact-byte replay. Its accepted current snapshot contains ten users,
 twelve libraries, 98 devices and 24 full detail witnesses. The new administrator
@@ -58,20 +70,20 @@ calibrations. Each stopped lifecycle permits one DELETE; an unacknowledged
 write or an acknowledged write without exact restoration cannot be retried.
 Played=true with a present percentage remains unsupported pending actual evidence.
 
-Next: finish the producer and outer-operator integration for this accepted
-baseline. The currently published producer still requires the historical
-eight-user/ten-library/twelve-detail release-v2 input and must not run against
-the enlarged population. The new release-v3 contract retains the actual v4 and
-Guid history and adds baselineObservation={manifest, independent}; its fixed
-observer source must replay the complete actual evidence through
-verify_completed_evidence before returning the baseline and closure descriptors.
-The adaptation is in progress and not yet remotely verified or admitted.
+The new release-v3 contract retains the actual v4 and Guid history and adds
+baselineObservation={manifest, independent}. Its fixed observer source replays
+the complete actual evidence through verify_completed_evidence before returning
+the baseline and closure descriptors. That producer adaptation and its actual
+read-only audit have passed; preparation05 has completed at worker level and
+awaits independent full reconstruction.
+The older published release-v2 producer must not run against this population.
 
-The proposed new preparation plan is 293 normal requests, 299 with successful
+The preparation05 plan permits 293 normal requests, 299 with successful
 closure, and 107 failure-cleanup requests, within 320/120/440 hard caps. Matrix
-caps remain 220/80/300. After verification, use a fresh input and scope for four
-actual calibrations, independent fixture release and the reference NextUp
-matrix. The [preparation04 seal](nextup-global-reference-preparation-04-independent-terminal.json),
+caps remain 220/80/300. Its four actual calibrations are complete; independently
+reconstruct the consumed preparation05 scope before fixture release and the
+reference NextUp matrix. Do not replay preparation05. The
+[preparation04 seal](nextup-global-reference-preparation-04-independent-terminal.json),
 all 172 exact replayed requests and its separate accepted UserData recovery
 remain immutable historical evidence.
 
@@ -1613,7 +1625,7 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Research baseline and PostgreSQL/toolchain decisions | Complete as a documentation increment | Pushed `baa3731`: pinned upstream catalog, scope, PostgreSQL architecture and toolchain provenance |
-| M3e real-client acceptance | In progress; current baseline independently accepted; preparation/matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. Observer03 completed 64 requests and independent exact-byte replay, capturing 10 users/12 libraries/98 devices/24 full details with exact new-token closure, 158 preserved roots and full Goby 83/70/185 unchanged. Its source passed 101 guards/two compile checks. The shared Episode percentage/v3 lifecycle/one-DELETE contract previously passed 379 guards/eight compile checks. Producer and operator integration for the new baseline and release-v3 are in progress; the currently published 8-user/10-library/12-detail producer remains unsuitable for a new actual run. Four actual calibrations, fixture release and NextUp matrix remain open. Automatic-refresh v4/v7 controls remain negative. Primary upgrade needs positive client acceptance and a fresh independently attested upgrade. See [observer03](nextup-global-baseline-observer-03.md). |
+| M3e real-client acceptance | In progress; preparation05 worker completed four calibrations; independent replay/matrix/client gates open | Candidate source55/schema28; primary source32/schema27; positive client gate unmet. The release-v3 producer passed 181 guards and actual observer/Grant replay; the final operator passed 73 guards. Actual preparation05 completed 269 requests, four calibrations, four DELETE attempts and three exact token closures, with exit0/MainPID0 and no pending/uncertain responsibility. All 163 protected roots and full Goby 83/70/185 match before/after captures. Independent full raw replay, fixture release and NextUp matrix remain pending. Automatic-refresh v4/v7 controls remain negative. Primary upgrade needs positive client acceptance and a fresh independently attested upgrade. See [preparation05](nextup-global-reference-preparation-05.md). |
 | Linux toolchain and database provisioning | Complete | Pushed `79745ce`: Go 1.27.1, FFmpeg 9.0.1 and PostgreSQL 17.11; software media verification passed |
 | M0 core reference capture | Baseline complete; broader coverage pending | Official Emby 4.9.5.0 evidence contains 2462 records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one readiness connection refusal, and one audit. The [4K encoding-width study](../research/encoding-width-reference.md) added 61 to the preceding 2305; the [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 after the [read study](../research/configuration-reference.md) reached 2051. Older evidence remains preserved. Broader configuration writes, changed-value key writes and restart persistence, task timer/key-auth behavior, weekly/system-event execution, DST/maximum-runtime enforcement, global NextUp selection, and hidden header-device Info/deletion remain unresolved. Reference records are separate from product acceptance |
 | M1 service, identity, administrator foundation | Foundation increment complete | PostgreSQL migrations, users/sessions, setup/login, CSRF, proxy-aware rate limits, React/MUI overview/user creation, non-root Linux deployment; [verification report](verification-m1.md) |

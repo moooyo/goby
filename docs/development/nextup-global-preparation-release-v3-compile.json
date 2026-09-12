@@ -1,0 +1,11 @@
+{
+  "bytecodeWritten": false,
+  "compileChecks": 4,
+  "passed": true,
+  "sources": {
+    "prepare-nextup-global-reference.py": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7",
+    "run-nextup-global-reference.py": "8c9ebe40bdc6224670b54298927a4ad0cff90450b3f05bd47963086fb0d3251e",
+    "test-prepare-nextup-global-reference.py": "2ff164c6dcb972087e6bacd172b744cf9fe9d88bace196a1f3e385803fa0da5b",
+    "test-run-nextup-global-reference.py": "a0cc9387342625eb6e30fca0b3e6b87877f70218bd6c3b479545cadbd2b63fe7"
+  }
+}
