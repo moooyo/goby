@@ -1,8 +1,10 @@
 # Storage root bindings and missing-file reconciliation
 
-Status: implementation plan. No binding migration, native binding API, or
-ordinary missing-file deletion has been implemented or verified. This work is
-required before a completed scan can remove catalog rows for absent files.
+Status: the underlying Go root identity adapter is implemented and has bounded
+remote verification. Persistent binding and reconciliation remain an
+implementation plan: schema28, the native binding/rebind API and ordinary
+missing-file deletion have not been implemented or verified. Those integrations
+are required before a completed scan can remove catalog rows for absent files.
 
 The [first remote capability observation](root-binding-capability-v1.json)
 established that `FS_IOC_GETFSUUID` and `name_to_handle_at` both work for one
@@ -15,6 +17,29 @@ also obtained both identifiers on an owned ext4 fixture as the actual `goby`
 service uid, with no supplementary groups, an empty capability bounding set,
 and NoNewPrivileges. System reboot, nested mounts, network filesystems, the
 complete service sandbox, and product deletion authorization remain unverified.
+
+The frozen source38 change set covers 19 Go files, including the implemented
+`root_identity` adapter and its `linux-fsuuid-filehandle-v1` identity profile.
+The adapter separates the complete filesystem UUID and opaque directory handle
+from the live device/inode/mount witness; it does not persist or approve a root
+binding. [Go adapter verification](root-identity-go-verification.json) passed
+14 top-level tests, including one process-helper entry, with race detection,
+zero failures and zero skips. Coverage includes real ext4 directory content
+changes, same-path replacement/restoration and a separate observer process.
+The verification record SHA-256 is
+`e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
+
+The [actual unprivileged Go helper](root-identity-go-unprivileged.json) also
+matched the identity and live witness on an owned ext4 fixture as service uid
+995, with an empty capability bounding set and NoNewPrivileges. Its record
+SHA-256 is
+`0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
+These results advance the earlier API feasibility observations to a tested
+adapter; system reboot, nested mounts, other filesystems and the complete
+service sandbox remain unverified. Source38 also passed its separate
+[95-test PostgreSQL notification/lock checks](m3e-library-changed-aux-verification.json);
+its full-suite regression is running. The persistence and reconciliation
+steps below remain planned and are not deletion authorization.
 
 ## Problem and acceptance boundary
 
@@ -40,12 +65,14 @@ has a relative path, identity profile, validity domain, filesystem identity, and
 directory identity. Apply explicit size and boundary-count limits; exceeding a
 limit disables deletion instead of silently truncating the topology.
 
-The preferred identity profile combines a verified stable filesystem identity
-with an opaque directory file handle and its type. The actual Linux APIs,
-filesystem support, and reboot guarantees need remote capability verification
-before selecting or implementing that profile. Device/inode numbers, mount IDs,
-mount namespaces, and `f_fsid` alone are not a durable volume identity. A weaker
-profile must expose its boot/process validity domain and expire explicitly;
+The implemented adapter combines a complete filesystem UUID with an opaque
+directory file handle and its type. Its current ext4 and observer-process
+evidence does not establish reboot persistence, mount topology or support for
+other filesystems; those guarantees still need remote verification before the
+profile can authorize persisted root bindings and deletion. Device/inode
+numbers, mount IDs, mount namespaces, and `f_fsid` alone are not a durable volume
+identity. A weaker profile must expose its boot/process validity domain and
+expire explicitly;
 process-scoped identity must retain the original descriptor. Directory change
 timestamps and link counts belong to scan stability evidence, not durable
 identity, because normal content changes can alter them.

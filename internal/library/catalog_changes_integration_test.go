@@ -167,9 +167,10 @@ func TestCatalogChangesMetadataNoopAndFailuresStayQuiet(t *testing.T) {
 func TestCatalogChangesOwnPayloadStorageAndSupportListenerReplacement(t *testing.T) {
 	ctx, _, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	first := catalogChangesTestListener(t, store)
-	backing := strings.Repeat("x", 1<<20) + "itemlibraryparent"
+	backing := strings.Repeat("x", 1<<20) + "itemlibraryparentprevious"
 	change := CatalogChange{Kind: CatalogUpdated, ItemID: backing[1<<20 : (1<<20)+4],
-		LibraryID: backing[(1<<20)+4 : (1<<20)+11], ParentID: backing[(1<<20)+11:]}
+		LibraryID: backing[(1<<20)+4 : (1<<20)+11], ParentID: backing[(1<<20)+11 : (1<<20)+17],
+		PreviousParentID: backing[(1<<20)+17:]}
 	input := []CatalogChange{change}
 	tx := beginCatalogTestTransaction(t, ctx, store)
 	if err := recordCatalogChanges(tx, input...); err != nil {
@@ -183,7 +184,8 @@ func TestCatalogChangesOwnPayloadStorageAndSupportListenerReplacement(t *testing
 	assertCatalogTestChanges(t, notification, []CatalogChange{change})
 	if unsafe.StringData(notification.Changes[0].ItemID) == unsafe.StringData(change.ItemID) ||
 		unsafe.StringData(notification.Changes[0].LibraryID) == unsafe.StringData(change.LibraryID) ||
-		unsafe.StringData(notification.Changes[0].ParentID) == unsafe.StringData(change.ParentID) {
+		unsafe.StringData(notification.Changes[0].ParentID) == unsafe.StringData(change.ParentID) ||
+		unsafe.StringData(notification.Changes[0].PreviousParentID) == unsafe.StringData(change.PreviousParentID) {
 		t.Fatal("retained identifiers kept the producer's large backing allocation")
 	}
 	notification.Changes[0].ItemID = "listener-reused-payload"
@@ -228,7 +230,7 @@ func TestCatalogChangesOverflowReplacesAllFactsWithResync(t *testing.T) {
 	}
 	assertCatalogTestChanges(t, nextCatalogTestNotification(t, notifications), maximum)
 	large := CatalogChange{Kind: CatalogUpdated, ItemID: strings.Repeat("i", 256),
-		LibraryID: strings.Repeat("l", 256), ParentID: strings.Repeat("p", 256)}
+		LibraryID: strings.Repeat("l", 256), ParentID: strings.Repeat("p", 256), PreviousParentID: strings.Repeat("o", 256)}
 	for _, overflow := range []string{"count", "bytes", "invalid"} {
 		t.Run(overflow, func(t *testing.T) {
 			tx := beginCatalogTestTransaction(t, ctx, store)
@@ -237,7 +239,7 @@ func TestCatalogChangesOverflowReplacesAllFactsWithResync(t *testing.T) {
 					t.Fatal(err)
 				}
 			} else if overflow == "bytes" {
-				for index := 0; index < maxCatalogChangeBytes/(catalogChangeOverhead+768); index++ {
+				for index := 0; index < maxCatalogChangeBytes/(catalogChangeOverhead+1024); index++ {
 					if err := recordCatalogChanges(tx, large); err != nil {
 						t.Fatal(err)
 					}

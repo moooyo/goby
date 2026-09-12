@@ -14,7 +14,7 @@ const (
 	libraryNotificationQueueBytes  = 256 * 1024
 	libraryNotificationBatchBytes  = 64 * 1024
 	libraryNotificationChanges     = 512
-	libraryNotificationChangeBytes = 64
+	libraryNotificationChangeBytes = 80
 )
 
 type libraryNotificationStore interface {
@@ -84,6 +84,7 @@ func (n *libraryNotifier) Enqueue(notification library.CatalogNotification) {
 		changes[index].ItemID = strings.Clone(change.ItemID)
 		changes[index].LibraryID = strings.Clone(change.LibraryID)
 		changes[index].ParentID = strings.Clone(change.ParentID)
+		changes[index].PreviousParentID = strings.Clone(change.PreviousParentID)
 	}
 	n.queue = append(n.queue, &queuedLibraryNotification{notification: library.CatalogNotification{Changes: changes},
 		bytes: size, generation: n.generation})
@@ -101,10 +102,13 @@ func catalogNotificationSize(notification library.CatalogNotification) (int, boo
 		if (change.Kind != library.CatalogAdded && change.Kind != library.CatalogUpdated && change.Kind != library.CatalogRemoved) ||
 			!validLibraryChangedID(change.ItemID) || !validLibraryChangedID(change.LibraryID) ||
 			(change.ParentID != "" && !validLibraryChangedID(change.ParentID)) || change.ParentID == change.ItemID ||
+			(change.PreviousParentID != "" && (change.Kind != library.CatalogUpdated || change.IsCollectionFolder ||
+				!validLibraryChangedID(change.PreviousParentID) || change.ParentID == "" ||
+				change.PreviousParentID == change.ParentID || change.PreviousParentID == change.ItemID)) ||
 			(change.IsCollectionFolder && (!change.IsFolder || change.ItemID != change.LibraryID || change.ParentID != "")) {
 			return 0, false
 		}
-		size += libraryNotificationChangeBytes + len(change.ItemID) + len(change.LibraryID) + len(change.ParentID)
+		size += libraryNotificationChangeBytes + len(change.ItemID) + len(change.LibraryID) + len(change.ParentID) + len(change.PreviousParentID)
 		if size > libraryNotificationBatchBytes {
 			return 0, false
 		}
@@ -222,6 +226,9 @@ func catalogNotificationEnvelope(notification library.CatalogNotification) (even
 		byKey[key], byItem[change.ItemID] = change, change
 	}
 	for _, change := range notification.Changes {
+		if previous, exists := byKey[catalogChangeKey{change.PreviousParentID, change.LibraryID}]; change.PreviousParentID != "" && exists && !previous.IsFolder {
+			return events.Envelope{}, events.ErrResyncRequired
+		}
 		seen := map[string]bool{change.ItemID: true}
 		for parentID := change.ParentID; parentID != ""; {
 			if seen[parentID] {
@@ -294,6 +301,10 @@ func catalogNotificationEnvelope(notification library.CatalogNotification) (even
 			}
 		case library.CatalogUpdated:
 			appendID(&data.ItemsUpdated, change.ItemID, change.LibraryID)
+			if change.PreviousParentID != "" {
+				appendID(&data.FoldersRemovedFrom, change.PreviousParentID, change.LibraryID)
+				appendID(&data.FoldersAddedTo, change.ParentID, change.LibraryID)
+			}
 		case library.CatalogRemoved:
 			appendID(&data.ItemsRemoved, change.ItemID, change.LibraryID)
 			if !change.IsCollectionFolder {

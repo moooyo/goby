@@ -401,6 +401,13 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	defer rollback(tx)
+	beforeCatalog, err := readScanCatalogItem(state.task.ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if beforeCatalog.present && beforeCatalog.change.LibraryID != state.library.ID {
+		return fmt.Errorf("%w: scanned item belongs to another library", ErrUnavailable)
+	}
 	_, err = tx.Exec(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path,
 		 index_number, parent_index_number, media, file_identity, file_size, modified_at,
@@ -427,6 +434,13 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {
+		return err
+	}
+	afterCatalog, err := readScanCatalogItem(state.task.ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if err := recordScanCatalogChange(tx, state.library.ID, beforeCatalog, afterCatalog, state.task.job.ForceProbe); err != nil {
 		return err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
@@ -484,6 +498,13 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		return "", err
 	}
 	defer rollback(tx)
+	beforeCatalog, err := readScanCatalogFolder(state.task.ctx, tx, state.root.id, relative)
+	if err != nil {
+		return "", err
+	}
+	if beforeCatalog.present && beforeCatalog.change.LibraryID != state.library.ID {
+		return "", fmt.Errorf("%w: scanned folder belongs to another library", ErrUnavailable)
+	}
 	err = tx.QueryRow(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path, is_folder, index_number,
 		 overview, local_metadata, local_metadata_hash, local_metadata_path)
@@ -509,6 +530,15 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		return "", err
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {
+		return "", err
+	}
+	afterCatalog, err := readScanCatalogItem(state.task.ctx, tx, id)
+	if err != nil {
+		return "", err
+	}
+	// ForceProbe refreshes media files. A directory has no successful probe to
+	// invalidate, so its notifications still require changed effective facts.
+	if err := recordScanCatalogChange(tx, state.library.ID, beforeCatalog, afterCatalog, false); err != nil {
 		return "", err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {

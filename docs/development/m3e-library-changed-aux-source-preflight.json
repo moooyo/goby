@@ -1,0 +1,37 @@
+{
+  "base_manifest_sha256": "153018fb7e0b5308d727dcc7b1794bc9769ba71e24c2b783a23941595291813a",
+  "database_setup_performed": false,
+  "files": 4167,
+  "formal_source_preflight": "passed",
+  "format_changed": [
+    "internal/library/metadata_music_notifications.go",
+    "internal/library/root_identity.go",
+    "internal/library/root_identity_linux.go",
+    "internal/library/root_identity_linux_test.go",
+    "internal/library/root_identity_test.go"
+  ],
+  "formatted_archive_sha256": "d97384a2aa6eede712386fe97df4ce1ce7d68eb5bb4ea1c3fc3cb59d41589b41",
+  "formatted_files": {
+    "internal/library/extra_publication_locks_integration_test.go": "78b3d643acf3f45e2668e1272ac280ebd208dd8313af4c3a3a490307af96b0e4",
+    "internal/library/extras_scan.go": "d3761813d7890fbaabf9bd1904b1bbfa3bfaea92c6436663dc14fbccde844e99",
+    "internal/library/image_catalog_changes.go": "a5401175abfa1b3d59d175b2290336f31ed63a2f407a81435860f0b623895831",
+    "internal/library/image_catalog_changes_integration_test.go": "6640f5b576c714e90fcdba678015a22421bba56aef2485394458034d13ac8c19",
+    "internal/library/images_scan.go": "4111ccfd86d36044606c5a8c7231bc7a7086c976f692c07415f104883edace60",
+    "internal/library/metadata_music_notifications.go": "3872d26706258129a4ef9c2e7f65b7a9068c576c2045f348438cc8841a97cf19",
+    "internal/library/metadata_music_notifications_integration_test.go": "944b96e1d24614fdd88dc6e1a2d0cfdde3b490d2da38bc48abe34a6694d8dab2",
+    "internal/library/metadata_music_scan.go": "8ff9b1eed27d34241fbb0fa4e70e80d98750970fe3cf58c8590e21be421e3b59",
+    "internal/library/paths.go": "0c7c47128ce3fdac58d433917c2befc812c25ac27ae5dfbfc7218f9eff7dff88",
+    "internal/library/root_identity.go": "e430e994262792f89b061ef8138a3108d66bc7558d425a099caa87350318c301",
+    "internal/library/root_identity_linux.go": "c206dce4d69ce6c696b837480c6fa3e05c567efdc3d4c9eeb6e7680119de0e48",
+    "internal/library/root_identity_linux_test.go": "ed5ed4e0670f29feddb83a122fb4b10c39c9f78ea7995da5607ae151a401272d",
+    "internal/library/root_identity_other.go": "b07c96b30b190bc10a8140615860f4b5f2b25e8cfd95acd58b9871199c01c9fa",
+    "internal/library/root_identity_other_test.go": "c961d08e5e9dc62b03576bed53367694de579179b1063b71275068172230bb70",
+    "internal/library/root_identity_test.go": "ea9906167bc5d08d26c8add380675ec1334afe3f24aabde60db99d2a9ba8dc39",
+    "internal/library/subtitle_catalog_changes.go": "a79cc3430044d9629e255d7a379ea79152a11665b0a230b6e02c1b45407a4417",
+    "internal/library/subtitle_catalog_changes_integration_test.go": "2be22d41208f486196e54d9960c570969480266f6a572b943267ae0b8e3c219f",
+    "internal/library/subtitles_scan.go": "b3006346800b9882eff2b3780a63416fe6497568187d7a2a0a3828e1ce2c9a3a",
+    "internal/library/themes_scan.go": "8b19e0e6c06792145c61e8f99d678a2c637b814d863ce9525db2eff73d4f2ef3"
+  },
+  "manifest_sha256": "e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-38"
+}

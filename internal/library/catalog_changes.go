@@ -18,11 +18,14 @@ const (
 // CatalogChange is a trusted fact captured inside its catalog transaction.
 // Removed items retain their former library and parent rather than looking them
 // up after deletion. These facts are independent of any client wire protocol.
+// An updated item moved within its library retains PreviousParentID so both
+// containers can invalidate their membership without changing the item identity.
 type CatalogChange struct {
 	Kind               CatalogChangeKind
 	ItemID             string
 	LibraryID          string
 	ParentID           string
+	PreviousParentID   string
 	IsFolder           bool
 	IsCollectionFolder bool
 }
@@ -37,7 +40,7 @@ type CatalogNotification struct {
 const (
 	maxCatalogChanges     = 1024
 	maxCatalogChangeBytes = 256 * 1024
-	catalogChangeOverhead = 64
+	catalogChangeOverhead = 80
 )
 
 type catalogChangeListener struct {
@@ -130,7 +133,7 @@ func recordCatalogChanges(tx pgx.Tx, changes ...CatalogChange) error {
 			batch.requireResync()
 			return nil
 		}
-		needed := catalogChangeOverhead + len(change.ItemID) + len(change.LibraryID) + len(change.ParentID)
+		needed := catalogChangeOverhead + len(change.ItemID) + len(change.LibraryID) + len(change.ParentID) + len(change.PreviousParentID)
 		if needed > maxCatalogChangeBytes-size {
 			batch.requireResync()
 			return nil
@@ -145,6 +148,7 @@ func recordCatalogChanges(tx pgx.Tx, changes ...CatalogChange) error {
 		change.ItemID = strings.Clone(change.ItemID)
 		change.LibraryID = strings.Clone(change.LibraryID)
 		change.ParentID = strings.Clone(change.ParentID)
+		change.PreviousParentID = strings.Clone(change.PreviousParentID)
 		retained[len(batch.changes)+index] = change
 	}
 	batch.changes, batch.bytes = retained, size
@@ -155,6 +159,9 @@ func validCatalogChange(change CatalogChange) bool {
 	return (change.Kind == CatalogAdded || change.Kind == CatalogUpdated || change.Kind == CatalogRemoved) &&
 		validCatalogLibraryIdentifier(change.ItemID) && validCatalogLibraryIdentifier(change.LibraryID) &&
 		(change.ParentID == "" || validCatalogLibraryIdentifier(change.ParentID)) &&
+		(change.PreviousParentID == "" || change.Kind == CatalogUpdated && !change.IsCollectionFolder &&
+			validCatalogLibraryIdentifier(change.PreviousParentID) && change.ParentID != "" &&
+			change.PreviousParentID != change.ParentID && change.PreviousParentID != change.ItemID && change.ParentID != change.ItemID) &&
 		(!change.IsCollectionFolder || change.IsFolder && change.ItemID == change.LibraryID && change.ParentID == "")
 }
 

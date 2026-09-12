@@ -1,12 +1,14 @@
 # Development handoff
 
-Current verification boundary: **source35 completed its full regression;
-source37 passed the separate 80-test ordinary-scan/HTTP/WebSocket checks and
-its own full regression is now running.**
-SSH is restored. The transient signing-agent refusal did not end or restart
-the source35 run, whose completed result is recorded below.
+Current verification boundary: **source37 passed its full 24-package regression
+with 1,920 top-level tests, zero failures, zero skips and all six PostgreSQL
+cleanup checks true. Source38 passed 95 auxiliary-notification/lock checks;
+its separate full-suite regression is running.**
+SSH is restored. Primary and candidate remain on source32/schema27; neither
+notification increment has been deployed, and original-client UI acceptance
+remains open.
 
-The working tree contains the next, unstaged ordinary-scan increment:
+The accepted source37 ordinary-scan increment contains
 transactional Added/Updated facts, effective folder comparisons, explicit probe
 invalidation, and same-library moves retaining both parent scopes through
 `PreviousParentID`. Source36 passed [14 pure race tests](m3e-library-changed-scan-pure-verification.json),
@@ -32,30 +34,63 @@ is historical. Execution records remain under
 Terminal receipt SHA-256 is
 `962a578e7e5fae442e4ca2b1b9bf0d9613e3ba1c15d23fb7e5f42da85b9ea244`.
 These are ordinary-scan and real HTTP/WebSocket integration checks, not
-original-client UI acceptance or complete-suite verification.
+original-client UI acceptance. The separate full-suite result follows.
 
-The source37 full regression is **running** under
-`goby-library-changed-scan-full-controller-v1.service`, PID979794, invocation
-`d477192e74604dd290af3e7d6c3d212a`, with execution records under
-`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
-Its run ID is `20260912_005623_3e09ff8ff85d`; the pending report is
+The [source37 full regression](m3e-library-changed-scan-full-verification.json)
+passed 24 packages and 1,920 top-level tests, with zero failures, zero skips and
+all six cleanup checks true. Its run ID is `20260912_005623_3e09ff8ff85d`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005623_3e09ff8ff85d/report.json`.
-No source37 full-suite result is available yet. Recheck this exact handle;
-an observation timeout does not authorize a replacement run.
+Report SHA-256 is
+`3c99ecc06a5d8f0d184fc50e7dcc5a6737af80f3a532e8225db7c051236c064b`.
+The run's `tmp/goby-linux-amd64` is 28,266,227 bytes, SHA-256
+`8172549d40cf5ddf36d756baa411adb291cfd3b2e41a827cc19aa12678e693d3`.
+Controller `goby-library-changed-scan-full-controller-v1.service`, invocation
+`d477192e74604dd290af3e7d6c3d212a`, completed with exit0, MainPID0 and an empty
+cgroup; its former PID979794 is historical. Execution records remain under
+`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
+Terminal receipt SHA-256 is
+`a76176e12c7fdc87d4016bac7311f4743a443d2632ee9c9285e6e7fb8966b194`.
 
-The source35 checkpoint contains its 18 changed Go files at their frozen,
-fully tested bytes; new scan/move edits are deliberately unstaged, including
-further changes to shared producer/notifier files. Do not combine these scopes
-or claim the newer code passed source35 verification. The
-[storage binding plan](storage-root-bindings-plan.md) describes the separate
-unimplemented root-identity/reconciliation dependency. Its
-[root capability observation](root-binding-capability-v1.json) and
-[unprivileged observation](root-binding-unprivileged-capability-v1.json) establish
-bounded API feasibility only: schema28 binding is not implemented, and identity
-continuity across a system reboot remains unverified. The user's untracked
+Keep the accepted ten-file source37 checkpoint separate from source38's 19
+unstaged Go files. Source38 adds post-commit image/subtitle projection changes,
+derived album changes and inherited Audio/theme references, an extras scan
+lock-order lease fix, and the low-level root-identity adapter. Its remote
+formatting and [formal source preflight](m3e-library-changed-aux-source-preflight.json)
+passed for 4,167 files, manifest SHA-256
+`e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b`.
+These source checks do not establish PostgreSQL or full-suite success.
+
+The [source38 targeted checks](m3e-library-changed-aux-verification.json) passed
+95 top-level tests with zero failures, zero skips and all six cleanup checks.
+Report SHA-256 is `3645b4e6d066a2b303b0baa7486869dd899e746ec3d955026e1ff976fe1ecd01`:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_012842_0cfb5473113e/report.json`.
+The controller `goby-library-changed-aux-controller-v1.service`, invocation
+`9314e7571edf43ad81ec062b88d9a147`, exited0 with MainPID0 and an empty cgroup.
+Its terminal receipt SHA-256 is
+`43a58b42154d8365d2f06d9e08c046f6580214c559971f9d4e492eaa3700c7b8`.
+
+Source38 full regression is **running** under
+`goby-library-changed-aux-full-controller-v1.service`, PID1013204, invocation
+`d7760f6de7de42638b47348df631dac9`, with execution records under
+`/opt/goby-test/exec-work-m3e/library-changed-aux-full-execution-01`.
+Run ID: `20260912_013304_de10a2ccd535`; pending report:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_013304_de10a2ccd535/report.json`.
+Recheck this exact handle without restarting on an observation timeout. No
+source38 full-suite result or deployment is claimed.
+
+The [storage binding plan](storage-root-bindings-plan.md) now distinguishes the
+implemented low-level adapter from unimplemented persistence and reconciliation.
+The adapter passed [14 remote race tests](root-identity-go-verification.json),
+report SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
+The [actual Go helper](root-identity-go-unprivileged.json) also obtained the same
+identity as uid995 with empty capabilities and NoNewPrivileges, report SHA-256
+`0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
+No schema28 binding, rebind workflow or deletion authorization exists yet.
+System reboot, nested mounts, other filesystems and the complete service sandbox
+remain unverified. The user's untracked
 `scripts/test-env/upgrade-main-schema25.py` remains untouched and excluded.
 
-Accepted verification increment: **source35 passed the full 24-package run
+Historical verification increment: **source35 passed the full 24-package run
 with 1,908 top-level tests, zero failures, zero skips and all six PostgreSQL
 cleanup checks true.** The earlier [producer verification](m3e-library-changed-producer-verification.json)
 records 43 passed tests, zero failures, zero skips and all six cleanup checks
@@ -70,10 +105,10 @@ trusted facts inside their transactions and notify only after successful commit.
 Request cancellation does not suppress an already committed notification;
 rollback, failed commit and no-op edits do not publish. The bounded notifier
 feeds the existing broadcast and current-permission delivery path. Source35
-does not include ordinary scan production. The newer ordinary scan/move code
-has passed its pure and PostgreSQL/HTTP/WebSocket checks, while its full suite
-and original-client UI acceptance remain pending. Auxiliary and derived-metadata
-scan producers are still unimplemented. See
+does not include ordinary scan production. Source37 subsequently passed its
+ordinary scan/move targeted checks and full suite. Source38's image/subtitle and
+derived-album producers are implemented but await PostgreSQL and full-suite
+results; original-client UI acceptance remains pending. See
 [implementation boundaries](library-change-notifications.md).
 
 The [completed source35 full report](m3e-library-changed-full-verification.json)
@@ -147,8 +182,9 @@ MainPID0 with an empty cgroup. Terminal SHA-256 is
 `2441846e7ae8923f5fcdcfac8e4a9f8d6aab53eb3e4034577391e2c6910c6dba`.
 It began after the first controller terminated and made no catalog mutations.
 
-Next: complete source37 full regression and original-client UI acceptance,
-then connect auxiliary and derived scan commits. Safe missing-file
+Next: complete source38's full regression and
+original-client UI acceptance, and implement complete theme/extra resource-change
+notifications and global entity projection invalidation. Safe missing-file
 reconciliation requires durable
 root/storage binding, complete cross-root move matching and stable directory
 observations. That binding and reconciliation workflow is not implemented or

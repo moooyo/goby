@@ -196,10 +196,12 @@ func TestCatalogNotificationEnvelopeRejectsAmbiguousFactsAndInvalidBounds(t *tes
 }
 
 func TestCatalogNotificationEnvelopeChecksEncodedAndScopeByteBudget(t *testing.T) {
-	changes := make([]library.CatalogChange, 113)
+	// JSON escaping expands these valid identifiers beyond the input budget's
+	// raw string bytes, so the encoded publication needs an independent bound.
+	changes := make([]library.CatalogChange, 110)
 	for index := range changes {
 		changes[index] = library.CatalogChange{Kind: library.CatalogAdded, LibraryID: "l",
-			ItemID: strings.Repeat("i", 250) + fmt.Sprintf("%06d", index), ParentID: strings.Repeat("p", 250) + fmt.Sprintf("%06d", index)}
+			ItemID: strings.Repeat("\"", 250) + fmt.Sprintf("%06d", index), ParentID: strings.Repeat("p", 250) + fmt.Sprintf("%06d", index)}
 	}
 	notification := library.CatalogNotification{Changes: changes}
 	if _, valid := catalogNotificationSize(notification); !valid {
@@ -462,7 +464,7 @@ func libraryNotifierUpdate(itemID string) library.CatalogNotification {
 func libraryNotifierLargeBatch() library.CatalogNotification {
 	change := library.CatalogChange{Kind: library.CatalogUpdated, ItemID: strings.Repeat("i", 256),
 		LibraryID: strings.Repeat("l", 256), ParentID: strings.Repeat("p", 256)}
-	changes := make([]library.CatalogChange, 78)
+	changes := make([]library.CatalogChange, 77)
 	for index := range changes {
 		changes[index] = change
 	}

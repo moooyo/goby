@@ -1,13 +1,15 @@
 # Library change notifications
 
-Committed library creation/deletion and native metadata edits now reach the
-bounded notifier and outbound permission filter. Source35 passed both targeted
-producer checks and its full remote suite. Later ordinary scan and move changes
-passed pure logic checks and the source37 PostgreSQL/HTTP/WebSocket targeted
-suite. Source37 full-suite results and original-client UI acceptance remain
-pending. Auxiliary and derived scan notifications, persistent root binding and safe
-missing-file reconciliation are not implemented. LibraryChanged
-support and client acceptance remain incomplete, and this work is not deployed.
+Committed library creation/deletion, native metadata edits and ordinary scan/move
+changes reach the bounded notifier and outbound permission filter. Source37
+passed its 80 targeted PostgreSQL/HTTP/WebSocket checks and full remote suite:
+24 packages, 1,920 top-level tests, zero failures, zero skips and all six cleanup
+checks true. Source38 adds image/subtitle and derived-album notifications; its
+95 targeted checks passed and its full-suite result is pending. Complete
+theme/extra resource-change notifications, global entity projection invalidation,
+persistent root binding and safe missing-file reconciliation remain unfinished.
+Original-client UI acceptance remains open. Primary and candidate still run
+source32/schema27; this work is not deployed.
 
 ## Reference observations
 
@@ -145,14 +147,16 @@ accepted source32/schema27 deployment.
 
 ## Ordinary scan changes after source35
 
-Later, unstaged code connects ordinary file and folder additions/updates to the
+The source37 checkpoint connects ordinary file and folder additions/updates to the
 post-commit producer. Folder comparison uses effective properties after metadata
 synchronization rather than timestamps or source bookkeeping. Successful file
 ForceProbe refreshes can invalidate identical accepted facts; cached unchanged
 visits stay quiet. Same-library moves retain PreviousParentID in one update fact,
 and earlier commits are not gated on the eventual whole-scan result. Source37's
-targeted PostgreSQL and real HTTP/WebSocket checks now cover these changes;
-source35's earlier result does not. Original-client UI acceptance remains open.
+targeted PostgreSQL/HTTP/WebSocket checks and full suite cover these changes;
+source35's earlier result does not. The accepted ten-file source37 increment is
+kept separate from source38's 19 unstaged Go files. Original-client UI acceptance
+remains open.
 
 The [source36 pure verification](m3e-library-changed-scan-pure-verification.json)
 passed 14 tests with race detection and no failures or skips. Its report SHA-256
@@ -174,7 +178,7 @@ Preflight performed no database setup and is not a PostgreSQL test pass.
 The [source37 targeted verification](m3e-library-changed-scan-verification.json)
 passed 80 top-level tests, with zero failures, zero skips and all six cleanup
 flags true. It covers ordinary scanning and real HTTP/WebSocket delivery; it
-does not establish original-client UI acceptance or a source37 full-suite pass.
+does not establish original-client UI acceptance. Full-suite evidence is separate.
 The run ID is `20260912_005317_90f76937a793`; its remote report is
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005317_90f76937a793/report.json`.
 The report SHA-256 is
@@ -186,23 +190,74 @@ execution directory
 Its terminal record SHA-256 is
 `962a578e7e5fae442e4ca2b1b9bf0d9613e3ba1c15d23fb7e5f42da85b9ea244`.
 
-The source37 full run is active under
-`goby-library-changed-scan-full-controller-v1.service`, PID `979794`, InvocationId
-`d477192e74604dd290af3e7d6c3d212a`, execution directory
-`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
-The run ID is `20260912_005623_3e09ff8ff85d`; the pending report path is
+The [source37 full run](m3e-library-changed-scan-full-verification.json) passed
+24 packages and 1,920 top-level tests, with zero failures, zero skips and all six
+PostgreSQL cleanup flags true. Run ID `20260912_005623_3e09ff8ff85d`; report:
 `/opt/goby-test/exec-work-m3e/client-backup-run-20260912_005623_3e09ff8ff85d/report.json`.
-It has no terminal result yet; the completed 1,908-test full run belongs to
-source35. SSH access has recovered, with no current access blocker.
+Report SHA-256 is
+`3c99ecc06a5d8f0d184fc50e7dcc5a6737af80f3a532e8225db7c051236c064b`.
+The run's `tmp/goby-linux-amd64` is 28,266,227 bytes, SHA-256
+`8172549d40cf5ddf36d756baa411adb291cfd3b2e41a827cc19aa12678e693d3`.
+Controller `goby-library-changed-scan-full-controller-v1.service` completed with
+exit0, MainPID0 and an empty cgroup, retaining InvocationId
+`d477192e74604dd290af3e7d6c3d212a`; its former PID979794 is historical. Execution:
+`/opt/goby-test/exec-work-m3e/library-changed-scan-full-execution-01`.
+Terminal SHA-256 is
+`a76176e12c7fdc87d4016bac7311f4743a443d2632ee9c9285e6e7fb8966b194`.
+The earlier 1,908-test source35 result remains a separate historical checkpoint.
+
+## Source38 auxiliary and derived changes
+
+The frozen, unstaged source38 increment compares image and subtitle public
+projections inside their existing owned transactions. Actual additions, content
+hash changes, metadata changes and removals record an Updated fact for the owner;
+unchanged scans, retained values after rejected input, rollback and failed commits
+do not publish. These scanner paths also run when the main media item is cached.
+Inspection timestamps and private file identity alone do not trigger a change.
+The subtitle comparison follows active, visible external stream indices, so
+maintenance of an already hidden historical track stays quiet.
+
+Derived music-album transactions compare decoded public metadata, structural
+properties and entity references after administrator controls apply. Retained raw
+source fields such as Album do not create a MusicAlbum update when its public
+projection is unchanged. A changed album name or AlbumArtists also records its
+dependent Audio/MusicVideo items: ordinary ancestor traversal stops at a nested
+MusicAlbum, while direct visibility admits active theme Audio as a terminal
+consumer. The album and inherited facts share the successful commit; excessive
+fan-out produces Resync instead of a truncated item list.
+
+This snapshot also includes the extras scan lock-order lease fix and low-level
+root-identity adapter. It does not implement complete theme/extra resource-change
+notifications, global entity projection invalidation, persisted bindings, rebind
+or missing-file deletion. Remote formatting and the
+[formal source38 preflight](m3e-library-changed-aux-source-preflight.json) passed
+for 4,167 files, manifest SHA-256
+`e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b`.
+
+The [source38 targeted report](m3e-library-changed-aux-verification.json)
+passed 95 top-level tests with zero failures, zero skips and all six cleanup
+checks. Report SHA-256 is
+`3645b4e6d066a2b303b0baa7486869dd899e746ec3d955026e1ff976fe1ecd01`:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_012842_0cfb5473113e/report.json`.
+Its controller is exited0/MainPID0 with an empty cgroup; terminal SHA-256 is
+`43a58b42154d8365d2f06d9e08c046f6580214c559971f9d4e492eaa3700c7b8`.
+Source38 full regression is **running** under
+`goby-library-changed-aux-full-controller-v1.service`, PID1013204, InvocationId
+`d7760f6de7de42638b47348df631dac9`, execution directory
+`/opt/goby-test/exec-work-m3e/library-changed-aux-full-execution-01`.
+Run ID: `20260912_013304_de10a2ccd535`; pending report:
+`/opt/goby-test/exec-work-m3e/client-backup-run-20260912_013304_de10a2ccd535/report.json`.
+Its 19-file increment has no full-suite result yet. Recheck this handle instead
+of replacing a live run after an observation timeout.
+SSH access is restored, with no current access blocker.
 
 ## Remaining integration
 
-Complete source37 full-suite verification and original-client UI acceptance of
-the ordinary scan and move changes, then connect auxiliary scans and derived
-metadata updates. Preserve earlier committed changes when a later scan step
-fails, and distinguish explicit
-refresh invalidation from a proven visible metadata change. Source35's native
-metadata and library-root coverage does not establish these scan semantics.
+Complete source38 full-suite verification, then original-client UI
+acceptance of the implemented scan changes. Complete theme/extra resource-change
+notifications and global entity projection invalidation remain separate work.
+Preserve earlier committed changes when a later scan step fails, and distinguish
+explicit refresh invalidation from a proven visible metadata change.
 
 Persistent root identity binding and safe missing-file reconciliation remain
 unimplemented. Deletion requires stable directory observations across all roots,
@@ -210,12 +265,17 @@ completed cross-root move matching and preservation on inaccessible, replaced or
 incomplete roots. A held directory descriptor alone does not prove that the
 configured pathname or mount still identifies the same root.
 
-The [storage root binding plan](storage-root-bindings-plan.md),
-[initial capability observation](root-binding-capability-v1.json) and
-[unprivileged capability observation](root-binding-unprivileged-capability-v1.json)
-establish bounded API feasibility only. Schema28, persisted bindings and product
-deletion authorization are not implemented; reboot, cross-system portability,
-nested mounts and network filesystems remain unverified.
+The [storage root binding plan](storage-root-bindings-plan.md) separates the
+implemented low-level adapter from its unimplemented persisted workflow. The
+adapter passed [14 remote race tests](root-identity-go-verification.json), report
+SHA-256 `e8c56113fb8f9acc8d9824d58698fa5bb9f93da3aad8c86b1229f79638215207`.
+Its [actual Go helper](root-identity-go-unprivileged.json) obtained the same
+identity as uid995 with empty capabilities and NoNewPrivileges, report SHA-256
+`0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
+The earlier capability observations remain historical API evidence. Schema28,
+persisted bindings, rebind and product deletion authorization are not implemented;
+system reboot, nested mounts, other filesystems and the complete service sandbox
+remain unverified.
 
 After the remaining scan production and reconciliation are implemented, verify
 those real events end to end and repeat the original-client refresh and

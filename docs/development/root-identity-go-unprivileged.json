@@ -1,0 +1,15 @@
+{
+  "capability_bounding_set_empty": true,
+  "captured_at": "2026-09-12T01:24:30.997299+00:00",
+  "database_access_performed": false,
+  "fixture": "/opt/goby-root-identity-go-1v41ovwq",
+  "gid": 986,
+  "identity_and_live_witness_match_root_observer": true,
+  "manifest_sha256": "e411a04c478055f99f34cbef1dde3c05a885c5131681152e3f382f4fcc3c665b",
+  "no_new_privileges": true,
+  "scope": "The source38 Go adapter observed one owned ext4 directory through a supplied descriptor under the service uid with no capabilities. This does not validate the complete service sandbox, reboot, mount topology, persistence, or deletion.",
+  "source": "/opt/goby-test/exec-work-m3e/source-attempt-38",
+  "status": "passed",
+  "test_binary_sha256": "a4b60873f104403de3cefd7ad6ccbae6cc989ccbd8a988ab931cf0a26a72e34d",
+  "uid": 995
+}
