@@ -1,0 +1,73 @@
+{
+  "kind": "audited-candidate-core-client-closeout-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T11:40:03.613887+00:00",
+  "sourcePins": {
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-close-audited-candidate-client.mjs": "f211fe13de26945e352b213fdba08b3788733f275b1bcde704d2ba232e348923",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "close-audited-candidate-client.mjs": "0a72e93aa136bb7a26eabb5c8eae6830d51afe4b784d0591b705a60904319f95",
+    "client-browser-playback.mjs": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619",
+    "test-client-browser-audited-candidate.mjs": "a5497ff8544e1d960ccc8ba8bbb6cd4e9aed1b196bbb491e7a1266fa07930edc",
+    "client-browser-audited-candidate.mjs": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "test-client-browser-playback.mjs": "267b144afa42f39056655506b5a332437dc459139e90b320224e6a8c36ba50fa"
+  },
+  "compileChecks": [
+    {
+      "source": "client-browser-playback.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "test-client-browser-playback.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "close-audited-candidate-client.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "test-close-audited-candidate-client.mjs",
+      "exitCode": 0
+    }
+  ],
+  "adapterCounts": {
+    "tests": 39,
+    "pass": 39,
+    "fail": 0,
+    "skipped": 0
+  },
+  "adapterChecksExecuted": false,
+  "reusedAdapterVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/av-tool-verification-06/verification.json",
+    "sha256": "ea82e068b3a50213ec7a182edffb42932005e7035b68796719befae76a275840"
+  },
+  "movieExitCode": 0,
+  "movieCounts": {
+    "tests": 16,
+    "pass": 16,
+    "fail": 0,
+    "skipped": 0
+  },
+  "movieOutputSha256": "0f31267dd1af9f8cb927ebf77117fe762ed8483a61ec7bff80124e53703ead3e",
+  "closerExitCode": 1,
+  "closerCounts": {
+    "testCount": 16,
+    "passed": 15,
+    "failed": 1,
+    "sourceUnchanged": true
+  },
+  "closerReport": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie-lifecycle-verification-01/closer-report.json",
+    "sha256": "694c9b00498192cf408a2498ad62f04df91ac85442ff2f7a63c5a4e9bc6438aa"
+  },
+  "retainedSnapshotReplay": true,
+  "replayedNewPlaybackRowsAreSynthetic": true,
+  "sourcesUnchanged": true,
+  "browserStarted": false,
+  "businessHttp": false,
+  "sqlQueries": 0,
+  "serviceActions": 0,
+  "passed": false
+}

@@ -3,7 +3,7 @@
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
 **diagnostic and cancellation fixes verified; candidate admitted;
-core original-client acceptance is in progress**. The
+offline movie alignment verified, real-client acceptance still open**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -56,8 +56,22 @@ including all ten revoked sessions and the expected session/device/audit changes
 The correction passed [39 observer/UI tests](../development/audited-core-client-observer-cleanup-verification.json),
 [11 controller checks](../development/audited-core-client-observer-cleanup-runner-verification.json)
 and a [captured-data replay](../development/audited-core-client-observer-replay.json).
-Movie04 is the one additional attempt permitted by the pause review below.
-Full authentication and media evidence remain strict;
+Movie04 consumed the one additional attempt permitted by the pause review below.
+Login, bounded observation and credential cleanup completed, but the legacy
+movie flow inspected Play before the asynchronous detail view became ready.
+The wire contains PlaybackInfo preparation only, with no Playing reports or
+media GET. A single unstarted Prepared row and zero-history user-data row remain
+associated with a revoked authentication session; neither empty tables nor a
+Stopped transition is claimed. Consecutive browser iterations were stopped.
+The [complete offline alignment](../development/audited-movie-offline-alignment.json)
+now passes 16 lifecycle, 20 durable-state/lineage and 16 controller checks, plus
+the actual saved-control replay. It covers control readiness, relogin, response
+completion, cleanup, precise diagnostic phases and a version-2 baseline for the
+retained preparation. File nanosecond metadata is read losslessly through exact
+schema/known-epoch paths; generic API JSON remains strict. The next deliverable
+is a separate, bounded version-2 movie execution decision using that verified
+source set, with fresh runtime and exact snapshot admission. Full authentication
+and media evidence remain strict;
 the rejected external registration attempt was blocked before any upstream
 connection and does not justify wider network access. The retained movie02 evidence supports
 this race but does not identify every old generic guard retrospectively. Both

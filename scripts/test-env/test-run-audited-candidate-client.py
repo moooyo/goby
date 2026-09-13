@@ -3,7 +3,9 @@
 import copy
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
+import sys
 import types
 import unittest
 from unittest.mock import Mock, patch
@@ -11,6 +13,9 @@ from unittest.mock import Mock, patch
 spec = importlib.util.spec_from_file_location("client_run", Path(__file__).with_name("run-audited-candidate-client.py"))
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
+REPLAY_SAVED = "--replay-retained-snapshot" in sys.argv
+if REPLAY_SAVED:
+    sys.argv.remove("--replay-retained-snapshot")
 
 
 def fixture():
@@ -28,6 +33,27 @@ def fixture():
 def make_job(value=None):
     return m.ClientRun(types.SimpleNamespace(), value or fixture(), {"path": str(m.R / "input.json"), "sha256": "e" * 64},
                        {"path": str(m.R / "run-audited-candidate-client.py"), "sha256": "f" * 64})
+
+
+def retained_fixture():
+    actor, item, control = "a" * 32, "c" * 32, "b" * 32
+    binding = {"actors": {"movie": {"id": actor, "username": "synthetic-movie"}}, "catalog": {"movie": {"id": item, "runtimeTicks": 6000000000}}}
+    tables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users".split()
+    before = {"capturedAt": "2026-09-13T11:21:00Z", "tables": {name: [] for name in tables}, "sequences": {"synthetic": {"lastValue": "1", "isCalled": True}}}
+    before["tables"]["users"] = [{"id": actor, "name": "synthetic-movie", "is_administrator": False, "is_disabled": False, "policy": {}}]
+    before["tables"]["sessions"] = [{"id": str(i), "user_id": control, "revoked_at": "2026-09-13T11:20:00Z"} for i in range(10)] + [
+        {"id": m.RETAINED_AUTH, "user_id": actor, "device_id": "synthetic-device", "kind": "emby", "revoked_at": "2026-09-13T11:20:00Z"}]
+    before["tables"]["play_sessions"] = [{"id": m.RETAINED_PLAY, "auth_session_id": m.RETAINED_AUTH, "user_id": actor, "item_id": item,
+        "device_id": "synthetic-device", "media_source_id": "mediasource_" + item, "duration_ticks": 6000000000, "application_client_id": None,
+        "state": "Prepared", "counted": False, "started_at": None, "stopped_at": None, "position_ticks": 0, "player_state": {},
+        "created_at": "2026-09-13T11:15:00Z", "updated_at": "2026-09-13T11:15:00Z", "expires_at": "2026-09-13T11:45:00Z", "client_correlated": False}]
+    before["tables"]["user_item_data"] = [{"user_id": actor, "item_id": item, "playback_position_ticks": 0, "play_count": 0,
+        "is_favorite": False, "played": False, "last_played_at": None, "updated_at": "2026-09-13T11:15:00Z"}]
+    closeout = {"kind": "audited-core-movie04-failure-closeout", "status": "closed_failed_attempt_with_retained_unstarted_preparation",
+        "runtimeEpoch": copy.deepcopy(m.EPOCH), "sourceAfter": copy.deepcopy(m.RETAINED_SNAPSHOT), "scenario": "movie", "runId": "movie-04",
+        "browserAndGatewayClosed": True, "allElevenSessionsRevoked": True, "clientAcceptance": False, "playbackStarted": False,
+        "clientPlaybackReferences": 0, "encodingJobs": 0, "retainedPreparation": {"id": m.RETAINED_PLAY, "authSessionId": m.RETAINED_AUTH, "itemId": item, "ownerCredentialRevoked": True}}
+    return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
 
 
 def startup_fixture():
@@ -77,6 +103,76 @@ def startup_fixture():
 
 
 class Guards(unittest.TestCase):
+    def test_retained_version_is_movie_only_and_preserves_legacy_input(self):
+        value = fixture()
+        value.update(version=2, retainedBaseline=copy.deepcopy(m.RETAINED_BASELINE))
+        self.assertIs(m.validate_input(value), value)
+        for scenario in m.SCENARIOS - {"movie"}:
+            with self.subTest(scenario=scenario), self.assertRaisesRegex(m.RunError, "retained_movie_input_authority"):
+                m.validate_input({**value, "scenario": scenario})
+        with self.assertRaises(m.RunError):
+            m.validate_input({**value, "version": 1})
+        changed = copy.deepcopy(value)
+        changed["retainedBaseline"]["sha256"] = "0" * 64
+        with self.assertRaises(m.RunError):
+            m.validate_input(changed)
+
+    def test_retained_exact_before_rejects_unknown_rows_and_stale_pruning_window(self):
+        before, binding, retained = retained_fixture()
+        m.verify_actor_before(before, binding, "movie", retained)
+        with self.assertRaisesRegex(m.RunError, "scenario_actor_already_consumed"):
+            m.verify_actor_before(before, binding, "movie")
+        for mutation in (lambda row: row["tables"]["play_sessions"].append({"id": "unknown", "user_id": "a" * 32}),
+                         lambda row: row["tables"]["play_sessions"][0].pop("player_state"),
+                         lambda row: row["tables"]["user_item_data"][0].update(play_count=1),
+                         lambda row: row["tables"]["sessions"][-1].update(revoked_at=None),
+                         lambda row: row["sequences"]["synthetic"].update(lastValue="2")):
+            changed = copy.deepcopy(before)
+            mutation(changed)
+            with self.assertRaisesRegex(m.RunError, "retained_movie_fresh_state_changed"):
+                m.verify_actor_before(changed, binding, "movie", retained)
+        stale = copy.deepcopy(before)
+        stale["capturedAt"] = "2026-09-20T11:30:00Z"
+        with self.assertRaisesRegex(m.RunError, "retained_movie_pruning_deadline"):
+            m.verify_actor_before(stale, binding, "movie", retained)
+
+    def test_retained_before_distinguishes_nested_json_booleans_from_numbers(self):
+        for key, boolean, number in (("EnableMediaPlayback", False, 0), ("EnableAllFolders", True, 1)):
+            before, binding, retained = retained_fixture()
+            foreign = {"id": "c" * 32, "name": "Control", "policy": {key: boolean}}
+            before["tables"]["users"].append(copy.deepcopy(foreign))
+            retained["snapshot"]["tables"]["users"].append(copy.deepcopy(foreign))
+            m.verify_actor_before(before, binding, "movie", retained)
+            before["tables"]["users"][-1]["policy"][key] = number
+            with self.subTest(key=key), self.assertRaisesRegex(m.RunError, "retained_movie_fresh_state_changed"):
+                m.verify_actor_before(before, binding, "movie", retained)
+
+    def test_retained_authority_rejects_nonzero_live_wrong_auth_and_extra_residue(self):
+        for mutation in (lambda row: row["tables"]["sessions"][-1].update(revoked_at=None),
+                         lambda row: row["tables"]["play_sessions"][0].update(auth_session_id="wrong"),
+                         lambda row: row["tables"]["play_sessions"][0].update(counted=True),
+                         lambda row: row["tables"]["user_item_data"][0].update(playback_position_ticks=1),
+                         lambda row: row["tables"]["client_playback_references"].append({"user_id": "a" * 32}),
+                         lambda row: row["tables"]["encoding_jobs"].append({"user_id": "a" * 32})):
+            before, binding, retained = retained_fixture()
+            mutation(retained["snapshot"])
+            with self.assertRaises(m.RunError):
+                m.validate_retained_movie_baseline(retained["closeout"], retained["snapshot"], binding)
+
+    if REPLAY_SAVED:
+        def test_saved_movie04_snapshot_offline_replay(self):
+            def read(pin):
+                raw = Path(pin["path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), pin["sha256"])
+                return json.loads(raw)
+            closeout, saved, binding = read(m.RETAINED_BASELINE), read(m.RETAINED_SNAPSHOT), read(m.BINDING)
+            retained = {"closeout": closeout, "snapshot": saved}
+            m.verify_actor_before(copy.deepcopy(saved), binding, "movie", retained)
+            changed = copy.deepcopy(saved)
+            changed["tables"]["play_sessions"][0]["counted"] = True
+            with self.assertRaises(m.RunError):
+                m.verify_actor_before(changed, binding, "movie", retained)
+
     def test_hosting_gate_rejects_incomplete_startup_redirect_and_live_token(self):
         startup_fixture()[-1]()
         for failure in ("unfinished", "redirect", "live-token"):

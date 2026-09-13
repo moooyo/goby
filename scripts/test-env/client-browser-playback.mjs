@@ -5,222 +5,310 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
-const MOVIE = 'M3e Client Movie';
+const MOVIE = 'M3e Client Movie', ITEM_ID = /^[a-f0-9]{32}$/i;
+const requireMovie = (value, code) => { if (!value) throw new Error(code); };
+
+export function movieFailureCode(error, fallback = 'movie_operation_failed') {
+  if (error?.message === 'candidate_time_budget_exhausted') return error.message;
+  if (Array.isArray(error?.errors) && error.errors.some(value => movieFailureCode(value, '') === 'candidate_time_budget_exhausted'))
+    return 'candidate_time_budget_exhausted';
+  return /^movie_[a-z0-9_]+$/.test(error?.message ?? '') ? error.message : fallback;
+}
+
+export async function waitMovieControl(candidates, { record = () => {}, timeout = 10000 } = {}) {
+  const counts = async () => Promise.all(candidates.map(async ({ key, locator }) => ({ control: key, count: await locator.count() })));
+  try { await Promise.any(candidates.map(({ locator }) => locator.first().waitFor({ state: 'visible', timeout }))); }
+  catch (error) {
+    try { record(await counts()); } catch { /* Diagnostic counts cannot replace the original failure. */ }
+    throw new Error(movieFailureCode(error, 'movie_control_not_ready'));
+  }
+  const observed = await counts(); record(observed);
+  requireMovie(observed.every(row => row.count <= 1), 'movie_control_not_unique');
+  const index = observed.findIndex(row => row.count === 1);
+  requireMovie(index >= 0, 'movie_control_not_ready');
+  return candidates[index];
+}
+
+export function movieItemFromLocation(location, target) {
+  try {
+    const url = new URL(location, target), [route, query = ''] = url.hash.slice(1).split('?');
+    if (url.origin !== target.origin || route !== '!/item' || url.username || url.password) return null;
+    const values = new URLSearchParams(query).getAll('id');
+    return values.length === 1 && ITEM_ID.test(values[0]) ? values[0] : null;
+  } catch { return null; }
+}
+
+export function moviePlaybackIdentity(request, target, event) {
+  requireMovie(['started', 'stopped'].includes(event), 'movie_report_event_invalid');
+  const url = new URL(request.url()), suffix = event === 'started' ? '' : '/Stopped';
+  requireMovie(request.method() === 'POST' && url.origin === target.origin &&
+    new RegExp('^/(?:emby/)?Sessions/Playing' + suffix + '/?$', 'i').test(url.pathname), 'movie_report_scope_invalid');
+  const bytes = request.postDataBuffer();
+  requireMovie(Buffer.isBuffer(bytes) && bytes.length > 0 && bytes.length <= 65536, 'movie_report_body_unavailable');
+  let body;
+  try { body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
+  catch { throw new Error('movie_report_body_invalid'); }
+  const identity = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value);
+  requireMovie(body && !Array.isArray(body) && typeof body === 'object' && ITEM_ID.test(body.ItemId ?? '') &&
+    identity(body.MediaSourceId) && identity(body.PlaySessionId), 'movie_report_identity_missing');
+  for (const key of ['SessionId', 'UserId']) requireMovie(body[key] === undefined || identity(body[key]), 'movie_report_identity_invalid');
+  requireMovie(body.PositionTicks === undefined || Number.isSafeInteger(body.PositionTicks) && body.PositionTicks >= 0, 'movie_report_position_invalid');
+  return { item_id: body.ItemId, media_source_id: body.MediaSourceId, play_session_id: body.PlaySessionId,
+    session_id: body.SessionId ?? null, user_id: body.UserId ?? null, position_ticks: body.PositionTicks ?? null };
+}
+
+export function observeMovieResponse(page, target, event) {
+  const suffix = { started: 'Playing', stopped: 'Playing/Stopped', logout: 'Logout' }[event];
+  requireMovie(suffix, 'movie_response_event_invalid');
+  const observed = page.waitForResponse(response => {
+    const request = response.request();
+    try { return request.method() === 'POST' && request.frame() === page.mainFrame() && new URL(response.url()).origin === target.origin &&
+      new RegExp('^/(?:emby/)?Sessions/' + suffix + '/?$', 'i').test(new URL(response.url()).pathname); }
+    catch { return false; }
+  }, { timeout: 30000 }).then(response => ({ response }), error => ({ failure: movieFailureCode(error, 'movie_response_not_observed') }));
+  let completion;
+  return { wait(expected = {}) {
+    return completion ??= (async () => {
+      const value = await observed;
+      requireMovie(!value.failure, value.failure);
+      const response = value.response;
+      requireMovie(response.status() === 204, 'movie_' + event + '_response_not_204');
+      const identity = event === 'logout' ? null : moviePlaybackIdentity(response.request(), target, event);
+      if (identity && expected.itemId) requireMovie(identity.item_id === expected.itemId, 'movie_playback_item_changed');
+      if (identity && expected.identity) {
+        requireMovie(['item_id', 'media_source_id', 'play_session_id'].every(key => identity[key] === expected.identity[key]), 'movie_stopped_identity_mismatch');
+        for (const key of ['session_id', 'user_id']) requireMovie(!identity[key] || !expected.identity[key] || identity[key] === expected.identity[key], 'movie_stopped_owner_mismatch');
+      }
+      let finished;
+      const completionResult = Promise.resolve().then(() => response.finished()).then(value => ({ value }),
+        error => ({ failure: movieFailureCode(error, 'movie_response_completion_failed') }));
+      try {
+        // The page wait retains the caller's remaining budget; both promises are handled immediately.
+        finished = await Promise.race([completionResult, page.waitForTimeout(10000).then(() => { throw new Error('movie_response_completion_timeout'); })]);
+      } catch (error) { throw new Error(movieFailureCode(error, 'movie_response_completion_failed')); }
+      requireMovie(!finished.failure, finished.failure);
+      requireMovie(finished.value === null && !response.request().failure(), 'movie_response_incomplete');
+      return { response_status: 204, response_complete: true, identity };
+    })();
+  } };
+}
+
+export async function completeMovieCleanup({ stop, logout, onFailure }) {
+  for (const [operation, action] of [['stop', stop], ['logout', logout]]) {
+    try { await action(); }
+    catch (error) { onFailure(operation, movieFailureCode(error, 'movie_cleanup_' + operation + '_failed')); }
+  }
+}
 
 export async function runMovieWorkflow({ page, report, snapshot, repeatLogin, target }) {
-  const result = report.playback = { movie: MOVIE, phase: 'home', steps: [],
+  const result = report.playback = { movie: MOVIE, phase: 'home', operation: 'home_ready', steps: [], lifecycles: [],
     outcome: 'in_progress', method: 'Original client UI actions and read-only HTMLMediaElement observations' };
+  let itemId = null, playback = null, currentLogout = null, ownedSession = true, cleaning = false, signOutMenuRequested = false;
+  const operation = value => { result.operation = value; };
+  const counts = values => result.steps.push({ label: 'control-counts', phase: result.phase, operation: result.operation, controls: values });
+  const locateButton = name => page.getByRole('button', { name, exact: typeof name === 'string' }).filter({ visible: true });
+  const ready = candidates => waitMovieControl(candidates, { record: counts });
 
   async function metrics(label) {
+    operation('metrics_' + label.replaceAll('-', '_'));
     const videos = await page.evaluate(() => [...document.querySelectorAll('video')].map(video => {
       const quality = typeof video.getVideoPlaybackQuality === 'function' ? video.getVideoPlaybackQuality() : null;
       const rect = video.getBoundingClientRect();
       return { current_time: Number.isFinite(video.currentTime) ? video.currentTime : null,
-        duration: Number.isFinite(video.duration) ? video.duration : null,
-        paused: video.paused, ended: video.ended, seeking: video.seeking,
-        ready_state: video.readyState, network_state: video.networkState,
-        video_width: video.videoWidth, video_height: video.videoHeight,
-        total_video_frames: quality?.totalVideoFrames ?? null,
-        dropped_video_frames: quality?.droppedVideoFrames ?? null,
+        duration: Number.isFinite(video.duration) ? video.duration : null, paused: video.paused, ended: video.ended, seeking: video.seeking,
+        ready_state: video.readyState, network_state: video.networkState, video_width: video.videoWidth, video_height: video.videoHeight,
+        total_video_frames: quality?.totalVideoFrames ?? null, dropped_video_frames: quality?.droppedVideoFrames ?? null,
         visible: rect.width > 0 && rect.height > 0 };
     }));
-    const entry = { label, videos, observed_at: new Date().toISOString() };
-    result.steps.push(entry);
+    result.steps.push({ label, videos, observed_at: new Date().toISOString() });
     return videos.find(video => video.visible) ?? videos[0] ?? null;
   }
 
   async function inspect(label) {
+    operation('snapshot_' + label.replaceAll('-', '_'));
     await snapshot(label);
+    operation('controls_' + label.replaceAll('-', '_'));
     result.steps.push({ label: `${label}-controls`, controls: await page.evaluate(() =>
       [...document.querySelectorAll('button,a,input,[role="button"],[role="slider"]')]
-        .filter(element => element.getClientRects().length)
-        .slice(0, 180).map(element => ({ tag: element.tagName.toLowerCase(), type: element.getAttribute('type'),
-          role: element.getAttribute('role'), label: element.getAttribute('aria-label'),
-          title: element.getAttribute('title'), class: typeof element.className === 'string' ? element.className : null,
-          text: (element.innerText ?? '').trim().slice(0, 120) }))) });
+        .filter(element => element.getClientRects().length).slice(0, 180).map(element => ({
+          tag: element.tagName.toLowerCase(), type: element.getAttribute('type'), role: element.getAttribute('role'),
+          label: element.getAttribute('aria-label'), title: element.getAttribute('title'),
+          class: typeof element.className === 'string' ? element.className : null, text: (element.innerText ?? '').trim().slice(0, 120) }))) });
+  }
+
+  async function diagnostic(label, action) {
+    try { await action(); return null; }
+    catch (error) {
+      const code = movieFailureCode(error, 'movie_observation_failed');
+      (result.observation_errors ??= []).push({ phase: result.phase, operation: label, code });
+      return code;
+    }
+  }
+
+  async function button(name, key) {
+    operation(key + '_ready');
+    const selected = await ready([{ key, locator: locateButton(name) }]);
+    operation(key + '_click'); await selected.locator.click({ timeout: 8000 });
   }
 
   async function showControls() {
-    const video = page.locator('video:visible').first();
-    const box = await video.boundingBox();
-    if (!box) throw new Error('The original player has no visible video surface.');
-    // The observed video is covered by its player's input surface. Pointer
-    // movement must target screen coordinates rather than require the video
-    // itself to receive pointer events.
+    operation('video_surface_ready');
+    const selected = await ready([{ key: 'video_surface', locator: page.locator('video:visible') }]);
+    const box = await selected.locator.boundingBox(); requireMovie(box, 'movie_video_surface_missing');
     await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.55, { steps: 4 });
     await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.75, { steps: 4 });
-    await page.waitForTimeout(500);
-  }
-
-  async function button(name) {
-    const locator = page.getByRole('button', { name, exact: typeof name === 'string' }).filter({ visible: true });
-    if (await locator.count() !== 1) throw new Error('The visible UI control is missing or ambiguous.');
-    await locator.click({ timeout: 8000 });
   }
 
   async function waitPlaying() {
+    operation('playing_ready');
     await page.waitForFunction(() => [...document.querySelectorAll('video')].some(video =>
-      video.getClientRects().length && !video.paused && video.readyState >= 2 && video.videoWidth > 0 && video.currentTime > 1),
-      null, { timeout: 30000 });
+      video.getClientRects().length && !video.paused && video.readyState >= 2 && video.videoWidth > 0 && video.currentTime > 1), null, { timeout: 30000 });
   }
 
-  async function seek(fraction, label) {
-    await showControls();
-    const ranges = page.locator('input[type="range"]:visible');
-    const candidates = [];
-    for (let index = 0; index < await ranges.count(); index += 1) {
-      const control = ranges.nth(index);
-      const description = await control.evaluate(element =>
-        [element.className, element.getAttribute('aria-label'), element.getAttribute('title')].join(' '));
-      if (/seek|progress|position|timeline/i.test(description)) candidates.push(control);
+  async function advance(before, seconds = 2) {
+    requireMovie(before && Number.isFinite(before.current_time) && Number.isFinite(before.total_video_frames), 'movie_advancement_baseline_missing');
+    operation('frames_advance');
+    await page.waitForFunction(expected => [...document.querySelectorAll('video')].some(video => video.getClientRects().length &&
+      !video.paused && video.currentTime > expected.time + expected.seconds &&
+      (video.getVideoPlaybackQuality?.().totalVideoFrames ?? 0) > expected.frames),
+    { time: before.current_time, frames: before.total_video_frames, seconds }, { timeout: 15000 });
+  }
+
+  async function openMovieDetail(homeLabel) {
+    operation('home_movie_ready');
+    const titles = page.getByText(MOVIE, { exact: true }).filter({ visible: true });
+    await titles.first().waitFor({ state: 'visible', timeout: 20000 });
+    counts([{ control: 'movie_title', count: await titles.count() }]); await inspect(homeLabel);
+    result.phase = 'movie_detail'; operation('movie_card_ready');
+    const title = titles.first(), clickable = title.locator('xpath=ancestor-or-self::*[self::button or self::a][1]');
+    const imageButton = title.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " cardBox ")][1]').locator('button.cardContent-button');
+    const selected = await ready([{ key: 'movie_title_action', locator: clickable }, { key: 'movie_image_action', locator: imageButton }]);
+    operation('movie_card_click'); await selected.locator.click({ timeout: 8000 });
+    operation('movie_detail_location'); await page.waitForURL(location => movieItemFromLocation(location, target) !== null, { timeout: 20000 });
+    const observedItem = movieItemFromLocation(page.url(), target);
+    requireMovie(!itemId || observedItem === itemId, 'movie_relogin_item_changed'); itemId = observedItem; result.item_id = itemId;
+    operation('movie_detail_title');
+    await ready([{ key: 'movie_detail_title', locator: page.getByText(MOVIE, { exact: true }).filter({ visible: true }) }]);
+  }
+
+  async function beginPlayback(resume) {
+    result.phase = resume ? 'resume' : 'play'; operation(resume ? 'resume_ready' : 'initial_play_ready');
+    const selected = await ready(resume ? [{ key: 'resume', locator: locateButton(/\bResume\b/i) }] :
+      [{ key: 'from_beginning', locator: locateButton('From Beginning') }, { key: 'play', locator: locateButton('Play') }]);
+    await inspect(resume ? 'movie-before-resume' : 'movie-detail');
+    operation('started_response_arm');
+    playback = { start: observeMovieResponse(page, target, 'started'), identity: null, stop: null, back_attempted: false, stopped: false, evidence: null };
+    operation(resume ? 'resume_click' : 'initial_play_click'); await selected.locator.click({ timeout: 8000 });
+    operation('started_complete'); const started = await playback.start.wait({ itemId });
+    requireMovie(!result.lifecycles.some(row => row.play_session_id === started.identity.play_session_id), 'movie_relogin_play_session_reused');
+    playback.identity = started.identity;
+    playback.evidence = { ...started.identity, started_status: 204, started_complete: true, stopped_complete: false,
+      event_scope: 'Original logical page responses; physical cardinality remains in the gateway ledger.' };
+    result.lifecycles.push(playback.evidence); await waitPlaying();
+  }
+
+  async function stopPlayback() {
+    if (!playback || playback.stopped) return;
+    if (!playback.stop) {
+      const visible = await page.locator('video:visible').count();
+      if (!visible && !playback.identity) return;
+      await showControls(); operation('stop_back_ready');
+      const selected = await ready([{ key: 'back', locator: locateButton('Back') }]);
+      operation('stopped_response_arm');
+      playback.stop = observeMovieResponse(page, target, 'stopped'); playback.back_attempted = true;
+      operation('stop_back_click'); await selected.locator.click({ timeout: 8000 });
     }
-    if (candidates.length !== 1) throw new Error('The visible seek slider is missing or ambiguous.');
-    const before = await metrics(`${label}-before`);
-    const slider = candidates[0];
-    const box = await slider.boundingBox();
-    if (!box || box.width < 50) throw new Error('The seek slider has no usable UI geometry.');
-    await slider.click({ position: { x: box.width * fraction, y: box.height / 2 }, timeout: 8000 });
-    await page.waitForTimeout(1000);
-    const after = await metrics(`${label}-after`);
-    const movedInDirection = before && after && (label.includes('forward')
-      ? after.current_time > before.current_time + 10 : after.current_time < before.current_time - 10);
-    if (!movedInDirection || !after.duration || Math.abs(after.current_time - after.duration * fraction) > Math.max(5, after.duration * 0.02)) {
-      throw new Error('The visible seek action did not move the media timeline.');
-    }
-    await inspect(label);
-    return after;
+    operation('stopped_complete'); const stopped = await playback.stop.wait({ itemId, identity: playback.identity });
+    operation('media_stopped');
+    await page.waitForFunction(() => [...document.querySelectorAll('video,audio')].every(media => media.paused), null, { timeout: 15000 });
+    playback.stopped = true;
+    if (playback.evidence) Object.assign(playback.evidence, { stopped_status: 204, stopped_complete: true, stopped_position_ticks: stopped.identity.position_ticks });
+    else (result.cleanup_stopped_reports ??= []).push({ ...stopped.identity, stopped_status: 204, stopped_complete: true, started_complete: false });
   }
 
   async function logout(label) {
-    if (await page.locator('video:visible').count()) {
-      await showControls();
-      await button('Back');
-      await page.waitForTimeout(750);
+    if (!ownedSession) return;
+    const observe = name => cleaning ? diagnostic(name, () => inspect(name)) : inspect(name);
+    await observe(`${label}-before`);
+    if (!currentLogout) {
+      operation('sign_out_ready'); let signOut = locateButton(/\bSign Out\b/i);
+      if (!await signOut.count() && !signOutMenuRequested) {
+        operation('settings_ready'); const settings = await ready([{ key: 'settings', locator: locateButton('Settings') }]);
+        operation('settings_click'); signOutMenuRequested = true; await settings.locator.click({ timeout: 8000 });
+        await observe(`${label}-menu`);
+        signOut = locateButton(/\bSign Out\b/i);
+      }
+      const selected = await ready([{ key: 'sign_out', locator: signOut }]);
+      operation('logout_response_arm');
+      currentLogout = { response: observeMovieResponse(page, target, 'logout'), submitted: true };
+      report.logout = { attempted: true, result: 'submitted_outcome_unknown', owned_session: 'possibly_retained_owned_session_no_ui_logout' };
+      operation('sign_out_click'); await selected.locator.click({ timeout: 8000 });
     }
-    await inspect(`${label}-before`);
-    let signOut = page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true });
-    if (!await signOut.count()) {
-      const settings = page.getByRole('button', { name: 'Settings', exact: true }).filter({ visible: true });
-      if (await settings.count() !== 1) throw new Error('The observed account menu control is unavailable.');
-      await settings.click({ timeout: 8000 });
-      await page.waitForTimeout(300);
-      await inspect(`${label}-menu`);
-      signOut = page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true });
-    }
-    if (await signOut.count() !== 1) throw new Error('The original UI Sign Out control is unavailable.');
-    const response = page.waitForResponse(value => value.request().method() === 'POST' &&
-      new URL(value.url()).origin === target.origin &&
-      /^(?:\/emby)?\/sessions\/logout\/?$/i.test(new URL(value.url()).pathname), { timeout: 10000 }).catch(() => null);
-    report.logout.attempted = true;
-    await signOut.click({ timeout: 8000 });
-    const observed = await response;
-    if (!observed || observed.status() < 200 || observed.status() >= 300) throw new Error('No successful original-client logout response was observed.');
-    report.logout = { attempted: true, result: 'logout_http_accepted_ui_transition_pending', http_status: observed.status(),
+    operation('logout_complete'); await currentLogout.response.wait();
+    report.logout = { attempted: true, result: 'logout_http_accepted_ui_transition_pending', http_status: 204,
       owned_session: 'possibly_retained_owned_session_ui_logout_transition_unconfirmed' };
-    await Promise.any([
-      page.getByText('Manual Login', { exact: true }).waitFor({ state: 'visible', timeout: 10000 }),
-      page.locator('form:has(input[type="password"]:visible)').waitFor({ state: 'visible', timeout: 10000 }),
-    ]);
-    report.logout.result = 'ui_logout_http_accepted_and_login_view_visible';
-    report.logout.owned_session = 'ui_logout_observed';
-    (report.logout_history ??= []).push(report.logout);
-    await inspect(`${label}-after`);
+    operation('logout_view_ready');
+    await ready([{ key: 'manual_login', locator: page.getByText('Manual Login', { exact: true }) },
+      { key: 'login_form', locator: page.locator('form:has(input[type="password"]:visible)') }]);
+    report.logout.result = 'ui_logout_http_accepted_and_login_view_visible'; report.logout.owned_session = 'ui_logout_observed';
+    (report.logout_history ??= []).push(report.logout); ownedSession = false;
+    await observe(`${label}-after`);
   }
 
   try {
-    const movie = page.getByText(MOVIE, { exact: true }).filter({ visible: true });
-    await movie.first().waitFor({ state: 'visible', timeout: 20000 });
-    await inspect('movie-home');
-    result.phase = 'movie_detail';
-    const title = movie.first();
-    const clickable = title.locator('xpath=ancestor-or-self::*[self::button or self::a][1]');
-    if (await clickable.count() === 1) await clickable.click({ timeout: 8000 });
-    else {
-      const card = title.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " cardBox ")][1]');
-      const imageButton = card.locator('button.cardContent-button');
-      if (await imageButton.count() !== 1) throw new Error('The original movie card action is unavailable.');
-      await imageButton.click({ timeout: 8000 });
+    await openMovieDetail('movie-home'); await beginPlayback(false);
+    const started = await metrics('playing-start'); await advance(started); const advanced = await metrics('playing-advanced');
+    requireMovie(advanced && advanced.current_time > started.current_time && advanced.total_video_frames > started.total_video_frames, 'movie_frames_not_advancing');
+    await showControls(); await inspect('movie-playing');
+    result.phase = 'pause'; await button('Pause', 'pause'); operation('paused_ready');
+    await page.waitForFunction(() => { const videos = [...document.querySelectorAll('video')].filter(video => video.getClientRects().length); return videos.length === 1 && videos[0].paused; }, null, { timeout: 5000 });
+    const paused = await metrics('paused'); requireMovie(paused?.paused, 'movie_pause_not_observed');
+    for (const [phase, fraction, label] of [['seek_forward', 0.30, 'movie-seek-forward'], ['seek_backward', 0.20, 'movie-seek-backward']]) {
+      result.phase = phase; await showControls(); operation('seek_slider_ready');
+      await page.waitForFunction(() => [...document.querySelectorAll('input[type="range"]')].some(element => element.getClientRects().length &&
+        /seek|progress|position|timeline/i.test([element.className, element.getAttribute('aria-label'), element.getAttribute('title')].join(' '))), null, { timeout: 10000 });
+      const ranges = page.locator('input[type="range"]:visible'), candidates = [];
+      for (let index = 0; index < await ranges.count(); index++) { const control = ranges.nth(index);
+        if (/seek|progress|position|timeline/i.test(await control.evaluate(element => [element.className, element.getAttribute('aria-label'), element.getAttribute('title')].join(' ')))) candidates.push(control); }
+      counts([{ control: 'seek_slider', count: candidates.length }]); requireMovie(candidates.length === 1, 'movie_seek_slider_not_unique');
+      const before = await metrics(label + '-before'), box = await candidates[0].boundingBox();
+      requireMovie(before && box && box.width >= 50, 'movie_seek_geometry_unavailable');
+      operation('seek_click'); await candidates[0].click({ position: { x: box.width * fraction, y: box.height / 2 }, timeout: 8000 });
+      operation('seek_complete');
+      await page.waitForFunction(expected => [...document.querySelectorAll('video')].some(video => video.getClientRects().length && !video.seeking &&
+        (expected.forward ? video.currentTime > expected.before + 10 : video.currentTime < expected.before - 10) &&
+        Number.isFinite(video.duration) && Math.abs(video.currentTime - video.duration * expected.fraction) <= Math.max(5, video.duration * 0.02)),
+      { before: before.current_time, fraction, forward: phase === 'seek_forward' }, { timeout: 15000 });
+      await metrics(label + '-after'); await inspect(label);
     }
-    await page.waitForTimeout(750);
-    await inspect('movie-detail');
-    result.phase = 'play';
-    const fromBeginning = page.getByRole('button', { name: 'From Beginning', exact: true }).filter({ visible: true });
-    if (await fromBeginning.count() === 1) await fromBeginning.click({ timeout: 8000 });
-    else await button('Play');
-    await waitPlaying();
-    const started = await metrics('playing-start');
-    await page.waitForTimeout(2500);
-    const advanced = await metrics('playing-advanced');
-    if (!started || !advanced || advanced.current_time <= started.current_time || advanced.total_video_frames <= started.total_video_frames) {
-      throw new Error('The original player did not demonstrate advancing decoded frames.');
-    }
-    await showControls();
-    await inspect('movie-playing');
-    result.phase = 'pause';
-    await button('Pause');
-    await page.waitForTimeout(300);
-    const paused = await metrics('paused');
-    if (!paused?.paused) throw new Error('The original UI did not pause playback.');
-    result.phase = 'seek_forward';
-    await seek(0.30, 'movie-seek-forward');
-    result.phase = 'seek_backward';
-    await seek(0.20, 'movie-seek-backward');
     const beforeContinue = await metrics('before-continue');
-    if (beforeContinue?.paused) await button('Play');
-    await waitPlaying();
-    await page.waitForTimeout(1500);
-    result.phase = 'stop';
-    const stoppingAt = await metrics('before-stop');
-    await inspect('movie-before-stop');
-    const previousRequests = report.requests.length;
-    await button('Back');
-    await page.waitForTimeout(1200);
-    await inspect('movie-stopped');
-    await metrics('after-stop');
-    const stopped = report.requests.slice(previousRequests).find(entry => /\/Sessions\/Playing\/Stopped$/i.test(entry.route) && entry.method === 'POST');
-    if (!stopped || stopped.status < 200 || stopped.status >= 300) throw new Error('The original client did not complete its Stopped report.');
-    result.stop_position_seconds = stoppingAt?.current_time ?? null;
-    result.phase = 'relogin';
-    await inspect('movie-before-relogin');
-    await logout('movie-relogin-sign-out');
+    if (beforeContinue?.paused) await button('Play', 'continue_play');
+    await waitPlaying(); await advance(beforeContinue, 1.5);
+    result.phase = 'stop'; const stoppingAt = await metrics('before-stop'); await inspect('movie-before-stop');
+    await stopPlayback(); await inspect('movie-stopped'); await metrics('after-stop'); result.stop_position_seconds = stoppingAt?.current_time ?? null;
+    result.phase = 'relogin'; await inspect('movie-before-relogin'); await logout('movie-relogin-sign-out');
+    operation('repeat_login'); ownedSession = true; currentLogout = null; playback = null; signOutMenuRequested = false;
+    report.logout = { attempted: false, result: 'not_attempted', owned_session: 'retained_owned_session_no_ui_logout' };
     await repeatLogin();
-    const resumedMovie = page.getByText(MOVIE, { exact: true }).filter({ visible: true });
-    await resumedMovie.first().waitFor({ state: 'visible', timeout: 20000 });
-    await inspect('movie-relogin-home');
-    const resumedTitle = resumedMovie.first().locator('xpath=ancestor-or-self::*[self::button or self::a][1]');
-    if (await resumedTitle.count() !== 1) throw new Error('The original movie card is unavailable after relogin.');
-    await resumedTitle.click({ timeout: 8000 });
-    await page.waitForTimeout(750);
-    result.phase = 'resume';
-    await inspect('movie-before-resume');
-    await button(/\bResume\b/i);
-    await waitPlaying();
+    await openMovieDetail('movie-relogin-home'); await beginPlayback(true);
     const resumed = await metrics('resumed');
-    if (!resumed || !stoppingAt || Math.abs(resumed.current_time - stoppingAt.current_time) > 15) {
-      throw new Error('The original resume action did not restore the observed stop position.');
-    }
-    await page.waitForTimeout(2500);
-    const resumedAdvanced = await metrics('resumed-advanced');
-    if (!resumedAdvanced || resumedAdvanced.paused || resumedAdvanced.current_time <= resumed.current_time + 1 ||
-        resumedAdvanced.total_video_frames <= resumed.total_video_frames) {
-      throw new Error('Resumed playback did not demonstrate advancing decoded frames.');
-    }
-    await inspect('movie-resumed');
-    await showControls();
-    await button('Back');
-    await page.waitForTimeout(750);
-    result.phase = 'logout';
-    await logout('movie-sign-out');
-    result.phase = 'complete';
-    result.outcome = 'movie_ui_flow_completed';
-  } catch {
-    result.outcome = 'blocked_at_observed_ui_step';
-    await metrics(`blocked-${result.phase}`).catch(() => {});
-    await inspect(`movie-blocked-${result.phase}`).catch(() => {});
-    result.cleanup_attempted = true;
-    try { await logout('movie-blocked-cleanup'); }
-    catch { result.cleanup_result = 'ui_logout_not_completed_private_state_required'; }
-    throw new Error('The original movie UI workflow stopped at its recorded phase.');
+    requireMovie(resumed && stoppingAt && Math.abs(resumed.current_time - stoppingAt.current_time) <= 15, 'movie_resume_position_mismatch');
+    await advance(resumed); const resumedAdvanced = await metrics('resumed-advanced');
+    requireMovie(resumedAdvanced && !resumedAdvanced.paused && resumedAdvanced.current_time > resumed.current_time + 1 &&
+      resumedAdvanced.total_video_frames > resumed.total_video_frames, 'movie_resumed_frames_not_advancing');
+    await inspect('movie-resumed'); await stopPlayback(); result.phase = 'logout'; await logout('movie-sign-out');
+    result.phase = 'complete'; result.operation = 'complete'; result.outcome = 'movie_ui_flow_completed';
+  } catch (error) {
+    const failure = { phase: result.phase, operation: result.operation, code: movieFailureCode(error, 'movie_' + result.operation + '_failed') };
+    result.failure = failure; result.outcome = 'blocked_at_observed_ui_step'; result.cleanup_attempted = true; cleaning = true;
+    await diagnostic('blocked_metrics', () => metrics(`blocked-${failure.phase}`));
+    await diagnostic('blocked_controls', () => inspect(`movie-blocked-${failure.phase}`));
+    await completeMovieCleanup({ stop: stopPlayback, logout: () => logout('movie-blocked-cleanup'),
+      onFailure(operation, code) { (result.cleanup_errors ??= []).push({ operation, code }); } });
+    if (result.cleanup_errors?.length) result.cleanup_result = ownedSession
+      ? 'ui_logout_not_completed_private_state_required' : 'ui_logout_completed_stop_evidence_incomplete';
+    result.phase = failure.phase; result.operation = failure.operation;
+    throw new Error(failure.code);
   }
 }
 

@@ -1,0 +1,62 @@
+{
+  "kind": "audited-movie-offline-alignment-closeout",
+  "status": "verified_offline_browser_resumption_not_executed",
+  "host": "test-env",
+  "source": {
+    "movie": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619",
+    "adapter": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3",
+    "closer": "13594b2d40b3befd14e17b9a54fed626d93ec7f841d7c4e22115254fbc30bfca",
+    "controller": "291a58ded1d519adc923cd2afb4206c173b3a8695592d753150ac814c6d1576e"
+  },
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie-lifecycle-verification-02/verification.json",
+    "sha256": "5f98f41b695fdd59eafd7f91814ea7d39d008eb465bba3d1e95aea271c5b45f9"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie-controller-verification-03/controller-verification.json",
+    "sha256": "0a3348ea7b2d4bcc5f5750d1eeb8e2c599dfd5c78125efe16a650fcaef5bd7cd"
+  },
+  "capturedControlReplay": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie-lifecycle-verification-01/movie04-control-replay.json",
+    "sha256": "cd22a3bdd100bc8f6ed62a104db82d7204805e114fcb1a2afec2cb13a394a6c2"
+  },
+  "checks": {
+    "movieLifecycle": 16,
+    "durableCloseoutAndSavedSnapshotReplay": 20,
+    "controllerAndSavedSnapshotReplay": 16,
+    "nestedJsonBooleanAndNumberTypesRemainDistinct": true,
+    "unchangedAdapterChecksReused": 39,
+    "syntheticNewPlaybackRowsAreNotObservedPlayback": true,
+    "capturedEmptyDetailToUniquePlayReplayPassed": true
+  },
+  "retainedBaseline": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie04-failure-closeout.json",
+    "sha256": "5843a790e3c4ba09109d145b64fbda58f94c7ee94092e898ab584bab37880e8d",
+    "preparedPlayId": "play_40969548543a02735b847a89bc34671b",
+    "recordedState": "Prepared",
+    "onlyPermittedFutureState": "Expired",
+    "futureTransitionExecuted": false,
+    "newAccountsCreated": 0
+  },
+  "losslessMetadata": {
+    "sourceSnapshotFields": [
+      "tables.item_subtitles[*].change_time_ns",
+      "tables.items[*].media.FileChangeTimeNs"
+    ],
+    "fixedPreviousEpochFields": [
+      "preservation.oldBinaryFacts.ctimeNs",
+      "preservation.oldBinaryFacts.mtimeNs"
+    ],
+    "representation": "Validated integer tokens become exact decimal strings only in memory.",
+    "originalFilesAndHashesPreserved": true,
+    "genericJsonUnsafeNumberRejectionRetained": true,
+    "firstFailedVerificationPreserved": true
+  },
+  "newBrowserRuns": 0,
+  "newHttpRequests": 0,
+  "newSqlQueries": 0,
+  "serviceActions": 0,
+  "productChanged": false,
+  "clientAcceptance": false,
+  "nextAction": "Make a fresh bounded execution decision for the verified version-2 movie input. Do not reuse movie04 or treat offline verification as real playback acceptance."
+}

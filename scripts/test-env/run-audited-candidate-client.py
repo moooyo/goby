@@ -12,21 +12,26 @@ import signal
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta
 
 R = Path("/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14")
 EPOCH = {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"}
 BINDING = {"path": str(R / "candidate-backup-limits-revision-01/private/seed-runtime-binding.json"), "sha256": "92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f"}
+RETAINED_BASELINE = {"path": str(R / "candidate-core-movie04-failure-closeout.json"), "sha256": "5843a790e3c4ba09109d145b64fbda58f94c7ee94092e898ab584bab37880e8d"}
+RETAINED_SNAPSHOT = {"path": str(R / "candidate-core-client-movie-04/private/source-after.json"), "sha256": "7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c"}
+RETAINED_PLAY = "play_40969548543a02735b847a89bc34671b"
+RETAINED_AUTH = "aadd2636638e28cc6ceaf5bb8f2cb132"
 ADMISSION = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
 ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission04-closeout.json"), "sha256": "c2aea574a3196b5ef486a2ba2b664d59bb75f5208d3a1a0c53ecaaab81b81eb4"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "av-tool-verification-06/verification.json"), "sha256": "ea82e068b3a50213ec7a182edffb42932005e7035b68796719befae76a275840"}
+AV_VERIFICATION = {"path": str(R / "offline-movie-lifecycle-verification-02/verification.json"), "sha256": "5f98f41b695fdd59eafd7f91814ea7d39d008eb465bba3d1e95aea271c5b45f9"}
 RUNTIME = {"path": str(R / "backup-limits-tool-verification-01/audited-candidate-runtime.py"), "sha256": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3", "closer": "38e8a96e057fee491b4c2324d510779e55890d37e04fdc93d0be71df23cca8ce",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3", "closer": "13594b2d40b3befd14e17b9a54fed626d93ec7f841d7c4e22115254fbc30bfca",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
-    "movie": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "movie": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
 SCENARIOS = {"movie", "episode", "mp3", "flac", "subtitles", "tv-browse"}
 BUDGETS = {"maximumSeconds": 1200, "cleanupSeconds": 240, "clientSeconds": 600, "clientCleanupSeconds": 120,
@@ -58,8 +63,11 @@ def descriptor(pin):
 
 
 def validate_input(value):
-    need(set(value) == INPUT_KEYS and value["kind"] == "audited-candidate-client-run-input" and type(value["version"]) is int and value["version"] == 1 and
+    version = value.get("version")
+    need(type(version) is int and version in (1, 2) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version == 2 else set()) and value["kind"] == "audited-candidate-client-run-input" and
          value["scenario"] in SCENARIOS and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,55}", value["runId"]), "client_run_input_invalid")
+    if version == 2:
+        need(value["scenario"] == "movie" and value["retainedBaseline"] == RETAINED_BASELINE, "retained_movie_input_authority")
     for key in INPUT_KEYS - {"kind", "version", "runId", "scenario", "output", "sources", "budgets", "gatewayBudgets"}:
         descriptor(value[key])
     need(value["runtimeEpoch"] == EPOCH and value["seedBinding"] == BINDING and value["admission"] == ADMISSION and value["admissionCloseout"] == ADMISSION_CLOSEOUT and
@@ -152,12 +160,52 @@ def hosting_initialized(report, value, hosting, epoch, read_descriptor, read_byt
          report["servicesStartedOrStopped"] == report["gobyBusinessHttpRequests"] == 0, "hosting_initialization_scope_exceeded")
 
 
-def verify_actor_before(snapshot, binding, scenario):
+def validate_retained_movie_baseline(closeout, snapshot, binding):
+    """Validate the known saved residue without authorizing any business action."""
+    need(closeout.get("kind") == "audited-core-movie04-failure-closeout" and closeout.get("status") == "closed_failed_attempt_with_retained_unstarted_preparation" and
+         closeout.get("runtimeEpoch") == EPOCH and closeout.get("sourceAfter") == RETAINED_SNAPSHOT and closeout.get("scenario") == "movie" and
+         closeout.get("runId") == "movie-04" and closeout.get("browserAndGatewayClosed") is True and closeout.get("allElevenSessionsRevoked") is True and
+         closeout.get("clientAcceptance") is False and closeout.get("playbackStarted") is False and closeout.get("clientPlaybackReferences") == closeout.get("encodingJobs") == 0,
+         "retained_movie_closeout_invalid")
+    need(set(snapshot) == {"capturedAt", "tables", "sequences"} and len(snapshot["tables"]) == 35, "retained_movie_snapshot_inventory")
+    tables, actor, movie = snapshot["tables"], binding["actors"]["movie"], binding["catalog"]["movie"]
+    users = [row for row in tables["users"] if row["id"] == actor["id"]]
+    need(len(users) == 1 and users[0]["name"] == actor["username"] and users[0]["is_administrator"] is False and users[0]["is_disabled"] is False and users[0]["policy"] == {}, "retained_movie_actor_changed")
+    need(len(tables["play_sessions"]) == 1 and not tables["client_playback_references"] and not tables["encoding_jobs"] and
+         len(tables["sessions"]) == 11 and all(row["revoked_at"] is not None for row in tables["sessions"]), "retained_movie_row_inventory")
+    play = tables["play_sessions"][0]
+    auth = [row for row in tables["sessions"] if row["id"] == RETAINED_AUTH]
+    need(play["id"] == RETAINED_PLAY and play["auth_session_id"] == RETAINED_AUTH and play["user_id"] == actor["id"] and play["item_id"] == movie["id"] and
+         play["media_source_id"] == "mediasource_" + movie["id"] and play["duration_ticks"] == movie["runtimeTicks"] and play["application_client_id"] is None and
+         play["state"] == "Prepared" and play["counted"] is False and play["started_at"] is None and play["stopped_at"] is None and play["position_ticks"] == 0 and
+         len(auth) == 1 and auth[0]["kind"] == "emby" and auth[0]["user_id"] == actor["id"] and auth[0]["device_id"] == play["device_id"], "retained_movie_preparation_changed")
+    data = [row for row in tables["user_item_data"] if row["user_id"] == actor["id"]]
+    need(len(data) == 1 and data[0]["item_id"] == movie["id"] and data[0]["playback_position_ticks"] == data[0]["play_count"] == 0 and
+         data[0]["is_favorite"] is False and data[0]["played"] is False and data[0]["last_played_at"] is None, "retained_movie_history_not_zero")
+    residue = closeout.get("retainedPreparation", {})
+    need(residue.get("id") == RETAINED_PLAY and residue.get("authSessionId") == RETAINED_AUTH and residue.get("itemId") == movie["id"] and
+         residue.get("ownerCredentialRevoked") is True, "retained_movie_closeout_row_binding")
+    return play
+
+
+def verify_actor_before(snapshot, binding, scenario, retained=None):
     actor = binding["actors"][scenario]["id"]
     rows = [row for row in snapshot["tables"]["users"] if row["id"] == actor]
     need(len(rows) == 1 and rows[0]["is_administrator"] is False and rows[0]["is_disabled"] is False, "scenario_actor_not_ordinary")
-    need(not any(row["user_id"] == actor for row in snapshot["tables"]["play_sessions"]) and
-         not any(row["user_id"] == actor for row in snapshot["tables"]["client_playback_references"]), "scenario_actor_already_consumed")
+    if retained is None:
+        need(not any(row["user_id"] == actor for row in snapshot["tables"]["play_sessions"]) and
+             not any(row["user_id"] == actor for row in snapshot["tables"]["client_playback_references"]), "scenario_actor_already_consumed")
+        return
+    need(scenario == "movie" and set(retained) == {"closeout", "snapshot"}, "retained_movie_scenario_required")
+    prior = retained["snapshot"]
+    play = validate_retained_movie_baseline(retained["closeout"], prior, binding)
+    # Python equality conflates booleans and integers inside JSONB documents.
+    canonical = lambda value: json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    need(set(snapshot) == set(prior) and canonical(snapshot["tables"]) == canonical(prior["tables"]) and
+         canonical(snapshot["sequences"]) == canonical(prior["sequences"]), "retained_movie_fresh_state_changed")
+    timestamp = lambda value: datetime.fromisoformat(value.replace("Z", "+00:00"))
+    need(timestamp(snapshot["capturedAt"]) >= timestamp(prior["capturedAt"]) and
+         timestamp(snapshot["capturedAt"]) + timedelta(seconds=BUDGETS["maximumSeconds"]) < timestamp(play["expires_at"]) + timedelta(days=7), "retained_movie_pruning_deadline")
 
 
 def verify_signal_target(state, row, process, boot_id):
@@ -217,13 +265,20 @@ class ClientRun:
         self.epoch = self.r.validate_epoch(epoch)
         self.binding = self.s.descriptor(self.value["seedBinding"])
         self.r.validate_seed_runtime_binding(self.binding, self.value["runtimeEpoch"], epoch, self.s.descriptor(self.r.SEED))
+        self.retained = None
+        if self.value["version"] == 2:
+            closeout = self.s.descriptor(self.value["retainedBaseline"])
+            need(closeout["sourceAfter"] == RETAINED_SNAPSHOT, "retained_movie_snapshot_changed")
+            self.retained = {"closeout": closeout, "snapshot": self.s.descriptor(closeout["sourceAfter"])}
+            validate_retained_movie_baseline(closeout, self.retained["snapshot"], self.binding)
         report = self.s.descriptor(self.value["admission"])
         admitted(report, self.value, epoch)
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
         need(verification["passed"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
              verification["adapterCounts"] == {"tests": 39, "pass": 39, "fail": 0, "skipped": 0} and
-             verification["closerCounts"] == {"testCount": 12, "passed": 12, "failed": 0, "sourceUnchanged": True} and
+             verification["closerCounts"] == {"testCount": 20, "passed": 20, "failed": 0, "sourceUnchanged": True} and
+             verification["movieCounts"] == {"tests": 16, "pass": 16, "fail": 0, "skipped": 0} and
              all(verification["sourcePins"][filename] == FROZEN[key] for key, filename in SOURCE_FILES.items() if filename.endswith(".mjs")), "verified_client_sources_differ")
         for pin in [self.value["node"], *self.value["sources"].values()]:
             self.s.read_checked(pin["path"], pin["sha256"])
@@ -423,7 +478,7 @@ class ClientRun:
         self.open()
         self.stage = "source_before"
         before, self.before_pin, self.candidate_before, self.postgres_before, self.lease_before = self.source_sample("before")
-        verify_actor_before(before, self.binding, self.value["scenario"])
+        verify_actor_before(before, self.binding, self.value["scenario"], self.retained)
         self.before_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
         candidate_process = {key: self.candidate_before[key] for key in self.gateway.PROCESS_FIELDS}
         self.gateway_config = {"schemaVersion": 1, "runId": self.value["runId"], "proxyOrigin": self.epoch["candidate"]["publicUrl"], "browserOrigin": self.epoch["candidate"]["publicUrl"],
@@ -478,10 +533,12 @@ class ClientRun:
             "clientWorker": {"exitCode": int(client["terminal"]["ExecMainStatus"]), "mainPID": int(client["closure"]["unit"]["MainPID"]), "workerPidAbsent": client["closure"]["workerPidAbsent"], "remainingBrowserPids": client["closure"]["recursiveCgroupPids"]},
             "gatewayWorker": {"exitCode": gateway_exit, "mainPID": int(self.workers["gateway"]["closure"]["unit"]["MainPID"]), "workerPidAbsent": self.workers["gateway"]["closure"]["workerPidAbsent"], "index": index_pin}}
         boundary_pin = self.save("boundary.json", boundary)
-        closeout = {"kind": "audited-candidate-client-closeout-input", "version": 1, "manifest": self.manifest_pin,
+        closeout = {"kind": "audited-candidate-client-closeout-input", "version": self.value["version"], "manifest": self.manifest_pin,
             "observation": self.pin_file(self.output / "browser/observation.json"), "summary": self.pin_file(self.output / "browser/summary.json"), "gatewayAttestation": self.gateway_pin,
             "gatewayIndex": index_pin, "runtimeEpoch": self.value["runtimeEpoch"], "admission": self.value["admission"], "seedBinding": self.value["seedBinding"],
             "sourceBefore": self.before_pin, "sourceAfter": after_pin, "boundary": boundary_pin, "sources": self.value["sources"], "output": str(self.output / "closeout")}
+        if self.value["version"] == 2:
+            closeout["retainedBaseline"] = self.value["retainedBaseline"]
         closeout_input = self.save("closeout-input.json", closeout)
         self.stage = "offline_closeout"
         self.remaining(cleanup=True)

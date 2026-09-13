@@ -13,7 +13,9 @@ upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
 gates and complete M2-M6 requirements remain open. Priorities 1 and 2 are complete:
 the corrected product is verified and its isolated candidate has passed live
-admission. Core original-client acceptance is in progress; no main deployment is claimed.
+admission. Core original-client acceptance remains open. The offline movie
+lifecycle and retained-baseline alignment is verified; a new bounded browser
+execution decision remains separate. No main deployment is claimed.
 
 The independently confirmed
 [late restore cancellation race](restore-cancellation-race.md) is fixed. Both windows
@@ -112,8 +114,23 @@ upstream connection. The bounded observer and independent cleanup correction
 passed [39 adapter tests](audited-core-client-observer-cleanup-verification.json),
 [11 controller checks](audited-core-client-observer-cleanup-runner-verification.json)
 and the [actual saved bootstrap replay](audited-core-client-observer-replay.json).
-The independently reviewed pause permits one new movie04 attempt. Another tooling
-failure stops consecutive browser iterations pending offline lifecycle review.
+Movie04 consumed the one attempt permitted by the reviewed pause. It completed
+authentication, observer draining and credential cleanup, then hit the legacy
+movie flow's fixed-delay/immediate-control-check race. Retained screenshots show
+an empty detail view followed approximately 141 ms later by its ready Play
+control. The physical ledger has one completed PlaybackInfo request and no
+Playing/Progress/Stopped reports or media GET. One Prepared row, with no start
+time and zero position/count, and a zero-history user-data row remain; all
+authentication sessions are revoked and no encoding job exists. This is retained
+preparation, not delivered or stopped playback. Browser iterations are now
+stopped while the entire movie lifecycle and this nonempty baseline were aligned
+offline. That [alignment is verified](audited-movie-offline-alignment.json): 16
+movie lifecycle, 20 durable-state/lineage and 16 controller checks passed on
+`test-env`, together with the actual saved-control replay. The first replay's
+unsafe-number failure remains retained; exact schema and fixed historical-epoch
+readers now preserve file nanosecond integers without rounding or changing the
+original evidence. Generic/public JSON retains the original strict limits.
+No movie05 was executed or authorized by the preceding pause decision.
 The old movie02 generic failure cannot establish
 which individual guard failed. Both attempts and hosting evidence remain
 retained; acceptance is pending and the admitted Goby binary and configuration

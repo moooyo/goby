@@ -1,0 +1,20 @@
+{
+  "kind": "audited-movie04-control-readiness-replay",
+  "host": "test-env",
+  "source": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/browser/observation.json",
+    "sha256": "6ac2337a4a87cc41690100e05dac6327b842c8391ed99c4c241f992629795dac"
+  },
+  "beforeLabel": "movie-detail-controls",
+  "afterLabel": "movie-blocked-cleanup-before-controls",
+  "beforePlayCount": 0,
+  "afterPlayCount": 1,
+  "notSelectedBeforeReady": true,
+  "selectedControl": "play",
+  "savedEvidenceUnchanged": true,
+  "runtimeStepsAreSynthetic": true,
+  "browserStarted": false,
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "passed": true
+}

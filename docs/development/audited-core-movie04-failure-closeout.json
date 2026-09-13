@@ -1,0 +1,261 @@
+{
+  "kind": "audited-core-movie04-failure-closeout",
+  "status": "closed_failed_attempt_with_retained_unstarted_preparation",
+  "capturedAt": "2026-09-13T11:21:11.608724+00:00",
+  "reviewMethod": "saved_artifact_and_lifecycle_source_reconciliation",
+  "scenario": "movie",
+  "runId": "movie-04",
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/av-tool-verification-06/movie-input-04.json",
+    "sha256": "62502bb48f0f98e2544d805dcbfa1d8bf65efb67c00add49f7516baa5e1722f3"
+  },
+  "failure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/failure.json",
+    "sha256": "f016d71424d80d7bed6536f8e7a63878288c38520ef3877a8be9d38222ad43aa"
+  },
+  "observation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/browser/observation.json",
+    "sha256": "6ac2337a4a87cc41690100e05dac6327b842c8391ed99c4c241f992629795dac"
+  },
+  "summary": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/browser/summary.json",
+    "sha256": "cbdb73a8d396fede3ea92029379a8ec60e146eb398be6c809bdc62792b705bcb"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/close-core-movie04-failure-01.py",
+    "sha256": "b1e7922d9f51d64d3f7cfe0c6c2180298e8619b465db76d5ef941a431e9bdf3e"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-backup-limits-revision-01/private/runtime-epoch.json",
+    "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"
+  },
+  "sourceRules": {
+    "internal/server/playback_info.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/server/playback_info.go",
+      "sha256": "429529503ab32369aee3097a4ecffb1a97e62526abafec4c83529ce3819a8ce0"
+    },
+    "internal/library/play_sessions.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/library/play_sessions.go",
+      "sha256": "06ee271291bfba491f7e56ff46627ce44ec7efcd3bafe1cf0121895595430e05"
+    },
+    "internal/library/userdata.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/library/userdata.go",
+      "sha256": "743c6cf727010154661c32eda6ad007044292bb042197330e37add6a55c651db"
+    },
+    "internal/server/auth.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/server/auth.go",
+      "sha256": "7eca8142ccf646db7720346ec166cfbe4e99c2ebbcc28a1dfd3cf0627409e8c8"
+    },
+    "internal/identity/store.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/store.go",
+      "sha256": "ae15b4f1444159f46bdb7f59ca8c96de40965bf1a8379736d2afe3f3a507690a"
+    },
+    "internal/identity/device_registration.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/device_registration.go",
+      "sha256": "6b00888826fd767e4932d2098e67a3904bcd35c8303927280ff246a2b165b6b7"
+    },
+    "internal/identity/client_sessions.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/client_sessions.go",
+      "sha256": "6f918e7864f1fe288123719cde38863b673e2a14b46d86caeed9ad14562f082b"
+    }
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/source-before.json",
+    "sha256": "acc4f5349c0f3099637700f245c8b9d55320ee41a73ab5a17d4bd4cbc773eba0"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/source-after.json",
+    "sha256": "7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c"
+  },
+  "sourceBeforeRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/source-before-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "sourceAfterRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/source-after-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "gatewayAttestation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/gateway-attestation.json",
+    "sha256": "f1cd6af16f439e9a7653a94a79fb0d6b7393d727fa4e0102888bd9374d119a18"
+  },
+  "gatewayIndex": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/index.json",
+    "sha256": "0bc9c3f51c815c4e9ff1b1cda1dd6f92d5583b70e1042c5e0d8baed0cbc17e9d"
+  },
+  "physicalRequests": 263,
+  "physicalMethods": {
+    "GET": 257,
+    "POST": 4,
+    "CONNECT": 2
+  },
+  "forwardedCompleteHttpExchanges": 261,
+  "loopbackConnectHandshakes": 1,
+  "pairedGatewayLedgerComplete": true,
+  "externalConnect": {
+    "count": 1,
+    "ordinal": 216,
+    "target": "mb3admin.com:443",
+    "upstreamConnected": false,
+    "upstreamBytesWritten": 0,
+    "reason": "host_origin_mismatch",
+    "intent": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000216-intent.json",
+      "sha256": "859317e4c7ea2ef54a735bf44fd68e318f97687e2c6ca340217befc0b1462480"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000216-result.json",
+      "sha256": "733f33eaa65393023e35adaf3211ac6f010834365adafed8e5dfcbeb1df5e34d"
+    }
+  },
+  "newLogins": 1,
+  "authenticated": true,
+  "login": {
+    "ordinal": 209,
+    "status": 200,
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000209-result.json",
+      "sha256": "a8f0acf636508b94c881748bb1f0cb26615e7ed08d5cb87d4ab555149539327f"
+    }
+  },
+  "playbackInfo": {
+    "ordinal": 253,
+    "status": 200,
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000253-result.json",
+      "sha256": "996057e110705c53d1705458597f99a633d05f5adff4c1385e3aefd9decd4b24"
+    },
+    "preparedSessionId": "play_40969548543a02735b847a89bc34671b"
+  },
+  "logout": {
+    "ordinal": 259,
+    "status": 204,
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000259-result.json",
+      "sha256": "e1c1de7268b1007d7c229d265e534e314b6044ad26f215e3d145a1385f5a7527"
+    },
+    "legacyUiLogoutProven": true
+  },
+  "sameTokenRejection": {
+    "ordinal": 261,
+    "status": 401,
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000261-result.json",
+      "sha256": "55cd33ab4a820a27270fd26cf5419c1c1c9b8ceafc29fde2d6f919a4a9f18b74"
+    },
+    "independentNodeVerification": true
+  },
+  "adapterLogoutPhase": null,
+  "adapterLogoutPhaseIsNotLogoutOutcome": true,
+  "allElevenSessionsRevoked": true,
+  "serviceWorkerMetadataObservation": {
+    "observerOrdinal": 4,
+    "scope": "service_worker",
+    "mainFrame": false,
+    "fromServiceWorkerResponse": false,
+    "status": 200,
+    "completed": true,
+    "physicalOrdinal": 4,
+    "physicalResult": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/gateway/private/request-000004-result.json",
+      "sha256": "b59842b884323ddf6610c835d16965f7940b4f4920da30b0ee61c79bf4e74181"
+    },
+    "assetBodyRead": false
+  },
+  "observerFailures": 0,
+  "observerDrainTimeouts": 0,
+  "observerPending": 0,
+  "preservation": {
+    "ownedTables": 35,
+    "unchangedTables": 30,
+    "allExistingRowsExact": true,
+    "newSessions": 1,
+    "newDevices": 1,
+    "newActivityEntries": 2,
+    "activityActions": [
+      "session.login",
+      "session.revoked"
+    ],
+    "sequenceDeltas": {
+      "activity_entries_id_seq": 2,
+      "devices_id_seq": 1
+    },
+    "otherSequencesExact": true
+  },
+  "retainedPreparation": {
+    "id": "play_40969548543a02735b847a89bc34671b",
+    "authSessionId": "aadd2636638e28cc6ceaf5bb8f2cb132",
+    "itemId": "36b446dc1c9133016916d8110ad560c8",
+    "state": "Prepared",
+    "startedAt": null,
+    "stoppedAt": null,
+    "positionTicks": 0,
+    "counted": false,
+    "ownerCredentialRevoked": true,
+    "notStopped": true
+  },
+  "retainedUserData": {
+    "rows": 1,
+    "playCount": 0,
+    "played": false,
+    "lastPlayedAt": null,
+    "positionTicks": 0
+  },
+  "startedPlaybackRows": 0,
+  "playingOrPausedRows": 0,
+  "playingRequests": 0,
+  "progressRequests": 0,
+  "stoppedRequests": 0,
+  "mediaGetRequests": 0,
+  "encodingJobs": 0,
+  "clientPlaybackReferences": 0,
+  "playbackStarted": false,
+  "clientAcceptance": false,
+  "lifecycleBoundary": "PlaybackInfo creates Prepared and initial user data. Active-session queries exclude revoked authentication; NowPlaying selects only Playing/Paused. The retained row was neither started nor marked Stopped.",
+  "nextBaselineMustIncludeRetainedPreparation": true,
+  "nextStep": "offline_lifecycle_alignment_without_another_browser_iteration",
+  "workers": {
+    "gateway": {
+      "pid": 438609,
+      "invocationId": "9b52d6dbaa9d48fe93daf7517a21b31b",
+      "exitCode": 0,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/gateway-terminal.json",
+        "sha256": "810d7c2ee0d4897346403c61b83dc9cf3f27685633583badb15d220e170e843e"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/gateway-closed.json",
+        "sha256": "724a94171939f5c4bbb1480328c469928fca143cb580396ceffa7c1d31397c84"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    },
+    "browser": {
+      "pid": 438617,
+      "invocationId": "20d2acfbf24542f5a96b22b4adee2cb1",
+      "exitCode": 1,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/browser-terminal.json",
+        "sha256": "06905a11084995287ff894784ab965f8991321c0a8e61a3cb72edfde0d877d95"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-04/private/browser-closed.json",
+        "sha256": "a8297230a225220c1c1adec9f571bf9a7c8f5952a8c5340cd69e14b952612c38"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    }
+  },
+  "browserAndGatewayClosed": true,
+  "gatewayExitCode": 0,
+  "browserExitCode": 1,
+  "scopeConsumed": true,
+  "automaticBusinessRetry": false,
+  "vendorAssetBodiesRead": false,
+  "reviewHttpRequests": 0,
+  "reviewSqlQueries": 0,
+  "reviewRuntimeProbes": 0,
+  "reviewBrowserStarts": 0,
+  "reviewServiceActions": 0,
+  "reviewBusinessWrites": 0
+}
