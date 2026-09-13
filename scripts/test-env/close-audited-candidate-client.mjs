@@ -34,6 +34,7 @@ export const BINARY_SUCCESSOR = {
   sourceManifest: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json', sha256: 'bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff' },
 };
 export const REUSED_ADMISSION04 = { path: RETAINED_ROOT + '/candidate-live-admission-04/private/report.json', sha256: '05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653' };
+const PUBLIC_ADMISSION03_CLOSEOUT = { path: RETAINED_ROOT + '/candidate-admission03-failure-closeout.json', sha256: '090d04421c8fb847822695143483b153f096e2707571c14a01d4860d48233e2a' };
 export const AFFECTED_TV_TRANSITION_CLOSEOUT = { path: RETAINED_ROOT + '/candidate-tv-parent-transition-closeout.json', sha256: 'c9e03c008d0d1dbf0b66b8070692738e50a2ca57c29f89cbd40c1fba38d597ba' };
 const AFFECTED_TV_CHECKS = ['runtimeIdentity', 'tvDefaultParents', 'tvDetailParents', 'ordinaryAuthorization', 'healthWindow60Seconds', 'sourceAndInactivePreserved', 'sessionCleanup'];
 const REUSED_ADMISSION_CONTRACTS = ['native_authentication_and_query_carriers', 'storage_and_library_access', 'backup_create_download', 'restore_ready_cancel_retained_stage'];
@@ -1020,8 +1021,14 @@ function validateBinarySuccessorLineage(epoch, seed, lineage) {
   need(equal(without(seed, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS]),
     without(previousBinding, ['version', 'runtimeEpoch', 'currentSessions', ...ENV_BINDING_KEYS])), 'binary_successor_seed_provenance');
   const sessions = binarySuccessorSessions(priorSource);
-  need(equal(seed.currentSessions, sessions) && previousBinding.currentSessions.every(old => sessions.some(row =>
-    row.kind === old.kind && row.credentialId === old.credentialId && row.tokenSha256 === old.tokenSha256)), 'binary_successor_session_history');
+  need(equal(seed.currentSessions, sessions) && previousBinding.currentSessions.every(old => {
+    if (!own(old) || !Object.hasOwn(old, 'credentialId') || typeof old.tokenSha256 !== 'string' || !SHA.test(old.tokenSha256) ||
+      old.credentialId !== null && (typeof old.credentialId !== 'string' || !/^[0-9a-f]{32}$/.test(old.credentialId))) return false;
+    const matches = sessions.filter(row => row.kind === old.kind && row.tokenSha256 === old.tokenSha256);
+    // Initial seed cleanup recorded literal null IDs; only their unique
+    // kind/token binding may supply the already verified current credential ID.
+    return matches.length === 1 && (old.credentialId === null || matches[0].credentialId === old.credentialId);
+  }), 'binary_successor_session_history');
 }
 
 export function validateRuntimeLineage(epoch, seed, lineage = {}) {
@@ -1211,11 +1218,14 @@ async function readEnvironmentLineage(epoch, seed) {
   need(equal(epoch.previousEpoch, PREVIOUS_BINARY_EPOCH), 'previous_binary_epoch_reader_authority');
   const lineage = { previousEpoch: previousBinaryEpochJSON(await readPin(epoch.previousEpoch), epoch.previousEpoch), previousBinding: strictJSON(await readPin(seed.previousBinding)),
     configurationInput: strictJSON(await readPin(epoch.transitionInput)), failedAdmission03: strictJSON(await readPin(seed.admission03)) };
-  await readPin(epoch.productInput); await readPin(seed.failureCloseout); await readPin(seed.closedState);
+  await readPin(epoch.productInput);
+  // Only this fixed public receipt permits its recorded 0644 mode.
+  await readPin(seed.failureCloseout, MAX_FILE, !equal(seed.failureCloseout, PUBLIC_ADMISSION03_CLOSEOUT));
+  await readPin(seed.closedState);
   return lineage;
 }
 
-async function readBinarySuccessorLineage(epoch, seed) {
+export async function readBinarySuccessorLineage(epoch, seed) {
   need(equal(epoch.previousEpoch, BINARY_SUCCESSOR.previousEpoch) && equal(seed.previousBinding, BINARY_SUCCESSOR.previousBinding) &&
     equal(epoch.reviewedState, BINARY_SUCCESSOR.reviewedState) && equal(epoch.reviewedSummary, BINARY_SUCCESSOR.reviewedSummary) &&
     equal(seed.priorSource, BINARY_SUCCESSOR.priorSource) && equal(seed.priorCloseout, BINARY_SUCCESSOR.priorCloseout), 'binary_successor_reader_authority');

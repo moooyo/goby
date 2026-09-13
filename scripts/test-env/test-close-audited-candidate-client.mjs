@@ -282,7 +282,7 @@ function binarySuccessorFixture(closer) {
       cmdline: [epoch.currentSource.binary.path], networkNamespace: 'net:[synthetic]', cgroup: '/synthetic-candidate.service' });
     epoch.candidate.processes = { postgres: clone(epoch.postgresProcess), server: { Id: 'synthetic-candidate.service', MainPID: String(epoch.candidateProcess.pid) } };
   }
-  prior.lineage.previousBinding.currentSessions.forEach((row, index) => { row.credentialId = id(index + 1); });
+  prior.lineage.previousBinding.currentSessions.forEach((row, index) => { row.credentialId = index < 2 ? null : id(index + 1); });
   ['admin', 'P', 'Q'].forEach((role, index) => { prior.lineage.failedAdmission03.controllerSessions[role].credentialId = id(index + 4); });
   prior.seed.currentSessions = [...clone(prior.lineage.previousBinding.currentSessions), ...['admin', 'P', 'Q'].map(role => ({
     kind: role === 'admin' ? 'admin' : 'emby', tokenSha256: prior.lineage.failedAdmission03.controllerSessions[role].tokenSha256,
@@ -686,6 +686,8 @@ function guardCases(closer) {
       assert.deepEqual(closer.runtimeEpochJSON(jsonBytes(value.epoch), value.seed.runtimeEpoch), value.epoch);
       assert.deepEqual(jsonBytes(value), before);
       assert.equal(value.seed.currentSessions.length, 15);
+      assert.equal(value.lineage.previousBinding.currentSessions.filter(row => row.credentialId === null).length, 2);
+      assert(value.seed.currentSessions.every(row => typeof row.credentialId === 'string'));
       assert.notDeepEqual(value.epoch.productInput, value.epoch.configurationInput);
       assert.notDeepEqual(value.seed.runtimeEpoch, closer.BINARY_SUCCESSOR.previousEpoch);
     }],
@@ -754,6 +756,18 @@ function guardCases(closer) {
         ['lost_ancestor_credential', value => {
           const token = sha('synthetic-replaced-ancestor-token'); value.lineage.priorSource.tables.sessions[0].token_hash = '\\x' + token;
           value.seed.currentSessions[0].tokenSha256 = token;
+        }, /binary_successor_session_history/],
+        ['known_ancestor_id_mismatch', value => {
+          for (const binding of [value.lineage.previousBinding, value.lineage.previousLineage.previousBinding]) binding.currentSessions[2].credentialId = 'f'.repeat(32);
+        }, /binary_successor_session_history/],
+        ['ancestor_token_hash_missing', value => {
+          for (const binding of [value.lineage.previousBinding, value.lineage.previousLineage.previousBinding]) delete binding.currentSessions[0].tokenSha256;
+        }, /binary_successor_session_history/],
+        ['ancestor_id_field_missing', value => {
+          for (const binding of [value.lineage.previousBinding, value.lineage.previousLineage.previousBinding]) delete binding.currentSessions[0].credentialId;
+        }, /binary_successor_session_history/],
+        ['ancestor_id_undefined_is_not_literal_null', value => {
+          for (const binding of [value.lineage.previousBinding, value.lineage.previousLineage.previousBinding]) binding.currentSessions[0].credentialId = undefined;
         }, /binary_successor_session_history/],
       ]) {
         const value = binarySuccessorFixture(closer); mutate(value);
@@ -993,6 +1007,32 @@ async function savedRetainedReplay(closer) {
   return pins;
 }
 
+async function savedCurrentLineageReplay(closer) {
+  const root = '/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14';
+  const pins = {
+    runtimeEpoch: { path: root + '/candidate-tv-parent-transition-01/private/runtime-epoch.json', sha256: '76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac' },
+    seedBinding: { path: root + '/candidate-tv-parent-transition-01/private/seed-runtime-binding.json', sha256: '94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43' },
+    admission05: { path: root + '/candidate-live-admission-05/private/report.json', sha256: 'b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535' },
+    admission04: closer.REUSED_ADMISSION04, transitionCloseout: closer.AFFECTED_TV_TRANSITION_CLOSEOUT,
+  };
+  const read = async pin => { const bytes = await fs.readFile(pin.path); assert.equal(sha(bytes), pin.sha256, 'current_replay_digest_changed'); return bytes; };
+  const epoch = closer.runtimeEpochJSON(await read(pins.runtimeEpoch), pins.runtimeEpoch);
+  const seed = closer.strictJSON(await read(pins.seedBinding)), admission = closer.strictJSON(await read(pins.admission05));
+  const previousAdmission = closer.strictJSON(await read(pins.admission04));
+  await read(pins.transitionCloseout);
+  // Call the actual production loader, including its file metadata policy and
+  // role-specific decoders. No copied loader or browser fixture is used here.
+  const lineage = await closer.readBinarySuccessorLineage(epoch, seed);
+  closer.validateRuntimeLineage(epoch, seed, lineage);
+  closer.validateCandidateAdmissionBinding({ runtimeEpoch: pins.runtimeEpoch, seedBinding: pins.seedBinding }, epoch, admission, lineage, previousAdmission);
+  assert.equal(epoch.version, 3); assert.equal(seed.version, 3); assert.equal(admission.version, 3);
+  assert.equal(epoch.currentSource.binary.sha256, 'b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42');
+  return { kind: 'actual_saved_current_lineage_and_admission', pins, productionLoader: 'readBinarySuccessorLineage',
+    epochVersion: epoch.version, admissionVersion: admission.version, admissionKind: admission.admissionKind,
+    binarySha256: epoch.currentSource.binary.sha256, inheritedSessions: seed.currentSessions.length,
+    browserInputsCreated: 0, httpCalls: 0, sqlCalls: 0, serviceCalls: 0, clientAcceptance: false };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const replay = args.length === 5 && args[4] === '--replay-retained-snapshot';
@@ -1009,15 +1049,18 @@ async function main() {
     catch (error) { tests.push({ name, outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'pure_guard_assertion_failed' }); }
   }
-  let replayedPins = [];
+  let replayedPins = [], currentLineageReplay = null;
   if (replay) {
     try { replayedPins = await savedRetainedReplay(closer); tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'passed' }); }
     catch (error) { tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'saved_replay_assertion_failed' }); }
+    try { currentLineageReplay = await savedCurrentLineageReplay(closer); tests.push({ name: 'saved_current_epoch3_admission05_through_production_loader', outcome: 'passed' }); }
+    catch (error) { tests.push({ name: 'saved_current_epoch3_admission05_through_production_loader', outcome: 'failed', errorType: error.name,
+      failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'current_saved_replay_assertion_failed' }); }
   }
   const unchanged = (await Promise.all(Object.entries(sources).map(async ([filename, digest]) => sha(await fs.readFile(filename)) === digest))).every(Boolean);
   const report = { kind: 'audited-candidate-client-closeout-pure-guards', version: 1,
-    scope: 'Exported pure functions on synthetic fixtures; optional saved movie04 baseline and admission04 plus simulated new rows. No live or client acceptance claim.', replayedPins,
+    scope: 'Pure synthetic fixtures; optional saved movie04/admission04 and actual epoch3/admission05 through the production lineage loader. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay,
     source: { path: source, sha256: sources[source] }, sources, output, testCount: tests.length,
     passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, clientAcceptanceClaim: false, endToEndExecuted: false,
@@ -1029,7 +1072,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 31 : 30) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (replay ? 32 : 30) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-13 after TV browse01. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after affected admission05. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -58,7 +58,11 @@ logout rejections. Exact reconciliation found two new sessions, two devices
 and four audit rows; all seventeen sessions are revoked, all prior playback
 and userdata remain exact, and the inactive stage/control files are preserved.
 The selected controller passed thirty guards and three actual saved-receipt
-integrations. This is API/runtime admission, with core client acceptance open.
+integrations. The final [actual lineage reader review](tv-parent-client-lineage-review.md)
+also passes, including the fixed public report and two unknown historical
+credential IDs. The [first MP3 input](audited-mp3-client01-plan.md) is reviewed
+against the exact seventeen-session state. This is API/runtime admission, with
+core client acceptance open.
 
 ## Movie checkpoints
 

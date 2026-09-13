@@ -39,12 +39,12 @@ SERVER_LOG_LIMIT = 32 << 20
 ADMISSION = {"path": str(R / "candidate-live-admission-05/private/report.json"), "sha256": "b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535"}
 ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission05-closeout.json"), "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "tv-parent-client-component-verification-01/verification.json"), "sha256": "89a1d1c03f10455a0006b5930281fbe84637f4954877ce2dc97affacfcd17158"}
+AV_VERIFICATION = {"path": str(R / "tv-parent-client-component-verification-03/verification.json"), "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"}
 RUNTIME = {"path": str(R / "candidate-successor-tool-verification-01/audited-candidate-runtime.py"), "sha256": "bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0", "closer": "ca303bb6e14ea9ee94d1456867395668dbce14b5defcb0aa72409ad3803b04bc",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0", "closer": "94910123694fe6f772cb0cfcc80696ed1691a46d33b0669ef8e969f7d81cbb94",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
     "movie": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
@@ -452,7 +452,7 @@ class ClientRun:
         need(verification["kind"] == "tv-parent-candidate-client-component-verification" and verification["passed"] is True and
              verification["sourceUnchanged"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
              verification["adapterCounts"] == {"tests": 55, "pass": 55, "fail": 0, "skipped": 0} and verification["adapterSavedReplayChecks"] == 7 and
-             verification["closerCounts"] == {"testCount": 31, "passed": 31, "failed": 0, "sourceUnchanged": True} and
+             verification["closerCounts"] == {"testCount": 32, "passed": 32, "failed": 0, "sourceUnchanged": True} and
              verification["version3Counts"] == {"tests": 12, "pass": 12, "fail": 0, "skipped": 0} and
              verification["savedMovie05ReplayCounts"] == {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True} and
              verification["movieCounts"] == {"tests": 19, "pass": 19, "fail": 0, "skipped": 0} and

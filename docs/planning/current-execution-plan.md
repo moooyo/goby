@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-13 after TV browse01. Status: **audited product verified and
+Reviewed on 2026-09-14 after affected admission05. Status: **audited product verified and
 current candidate admitted; core client acceptance open;
 TV parent metadata verified, installed and admitted**. This is the active work queue.
 [Current status](../development/current-status.md) records accepted facts;
@@ -61,6 +61,10 @@ Admission04 is reused for its unchanged contracts without another backup/restore
 The final controller passed thirty guards and three actual saved-receipt checks.
 Freeze the next independent client input against this selected source and the
 current seventeen revoked sessions; preserve all consumed movie/TV inputs.
+The [actual lineage reader review](../development/tv-parent-client-lineage-review.md)
+and [first MP3 entry](../development/audited-mp3-client01-plan.md) are complete.
+Execute that one bounded MP3 scenario, then reconcile its owned state before
+selecting the following independent scenario.
 Do not expand this into Live TV or reopen global NextUp research on an error
 timestamp alone.
 
