@@ -24,8 +24,30 @@ and its worker report is
 `4d65de4801e261de49ed41024a0506d23a521957ee4b312494a12b5031bf99f5`.
 The binary at that full scope's `bin/goby-linux-amd64` is 29,561,402 bytes,
 SHA-256 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`.
-Independent artifact reconciliation is complete. The transition tool changes,
-their focused verification and final execution input remain pending.
+Independent artifact reconciliation is complete. The existing transition and
+runtime tools now support the bounded binary-successor branch. The controller
+validates hosting initialization against its historical context, and the client
+closeout consumes the successor lineage without reinterpreting the old epochs.
+
+The [remote tool verification](tv-parent-successor-tool-verification.json)
+passed 103 checks: seven original runtime guards, twelve successor guards with
+saved evidence, five environment compatibility guards, 26 controller checks,
+28 closeout checks, twelve v3 integration checks and thirteen saved movie05
+replay checks. All eighteen source files remained exact. No HTTP, SQL, browser
+or service operation occurred. Nested boolean/integer substitutions are rejected
+by the new hosting-context comparisons. This proof does not pass client
+acceptance or admit the new binary.
+
+The final input is frozen at
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-entry-01/input.json`,
+SHA-256 `a84a7fb85031e4dc6683d6aa14e1eb9b059e932b0dda9390a46e584681bd7af7`.
+Its entry report SHA-256 is
+`8078dfa39269b332842638a08d701c1bf0b1d8a93254c12408add927299658b9`.
+The new output is `candidate-tv-parent-transition-01`. The runtime helper is
+`bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922`,
+and the transition helper is
+`dea04062c7bb6ca8c253b8c8a276259ae163481a4c0d908574d3c6474f9f2b14`.
+Saved contract checks passed; fresh preflight and execution remain pending.
 
 The one read-only state capture is retained at
 `/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-state-review-01/`.

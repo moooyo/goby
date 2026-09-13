@@ -93,9 +93,13 @@ def log_fixture():
     return process, info, snapshot(raw_before, "before", "2026-09-13T12:20:00Z"), snapshot(raw_after, "after", "2026-09-13T12:20:01Z"), raw_before, raw_after
 
 
-def startup_fixture():
+def startup_fixture(*, successor=False, epoch_version=2):
     """Saved-artifact fixtures; these callbacks never access runtime state."""
     value = fixture()
+    if successor:
+        value.update(copy.deepcopy(m.HOST_STARTUP_HISTORY))
+        for key, digest in m.HOST_STARTUP_TRANSPORT.items():
+            value["sources"][key]["sha256"] = digest
     pin = lambda name: {"path": str(m.R / "client-host-startup-01/private" / name), "sha256": "a" * 64}
     process = {"pid": 101, "startTicks": "100", "bootId": "boot", "uid": 0, "exe": "/frozen/host", "exeDevice": 1,
                "exeInode": 2, "cmdline": ["/frozen/host"], "networkNamespace": "net:[10]", "cgroup": "0::/system.slice/host.service\n"}
@@ -103,7 +107,7 @@ def startup_fixture():
         "unitProperties": dict.fromkeys(m.HOST_UNIT_FIELDS, "fixture"), "packageSha256": "b" * 64, "executableSha256": "c" * 64,
         "serverId": "d" * 32, "version": "4.9.5.0", "serverName": "Goby Core AV Original Client Host 01"}
     candidate = {**process, "pid": 102, "exe": "/frozen/goby", "cmdline": ["/frozen/goby"], "cgroup": "0::/system.slice/candidate.service\n"}
-    epoch = {"runtimeHelper": copy.deepcopy(m.RUNTIME), "candidateProcess": candidate,
+    epoch = {"version": epoch_version, "runtimeHelper": copy.deepcopy(value["runtimeHelper"]), "candidateProcess": candidate,
         "candidate": {"listener": {"port": 28498, "socketInode": "13"}}, "postgresProcess": {**process, "pid": 103}, "lease": {"backendPid": 104}}
     anchor = {**candidate, "listener": {"host": "127.0.0.1", "port": 28498, "socketInode": "13"}}
     host_anchor = {key: copy.deepcopy(hosting[key]) for key in ("process", "listener", "packageSha256", "executableSha256")}
@@ -135,6 +139,37 @@ def startup_fixture():
         report["webIndex"]["response"]["path"]: web, pin("logout.json")["path"]: {"status": 204, "complete": True},
         pin("revoked.json")["path"]: {"status": 401, "complete": True}}
     raw_files = {web["rawHeaders"]["path"]: raw}
+    if successor:
+        epoch.update(kind="audited-candidate-runtime-epoch", operationKind="environment_revision",
+                     transitionInput=pin("environment-input.json"), previousEpoch=pin("prior-binary-epoch.json"))
+        historical_binding = {"kind": "audited-candidate-seed-runtime-binding", "version": 2,
+            "runtimeEpoch": copy.deepcopy(m.HOST_STARTUP_HISTORY["runtimeEpoch"]), "previousBinding": pin("prior-binding.json")}
+        configuration = {"kind": "audited-candidate-environment-revision-input", "version": 1,
+            "runtimeHelper": copy.deepcopy(m.HOST_STARTUP_HISTORY["runtimeHelper"]), "previousEpoch": copy.deepcopy(epoch["previousEpoch"]),
+            "previousSeedBinding": copy.deepcopy(historical_binding["previousBinding"])}
+        current = copy.deepcopy(epoch)
+        current.update(version=3, operationKind="binary_successor", previousEpoch=copy.deepcopy(m.HOST_STARTUP_HISTORY["runtimeEpoch"]),
+                       transitionInput=pin("successor-input.json"), productInput=pin("successor-input.json"),
+                       configurationInput=copy.deepcopy(epoch["transitionInput"]), runtimeHelper=pin("successor-runtime.py"))
+        current["candidateProcess"]["pid"] += 100
+        current["candidateProcess"]["startTicks"] = "200"
+        current["candidate"]["listener"]["socketInode"] = "113"
+        product = {"kind": "audited-candidate-transition-input", "version": 2,
+            "previousEpoch": copy.deepcopy(m.HOST_STARTUP_HISTORY["runtimeEpoch"]), "previousBinding": copy.deepcopy(m.HOST_STARTUP_HISTORY["seedBinding"])}
+        historical_hosting = copy.deepcopy(hosting)
+        documents.update({m.HOST_STARTUP_HISTORY["runtimeEpoch"]["path"]: epoch,
+            m.HOST_STARTUP_HISTORY["seedBinding"]["path"]: historical_binding,
+            m.HOST_STARTUP_HISTORY["hostingInitialization"]["path"]: report,
+            epoch["transitionInput"]["path"]: configuration, current["transitionInput"]["path"]: product,
+            report["hosting"]["path"]: historical_hosting})
+        value.update(runtimeEpoch=pin("successor-epoch.json"), seedBinding=pin("successor-binding.json"), runtimeHelper=copy.deepcopy(current["runtimeHelper"]))
+        context = {"report": report, "initialization": initialization, "documents": documents, "raw_files": raw_files,
+            "epoch": current, "historical_epoch": epoch, "historical_binding": historical_binding,
+            "hosting": hosting, "historical_hosting": historical_hosting, "value": value,
+            "lineage": {"productEpoch": current, "productInput": product, "configurationInput": configuration}}
+        context["check"] = lambda: m.hosting_initialized(context["report"], value, hosting, current,
+            lambda row: documents[row["path"]], lambda row: raw_files[row["path"]], tables, lineage=context["lineage"])
+        return context
     check = lambda: m.hosting_initialized(report, value, hosting, epoch, lambda row: documents[row["path"]], lambda row: raw_files[row["path"]], tables)
     return report, initialization, documents, raw_files, check
 
@@ -365,6 +400,95 @@ class Guards(unittest.TestCase):
                 documents[report["sourceAfter"]["path"]]["sequences"]["fixture_sequence"] += 1
             with self.subTest(failure=failure), self.assertRaisesRegex(m.RunError, "hosting_initialization_"):
                 check()
+
+    def test_successor_hosting_uses_fixed_history_with_a_different_current_candidate(self):
+        for version in (1, 2):
+            startup_fixture(epoch_version=version)[-1]()
+        value = startup_fixture(successor=True)
+        self.assertNotEqual(value["epoch"]["candidateProcess"], value["historical_epoch"]["candidateProcess"])
+        self.assertNotEqual(value["value"]["runtimeHelper"], m.HOST_STARTUP_HISTORY["runtimeHelper"])
+        before = copy.deepcopy(value["report"])
+        with patch.dict(m.FROZEN, {"gateway": "0" * 64, "proxy": "1" * 64}):
+            value["check"]()
+        self.assertEqual(value["report"], before)
+
+    def test_successor_hosting_rejects_missing_mixed_or_unanchored_history(self):
+        for failure in ("parent", "lineage-missing", "lineage-extra", "lineage-duplicate", "lineage-current", "old-binding", "old-runtime", "config-runtime",
+                        "config-version", "binding-epoch", "startup-pin", "current-runtime", "hosting", "input-binding", "transport"):
+            value = startup_fixture(successor=True)
+            if failure == "parent":
+                value["epoch"]["previousEpoch"]["sha256"] = "0" * 64
+            elif failure == "lineage-missing":
+                value["lineage"] = None
+            elif failure == "lineage-extra":
+                value["lineage"]["anotherEpoch"] = value["historical_epoch"]
+            elif failure == "lineage-duplicate":
+                value["lineage"]["productEpoch"] = [value["epoch"], value["epoch"]]
+            elif failure == "lineage-current":
+                value["lineage"]["productEpoch"] = copy.deepcopy(value["epoch"])
+                value["lineage"]["productEpoch"]["candidateProcess"]["pid"] += 1
+            elif failure == "old-binding":
+                value["lineage"]["productInput"]["previousBinding"]["sha256"] = "0" * 64
+            elif failure == "old-runtime":
+                value["historical_epoch"]["runtimeHelper"]["sha256"] = "0" * 64
+            elif failure == "config-runtime":
+                value["lineage"]["configurationInput"]["runtimeHelper"]["sha256"] = "0" * 64
+            elif failure == "config-version":
+                value["lineage"]["configurationInput"]["version"] = True
+            elif failure == "binding-epoch":
+                value["historical_binding"]["runtimeEpoch"]["sha256"] = "0" * 64
+            elif failure == "startup-pin":
+                value["value"]["hostingInitialization"]["sha256"] = "0" * 64
+            elif failure == "current-runtime":
+                value["value"]["runtimeHelper"]["sha256"] = "0" * 64
+            elif failure == "hosting":
+                value["hosting"]["process"]["pid"] += 1
+            elif failure == "input-binding":
+                value["initialization"]["seedBinding"]["sha256"] = "0" * 64
+            else:
+                value["initialization"]["gateway"]["sha256"] = "0" * 64
+            with self.subTest(failure=failure), self.assertRaisesRegex(m.RunError, "hosting_initialization_"):
+                value["check"]()
+
+    def test_successor_hosting_still_checks_every_old_receipt_internally(self):
+        for failure in ("candidate-before", "candidate-after", "postgres", "lease", "table", "sequence", "index-body", "redirect", "live-token", "retry"):
+            value = startup_fixture(successor=True)
+            report, documents = value["report"], value["documents"]
+            if failure == "candidate-before":
+                report["candidateBefore"]["pid"] = value["epoch"]["candidateProcess"]["pid"]
+            elif failure == "candidate-after":
+                report["candidateAfter"]["pid"] += 1
+            elif failure == "postgres":
+                report["postgresAfter"]["pid"] += 1
+            elif failure == "lease":
+                report["leaseAfter"]["backendPid"] += 1
+            elif failure == "table":
+                documents[report["sourceAfter"]["path"]]["tables"]["users"].append({"id": "unexpected"})
+            elif failure == "sequence":
+                documents[report["sourceAfter"]["path"]]["sequences"]["fixture_sequence"] += 1
+            elif failure == "index-body":
+                documents[report["webIndex"]["response"]["path"]]["bodyRead"] = True
+            elif failure == "redirect":
+                web = documents[report["webIndex"]["response"]["path"]]
+                web["headers"].append(["Location", "index.html?start=wizard"])
+                value["raw_files"][web["rawHeaders"]["path"]] = b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nLocation: index.html?start=wizard\r\n\r\n"
+            elif failure == "live-token":
+                documents[report["cleanup"][0]["sameTokenStatusResponse"]["path"]]["status"] = 200
+            else:
+                report["automaticWriteRetry"] = True
+            with self.subTest(failure=failure), self.assertRaisesRegex(m.RunError, "hosting_initialization_"):
+                value["check"]()
+
+    def test_successor_hosting_rejects_nested_boolean_as_integer_in_the_passed_report(self):
+        value = startup_fixture(successor=True)
+        saved = value["documents"][m.HOST_STARTUP_HISTORY["hostingInitialization"]["path"]]
+        value["report"] = copy.deepcopy(saved)
+        value["report"]["preservation"]["sequencesExact"] = 1
+        self.assertIs(saved["preservation"]["sequencesExact"], True)
+        # Ordinary Python equality would erase this nested type change.
+        self.assertEqual(value["report"], saved)
+        with self.assertRaisesRegex(m.RunError, "hosting_initialization_history_changed"):
+            value["check"]()
 
     def test_exact_current_release_and_six_scenarios(self):
         for scenario in m.SCENARIOS:

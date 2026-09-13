@@ -22,6 +22,17 @@ export const OCCUPIED_AUTH = 'e5649a6dc8451164243a4213f12d0ba2';
 export const CANDIDATE_LOG = '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/server-unit.log';
 const RETAINED_EPOCH = { path: RETAINED_ROOT + '/candidate-backup-limits-revision-01/private/runtime-epoch.json', sha256: '72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e' };
 export const PREVIOUS_BINARY_EPOCH = { path: RETAINED_ROOT + '/candidate-cancellation-transition-01/private/runtime-epoch.json', sha256: '7bcdbc529fd1ba3f6a62f66585e6788cc9efa1aac22a4accc8d339d69ccf6ae2' };
+export const BINARY_SUCCESSOR = {
+  previousEpoch: RETAINED_EPOCH,
+  previousBinding: { path: RETAINED_ROOT + '/candidate-backup-limits-revision-01/private/seed-runtime-binding.json', sha256: '92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f' },
+  reviewedSummary: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-state-review-01/summary.json', sha256: 'be2bd9a3081c9f84fb71ed617d2d3a025415ee2faf762d89e512e26bcd0dff18' },
+  reviewedState: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-state-review-01/private/state.json', sha256: '82cabde1a8d8dcf73a0e19da5b7c680fd977cace56d0d597bac0c59513b170a6' },
+  priorCloseout: { path: RETAINED_ROOT + '/candidate-core-tv-browse01-owned-state-closeout.json', sha256: 'b9cbc7ad57f7381c1c6c8d267827cb24a907376a17944fe5b3bd5d8dcdd3f4a0' },
+  priorSource: { path: RETAINED_ROOT + '/candidate-core-client-tv-browse-01/private/source-after.json', sha256: '541dc489d1592612485aa4e18955cec3adac3cbb8070b1405d4af8f6818a92a6' },
+  fullRoot: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356',
+  archiveSha256: 'b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177',
+  sourceManifest: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json', sha256: 'bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff' },
+};
 const CLOSEOUT_PINS = ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary'];
 const TABLES = 'activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users'.split(' ').sort();
 const SOURCE_FILES = { closer: 'close-audited-candidate-client.mjs', adapter: 'client-browser-audited-candidate.mjs', gateway: 'client-acceptance-gateway.py', proxy: 'client-acceptance-proxy.py',
@@ -30,6 +41,10 @@ const EPOCH_KEYS = 'kind version status transitionInput transitionHelper runtime
 const BINDING_KEYS = 'kind version runtimeEpoch originalSeed seedExecutor seedInput seedSessionAddendum admission02 serverId admin actors controlQ catalog catalogFile actualCatalogDtos libraries roots resources seedCleanup currentSessions candidateAdmissionComplete'.split(' ');
 const ENV_EPOCH_KEYS = ['previousEpoch', 'productInput', 'operationKind', 'configurationChange'];
 const ENV_BINDING_KEYS = ['previousBinding', 'admission03', 'failureCloseout', 'closedState'];
+const SUCCESSOR_EPOCH_KEYS = ['previousEpoch', 'productInput', 'configurationInput', 'operationKind', 'reviewedState', 'reviewedSummary'];
+const SUCCESSOR_BINDING_KEYS = ['previousBinding', 'reviewedSummary', 'reviewedState', 'priorCloseout', 'priorSource'];
+const SUCCESSOR_INPUT_KEYS = 'kind version output previousEpoch previousBinding reviewedSummary reviewedState priorCloseout priorSource newFullReport newSourceManifest newBinary compiledCatalog frontendReport helpers budgets'.split(' ');
+const SUCCESSOR_LIMITS = { maximumSeconds: 900, stopSeconds: 60, readySeconds: 60, maximumPublicRequests: 10, stopCalls: 1, replaceCalls: 1, startCalls: 1 };
 const ENV_ADDITIONS = { GOBY_BACKUP_MAX_OBJECT_BYTES: '67108864', GOBY_BACKUP_MAX_TOTAL_BYTES: '268435456' };
 const own = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const need = (value, code) => { if (!value) throw new Error(code); };
@@ -917,15 +932,104 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
       .map(key => [key, currentData.get(actor + '/' + selected.id)?.[key]])) : null };
 }
 
+function validateBinarySuccessorInput(input) {
+  need(exact(input, SUCCESSOR_INPUT_KEYS) && input.kind === 'audited-candidate-transition-input' && input.version === 2 &&
+    SUCCESSOR_INPUT_KEYS.filter(key => !['kind', 'version', 'output', 'helpers', 'budgets'].includes(key)).every(key => descriptor(input[key])), 'binary_successor_input_schema');
+  for (const key of ['previousEpoch', 'previousBinding', 'reviewedSummary', 'reviewedState', 'priorCloseout', 'priorSource'])
+    need(equal(input[key], BINARY_SUCCESSOR[key]), 'binary_successor_input_authority');
+  need(equal(input.newSourceManifest, BINARY_SUCCESSOR.sourceManifest) && input.newFullReport.path === BINARY_SUCCESSOR.fullRoot + '/report.json' &&
+    input.newBinary.path === BINARY_SUCCESSOR.fullRoot + '/bin/goby-linux-amd64' &&
+    input.compiledCatalog.path === BINARY_SUCCESSOR.fullRoot + '/source/internal/backuppg/catalogs/schema-28-postgresql-17.json' &&
+    typeof input.output === 'string' && path.posix.dirname(input.output) === RETAINED_ROOT && /^candidate-tv-parent-transition-[0-9]{2}$/.test(path.posix.basename(input.output)) &&
+    exact(input.helpers, ['seed', 'provision', 'gateway', 'admission', 'reconcile']) && Object.values(input.helpers).every(descriptor) &&
+    equal(input.budgets, SUCCESSOR_LIMITS), 'binary_successor_input_scope');
+  return input;
+}
+
+function binarySuccessorSessions(source) {
+  need(exact(source, ['capturedAt', 'tables', 'sequences']) && exact(source.tables, TABLES) && own(source.sequences) &&
+    Array.isArray(source.tables.sessions) && source.tables.sessions.length === 15, 'binary_successor_prior_source');
+  instant(source.capturedAt);
+  const rows = source.tables.sessions.map(row => {
+    need(['admin', 'emby'].includes(row.kind) && /^[0-9a-f]{32}$/.test(row.id) && /^[0-9a-f]{32}$/.test(row.user_id) &&
+      /^\\x[0-9a-f]{64}$/.test(row.token_hash), 'binary_successor_session_identity');
+    instant(row.revoked_at);
+    return { kind: row.kind, credentialId: row.id, tokenSha256: row.token_hash.slice(2), userId: row.user_id, revokedAt: row.revoked_at };
+  });
+  need(new Set(rows.map(row => row.credentialId)).size === 15 && new Set(rows.map(row => row.tokenSha256)).size === 15, 'binary_successor_session_collision');
+  return rows.sort((a, b) => a.credentialId < b.credentialId ? -1 : a.credentialId > b.credentialId ? 1 : 0);
+}
+
+function validateBinarySuccessorFullReport(report, worker, input) {
+  need(report?.status === 'passed' && worker?.status === 'passed' && report.mode === 'full' && worker.mode === 'full' &&
+    report.archive_sha256 === BINARY_SUCCESSOR.archiveSha256 && report.scope === BINARY_SUCCESSOR.fullRoot && worker.scope === BINARY_SUCCESSOR.fullRoot &&
+    report.unit_exit_code === 0 && report.recursive_cgroup_empty === true && report.existing_services_modified === false &&
+    SHA.test(report.worker_report_sha256) && equal(report.worker, worker), 'binary_successor_full_report_incomplete');
+  need(exact(worker.cleanup, ['only_worker_process_remains', 'owned_postgres_stopped', 'private_bind_removed', 'source_unchanged']) &&
+    Object.values(worker.cleanup).every(value => value === true), 'binary_successor_full_cleanup');
+  const expected = worker.expected_packages, packages = worker.packages;
+  need(Array.isArray(expected) && expected.length === 25 && expected.every(value => typeof value === 'string') && new Set(expected).size === 25 &&
+    Array.isArray(packages) && packages.length === 25 && equal(packages.map(row => row.package).sort(), [...expected].sort()) &&
+    packages.every(row => row.result === 'pass' && row.exit_code === 0 && row.failed === 0 && row.skipped === 0) &&
+    integer(worker.test_counts?.passed) && worker.test_counts.passed > 0 && worker.test_counts.failed === 0 && worker.test_counts.skipped === 0,
+  'binary_successor_full_package_coverage');
+  need(worker.binary?.path === 'bin/goby-linux-amd64' && worker.binary.sha256 === input.newBinary.sha256 &&
+    integer(worker.binary.bytes) && worker.binary.bytes > 0, 'binary_successor_full_binary');
+}
+
+function validateBinarySuccessorLineage(epoch, seed, lineage) {
+  const { previousEpoch: previous, previousBinding, previousLineage, transitionInput, reviewedSummary: summary, priorCloseout, priorSource, fullReport, fullWorker } = lineage;
+  need(previous?.version === 2 && previousBinding?.version === 2 && equal(epoch.previousEpoch, BINARY_SUCCESSOR.previousEpoch) &&
+    equal(seed.previousBinding, BINARY_SUCCESSOR.previousBinding) && equal(previousBinding.runtimeEpoch, epoch.previousEpoch) &&
+    equal(previous.previousEpoch, PREVIOUS_BINARY_EPOCH), 'binary_successor_ancestor');
+  validateRuntimeLineage(previous, previousBinding, previousLineage);
+  const input = validateBinarySuccessorInput(transitionInput);
+  need(epoch.operationKind === 'binary_successor' && equal(epoch.calls, { stop: 1, replace: 1, start: 1 }) &&
+    ['transitionInput', 'transitionHelper', 'runtimeHelper', 'productInput', 'configurationInput', 'before', 'after', 'preservation'].every(key => descriptor(epoch[key])) &&
+    equal(epoch.productInput, epoch.transitionInput) && equal(epoch.configurationInput, previous.transitionInput) &&
+    equal(epoch.helpers, input.helpers) && equal(epoch.helpers, previous.helpers) &&
+    equal(epoch.originalProvision, previous.originalProvision) && equal(epoch.seedProvenance, previous.seedProvenance), 'binary_successor_product_configuration');
+  const source = epoch.currentSource;
+  need(source.archiveSha256 === BINARY_SUCCESSOR.archiveSha256 && equal(source.sourceManifest, BINARY_SUCCESSOR.sourceManifest) &&
+    equal(source.fullReport, input.newFullReport) && descriptor(source.binary) && source.binary.path === previous.currentSource.binary.path &&
+    source.binary.sha256 === input.newBinary.sha256 && source.binary.sha256 !== previous.currentSource.binary.sha256 &&
+    source.binary.sha256 !== 'a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7', 'binary_successor_product_source');
+  validateBinarySuccessorFullReport(fullReport, fullWorker, input);
+  const current = epoch.candidate, old = previous.candidate;
+  const changed = ['input', 'productInput', 'binary', 'currentSourceManifest', 'backendReport', 'processes', 'serverIdentity', 'listener', 'databases'];
+  need(exact(current, Object.keys(old)) && equal(without(current, changed), without(old, changed)) &&
+    equal(current.input, epoch.productInput) && equal(current.productInput, epoch.productInput) && equal(current.backendReport, source.fullReport) &&
+    exact(current.processes, Object.keys(old.processes)) && equal(without(current.processes, ['server']), without(old.processes, ['server'])) &&
+    equal(epoch.postgresProcess, previous.postgresProcess), 'binary_successor_candidate_configuration');
+  need(['bootId', 'uid', 'exe', 'cmdline', 'networkNamespace', 'cgroup'].every(key => Object.hasOwn(previous.candidateProcess, key) &&
+    equal(epoch.candidateProcess[key], previous.candidateProcess[key])), 'binary_successor_process_sandbox');
+  need(exact(current.databases, Object.keys(old.databases)) && ['source', 'recovery'].every(slot => own(old.databases[slot]) &&
+    exact(current.databases[slot], Object.keys(old.databases[slot])) &&
+    equal(without(current.databases[slot], ['afterStart']), without(old.databases[slot], ['afterStart']))), 'binary_successor_database_identity');
+  for (const key of ['reviewedState', 'reviewedSummary']) need(equal(epoch[key], BINARY_SUCCESSOR[key]) && equal(seed[key], BINARY_SUCCESSOR[key]), 'binary_successor_review_authority');
+  for (const key of ['priorCloseout', 'priorSource']) need(equal(seed[key], BINARY_SUCCESSOR[key]), 'binary_successor_prior_authority');
+  need(summary?.kind === 'audited-tv-parent-transition-startup-state-review' && summary.status === 'captured_state_supports_bounded_transition_contract' &&
+    equal(summary.state, epoch.reviewedState) && equal(summary.runtimeEpoch, epoch.previousEpoch) && equal(summary.seedBinding, seed.previousBinding) &&
+    equal(summary.priorSource, seed.priorSource) && summary.source?.ownedTablesExactToTvCloseout === 35 && summary.source.sequencesExact === true &&
+    priorCloseout?.status === 'owned_state_closed_client_acceptance_pending' && priorCloseout.clientAcceptance === false &&
+    equal(priorCloseout.inputEvidence?.after, seed.priorSource) && equal(priorCloseout.inputEvidence?.epoch, epoch.previousEpoch), 'binary_successor_review_binding');
+  need(equal(without(seed, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS]),
+    without(previousBinding, ['version', 'runtimeEpoch', 'currentSessions', ...ENV_BINDING_KEYS])), 'binary_successor_seed_provenance');
+  const sessions = binarySuccessorSessions(priorSource);
+  need(equal(seed.currentSessions, sessions) && previousBinding.currentSessions.every(old => sessions.some(row =>
+    row.kind === old.kind && row.credentialId === old.credentialId && row.tokenSha256 === old.tokenSha256)), 'binary_successor_session_history');
+}
+
 export function validateRuntimeLineage(epoch, seed, lineage = {}) {
-  need([1, 2].includes(epoch.version) && exact(epoch, [...EPOCH_KEYS, ...(epoch.version === 2 ? ENV_EPOCH_KEYS : [])]) &&
+  need([1, 2, 3].includes(epoch.version) && exact(epoch, [...EPOCH_KEYS, ...(epoch.version === 2 ? ENV_EPOCH_KEYS : epoch.version === 3 ? SUCCESSOR_EPOCH_KEYS : [])]) &&
     epoch.kind === 'audited-candidate-runtime-epoch' && epoch.status === 'running_awaiting_live_acceptance' && epoch.candidateAdmissionComplete === false &&
-    seed.version === epoch.version && exact(seed, [...BINDING_KEYS, ...(seed.version === 2 ? ENV_BINDING_KEYS : [])]) &&
+    seed.version === epoch.version && exact(seed, [...BINDING_KEYS, ...(seed.version === 2 ? ENV_BINDING_KEYS : seed.version === 3 ? SUCCESSOR_BINDING_KEYS : [])]) &&
     seed.kind === 'audited-candidate-seed-runtime-binding' && seed.candidateAdmissionComplete === false, 'runtime_lineage_schema');
   need(exact(epoch.currentSource, ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema']) && epoch.currentSource.schema === 28 &&
     epoch.candidate.bootstrapExecuted === true && equal(epoch.candidate.sourceState, { users: 8, schema: 28, migrations: 28 }) &&
     equal(epoch.candidate.binary, epoch.currentSource.binary) && equal(epoch.candidate.currentSourceManifest, epoch.currentSource.sourceManifest), 'runtime_lineage_product');
   if (epoch.version === 1) { need(equal(epoch.calls, { stop: 1, replace: 1, start: 1 }) && seed.currentSessions.length === 3, 'binary_epoch_calls_or_sessions'); return; }
+  if (epoch.version === 3) return validateBinarySuccessorLineage(epoch, seed, lineage);
   const { previousEpoch: previous, previousBinding, configurationInput, failedAdmission03 } = lineage, change = epoch.configurationChange;
   need(previous?.version === 1 && previousBinding?.version === 1, 'environment_predecessor_missing');
   validateRuntimeLineage(previous, previousBinding);
@@ -1077,6 +1181,33 @@ export function validateCloseoutInput(input) {
   return input;
 }
 
+async function readEnvironmentLineage(epoch, seed) {
+  need(equal(epoch.previousEpoch, PREVIOUS_BINARY_EPOCH), 'previous_binary_epoch_reader_authority');
+  const lineage = { previousEpoch: previousBinaryEpochJSON(await readPin(epoch.previousEpoch), epoch.previousEpoch), previousBinding: strictJSON(await readPin(seed.previousBinding)),
+    configurationInput: strictJSON(await readPin(epoch.transitionInput)), failedAdmission03: strictJSON(await readPin(seed.admission03)) };
+  await readPin(epoch.productInput); await readPin(seed.failureCloseout); await readPin(seed.closedState);
+  return lineage;
+}
+
+async function readBinarySuccessorLineage(epoch, seed) {
+  need(equal(epoch.previousEpoch, BINARY_SUCCESSOR.previousEpoch) && equal(seed.previousBinding, BINARY_SUCCESSOR.previousBinding) &&
+    equal(epoch.reviewedState, BINARY_SUCCESSOR.reviewedState) && equal(epoch.reviewedSummary, BINARY_SUCCESSOR.reviewedSummary) &&
+    equal(seed.priorSource, BINARY_SUCCESSOR.priorSource) && equal(seed.priorCloseout, BINARY_SUCCESSOR.priorCloseout), 'binary_successor_reader_authority');
+  const previousEpoch = runtimeEpochJSON(await readPin(epoch.previousEpoch), epoch.previousEpoch), previousBinding = strictJSON(await readPin(seed.previousBinding));
+  need(previousEpoch.version === 2 && previousBinding.version === 2, 'binary_successor_ancestor');
+  const previousLineage = await readEnvironmentLineage(previousEpoch, previousBinding);
+  const transitionInput = validateBinarySuccessorInput(strictJSON(await readPin(epoch.transitionInput)));
+  const fullReport = strictJSON(await readPin(transitionInput.newFullReport, MAX_FILE, false));
+  const fullWorker = strictJSON(await readPin({ path: BINARY_SUCCESSOR.fullRoot + '/worker-report.json', sha256: fullReport.worker_report_sha256 }, MAX_FILE, false));
+  // These fixed/private proofs contain filesystem nanoseconds. Their bytes are
+  // authenticated here; the Python runtime owns their full preservation check.
+  for (const pin of [epoch.reviewedState, epoch.before, epoch.after, epoch.preservation]) await readPin(pin);
+  for (const pin of [transitionInput.newSourceManifest, transitionInput.compiledCatalog, transitionInput.frontendReport]) await readPin(pin, MAX_FILE, false);
+  return { previousEpoch, previousBinding, previousLineage, transitionInput, fullReport, fullWorker,
+    reviewedSummary: strictJSON(await readPin(epoch.reviewedSummary)), priorCloseout: strictJSON(await readPin(seed.priorCloseout)),
+    priorSource: sourceSnapshotJSON(await readPin(seed.priorSource)) };
+}
+
 export async function runCloseout(inputPin) {
   need(process.platform === 'linux' && process.getuid?.() === 0 && process.env.SSH_CONNECTION, 'remote_only_closeout'); process.umask(0o077);
   const input = validateCloseoutInput(strictJSON(await readPin(inputPin)));
@@ -1102,13 +1233,8 @@ export async function runCloseout(inputPin) {
     evidence.authorizedInput = strictJSON(await readPin(evidence.serverLog.input));
     await readPin(evidence.serverLog.controller, MAX_FILE, false);
   }
-  if (evidence.runtimeEpoch.version === 2) {
-    const epoch = evidence.runtimeEpoch, seed = evidence.seedBinding;
-    need(equal(epoch.previousEpoch, PREVIOUS_BINARY_EPOCH), 'previous_binary_epoch_reader_authority');
-    evidence.lineage = { previousEpoch: previousBinaryEpochJSON(await readPin(epoch.previousEpoch), epoch.previousEpoch), previousBinding: strictJSON(await readPin(seed.previousBinding)),
-      configurationInput: strictJSON(await readPin(epoch.transitionInput)), failedAdmission03: strictJSON(await readPin(seed.admission03)) };
-    await readPin(epoch.productInput); await readPin(seed.failureCloseout); await readPin(seed.closedState);
-  }
+  if (evidence.runtimeEpoch.version === 2) evidence.lineage = await readEnvironmentLineage(evidence.runtimeEpoch, evidence.seedBinding);
+  if (evidence.runtimeEpoch.version === 3) evidence.lineage = await readBinarySuccessorLineage(evidence.runtimeEpoch, evidence.seedBinding);
   const gateway = evidence.gatewayAttestation, index = evidence.gatewayIndex;
   need(Array.isArray(index.entries) && index.entries.length <= 10000, 'ledger_inventory_limit');
   need(input.gatewayAttestation.path === path.join(gateway.ledgerRoot, 'gateway-attestation.json') && input.gatewayIndex.path === path.join(gateway.ledgerRoot, 'index.json'), 'ledger_paths_not_bound');

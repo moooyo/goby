@@ -45,6 +45,21 @@ REQUIRED_BACKUP_FREE = 2 * (64 << 20) + (64 << 20) + (32 << 20) + (64 << 10)
 ENV_INPUT_KEYS = {"kind", "version", "output", "previousEpoch", "previousSeedBinding", "admission03", "failureCloseout", "closedState", "runtimeHelper", "additions", "budgets"}
 ENV_EPOCH_KEYS = EPOCH_KEYS | {"previousEpoch", "productInput", "operationKind", "configurationChange"}
 ENV_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "admission03", "failureCloseout", "closedState"}
+CURRENT_ENV_EPOCH = {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"}
+CURRENT_ENV_BINDING = {"path": str(R / "candidate-backup-limits-revision-01/private/seed-runtime-binding.json"), "sha256": "92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f"}
+SUCCESSOR_STATE = {"path": str(R / "candidate-tv-parent-transition-state-review-01/private/state.json"), "sha256": "82cabde1a8d8dcf73a0e19da5b7c680fd977cace56d0d597bac0c59513b170a6"}
+SUCCESSOR_SUMMARY = {"path": str(R / "candidate-tv-parent-transition-state-review-01/summary.json"), "sha256": "be2bd9a3081c9f84fb71ed617d2d3a025415ee2faf762d89e512e26bcd0dff18"}
+SUCCESSOR_PRIOR_SOURCE = {"path": str(R / "candidate-core-client-tv-browse-01/private/source-after.json"), "sha256": "541dc489d1592612485aa4e18955cec3adac3cbb8070b1405d4af8f6818a92a6"}
+SUCCESSOR_PRIOR_CLOSEOUT = {"path": str(R / "candidate-core-tv-browse01-owned-state-closeout.json"), "sha256": "b9cbc7ad57f7381c1c6c8d267827cb24a907376a17944fe5b3bd5d8dcdd3f4a0"}
+ADMISSION04 = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
+INACTIVE_STAGE = {"path": str(R / "candidate-live-admission-04/private/inactive-cancelled.json"), "sha256": "12dac8ef138874cfca6dd6803213854b716ec3a6639b0321954f68ee02e9eb73"}
+NEW_F = Path("/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356")
+NEW_ARCHIVE = "b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177"
+NEW_SOURCE_MANIFEST = {"path": str(NEW_F / "source-manifest.json"), "sha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff"}
+CURRENT_BINARY = "477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f"
+SUCCESSOR_INPUT_KEYS = {"kind", "version", "output", "previousEpoch", "previousBinding", "reviewedSummary", "reviewedState", "priorCloseout", "priorSource", "newFullReport", "newSourceManifest", "newBinary", "compiledCatalog", "frontendReport", "helpers", "budgets"}
+SUCCESSOR_EPOCH_KEYS = EPOCH_KEYS | {"previousEpoch", "productInput", "configurationInput", "operationKind", "reviewedState", "reviewedSummary"}
+SUCCESSOR_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "reviewedSummary", "reviewedState", "priorCloseout", "priorSource"}
 
 
 class ContractError(ValueError):
@@ -97,6 +112,8 @@ def load_helper(name, pin):
 
 
 def validate_transition_input(value):
+    if type(value.get("version")) is int and value["version"] == 2:
+        return validate_binary_successor_input(value)
     need(set(value) == INPUT_KEYS and value["kind"] == "audited-candidate-transition-input" and type(value["version"]) is int and value["version"] == 1, "transition_input_schema")
     for key in INPUT_KEYS - {"kind", "version", "output", "helpers", "budgets"}:
         descriptor(value[key])
@@ -109,6 +126,146 @@ def validate_transition_input(value):
     need(value["newFullReport"]["path"] == str(F / "report.json") and value["newSourceManifest"]["path"] == str(F / "source-manifest.json") and
          value["newBinary"]["path"] == str(F / "bin/goby-linux-amd64") and value["compiledCatalog"]["path"] == str(F / "source" / CATALOG_RELATIVE), "transition_product_scope_invalid")
     return value
+
+
+def validate_binary_successor_input(value):
+    need(set(value) == SUCCESSOR_INPUT_KEYS and value["kind"] == "audited-candidate-transition-input" and type(value["version"]) is int and value["version"] == 2, "binary_successor_input_schema")
+    for key in SUCCESSOR_INPUT_KEYS - {"kind", "version", "output", "helpers", "budgets"}:
+        descriptor(value[key])
+    expected = {"previousEpoch": CURRENT_ENV_EPOCH, "previousBinding": CURRENT_ENV_BINDING, "reviewedState": SUCCESSOR_STATE,
+                "reviewedSummary": SUCCESSOR_SUMMARY, "priorSource": SUCCESSOR_PRIOR_SOURCE, "priorCloseout": SUCCESSOR_PRIOR_CLOSEOUT,
+                "newSourceManifest": NEW_SOURCE_MANIFEST}
+    need(all(value[key] == pin for key, pin in expected.items()), "binary_successor_authority_changed")
+    need(set(value["helpers"]) == HELPERS and all(descriptor(pin) for pin in value["helpers"].values()) and
+         value["helpers"]["gateway"]["sha256"] == GATEWAY_SOURCE_SHA, "binary_successor_helpers_invalid")
+    output = Path(value["output"])
+    need(output.parent == R and re.fullmatch(r"candidate-tv-parent-transition-[0-9]{2}", output.name) and value["budgets"] == LIMITS and
+         all(type(number) is int for number in value["budgets"].values()), "binary_successor_scope_or_budget_invalid")
+    need(value["newFullReport"]["path"] == str(NEW_F / "report.json") and value["newBinary"]["path"] == str(NEW_F / "bin/goby-linux-amd64") and
+         value["compiledCatalog"]["path"] == str(NEW_F / "source" / CATALOG_RELATIVE) and value["newBinary"]["sha256"] not in (OLD_BINARY, CURRENT_BINARY), "binary_successor_product_scope_invalid")
+    return value
+
+
+def validate_successor_full_report(report, worker, value):
+    need(report["status"] == worker["status"] == "passed" and report["mode"] == worker["mode"] == "full" and report["archive_sha256"] == NEW_ARCHIVE and
+         report["unit_exit_code"] == 0 and report["recursive_cgroup_empty"] is True and report["existing_services_modified"] is False and report["worker"] == worker,
+         "full_product_verification_not_complete")
+    cleanup = {"only_worker_process_remains", "owned_postgres_stopped", "private_bind_removed", "source_unchanged"}
+    need(set(worker["cleanup"]) == cleanup and all(worker["cleanup"][key] is True for key in cleanup), "full_product_cleanup_incomplete")
+    expected, actual = worker["expected_packages"], worker["packages"]
+    need(len(expected) == len(set(expected)) == len(actual) == 25 and {row["package"] for row in actual} == set(expected) and
+         all(row["result"] == "pass" and row["exit_code"] == row["failed"] == row["skipped"] == 0 for row in actual) and
+         worker["test_counts"]["failed"] == worker["test_counts"]["skipped"] == 0 and worker["test_counts"]["passed"] > 0, "full_package_coverage_incomplete")
+    need(report["scope"] == worker["scope"] == str(NEW_F) and worker["binary"]["path"] == "bin/goby-linux-amd64" and
+         worker["binary"]["sha256"] == value["newBinary"]["sha256"] and worker["binary"]["sha256"] not in (OLD_BINARY, CURRENT_BINARY) and
+         type(worker["binary"]["bytes"]) is int and worker["binary"]["bytes"] > 0, "new_binary_not_verified")
+
+
+def successor_sessions(source):
+    """Publish only normalized, deterministically ordered revoked credentials."""
+    rows = source["tables"]["sessions"]
+    need(len(rows) == 15, "successor_session_count")
+    result = []
+    for row in rows:
+        need(isinstance(row, dict) and {"kind", "id", "user_id", "token_hash", "revoked_at"} <= set(row) and
+             all(isinstance(row[key], str) for key in ("kind", "id", "user_id", "token_hash", "revoked_at")), "successor_revoked_session_type")
+        need(row["kind"] in ("admin", "emby") and re.fullmatch(r"[0-9a-f]{32}", row["id"]) and re.fullmatch(r"[0-9a-f]{32}", row["user_id"]) and
+             re.fullmatch(r"\\x[0-9a-f]{64}", row["token_hash"]) and isinstance(row["revoked_at"], str), "successor_revoked_session_invalid")
+        need(datetime.fromisoformat(row["revoked_at"].replace("Z", "+00:00")).tzinfo is not None, "successor_revoked_time_invalid")
+        result.append({"kind": row["kind"], "credentialId": row["id"], "tokenSha256": row["token_hash"][2:], "userId": row["user_id"], "revokedAt": row["revoked_at"]})
+    need(len({row["credentialId"] for row in result}) == len({row["tokenSha256"] for row in result}) == 15, "successor_session_collision")
+    return sorted(result, key=lambda row: row["credentialId"])
+
+
+def validate_successor_state(state, *, now=None):
+    """Check the occupied, nonempty startup state without performing IO."""
+    now = now or datetime.now(timezone.utc)
+    need(now.tzinfo is not None and [state[key] for key in ("runtimeEpoch", "previousEpoch") if key in state] == [CURRENT_ENV_EPOCH] and
+         state["seedBinding"] == CURRENT_ENV_BINDING and state["priorSource"] == SUCCESSOR_PRIOR_SOURCE and state["admission04"] == ADMISSION04, "successor_state_authority_changed")
+    tables = state["source"]["tables"]
+    need(set(tables) == set(state["inactiveStage"]["tables"]) == TABLES and len(tables["users"]) == 8 and len(tables["items"]) == 13 and
+         [row["version"] for row in tables["schema_migrations"]] == [row["version"] for row in state["inactiveStage"]["tables"]["schema_migrations"]] == list(range(1, 29)), "successor_source_inventory_changed")
+    sessions = successor_sessions(state["source"])
+    need(len(tables["play_sessions"]) == 7 and len(tables["user_item_data"]) == 2 and sum(row["counted"] is True for row in tables["play_sessions"]) == 2,
+         "successor_play_history_changed")
+    prepared = [row for row in tables["play_sessions"] if row["state"] == "Prepared"]
+    need(len(prepared) == 2 and all(row["counted"] is False and row["started_at"] is None and row["stopped_at"] is None for row in prepared), "successor_prepared_history_changed")
+    need(all(not tables[key] for key in ("client_playback_references", "encoding_jobs", "task_triggers", "task_runs", "task_run_children", "task_run_requests", "task_occurrences")) and
+         len(tables["scan_jobs"]) == 3 and all(row["status"] == "Completed" for row in tables["scan_jobs"]), "successor_pending_startup_work")
+    definitions = tables["task_definitions"]
+    need(len(definitions) == 1 and all(definitions[0][key] == val for key, val in {"key": "library.scan", "emby_key": "RefreshLibrary", "name": "Scan media library",
+         "description": "Scan all registered media libraries.", "category": "Library"}.items()), "successor_task_definition_changed")
+    need(len(tables["activity_entries"]) == 58 and all(now + timedelta(seconds=LIMITS["maximumSeconds"]) < datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")) + timedelta(days=1)
+         for row in tables["activity_entries"]), "successor_activity_retention_deadline")
+    need(set(state["trees"]) == set(TREE_ROOTS) and not any(".next-" in name or ".goby-backup-catalog.pending" in name for tree in state["trees"].values() for name in tree), "successor_pending_control_file")
+    need(set(state["trees"][str(C / "data/cache")]) == {".", ".goby-transcode-cache", ".goby-transcode-lock"} and
+         sum(not row.get("directory") for row in state["trees"][str(C / "data/media")].values()) == 14 and
+         sum(not row.get("directory") for row in state["trees"][str(C / "install/admin")].values()) == 57, "successor_media_cache_asset_inventory")
+    documents = state["controlDocuments"]
+    need("recovery/activation-journal.json" not in documents, "successor_pending_activation")
+    marker = json.loads(next(row["value"] for row in tables["server_settings"] if row["key"] == "goby.recovery.binding.v1"))
+    payload = documents["operations/current.json"]["payload"]
+    operations = payload["operations"]
+    need(not payload.get("transition") and len(operations) == 3 and {(row["kind"], row["state"], row["phase"]) for row in operations} ==
+         {("create", "failed", "finished"), ("create", "completed", "finished"), ("restore", "cancelled", "finished")} and
+         all(row["authorized"] is True and row["applyAuthorized"] is False and row["cancelAuthorized"] is (row["kind"] == "restore") for row in operations), "successor_operation_startup_work")
+    source_state = operations[0]["sourceState"]
+    need(all(row["sourceState"] == source_state for row in operations) and marker["deploymentId"] == source_state["deploymentId"] and
+         marker["slot"] == source_state["databaseSlot"] == "primary" and not marker.get("generationId") and source_state["revision"] == 0, "successor_control_source_binding")
+    entries = documents["backups/.goby-backup-catalog.json"]["entries"]
+    need(len(entries) == 2 and {(row["metadata"]["state"], row["phase"], row["metadata"]["size"]) for row in entries} == {("failed", "empty", 0), ("ready", "ready", 290550)} and
+         all(row["deleting"] is False for row in entries), "successor_backup_startup_work")
+    generations = documents["recovery/generation-registry.json"]["generations"]
+    slots = {row["slot"]: row for row in payload["slots"]}
+    restore = next(row for row in operations if row["kind"] == "restore")
+    need(len(generations) == 1 and generations[0]["complete"] is True and set(slots) == {"primary", "recovery"} and
+         slots["primary"]["state"] == "active" and slots["recovery"]["state"] == "staged" and
+         slots["recovery"]["imageId"] == restore["generationId"] == generations[0]["id"] and slots["recovery"]["operation"] == restore["id"], "successor_inactive_generation_binding")
+    registry = state["diagnostics"]["registry"]
+    need(len(registry["files"]) <= 14 and sum(row["closed"] is False for row in registry["files"]) == 1 and all(not row.get("deleting") and
+         now + timedelta(seconds=LIMITS["maximumSeconds"]) < datetime.fromisoformat(row["created"].replace("Z", "+00:00")) + timedelta(days=7) for row in registry["files"]), "successor_diagnostic_retention_deadline")
+    need(canonical(state["candidateBefore"]) == canonical(state["candidateAfter"]) and canonical(state["postgresBefore"]) == canonical(state["postgresAfter"]) and
+         canonical(state["leaseBefore"]) == canonical(state["leaseAfter"]) and canonical(state["hostingBefore"]) == canonical(state["hostingAfter"]), "successor_capture_identity_drift")
+    return {"ownedTables": 35, "revokedSessions": sessions, "playRows": 7, "userDataRows": 2, "preparedRows": 2, "inactiveStageRetained": True}
+
+
+def compare_successor_preservation(before, after, *, installed_binary=None, now=None):
+    validate_successor_state(before, now=now)
+    validate_successor_state(after, now=now)
+    for section in ("source", "inactiveStage"):
+        need(canonical(before[section]["tables"]) == canonical(after[section]["tables"]) and canonical(before[section]["sequences"]) == canonical(after[section]["sequences"]), "successor_logical_state_changed_" + section)
+    for section in ("databases", "trees", "controlDocuments", "loadedUnits", "protected", "postgresBefore", "postgresAfter", "hostingBefore", "hostingAfter"):
+        need(canonical(before[section]) == canonical(after[section]), "successor_preservation_changed_" + section)
+    old_files, new_files = before["fixedFiles"], after["fixedFiles"]
+    need(set(old_files) == set(new_files) and str(C / "data/master.key") in old_files, "successor_fixed_file_inventory")
+    binary_path = str(C / "install/goby")
+    for name in old_files:
+        if installed_binary is None or name != binary_path:
+            need(canonical(old_files[name]) == canonical(new_files[name]), "successor_fixed_file_changed")
+    if installed_binary is not None:
+        descriptor(installed_binary)
+        need(installed_binary["path"] == binary_path and new_files[binary_path]["sha256"] == installed_binary["sha256"] and
+             all(new_files[binary_path][key] == old_files[binary_path][key] for key in ("dev", "uid", "gid", "mode")), "successor_installed_binary_authority")
+    else:
+        for key in ("candidateBefore", "candidateAfter", "leaseBefore", "leaseAfter"):
+            need(canonical(before[key]) == canonical(after[key]), "successor_before_identity_changed")
+    def append(old, new):
+        need(all(old[key] == new[key] for key in ("dev", "ino", "uid", "gid", "mode")) and new["bytes"] >= old["bytes"] and
+             (new["prefixSha256"] == old["sha256"] if "prefixSha256" in new else
+              new["bytes"] == old["bytes"] and new["sha256"] == old["sha256"]), "successor_log_prefix_changed")
+    need(set(before["unitLogs"]) == set(after["unitLogs"]) == {"server-unit.log", "postgres-unit.log"}, "successor_unit_log_inventory")
+    for name, facts in before["unitLogs"].items():
+        append(facts, after["unitLogs"][name])
+    if installed_binary is None:
+        old, new = before["diagnostics"], after["diagnostics"]
+        need(canonical(old["registry"]) == canonical(new["registry"]) and canonical(old["registryFile"]) == canonical(new["registryFile"]) and
+             old["lock"] == new["lock"] and old["directory"] == new["directory"] and set(old["files"]) == set(new["files"]), "successor_before_diagnostics_changed")
+        for name, facts in old["files"].items():
+            append(facts, new["files"][name])
+    else:
+        compare_diagnostics(before["diagnostics"], after["diagnostics"])
+    return {"ownedTablesExact": 35, "sequencesExact": True, "inactiveStageExact": True, "allPriorPlayAndUserDataExact": True,
+            "controlMediaAssetsExact": True, "configurationExact": True, "postgresContinuous": True, "hostingContinuous": True}
 
 
 def validate_full_report(report, worker, value):
@@ -272,6 +429,8 @@ def validate_reviewed_contract(value):
 
 def validate_epoch(epoch):
     version = epoch["version"]
+    if type(version) is int and version == 3:
+        return validate_binary_successor_epoch(epoch)
     need(type(version) is int and version in (1, 2) and set(epoch) == (EPOCH_KEYS if version == 1 else ENV_EPOCH_KEYS) and epoch["kind"] == "audited-candidate-runtime-epoch" and epoch["status"] == "running_awaiting_live_acceptance" and
          epoch["originalProvision"] == PROVISION and epoch["seedProvenance"] == SEED and epoch["candidateAdmissionComplete"] is False, "runtime_epoch_schema")
     for key in ("transitionInput", "transitionHelper", "runtimeHelper", "before", "after"):
@@ -300,8 +459,46 @@ def validate_epoch(epoch):
     return epoch
 
 
+def validate_binary_successor_epoch(epoch):
+    need(set(epoch) == SUCCESSOR_EPOCH_KEYS and epoch["kind"] == "audited-candidate-runtime-epoch" and type(epoch["version"]) is int and epoch["version"] == 3 and
+         epoch["status"] == "running_awaiting_live_acceptance" and epoch["operationKind"] == "binary_successor" and
+         epoch["previousEpoch"] == CURRENT_ENV_EPOCH and epoch["reviewedState"] == SUCCESSOR_STATE and epoch["reviewedSummary"] == SUCCESSOR_SUMMARY and
+         epoch["originalProvision"] == PROVISION and epoch["seedProvenance"] == SEED and epoch["candidateAdmissionComplete"] is False, "binary_successor_epoch_schema")
+    for key in ("transitionInput", "transitionHelper", "runtimeHelper", "before", "after", "productInput", "configurationInput", "preservation"):
+        descriptor(epoch[key])
+    need(epoch["productInput"] == epoch["transitionInput"] and epoch["calls"] == {"stop": 1, "replace": 1, "start": 1}, "binary_successor_epoch_operation")
+    source = epoch["currentSource"]
+    need(set(source) == {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema"} and source["archiveSha256"] == NEW_ARCHIVE and
+         source["sourceManifest"] == NEW_SOURCE_MANIFEST and source["schema"] == 28, "binary_successor_epoch_source")
+    for key in ("sourceManifest", "binary", "fullReport"):
+        descriptor(source[key])
+    need(source["binary"]["path"] == str(C / "install/goby") and source["binary"]["sha256"] not in (OLD_BINARY, CURRENT_BINARY) and
+         source["fullReport"]["path"] == str(NEW_F / "report.json"), "binary_successor_epoch_product_path")
+    candidate = epoch["candidate"]
+    need(candidate["bootstrapExecuted"] is True and candidate["sourceState"] == {"users": 8, "schema": 28, "migrations": 28} and
+         candidate["originalProvision"] == PROVISION and candidate["seedProvenance"] == SEED and candidate["binary"] == source["binary"] and
+         candidate["currentSourceManifest"] == source["sourceManifest"] and candidate["backendReport"] == source["fullReport"] and
+         candidate["input"] == candidate["productInput"] == epoch["productInput"], "binary_successor_candidate_binding")
+    return epoch
+
+
 def validate_seed_runtime_binding(binding, epoch_pin, epoch, seed):
     version = binding["version"]
+    if type(version) is int and version == 3:
+        need(epoch["version"] == 3 and set(binding) == SUCCESSOR_BINDING_KEYS and binding["kind"] == "audited-candidate-seed-runtime-binding" and
+             binding["runtimeEpoch"] == epoch_pin and binding["previousBinding"] == CURRENT_ENV_BINDING and binding["reviewedState"] == SUCCESSOR_STATE and
+             binding["reviewedSummary"] == SUCCESSOR_SUMMARY and binding["priorCloseout"] == SUCCESSOR_PRIOR_CLOSEOUT and binding["priorSource"] == SUCCESSOR_PRIOR_SOURCE and
+             binding["originalSeed"] == SEED and binding["seedExecutor"] == seed["helper"] and binding["seedExecutor"]["sha256"] == SEED_EXECUTOR and
+             binding["seedInput"] == seed["input"] and binding["seedSessionAddendum"] == SEED_ADDENDUM and binding["admission02"] == ADMISSION02 and
+             binding["candidateAdmissionComplete"] is False, "binary_successor_seed_provenance")
+        for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources", "seedCleanup"):
+            need(canonical(binding[key]) == canonical(seed["cleanup"] if key == "seedCleanup" else seed[key]), "binary_successor_seed_mapping_changed")
+        rows = binding["currentSessions"]
+        need(len(rows) == 15 and all(set(row) == {"kind", "credentialId", "tokenSha256", "userId", "revokedAt"} for row in rows), "binary_successor_binding_session_shape")
+        projected = {"tables": {"sessions": [{"kind": row["kind"], "id": row["credentialId"], "token_hash": "\\x" + row["tokenSha256"], "user_id": row["userId"], "revoked_at": row["revokedAt"]} for row in rows]}}
+        need(rows == successor_sessions(projected), "binary_successor_binding_session_order")
+        validate_epoch(epoch)
+        return binding
     need(type(version) is int and version in (1, 2) and version == epoch["version"] and set(binding) == (BINDING_KEYS if version == 1 else ENV_BINDING_KEYS) and binding["kind"] == "audited-candidate-seed-runtime-binding" and
          binding["runtimeEpoch"] == epoch_pin and binding["originalSeed"] == SEED and binding["seedExecutor"] == seed["helper"] and binding["seedExecutor"]["sha256"] == SEED_EXECUTOR and
          binding["seedInput"] == seed["input"] and binding["seedSessionAddendum"] == SEED_ADDENDUM and binding["admission02"] == ADMISSION02 and binding["candidateAdmissionComplete"] is False,
@@ -355,8 +552,10 @@ def validate_environment_append(before, after):
 
 
 def resolve_epoch_lineage(epoch, read_descriptor):
-    """Resolve only v1 product or the single permitted v2 environment successor."""
+    """Resolve only the three explicitly frozen generations; never an open graph."""
     validate_epoch(epoch)
+    if epoch["version"] == 3:
+        return resolve_binary_successor_lineage(epoch, read_descriptor)
     if epoch["version"] == 1:
         return {"productEpoch": epoch, "productInput": read_descriptor(epoch["transitionInput"]), "configurationInput": None}
     previous = validate_epoch(read_descriptor(epoch["previousEpoch"]))
@@ -372,6 +571,56 @@ def resolve_epoch_lineage(epoch, read_descriptor):
     config_input = validate_environment_revision_input(read_descriptor(epoch["transitionInput"]))
     need(config_input["previousEpoch"] == epoch["previousEpoch"] and config_input["runtimeHelper"] == epoch["runtimeHelper"], "environment_epoch_input_cross_binding")
     return {"productEpoch": previous, "productInput": read_descriptor(previous["transitionInput"]), "configurationInput": config_input}
+
+
+def validate_successor_review(summary, state, prior_closeout, prior_source, *, now=None):
+    need(summary["kind"] == "audited-tv-parent-transition-startup-state-review" and summary["status"] == "captured_state_supports_bounded_transition_contract" and
+         summary["state"] == SUCCESSOR_STATE and summary["runtimeEpoch"] == CURRENT_ENV_EPOCH and summary["seedBinding"] == CURRENT_ENV_BINDING and
+         summary["priorSource"] == SUCCESSOR_PRIOR_SOURCE and summary["source"]["ownedTablesExactToTvCloseout"] == 35 and summary["source"]["sequencesExact"] is True and
+         prior_closeout["status"] == "owned_state_closed_client_acceptance_pending" and prior_closeout["clientAcceptance"] is False and
+         prior_closeout["inputEvidence"]["after"] == SUCCESSOR_PRIOR_SOURCE and prior_closeout["inputEvidence"]["epoch"] == CURRENT_ENV_EPOCH, "binary_successor_review_binding")
+    need(canonical(state["source"]["tables"]) == canonical(prior_source["tables"]) and canonical(state["source"]["sequences"]) == canonical(prior_source["sequences"]), "binary_successor_review_source_differs")
+    return validate_successor_state(state, now=now)
+
+
+def resolve_binary_successor_lineage(epoch, read_descriptor):
+    previous = validate_epoch(read_descriptor(epoch["previousEpoch"]))
+    need(previous["version"] == 2, "binary_successor_requires_configuration_parent")
+    inherited = resolve_epoch_lineage(previous, read_descriptor)
+    value = validate_binary_successor_input(read_descriptor(epoch["transitionInput"]))
+    for key, filename in (("before", "before.json"), ("after", "after.json"), ("preservation", "preservation.json")):
+        need(epoch[key]["path"] == str(Path(value["output"]) / "private" / filename), "binary_successor_proof_scope_changed")
+    need(value["previousEpoch"] == epoch["previousEpoch"] and value["helpers"] == epoch["helpers"] == previous["helpers"] and
+         epoch["configurationInput"] == previous["transitionInput"] and epoch["currentSource"]["fullReport"] == value["newFullReport"] and
+         epoch["currentSource"]["sourceManifest"] == value["newSourceManifest"] and epoch["currentSource"]["binary"]["sha256"] == value["newBinary"]["sha256"], "binary_successor_product_configuration_lineage")
+    old, current = previous["candidate"], epoch["candidate"]
+    need(value["frontendReport"] == old["frontendReport"], "binary_successor_frontend_lineage_changed")
+    changed = {"input", "productInput", "binary", "currentSourceManifest", "backendReport", "processes", "serverIdentity", "listener", "databases"}
+    need(set(current) == set(old) and all(canonical(current[key]) == canonical(old[key]) for key in set(old) - changed) and
+         current["processes"]["postgres"] == old["processes"]["postgres"] and epoch["postgresProcess"] == previous["postgresProcess"], "binary_successor_changed_configuration")
+    need(all(epoch["candidateProcess"][key] == previous["candidateProcess"][key] for key in ("bootId", "uid", "exe", "cmdline", "networkNamespace", "cgroup")), "binary_successor_changed_process_sandbox")
+    report = read_descriptor(value["newFullReport"])
+    worker = read_descriptor({"path": str(NEW_F / "worker-report.json"), "sha256": report["worker_report_sha256"]})
+    validate_successor_full_report(report, worker, value)
+    sources = read_descriptor(value["newSourceManifest"])
+    need(isinstance(sources, dict) and CATALOG_RELATIVE in sources and
+         value["compiledCatalog"]["sha256"] == sources[CATALOG_RELATIVE]["sha256"], "binary_successor_catalog_source_binding")
+    state = read_descriptor(epoch["reviewedState"])
+    validate_successor_review(read_descriptor(epoch["reviewedSummary"]), state, read_descriptor(SUCCESSOR_PRIOR_CLOSEOUT), read_descriptor(SUCCESSOR_PRIOR_SOURCE),
+                              now=datetime.fromisoformat(state["capturedAt"].replace("Z", "+00:00")))
+    before, after = read_descriptor(epoch["before"]), read_descriptor(epoch["after"])
+    compare_successor_preservation(state, before, now=datetime.fromisoformat(before["capturedAt"].replace("Z", "+00:00")))
+    compare_successor_preservation(before, after, installed_binary=epoch["currentSource"]["binary"], now=datetime.fromisoformat(after["capturedAt"].replace("Z", "+00:00")))
+    proof = read_descriptor(epoch["preservation"])
+    need(proof["before"] == epoch["before"] and proof["after"] == epoch["after"] and proof["reviewedState"] == SUCCESSOR_STATE and
+         proof["installedBinary"] == epoch["currentSource"]["binary"], "binary_successor_preservation_proof_binding")
+    need(after["candidateAfter"] == {**epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": current["listener"]["port"], "socketInode": current["listener"]["socketInode"]}} and
+         after["postgresAfter"] == epoch["postgresProcess"] and after["leaseAfter"] == epoch["lease"], "binary_successor_after_runtime_proof")
+    for slot in ("source", "recovery"):
+        need(set(current["databases"][slot]) == set(old["databases"][slot]) and all(current["databases"][slot][key] == old["databases"][slot][key]
+             for key in old["databases"][slot] if key != "afterStart") and current["databases"][slot]["afterStart"] == after["databases"][slot] == before["databases"][slot] == state["databases"][slot],
+             "binary_successor_database_facts_drift")
+    return {"productEpoch": epoch, "productInput": value, "configurationInput": inherited["configurationInput"]}
 
 
 def environment_revision_sessions(previous_binding, report, state):
@@ -400,6 +649,12 @@ def environment_revision_sessions(previous_binding, report, state):
 
 def verify_environment_epoch_files(epoch, seed_module):
     if epoch["version"] == 1:
+        return
+    if epoch["version"] == 3:
+        resolve_epoch_lineage(epoch, seed_module.descriptor)
+        previous = seed_module.descriptor(epoch["previousEpoch"])
+        need(epoch["candidate"]["runtime"] == previous["candidate"]["runtime"], "binary_successor_environment_changed")
+        verify_environment_epoch_files(previous, seed_module)
         return
     resolve_epoch_lineage(epoch, seed_module.descriptor)
     change = epoch["configurationChange"]
@@ -491,6 +746,13 @@ class EpochIO:
             need(closure["kind"] == "audited-candidate-admission03-failure-closeout" and closure["status"] == "failed_attempt_closed_for_configuration_revision" and closure["closedState"] == ADMISSION03_STATE,
                  "environment_failure_closeout_not_bound")
             need(self.binding["currentSessions"] == environment_revision_sessions(prior_binding, self.seed.descriptor(ADMISSION03), state), "environment_binding_sessions_changed")
+        elif self.epoch["version"] == 3:
+            lineage = resolve_epoch_lineage(self.epoch, self.seed.descriptor)
+            previous = self.seed.descriptor(self.epoch["previousEpoch"])
+            prior_binding = self.seed.descriptor(self.binding["previousBinding"])
+            validate_seed_runtime_binding(prior_binding, self.epoch["previousEpoch"], previous, original_seed)
+            need(self.binding["currentSessions"] == successor_sessions(self.seed.descriptor(self.binding["priorSource"])) and
+                 self.binding["previousBinding"] == lineage["productInput"]["previousBinding"], "binary_successor_binding_sessions_changed")
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.budgets = value["budgets"]
         need(self.output.parent == R and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", self.output.name) and set(self.budgets) == set(self.seed.BUDGETS) and

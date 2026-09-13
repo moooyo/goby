@@ -60,6 +60,15 @@ HOST_NETWORK_CONFIGURATION = {"HttpServerPortNumber": 28497, "PublicPort": 28497
     "EnableUPnP": False, "EnableRemoteAccess": False, "EnableAutoUpdate": False, "EnableAutomaticRestart": False,
     "AutoRunWebApp": False}
 HOST_UNIT_FIELDS = "Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts".split()
+# Startup history is independent of the current candidate and transport pins.
+HOST_STARTUP_HISTORY = {
+    "runtimeEpoch": {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"},
+    "seedBinding": {"path": str(R / "candidate-backup-limits-revision-01/private/seed-runtime-binding.json"), "sha256": "92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f"},
+    "runtimeHelper": {"path": str(R / "backup-limits-tool-verification-01/audited-candidate-runtime.py"), "sha256": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66"},
+    "hostingInitialization": {"path": str(R / "client-host-startup-01/private/report.json"), "sha256": "3b951bbee3f124321ca6f8f05b90b3a3243969aa27fff6bc348d157b044b6a8d"},
+}
+HOST_STARTUP_TRANSPORT = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070",
+                          "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874"}
 
 
 class RunError(ValueError):
@@ -113,7 +122,48 @@ def admitted(report, value, epoch):
          report["runtimeEpoch"] == value["runtimeEpoch"] and report["seedRuntimeBinding"] == value["seedBinding"] and report["currentSource"] == epoch["currentSource"], "successful_current_admission_required")
 
 
-def hosting_initialized(report, value, hosting, epoch, read_descriptor, read_bytes, tables):
+def hosting_initialized(report, value, hosting, epoch, read_descriptor, read_bytes, tables, *, lineage=None):
+    """Bind historical startup to the fixed parent of the validated successor."""
+    if epoch.get("version") != 3:
+        return _hosting_initialized_receipt(report, value, hosting, epoch, read_descriptor, read_bytes, tables, FROZEN)
+    need(type(epoch["version"]) is int and epoch.get("operationKind") == "binary_successor" and
+         canonical(epoch.get("previousEpoch")) == canonical(HOST_STARTUP_HISTORY["runtimeEpoch"]) and
+         canonical(value["hostingInitialization"]) == canonical(HOST_STARTUP_HISTORY["hostingInitialization"]) and
+         canonical(value["runtimeHelper"]) == canonical(epoch["runtimeHelper"]), "hosting_initialization_successor_authority_changed")
+    need(isinstance(lineage, dict) and set(lineage) == {"productEpoch", "productInput", "configurationInput"} and
+         canonical(lineage["productEpoch"]) == canonical(epoch), "hosting_initialization_lineage_required")
+    historical_epoch = read_descriptor(HOST_STARTUP_HISTORY["runtimeEpoch"])
+    historical_binding = read_descriptor(HOST_STARTUP_HISTORY["seedBinding"])
+    product, configuration = lineage["productInput"], lineage["configurationInput"]
+    need(canonical(report) == canonical(read_descriptor(HOST_STARTUP_HISTORY["hostingInitialization"])) and
+         historical_epoch.get("kind") == "audited-candidate-runtime-epoch" and historical_epoch.get("version") == 2 and
+         historical_epoch.get("operationKind") == "environment_revision" and canonical(historical_epoch["runtimeHelper"]) == canonical(HOST_STARTUP_HISTORY["runtimeHelper"]) and
+         historical_binding.get("kind") == "audited-candidate-seed-runtime-binding" and historical_binding.get("version") == 2 and
+         canonical(historical_binding["runtimeEpoch"]) == canonical(HOST_STARTUP_HISTORY["runtimeEpoch"]), "hosting_initialization_history_changed")
+    need(isinstance(product, dict) and canonical(product) == canonical(read_descriptor(epoch["transitionInput"])) and
+         product.get("kind") == "audited-candidate-transition-input" and type(product.get("version")) is int and product["version"] == 2 and
+         canonical(product.get("previousEpoch")) == canonical(HOST_STARTUP_HISTORY["runtimeEpoch"]) and canonical(product.get("previousBinding")) == canonical(HOST_STARTUP_HISTORY["seedBinding"]) and
+         canonical(epoch["productInput"]) == canonical(epoch["transitionInput"]) and canonical(epoch["configurationInput"]) == canonical(historical_epoch["transitionInput"]) and
+         isinstance(configuration, dict) and canonical(configuration) == canonical(read_descriptor(historical_epoch["transitionInput"])) and
+         configuration.get("kind") == "audited-candidate-environment-revision-input" and type(configuration.get("version")) is int and configuration["version"] == 1 and
+         canonical(configuration.get("runtimeHelper")) == canonical(HOST_STARTUP_HISTORY["runtimeHelper"]) and
+         canonical(configuration.get("previousEpoch")) == canonical(historical_epoch["previousEpoch"]) and
+         canonical(configuration.get("previousSeedBinding")) == canonical(historical_binding["previousBinding"]), "hosting_initialization_history_lineage_changed")
+    historical_hosting = read_descriptor(report["hosting"])
+    need(canonical(_hosting_identity(historical_hosting)) == canonical(_hosting_identity(hosting)) and
+         canonical({key: historical_hosting[key] for key in ("serverId", "version", "serverName")}) ==
+         canonical({key: hosting[key] for key in ("serverId", "version", "serverName")}), "hosting_initialization_host_changed")
+    historical_value = {**HOST_STARTUP_HISTORY, "hosting": report["hosting"]}
+    return _hosting_initialized_receipt(report, historical_value, historical_hosting, historical_epoch,
+                                        read_descriptor, read_bytes, tables, HOST_STARTUP_TRANSPORT)
+
+
+def _hosting_identity(hosting):
+    return {"process": hosting["process"], "listener": hosting["listener"], "unit": {key: hosting["unitProperties"][key] for key in HOST_UNIT_FIELDS},
+            "packageSha256": hosting["packageSha256"], "executableSha256": hosting["executableSha256"]}
+
+
+def _hosting_initialized_receipt(report, value, hosting, epoch, read_descriptor, read_bytes, tables, transport):
     """Admit the explicit startup receipt using saved evidence only."""
     need(isinstance(report, dict) and report.get("kind") == "audited-original-client-host-startup" and type(report.get("version")) is int and
          report["version"] == 1 and report.get("status") == "ready_for_core_client" and report.get("failure") is None and
@@ -131,11 +181,10 @@ def hosting_initialized(report, value, hosting, epoch, read_descriptor, read_byt
         need(report[key] == initialization[key] == value[key], "hosting_initialization_authority_changed")
     need(initialization["runtimeHelper"] == value["runtimeHelper"] == epoch["runtimeHelper"], "hosting_initialization_runtime_changed")
     for key in ("gateway", "proxy"):
-        need(initialization[key]["sha256"] == FROZEN[key], "hosting_initialization_transport_changed")
+        need(initialization[key]["sha256"] == transport[key], "hosting_initialization_transport_changed")
     need(Path(report["helper"]["path"]).name == "initialize-audited-client-host.py" and
          Path(report["helper"]["path"]).is_relative_to(R), "hosting_initialization_helper_invalid")
-    host = {"process": hosting["process"], "listener": hosting["listener"], "unit": {key: hosting["unitProperties"][key] for key in HOST_UNIT_FIELDS},
-            "packageSha256": hosting["packageSha256"], "executableSha256": hosting["executableSha256"]}
+    host = _hosting_identity(hosting)
     need(report["hostingBefore"] == report["hostingAfter"] == host, "hosting_initialization_host_changed")
     candidate = {**epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": epoch["candidate"]["listener"]["port"],
                  "socketInode": epoch["candidate"]["listener"]["socketInode"]}}
@@ -376,7 +425,8 @@ class ClientRun:
         need(self.hosting["kind"] == "core-av-original-client-hosting" and self.hosting["version"] == "4.9.5.0", "original_client_hosting_not_admitted")
         self.verify_hosting()
         hosting_initialized(self.s.descriptor(self.value["hostingInitialization"]), self.value, self.hosting, self.epoch,
-                            self.s.descriptor, lambda pin: self.s.read_checked(pin["path"], pin["sha256"]), self.r.TABLES)
+                            self.s.descriptor, lambda pin: self.s.read_checked(pin["path"], pin["sha256"]), self.r.TABLES,
+                            lineage=self.r.resolve_epoch_lineage(self.epoch, self.s.descriptor) if self.epoch.get("version") == 3 else None)
         self.catalog = self.s.descriptor(self.value["compiledCatalog"])
         source_manifest = self.s.descriptor(epoch["currentSource"]["sourceManifest"])
         self.modules["admission"].validate_catalog(self.catalog, source_manifest, self.value["compiledCatalog"])

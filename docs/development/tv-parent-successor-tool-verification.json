@@ -1,0 +1,327 @@
+{
+  "kind": "audited-candidate-binary-successor-tool-verification",
+  "version": 1,
+  "host": "test-env",
+  "capturedAt": "2026-09-13T15:20:08.358145+00:00",
+  "sourcePins": {
+    "audited-candidate-runtime.py": "bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922",
+    "transition-audited-candidate.py": "dea04062c7bb6ca8c253b8c8a276259ae163481a4c0d908574d3c6474f9f2b14",
+    "test-audited-candidate-runtime.py": "eaac32d51f30d64e4266cf5b26e78a02d5ac6b80e46835c153077abca6784f06",
+    "test-transition-binary-successor.py": "a350c9be4284a2d865cf1e506b999d70d5eb0034cf47d6aa079662ad64e28170",
+    "revise-audited-candidate-backup-limits.py": "960eb8d7ff06912ad5d6a59f9814d75b72efa31b80bb7529ec958e19665cca61",
+    "test-revise-audited-candidate-backup-limits.py": "4fdf297865db911e1a95b8b76eed2dd5458c75ceaff1edc570d84c775d23bc46",
+    "run-audited-candidate-client.py": "9f38c131469099ae86baf056e5d819716f5ae47715fd9c0f52518fd10c7469c3",
+    "test-run-audited-candidate-client.py": "9f7465878ff5db041ed4c0204db8fd5870dfcbf6d120c5cd85fe154588f12b1d",
+    "close-audited-candidate-client.mjs": "a6bf81ce6f7539d94d7e8e8d81d70bd2aee3b3c97d84d78018f63b9d41eefeab",
+    "test-close-audited-candidate-client.mjs": "dbc4238eb4f7f87012eae24a15085332a8b06278a9424ed8c74e6d727ffec5ad",
+    "client-browser-audited-candidate.mjs": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-playback.mjs": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-client-v3-evidence.mjs": "905dcae9d54c1acfc79e76f80bcd51f1d3222c3796cb13b481c088b7883ab654",
+    "test-replay-movie05-evidence.mjs": "1b1f471513dc02e8a0228067398a53d452d76d54102af645a5a60c59e391c2a5"
+  },
+  "parseChecks": [
+    {
+      "source": "audited-candidate-runtime.py",
+      "passed": true
+    },
+    {
+      "source": "transition-audited-candidate.py",
+      "passed": true
+    },
+    {
+      "source": "test-audited-candidate-runtime.py",
+      "passed": true
+    },
+    {
+      "source": "test-transition-binary-successor.py",
+      "passed": true
+    },
+    {
+      "source": "revise-audited-candidate-backup-limits.py",
+      "passed": true
+    },
+    {
+      "source": "test-revise-audited-candidate-backup-limits.py",
+      "passed": true
+    },
+    {
+      "source": "run-audited-candidate-client.py",
+      "passed": true
+    },
+    {
+      "source": "test-run-audited-candidate-client.py",
+      "passed": true
+    },
+    {
+      "source": "close-audited-candidate-client.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-close-audited-candidate-client.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-close-audited-candidate-client.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-close-audited-candidate-client.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-close-audited-candidate-client.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-close-audited-candidate-client.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-audited-candidate.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-audited-candidate.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-audited-candidate.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-session-proof.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-session-proof.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-session-proof.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-playback.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-playback.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-playback.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-audio-flow.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-audio-flow.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-audio-flow.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-subtitle-flow.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-subtitle-flow.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-subtitle-flow.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "client-browser-tv-flow.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-tv-flow.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-client-browser-tv-flow.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-client-v3-evidence.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-client-v3-evidence.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-client-v3-evidence.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-replay-movie05-evidence.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-replay-movie05-evidence.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/parse-test-replay-movie05-evidence.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "python": {
+    "runtime": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/runtime.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/runtime.stderr",
+        "sha256": "bd8b6e98c3fde35b63ab6d268fdd3a11412f774f5efed5e707ad2bef28c91f16"
+      },
+      "testsRun": 7,
+      "expectedTests": 7,
+      "passed": true,
+      "failedTests": []
+    },
+    "successor": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/successor.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/successor.stderr",
+        "sha256": "e8a3f602f10fdbc968717834bf50adf19d85a73c7c282e76560b063216c179e9"
+      },
+      "testsRun": 12,
+      "expectedTests": 12,
+      "passed": true,
+      "failedTests": []
+    },
+    "environment": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/environment.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/environment.stderr",
+        "sha256": "3872f5a85da677f909ec5c55a5821758c34e2394460567a29f8043b480cc1105"
+      },
+      "testsRun": 5,
+      "expectedTests": 5,
+      "passed": true,
+      "failedTests": []
+    },
+    "controller": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/controller.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/controller.stderr",
+        "sha256": "98cd1d37588c11e47dbed5283b47d9cb464be843b0f5f9caab2d76b60a555fab"
+      },
+      "testsRun": 26,
+      "expectedTests": 26,
+      "passed": true,
+      "failedTests": []
+    }
+  },
+  "javascript": {
+    "closer": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/closer.stdout",
+        "sha256": "b10df4a4dcb417873ff54e40fe7a4d33ada84cf5de7383a9b7b27197274501af"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/closer.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/closer-report.json",
+        "sha256": "a9420aa33a3eb22f441930477281590be31b803f2841968cb369fa03ff0f0720"
+      },
+      "counts": {
+        "testCount": 28,
+        "passed": 28,
+        "failed": 0,
+        "sourceUnchanged": true
+      },
+      "passed": true,
+      "failedTests": []
+    },
+    "movie05": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/movie05.stdout",
+        "sha256": "d2e42d6a1137ad250d598fb6da65af97f7c8614c22186ecd8e9aa1a4ea6ecfbf"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/movie05.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/movie05-report.json",
+        "sha256": "2b7ed9444a3b071408deccc31ada79a8b6d6bd7d3f7e8f30bd3869ee8e8b3846"
+      },
+      "counts": {
+        "testCount": 13,
+        "passed": 13,
+        "failed": 0,
+        "sourceUnchanged": true
+      },
+      "passed": true,
+      "failedTests": []
+    },
+    "client-v3": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/client-v3.stdout",
+        "sha256": "55a63c367312fc583d8946194fe5232752cead44180c784dd718c3ceee10f8c7"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-successor-tool-verification-01/client-v3.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "counts": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "passed": true
+    }
+  },
+  "sourceUnchanged": true,
+  "passed": true,
+  "httpCalls": 0,
+  "sqlQueries": 0,
+  "browserRuns": 0,
+  "serviceActions": 0,
+  "candidateTransitionExecuted": false,
+  "newCandidateAdmission": false,
+  "clientAcceptance": false
+}

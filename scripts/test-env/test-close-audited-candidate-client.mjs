@@ -256,6 +256,83 @@ function runtimeLineageFixture() {
   return { epoch, seed, lineage: { previousEpoch, previousBinding, configurationInput, failedAdmission03 } };
 }
 
+function binarySuccessorFixture(closer) {
+  // This is a synthetic, in-memory envelope. Fixed descriptors are copied only
+  // to exercise the contract; the fixture does not claim their contents or hashes.
+  const prior = runtimeLineageFixture(), authority = closer.BINARY_SUCCESSOR;
+  const pin = name => ({ path: '/opt/goby-test/synthetic-successor/' + name, sha256: sha('synthetic-successor-' + name) });
+  const id = index => index.toString(16).padStart(32, '0');
+  prior.epoch.previousEpoch = clone(closer.PREVIOUS_BINARY_EPOCH);
+  prior.lineage.previousBinding.runtimeEpoch = clone(closer.PREVIOUS_BINARY_EPOCH);
+  prior.lineage.configurationInput.previousEpoch = clone(closer.PREVIOUS_BINARY_EPOCH);
+  prior.lineage.failedAdmission03.runtimeEpoch = clone(closer.PREVIOUS_BINARY_EPOCH);
+  prior.seed.runtimeEpoch = clone(authority.previousEpoch);
+  const helpers = Object.fromEntries(['seed', 'provision', 'gateway', 'admission', 'reconcile'].map(name => [name, pin(name + '.py')]));
+  for (const epoch of [prior.lineage.previousEpoch, prior.epoch]) {
+    epoch.helpers = clone(helpers);
+    epoch.currentSource.binary.path = '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby';
+    epoch.candidate.binary = clone(epoch.currentSource.binary);
+    epoch.candidate.backendReport = clone(epoch.currentSource.fullReport);
+    epoch.candidate.originalProvision = clone(epoch.originalProvision);
+    epoch.candidate.seedProvenance = clone(epoch.seedProvenance);
+    delete epoch.candidate.database;
+    epoch.candidate.databases = { source: { name: 'synthetic-source', owner: 'synthetic-source-owner', afterStart: { tables: 28 } },
+      recovery: { name: 'synthetic-recovery', owner: 'synthetic-recovery-owner', afterStart: { tables: 0 } } };
+    Object.assign(epoch.candidateProcess, { uid: 0, exe: epoch.currentSource.binary.path,
+      cmdline: [epoch.currentSource.binary.path], networkNamespace: 'net:[synthetic]', cgroup: '/synthetic-candidate.service' });
+    epoch.candidate.processes = { postgres: clone(epoch.postgresProcess), server: { Id: 'synthetic-candidate.service', MainPID: String(epoch.candidateProcess.pid) } };
+  }
+  prior.lineage.previousBinding.currentSessions.forEach((row, index) => { row.credentialId = id(index + 1); });
+  ['admin', 'P', 'Q'].forEach((role, index) => { prior.lineage.failedAdmission03.controllerSessions[role].credentialId = id(index + 4); });
+  prior.seed.currentSessions = [...clone(prior.lineage.previousBinding.currentSessions), ...['admin', 'P', 'Q'].map(role => ({
+    kind: role === 'admin' ? 'admin' : 'emby', tokenSha256: prior.lineage.failedAdmission03.controllerSessions[role].tokenSha256,
+    credentialId: prior.lineage.failedAdmission03.controllerSessions[role].credentialId }))];
+  const priorSource = { capturedAt: '2026-09-13T14:00:00.000000Z', tables: Object.fromEntries(TABLES.map(name => [name, []])), sequences: {} };
+  priorSource.tables.sessions = Array.from({ length: 15 }, (_, index) => {
+    const old = prior.seed.currentSessions[index];
+    return { id: id(index + 1), kind: old?.kind ?? 'emby', user_id: index % 3 === 0 ? CONTROL : ACTOR,
+      token_hash: '\\x' + (old?.tokenSha256 ?? sha('synthetic-successor-token-' + index)), revoked_at: '2026-09-13T13:59:00.000000Z' };
+  });
+  const inputPin = pin('transition-input.json'), newBinary = { path: authority.fullRoot + '/bin/goby-linux-amd64', sha256: sha('synthetic-successor-binary') };
+  const input = { kind: 'audited-candidate-transition-input', version: 2, output: path.posix.dirname(authority.previousEpoch.path).replace('/candidate-backup-limits-revision-01/private', '/candidate-tv-parent-transition-01'),
+    ...Object.fromEntries(['previousEpoch', 'previousBinding', 'reviewedSummary', 'reviewedState', 'priorCloseout', 'priorSource'].map(key => [key, clone(authority[key])])),
+    newFullReport: { path: authority.fullRoot + '/report.json', sha256: sha('synthetic-successor-full-report') },
+    newSourceManifest: clone(authority.sourceManifest), newBinary, compiledCatalog: { path: authority.fullRoot + '/source/internal/backuppg/catalogs/schema-28-postgresql-17.json', sha256: sha('synthetic-successor-catalog') },
+    frontendReport: pin('frontend-report.json'), helpers: clone(helpers),
+    budgets: { maximumSeconds: 900, stopSeconds: 60, readySeconds: 60, maximumPublicRequests: 10, stopCalls: 1, replaceCalls: 1, startCalls: 1 } };
+  const { configurationChange, ...epochBase } = clone(prior.epoch);
+  const epoch = { ...epochBase, version: 3, previousEpoch: clone(authority.previousEpoch), operationKind: 'binary_successor',
+    transitionInput: inputPin, productInput: inputPin, configurationInput: clone(prior.epoch.transitionInput), transitionHelper: pin('transition.py'), runtimeHelper: pin('runtime.py'),
+    reviewedState: clone(authority.reviewedState), reviewedSummary: clone(authority.reviewedSummary),
+    currentSource: { archiveSha256: authority.archiveSha256, sourceManifest: clone(authority.sourceManifest),
+      binary: { path: prior.epoch.currentSource.binary.path, sha256: newBinary.sha256 }, fullReport: clone(input.newFullReport), schema: 28 },
+    before: pin('before.json'), after: pin('after.json'), preservation: pin('preservation.json'), calls: { stop: 1, replace: 1, start: 1 } };
+  epoch.candidate.input = clone(inputPin); epoch.candidate.productInput = clone(inputPin);
+  epoch.candidate.binary = clone(epoch.currentSource.binary); epoch.candidate.currentSourceManifest = clone(epoch.currentSource.sourceManifest);
+  epoch.candidate.backendReport = clone(epoch.currentSource.fullReport);
+  epoch.candidateProcess.pid = 2022; epoch.candidateProcess.startTicks = '301';
+  epoch.candidate.processes.server.MainPID = '2022'; epoch.candidate.listener.socketInode = '7003';
+  epoch.candidate.databases.source.afterStart = { tables: 35 };
+  const { previousBinding, admission03, failureCloseout, closedState, ...seedBase } = clone(prior.seed);
+  const seed = { ...seedBase, version: 3, runtimeEpoch: pin('epoch-v3.json'),
+    ...Object.fromEntries(['previousBinding', 'reviewedSummary', 'reviewedState', 'priorCloseout', 'priorSource'].map(key => [key, clone(authority[key])])),
+    currentSessions: priorSource.tables.sessions.map(row => ({ kind: row.kind, credentialId: row.id, tokenSha256: row.token_hash.slice(2), userId: row.user_id, revokedAt: row.revoked_at })) };
+  const packages = Array.from({ length: 25 }, (_, index) => 'synthetic/package-' + index);
+  const fullWorker = { status: 'passed', mode: 'full', scope: authority.fullRoot,
+    cleanup: { only_worker_process_remains: true, owned_postgres_stopped: true, private_bind_removed: true, source_unchanged: true },
+    expected_packages: packages, packages: packages.map(name => ({ package: name, result: 'pass', exit_code: 0, failed: 0, skipped: 0 })),
+    test_counts: { passed: 25, failed: 0, skipped: 0 }, binary: { path: 'bin/goby-linux-amd64', sha256: newBinary.sha256, bytes: 1024 } };
+  const fullReport = { status: 'passed', mode: 'full', scope: authority.fullRoot, archive_sha256: authority.archiveSha256,
+    unit_exit_code: 0, recursive_cgroup_empty: true, existing_services_modified: false, worker_report_sha256: sha('synthetic-successor-worker-report'), worker: clone(fullWorker) };
+  const reviewedSummary = { kind: 'audited-tv-parent-transition-startup-state-review', status: 'captured_state_supports_bounded_transition_contract',
+    state: clone(authority.reviewedState), runtimeEpoch: clone(authority.previousEpoch), seedBinding: clone(authority.previousBinding), priorSource: clone(authority.priorSource),
+    source: { ownedTablesExactToTvCloseout: 35, sequencesExact: true } };
+  const priorCloseout = { status: 'owned_state_closed_client_acceptance_pending', clientAcceptance: false,
+    inputEvidence: { after: clone(authority.priorSource), epoch: clone(authority.previousEpoch) } };
+  return { epoch, seed, lineage: { previousEpoch: prior.epoch, previousBinding: prior.seed, previousLineage: prior.lineage,
+    transitionInput: input, reviewedSummary, priorCloseout, priorSource, fullReport, fullWorker } };
+}
+
 function guardCases(closer) {
   return [
     ['login_request_decoder_dispatches_json_and_utf8_body_form_without_query_merge', () => {
@@ -582,6 +659,86 @@ function guardCases(closer) {
         assert.throws(() => closer.validateRuntimeLineage(current.epoch, current.seed, current.lineage), expected, name);
       }
     }],
+    ['runtime_binary_successor_preserves_the_fixed_environment_ancestor_and_seed', () => {
+      const value = binarySuccessorFixture(closer), before = jsonBytes(value);
+      assert.equal(closer.validateRuntimeLineage(value.epoch, value.seed, value.lineage), undefined);
+      assert.deepEqual(closer.runtimeEpochJSON(jsonBytes(value.epoch), value.seed.runtimeEpoch), value.epoch);
+      assert.deepEqual(jsonBytes(value), before);
+      assert.equal(value.seed.currentSessions.length, 15);
+      assert.notDeepEqual(value.epoch.productInput, value.epoch.configurationInput);
+      assert.notDeepEqual(value.seed.runtimeEpoch, closer.BINARY_SUCCESSOR.previousEpoch);
+    }],
+    ['runtime_binary_successor_rejects_another_or_incomplete_ancestor_chain', () => {
+      for (const [name, mutate, expected] of [
+        ['other_parent', value => { value.epoch.previousEpoch.sha256 = sha('another-parent'); }, /binary_successor_ancestor/],
+        ['other_parent_path', value => { value.epoch.previousEpoch.path += '.other'; }, /binary_successor_ancestor/],
+        ['other_binding', value => { value.seed.previousBinding.sha256 = sha('another-binding'); }, /binary_successor_ancestor/],
+        ['parent_version', value => { value.lineage.previousEpoch.version = 1; }, /binary_successor_ancestor/],
+        ['grandparent_path', value => { value.lineage.previousEpoch.previousEpoch.path += '.other'; }, /binary_successor_ancestor/],
+        ['grandparent_failed_calls', value => { value.lineage.previousLineage.previousEpoch.calls.replace = 2; }, /binary_epoch_calls_or_sessions/],
+        ['configuration_parent_drift', value => { value.lineage.previousEpoch.configurationChange.additions.GOBY_MEDIA_ROOTS = '/other'; }, /environment_configuration_changed/],
+        ['missing_epoch_field', value => { delete value.epoch.configurationInput; }, /runtime_lineage_schema/],
+        ['old_epoch_extras', value => { value.epoch.configurationChange = {}; }, /runtime_lineage_schema/],
+      ]) {
+        const value = binarySuccessorFixture(closer); mutate(value);
+        assert.throws(() => closer.validateRuntimeLineage(value.epoch, value.seed, value.lineage), expected, name);
+      }
+    }],
+    ['runtime_binary_successor_rejects_product_configuration_and_full_report_substitution', () => {
+      const workerChange = mutate => value => { mutate(value.lineage.fullWorker); value.lineage.fullReport.worker = clone(value.lineage.fullWorker); };
+      for (const [name, mutate, expected] of [
+        ['old_transition_input', value => { value.lineage.transitionInput.version = 1; }, /binary_successor_input_schema/],
+        ['unreviewed_input_key', value => { value.lineage.transitionInput.reviewedStateContract = {}; }, /binary_successor_input_schema/],
+        ['another_output_scope', value => { value.lineage.transitionInput.output += '/nested'; }, /binary_successor_input_scope/],
+        ['another_review_source', value => { value.lineage.transitionInput.priorSource.sha256 = sha('other-source'); }, /binary_successor_input_authority/],
+        ['another_source_manifest', value => { value.lineage.transitionInput.newSourceManifest.sha256 = sha('other-manifest'); }, /binary_successor_input_scope/],
+        ['product_is_old_configuration', value => { value.epoch.productInput = clone(value.epoch.configurationInput); }, /binary_successor_product_configuration/],
+        ['configuration_is_old_binary_input', value => { value.epoch.configurationInput = clone(value.lineage.previousEpoch.productInput); }, /binary_successor_product_configuration/],
+        ['another_archive', value => { value.epoch.currentSource.archiveSha256 = sha('other-archive'); }, /binary_successor_product_source/],
+        ['input_binary_mismatch', value => { value.lineage.transitionInput.newBinary.sha256 = sha('other-binary'); }, /binary_successor_product_source/],
+        ['full_still_running', value => { value.lineage.fullReport.status = 'running'; }, /binary_successor_full_report_incomplete/],
+        ['full_failed_unit', value => { value.lineage.fullReport.unit_exit_code = 1; }, /binary_successor_full_report_incomplete/],
+        ['full_worker_mismatch', value => { value.lineage.fullReport.worker.binary.sha256 = sha('other-worker'); }, /binary_successor_full_report_incomplete/],
+        ['full_source_changed', workerChange(worker => { worker.cleanup.source_unchanged = false; }), /binary_successor_full_cleanup/],
+        ['full_missing_package', workerChange(worker => { worker.packages.pop(); }), /binary_successor_full_package_coverage/],
+        ['full_skipped_test', workerChange(worker => { worker.test_counts.skipped = 1; }), /binary_successor_full_package_coverage/],
+        ['full_other_binary', workerChange(worker => { worker.binary.sha256 = sha('other-compiled-binary'); }), /binary_successor_full_binary/],
+        ['environment_changed', value => { value.epoch.candidate.runtime.sha256 = sha('other-environment'); }, /binary_successor_candidate_configuration/],
+        ['postgres_changed', value => { value.epoch.postgresProcess.pid++; }, /binary_successor_candidate_configuration/],
+        ['namespace_changed', value => { value.epoch.candidateProcess.networkNamespace = 'net:[other]'; }, /binary_successor_process_sandbox/],
+        ['database_owner_changed', value => { value.epoch.candidate.databases.source.owner = 'other-owner'; }, /binary_successor_database_identity/],
+      ]) {
+        const value = binarySuccessorFixture(closer); mutate(value);
+        assert.throws(() => closer.validateRuntimeLineage(value.epoch, value.seed, value.lineage), expected, name);
+      }
+    }],
+    ['runtime_binary_successor_requires_the_reviewed_source_and_all_revoked_sessions', () => {
+      for (const [name, mutate, expected] of [
+        ['prior_source_pin', value => { value.seed.priorSource.sha256 = sha('other-prior-source'); }, /binary_successor_prior_authority/],
+        ['reviewed_state_pin', value => { value.epoch.reviewedState.sha256 = sha('other-state'); }, /binary_successor_review_authority/],
+        ['summary_state_binding', value => { value.lineage.reviewedSummary.state.sha256 = sha('other-summary-state'); }, /binary_successor_review_binding/],
+        ['summary_not_preserved', value => { value.lineage.reviewedSummary.source.sequencesExact = false; }, /binary_successor_review_binding/],
+        ['prior_closeout_epoch', value => { value.lineage.priorCloseout.inputEvidence.epoch.sha256 = sha('other-closeout-epoch'); }, /binary_successor_review_binding/],
+        ['unearned_client_acceptance', value => { value.lineage.priorCloseout.clientAcceptance = true; }, /binary_successor_review_binding/],
+        ['seed_actor_changed', value => { value.seed.actors.mp3.username = 'other-actor'; }, /binary_successor_seed_provenance/],
+        ['source_table_inventory', value => { delete value.lineage.priorSource.tables.users; }, /binary_successor_prior_source/],
+        ['missing_session', value => { value.lineage.priorSource.tables.sessions.pop(); }, /binary_successor_prior_source/],
+        ['live_session', value => { value.lineage.priorSource.tables.sessions[0].revoked_at = null; }, /timestamp_invalid/],
+        ['wrong_credential_kind', value => { value.lineage.priorSource.tables.sessions[0].kind = 'application_key'; }, /binary_successor_session_identity/],
+        ['malformed_token_digest', value => { value.lineage.priorSource.tables.sessions[0].token_hash = '\\x00'; }, /binary_successor_session_identity/],
+        ['duplicate_credential', value => { value.lineage.priorSource.tables.sessions[1].id = value.lineage.priorSource.tables.sessions[0].id; }, /binary_successor_session_collision/],
+        ['duplicate_token', value => { value.lineage.priorSource.tables.sessions[1].token_hash = value.lineage.priorSource.tables.sessions[0].token_hash; }, /binary_successor_session_collision/],
+        ['session_order', value => { value.seed.currentSessions.reverse(); }, /binary_successor_session_history/],
+        ['session_projection_extra', value => { value.seed.currentSessions[0].privateToken = 'synthetic-extra'; }, /binary_successor_session_history/],
+        ['lost_ancestor_credential', value => {
+          const token = sha('synthetic-replaced-ancestor-token'); value.lineage.priorSource.tables.sessions[0].token_hash = '\\x' + token;
+          value.seed.currentSessions[0].tokenSha256 = token;
+        }, /binary_successor_session_history/],
+      ]) {
+        const value = binarySuccessorFixture(closer); mutate(value);
+        assert.throws(() => closer.validateRuntimeLineage(value.epoch, value.seed, value.lineage), expected, name);
+      }
+    }],
     ['universal_audio_preparation_requires_the_same_owned_nonce_and_prior_media_get', () => {
       for (const scenario of ['mp3', 'flac']) {
         const value = universalFixture(closer, scenario), original = jsonBytes(value.exchange.result);
@@ -787,7 +944,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 24 : 23) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (replay ? 28 : 27) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

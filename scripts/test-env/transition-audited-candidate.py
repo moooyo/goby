@@ -51,6 +51,7 @@ class Transition:
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.stage, self.calls, self.responsibilities = "product_preflight", {"stop": 0, "replace": 0, "start": 0}, []
         self.started, self.created, self.public_count = time.monotonic(), False, 0
+        self.old_binary_sha = runtime.OLD_BINARY
 
     def need(self, value, code):
         self.r.need(value, code)
@@ -63,16 +64,16 @@ class Transition:
     def save(self, name, value):
         return self.s.write_json_once(self.private / name, value)
 
-    def products(self):
+    def product_files(self, scope, archive_sha, validate_report):
         v = self.value
         self.need(not os.path.lexists(self.output), "transition_output_collision")
         report = self.s.descriptor(v["newFullReport"])
-        worker = self.s.parse(self.s.read_checked(self.r.F / "worker-report.json", report["worker_report_sha256"]))
-        self.r.validate_full_report(report, worker, v)
-        archive = self.s.read_checked(self.r.F / "source.tar", self.r.ARCHIVE)
+        worker = self.s.parse(self.s.read_checked(scope / "worker-report.json", report["worker_report_sha256"]))
+        validate_report(report, worker, v)
+        archive = self.s.read_checked(scope / "source.tar", archive_sha)
         sources = self.s.descriptor(v["newSourceManifest"])
         self.need(self.r.archive_manifest(archive) == sources, "source_manifest_not_bound_to_verified_archive")
-        source_root = self.r.F / "source"
+        source_root = scope / "source"
         entries = list(source_root.rglob("*"))
         self.need(isinstance(sources, dict) and 100 <= len(sources) <= 10000 and len(entries) <= 15000 and all(not node.is_symlink() for node in entries) and
                    {str(node.relative_to(source_root)) for node in entries if node.is_file()} == set(sources), "verified_source_membership_changed")
@@ -87,6 +88,11 @@ class Transition:
         self.a.validate_catalog(self.catalog, sources, v["compiledCatalog"])
         frontend = self.s.descriptor(v["frontendReport"])
         self.need(frontend["status"] == "passed" and len(frontend["assets"]) == 57 and frontend["sourceFilesMatched"] == 64, "frontend_receipt_changed")
+        return sources, frontend
+
+    def products(self):
+        v = self.value
+        sources, frontend = self.product_files(self.r.F, self.r.ARCHIVE, self.r.validate_full_report)
         self.old = self.s.descriptor(self.r.PROVISION)
         self.need(v["frontendReport"] == self.old["frontendReport"] and self.old["binary"]["sha256"] == self.r.OLD_BINARY, "old_product_identity_changed")
         old_input = self.s.descriptor(self.old["input"])
@@ -288,14 +294,24 @@ class Transition:
         self.need(count == 0 and self.g.metadata(self.old["postgresIdentity"]["pid"]) == self.before["postgresProcess"], "old_lease_not_released_or_postgres_changed")
         self.save("stopped.json", {"unit": unit, "oldProcess": old_process, "leaseCount": count})
 
+    def check_fresh_before(self, reviewed_source):
+        self.need(self.r.canonical(self.before["source"]["tables"]) == self.r.canonical(reviewed_source["tables"]) and self.before["source"]["sequences"] == reviewed_source["sequences"], "fresh_state_differs_from_reviewed_contract")
+        self.need({key: self.before[key] for key in self.contract["preserved"]} == self.contract["preserved"], "fresh_resources_differ_from_reviewed_contract")
+        return self.s.descriptor(self.contract["diagnosticsSnapshot"])
+
+    def adopt_runtime_context(self, candidate, process):
+        self.candidate = self.io.candidate = candidate
+        self.epoch = {"candidateProcess": process}
+
+    def preserve(self, after, installed):
+        return self.r.compare_preservation(self.before, after)
+
     def run(self):
         reviewed_source = self.products()
         self.open()
         self.stage = "fresh_before_state"
         self.before, before_pin = self.capture("before")
-        self.need(self.r.canonical(self.before["source"]["tables"]) == self.r.canonical(reviewed_source["tables"]) and self.before["source"]["sequences"] == reviewed_source["sequences"], "fresh_state_differs_from_reviewed_contract")
-        self.need({key: self.before[key] for key in self.contract["preserved"]} == self.contract["preserved"], "fresh_resources_differ_from_reviewed_contract")
-        reviewed_diagnostics = self.s.descriptor(self.contract["diagnosticsSnapshot"])
+        reviewed_diagnostics = self.check_fresh_before(reviewed_source)
         diagnostics_before = self.diagnostics()
         self.need(diagnostics_before["registry"] == reviewed_diagnostics["registry"] and diagnostics_before["lock"] == reviewed_diagnostics["lock"], "reviewed_diagnostic_identity_changed")
         diagnostics_before_pin = self.save("diagnostics-before.json", diagnostics_before)
@@ -304,7 +320,7 @@ class Transition:
         lease_before_pin = self.save("lease-before.json", self.lease())
         old_process = self.g.metadata(self.candidate["serverIdentity"]["pid"])
         old_facts, old_binary = self.file(self.r.C / "install/goby")
-        self.need(old_facts["sha256"] == self.r.OLD_BINARY, "installed_old_binary_changed")
+        self.need(old_facts["sha256"] == self.old_binary_sha, "installed_old_binary_changed")
         self.save("binary-preservation-intent.json", {"facts": old_facts, "source": self.old["binary"]})
         old_copy = self.s.write_once(self.private / "goby-before.bin", old_binary)
         staged = self.r.C / "install" / (".goby-next-" + self.output.name)
@@ -313,6 +329,8 @@ class Transition:
         self.p.write(staged, self.binary, mode=old_facts["mode"])
         staged_facts, unused = self.file(staged)
         self.need(staged_facts["sha256"] == self.value["newBinary"]["sha256"] and staged_facts["dev"] == old_facts["dev"] and staged_facts["uid"] == old_facts["uid"] == 0, "staged_binary_authority_changed")
+        if self.value["version"] == 2:
+            self.need(all(staged_facts[key] == old_facts[key] for key in ("gid", "mode")), "successor_staged_binary_permissions_changed")
         self.stage = "stop"
         self.pin()
         self.save("stop-intent.json", {"unit": self.p.units["server"], "process": old_process})
@@ -343,8 +361,7 @@ class Transition:
         current.pop("setupToken", None)
         current["processes"]["server"] = server
         current["serverIdentity"] = self.p.process("server", server)
-        self.candidate = self.io.candidate = current
-        self.epoch = {"candidateProcess": self.g.metadata(current["serverIdentity"]["pid"])}
+        self.adopt_runtime_context(current, self.g.metadata(current["serverIdentity"]["pid"]))
         self.stage = "readiness"
         ready_deadline = time.monotonic() + 60
         signal.setitimer(signal.ITIMER_REAL, min(self.remaining(), self.r.LIMITS["readySeconds"]))
@@ -367,7 +384,7 @@ class Transition:
         lease = self.lease()
         self.stage = "after_preservation"
         after, after_pin = self.capture("after")
-        preservation = self.r.compare_preservation(self.before, after)
+        preservation = self.preserve(after, installed)
         diagnostics_after = self.diagnostics(diagnostics_before)
         preservation["diagnostics"] = self.r.compare_diagnostics(diagnostics_before, diagnostics_after)
         diagnostics_after_pin = self.save("diagnostics-after.json", diagnostics_after)
@@ -382,6 +399,9 @@ class Transition:
         self.pin()
         self.remaining()
         self.stage = "publish_epoch"
+        return self.publish_epoch(current, installed, before_pin, after, after_pin, preservation, lease)
+
+    def publish_epoch(self, current, installed, before_pin, after, after_pin, preservation, lease):
         epoch = {"kind": "audited-candidate-runtime-epoch", "version": 1, "status": "running_awaiting_live_acceptance", "transitionInput": self.input_pin,
                  "transitionHelper": self.source_pin, "runtimeHelper": self.runtime_pin, "originalProvision": self.r.PROVISION, "seedProvenance": self.r.SEED,
                  "currentSource": {"archiveSha256": self.r.ARCHIVE, "sourceManifest": self.value["newSourceManifest"], "binary": installed, "fullReport": self.value["newFullReport"], "schema": 28},
@@ -393,6 +413,152 @@ class Transition:
                    "seedExecutor": self.seed["helper"], "seedInput": self.seed["input"], "seedSessionAddendum": self.r.SEED_ADDENDUM, "admission02": self.r.ADMISSION02,
                    **{key: self.seed[key] for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources")},
                    "seedCleanup": self.seed["cleanup"], "currentSessions": self.sessions, "candidateAdmissionComplete": False}
+        self.r.validate_seed_runtime_binding(binding, epoch_pin, epoch, self.seed)
+        return {"status": "running_awaiting_live_acceptance", "runtimeEpoch": epoch_pin, "seedRuntimeBinding": self.save("seed-runtime-binding.json", binding), "candidateAdmissionComplete": False}
+
+
+class BinarySuccessor(Transition):
+    """The single reviewed v2-configuration to TV-parent-binary transition."""
+    def reviewed(self, historical=False):
+        v = self.value
+        self.previous_epoch = self.r.validate_epoch(self.s.descriptor(v["previousEpoch"]))
+        self.need(self.previous_epoch["version"] == 2 and v["helpers"] == self.previous_epoch["helpers"], "successor_parent_or_helpers_changed")
+        self.r.resolve_epoch_lineage(self.previous_epoch, self.s.descriptor)
+        self.seed = self.s.descriptor(self.r.SEED)
+        self.previous_binding = self.r.validate_seed_runtime_binding(self.s.descriptor(v["previousBinding"]), v["previousEpoch"], self.previous_epoch, self.seed)
+        self.old = deepcopy(self.previous_epoch["candidate"])
+        self.old_binary_sha = self.r.CURRENT_BINARY
+        self.need(self.old["binary"]["sha256"] == self.old_binary_sha, "successor_current_binary_changed")
+        self.reviewed_state = self.s.descriptor(v["reviewedState"])
+        now = datetime.fromisoformat(self.reviewed_state["capturedAt"].replace("Z", "+00:00")) if historical else None
+        facts = self.r.validate_successor_review(self.s.descriptor(v["reviewedSummary"]), self.reviewed_state,
+            self.s.descriptor(v["priorCloseout"]), self.s.descriptor(v["priorSource"]), now=now)
+        self.sessions = facts["revokedSessions"]
+        before = self.reviewed_state
+        expected = {**self.previous_epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": self.old["listener"]["port"], "socketInode": self.old["listener"]["socketInode"]}}
+        self.need(before["candidateBefore"] == before["candidateAfter"] == expected and before["postgresBefore"] == before["postgresAfter"] == self.previous_epoch["postgresProcess"] and
+                   before["leaseBefore"] == before["leaseAfter"] == self.previous_epoch["lease"], "successor_review_runtime_changed")
+        admission = self.s.descriptor(self.r.ADMISSION04)
+        self.need(admission["status"] == "admitted_for_core_client" and admission["runtimeEpoch"] == self.value["previousEpoch"] and
+                   admission["seedRuntimeBinding"] == self.value["previousBinding"] and admission["evidence"]["inactive-cancelled"] == self.r.INACTIVE_STAGE, "successor_inactive_admission_binding")
+        inactive = self.s.descriptor(self.r.INACTIVE_STAGE)
+        self.need(self.r.canonical(before["inactiveStage"]["tables"]) == self.r.canonical(inactive["tables"]) and
+                   self.r.canonical(before["inactiveStage"]["sequences"]) == self.r.canonical(inactive["sequences"]), "successor_review_inactive_stage_changed")
+        return facts
+
+    def products(self):
+        sources, frontend = self.product_files(self.r.NEW_F, self.r.NEW_ARCHIVE, self.r.validate_successor_full_report)
+        self.reviewed()
+        self.need(self.value["frontendReport"] == self.old["frontendReport"], "successor_frontend_receipt_changed")
+        previous_sources = self.s.descriptor(self.previous_epoch["currentSource"]["sourceManifest"])
+        unchanged = {name for name in set(sources) | set(previous_sources) if name.startswith("web/admin/") or name.startswith("internal/database/migrations/") or name == self.r.CATALOG_RELATIVE}
+        self.need(sum(name.startswith("web/admin/") for name in unchanged) == 64 and all(name in sources and name in previous_sources and sources[name] == previous_sources[name] for name in unchanged), "successor_schema_or_frontend_changed")
+        for name, row in frontend["assets"].items():
+            self.need(not Path(name).is_absolute() and ".." not in Path(name).parts, "frontend_asset_path_invalid")
+            self.s.read_checked(self.r.C / "install/admin" / name, row["sha256"])
+        return self.reviewed_state["source"]
+
+    def check_captured(self):
+        facts = self.reviewed(historical=True)
+        return {"status": "captured_contract_checked_not_product_admitted", "state": facts, "newSqlQueries": 0,
+                "httpRequests": 0, "businessWrites": 0, "newProductGateEvaluated": False, "freshRuntimeChecked": False}
+
+    def open(self):
+        value = {"output": str(self.output), "budgets": {"maximumSeconds": 900, "cleanupSeconds": 60, "maximumRequests": 10, "cleanupRequests": 1}}
+        self.io = self.r.EpochIO(value, self.input_pin, self.source_pin, self.value["previousEpoch"], self.value["previousBinding"], self.modules)
+        try:
+            self.io.open()
+        finally:
+            self.created = self.io.created
+        self.p, self.candidate = self.io.provision, self.io.candidate
+        self.epoch = {"candidateProcess": deepcopy(self.previous_epoch["candidateProcess"])}
+        self.pin()
+
+    def hosting(self):
+        expected = self.reviewed_state["hostingBefore"]
+        fields = list(expected["unit"])
+        result = subprocess.run(["/usr/bin/systemctl", "show", expected["unit"]["Id"], "--property=" + ",".join(fields)], capture_output=True, timeout=10, check=True)
+        unit = dict(line.split("=", 1) for line in result.stdout.decode().splitlines() if "=" in line)
+        self.need(unit == expected["unit"] and self.g.metadata(expected["process"]["pid"]) == expected["process"], "successor_hosting_changed")
+        self.g.verify_listener(expected["process"]["pid"], expected["listener"])
+        return deepcopy(expected)
+
+    def capture(self, label):
+        reference = self.before if label == "after" else self.reviewed_state
+        candidate_before = self.pin()
+        postgres_before = self.g.metadata(self.old["postgresIdentity"]["pid"])
+        lease_before, host_before = self.lease(), self.hosting()
+        source = self.sql_json(self.candidate["database"], self.a.snapshot_sql(self.catalog))
+        inactive = self.sql_json(self.candidate["recoveryDatabase"], self.a.snapshot_sql(self.catalog))
+        databases = {slot: self.p.database_facts(self.candidate["processes"]["postgres"], self.candidate["database" if slot == "source" else "recoveryDatabase"]) for slot in ("source", "recovery")}
+        trees, documents = {}, {}
+        for root in self.r.TREE_ROOTS:
+            trees[root], found = self.tree(root)
+            documents.update(found)
+        self.save(label + "-control-documents.json", documents)
+        self.save(label + "-tree-facts.json", trees)
+        fixed = {pin["path"]: self.file(pin["path"])[0] for pin in [self.r.PROVISION, self.candidate["binary"], self.candidate["runtime"], *self.candidate["units"].values()]}
+        root = self.r.C / "data"
+        children = list(root.iterdir())
+        self.need(len(children) <= 64 and all(not path.is_symlink() for path in children) and
+                   {path.name for path in children if path.is_dir()} == {"recovery", "operations", "backups", "cache", "media", "diagnostics"}, "uncovered_data_root_directory")
+        info = self.s.safe_path(root, (0, self.s.pwd.getpwnam("goby").pw_uid), True)
+        fixed[str(root)] = {"directory": True, "entries": sorted(path.name for path in children), "dev": info.st_dev, "ino": info.st_ino, "uid": info.st_uid,
+                            "gid": info.st_gid, "mode": stat.S_IMODE(info.st_mode), "mtimeNs": info.st_mtime_ns, "ctimeNs": info.st_ctime_ns}
+        for path in children:
+            if not path.is_dir():
+                fixed[str(path)] = self.file(path)[0]
+        fixed.setdefault(str(root / "master.key"), {"absent": True})
+        diagnostics = self.diagnostics(reference["diagnostics"])
+        logs = {name: self.file(self.r.C / "private" / name, facts["bytes"])[0] for name, facts in reference["unitLogs"].items()}
+        result = {"source": source, "inactiveStage": inactive, "databases": databases, "trees": trees, "controlDocuments": documents, "fixedFiles": fixed,
+                  "diagnostics": diagnostics, "unitLogs": logs, "loadedUnits": self.loaded_units(), "protected": {unit: self.p.show(unit) for unit in self.r.PROTECTED},
+                  "candidateBefore": candidate_before, "candidateAfter": self.pin(), "postgresBefore": postgres_before, "postgresAfter": self.g.metadata(self.old["postgresIdentity"]["pid"]),
+                  "leaseBefore": lease_before, "leaseAfter": self.lease(), "hostingBefore": host_before, "hostingAfter": self.hosting(),
+                  "previousEpoch": self.value["previousEpoch"], "seedBinding": self.value["previousBinding"], "priorSource": self.value["priorSource"], "admission04": self.r.ADMISSION04,
+                  "postgresProcess": postgres_before, "capturedAt": datetime.now(timezone.utc).isoformat()}
+        pin = self.save(label + ".json", result)
+        self.r.validate_successor_state(result)
+        return result, pin
+
+    def check_fresh_before(self, reviewed_source):
+        self.r.compare_successor_preservation(self.reviewed_state, self.before)
+        self.need(self.r.canonical(self.before["source"]["tables"]) == self.r.canonical(reviewed_source["tables"]) and
+                   self.r.canonical(self.before["source"]["sequences"]) == self.r.canonical(reviewed_source["sequences"]), "successor_fresh_source_changed")
+        return self.reviewed_state["diagnostics"]
+
+    def adopt_runtime_context(self, candidate, process):
+        candidate["productInput"] = self.input_pin
+        # This is a private, unversioned pin context, not a rewritten historical epoch.
+        context = {"candidateProcess": deepcopy(process), "postgresProcess": deepcopy(self.previous_epoch["postgresProcess"])}
+        self.candidate = self.io.candidate = candidate
+        self.epoch = deepcopy(context)
+        self.io.epoch = deepcopy(context)
+        self.io.reader.epoch = deepcopy(context)
+        self.io.reader.manifest = self.io.reader.candidate = candidate
+
+    def preserve(self, after, installed):
+        return self.r.compare_successor_preservation(self.before, after, installed_binary=installed)
+
+    def publish_epoch(self, current, installed, before_pin, after, after_pin, preservation, lease):
+        for slot in ("source", "recovery"):
+            self.need(after["databases"][slot] == self.before["databases"][slot] == self.reviewed_state["databases"][slot], "successor_database_facts_drift")
+            current["databases"][slot]["afterStart"] = deepcopy(after["databases"][slot])
+        proof = {"before": before_pin, "after": after_pin, "reviewedState": self.value["reviewedState"], "installedBinary": installed, **preservation}
+        epoch = {"kind": "audited-candidate-runtime-epoch", "version": 3, "status": "running_awaiting_live_acceptance", "operationKind": "binary_successor",
+                 "transitionInput": self.input_pin, "productInput": self.input_pin, "configurationInput": self.previous_epoch["transitionInput"], "previousEpoch": self.value["previousEpoch"],
+                 "reviewedState": self.value["reviewedState"], "reviewedSummary": self.value["reviewedSummary"], "transitionHelper": self.source_pin, "runtimeHelper": self.runtime_pin,
+                 "originalProvision": self.r.PROVISION, "seedProvenance": self.r.SEED, "currentSource": {"archiveSha256": self.r.NEW_ARCHIVE, "sourceManifest": self.value["newSourceManifest"],
+                 "binary": installed, "fullReport": self.value["newFullReport"], "schema": 28}, "candidate": current, "candidateProcess": self.epoch["candidateProcess"],
+                 "postgresProcess": after["postgresAfter"], "lease": lease, "before": before_pin, "after": after_pin, "preservation": self.save("preservation.json", proof),
+                 "calls": self.calls, "helpers": self.value["helpers"], "candidateAdmissionComplete": False}
+        self.r.validate_epoch(epoch)
+        epoch_pin = self.save("runtime-epoch.json", epoch)
+        binding = {"kind": "audited-candidate-seed-runtime-binding", "version": 3, "runtimeEpoch": epoch_pin, "originalSeed": self.r.SEED, "seedExecutor": self.seed["helper"],
+                   "seedInput": self.seed["input"], "seedSessionAddendum": self.r.SEED_ADDENDUM, "admission02": self.r.ADMISSION02,
+                   **{key: self.seed[key] for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources")},
+                   "seedCleanup": self.seed["cleanup"], "currentSessions": self.sessions, "previousBinding": self.value["previousBinding"], "reviewedState": self.value["reviewedState"],
+                   "reviewedSummary": self.value["reviewedSummary"], "priorCloseout": self.value["priorCloseout"], "priorSource": self.value["priorSource"], "candidateAdmissionComplete": False}
         self.r.validate_seed_runtime_binding(binding, epoch_pin, epoch, self.seed)
         return {"status": "running_awaiting_live_acceptance", "runtimeEpoch": epoch_pin, "seedRuntimeBinding": self.save("seed-runtime-binding.json", binding), "candidateAdmissionComplete": False}
 
@@ -456,7 +622,8 @@ def main():
     r.read_bootstrap(source_pin)
     input_pin = {"path": args.input, "sha256": args.input_sha256}
     value = json.loads(r.read_bootstrap(input_pin))
-    job = Transition(r, value, input_pin, source_pin, runtime_pin)
+    job_type = BinarySuccessor if type(value.get("version")) is int and value["version"] == 2 else Transition
+    job = job_type(r, value, input_pin, source_pin, runtime_pin)
     if args.check_captured:
         try:
             print(json.dumps(job.check_captured()))
