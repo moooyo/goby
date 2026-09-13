@@ -1,10 +1,9 @@
 # Audited main upgrade contract
 
-Status: **DRAFT, updated 2026-09-13; main preparation only**. Candidate live
-admission04 has passed; core original-client acceptance and fresh main facts
-remain open. This update only reviewed source and retained evidence. It performed
-no remote observation, backup, rehearsal, service change, test or build and does
-not authorize main deployment.
+Status: **DRAFT, updated 2026-09-13; main preparation only**. The TV successor's
+affected admission05 has passed and reuses the preceding admission04 contracts.
+Core original-client acceptance and fresh main facts remain open. This draft
+does not authorize or report any main-deployment operation.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
 execution. The [source55 main plan](main-schema28-upgrade-plan.md), its prepared
@@ -29,7 +28,8 @@ The later [TV parent metadata increment](tv-parent-metadata.md) has also passed
 full verification: 2,270 tests/25 packages and a Linux build. Its selected
 successor binary is `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
 installed through the [candidate transition](tv-parent-candidate-transition-closeout.json)
-and pending affected live admission. The `477d26ad...` identity above records the
+and admitted by [affected admission05](tv-parent-affected-admission-closeout.json).
+The `477d26ad...` identity above records the
 admitted predecessor. Freeze main against the final admitted successor
 and its actual core-client evidence, rather than promoting that predecessor
 through stale product pins.

@@ -1,7 +1,7 @@
 # TV parent metadata candidate transition
 
 Status: the [candidate transition is complete](tv-parent-candidate-transition-closeout.json);
-affected live admission remains pending. The [final product verification](tv-parent-metadata-full-verification.json)
+its [affected admission also passed](tv-parent-affected-admission-closeout.json). The [final product verification](tv-parent-metadata-full-verification.json)
 passed all 2,270 tests/25 packages and the Linux build. This extends the existing
 same-schema transition tool for the current configuration epoch and retained
 state. Preserve the historical transition inputs and their validators.
@@ -61,7 +61,8 @@ Configuration, media, assets, controls and hosting are preserved. The old proces
 and staged replacement path are absent; the old binary copy is retained and
 verified. Independent closeout revalidated saved lineage and the current
 process without additional HTTP, SQL or service operations. The successor is
-running and awaits affected live admission; this is not client acceptance.
+was running pending affected admission at transition closeout. Subsequent
+admission05 passed its changed TV/API checks; client acceptance remains open.
 
 The one read-only state capture is retained at
 `/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-state-review-01/`.

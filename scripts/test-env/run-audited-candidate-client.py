@@ -16,9 +16,10 @@ import time
 from datetime import datetime, timedelta, timezone
 
 R = Path("/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14")
-EPOCH = {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"}
-BINDING = {"path": str(R / "candidate-backup-limits-revision-01/private/seed-runtime-binding.json"), "sha256": "92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f"}
+EPOCH = {"path": str(R / "candidate-tv-parent-transition-01/private/runtime-epoch.json"), "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"}
+BINDING = {"path": str(R / "candidate-tv-parent-transition-01/private/seed-runtime-binding.json"), "sha256": "94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43"}
 RETAINED_BASELINE = {"path": str(R / "candidate-core-movie04-failure-closeout.json"), "sha256": "5843a790e3c4ba09109d145b64fbda58f94c7ee94092e898ab584bab37880e8d"}
+RETAINED_MOVIE_EPOCH = {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"}
 RETAINED_SNAPSHOT = {"path": str(R / "candidate-core-client-movie-04/private/source-after.json"), "sha256": "7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c"}
 RETAINED_PLAY = "play_40969548543a02735b847a89bc34671b"
 RETAINED_AUTH = "aadd2636638e28cc6ceaf5bb8f2cb132"
@@ -35,17 +36,17 @@ MOVIE05_HISTORY = {
 }
 SERVER_LOG = Path("/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/server-unit.log")
 SERVER_LOG_LIMIT = 32 << 20
-ADMISSION = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
-ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission04-closeout.json"), "sha256": "c2aea574a3196b5ef486a2ba2b664d59bb75f5208d3a1a0c53ecaaab81b81eb4"}
+ADMISSION = {"path": str(R / "candidate-live-admission-05/private/report.json"), "sha256": "b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535"}
+ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission05-closeout.json"), "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "client-v3-component-verification-01/verification.json"), "sha256": "994c013949005f3de6171588f1bf234ac13c4026f0cafdd3bf562871a34a0366"}
-RUNTIME = {"path": str(R / "backup-limits-tool-verification-01/audited-candidate-runtime.py"), "sha256": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66"}
+AV_VERIFICATION = {"path": str(R / "tv-parent-client-component-verification-01/verification.json"), "sha256": "89a1d1c03f10455a0006b5930281fbe84637f4954877ce2dc97affacfcd17158"}
+RUNTIME = {"path": str(R / "candidate-successor-tool-verification-01/audited-candidate-runtime.py"), "sha256": "bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "3ecbffb851c6d75549a884c0fab6956564708bc6f78fae397cb2b88077cdeda3", "closer": "dedb3b54a1df8120c0a9baf1d2fe33a0f166557d60009c2e04ce462178416827",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0", "closer": "ca303bb6e14ea9ee94d1456867395668dbce14b5defcb0aa72409ad3803b04bc",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
-    "movie": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "movie": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
 SCENARIOS = {"movie", "episode", "mp3", "flac", "subtitles", "tv-browse"}
 BUDGETS = {"maximumSeconds": 1200, "cleanupSeconds": 240, "clientSeconds": 600, "clientCleanupSeconds": 120,
@@ -69,6 +70,8 @@ HOST_STARTUP_HISTORY = {
 }
 HOST_STARTUP_TRANSPORT = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070",
                           "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874"}
+AFFECTED_TV_PARENT_ADMISSION04 = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
+AFFECTED_TV_PARENT_CLOSEOUT = {"path": str(R / "candidate-tv-parent-transition-closeout.json"), "sha256": "c9e03c008d0d1dbf0b66b8070692738e50a2ca57c29f89cbd40c1fba38d597ba"}
 
 
 class RunError(ValueError):
@@ -116,7 +119,40 @@ def validate_input(value):
     return value
 
 
-def admitted(report, value, epoch):
+def admitted(report, value, epoch, *, reused_admission04=None, product_input=None):
+    if epoch.get("version") == 3:
+        need(type(epoch["version"]) is int and epoch.get("operationKind") == "binary_successor" and isinstance(report, dict) and
+             report.get("kind") == "audited-candidate-live-admission" and type(report.get("version")) is int and report["version"] == 3 and
+             report.get("admissionKind") == "affected_tv_parent" and report.get("status") == "admitted_for_core_client" and
+             report.get("candidateAdmissionComplete") is True and "failure" in report and report["failure"] is None and report.get("cleanupFailures") == [] and
+             canonical(report.get("runtimeEpoch")) == canonical(value["runtimeEpoch"]) and
+             canonical(report.get("seedRuntimeBinding")) == canonical(value["seedBinding"]) and
+             canonical(report.get("currentSource")) == canonical(epoch["currentSource"]), "successful_current_admission_required")
+        fresh = report.get("freshChecks")
+        need(isinstance(fresh, dict) and set(fresh) == {"runtimeIdentity", "tvDefaultParents", "tvDetailParents", "ordinaryAuthorization",
+             "healthWindow60Seconds", "sourceAndInactivePreserved", "sessionCleanup"} and all(check is True for check in fresh.values()) and
+             canonical(report.get("transitionCloseout")) == canonical(AFFECTED_TV_PARENT_CLOSEOUT), "affected_tv_parent_admission_contract")
+        old = reused_admission04
+        need(isinstance(old, dict) and old.get("kind") == "audited-candidate-live-admission" and type(old.get("version")) is int and old["version"] == 2 and
+             old.get("status") == "admitted_for_core_client" and old.get("candidateAdmissionComplete") is True and "failure" in old and old["failure"] is None and
+             old.get("cleanupFailures") == [] and canonical(old.get("runtimeEpoch")) == canonical(HOST_STARTUP_HISTORY["runtimeEpoch"]) == canonical(epoch.get("previousEpoch")) and
+             canonical(old.get("seedRuntimeBinding")) == canonical(HOST_STARTUP_HISTORY["seedBinding"]) and
+             isinstance(product_input, dict) and product_input.get("kind") == "audited-candidate-transition-input" and
+             type(product_input.get("version")) is int and product_input["version"] == 2 and
+             canonical(epoch["productInput"]) == canonical(epoch["transitionInput"]) and
+             canonical(product_input.get("previousEpoch")) == canonical(old["runtimeEpoch"]) and
+             canonical(product_input.get("previousBinding")) == canonical(old["seedRuntimeBinding"]), "affected_tv_parent_admission_reuse")
+        source = old.get("currentSource")
+        need(isinstance(source, dict) and set(source) == {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema"} and
+             isinstance(source["archiveSha256"], str) and re.fullmatch(r"[0-9a-f]{64}", source["archiveSha256"]) and
+             type(source["schema"]) is int and source["schema"] == 28, "affected_tv_parent_admission_reuse_source")
+        for key in ("sourceManifest", "binary", "fullReport"):
+            descriptor(source[key])
+        need(canonical(report.get("reusedAdmission04")) == canonical({"report": AFFECTED_TV_PARENT_ADMISSION04,
+             "runtimeEpoch": old["runtimeEpoch"], "seedRuntimeBinding": old["seedRuntimeBinding"], "currentSource": source,
+             "contracts": ["native_authentication_and_query_carriers", "storage_and_library_access", "backup_create_download", "restore_ready_cancel_retained_stage"]}),
+             "affected_tv_parent_admission_reuse")
+        return
     need(report["kind"] == "audited-candidate-live-admission" and report["version"] == 2 and report["status"] == "admitted_for_core_client" and
          report["candidateAdmissionComplete"] is True and report["failure"] is None and report["cleanupFailures"] == [] and
          report["runtimeEpoch"] == value["runtimeEpoch"] and report["seedRuntimeBinding"] == value["seedBinding"] and report["currentSource"] == epoch["currentSource"], "successful_current_admission_required")
@@ -232,7 +268,7 @@ def _hosting_initialized_receipt(report, value, hosting, epoch, read_descriptor,
 def validate_retained_movie_baseline(closeout, snapshot, binding):
     """Validate the known saved residue without authorizing any business action."""
     need(closeout.get("kind") == "audited-core-movie04-failure-closeout" and closeout.get("status") == "closed_failed_attempt_with_retained_unstarted_preparation" and
-         closeout.get("runtimeEpoch") == EPOCH and closeout.get("sourceAfter") == RETAINED_SNAPSHOT and closeout.get("scenario") == "movie" and
+         closeout.get("runtimeEpoch") == RETAINED_MOVIE_EPOCH and closeout.get("sourceAfter") == RETAINED_SNAPSHOT and closeout.get("scenario") == "movie" and
          closeout.get("runId") == "movie-04" and closeout.get("browserAndGatewayClosed") is True and closeout.get("allElevenSessionsRevoked") is True and
          closeout.get("clientAcceptance") is False and closeout.get("playbackStarted") is False and closeout.get("clientPlaybackReferences") == closeout.get("encodingJobs") == 0,
          "retained_movie_closeout_invalid")
@@ -261,7 +297,7 @@ def validate_movie05_baseline(closeout, snapshot, binding):
     """Retain completed owned-state proof without claiming browser acceptance."""
     need(closeout.get("kind") == "audited-movie05-owned-state-closeout" and closeout.get("status") == "owned_state_closed_client_acceptance_pending" and
          closeout.get("clientAcceptance") is False and closeout.get("failure") is None and closeout.get("inputEvidence", {}).get("after") == MOVIE05_SNAPSHOT and
-         closeout["inputEvidence"].get("epoch") == EPOCH and closeout.get("browserOutcome") == "failed" and closeout.get("browserExitCode") == 1 and
+         closeout["inputEvidence"].get("epoch") == RETAINED_MOVIE_EPOCH and closeout.get("browserOutcome") == "failed" and closeout.get("browserExitCode") == 1 and
          closeout.get("gatewayExitCode") == 0, "movie05_closeout_invalid")
     need(set(snapshot) == {"capturedAt", "tables", "sequences"} and len(snapshot["tables"]) == 35, "movie05_snapshot_inventory")
     tables, actor, movie = snapshot["tables"], binding["actors"]["movie"], binding["catalog"]["movie"]
@@ -408,15 +444,18 @@ class ClientRun:
             self.retained = {"closeout": closeout, "snapshot": self.s.descriptor(closeout["inputEvidence"]["after"])}
             validate_movie05_baseline(closeout, self.retained["snapshot"], self.binding)
         report = self.s.descriptor(self.value["admission"])
-        admitted(report, self.value, epoch)
+        admitted(report, self.value, epoch,
+                 reused_admission04=self.s.descriptor(AFFECTED_TV_PARENT_ADMISSION04) if epoch.get("version") == 3 else None,
+                 product_input=self.s.descriptor(epoch["productInput"]) if epoch.get("version") == 3 else None)
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
-        need(verification["passed"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
-             verification["adapterCounts"] == {"tests": 48, "pass": 48, "fail": 0, "skipped": 0} and
-             verification["closerCounts"] == {"testCount": 24, "passed": 24, "failed": 0, "sourceUnchanged": True} and
+        need(verification["kind"] == "tv-parent-candidate-client-component-verification" and verification["passed"] is True and
+             verification["sourceUnchanged"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
+             verification["adapterCounts"] == {"tests": 55, "pass": 55, "fail": 0, "skipped": 0} and verification["adapterSavedReplayChecks"] == 7 and
+             verification["closerCounts"] == {"testCount": 31, "passed": 31, "failed": 0, "sourceUnchanged": True} and
              verification["version3Counts"] == {"tests": 12, "pass": 12, "fail": 0, "skipped": 0} and
              verification["savedMovie05ReplayCounts"] == {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True} and
-             verification["movieCounts"] == {"tests": 16, "pass": 16, "fail": 0, "skipped": 0} and
+             verification["movieCounts"] == {"tests": 19, "pass": 19, "fail": 0, "skipped": 0} and
              all(verification["sourcePins"][filename] == FROZEN[key] for key, filename in SOURCE_FILES.items() if filename.endswith(".mjs")), "verified_client_sources_differ")
         for pin in [self.value["node"], *self.value["sources"].values()]:
             self.s.read_checked(pin["path"], pin["sha256"])

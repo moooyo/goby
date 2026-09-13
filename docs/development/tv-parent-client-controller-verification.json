@@ -1,0 +1,35 @@
+{
+  "kind": "tv-parent-client-controller-verification",
+  "version": 1,
+  "host": "test-env",
+  "capturedAt": "2026-09-13T15:47:54.231375+00:00",
+  "sourcePins": {
+    "run-audited-candidate-client.py": "f0869a5607b0665dc49bec8624c886331aa75168a39f820421db0a52b70cb5cc",
+    "test-run-audited-candidate-client.py": "b85313f7d4007aa2f4a602f3c642d03daa727e1bf7feb97dfa0b8cbb836d2259"
+  },
+  "testsRun": 30,
+  "testsExitCode": 0,
+  "testsPassed": true,
+  "failedTests": [],
+  "savedIntegrationChecks": [
+    "actual_successor_admission_binding",
+    "actual_historical_hosting_with_current_successor",
+    "current_component_source_selection"
+  ],
+  "savedIntegrationFailure": null,
+  "sourceUnchanged": true,
+  "passed": true,
+  "stdout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-01/guards.stdout",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-01/guards.stderr",
+    "sha256": "e0620d3635725b50111afc8ee0596e07ecfe38dfa95dfba32c7c01b499400fb9"
+  },
+  "httpCalls": 0,
+  "sqlQueries": 0,
+  "browserRuns": 0,
+  "serviceActions": 0,
+  "clientAcceptance": false
+}

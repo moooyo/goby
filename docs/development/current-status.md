@@ -9,8 +9,8 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Complete affected live admission of the installed TV metadata successor |
-| Audited candidate | Prior binary/configuration and live admission04 passed; the verified TV successor is installed with exact retained state | Check changed TV projections and authorization before resuming client work |
+| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
+| Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Execute the next independently admitted original-client scenario |
 | Core original client | Movie05 playback and TV browse01 navigation observed; both formal results failed and owned states closed | Complete strict movie/TV acceptance, episode, MP3, FLAC and external-subtitle scenarios |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
@@ -45,11 +45,20 @@ is also closed, with an empty hosting library and its setup credential revoked.
 
 The [TV successor transition](tv-parent-candidate-transition-closeout.json)
 completed exactly one stop, replacement and start after 103 remote tool checks.
-New epoch `76d7cc71...` runs PID 486706 and awaits affected live admission.
+New epoch `76d7cc71...` runs PID 486706.
 All source and inactive tables/sequences, fifteen revoked sessions, seven plays,
 two userdata rows, controls and media remained exact. The PostgreSQL process,
 configuration and original-client hosting remained unchanged. Old admission04
 does not independently admit the new binary.
+
+[Affected admission05](tv-parent-affected-admission-closeout.json) now passes
+the new TV list/detail projections and restricted-user access. Its 24 complete
+responses include a 60-second health/readiness window and both same-token
+logout rejections. Exact reconciliation found two new sessions, two devices
+and four audit rows; all seventeen sessions are revoked, all prior playback
+and userdata remain exact, and the inactive stage/control files are preserved.
+The selected controller passed thirty guards and three actual saved-receipt
+integrations. This is API/runtime admission, with core client acceptance open.
 
 ## Movie checkpoints
 
@@ -146,8 +155,8 @@ passed 2,270 tests/25 packages with race instrumentation and a Linux build,
 without failures or skips. Raw test events, source/archive/manifest and binary
 were independently reconciled; the isolated worker/PG are closed. Binary
 `b0d6769c...` from archive `b363afdc...` is installed through the completed
-[current-state transition](tv-parent-candidate-transition-plan.md) and awaits
-affected live admission. This is not a Live TV feature expansion;
+[current-state transition](tv-parent-candidate-transition-plan.md) and passed
+[affected live admission](tv-parent-affected-admission-closeout.json). This is not a Live TV feature expansion;
 the nearby `/LiveTv/Programs` 404 is only a timing lead for the unresolved error.
 Affected client runs stay paused until the new admission and client inputs pass.
 The consumed TV actor now needs retained-state admission before any future

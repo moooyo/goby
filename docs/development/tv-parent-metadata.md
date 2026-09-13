@@ -86,7 +86,9 @@ and source archive is
 `b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177`.
 The [bounded candidate transition](tv-parent-candidate-transition-closeout.json)
 installed this binary and preserved both databases and retained history exactly.
-Affected live admission and original-client acceptance remain pending.
+[Affected live admission](tv-parent-affected-admission-closeout.json) passed the
+new default/detail projections and restricted-user checks. Original-client
+acceptance remains pending.
 
 During the full run, available disk space fell to about 300 MB. A separately
 recorded release removed only the reproducible Go build-cache directories in

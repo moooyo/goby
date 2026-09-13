@@ -1,6 +1,6 @@
 # TV parent metadata affected admission
 
-Status: implementation and focused verification passed; execution input frozen.
+Status: [admission05 and independent closeout passed](tv-parent-affected-admission-closeout.json).
 The selected successor
 is installed and its [transition is closed](tv-parent-candidate-transition-closeout.json).
 This admission covers the changed TV projections and their access path. It
@@ -21,8 +21,9 @@ the actual successor, binding, source/inactive state, original seed and private
 credential bindings through the preflight health boundary. The [client
 component verification](tv-parent-client-component-verification.json) passed
 56 checks and reused the unchanged adapter/movie proofs. Neither verification
-performed live HTTP, SQL, browser or service work. Controller selection and its
-final saved-receipt integration remain pending actual admission.
+performed live HTTP, SQL, browser or service work. The [selected controller](tv-parent-client-controller-verification.json)
+then passed thirty guards and three integrations against the actual saved
+admission, historical hosting receipt and selected component sources.
 
 The input is `tv-parent-admission-entry-01/input.json` beneath the retained
 delivery root, SHA-256
@@ -31,7 +32,24 @@ The new output is `candidate-live-admission-05`. The entry report is
 `b030a673cf3cc307317c4d55fb2dacaaed5c90f2b266a1923aae64fccd8ccdaf`.
 The frozen admission tool is
 `791c7733a2e7fb3dc2c7272c72c372af9a2e30f4bb4d44f0424f10952ad230d3`.
-Fresh preflight remains required before issuing any authentication request.
+Fresh preflight passed, and this input is consumed. The run took 61,601 ms and
+completed all twenty normal and four cleanup requests. All seven fresh checks
+passed. Independent closeout replayed every response, verified the default and
+detail DTOs and denial results, reconciled exact owned rows/sequences and read
+back the current process identity. The first saved-only closeout attempt had
+assumed a legacy `sample.process` field; its corrected reader uses the actual
+response-only samples, saved boundary process/resource identities and current
+runtime pin. The original script is retained; no business request was repeated.
+
+Exactly two sessions, two devices and four activity entries were added. All
+seventeen sessions are revoked. The seven prior plays, two userdata rows,
+inactive database and sequences, control files, environment, media and hosting
+are exact. No resource-limit event or process restart occurred. The actual
+admission report SHA-256 is
+`b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535`;
+the independent closeout is
+`86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b`.
+Client acceptance remains open.
 
 ## Fixed requests and limits
 

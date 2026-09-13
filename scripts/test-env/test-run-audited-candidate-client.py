@@ -39,6 +39,36 @@ def make_job(value=None):
                        {"path": str(m.R / "run-audited-candidate-client.py"), "sha256": "f" * 64})
 
 
+def successor_admission_fixture():
+    pin = lambda name, digit: {"path": str(m.R / "synthetic-admission" / name), "sha256": digit * 64}
+    old_source = {"archiveSha256": "1" * 64, "sourceManifest": pin("old-source.json", "2"),
+        "binary": pin("old-goby", "3"), "fullReport": pin("old-full.json", "4"), "schema": 28}
+    old = {"kind": "audited-candidate-live-admission", "version": 2, "status": "admitted_for_core_client",
+        "candidateAdmissionComplete": True, "failure": None, "cleanupFailures": [],
+        "runtimeEpoch": copy.deepcopy(m.HOST_STARTUP_HISTORY["runtimeEpoch"]),
+        "seedRuntimeBinding": copy.deepcopy(m.HOST_STARTUP_HISTORY["seedBinding"]), "currentSource": old_source}
+    value = fixture()
+    value.update(runtimeEpoch=pin("new-epoch.json", "5"), seedBinding=pin("new-binding.json", "6"))
+    source = {**copy.deepcopy(old_source), "binary": pin("new-goby", "7"), "fullReport": pin("new-full.json", "8")}
+    epoch = {"version": 3, "operationKind": "binary_successor", "previousEpoch": copy.deepcopy(old["runtimeEpoch"]),
+        "transitionInput": pin("transition-input.json", "9"), "productInput": pin("transition-input.json", "9"), "currentSource": source}
+    product = {"kind": "audited-candidate-transition-input", "version": 2,
+        "previousEpoch": copy.deepcopy(old["runtimeEpoch"]), "previousBinding": copy.deepcopy(old["seedRuntimeBinding"])}
+    report = {**copy.deepcopy(old), "version": 3, "admissionKind": "affected_tv_parent", "runtimeEpoch": copy.deepcopy(value["runtimeEpoch"]),
+        "seedRuntimeBinding": copy.deepcopy(value["seedBinding"]), "currentSource": copy.deepcopy(source),
+        "transitionCloseout": copy.deepcopy(m.AFFECTED_TV_PARENT_CLOSEOUT),
+        "freshChecks": dict.fromkeys(["runtimeIdentity", "tvDefaultParents", "tvDetailParents", "ordinaryAuthorization",
+            "healthWindow60Seconds", "sourceAndInactivePreserved", "sessionCleanup"], True),
+        "reusedAdmission04": {"report": copy.deepcopy(m.AFFECTED_TV_PARENT_ADMISSION04), "runtimeEpoch": copy.deepcopy(old["runtimeEpoch"]),
+            "seedRuntimeBinding": copy.deepcopy(old["seedRuntimeBinding"]), "currentSource": copy.deepcopy(old_source),
+            "contracts": ["native_authentication_and_query_carriers", "storage_and_library_access", "backup_create_download", "restore_ready_cancel_retained_stage"]}}
+    return {"report": report, "value": value, "epoch": epoch, "old": old, "product": product}
+
+
+def check_successor_admission(value):
+    return m.admitted(value["report"], value["value"], value["epoch"], reused_admission04=value["old"], product_input=value["product"])
+
+
 def retained_fixture():
     actor, item, control = "a" * 32, "c" * 32, "b" * 32
     binding = {"actors": {"movie": {"id": actor, "username": "synthetic-movie"}}, "catalog": {"movie": {"id": item, "runtimeTicks": 6000000000}}}
@@ -54,7 +84,7 @@ def retained_fixture():
     before["tables"]["user_item_data"] = [{"user_id": actor, "item_id": item, "playback_position_ticks": 0, "play_count": 0,
         "is_favorite": False, "played": False, "last_played_at": None, "updated_at": "2026-09-13T11:15:00Z"}]
     closeout = {"kind": "audited-core-movie04-failure-closeout", "status": "closed_failed_attempt_with_retained_unstarted_preparation",
-        "runtimeEpoch": copy.deepcopy(m.EPOCH), "sourceAfter": copy.deepcopy(m.RETAINED_SNAPSHOT), "scenario": "movie", "runId": "movie-04",
+        "runtimeEpoch": copy.deepcopy(m.RETAINED_MOVIE_EPOCH), "sourceAfter": copy.deepcopy(m.RETAINED_SNAPSHOT), "scenario": "movie", "runId": "movie-04",
         "browserAndGatewayClosed": True, "allElevenSessionsRevoked": True, "clientAcceptance": False, "playbackStarted": False,
         "clientPlaybackReferences": 0, "encodingJobs": 0, "retainedPreparation": {"id": m.RETAINED_PLAY, "authSessionId": m.RETAINED_AUTH, "itemId": item, "ownerCredentialRevoked": True}}
     return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
@@ -75,7 +105,7 @@ def movie05_fixture():
     before["tables"]["play_sessions"] = plays
     before["tables"]["user_item_data"][0].update(play_count=2, playback_position_ticks=1217878390, last_played_at="2026-09-13T12:01:00Z")
     closeout = {"kind": "audited-movie05-owned-state-closeout", "status": "owned_state_closed_client_acceptance_pending", "clientAcceptance": False,
-        "inputEvidence": {"after": copy.deepcopy(m.MOVIE05_SNAPSHOT), "epoch": copy.deepcopy(m.EPOCH)}, "browserOutcome": "failed", "browserExitCode": 1, "gatewayExitCode": 0,
+        "inputEvidence": {"after": copy.deepcopy(m.MOVIE05_SNAPSHOT), "epoch": copy.deepcopy(m.RETAINED_MOVIE_EPOCH)}, "browserOutcome": "failed", "browserExitCode": 1, "gatewayExitCode": 0,
         "checks": {"authentication": {"allSessionsRevoked": 13}, "ownedData": {"ownedTables": 35, "oldRowsDeleted": 0, "userData": copy.deepcopy(before["tables"]["user_item_data"][0])}}}
     return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
 
@@ -175,6 +205,72 @@ def startup_fixture(*, successor=False, epoch_version=2):
 
 
 class Guards(unittest.TestCase):
+    def test_admission_version_tracks_the_runtime_epoch_and_requires_current_success(self):
+        value = successor_admission_fixture()
+        check_successor_admission(value)
+        for version in (1, 2):
+            legacy_value = {"runtimeEpoch": value["old"]["runtimeEpoch"], "seedBinding": value["old"]["seedRuntimeBinding"]}
+            m.admitted(value["old"], legacy_value, {"version": version, "currentSource": value["old"]["currentSource"]})
+            with self.subTest(version=version), self.assertRaises(m.RunError):
+                m.admitted(value["report"], legacy_value, {"version": version, "currentSource": value["old"]["currentSource"]})
+        for mutate in (lambda row: row["report"].update(version=2), lambda row: row["report"].update(version=3.0),
+                       lambda row: row["report"].update(status="admission_failed_resources_retained"),
+                       lambda row: row["report"].update(candidateAdmissionComplete=1), lambda row: row["report"].pop("failure"),
+                       lambda row: row["report"].update(currentSource=copy.deepcopy(row["old"]["currentSource"]))):
+            changed = successor_admission_fixture()
+            mutate(changed)
+            with self.assertRaises(m.RunError):
+                check_successor_admission(changed)
+
+    def test_affected_tv_admission_requires_exact_fresh_checks_and_fixed_transition_closeout(self):
+        for failure in ("kind", "missing", "extra", "false", "integer", "closeout"):
+            value = successor_admission_fixture()
+            if failure == "kind":
+                value["report"]["admissionKind"] = "full_admission"
+            elif failure == "missing":
+                value["report"]["freshChecks"].pop("tvDetailParents")
+            elif failure == "extra":
+                value["report"]["freshChecks"]["unreviewed"] = True
+            elif failure in ("false", "integer"):
+                value["report"]["freshChecks"]["sessionCleanup"] = False if failure == "false" else 1
+            else:
+                value["report"]["transitionCloseout"]["sha256"] = "0" * 64
+            with self.subTest(failure=failure), self.assertRaises(m.RunError):
+                check_successor_admission(value)
+
+    def test_affected_tv_admission_rejects_untrusted_old04_or_mixed_reuse_metadata(self):
+        for failure in ("old-missing", "old-version", "old-failed", "old-failure-missing", "parent", "binding", "product", "source-shape",
+                        "report-pin", "epoch-pin", "binding-pin", "source", "contracts", "extra"):
+            value = successor_admission_fixture()
+            reuse = value["report"]["reusedAdmission04"]
+            if failure == "old-missing":
+                value["old"] = None
+            elif failure == "old-version":
+                value["old"]["version"] = 3
+            elif failure == "old-failed":
+                value["old"]["candidateAdmissionComplete"] = False
+            elif failure == "old-failure-missing":
+                value["old"].pop("failure")
+            elif failure == "parent":
+                value["epoch"]["previousEpoch"]["sha256"] = "0" * 64
+            elif failure == "binding":
+                value["product"]["previousBinding"]["sha256"] = "0" * 64
+            elif failure == "product":
+                value["product"] = None
+            elif failure == "source-shape":
+                value["old"]["currentSource"].pop("archiveSha256")
+            elif failure in ("report-pin", "epoch-pin", "binding-pin"):
+                key = {"report-pin": "report", "epoch-pin": "runtimeEpoch", "binding-pin": "seedRuntimeBinding"}[failure]
+                reuse[key]["sha256"] = "0" * 64
+            elif failure == "source":
+                reuse["currentSource"]["binary"]["sha256"] = "0" * 64
+            elif failure == "contracts":
+                reuse["contracts"].append("new_backup_or_restore")
+            else:
+                reuse["unreviewed"] = True
+            with self.subTest(failure=failure), self.assertRaises(m.RunError):
+                check_successor_admission(value)
+
     def test_version3_requires_movie05_or_null_without_changing_legacy_versions(self):
         for scenario in m.SCENARIOS:
             value = fixture()
@@ -284,6 +380,19 @@ class Guards(unittest.TestCase):
         self.assertLess(events.index("source_after"), events.index("log_after"))
         self.assertLess(events.index("log_after"), events.index("server-log.json"))
         self.assertIsNotNone(job.server_log_pin)
+
+    def test_retained_movie_history_cannot_be_relabelled_as_the_current_successor(self):
+        self.assertNotEqual(m.RETAINED_MOVIE_EPOCH, m.EPOCH)
+        for factory, version in ((retained_fixture, 2), (movie05_fixture, 3)):
+            before, binding, retained = factory()
+            m.verify_actor_before(before, binding, "movie", retained, version)
+            closeout = retained["closeout"]
+            if version == 2:
+                closeout["runtimeEpoch"] = copy.deepcopy(m.EPOCH)
+            else:
+                closeout["inputEvidence"]["epoch"] = copy.deepcopy(m.EPOCH)
+            with self.subTest(version=version), self.assertRaises(m.RunError):
+                m.verify_actor_before(before, binding, "movie", retained, version)
 
     if REPLAY_MOVIE05:
         def test_saved_movie05_snapshot_offline_replay(self):
