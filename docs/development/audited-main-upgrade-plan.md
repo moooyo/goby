@@ -17,20 +17,20 @@ input and independently review the selected implementation before execution.
 The selected candidate is
 `/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`. Its product includes
 R01-R21 through `a623375`, diagnostic commit `a9c541a` and the ready-plan
-cancellation fix `d03db2e`. The selected schema28 binary SHA256 is
+cancellation fix `d03db2e`. The preceding admitted schema28 binary SHA256 was
 `477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`;
 its source manifest SHA256 is
 `65e11ed30ffc769eddde99a2b9ce2387707f085f85e813c70f7b7d84c9519732`.
 The [full verification](restore-cancellation-full-verification.json) passed
 2,264 tests across 25 packages with race instrumentation and a Linux build.
-Bind these identities and all 57 frontend assets from their exact receipts.
+Retain these historical identities and all 57 unchanged frontend assets.
 
 The later [TV parent metadata increment](tv-parent-metadata.md) has also passed
 full verification: 2,270 tests/25 packages and a Linux build. Its selected
 successor binary is `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
-pending the [candidate transition](tv-parent-candidate-transition-plan.md) and
-affected live admission. The `477d26ad...` identity above records the currently
-running admitted predecessor. Freeze main against the final admitted successor
+installed through the [candidate transition](tv-parent-candidate-transition-closeout.json)
+and pending affected live admission. The `477d26ad...` identity above records the
+admitted predecessor. Freeze main against the final admitted successor
 and its actual core-client evidence, rather than promoting that predecessor
 through stale product pins.
 

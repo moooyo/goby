@@ -9,8 +9,8 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Install and admit the verified TV metadata successor through the reviewed transition |
-| Audited candidate | Selected binary/configuration, seeded catalog and live admission04 passed | Preserve its identity and owned state during client work |
+| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Complete affected live admission of the installed TV metadata successor |
+| Audited candidate | Prior binary/configuration and live admission04 passed; the verified TV successor is installed with exact retained state | Check changed TV projections and authorization before resuming client work |
 | Core original client | Movie05 playback and TV browse01 navigation observed; both formal results failed and owned states closed | Complete strict movie/TV acceptance, episode, MP3, FLAC and external-subtitle scenarios |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
@@ -28,8 +28,8 @@ cases from 64 unchanged source files.
 
 The isolated candidate is
 `/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`, binary SHA-256
-`477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
-Its [binary transition](audited-candidate-cancellation-transition.json) and
+`b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`.
+Its earlier [binary transition](audited-candidate-cancellation-transition.json) and
 [backup-limit correction](audited-candidate-backup-capacity.md) preserved all
 35 source tables. The [seed closeout](audited-candidate-seed-closeout.json)
 binds eight accounts, three libraries, fourteen media files, thirteen stored
@@ -39,9 +39,17 @@ for later checker failures.
 [Live admission04](audited-candidate-live-admission-closeout.json) passed a full
 ten-minute window, 79 complete responses, a 290,550-byte backup download,
 ready-plan cancellation and exact owned cleanup. The inactive staged recovery
-database remains retained; it is not an empty slot. Candidate admission is
-complete. The [original-client host initialization](audited-original-client-host-startup-closeout.json)
+database remains retained; it is not an empty slot. This is admission evidence
+for the preceding `477d26ad...` binary. The [original-client host initialization](audited-original-client-host-startup-closeout.json)
 is also closed, with an empty hosting library and its setup credential revoked.
+
+The [TV successor transition](tv-parent-candidate-transition-closeout.json)
+completed exactly one stop, replacement and start after 103 remote tool checks.
+New epoch `76d7cc71...` runs PID 486706 and awaits affected live admission.
+All source and inactive tables/sequences, fifteen revoked sessions, seven plays,
+two userdata rows, controls and media remained exact. The PostgreSQL process,
+configuration and original-client hosting remained unchanged. Old admission04
+does not independently admit the new binary.
 
 ## Movie checkpoints
 
@@ -137,11 +145,11 @@ remains retained. [Full verification](tv-parent-metadata-full-verification.json)
 passed 2,270 tests/25 packages with race instrumentation and a Linux build,
 without failures or skips. Raw test events, source/archive/manifest and binary
 were independently reconciled; the isolated worker/PG are closed. Binary
-`b0d6769c...` from archive `b363afdc...` is the selected successor, awaiting the
-[current-state transition](tv-parent-candidate-transition-plan.md). The running
-candidate remains `477d26ad...`. This is not a Live TV feature expansion;
+`b0d6769c...` from archive `b363afdc...` is installed through the completed
+[current-state transition](tv-parent-candidate-transition-plan.md) and awaits
+affected live admission. This is not a Live TV feature expansion;
 the nearby `/LiveTv/Programs` 404 is only a timing lead for the unresolved error.
-Affected client runs stay paused while the selected product/tools are prepared.
+Affected client runs stay paused until the new admission and client inputs pass.
 The consumed TV actor now needs retained-state admission before any future
 rerun, just as movie does. No main service change or complete core acceptance
 is claimed.

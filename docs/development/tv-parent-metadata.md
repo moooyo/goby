@@ -84,9 +84,9 @@ The selected replacement binary SHA-256 is
 `bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff`,
 and source archive is
 `b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177`.
-The currently running candidate is unchanged. Follow the
-[bounded transition plan](tv-parent-candidate-transition-plan.md) before
-installation, affected live admission or new original-client execution.
+The [bounded candidate transition](tv-parent-candidate-transition-closeout.json)
+installed this binary and preserved both databases and retained history exactly.
+Affected live admission and original-client acceptance remain pending.
 
 During the full run, available disk space fell to about 300 MB. A separately
 recorded release removed only the reproducible Go build-cache directories in

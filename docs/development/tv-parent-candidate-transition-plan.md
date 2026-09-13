@@ -1,8 +1,8 @@
 # TV parent metadata candidate transition
 
-Status: preparation; the [final product verification](tv-parent-metadata-full-verification.json)
-passed all 2,270 tests/25 packages and the Linux build. This plan
-does not claim a candidate update or fresh admission. It extends the existing
+Status: the [candidate transition is complete](tv-parent-candidate-transition-closeout.json);
+affected live admission remains pending. The [final product verification](tv-parent-metadata-full-verification.json)
+passed all 2,270 tests/25 packages and the Linux build. This extends the existing
 same-schema transition tool for the current configuration epoch and retained
 state. Preserve the historical transition inputs and their validators.
 
@@ -12,7 +12,7 @@ The predecessor is the admitted configuration epoch
 `72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e`,
 with seed binding
 `92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f`.
-The current binary remains
+The predecessor binary was
 `477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
 The selected replacement must come from the completed full verification of
 archive `b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177`;
@@ -47,7 +47,21 @@ The new output is `candidate-tv-parent-transition-01`. The runtime helper is
 `bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922`,
 and the transition helper is
 `dea04062c7bb6ca8c253b8c8a276259ae163481a4c0d908574d3c6474f9f2b14`.
-Saved contract checks passed; fresh preflight and execution remain pending.
+Saved contract checks and fresh preflight passed. Exactly one stop, replacement
+and start completed. The installed binary is the selected `b0d6769c...` artifact.
+The new epoch SHA-256 is
+`76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac`;
+the new seed binding SHA-256 is
+`94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43`.
+The candidate process is PID 486706, invocation
+`9f936a88b545499a99d024437e0b57c5`. PostgreSQL remains PID 363520.
+All 35 source tables and sequences, inactive staged data, fifteen revoked
+sessions, seven plays, two userdata rows and two Prepared rows are exact.
+Configuration, media, assets, controls and hosting are preserved. The old process
+and staged replacement path are absent; the old binary copy is retained and
+verified. Independent closeout revalidated saved lineage and the current
+process without additional HTTP, SQL or service operations. The successor is
+running and awaits affected live admission; this is not client acceptance.
 
 The one read-only state capture is retained at
 `/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-state-review-01/`.
