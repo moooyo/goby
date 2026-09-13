@@ -1,0 +1,419 @@
+{
+  "kind": "audited-core-subtitles01-checkpoint",
+  "version": 1,
+  "status": "owned_state_closed_client_acceptance_pending",
+  "capturedAt": "2026-09-13T17:53:38.810240+00:00",
+  "ownedStateCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-subtitles01-owned-state-closeout-02.json",
+    "sha256": "f8ea295082446922e1d071bdbc888bc6e83dffbfb04bf47ecc3a2129b2afc79d"
+  },
+  "originalCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/closeout/closeout.json",
+    "sha256": "9b2f85acbcb236ca699a39fcaacd8ae1a3a90b5e7b20531966ae7544b38f7fe1"
+  },
+  "originalFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/failure.json",
+    "sha256": "b1082f2ff888ac5a50af517c8d85ccd1a8b9ce0eb396664864ee1ebf6d8668fb"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "source": {
+    "binarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+    "manifestSha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff",
+    "schema": 28
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/source-before.json",
+    "sha256": "82b553249925b1700bc7d6cb1970d50b4af89ca1e7923a74fa4517fb75c23cc2"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/source-after.json",
+    "sha256": "6027063502c51efd1968e39afd463845dff19726a267430b5065ec7473f31524"
+  },
+  "boundary": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/boundary.json",
+    "sha256": "5ea312d1a9c29ba6a44950eabbb8dc20e2248604d57df87a4eb42b24f1741194"
+  },
+  "physicalRequests": 311,
+  "lifecycles": [
+    {
+      "playSessionId": "play_f24a94e325343ba5af4c8a5095e9f174",
+      "authSessionId": "c31c22797d087807b4c6753502941dbc",
+      "itemId": "36b446dc1c9133016916d8110ad560c8",
+      "state": "Stopped",
+      "counted": true,
+      "positionTicks": 1212420000,
+      "preparation": {
+        "kind": "playback_info",
+        "ordinal": 253
+      },
+      "startedOrdinals": [
+        283
+      ],
+      "progressOrdinals": [
+        285,
+        286,
+        288,
+        295,
+        296,
+        298
+      ],
+      "stoppedOrdinals": [
+        299
+      ],
+      "effectiveStopOrdinals": [
+        299
+      ],
+      "countingReportOrdinals": [
+        283
+      ],
+      "mediaGetOrdinals": [
+        281,
+        293,
+        294
+      ]
+    }
+  ],
+  "partialMedia": [
+    {
+      "ordinal": 281,
+      "interpretation": "browser_abort_near_owned_stop",
+      "contextAssociation": "exact_range",
+      "contextOrdinals": [
+        279
+      ],
+      "completeHTTP": false,
+      "responseForwardedComplete": false,
+      "deliveredBodyBytes": 7143424
+    },
+    {
+      "ordinal": 294,
+      "interpretation": "browser_abort_near_owned_stop",
+      "contextAssociation": "exact_range",
+      "contextOrdinals": [
+        291
+      ],
+      "completeHTTP": false,
+      "responseForwardedComplete": false,
+      "deliveredBodyBytes": 11206656
+    }
+  ],
+  "retainedPreparations": [
+    {
+      "playSessionId": "play_69583b3a13d911651543d239b9c5b657",
+      "itemId": "36b446dc1c9133016916d8110ad560c8",
+      "state": "Prepared",
+      "counted": false,
+      "playbackInfoOrdinals": [
+        303,
+        304
+      ]
+    }
+  ],
+  "logoutVerification": [
+    {
+      "authSessionId": "c31c22797d087807b4c6753502941dbc",
+      "loginOrdinal": 209,
+      "logoutOrdinal": 307,
+      "rejectionOrdinal": 309,
+      "rejectionStatus": 401
+    }
+  ],
+  "durable": {
+    "sessionsRevoked": 1,
+    "countedPlays": 1,
+    "retainedPreparations": [
+      {
+        "playSessionId": "play_69583b3a13d911651543d239b9c5b657",
+        "itemId": "36b446dc1c9133016916d8110ad560c8",
+        "state": "Prepared",
+        "counted": false
+      }
+    ],
+    "retainedTerminalEncodingJobs": [],
+    "controlQUnchanged": true,
+    "selectedUserdata": {
+      "item_id": "36b446dc1c9133016916d8110ad560c8",
+      "playback_position_ticks": 1212420000,
+      "play_count": 1,
+      "is_favorite": false,
+      "played": false,
+      "last_played_at": "2026-09-13T17:33:46.158152+00:00",
+      "updated_at": "2026-09-13T17:33:52.492739+00:00"
+    }
+  },
+  "data": {
+    "beforeSessions": 20,
+    "afterSessions": 21,
+    "allSessionsRevoked": true,
+    "beforePlays": 11,
+    "afterPlays": 13,
+    "beforeUserData": 5,
+    "afterUserData": 6,
+    "beforeClientReferences": 2,
+    "afterClientReferences": 2,
+    "beforeEncodingJobs": 0,
+    "afterEncodingJobs": 0,
+    "unchangedTables": [
+      "application_key_clients",
+      "application_key_devices",
+      "application_keys",
+      "catalog_entities",
+      "client_playback_references",
+      "encoding_jobs",
+      "extra_reserved_paths",
+      "item_entities",
+      "item_extra_resources",
+      "item_images",
+      "item_metadata_state",
+      "item_subtitles",
+      "item_theme_resources",
+      "items",
+      "libraries",
+      "library_roots",
+      "managed_settings",
+      "scan_jobs",
+      "schema_migrations",
+      "server_settings",
+      "task_definitions",
+      "task_occurrences",
+      "task_run_children",
+      "task_run_requests",
+      "task_runs",
+      "task_triggers",
+      "theme_owner_ids",
+      "theme_reserved_paths",
+      "user_settings",
+      "users"
+    ]
+  },
+  "originalUIRejection": {
+    "failedCheck": "client_ui_or_cleanup_incomplete",
+    "reproduced": true,
+    "pageErrorCount": 2,
+    "originalObservationUnchanged": true
+  },
+  "workers": {
+    "browser": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/browser-closed.json",
+        "sha256": "00cdd9aec7899c0bf2431c60e77c44509064b85ef2ee2fe1cf464dc2bf7595f3"
+      },
+      "pid": 495914,
+      "invocationId": "b8985c69b55e49f3a9a6a7a544b89537",
+      "recordedExitCode": 0,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-subtitles-01-browser.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    },
+    "gateway": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-subtitles-01/private/gateway-closed.json",
+        "sha256": "49b74a047ba5b6ecd69109e1ca9142108d8713106607563c1fcbd88d7315fa9e"
+      },
+      "pid": 495906,
+      "invocationId": "2ff8f51b0ea64ba68abe2c9c5a1d5544",
+      "recordedExitCode": 0,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-subtitles-01-gateway.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    }
+  },
+  "candidateProcess": {
+    "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+    "cgroup": "0::/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service\n",
+    "cmdline": [
+      "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby"
+    ],
+    "exe": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+    "exeDevice": 2049,
+    "exeInode": 1661714,
+    "networkNamespace": "net:[4026531840]",
+    "pid": 486706,
+    "startTicks": "3260806",
+    "uid": 995,
+    "listener": {
+      "host": "127.0.0.1",
+      "port": 28498,
+      "socketInode": "692538"
+    }
+  },
+  "postgresContinuous": true,
+  "candidateRestarted": false,
+  "clientAcceptance": false,
+  "subtitleAcceptance": false,
+  "coreScenarioClaim": false,
+  "newHttpRequests": 0,
+  "newSqlQueries": 0,
+  "newServiceActions": 0,
+  "scope": "Owned persistent state and physical request ownership are reconciled. Media cancellation interpretation retains explicit failed checks; fresh checks cover worker absence and candidate/PostgreSQL process continuity only.",
+  "nextAction": "Preserve the unattributed undefined errors and consumed inputs; proceed with bounded main read-only identity preparation.",
+  "subtitleEvidence": {
+    "reportedOutcome": "external_srt_vtt_ui_selection_and_seek_completed",
+    "delivery": [
+      {
+        "codec": "srt",
+        "subtitleIndex": 2,
+        "physicalOrdinal": 289,
+        "status": 200,
+        "contentType": "text/vtt",
+        "deliveredBodyBytes": 187,
+        "physicalTransferComplete": true,
+        "physicalBodyRetained": false,
+        "observerBody": {
+          "bytes": 187,
+          "sha256": "6639a605af385edeaac96cd2aab8a5ee744c60a041e7d4ecadb5f7a86980a67b",
+          "webvttPrefixObserved": true,
+          "syntheticCuesPresent": [
+            "Opening subtitle",
+            "Backward seek subtitle",
+            "Forward seek subtitle",
+            "Midpoint subtitle"
+          ]
+        }
+      },
+      {
+        "codec": "vtt",
+        "subtitleIndex": 3,
+        "physicalOrdinal": 297,
+        "status": 200,
+        "contentType": "text/vtt",
+        "deliveredBodyBytes": 220,
+        "physicalTransferComplete": true,
+        "physicalBodyRetained": false,
+        "observerBody": {
+          "bytes": 220,
+          "sha256": "efbce0e543ce0acef4a0ab9f979f2a4b5386658d4a96222ec95bdf917139dd6b",
+          "webvttPrefixObserved": true,
+          "syntheticCuesPresent": [
+            "Opening subtitle",
+            "Backward seek subtitle",
+            "Forward seek subtitle",
+            "Midpoint subtitle"
+          ]
+        }
+      }
+    ],
+    "cueObservations": [
+      {
+        "label": "subtitle-srt-opening-cue-0",
+        "cue": "Opening subtitle",
+        "currentTime": 0.972712,
+        "visibleDOMCue": true
+      },
+      {
+        "label": "subtitle-srt-forward-cue-0",
+        "cue": "Forward seek subtitle",
+        "currentTime": 121.242,
+        "visibleDOMCue": true
+      },
+      {
+        "label": "subtitle-vtt-forward-cue-0",
+        "cue": "Forward seek subtitle",
+        "currentTime": 121.242,
+        "visibleDOMCue": true
+      }
+    ],
+    "offRestoredObservation": true,
+    "bodyEvidenceBoundary": "Physical subtitle bodies were excluded by the gateway media policy. Observer hashes/cues and physical status/byte counts are preserved; no independent physical body hash reconstruction is claimed.",
+    "clientAcceptance": false
+  },
+  "nativeObservation": {
+    "events": [
+      {
+        "id": "native-rejection-1",
+        "execution_context_id": 3,
+        "sequence": 1,
+        "elapsed_ms": 17001,
+        "phase": "start_movie",
+        "operation": "authenticated",
+        "reason": {
+          "kind": "primitive",
+          "type": "undefined",
+          "value": null
+        },
+        "association": {
+          "state": "unattributed",
+          "request_ordinal": null
+        },
+        "diagnostic_state": "captured_redacted"
+      },
+      {
+        "id": "native-rejection-2",
+        "execution_context_id": 3,
+        "sequence": 2,
+        "elapsed_ms": 17030,
+        "phase": "start_movie",
+        "operation": "authenticated",
+        "reason": {
+          "kind": "primitive",
+          "type": "undefined",
+          "value": null
+        },
+        "association": {
+          "state": "unattributed",
+          "request_ordinal": null
+        },
+        "diagnostic_state": "captured_redacted"
+      }
+    ],
+    "summary": {
+      "count": 2,
+      "retained_count": 2,
+      "overflow_count": 0,
+      "scope": "Installed document contexts on the current page CDP session; workers and out-of-process frames are not automatically covered.",
+      "interpretation": "Completeness describes this collection scope. A matched Response does not attribute a pageerror or establish harmlessness.",
+      "count_is_lower_bound": false,
+      "diagnostics_complete": true,
+      "failures": [],
+      "installed_contexts": 1,
+      "setup_complete": true,
+      "teardown_complete": true,
+      "retained_bytes": 597
+    },
+    "interpretation": "The native primitive-undefined reasons do not attribute or waive the original pageerrors."
+  },
+  "mediaInterpretationComplete": false,
+  "unresolvedPartialMedia": [
+    {
+      "ordinal": 293,
+      "failedCheck": "media_partial_time_mismatch",
+      "physicalCompletedMonotonicNs": "40503366467319",
+      "deliveredBodyBytes": 163840,
+      "contextOrdinal": 291,
+      "deltaNanoseconds": "3507211510",
+      "contexts": [
+        {
+          "contextOrdinal": 291,
+          "contextScope": "frame",
+          "association": "exact_range",
+          "contextFailedElapsedMilliseconds": 23376,
+          "contextFailedMonotonicNs": "40506873678829",
+          "deltaNanoseconds": "3507211510"
+        }
+      ]
+    }
+  ]
+}

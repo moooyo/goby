@@ -1,8 +1,11 @@
 # Audited main upgrade contract
 
-Status: **DRAFT, updated 2026-09-13; main preparation only**. The TV successor's
+Status: **DRAFT, updated 2026-09-14; main preparation only**. The TV successor's
 affected admission05 has passed and reuses the preceding admission04 contracts.
-Core original-client acceptance and fresh main facts remain open. This draft
+Core original-client acceptance and full main safety facts remain open. Initial
+[read-only identity capture](audited-main-readonly-identity.json) finds main
+inactive, the source32 binary unchanged and PostgreSQL's unit active. It reads
+no environment/master contents or database/recovery state. This draft
 does not authorize or report any main-deployment operation.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
@@ -57,7 +60,8 @@ completion.
 
 | Accepted record | Reusable conclusion | Boundary |
 | --- | --- | --- |
-| [Cancellation-fix full verification](restore-cancellation-full-verification.json), [source freeze](restore-cancellation-source-freeze.json) and [binary transition](audited-candidate-cancellation-transition.json) | The selected snapshot passed 2,264 tests in 25 packages with race instrumentation and a Linux build; the selected binary was installed in the isolated candidate | Reuse this exact product verification; it does not establish core-client acceptance or main admission |
+| [TV successor full verification](tv-parent-metadata-full-verification.json), [transition](tv-parent-candidate-transition-closeout.json) and [admission05](tv-parent-affected-admission-closeout.json) | The currently selected snapshot passed 2,270 tests in 25 packages with race instrumentation and a Linux build; the installed successor passed affected admission | Reuse the selected product proof; core-client acceptance and main safety/admission remain separate |
+| [Cancellation-fix full verification](restore-cancellation-full-verification.json), [source freeze](restore-cancellation-source-freeze.json) and [binary transition](audited-candidate-cancellation-transition.json) | The predecessor snapshot passed 2,264 tests in 25 packages with race instrumentation and a Linux build; that predecessor was installed in the isolated candidate | Historical predecessor verification, not the current successor's final product proof or core/main admission |
 | [Live admission04](audited-candidate-live-admission-closeout.json) and [configuration revision](audited-candidate-backup-limits-revision.json) | Admission passed with 79 complete responses, eleven healthy/ready samples over ten minutes, backup download, ready-plan cancellation and owned-session cleanup under epoch `72e25f9...` | The inactive stage is retained; no restore application, rollback, core-client acceptance or main upgrade was performed |
 | [Earlier diagnostic verification](exit-diagnostics-full-verification.json), [source freeze](exit-diagnostics-source-freeze.json) and [publication](exit-diagnostics-publication.json) | Historical verification of the 2,262-test predecessor and diagnostic change | It predates the cancellation fix and is not the selected snapshot's final verification |
 | [Frontend build](audited-candidate-frontend-build.json) and [source/evidence reuse](audited-candidate-frontend-reuse.json) | 57 built assets and 41 earlier mocked API cases from 64 unchanged source files | No original-client acceptance or new browser-test execution is implied |
@@ -75,6 +79,13 @@ through their sealed receipts and manifests; do not recursively reverify all
 198 historical roots or claim that a narrower observation did so.
 
 ## Minimum fresh main facts
+
+The first metadata observation at 2026-09-13T17:54:09Z confirms the loaded main
+unit, its ordered environment-file references, fixed file identities and installed
+source32 bytes. It does not resolve effective configuration, active recovery
+binding, PostgreSQL/database/schema identity or current operation ownership.
+Those private read-only facts are the next preparation increment. Main remains
+inactive; neither startup nor backup creation is authorized by this metadata record.
 
 The following fields are required execution inputs, not facts established by
 this draft. Acquire private reads and database access under the freshly verified

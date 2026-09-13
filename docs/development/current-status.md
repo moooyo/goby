@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after MP3, FLAC and Episode01. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after Subtitles01 and main identity preparation. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -11,8 +11,8 @@ their original meanings and are not fresh deployment observations.
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
-| Core original client | MP3/FLAC passed; Episode01 retains three page errors with closed owned state; native rejection diagnostics and subtitle entry are verified | First external subtitle run, then evidence-led video correction and retained-state acceptance |
-| Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
+| Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
+| Main deployment | Fresh metadata confirms inactive main and matching source32 binary; PostgreSQL unit is active; upgrade contract remains a draft | Privately resolve effective configuration/recovery/database identity, then obtain recovery/restoration proofs and core acceptance before promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 ## Selected product and candidate
@@ -81,12 +81,12 @@ state. Its full TV browse and playback controls completed, but three page errors
 correctly failed formal acceptance. The [owned closeout](audited-episode-client01-closeout.json)
 reconciles 349 physical exchanges, one counted Stopped chain with count 1 and
 59.157962-second userdata, and one unstarted Prepared row from later detail
-PlaybackInfo. All twenty sessions are revoked; eleven plays, five userdata rows,
+PlaybackInfo. That closeout recorded twenty revoked sessions, eleven plays, five userdata rows,
 two audio references and no encoding jobs remain. All prior rows are preserved.
 Both workers exited with code 0 and are absent; candidate/PostgreSQL continuity is checked.
-This does not pass episode or overlapping TV browse acceptance. Follow the
-[bounded rejection review](audited-episode-client01-review.md) before freezing
-the first subtitle input. Existing product verification and audio acceptance
+This does not pass episode or overlapping TV browse acceptance. The
+[bounded rejection review](audited-episode-client01-review.md) led to the completed
+diagnostic and subtitle increments below. Existing product verification and audio acceptance
 remain reusable; no episode replay or new diagnostic framework is planned.
 
 The [native rejection increment](native-rejection-observer.md) is now verified:
@@ -97,8 +97,19 @@ the temporary server are closed, with zero original-client runs. The same
 increment reused the established movie readiness helper for the subtitle entry.
 Original pageerror rejection remains unchanged; metadata association does not
 resolve the old movie/episode errors. The [first subtitle entry](audited-subtitles-client01-entry.json)
-now passes with all35 tables/sequences matching the Episode01 closeout and an
-unused actor. Its one [bounded execution](audited-subtitles-client01-plan.md) is next.
+passed with all35 tables/sequences matching the Episode01 closeout and an
+unused actor. That input has now been consumed.
+
+Subtitles01 completed SRT/VTT selection, cue visibility, seek and return to Off,
+stop and logout. [Owned closure](audited-subtitles-client01-closeout.json) preserves
+all old rows and records twenty-one revoked sessions, thirteen plays, six userdata
+rows, two retained audio references and no encoding jobs. Both workers exited
+and candidate/PostgreSQL continuity remains exact. Formal acceptance stays open:
+two native primitive-undefined errors remain unattributed, and partial media 293
+has a 3507.211510 ms context/physical end-time difference outside the unchanged
+2000 ms limit. State/ownership closure does not waive this media evidence gap.
+Follow the [result decision](audited-subtitles-client01-review.md) into independent
+main read-only preparation, preserving all consumed inputs and original failures.
 
 ## Movie checkpoints
 
@@ -143,8 +154,8 @@ changed state. No movie07 input or run is claimed. The independent existing
 actors do not depend on that movie-only adjustment. TV browse subsequently
 consumed its own decision, as recorded below. MP3 and FLAC have since passed;
 episode is consumed with closed owned state and failed formal acceptance.
-Native rejection diagnostics and the first subtitle entry have since passed;
-the next increment is that one subtitle execution. Each business run needs a frozen decision,
+Native rejection diagnostics have since passed and Subtitles01 is now consumed
+with the explicit gaps above. Each future business run needs a frozen decision,
 serialized execution and complete closure. Passing an independent scenario
 does not resolve movie errors or authorize main promotion.
 
@@ -216,6 +227,15 @@ and PostgreSQL 17 main active. It made no database preservation attestation.
 No main/source55 restart or upgrade occurred in this client increment. Old PIDs
 and the [pre-reboot source55 recovery](candidate-source55-restart-closeout.md)
 are historical, not current live identities.
+
+The [fresh main identity record](audited-main-readonly-identity.json), captured at
+2026-09-13T17:54:09Z, again finds main and source55 inactive. Main's source32
+executable matches its historical SHA and 28,172,723-byte size; PostgreSQL's unit
+remains active with PID 893. Units, ordered environment-file references and fixed
+file metadata are stable during the read. Environment/master contents and
+database/recovery state were not read; no lock was acquired and no service,
+migration or restore action occurred. These facts support the next private
+configuration/ownership review, not upgrade admission or data preservation proof.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to

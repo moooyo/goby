@@ -1,0 +1,438 @@
+{
+  "kind": "audited-main-readonly-identity",
+  "version": 1,
+  "status": "metadata_observed_only",
+  "capturedAt": "2026-09-13T17:54:09.341622+00:00",
+  "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+  "unitsBefore": {
+    "goby-foundation-test.service": {
+      "properties": {
+        "Restart": "on-failure",
+        "MainPID": "0",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "WorkingDirectory": "/var/lib/goby-test",
+        "User": "goby",
+        "Group": "goby",
+        "Id": "goby-foundation-test.service",
+        "LoadState": "loaded",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "FragmentPath": "/etc/systemd/system/goby-foundation-test.service",
+        "DropInPaths": "/etc/systemd/system/goby-foundation-test.service.d/20-application-keys.conf /etc/systemd/system/goby-foundation-test.service.d/30-observability.conf /etc/systemd/system/goby-foundation-test.service.d/40-backup-recovery.conf",
+        "InvocationID": ""
+      },
+      "environmentFilesInObservedOrder": [
+        "/opt/goby-test/runtime.env (ignore_errors=no)",
+        "/opt/goby-test/recovery-m5j.env (ignore_errors=no)"
+      ]
+    },
+    "postgresql@17-main.service": {
+      "properties": {
+        "Restart": "no",
+        "MainPID": "893",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "/system.slice/system-postgresql.slice/postgresql@17-main.service",
+        "WorkingDirectory": "",
+        "User": "",
+        "Group": "",
+        "Id": "postgresql@17-main.service",
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "running",
+        "FragmentPath": "/usr/lib/systemd/system/postgresql@.service",
+        "DropInPaths": "",
+        "InvocationID": "d4d78ab469054a9f86dbf0ed6e3ccdc4"
+      },
+      "environmentFilesInObservedOrder": []
+    },
+    "goby-client-m3e.service": {
+      "properties": {
+        "Restart": "no",
+        "MainPID": "0",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "WorkingDirectory": "/var/lib/goby-test/client-m3e",
+        "User": "goby",
+        "Group": "goby",
+        "Id": "goby-client-m3e.service",
+        "LoadState": "loaded",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "FragmentPath": "/etc/systemd/system/goby-client-m3e.service",
+        "DropInPaths": "",
+        "InvocationID": ""
+      },
+      "environmentFilesInObservedOrder": [
+        "/opt/goby-test/exec-work-m3e/runtime.env (ignore_errors=no)"
+      ]
+    }
+  },
+  "unitsAfter": {
+    "goby-foundation-test.service": {
+      "properties": {
+        "Restart": "on-failure",
+        "MainPID": "0",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "WorkingDirectory": "/var/lib/goby-test",
+        "User": "goby",
+        "Group": "goby",
+        "Id": "goby-foundation-test.service",
+        "LoadState": "loaded",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "FragmentPath": "/etc/systemd/system/goby-foundation-test.service",
+        "DropInPaths": "/etc/systemd/system/goby-foundation-test.service.d/20-application-keys.conf /etc/systemd/system/goby-foundation-test.service.d/30-observability.conf /etc/systemd/system/goby-foundation-test.service.d/40-backup-recovery.conf",
+        "InvocationID": ""
+      },
+      "environmentFilesInObservedOrder": [
+        "/opt/goby-test/runtime.env (ignore_errors=no)",
+        "/opt/goby-test/recovery-m5j.env (ignore_errors=no)"
+      ]
+    },
+    "postgresql@17-main.service": {
+      "properties": {
+        "Restart": "no",
+        "MainPID": "893",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "/system.slice/system-postgresql.slice/postgresql@17-main.service",
+        "WorkingDirectory": "",
+        "User": "",
+        "Group": "",
+        "Id": "postgresql@17-main.service",
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "running",
+        "FragmentPath": "/usr/lib/systemd/system/postgresql@.service",
+        "DropInPaths": "",
+        "InvocationID": "d4d78ab469054a9f86dbf0ed6e3ccdc4"
+      },
+      "environmentFilesInObservedOrder": []
+    },
+    "goby-client-m3e.service": {
+      "properties": {
+        "Restart": "no",
+        "MainPID": "0",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "WorkingDirectory": "/var/lib/goby-test/client-m3e",
+        "User": "goby",
+        "Group": "goby",
+        "Id": "goby-client-m3e.service",
+        "LoadState": "loaded",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "FragmentPath": "/etc/systemd/system/goby-client-m3e.service",
+        "DropInPaths": "",
+        "InvocationID": ""
+      },
+      "environmentFilesInObservedOrder": [
+        "/opt/goby-test/exec-work-m3e/runtime.env (ignore_errors=no)"
+      ]
+    }
+  },
+  "unitsStableDuringRead": true,
+  "filesBefore": {
+    "/opt/goby-dev/goby": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 493,
+      "device": 2049,
+      "inode": 367849,
+      "links": 1,
+      "bytes": 28172723,
+      "mtimeNs": "1789153505177646859",
+      "ctimeNs": "1789153505209645559"
+    },
+    "/etc/systemd/system/goby-foundation-test.service": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 6472,
+      "links": 1,
+      "bytes": 437,
+      "mtimeNs": "1788935748179248673",
+      "ctimeNs": "1788935748179248673"
+    },
+    "/usr/lib/systemd/system/postgresql@.service": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 121691,
+      "links": 1,
+      "bytes": 1651,
+      "mtimeNs": "1697719104000000000",
+      "ctimeNs": "1788902550082996204"
+    },
+    "/opt/goby-test/runtime.env": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 367817,
+      "links": 1,
+      "bytes": 1346,
+      "mtimeNs": "1788990517093695474",
+      "ctimeNs": "1788990517097695323"
+    },
+    "/opt/goby-test/recovery-m5j.env": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 367838,
+      "links": 1,
+      "bytes": 172,
+      "mtimeNs": "1789055951298086791",
+      "ctimeNs": "1789055951298086791"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/20-application-keys.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 401037,
+      "links": 1,
+      "bytes": 66,
+      "mtimeNs": "1788990517097695323",
+      "ctimeNs": "1788990517097695323"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/30-observability.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 2417102,
+      "links": 1,
+      "bytes": 101,
+      "mtimeNs": "1789035962720627137",
+      "ctimeNs": "1789035962728626853"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/40-backup-recovery.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 2633662,
+      "links": 1,
+      "bytes": 516,
+      "mtimeNs": "1789055951702070594",
+      "ctimeNs": "1789055951710070273"
+    },
+    "/run/systemd/system/goby-foundation-test.service.d": {
+      "exists": false
+    },
+    "/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 2425854,
+      "links": 1,
+      "bytes": 35,
+      "mtimeNs": "1789106197758387601",
+      "ctimeNs": "1789106197758387601"
+    },
+    "/var/lib/goby-test": {
+      "exists": true,
+      "kind": "directory",
+      "uid": 995,
+      "gid": 986,
+      "mode": 488,
+      "device": 2049,
+      "inode": 366972,
+      "links": 8,
+      "bytes": 4096,
+      "mtimeNs": "1789080176185821031",
+      "ctimeNs": "1789080176185821031"
+    }
+  },
+  "filesAfter": {
+    "/opt/goby-dev/goby": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 493,
+      "device": 2049,
+      "inode": 367849,
+      "links": 1,
+      "bytes": 28172723,
+      "mtimeNs": "1789153505177646859",
+      "ctimeNs": "1789153505209645559"
+    },
+    "/etc/systemd/system/goby-foundation-test.service": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 6472,
+      "links": 1,
+      "bytes": 437,
+      "mtimeNs": "1788935748179248673",
+      "ctimeNs": "1788935748179248673"
+    },
+    "/usr/lib/systemd/system/postgresql@.service": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 121691,
+      "links": 1,
+      "bytes": 1651,
+      "mtimeNs": "1697719104000000000",
+      "ctimeNs": "1788902550082996204"
+    },
+    "/opt/goby-test/runtime.env": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 367817,
+      "links": 1,
+      "bytes": 1346,
+      "mtimeNs": "1788990517093695474",
+      "ctimeNs": "1788990517097695323"
+    },
+    "/opt/goby-test/recovery-m5j.env": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 367838,
+      "links": 1,
+      "bytes": 172,
+      "mtimeNs": "1789055951298086791",
+      "ctimeNs": "1789055951298086791"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/20-application-keys.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 401037,
+      "links": 1,
+      "bytes": 66,
+      "mtimeNs": "1788990517097695323",
+      "ctimeNs": "1788990517097695323"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/30-observability.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 2417102,
+      "links": 1,
+      "bytes": 101,
+      "mtimeNs": "1789035962720627137",
+      "ctimeNs": "1789035962728626853"
+    },
+    "/etc/systemd/system/goby-foundation-test.service.d/40-backup-recovery.conf": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 420,
+      "device": 2049,
+      "inode": 2633662,
+      "links": 1,
+      "bytes": 516,
+      "mtimeNs": "1789055951702070594",
+      "ctimeNs": "1789055951710070273"
+    },
+    "/run/systemd/system/goby-foundation-test.service.d": {
+      "exists": false
+    },
+    "/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock": {
+      "exists": true,
+      "kind": "regular",
+      "uid": 0,
+      "gid": 0,
+      "mode": 384,
+      "device": 2049,
+      "inode": 2425854,
+      "links": 1,
+      "bytes": 35,
+      "mtimeNs": "1789106197758387601",
+      "ctimeNs": "1789106197758387601"
+    },
+    "/var/lib/goby-test": {
+      "exists": true,
+      "kind": "directory",
+      "uid": 995,
+      "gid": 986,
+      "mode": 488,
+      "device": 2049,
+      "inode": 366972,
+      "links": 8,
+      "bytes": 4096,
+      "mtimeNs": "1789080176185821031",
+      "ctimeNs": "1789080176185821031"
+    }
+  },
+  "fileMetadataStableDuringRead": true,
+  "source32Binary": {
+    "path": "/opt/goby-dev/goby",
+    "sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+    "bytes": 28172723
+  },
+  "matchesHistoricalSource32Binary": true,
+  "mainCgroupPids": [],
+  "mainObservedInactive": true,
+  "environmentContentsRead": false,
+  "unitFileContentsRead": false,
+  "masterOrVaultContentsRead": false,
+  "databaseReadsOrWrites": 0,
+  "httpRequests": 0,
+  "serviceMutations": 0,
+  "lockAcquiredOrCreated": false,
+  "migrationOrRestorePerformed": false,
+  "promotionAdmitted": false,
+  "remaining": [
+    "Review effective configuration and recovery binding privately",
+    "Bind the actual database/cluster/schema and lifecycle ownership",
+    "Review startup write scope and obtain a fresh native recovery point",
+    "Rehearse forward and actual source32 restoration",
+    "Close supported core client acceptance"
+  ],
+  "scope": "Unit state, ordered environment-file references, fixed file metadata and installed source32 binary bytes only; no database or recovery-state preservation claim."
+}

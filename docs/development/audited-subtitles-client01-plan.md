@@ -1,8 +1,10 @@
 # First subtitle acceptance on the TV successor
 
-Status: [fresh entry review passed](audited-subtitles-client01-entry.json);
-execution pending. This is one
-unconsumed `subtitles-01` decision under the [current execution plan](../planning/current-execution-plan.md).
+Status: **consumed; UI journey completed, formal acceptance failed**.
+The [entry review](audited-subtitles-client01-entry.json) passed before execution;
+the [result review](audited-subtitles-client01-review.md) now controls follow-up.
+Retain this `subtitles-01` contract under the [current execution plan](../planning/current-execution-plan.md)
+as history; do not execute the input again.
 Use the existing subtitle actor, movie and external SRT/VTT fixtures. No account
 reset, media preparation, rescan, new client or network change is included.
 

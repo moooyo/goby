@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after MP3, FLAC and Episode01. Status: **product and
+Reviewed on 2026-09-14 after Subtitles01 and initial main identity preparation. Status: **product and
 candidate verified; MP3 and FLAC accepted; video client acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
@@ -20,10 +20,12 @@ correction. Episode01 has already run. Its visible playback completion cannot
 pass acceptance while three page errors remain unclassified. Those errors do
 not invalidate accepted MP3/FLAC results or justify unrelated full-suite reruns.
 
-The next increment must add a small amount of discriminating evidence. Use
-native rejection reason metadata in the existing adapter. Defer Debugger,
-async stacks and extra network instrumentation unless a concrete later question
-establishes their value. Preserve the page-error rule and every original failure.
+The bounded native-rejection increment is complete. Its actual subtitle
+observation confirms undefined reasons without identifying a response or cause.
+Next, privately review main configuration and recovery/database identity under
+the existing read-only preparation allowance. Defer Debugger, async stacks and
+extra network instrumentation unless a concrete later question establishes
+their value. Preserve the page-error rule and every original failure.
 
 ## Accepted baseline
 
@@ -33,17 +35,19 @@ establishes their value. Preserve the page-error rule and every original failure
 | Candidate | [TV successor transition](../development/tv-parent-candidate-transition-closeout.json) and [affected admission05](../development/tv-parent-affected-admission-closeout.json) passed | Admission05 checks changed TV projections/access and reuses admission04 for unchanged contracts; main is separate |
 | MP3/FLAC | Both declared journeys, physical delivery, durable state and owned cleanup [passed](../development/audited-flac-client01-closeout.json), with zero page errors | Only these client/media profiles pass; no audible-output or general codec claim |
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
+| Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
-| Main | Source32/schema27 installation retained; [replacement upgrade contract](../development/audited-main-upgrade-plan.md) remains a draft | No main/source55 restart or upgrade is established by these client increments |
+| Main | [Fresh metadata](../development/audited-main-readonly-identity.json) finds main inactive, source32 binary matching, PostgreSQL unit active and stable file identities | Effective configuration, recovery binding, actual database state and upgrade admission remain unverified |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
 under epoch `76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac`.
-Episode01 closed twenty revoked sessions, eleven play rows, five userdata rows,
-two retained audio references and no encoding jobs. Its new unstarted Prepared
-row is explained by recorded detail PlaybackInfo responses and stays retained.
+Subtitles01 closed twenty-one revoked sessions, thirteen play rows, six userdata
+rows, two retained audio references and no encoding jobs. Its unstarted Prepared
+row is explained by later detail PlaybackInfo responses and stays retained.
 All earlier rows remain preserved. Later inputs bind this closed state, not
-the old seventeen- or nineteen-session snapshots.
+the earlier episode or audio snapshots. Ownership/cleanup closure does not
+resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
@@ -51,24 +55,26 @@ the old seventeen- or nineteen-session snapshots.
 | --- | --- | --- |
 | 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
 | 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
-| 3. First subtitle increment | Freeze one unconsumed subtitle input against the current state, verified adapter and fixed client/media under existing limits | Verify supported SRT/VTT, playback, physical delivery, durable state and cleanup. Collect diagnostics as secondary evidence; close owned state before another run |
-| 4. Select the next video correction | Review the subtitle outcome and any new direct error evidence | No recurrence only means this scenario did not reproduce the error. Undefined stays unattributed. Do not retry video or add another diagnostic layer automatically |
+| 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
+| 4. Main read-only preparation — active | Initial service/file identity capture completed; next privately resolve effective configuration and recovery binding, then bind actual PostgreSQL/database ownership and schema | Produce a concrete current recovery input without starting main or applying migration/restore. Promotion still requires the core and safety gates |
 
-The [Episode01 review](../development/audited-episode-client01-review.md) fixes
-the diagnostic hypothesis, limits and remote checks. Limit this diagnostic
-increment to one focused work session, with a 60-minute investigation ceiling
-before reassessment. Finish implementation and synthetic verification before
-admitting the subtitle input. Subtitle acceptance is that run's primary result;
-diagnostic collection does not authorize extra playback attempts.
+The [Episode01 review](../development/audited-episode-client01-review.md) records
+the completed diagnostic hypothesis, limits and remote checks. Its implementation
+and synthetic verification preceded the one subtitle input, which is consumed.
+Future diagnostic work requires a separate discriminating question and retains
+the one-session, 60-minute investigation ceiling before reassessment. Diagnostic
+collection does not authorize extra playback attempts.
 
 The [diagnostic implementation](../development/native-rejection-observer.md)
 completed this bounded increment. Its initial synthetic redirect fixture failed
 and was corrected within the same scope of work; both verification workers are
 closed. The product remained unchanged. Do not reopen diagnostic tooling by default.
-The [subtitle entry review](../development/audited-subtitles-client01-entry.json)
-has passed with exact35-table/sequence state and an unused actor. Execute
-the one [reviewed subtitle input](../development/audited-subtitles-client01-plan.md),
-then close its actual state and evaluate its declared evidence.
+The [subtitle result review](../development/audited-subtitles-client01-review.md)
+now supersedes its execution instruction. Native undefined provides no response
+association, and partial293 has a separate unexplained timing difference. Keep
+these explicit gaps and stop the same video/diagnostic cycle. Advance the
+independent main read-only work already allowed below; it cannot pass core
+acceptance or admit promotion.
 
 If two successive tool/checker failures block the same planned observation,
 pause that experiment and reassess its shared cause and value. Preserve failed
@@ -76,7 +82,7 @@ evidence and reconcile actual state. Do not create renamed attempts or another
 general runner. Missing direct causes remain explicit; independent source
 review and release preparation can proceed while affected claims remain open.
 
-Movie, TV browse and episode actors are consumed. A future run needs reviewed
+Movie, TV browse, episode and subtitle actors are consumed. A future run needs reviewed
 retained-state input and saved-state verification through the existing contract.
 Do not reset accounts, use a null baseline, reuse stale movie05 state, or add
 per-attempt constants. Overlapping coverage closes another gate only when its
