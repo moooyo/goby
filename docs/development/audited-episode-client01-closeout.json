@@ -1,0 +1,271 @@
+{
+  "kind": "audited-core-episode01-checkpoint",
+  "version": 1,
+  "status": "owned_state_closed_client_acceptance_pending",
+  "capturedAt": "2026-09-13T16:57:27.931621+00:00",
+  "ownedStateCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-episode01-owned-state-closeout.json",
+    "sha256": "00f8e110eb847b3105ac00047d9b79d71e07d74d4f8e325359742f58a88f7225"
+  },
+  "originalCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/closeout/closeout.json",
+    "sha256": "7f1a01dab535a8c5b44772e10586c250877df697088c79f04f74c97652ed226d"
+  },
+  "originalFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/failure.json",
+    "sha256": "fa0f8dff0bf0d82d226b7ba7ac4971584232671c4a12ed8b8a631f4fd80159ab"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "source": {
+    "binarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+    "manifestSha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff",
+    "schema": 28
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/source-before.json",
+    "sha256": "f1e4c21b7c2a1f36e3030836c7d32a94a1e0c884ed1c54e4218dfa2873c7f47c"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/source-after.json",
+    "sha256": "011164aacd6aa45ecf5070f6cddaf346cadee45204d30cb9954e8b0538e53ce3"
+  },
+  "boundary": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/boundary.json",
+    "sha256": "a1116e35673094bead0ed2bb945d67cb16a149d79413849afdc0e92023a17ae9"
+  },
+  "physicalRequests": 349,
+  "lifecycles": [
+    {
+      "playSessionId": "play_aa07ddf6cfd949c49809d987d7d6b09f",
+      "authSessionId": "c58ce7b924a5b4cf59134730d0657ef5",
+      "itemId": "e080e73964a530dc8e6c52a150362f65",
+      "state": "Stopped",
+      "counted": true,
+      "positionTicks": 591579620,
+      "preparation": {
+        "kind": "playback_info",
+        "ordinal": 277
+      },
+      "startedOrdinals": [
+        319
+      ],
+      "progressOrdinals": [
+        321,
+        322,
+        325,
+        328,
+        329,
+        330
+      ],
+      "stoppedOrdinals": [
+        331
+      ],
+      "effectiveStopOrdinals": [
+        331
+      ],
+      "countingReportOrdinals": [
+        319
+      ],
+      "mediaGetOrdinals": [
+        317,
+        324,
+        327
+      ]
+    }
+  ],
+  "partialMedia": [
+    {
+      "ordinal": 317,
+      "interpretation": "browser_abort_near_owned_stop",
+      "contextAssociation": "exact_range",
+      "contextOrdinals": [
+        315
+      ],
+      "completeHTTP": false,
+      "responseForwardedComplete": false,
+      "deliveredBodyBytes": 10780672
+    },
+    {
+      "ordinal": 324,
+      "interpretation": "browser_abort_near_owned_stop",
+      "contextAssociation": "exact_range",
+      "contextOrdinals": [
+        322
+      ],
+      "completeHTTP": false,
+      "responseForwardedComplete": false,
+      "deliveredBodyBytes": 10425472
+    }
+  ],
+  "retainedPreparations": [
+    {
+      "playSessionId": "play_f39943c6de944c0a9a8fac0ecae815e9",
+      "itemId": "e080e73964a530dc8e6c52a150362f65",
+      "state": "Prepared",
+      "counted": false,
+      "playbackInfoOrdinals": [
+        335,
+        337,
+        338
+      ]
+    }
+  ],
+  "logoutVerification": [
+    {
+      "authSessionId": "c58ce7b924a5b4cf59134730d0657ef5",
+      "loginOrdinal": 209,
+      "logoutOrdinal": 345,
+      "rejectionOrdinal": 347,
+      "rejectionStatus": 401
+    }
+  ],
+  "durable": {
+    "sessionsRevoked": 1,
+    "countedPlays": 1,
+    "retainedPreparations": [
+      {
+        "playSessionId": "play_f39943c6de944c0a9a8fac0ecae815e9",
+        "itemId": "e080e73964a530dc8e6c52a150362f65",
+        "state": "Prepared",
+        "counted": false
+      }
+    ],
+    "retainedTerminalEncodingJobs": [],
+    "controlQUnchanged": true,
+    "selectedUserdata": {
+      "item_id": "e080e73964a530dc8e6c52a150362f65",
+      "playback_position_ticks": 591579620,
+      "play_count": 1,
+      "is_favorite": false,
+      "played": false,
+      "last_played_at": "2026-09-13T16:25:51.346316+00:00",
+      "updated_at": "2026-09-13T16:25:59.375153+00:00"
+    }
+  },
+  "data": {
+    "beforeSessions": 19,
+    "afterSessions": 20,
+    "allSessionsRevoked": true,
+    "beforePlays": 9,
+    "afterPlays": 11,
+    "beforeUserData": 4,
+    "afterUserData": 5,
+    "beforeClientReferences": 2,
+    "afterClientReferences": 2,
+    "unchangedTables": [
+      "application_key_clients",
+      "application_key_devices",
+      "application_keys",
+      "catalog_entities",
+      "client_playback_references",
+      "encoding_jobs",
+      "extra_reserved_paths",
+      "item_entities",
+      "item_extra_resources",
+      "item_images",
+      "item_metadata_state",
+      "item_subtitles",
+      "item_theme_resources",
+      "items",
+      "libraries",
+      "library_roots",
+      "managed_settings",
+      "scan_jobs",
+      "schema_migrations",
+      "server_settings",
+      "task_definitions",
+      "task_occurrences",
+      "task_run_children",
+      "task_run_requests",
+      "task_runs",
+      "task_triggers",
+      "theme_owner_ids",
+      "theme_reserved_paths",
+      "user_settings",
+      "users"
+    ]
+  },
+  "originalUIRejection": {
+    "failedCheck": "client_ui_or_cleanup_incomplete",
+    "reproduced": true,
+    "pageErrorCount": 3,
+    "originalObservationUnchanged": true
+  },
+  "workers": {
+    "browser": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/browser-closed.json",
+        "sha256": "57c14c08ccad0ac955240afe8f653d3e70452a611770f5e54b1242ada4f2a0c7"
+      },
+      "pid": 491875,
+      "invocationId": "d942542930444dd9af4d973ce53fea82",
+      "recordedExitCode": 0,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-episode-01-browser.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    },
+    "gateway": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/gateway-closed.json",
+        "sha256": "c75905a69fc87eb56d5ab045ad68de8fd3c61f2daf7cca2de3648bd9a036ca96"
+      },
+      "pid": 491867,
+      "invocationId": "0580642eba404a96a90d6db922a78e9a",
+      "recordedExitCode": 0,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-episode-01-gateway.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    }
+  },
+  "candidateProcess": {
+    "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+    "cgroup": "0::/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service\n",
+    "cmdline": [
+      "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby"
+    ],
+    "exe": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+    "exeDevice": 2049,
+    "exeInode": 1661714,
+    "networkNamespace": "net:[4026531840]",
+    "pid": 486706,
+    "startTicks": "3260806",
+    "uid": 995,
+    "listener": {
+      "host": "127.0.0.1",
+      "port": 28498,
+      "socketInode": "692538"
+    }
+  },
+  "postgresContinuous": true,
+  "candidateRestarted": false,
+  "clientAcceptance": false,
+  "tvBrowseAcceptance": false,
+  "newHttpRequests": 0,
+  "newSqlQueries": 0,
+  "newServiceActions": 0,
+  "scope": "Saved state and physical delivery are reconciled; fresh checks cover owned worker absence and candidate/PostgreSQL process continuity only.",
+  "nextAction": "Review bounded passive rejection metadata before an unconsumed subtitle input; keep all original failures and consumed inputs unchanged."
+}

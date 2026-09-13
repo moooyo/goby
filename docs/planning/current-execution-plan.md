@@ -1,256 +1,148 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after affected admission05. Status: **audited product verified and
-current candidate admitted; core client acceptance open;
-TV parent metadata verified, installed and admitted**. This is the active work queue.
-[Current status](../development/current-status.md) records accepted facts;
-[delivery and verification](delivery-and-verification.md) retains the complete
-M2-M6 obligations. Historical plans and consumed run inputs are evidence, not
-alternative instructions to execute.
+Reviewed on 2026-09-14 after MP3, FLAC and Episode01. Status: **product and
+candidate verified; MP3 and FLAC accepted; video client acceptance open**.
+This is the active queue. [Current status](../development/current-status.md)
+records accepted facts. [Delivery and verification](delivery-and-verification.md)
+retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
+inputs are evidence, not alternative execution instructions.
 
-The cancellation fix passed the [full remote verification](../development/restore-cancellation-full-verification.json):
-2,264 tests across 25 packages with race instrumentation and a Linux build,
-without failures or skips. Its selected candidate and configuration passed
-[live admission04](../development/audited-candidate-live-admission-closeout.json).
-Reuse these results while the product bytes remain unchanged.
+The goal remains an independent Linux media server using Go, PostgreSQL and
+FFmpeg, an administrator-only React/MUI dashboard and unmodified compatible
+clients. This review adds no consumer player and removes no release obligations.
 
-Movie05 completed the observed movie UI and two counted Stopped play chains,
-but its browser result failed. Its [owned state](../development/audited-core-movie05-owned-state-closeout.json)
-and saved physical/durable evidence have since been reconciled; four page-error
-causes remain unknown. The [v3 integration](../development/audited-client-v3-verification.json)
-passed 71 new remote checks and a read-only stdout capture. Its one permitted
-movie06 run failed before playback because the test helper required a unique
-title while the old Home view was still visible after the item URL changed.
-The [movie06 closeout](../development/audited-core-movie06-owned-state-closeout.json)
-confirms fourteen revoked sessions, both workers closed, exact userdata and
-only the explained session/device/audit/preparation changes. It does not pass
-client acceptance or resolve the old page errors.
+## Review conclusion
 
-The [movie06 plan review](../development/audited-movie06-plan-review.md) replaces
-the earlier immediate next actions. The transition-wait correction now passes
-[19 remote lifecycle tests](../development/audited-movie06-readiness-verification.json),
-including a reproduction against the unchanged source. Keep movie execution
-paused: its current v3 baseline is bound to movie05, and any later movie run
-needs an explicitly reviewed closed-state input without per-attempt code
-constants, saved-state replay and a reachable page-error observation.
+The delivery direction remains appropriate: verify the product, admit an
+isolated candidate, establish supported real-client behavior, then rehearse
+recovery and promote main. Immediate ordering and completion claims needed
+correction. Episode01 has already run. Its visible playback completion cannot
+pass acceptance while three page errors remain unclassified. Those errors do
+not invalidate accepted MP3/FLAC results or justify unrelated full-suite reruns.
 
-TV browse01 has now consumed its separate decision. It completed the visible
-cross-season navigation, but a derived `SeriesId` assertion failed and one page
-error remains unclassified. Its [owned state is closed](../development/audited-core-tv-browse01-owned-state-closeout.json):
-all fifteen sessions are revoked, both workers closed, and the movie history
-preserved. The shared adapter correction passed
-[62 remote checks](../development/audited-tv-browse01-adapter-verification.json),
-including saved-response replay. A separate retained reference response shows
-a real TV parent-metadata difference in the product; fixing the checker alone
-does not resolve it.
+The next increment must add a small amount of discriminating evidence. Use
+native rejection reason metadata in the existing adapter. Defer Debugger,
+async stacks and extra network instrumentation unless a concrete later question
+establishes their value. Preserve the page-error rule and every original failure.
 
-Follow the [TV evidence review](../development/audited-tv-browse01-evidence-review.md).
-The evidenced Series/Season identity and name projection is implemented through
-existing authorized queries. Its 21 effective focused tests and the
-[full verification](../development/tv-parent-metadata-full-verification.json)
-passed: 2,270 tests/25 packages with race instrumentation and a Linux build,
-zero failures/skips, reconciled source/artifacts and complete isolated cleanup.
-The corrected HTTP fixture and its original failed run remain recorded.
-The [current-epoch candidate successor](../development/tv-parent-candidate-transition-plan.md)
-is installed using the existing transition tool, with exact retained state and
-historical hosting provenance. Tool verification passed 103 checks; the one
-stop/replacement/start and independent closeout passed. The bounded
-[affected admission for TV projections and access](../development/tv-parent-affected-admission-plan.md)
-passed twenty normal and four cleanup requests, with exact owned cleanup.
-Admission04 is reused for its unchanged contracts without another backup/restore.
-The final controller passed thirty guards and three actual saved-receipt checks.
-Freeze the next independent client input against this selected source and the
-current seventeen revoked sessions; preserve all consumed movie/TV inputs.
-The [actual lineage reader review](../development/tv-parent-client-lineage-review.md)
-and [first MP3 entry](../development/audited-mp3-client01-plan.md) are complete.
-MP3 has now passed its first run and [owned closeout](../development/audited-mp3-client01-closeout.json),
-with eighteen revoked sessions and one retained audio-reference row. Execute
-the separately reviewed first FLAC input preserved the complete MP3 state and
-[passed](../development/audited-flac-client01-closeout.json). Nineteen sessions
-are now revoked and both retained audio references remain. Execute the reviewed
-[episode input](../development/audited-episode-client01-plan.md) next. Its
-declared journey includes full TV browsing; evaluate that overlapping evidence
-after overall success instead of requiring a redundant TV actor rerun.
-Do not expand this into Live TV or reopen global NextUp research on an error
-timestamp alone.
+## Accepted baseline
 
-MP3 and FLAC are complete for this profile. Episode playback and subtitles remain
-independent core increments. They do not depend functionally on movie passing, but they do use
-the shared adapter. Serialize writes and close each owned state before the
-next run. Every increment freezes relevant verified source, fresh actor/state
-facts, expected outcome and existing request/time/cleanup bounds. Movie and TV
-actors are now consumed; future reruns need reviewed retained-state admission,
-not new actor identities or another null-baseline input. Success closes only
-that scenario's declared coverage; overlapping behavior must have complete
-recorded checks and overall owned-state closure before any additional gate closes.
-
-The [main upgrade contract](../development/audited-main-upgrade-plan.md) remains
-a draft. It needs core acceptance and distinct forward-restoration and actual
-old-binary restoration proofs from one fresh recovery point. Neither main nor
-the older source55 service has been upgraded or restarted by this increment.
-
-## Goal retained
-
-Deliver an independent Linux media server using Go, PostgreSQL and FFmpeg, with
-an administrator-only React/MUI dashboard and unmodified compatible clients.
-Keep the complete M2-M6 scope and its evidence requirements. A scoped internal
-deployment or direct-play checkpoint is not completion of the planned server.
-M7 stays deferred. This review neither adds a consumer player nor removes
-hardware, operational, broader media or compatibility obligations.
-
-## Corrections retained from the initial review
-
-| Finding | Decision |
-| --- | --- |
-| Initially, the verified product fixes were absent from both old installations | Completed: the selected product now has an admitted isolated candidate; keep the old installations separate |
-| Both services exited unexpectedly; recovery proved current readiness, not the original cause | Prioritize bounded failure diagnosis and safe future exit classification; do not require an unknowable historical cause before all development can continue |
-| Matrix07 returned ten empty global results, and two zero-history clients made no NextUp request | Park global NextUp discovery as inconclusive; require new discriminating evidence before another experiment |
-| A source55-specific automatic-refresh gate became a prerequisite for main upgrades generally | Separate data/security/upgrade safety, core client regressions, and feature-specific compatibility gates; explicitly supersede the old source55 deployment design |
-| Repeated preparation, identity repair and evidence reconstruction displaced product work | Reuse verified helpers and receipts, scale new checks to changed risks, and stop unproductive tooling loops |
-| The master plan's initial backlog and long historical handoffs look current | Use this short queue and the current-status index; keep old facts without treating old PIDs or pending actions as current |
-
-## Ordered delivery work
-
-| Priority | Deliverable and scope | Entry and completion condition |
+| Area | Accepted result | Remaining limit |
 | --- | --- | --- |
-| 1. Diagnose and freeze the product — complete | Audited backend and matching frontend, including R01-R21, exit diagnostics and the cancellation fix | Reuse the exact verified source/artifacts. The historical exit cause remains unresolved; do not invent causality or repeat service starts to investigate it |
-| 2. Admit an audited candidate — complete | Isolated candidate with its own database/state and separately reviewed binary/configuration transitions | Admission04 passed. Preserve its source, process, lease, recovery and owned-state identity; no new admission run or primary upgrade is needed merely to continue client work |
-| 3. Close the core client checkpoint | Reuse the established original-client scenarios on that candidate: login/browse, movie and TV direct play, seek/stop/resume, MP3/FLAC and supported external subtitles; check the changed access and state paths | Pin client/media versions and require actual media delivery, advancing playback, durable state, user isolation and exact owned cleanup. Cite historical controls for unchanged contracts and rerun affected journeys. Do not restart all reference research |
-| 4. Prepare and perform the main upgrade | Write a new plan for the selected audited candidate and the freshly observed main deployment. The old source55-only plan is superseded | Require candidate admission, core client regression evidence, an exact migration/recovery contract, a real isolated backup/restore and rollback rehearsal, fresh authority/ownership checks, and a bounded post-upgrade workflow. A failure retains recovery responsibility and cannot be relabeled success |
-| 5. Close the remaining release matrix | Complete representative catalog capacity and blocked-storage/reboot cases, wider playback/transcode/subtitle cases, actual GPU profiles, packaging, project license and dependency notices, plus unresolved feature compatibility | Select one bounded increment at a time from M2-M6. Publish explicit client/server/media/hardware support rows and limitations. Missing hardware blocks that profile, not unrelated software verification. License and notices must be resolved before an external distribution release. A limited release remains partial |
+| Product | TV parent metadata and earlier fixes passed [2,270 tests/25 packages with race instrumentation and a Linux build](../development/tv-parent-metadata-full-verification.json), without failures or skips | Reuse this exact source and binary; this is not client acceptance |
+| Candidate | [TV successor transition](../development/tv-parent-candidate-transition-closeout.json) and [affected admission05](../development/tv-parent-affected-admission-closeout.json) passed | Admission05 checks changed TV projections/access and reuses admission04 for unchanged contracts; main is separate |
+| MP3/FLAC | Both declared journeys, physical delivery, durable state and owned cleanup [passed](../development/audited-flac-client01-closeout.json), with zero page errors | Only these client/media profiles pass; no audible-output or general codec claim |
+| Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
+| Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
+| Main | Source32/schema27 installation retained; [replacement upgrade contract](../development/audited-main-upgrade-plan.md) remains a draft | No main/source55 restart or upgrade is established by these client increments |
 
-Read-only source/artifact review may run in parallel. State-changing work on
-shared fixtures must remain serialized. Each next task must name its concrete
-deliverable and stop condition rather than request an open-ended M2-M6 finish.
+The selected binary is
+`b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
+under epoch `76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac`.
+Episode01 closed twenty revoked sessions, eleven play rows, five userdata rows,
+two retained audio references and no encoding jobs. Its new unstarted Prepared
+row is explained by recorded detail PlaybackInfo responses and stays retained.
+All earlier rows remain preserved. Later inputs bind this closed state, not
+the old seventeen- or nineteen-session snapshots.
 
-The first diagnosis pass is limited to one focused work session, with a
-60-minute investigation ceiling before reassessment. If retained evidence is
-insufficient, record the missing observation and implement only the diagnostic
-coverage needed to distinguish a future failure. Do not repeat service starts
-or claim that a readiness check fixes the original exit cause. A known unsafe
-condition blocks promotion until fixed; an unknown historical cause requires
-explicit risk tracking and bounded candidate stability evidence, not invented
-causality. Freeze the workload, resource limits, observation window and failure
-criteria before candidate execution. Keep heavy verification jobs serialized
-on the shared test host in light of the recorded memory-pressure episodes.
+## Immediate queue
+
+| Order | Concrete deliverable | Completion or stop condition |
+| --- | --- | --- |
+| 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
+| 2. Minimal rejection observation | Add bounded native unhandledrejection primitive/Response metadata to the existing adapter; verify only the changed behavior remotely | Preserve pageerror propagation, redaction and Stop/Logout. A Response request ID must uniquely match response metadata; timing cannot attribute an error |
+| 3. First subtitle increment | Freeze one unconsumed subtitle input against the current state, verified adapter and fixed client/media under existing limits | Verify supported SRT/VTT, playback, physical delivery, durable state and cleanup. Collect diagnostics as secondary evidence; close owned state before another run |
+| 4. Select the next video correction | Review the subtitle outcome and any new direct error evidence | No recurrence only means this scenario did not reproduce the error. Undefined stays unattributed. Do not retry video or add another diagnostic layer automatically |
+
+The [Episode01 review](../development/audited-episode-client01-review.md) fixes
+the diagnostic hypothesis, limits and remote checks. Limit this diagnostic
+increment to one focused work session, with a 60-minute investigation ceiling
+before reassessment. Finish implementation and synthetic verification before
+admitting the subtitle input. Subtitle acceptance is that run's primary result;
+diagnostic collection does not authorize extra playback attempts.
+
+If two successive tool/checker failures block the same planned observation,
+pause that experiment and reassess its shared cause and value. Preserve failed
+evidence and reconcile actual state. Do not create renamed attempts or another
+general runner. Missing direct causes remain explicit; independent source
+review and release preparation can proceed while affected claims remain open.
+
+Movie, TV browse and episode actors are consumed. A future run needs reviewed
+retained-state input and saved-state verification through the existing contract.
+Do not reset accounts, use a null baseline, reuse stale movie05 state, or add
+per-attempt constants. Overlapping coverage closes another gate only when its
+complete declared checks and overall closeout pass. Episode01 does not qualify.
+
+## Remaining delivery order
+
+1. Close supported core original-client behavior: login/browse, movie and TV
+   direct play, pause/seek/stop/resume, MP3/FLAC, external subtitles, durable
+   state and user isolation. Reuse accepted unchanged journeys and controls.
+2. Complete fresh main safety/recovery evidence and one native recovery point.
+   Rehearse two distinct isolated restorations: selected binary to schema28,
+   and actual old source32 binary to schema27. Then admit a bounded promotion
+   and post-upgrade workflow, subject to the core gate.
+3. Close remaining M2-M6 capacity, blocked-storage/reboot, wider media/transcode,
+   administration extensions, actual GPU profiles, arm64/OCI/embedded assets,
+   license/notices and feature compatibility. Publish exact support rows.
+
+Read-only main preparation can proceed independently. Promotion still requires
+core acceptance and fresh safety/recovery evidence. The old source55-specific
+main plan and runners remain superseded. A new-binary schema27 restore migrates
+to schema28 and does not establish old-binary rollback. A cancelled ready
+restore retains its inactive staged database; bind that occupied state explicitly.
 
 ## Gate boundaries
 
-| Gate | What it blocks | What it does not block |
+| Gate | Blocks | Independent work that remains possible |
 | --- | --- | --- |
-| Source identity, authorization, data preservation, migration and recovery safety | Any affected candidate admission or main promotion | Read-only diagnosis and preparation |
-| Core real-client regression on the selected candidate | Promotion claiming the supported playback workflow | Independent API/unit work and fresh isolated candidate preparation |
-| Positive global NextUp reference and real-client behavior | Global-selection/ordering and NextUp playback-refresh compatibility claims; complete acceptance of that feature | An explicitly partial internal checkpoint for unrelated verified behavior |
-| Positive LibraryChanged automatic refresh | Automatic-refresh compatibility claims | Core playback evidence and an internal upgrade with that limitation explicitly recorded |
-| Complete supported release profile | M6 completion or a broad compatibility release claim | Earlier partial milestones with exact scope and known gaps |
+| Source identity, authorization, ownership, preservation and recovery safety | Affected admission, mutation or promotion | Read-only diagnosis and preparation |
+| Supported core real-client regression | Main promotion claiming that playback workflow | Unrelated API/unit work and main read-only preparation |
+| Positive global NextUp and client behavior | Complete NextUp selection/order/refresh claims | Unrelated verified playback and an explicitly partial internal checkpoint |
+| Positive LibraryChanged automatic refresh | Automatic-refresh compatibility claims | Core playback and an internal upgrade with the limitation recorded |
+| Complete supported release profile | M6 completion or broad compatibility release | Partial milestones with exact scope and known gaps |
 
-This intentionally replaces the blanket source55 original-client prerequisite
-in the [old main schema28 plan](../development/main-schema28-upgrade-plan.md).
-It does not admit its old runner, artifacts or receipt fields for a new release.
-The replacement upgrade plan must bind the selected audited product and all
-applicable safety/core-workflow evidence. Do not substitute hashes in an old
-frozen input. NextUp and automatic refresh remain open requirements for their
-full feature claims; they have not passed and have not been removed from scope.
+Keep global NextUp and automatic-refresh discovery parked. Matrix07's empty
+global results and two zero-history clients' missing NextUp requests are
+inconclusive. Reopen only for a recorded decision with new discriminating
+evidence, such as a client-issued query or positive public reference state.
+Do not replay consumed experiments, reset budgets or treat missing requests
+as empty responses. The [comparison contract](../development/nextup-goby-comparison-contract.md)
+remains parked. Reference inspection permits public APIs, visible behavior and
+network/error metadata; vendor source and databases remain excluded.
 
-The selected executable migrates a schema27 restore to schema28. Such a restore
-does not establish a usable source32/schema27 rollback database. The draft main
-contract therefore requires an actual old-binary restoration/start in isolation
-from the same fresh recovery point. Likewise, cancelling a ready restore plan
-retains its inactive staged database; later operations must bind that retained
-state explicitly instead of treating the slot as empty.
+Historical service exits remain unresolved. Existing diagnostics and bounded
+candidate stability support further work; readiness cannot establish the old
+cause. Do not repeat starts to invent causality. A newly evidenced unsafe
+condition blocks affected promotion until resolved. Missing hardware blocks
+its profile, not unrelated software checks. License/notices must close before
+external distribution. A limited internal release is not M2-M6 completion.
 
-## NextUp and automatic-refresh research stop rules
+## Execution and verification
 
-The existing matrix, browser and recovery scopes are closed and consumed. Do
-not repeat the same empty-global requests or zero-history Home/TV/Suggestions
-journey, reset their budget, or reinterpret missing requests as empty responses.
-The unused remainder of an old time allowance is not authority for another run.
+All tests, builds, validators and runtime/media/browser checks run through
+`ssh test-env`; no local fallback is authorized. Read-only reviews may run in
+parallel. Serialize shared-fixture writes and heavy remote jobs. Check available
+resources before admitting a new browser or heavy verification scope.
 
-Reopen a feature investigation only with a recorded product decision and new
-evidence that can distinguish competing explanations: for example an actual
-client-issued query, a reproducible positive public reference state, or a
-specific changed prerequisite supported by an observed public exchange. A
-guessed parameter, arbitrary delay or renamed copy of the same fixture is not
-such evidence. Reference inspection remains limited to permitted public APIs
-and visible client behavior; do not inspect vendor source or its database.
+Map each changed behavior to the smallest meaningful remote check. Tool-only
+or documentation edits do not require another full product suite. Product
+changes require relevant regressions and one final full verification of the
+frozen snapshot. High-risk ownership, credential, migration and recovery
+transitions retain independent review and closure.
 
-Before any new experiment, freeze one hypothesis, predicted outcomes, the
-minimum controls, a wall-clock/request limit, and reserved cleanup. Permit one
-bounded attempt for that hypothesis, then report pass, observed difference or
-inconclusive. A revised experiment needs materially new evidence. Real-client
-discovery retains a ceiling of 20 minutes and two playback attempts per target;
-use a smaller bound where the hypothesis needs less. No playback attempt is
-authorized merely to spend the remaining allowance.
+Reuse tested operators and immutable receipts. Pin the history actually consumed
+and distinguish it from freshly checked live resources. Do not claim narrower
+checks reverified every historical root. Keep DTO/storage mappings explicit;
+preserve raw failed evidence privately and publish safe projections.
 
-The [Goby comparison contract](../development/nextup-goby-comparison-contract.md)
-is parked. The fourteen captured SeriesId controls remain useful if a concrete
-regression or compatibility decision needs them; they do not justify a default
-300-request run. Select only the controls necessary for that decision. Keep
-global Goby policies labeled as policy; never make all results empty to imitate
-the sampled reference negatives.
+Each increment fixes expected results, permitted writes, protected boundaries,
+limits and stop conditions before execution. Close owned resources before the
+next business scenario. Unknown errors cannot be waived from timestamps alone;
+they do not justify adding Live TV, enabling external egress or synthesizing
+vendor registration responses.
 
-## Verification and tooling proportionality
-
-All tests, builds, validators and runtime/media/browser checks still run through
-`ssh test-env`; there is no local fallback. Plan edits use source/document
-inspection. Changed tools require their own focused remote verification.
-
-For future work, map each changed behavior to its risk and the smallest useful
-check. Reuse the audit's exact-source evidence when the product inputs are
-unchanged. For changed product inputs, run relevant regressions and one required
-full verification pass for the final frozen snapshot; repeat only after a
-material change, failure or unresolved concern. Never rerun the full suite for
-a documentation edit or read-only checker correction alone. High-risk migration,
-recovery, credential and ownership transitions retain independent review and
-closure even when the product suite already passed.
-
-Tool changes require targeted checks for the changed failure mode and input
-contract; citing an old helper receipt does not verify newly edited helper code.
-
-Keep public projections distinct from persisted rows. The seed exposed ten
-catalog entries while storage also held the three library collection rows;
-stored policy retained two legacy account flags omitted from the six-field
-managed-policy projection. Before dispatching another reconciliation, exercise
-its complete comparison against the already captured DTOs and stored snapshot.
-Bind explicit representation mappings rather than assuming equal field sets or
-counts, or weakening checks to ignore unexplained extra data.
-
-The movie03 pause permitted movie04, and the later movie05/movie06 decisions
-were also consumed. None supplies retry authority. Their shared lesson remains:
-the adapter must preserve the accepted asynchronous lifecycle, and evidence
-collection must not block owned Stop/Logout. The movie06 review now controls the
-next offline increment and any subsequent execution decision. Keep the same
-candidate, hosting, media and network boundary. A real product difference needs
-a focused reproduction; a tooling failure needs saved-evidence reconciliation.
-Neither result grants an unlimited sequence of renamed browser attempts.
-
-Preserve old receipts and private artifacts. Reuse their accepted manifests and
-checksums; do not recursively reconstruct every historical scope before every
-new action. A new preservation contract must enumerate the resources the action
-can affect, the expected changes and unrelated protected boundaries. Isolate
-writes and check those live boundaries freshly. Any reduction from an old
-contract must be justified for a new scope, never applied retroactively. Actual
-identity drift, uncertain writes or unexplained foreign-state changes still
-stop the affected operation until reconciled.
-
-Pin each historical receipt actually consumed by the new operation. Reports
-must distinguish freshly checked live resources from history cited through an
-accepted immutable closure; a narrower check cannot claim that all 198 previous
-roots were freshly verified. Preserve raw failed identity samples privately
-before rejecting them, so a later review can identify the exact failed field
-without exposing credentials or sensitive runtime data in the published report.
-
-Prefer existing tested operators with small explicit input changes. Do not
-create another general framework or duplicate an entire runner to add a guard.
-If two successive tooling/checker failures prevent the same planned observation,
-pause the experiment and review the shared cause and its expected value before
-building another version. Retain each failure; retrying a read-only checker must
-not rerun business operations. Runtime dependency changes belong in preparation,
-not in an active browser/upgrade execution.
-
-Each increment needs one concise closeout linking source/artifact identity,
-checks run, observed product result, cleanup, residual risk and the next action.
-Keep detailed raw evidence private and link existing receipts rather than
-copying their full histories into every status file. Commit and push a reviewable
-checkpoint under the existing development policy; never report a document or
-tooling checkpoint as product compatibility or deployment completion.
+Publish one concise closeout covering identity, relevant checks, product result,
+cleanup, limitation and next action. Commit and push a reviewable checkpoint
+under the existing policy. Documentation, tool verification and owned-state
+closure must not be reported as client acceptance or deployment completion.

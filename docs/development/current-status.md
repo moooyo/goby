@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after affected admission05. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after MP3, FLAC and Episode01. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -10,8 +10,8 @@ their original meanings and are not fresh deployment observations.
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
-| Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Execute the next independently admitted original-client scenario |
-| Core original client | MP3 and FLAC passed on the current successor; movie05 playback and TV browse01 navigation have historical formal failures and closed owned state | Episode with its full browse portion, external subtitles and retained movie acceptance |
+| Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
+| Core original client | MP3 and FLAC passed; Episode01 completed visible browsing/playback but retained three page errors; movie/TV/episode owned state is closed | Minimal native rejection diagnostics, first external subtitles, then evidence-led video correction and retained-state acceptance |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -73,10 +73,21 @@ revoked credential. Old state is exact. The separately reviewed
 [first FLAC input](audited-flac-client01-plan.md) preserved this full state.
 FLAC also [passed](audited-flac-client01-closeout.json):287 exchanges,
 3,127,772 bytes of completed media delivery, count1/55.342315-second userdata,
-zero page errors and fully closed workers. All nineteen sessions are revoked,
-with nine plays, four userdata rows and two retained audio references. The
-[episode entry](audited-episode-client01-plan.md) is reviewed against that exact
-state and includes the existing full TV browse journey before playback.
+zero page errors and fully closed workers. At that closeout nineteen sessions were revoked,
+with nine plays, four userdata rows and two retained audio references.
+
+The [episode entry](audited-episode-client01-plan.md) was consumed against that
+state. Its full TV browse and playback controls completed, but three page errors
+correctly failed formal acceptance. The [owned closeout](audited-episode-client01-closeout.json)
+reconciles 349 physical exchanges, one counted Stopped chain with count 1 and
+59.157962-second userdata, and one unstarted Prepared row from later detail
+PlaybackInfo. All twenty sessions are revoked; eleven plays, five userdata rows,
+two audio references and no encoding jobs remain. All prior rows are preserved.
+Both workers exited with code 0 and are absent; candidate/PostgreSQL continuity is checked.
+This does not pass episode or overlapping TV browse acceptance. Follow the
+[bounded rejection review](audited-episode-client01-review.md) before freezing
+the first subtitle input. Existing product verification and audio acceptance
+remain reusable; no episode replay or new diagnostic framework is planned.
 
 ## Movie checkpoints
 
@@ -109,8 +120,9 @@ HTTP exchanges, one CONNECT handshake and one rejection before upstream.
 The transition readiness correction now [passes 19 remote tests](audited-movie06-readiness-verification.json),
 including a regression that reproduces the original failure against unchanged
 source. It preserves real action uniqueness, delayed readiness, separate play
-lifecycles and owned logout. The live controller's frozen source selection has
-not changed. This is a tooling checkpoint only.
+lifecycles and owned logout. At that historical checkpoint the controller's
+source selection had not changed. Later integration is recorded above; the
+readiness result alone was a tooling checkpoint.
 
 Movie execution stays paused under the [plan review](audited-movie06-plan-review.md).
 Before another movie attempt, its per-attempt baseline constants must become an
@@ -118,9 +130,11 @@ explicitly reviewed closed-state input with matching saved-state regression.
 The current v3 controller remains bound to movie05 and cannot admit movie06's
 changed state. No movie07 input or run is claimed. The independent existing
 actors do not depend on that movie-only adjustment. TV browse subsequently
-consumed its own decision, as recorded below; MP3, FLAC, episode and subtitles
-remain later increments after the shared prerequisites. Each needs a separate
-frozen decision, serialized execution and complete state closure. Their success
+consumed its own decision, as recorded below. MP3 and FLAC have since passed;
+episode is consumed with closed owned state and failed formal acceptance.
+The next increment is minimal native rejection diagnostics, then preparation
+of the unused subtitle input. Each business run needs a frozen decision,
+serialized execution and complete closure. Passing an independent scenario
 does not resolve movie errors or authorize main promotion.
 
 Earlier failures remain consumed and linked through their closeouts:
@@ -133,7 +147,7 @@ Earlier failures remain consumed and linked through their closeouts:
 They establish neither passing client acceptance nor a reason for automatic
 retries. Product verification remains reusable because the binary is unchanged.
 
-## Latest increment: TV browse
+## Historical TV browse checkpoint and product correction
 
 [TV browse01](audited-tv-browse01-execution-decision.md) completed the visible
 library-to-series, two season selections, Episode 2-1 detail, Home return and
@@ -158,8 +172,9 @@ The [adapter correction](audited-tv-browse01-adapter-verification.json) passed
 requested-item and parent identity, rejects conflicting SeriesId when present,
 and permits redacted diagnostics only for the precisely classified
 non-credential assertion. The original failed result and unknown page error
-remain. The controller still pins the prior adapter; no new browser run has
-used the correction.
+remain. At that checkpoint the controller still pinned the prior adapter and
+the correction had not been used by a new browser run. The later verified
+integration and MP3/FLAC/Episode01 results above supersede that pending action.
 
 An existing reference Episode detail also proves a distinct product difference:
 SeriesId, SeasonId and their names were absent from Goby's mapper. The
@@ -176,7 +191,8 @@ were independently reconciled; the isolated worker/PG are closed. Binary
 [current-state transition](tv-parent-candidate-transition-plan.md) and passed
 [affected live admission](tv-parent-affected-admission-closeout.json). This is not a Live TV feature expansion;
 the nearby `/LiveTv/Programs` 404 is only a timing lead for the unresolved error.
-Affected client runs stay paused until the new admission and client inputs pass.
+Admission05 and the first audio/episode inputs have since passed entry review;
+episode's remaining page errors keep video acceptance open.
 The consumed TV actor now needs retained-state admission before any future
 rerun, just as movie does. No main service change or complete core acceptance
 is claimed.
