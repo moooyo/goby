@@ -13,9 +13,11 @@ upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
 gates and complete M2-M6 requirements remain open. Priorities 1 and 2 are complete:
 the corrected product is verified and its isolated candidate has passed live
-admission. Core original-client acceptance remains open. The offline movie
-lifecycle and retained-baseline alignment is verified; a new bounded browser
-execution decision remains separate. No main deployment is claimed.
+admission. Core original-client acceptance remains open. The verified offline
+movie alignment enabled one new bounded movie05 run. Its UI completed playback,
+seeking and resume, but final evidence reconciliation remains open; browser
+execution is paused under the [saved-evidence review](audited-movie05-evidence-review.md).
+No main deployment is claimed.
 
 The independently confirmed
 [late restore cancellation race](restore-cancellation-race.md) is fixed. Both windows
@@ -122,7 +124,7 @@ control. The physical ledger has one completed PlaybackInfo request and no
 Playing/Progress/Stopped reports or media GET. One Prepared row, with no start
 time and zero position/count, and a zero-history user-data row remain; all
 authentication sessions are revoked and no encoding job exists. This is retained
-preparation, not delivered or stopped playback. Browser iterations are now
+preparation, not delivered or stopped playback. Browser iterations were
 stopped while the entire movie lifecycle and this nonempty baseline were aligned
 offline. That [alignment is verified](audited-movie-offline-alignment.json): 16
 movie lifecycle, 20 durable-state/lineage and 16 controller checks passed on
@@ -130,7 +132,19 @@ movie lifecycle, 20 durable-state/lineage and 16 controller checks passed on
 unsafe-number failure remains retained; exact schema and fixed historical-epoch
 readers now preserve file nanosecond integers without rounding or changing the
 original evidence. Generic/public JSON retains the original strict limits.
-No movie05 was executed or authorized by the preceding pause decision.
+The preceding pause decision did not authorize movie05. A subsequent
+[separate bounded decision](audited-movie05-execution-decision.md), with a fresh
+exact-state entry review, did permit one new run. Movie05 completed the UI movie
+workflow and two counted, durably Stopped play chains, with both login sessions
+revoked and all workers closed. It then failed the adapter's completed-media
+event requirement. The [evidence review](audited-movie05-evidence-review.md)
+preserves the failed result, verifies the 355-exchange physical framing and
+actual delivered bytes, and records unresolved Range association, protocol
+body decoding and page-error diagnostics. The independent
+[owned-state closeout](audited-core-movie05-owned-state-closeout.json) reconciles
+all 35 tables and sequences against 29 complete critical API exchanges, with
+all thirteen sessions revoked and two counted plays Stopped. Movie05 is consumed; browser
+execution is paused again. This does not establish complete movie acceptance.
 The old movie02 generic failure cannot establish
 which individual guard failed. Both attempts and hosting evidence remain
 retained; acceptance is pending and the admitted Goby binary and configuration

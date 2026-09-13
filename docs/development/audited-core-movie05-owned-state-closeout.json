@@ -1,0 +1,61 @@
+{
+  "kind": "audited-movie05-owned-state-checkpoint",
+  "status": "owned_state_closed_client_acceptance_pending",
+  "host": "test-env",
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie05-owned-state-closeout.json",
+    "sha256": "7c38d00bcb4ece5e056e06a22be848cbd5e76c77f7d5b642d06f656be3dc27ab"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/close-movie05-owned-state.py",
+    "sha256": "0ecb0ce3b118981ba56a3b8cb888356063d255524193995f730a69e7ae378def"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-05/private/source-after.json",
+    "sha256": "be0dbd70d4f7ea7d4343a3ea6259f80be216b9239e7acfa6552b2c7858b33bb0"
+  },
+  "observedWorkflow": "movie_ui_flow_completed",
+  "originalBrowserOutcome": "failed",
+  "originalBrowserFailure": "candidate_playback_chain_incomplete",
+  "clientAcceptance": false,
+  "state": {
+    "ownedTablesReviewed": 35,
+    "unchangedTables": 30,
+    "oldRowsDeleted": 0,
+    "allSessionsRevoked": 13,
+    "newSessions": 2,
+    "newDevices": 1,
+    "deviceSequenceDelta": 2,
+    "newActivityEntries": 4,
+    "activitySequenceDelta": 4,
+    "otherSequencesExact": true,
+    "newCountedStoppedPlays": 2,
+    "newUnstartedPreparations": 2,
+    "newUnstartedStates": ["Expired", "Prepared"],
+    "oldMovie04PreparationState": "Expired",
+    "userPlayCount": 2,
+    "userResumePositionTicks": 1217878390,
+    "clientPlaybackReferences": 0,
+    "encodingJobs": 0
+  },
+  "savedEvidenceChecks": {
+    "criticalCompleteApiExchanges": 29,
+    "firstTokenRejectedBeforeSecondLogin": true,
+    "candidateContinuous": true,
+    "postgresContinuous": true,
+    "leaseExact": true,
+    "browserExitCode": 1,
+    "gatewayExitCode": 0,
+    "bothWorkerPidsAbsentAsRecorded": true,
+    "bothWorkerCgroupsEmptyAsRecorded": true,
+    "originalReceiptsPreserved": true
+  },
+  "closeoutActions": {
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "browserRuns": 0,
+    "serviceActions": 0,
+    "businessWrites": 0
+  },
+  "nextAction": "Keep browser execution paused. Review movie05 as one saved-run fixture for browser/physical media attribution, actual form and JSON body representations, lossless PlaybackStartTimeTicks and missing page-error diagnostics. Do not reuse the consumed run or reset its actor."
+}

@@ -3,7 +3,7 @@
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
 **diagnostic and cancellation fixes verified; candidate admitted;
-offline movie alignment verified, real-client acceptance still open**. The
+movie UI completed, evidence reconciliation and client acceptance still open**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -68,9 +68,22 @@ now passes 16 lifecycle, 20 durable-state/lineage and 16 controller checks, plus
 the actual saved-control replay. It covers control readiness, relogin, response
 completion, cleanup, precise diagnostic phases and a version-2 baseline for the
 retained preparation. File nanosecond metadata is read losslessly through exact
-schema/known-epoch paths; generic API JSON remains strict. The next deliverable
-is a separate, bounded version-2 movie execution decision using that verified
-source set, with fresh runtime and exact snapshot admission. Full authentication
+schema/known-epoch paths; generic API JSON remains strict. A separate
+[bounded version-2 execution decision](../development/audited-movie05-execution-decision.md)
+now freezes movie05 using that verified source set. Its fresh read-only entry
+review matches all 35 tables and sequences to the retained snapshot and confirms
+the runtime, lease and original-client host. Movie05 has now consumed that
+decision. The original UI completed both playback lifecycles, seeking and resume,
+but the adapter failed its final media-evidence check. Its
+[saved-evidence review](../development/audited-movie05-evidence-review.md) confirms
+355 framed physical exchanges, actual media delivery and revoked credentials;
+it also identifies Range-association gaps, incorrect protocol-body assumptions
+and four page errors with no recorded cause. The
+[owned-state delta is closed](../development/audited-core-movie05-owned-state-closeout.json),
+including all 35 tables and sequences, 29 critical API exchanges and both workers.
+Full acceptance is not claimed. Keep browser execution paused and
+review the complete saved run as one regression fixture for the evidence
+contract and missing diagnostics before another execution decision. Full authentication
 and media evidence remain strict;
 the rejected external registration attempt was blocked before any upstream
 connection and does not justify wider network access. The retained movie02 evidence supports
