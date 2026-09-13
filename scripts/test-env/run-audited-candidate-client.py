@@ -39,12 +39,18 @@ SERVER_LOG_LIMIT = 32 << 20
 ADMISSION = {"path": str(R / "candidate-live-admission-05/private/report.json"), "sha256": "b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535"}
 ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission05-closeout.json"), "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "tv-parent-client-component-verification-03/verification.json"), "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"}
+AV_VERIFICATION = {"path": str(R / "native-rejection-observer-verification-02/verification.json"), "sha256": "17c2b2aafb751417cc98827e642c6f6aac30e3202723d424d96f38cf22d3e9dd"}
+REUSED_AV_VERIFICATION = {"path": str(R / "tv-parent-client-component-verification-03/verification.json"), "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"}
 RUNTIME = {"path": str(R / "candidate-successor-tool-verification-01/audited-candidate-runtime.py"), "sha256": "bbb89c798e92b2821b7fe450b11783abeb0fe4526e27bcdbe420bf43e558d922"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0", "closer": "94910123694fe6f772cb0cfcc80696ed1691a46d33b0669ef8e969f7d81cbb94",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "7b8a399d1179dbf4326ebbb860734d3a7355a040a67b50e6e086930bacbd6635", "closer": "94910123694fe6f772cb0cfcc80696ed1691a46d33b0669ef8e969f7d81cbb94",
+    "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "movie": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "subtitles": "bc377470137f6f9ee2804de009690f9f0f99b875a6bdb500d9f4709603b91dc0", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
+# This historical selection must not follow later edits to FROZEN.
+REUSED_AV_SOURCES = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0", "closer": "94910123694fe6f772cb0cfcc80696ed1691a46d33b0669ef8e969f7d81cbb94",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
     "movie": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
@@ -117,6 +123,52 @@ def validate_input(value):
         need(path.name == filename and path.is_relative_to(R) and not path.is_relative_to(value["output"]) and
              (not filename.endswith(".mjs") or path.parent == directory) and value["sources"][key]["sha256"] == FROZEN[key], "client_source_path_or_revision_changed")
     return value
+
+
+def validate_native_rejection_verification(verification, reused_verification):
+    """Bind fresh diagnostics and subtitle checks without replaying old suites."""
+    old = reused_verification
+    need(isinstance(old, dict) and old.get("kind") == "tv-parent-candidate-client-component-verification" and
+         type(old.get("version")) is int and old["version"] == 1 and old.get("passed") is True and
+         old.get("sourceUnchanged") is True and old.get("browserStarted") is False and old.get("businessHttp") is False,
+         "reused_component_verification_invalid")
+    old_counts = {"adapterCounts": {"tests": 55, "pass": 55, "fail": 0, "skipped": 0}, "adapterSavedReplayChecks": 7,
+        "closerCounts": {"testCount": 32, "passed": 32, "failed": 0, "sourceUnchanged": True},
+        "version3Counts": {"tests": 12, "pass": 12, "fail": 0, "skipped": 0},
+        "savedMovie05ReplayCounts": {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True},
+        "movieCounts": {"tests": 19, "pass": 19, "fail": 0, "skipped": 0}}
+    need(all(canonical(old.get(key)) == canonical(expected) for key, expected in old_counts.items()),
+         "reused_component_counts_changed")
+    old_pins = old.get("sourcePins")
+    need(isinstance(old_pins, dict) and all(old_pins.get(SOURCE_FILES[key]) == checksum for key, checksum in REUSED_AV_SOURCES.items()),
+         "reused_component_sources_changed")
+    need(isinstance(verification, dict) and verification.get("kind") == "candidate-native-rejection-component-verification" and
+         type(verification.get("version")) is int and verification["version"] == 1 and verification.get("passed") is True and
+         verification.get("sourceUnchanged") is True and verification.get("browserStarted") is True and
+         verification.get("businessHttp") is False and type(verification.get("syntheticBrowserRuns")) is int and
+         verification["syntheticBrowserRuns"] == 1 and type(verification.get("originalClientRuns")) is int and
+         verification["originalClientRuns"] == 0 and isinstance(verification.get("verificationWorker"), dict) and
+         verification["verificationWorker"].get("closed") is True, "native_component_verification_scope")
+    need(verification.get("freshComponents") == ["adapter", "subtitles"] and
+         canonical(verification.get("reusedComponents")) == canonical(REUSED_AV_VERIFICATION) and
+         verification.get("reusedChecks") == ["closer", "version3", "savedMovie05", "movie"], "native_component_reuse_scope")
+    need(canonical(verification.get("adapterCounts")) == canonical(old_counts["adapterCounts"]) and
+         type(verification.get("adapterSavedReplayChecks")) is int and verification["adapterSavedReplayChecks"] == 7,
+         "native_component_adapter_checks_incomplete")
+    native, subtitle = verification.get("nativeCounts"), verification.get("subtitleCounts")
+    need(isinstance(native, dict) and set(native) == {"testCount", "passed", "failed", "sourceUnchanged"} and
+         all(type(native[key]) is int for key in ("testCount", "passed", "failed")) and native["testCount"] > 0 and
+         native["passed"] == native["testCount"] and native["failed"] == 0 and native["sourceUnchanged"] is True,
+         "native_component_diagnostic_checks_incomplete")
+    need(isinstance(subtitle, dict) and set(subtitle) == {"tests", "pass", "fail", "skipped"} and
+         all(type(number) is int for number in subtitle.values()) and subtitle["tests"] > 0 and
+         subtitle["pass"] == subtitle["tests"] and subtitle["fail"] == 0 and subtitle["skipped"] == 0,
+         "native_component_subtitle_checks_incomplete")
+    pins = verification.get("sourcePins")
+    need(isinstance(pins, dict) and all(pins.get(filename) == FROZEN[key] for key, filename in SOURCE_FILES.items()),
+         "native_component_sources_changed")
+    need(all((FROZEN[key] != checksum if key in ("adapter", "subtitles") else FROZEN[key] == checksum)
+             for key, checksum in REUSED_AV_SOURCES.items()), "native_component_fresh_sources_changed")
 
 
 def admitted(report, value, epoch, *, reused_admission04=None, product_input=None):
@@ -449,14 +501,7 @@ class ClientRun:
                  product_input=self.s.descriptor(epoch["productInput"]) if epoch.get("version") == 3 else None)
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
-        need(verification["kind"] == "tv-parent-candidate-client-component-verification" and verification["passed"] is True and
-             verification["sourceUnchanged"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
-             verification["adapterCounts"] == {"tests": 55, "pass": 55, "fail": 0, "skipped": 0} and verification["adapterSavedReplayChecks"] == 7 and
-             verification["closerCounts"] == {"testCount": 32, "passed": 32, "failed": 0, "sourceUnchanged": True} and
-             verification["version3Counts"] == {"tests": 12, "pass": 12, "fail": 0, "skipped": 0} and
-             verification["savedMovie05ReplayCounts"] == {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True} and
-             verification["movieCounts"] == {"tests": 19, "pass": 19, "fail": 0, "skipped": 0} and
-             all(verification["sourcePins"][filename] == FROZEN[key] for key, filename in SOURCE_FILES.items() if filename.endswith(".mjs")), "verified_client_sources_differ")
+        validate_native_rejection_verification(verification, self.s.descriptor(REUSED_AV_VERIFICATION))
         for pin in [self.value["node"], *self.value["sources"].values()]:
             self.s.read_checked(pin["path"], pin["sha256"])
         self.gateway = self.r.load_helper("browser_gateway", self.value["sources"]["gateway"])

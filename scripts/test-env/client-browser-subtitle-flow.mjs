@@ -1,6 +1,7 @@
 /** Select both owned external subtitle tracks through the original movie UI. */
 
 import { createHash } from 'node:crypto';
+import { movieItemFromLocation, waitMovieControl } from './client-browser-playback.mjs';
 
 const MOVIE = 'M3e Client Movie';
 const CUES = ['Opening subtitle', 'Backward seek subtitle', 'Forward seek subtitle', 'Midpoint subtitle'];
@@ -121,12 +122,13 @@ export async function runSubtitleUI({ page, context, report, snapshot, target, m
     const movie = page.getByText(MOVIE, { exact: true }).filter({ visible: true }).first();
     await movie.waitFor({ state: 'visible', timeout: 20000 });
     await movie.locator('xpath=ancestor-or-self::*[self::button or self::a][1]').click({ timeout: 8000 });
-    await page.waitForTimeout(500);
+    await page.waitForURL(location => movieItemFromLocation(location, target) === movieId, { timeout: 20000 });
     await inspect('subtitle-movie-detail-before');
     result.phase = 'start_movie';
     const beginning = page.getByRole('button', { name: 'From Beginning', exact: true }).filter({ visible: true });
-    if (await beginning.count() === 1) await beginning.click({ timeout: 8000 });
-    else await button('Play');
+    const play = page.getByRole('button', { name: 'Play', exact: true }).filter({ visible: true });
+    const selected = await waitMovieControl([{ key: 'from_beginning', locator: beginning }, { key: 'play', locator: play }]);
+    await selected.locator.click({ timeout: 8000 });
     await page.waitForFunction(() => [...document.querySelectorAll('video')].some(video =>
       !video.paused && video.readyState >= 2 && video.videoWidth > 0 && video.currentTime > 0.5), null, { timeout: 30000 });
     await showControls();

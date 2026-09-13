@@ -18,6 +18,7 @@ const SCENARIOS = ['movie', 'episode', 'mp3', 'flac', 'subtitles', 'tv-browse'];
 export const GATEWAY_CLOSEOUT_SECONDS = 30;
 export const REQUEST_HEADER_TIMEOUT_MS = 5000;
 export const PAGE_ERROR_LIMITS = Object.freeze({ events: 64, name: 128, message: 4096, stack: 8192, location: 4096, outputMessage: 512, sources: 3, requests: 8 });
+export const NATIVE_REJECTION_LIMITS = Object.freeze({ events: 16, bytes: 32768, string: 4096, requestId: 256, bridgeTimeoutMs: 1000 });
 const sha = value => createHash('sha256').update(value).digest('hex');
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const need = (value, reason = 'candidate_guard_rejected') => { if (!value) throw new Error(reason); };
@@ -504,6 +505,207 @@ export function createCandidatePageErrorCollector({ secrets, context = () => ({}
   };
 }
 
+// This function is serialized into a fresh document before application scripts.
+// The binding is synchronous: no fetch/Promise wrapper or rejection handler is added.
+export function installCandidateNativeRejectionHook({ bindingName, limits }) {
+  const apply = Reflect.apply, own = Object.getOwnPropertyDescriptor, make = Object.create;
+  const stringify = JSON.stringify, finite = Number.isFinite, integer = Number.isInteger, safeInteger = Number.isSafeInteger;
+  const binding = own(globalThis, bindingName)?.value;
+  if (typeof binding !== 'function') return;
+  const objectOf = fields => { const result = make(null); for (const [key, value] of fields) result[key] = value; return result; };
+  const encoder = new TextEncoder(), encode = TextEncoder.prototype.encode;
+  const byteLength = text => apply(encode, encoder, [text]).length;
+  const emit = payload => { try { apply(binding, globalThis, [stringify(payload)]); } catch { /* Disposal cannot create a new rejection. */ } };
+  const message = (event, fields = []) => objectOf([['version', 1], ['event', event], ...fields]);
+  let count = 0, bytes = 0, saturated = false;
+  try {
+    const reasonGetter = own(PromiseRejectionEvent.prototype, 'reason').get;
+    const responseGetters = Object.fromEntries(['url', 'status', 'type', 'redirected', 'headers'].map(key => [key, own(Response.prototype, key).get]));
+    const headerGet = Headers.prototype.get, listen = EventTarget.prototype.addEventListener;
+    const string = (value, maximum) => { if (typeof value !== 'string' || value.length > maximum) throw null; return value; };
+    const overflow = reason => { if (!saturated) emit(message('overflow', [['reason', reason]])); saturated = true; };
+    const listener = event => {
+      if (saturated) return;
+      if (count >= limits.events) { overflow('event_limit'); return; }
+      count++;
+      try {
+        const value = apply(reasonGetter, event, []), type = typeof value;
+        let reason;
+        if (value === null || !['object', 'function'].includes(type)) {
+          const primitive = value === null ? 'null' : type;
+          reason = objectOf([['kind', 'primitive'], ['type', primitive], ['value', type === 'string' ? string(value, limits.string) :
+            type === 'boolean' || (type === 'number' && finite(value) && (!integer(value) || safeInteger(value))) ? value : null]]);
+        } else {
+          let status = null;
+          try { status = apply(responseGetters.status, value, []); } catch { /* Native brand check only; never inspect an arbitrary object. */ }
+          if (status === null) reason = objectOf([['kind', type]]);
+          else {
+            const headers = apply(responseGetters.headers, value, []), requestId = apply(headerGet, headers, ['X-Request-Id']);
+            reason = objectOf([['kind', 'response'], ['url', string(apply(responseGetters.url, value, []), limits.string)], ['status', status],
+              ['type', string(apply(responseGetters.type, value, []), 32)], ['redirected', apply(responseGetters.redirected, value, [])],
+              ['requestId', requestId === null ? null : string(requestId, limits.requestId)]]);
+          }
+        }
+        const payload = message('rejection', [['sequence', count], ['reason', reason]]), text = stringify(payload), size = byteLength(text);
+        if (bytes + size > limits.bytes) { overflow('byte_limit'); return; }
+        bytes += size;
+        try { apply(binding, globalThis, [text]); } catch { /* A detached bridge cannot interrupt the application. */ }
+      } catch { emit(message('capture_failed')); }
+    };
+    apply(listen, globalThis, ['unhandledrejection', listener]);
+    emit(message('installed'));
+  } catch { emit(message('capture_failed')); }
+}
+
+export function createCandidateNativeRejectionCollector({ secrets, context = () => ({}) }) {
+  const retained = [], installed = new Set(), sequences = new Map(), failures = new Set();
+  let count = 0, overflow = 0, retainedBytes = 0, setupComplete = false, teardownComplete = false;
+  const failureCodes = new Set(['setup_failed', 'setup_timeout', 'teardown_failed', 'teardown_timeout', 'payload_invalid',
+    'capture_failed', 'event_limit', 'byte_limit', 'context_failed', 'redaction_failed', 'page_disposal_incomplete']);
+  const markFailure = code => failures.add(failureCodes.has(code) ? code : 'capture_failed');
+  const validReason = value => {
+    if (!object(value)) return false;
+    if (['object', 'function'].includes(value.kind)) return exact(value, ['kind']);
+    if (value.kind === 'primitive') return exact(value, ['kind', 'type', 'value']) &&
+      (value.type === 'string' ? typeof value.value === 'string' && value.value.length <= NATIVE_REJECTION_LIMITS.string :
+        value.type === 'boolean' ? typeof value.value === 'boolean' : value.type === 'number' ? value.value === null || Number.isFinite(value.value) &&
+          (!Number.isInteger(value.value) || Number.isSafeInteger(value.value)) :
+          ['undefined', 'null', 'bigint', 'symbol'].includes(value.type) && value.value === null);
+    return value.kind === 'response' && exact(value, ['kind', 'url', 'status', 'type', 'redirected', 'requestId']) &&
+      typeof value.url === 'string' && value.url.length <= NATIVE_REJECTION_LIMITS.string &&
+      Number.isInteger(value.status) && (value.status === 0 || value.status >= 200 && value.status <= 599) &&
+      ['basic', 'cors', 'default', 'error', 'opaque', 'opaqueredirect'].includes(value.type) && typeof value.redirected === 'boolean' &&
+      (value.requestId === null || typeof value.requestId === 'string' && value.requestId.length <= NATIVE_REJECTION_LIMITS.requestId);
+  };
+  const label = value => typeof value === 'string' && /^[a-z][a-z0-9_-]{0,63}$/i.test(value) ? value : null;
+  return {
+    markFailure,
+    setBridgeState({ setupComplete: setup, teardownComplete: teardown } = {}) {
+      if (setup === true) setupComplete = true;
+      if (teardown === true) teardownComplete = true;
+    },
+    ingest(payload, executionContextId) {
+      try {
+        need(typeof payload === 'string' && Buffer.byteLength(payload) <= NATIVE_REJECTION_LIMITS.bytes &&
+          Number.isSafeInteger(executionContextId) && executionContextId > 0);
+        const value = JSON.parse(payload);
+        need(value?.version === 1);
+        if (value.event === 'installed') {
+          need(exact(value, ['version', 'event']) && installed.size < 64 && !installed.has(executionContextId));
+          installed.add(executionContextId); return;
+        }
+        need(installed.has(executionContextId));
+        if (value.event === 'overflow') {
+          need(exact(value, ['version', 'event', 'reason']) && ['event_limit', 'byte_limit'].includes(value.reason));
+          overflow++; markFailure(value.reason); return;
+        }
+        if (value.event === 'capture_failed') { need(exact(value, ['version', 'event'])); markFailure('capture_failed'); return; }
+        need(exact(value, ['version', 'event', 'sequence', 'reason']) && value.event === 'rejection' &&
+          Number.isSafeInteger(value.sequence) && value.sequence > (sequences.get(executionContextId) ?? 0) &&
+          value.sequence <= NATIVE_REJECTION_LIMITS.events && validReason(value.reason));
+        if (value.sequence !== (sequences.get(executionContextId) ?? 0) + 1) markFailure('capture_failed');
+        sequences.set(executionContextId, value.sequence); count++;
+        if (retained.length >= NATIVE_REJECTION_LIMITS.events) { overflow++; markFailure('event_limit'); return; }
+        let current = {};
+        try { current = context() ?? {}; } catch { markFailure('context_failed'); }
+        const row = { id: 'native-rejection-' + count, execution_context_id: executionContextId, sequence: value.sequence,
+          elapsed_ms: Number.isSafeInteger(current.elapsed_ms) && current.elapsed_ms >= 0 ? current.elapsed_ms : null,
+          phase: label(current.phase), operation: label(current.operation), reason: value.reason };
+        const size = Buffer.byteLength(JSON.stringify(row));
+        if (retainedBytes + size > NATIVE_REJECTION_LIMITS.bytes - 2048) { overflow++; markFailure('byte_limit'); return; }
+        retainedBytes += size; retained.push(row);
+      } catch { markFailure('payload_invalid'); }
+    },
+    snapshot({ authorityComplete = false, requests = [] } = {}) {
+      const problems = new Set(failures), redact = candidateDiagnosticRedactor(secrets);
+      let trimmed = 0, events = [];
+      try {
+        events = retained.map(row => {
+          const original = row.reason;
+          let reason = { kind: original.kind }, association = { state: 'unattributed', request_ordinal: null }, incomplete = !authorityComplete;
+          if (original.kind === 'primitive') {
+            const value = authorityComplete ? original.type === 'string' ? redact.text(original.value, 512) : original.value : null;
+            if (original.type === 'string' && value === null) incomplete = true;
+            reason = { kind: original.kind, type: original.type, value };
+          } else if (original.kind === 'response') {
+            const location = authorityComplete && original.url ? redact.location(original.url) : null;
+            const requestId = authorityComplete && original.requestId !== null ? redact.text(original.requestId, NATIVE_REJECTION_LIMITS.requestId) : null;
+            if (original.url && location === null || original.requestId !== null && requestId === null) incomplete = true;
+            reason = { kind: 'response', location, status: original.status, type: original.type, redirected: original.redirected, request_id: requestId };
+            if (authorityComplete && original.requestId && /^[\x21-\x7e]+$/.test(original.requestId) && original.url) {
+              const found = requests.filter(request => {
+                const headers = Object.entries(request.response_headers ?? {}).filter(([key]) => key.toLowerCase() === 'x-request-id');
+                return headers.length === 1 && headers[0][1] === original.requestId;
+              });
+              if (found.length > 1) association.state = 'ambiguous';
+              else if (found.length === 1) {
+                const request = found[0];
+                if (request.url === original.url && request.status === original.status && Number.isSafeInteger(request.ordinal) && request.ordinal > 0)
+                  association = { state: 'matched', request_ordinal: request.ordinal };
+                else association.state = 'mismatch';
+              }
+            }
+          }
+          return { ...row, phase: authorityComplete ? redact.text(row.phase, 64) : null,
+            operation: authorityComplete ? redact.text(row.operation, 64) : null, reason, association,
+            diagnostic_state: incomplete ? 'partially_unavailable' : 'captured_redacted' };
+        });
+      } catch { events = []; trimmed = retained.length; problems.add('redaction_failed'); }
+      const summary = () => ({ count, retained_count: events.length, overflow_count: overflow + trimmed,
+        scope: 'Installed document contexts on the current page CDP session; workers and out-of-process frames are not automatically covered.',
+        interpretation: 'Completeness describes this collection scope. A matched Response does not attribute a pageerror or establish harmlessness.',
+        count_is_lower_bound: overflow + trimmed > 0 || !setupComplete || !teardownComplete || installed.size === 0 || problems.size > 0,
+        diagnostics_complete: authorityComplete === true && setupComplete && teardownComplete && installed.size > 0 && problems.size === 0 &&
+          events.every(row => row.diagnostic_state === 'captured_redacted'),
+        failures: [...problems].sort(), installed_contexts: installed.size, setup_complete: setupComplete, teardown_complete: teardownComplete,
+        retained_bytes: Buffer.byteLength(JSON.stringify(events)) });
+      while (Buffer.byteLength(JSON.stringify({ events, summary: summary() })) > NATIVE_REJECTION_LIMITS.bytes && events.length) {
+        events.pop(); trimmed++; problems.add('byte_limit');
+      }
+      return { events, summary: summary() };
+    },
+  };
+}
+
+export async function attachCandidateNativeRejections({ context, page, collector, timeoutMs = NATIVE_REJECTION_LIMITS.bridgeTimeoutMs }) {
+  const bindingName = '__goby_native_rejection_v1';
+  let session, stopped = false, disposed = false;
+  const received = event => { if (!stopped && event.name === bindingName) collector.ingest(event.payload, event.executionContextId); };
+  const detachLate = async value => { try { await bounded(value.detach(), timeoutMs); } catch { collector.markFailure('teardown_failed'); } };
+  const setup = async () => {
+    session = await context.newCDPSession(page);
+    if (stopped) { await detachLate(session); return; }
+    session.on('Runtime.bindingCalled', received);
+    await session.send('Runtime.enable'); if (stopped) return;
+    await session.send('Runtime.addBinding', { name: bindingName }); if (stopped) return;
+    await page.addInitScript(installCandidateNativeRejectionHook, { bindingName, limits: NATIVE_REJECTION_LIMITS });
+    if (!stopped) collector.setBridgeState({ setupComplete: true });
+  };
+  try {
+    need(Number.isSafeInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= NATIVE_REJECTION_LIMITS.bridgeTimeoutMs);
+    await bounded(setup(), timeoutMs, 'native_setup_timeout');
+  } catch (error) { stopped = true; collector.markFailure(error?.message === 'native_setup_timeout' ? 'setup_timeout' : 'setup_failed'); }
+  return {
+    async dispose() {
+      if (disposed) return;
+      disposed = true; stopped = true;
+      try {
+        if (session) {
+          session.off('Runtime.bindingCalled', received);
+          if (!page.isClosed()) {
+            collector.markFailure('page_disposal_incomplete');
+            await bounded((async () => {
+              try { await session.send('Runtime.removeBinding', { name: bindingName }); }
+              finally { await session.detach(); }
+            })(), timeoutMs, 'native_teardown_timeout');
+          }
+        }
+        collector.setBridgeState({ teardownComplete: true });
+      } catch (error) { collector.markFailure(error?.message === 'native_teardown_timeout' ? 'teardown_timeout' : 'teardown_failed'); }
+    },
+  };
+}
+
 export function candidatePlaybackEvidence(requests, manifest, sessions) {
   const selected = selectedCandidateItem(manifest);
   if (!selected) return { required: false, passed: true };
@@ -590,12 +792,15 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       admission_cleanup_remaining: gateway.budgets.cleanupRequests - gatewayUsage.cleanup,
       external_validation: 'pending_outer_gateway_closure' },
     evidence_boundary: 'Original UI and frame/Service Worker context observations; physical gateway validation and P/Q state checks are external. No vendor asset bodies are read.' };
-  let browser, context, page, sessionProof, activeSession, episodeLocation = null, cleanupMode = false, requestOrdinal = 0;
+  let browser, context, page, sessionProof, nativeRejectionBridge, activeSession, episodeLocation = null, cleanupMode = false, requestOrdinal = 0;
   const secrets = [credential.password], entries = new WeakMap(), processAnchors = {};
   let secretRegistryComplete = true;
   const pageErrors = createCandidatePageErrorCollector({ secrets, context: () => ({ elapsed_ms: elapsed(),
     phase: cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.tv_browse?.phase ?? report.episode_phase ?? report.login_phase ?? null,
     operation: report.playback?.operation ?? report.logout_phase ?? report.login_phase ?? null, location: page?.url() ?? null, requests: report.requests }) });
+  const nativeRejections = createCandidateNativeRejectionCollector({ secrets, context: () => ({ elapsed_ms: elapsed(),
+    phase: cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.tv_browse?.phase ?? report.episode_phase ?? report.login_phase ?? null,
+    operation: report.playback?.operation ?? report.logout_phase ?? report.login_phase ?? null }) });
   const remaining = () => candidateRemainingMilliseconds(manifest.budgets, elapsed(), cleanupMode);
   const observations = createCandidateObserverQueue({ elapsed,
     onFailure: failure => { report.observer.failures.push(failure); report.failure ??= failure.reason; },
@@ -940,8 +1145,10 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
         attribution: 'browser_context_failure; gateway association pending' };
       report.observed_rejections.push(rejection); if (row.kind === 'external') report.blocked_external.push(rejection);
     });
-    page = budgetedUI(await context.newPage());
+    const rawPage = await context.newPage();
+    page = budgetedUI(rawPage);
     page.on('pageerror', error => { const entry = pageErrors.record(error); if (entry) report.page_errors.push(entry); });
+    nativeRejectionBridge = await attachCandidateNativeRejections({ context, page: rawPage, collector: nativeRejections });
     await loginUI(true);
     const shared = { page, context, report, snapshot, target: new URL(manifest.clientUrl) };
     if (manifest.scenario === 'movie') await runMovieWorkflow({ ...shared, repeatLogin: async () => {
@@ -982,12 +1189,17 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     catch { report.cleanup.private_state_unavailable = true; }
     try { if (sessionProof) await sessionProof.dispose(); } catch { report.failure ??= 'candidate_proof_close_failed'; }
     try { if (browser) await bounded(browser.close(), 15000); report.cleanup.browser_closed = true; } catch { report.failure ??= 'candidate_browser_close_failed'; }
+    // Keep passive collection until page disposal, after owned UI/token cleanup.
+    if (nativeRejectionBridge) await nativeRejectionBridge.dispose();
     report.cleanup.gateway_closure = 'owned_by_outer_controller';
     try { await pin(); } catch { report.failure ??= 'candidate_final_pin_failed'; }
     report.observer.pending = observations.snapshot();
     const pageErrorDiagnostics = pageErrors.snapshot({ authorityComplete: candidatePageErrorAuthorityComplete({
       secretRegistryComplete, observer: report.observer, requests: report.requests, manifest }) });
     report.page_errors = pageErrorDiagnostics.events; report.page_error_diagnostics = pageErrorDiagnostics.summary;
+    const nativeRejectionDiagnostics = nativeRejections.snapshot({ authorityComplete: candidatePageErrorAuthorityComplete({
+      secretRegistryComplete, observer: report.observer, requests: report.requests, manifest }), requests: report.requests });
+    report.native_rejections = nativeRejectionDiagnostics.events; report.native_rejection_diagnostics = nativeRejectionDiagnostics.summary;
     report.elapsed_ms = elapsed();
     if (report.elapsed_ms > manifest.budgets.maximumSeconds * 1000) report.failure ??= 'candidate_time_budget_exhausted';
     report.outcome = report.failure ? 'failed' : 'scenario_completed';
@@ -1004,6 +1216,11 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       logout_phase: report.logout_phase ?? null, logout_failure_phase: report.logout_failure_phase ?? null,
       page_error_count: pageErrorDiagnostics.summary.count, page_error_review_required: pageErrorDiagnostics.summary.review_required,
       page_error_diagnostics_complete: pageErrorDiagnostics.summary.diagnostics_complete, page_error_overflow_count: pageErrorDiagnostics.summary.overflow_count,
+      native_rejection_count: nativeRejectionDiagnostics.summary.count,
+      native_rejection_diagnostics_complete: nativeRejectionDiagnostics.summary.diagnostics_complete,
+      native_rejection_overflow_count: nativeRejectionDiagnostics.summary.overflow_count,
+      native_rejection_scope: nativeRejectionDiagnostics.summary.scope,
+      native_rejection_interpretation: nativeRejectionDiagnostics.summary.interpretation,
       observer: report.observer,
       playback_evidence: { required: report.playback_evidence.required, passed: report.playback_evidence.passed,
         evidence_stage: report.playback_evidence.evidence_stage ?? null, physical_validation: report.playback_evidence.physical_validation ?? null,

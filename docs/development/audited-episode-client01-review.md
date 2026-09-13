@@ -53,6 +53,10 @@ MP3/FLAC acceptance remains valid; movie, episode and TV browse remain open.
 
 ## One minimal diagnostic increment
 
+Completed by the [native rejection implementation and verification](native-rejection-observer.md).
+The following records its original hypothesis and bounded design; the active
+queue now advances to the unused subtitle input after fresh entry review.
+
 Hypothesis: pageerror serialization loses useful native rejection reason
 information. A passive `unhandledrejection` listener may distinguish a native
 Response, primitive undefined and the string `"undefined"`, and may associate a

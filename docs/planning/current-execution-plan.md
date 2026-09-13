@@ -50,7 +50,7 @@ the old seventeen- or nineteen-session snapshots.
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
-| 2. Minimal rejection observation | Add bounded native unhandledrejection primitive/Response metadata to the existing adapter; verify only the changed behavior remotely | Preserve pageerror propagation, redaction and Stop/Logout. A Response request ID must uniquely match response metadata; timing cannot attribute an error |
+| 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
 | 3. First subtitle increment | Freeze one unconsumed subtitle input against the current state, verified adapter and fixed client/media under existing limits | Verify supported SRT/VTT, playback, physical delivery, durable state and cleanup. Collect diagnostics as secondary evidence; close owned state before another run |
 | 4. Select the next video correction | Review the subtitle outcome and any new direct error evidence | No recurrence only means this scenario did not reproduce the error. Undefined stays unattributed. Do not retry video or add another diagnostic layer automatically |
 
@@ -60,6 +60,15 @@ increment to one focused work session, with a 60-minute investigation ceiling
 before reassessment. Finish implementation and synthetic verification before
 admitting the subtitle input. Subtitle acceptance is that run's primary result;
 diagnostic collection does not authorize extra playback attempts.
+
+The [diagnostic implementation](../development/native-rejection-observer.md)
+completed this bounded increment. Its initial synthetic redirect fixture failed
+and was corrected within the same scope of work; both verification workers are
+closed. The product remained unchanged. Do not reopen diagnostic tooling by default.
+The [subtitle entry review](../development/audited-subtitles-client01-entry.json)
+has passed with exact35-table/sequence state and an unused actor. Execute
+the one [reviewed subtitle input](../development/audited-subtitles-client01-plan.md),
+then close its actual state and evaluate its declared evidence.
 
 If two successive tool/checker failures block the same planned observation,
 pause that experiment and reassess its shared cause and value. Preserve failed

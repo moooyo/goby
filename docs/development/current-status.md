@@ -11,7 +11,7 @@ their original meanings and are not fresh deployment observations.
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
-| Core original client | MP3 and FLAC passed; Episode01 completed visible browsing/playback but retained three page errors; movie/TV/episode owned state is closed | Minimal native rejection diagnostics, first external subtitles, then evidence-led video correction and retained-state acceptance |
+| Core original client | MP3/FLAC passed; Episode01 retains three page errors with closed owned state; native rejection diagnostics and subtitle entry are verified | First external subtitle run, then evidence-led video correction and retained-state acceptance |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -89,6 +89,17 @@ This does not pass episode or overlapping TV browse acceptance. Follow the
 the first subtitle input. Existing product verification and audio acceptance
 remain reusable; no episode replay or new diagnostic framework is planned.
 
+The [native rejection increment](native-rejection-observer.md) is now verified:
+83 component checks, 35 controller guards and three actual saved integrations
+passed. A first synthetic redirect fixture failure is preserved; the corrected
+fixture uses its own private loopback server. Both synthetic browser scopes and
+the temporary server are closed, with zero original-client runs. The same
+increment reused the established movie readiness helper for the subtitle entry.
+Original pageerror rejection remains unchanged; metadata association does not
+resolve the old movie/episode errors. The [first subtitle entry](audited-subtitles-client01-entry.json)
+now passes with all35 tables/sequences matching the Episode01 closeout and an
+unused actor. Its one [bounded execution](audited-subtitles-client01-plan.md) is next.
+
 ## Movie checkpoints
 
 The [v3 input contract](audited-client-v3-input.md) integrates occupied movie05
@@ -132,8 +143,8 @@ changed state. No movie07 input or run is claimed. The independent existing
 actors do not depend on that movie-only adjustment. TV browse subsequently
 consumed its own decision, as recorded below. MP3 and FLAC have since passed;
 episode is consumed with closed owned state and failed formal acceptance.
-The next increment is minimal native rejection diagnostics, then preparation
-of the unused subtitle input. Each business run needs a frozen decision,
+Native rejection diagnostics and the first subtitle entry have since passed;
+the next increment is that one subtitle execution. Each business run needs a frozen decision,
 serialized execution and complete closure. Passing an independent scenario
 does not resolve movie errors or authorize main promotion.
 

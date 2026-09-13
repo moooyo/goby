@@ -34,6 +34,28 @@ def fixture():
         "sources": sources, "budgets": copy.deepcopy(m.BUDGETS), "gatewayBudgets": copy.deepcopy(m.GATEWAY_BUDGETS)}
 
 
+def native_verification_fixture():
+    old = {"kind": "tv-parent-candidate-client-component-verification", "version": 1, "passed": True,
+        "sourceUnchanged": True, "browserStarted": False, "businessHttp": False,
+        "adapterCounts": {"tests": 55, "pass": 55, "fail": 0, "skipped": 0}, "adapterSavedReplayChecks": 7,
+        "closerCounts": {"testCount": 32, "passed": 32, "failed": 0, "sourceUnchanged": True},
+        "version3Counts": {"tests": 12, "pass": 12, "fail": 0, "skipped": 0},
+        "savedMovie05ReplayCounts": {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True},
+        "movieCounts": {"tests": 19, "pass": 19, "fail": 0, "skipped": 0},
+        "sourcePins": {m.SOURCE_FILES[key]: checksum for key, checksum in m.REUSED_AV_SOURCES.items()}}
+    # A future current selection must not change the historical fixture.
+    selected = {**m.REUSED_AV_SOURCES, "adapter": "a" * 64, "subtitles": "b" * 64}
+    current = {"kind": "candidate-native-rejection-component-verification", "version": 1, "passed": True,
+        "sourceUnchanged": True, "browserStarted": True, "businessHttp": False, "syntheticBrowserRuns": 1, "originalClientRuns": 0,
+        "verificationWorker": {"closed": True}, "freshComponents": ["adapter", "subtitles"],
+        "reusedComponents": copy.deepcopy(m.REUSED_AV_VERIFICATION), "reusedChecks": ["closer", "version3", "savedMovie05", "movie"],
+        "adapterCounts": {"tests": 55, "pass": 55, "fail": 0, "skipped": 0}, "adapterSavedReplayChecks": 7,
+        "nativeCounts": {"testCount": 6, "passed": 6, "failed": 0, "sourceUnchanged": True},
+        "subtitleCounts": {"tests": 3, "pass": 3, "fail": 0, "skipped": 0},
+        "sourcePins": {m.SOURCE_FILES[key]: checksum for key, checksum in selected.items()}}
+    return current, old, selected
+
+
 def make_job(value=None):
     return m.ClientRun(types.SimpleNamespace(), value or fixture(), {"path": str(m.R / "input.json"), "sha256": "e" * 64},
                        {"path": str(m.R / "run-audited-candidate-client.py"), "sha256": "f" * 64})
@@ -205,6 +227,85 @@ def startup_fixture(*, successor=False, epoch_version=2):
 
 
 class Guards(unittest.TestCase):
+    def test_native_verification_separates_fresh_checks_from_reused_results(self):
+        current, old, selected = native_verification_fixture()
+        old_before = copy.deepcopy(old)
+        current["sourcePins"]["test-native-rejections.mjs"] = "c" * 64
+        self.assertNotIn("closerCounts", current)
+        self.assertNotIn("movieCounts", current)
+        with patch.object(m, "FROZEN", selected):
+            self.assertIsNone(m.validate_native_rejection_verification(current, old))
+            # The two new suites have actual positive counts, not guessed totals.
+            current["nativeCounts"].update(testCount=9, passed=9)
+            current["subtitleCounts"].update(tests=5, **{"pass": 5})
+            self.assertIsNone(m.validate_native_rejection_verification(current, old))
+        self.assertEqual(old, old_before)
+
+    def test_native_verification_rejects_wrong_execution_scope_and_boolean_counts(self):
+        changes = [("kind", "tv-parent-candidate-client-component-verification"), ("version", True),
+            ("passed", 1), ("sourceUnchanged", 1), ("browserStarted", False), ("browserStarted", 1), ("businessHttp", 0),
+            ("syntheticBrowserRuns", 0), ("syntheticBrowserRuns", True), ("syntheticBrowserRuns", 2),
+            ("originalClientRuns", 1), ("originalClientRuns", False), ("verificationWorker", {"closed": False}),
+            ("verificationWorker", {"closed": 1}), ("freshComponents", ["adapter"]),
+            ("freshComponents", ["adapter", "subtitles", "movie"]), ("reusedChecks", ["closer", "movie"])]
+        for key, value in changes:
+            current, old, selected = native_verification_fixture()
+            current[key] = value
+            with self.subTest(key=key, value=value), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+
+    def test_native_verification_requires_each_fresh_suite_and_strict_counts(self):
+        for group, key, value in [("adapterCounts", "fail", False), ("adapterCounts", "pass", 54),
+                ("nativeCounts", "testCount", True), ("nativeCounts", "failed", False), ("nativeCounts", "sourceUnchanged", 1),
+                ("nativeCounts", "passed", 5), ("subtitleCounts", "fail", False), ("subtitleCounts", "skipped", 1),
+                ("subtitleCounts", "tests", 0)]:
+            current, old, selected = native_verification_fixture()
+            current[group][key] = value
+            with self.subTest(group=group, key=key), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+        for missing in ("adapterCounts", "nativeCounts", "subtitleCounts", "adapterSavedReplayChecks"):
+            current, old, selected = native_verification_fixture()
+            del current[missing]
+            with self.subTest(missing=missing), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+
+    def test_native_verification_checks_the_fixed_old_receipt_independently(self):
+        for failure in ("descriptor-path", "descriptor-hash", "kind", "version", "passed", "source", "browser", "http",
+                        "adapter", "saved-tv", "closer", "version3", "saved-movie", "movie", "old-source"):
+            current, old, selected = native_verification_fixture()
+            if failure == "descriptor-path":
+                current["reusedComponents"]["path"] = str(m.R / "different/verification.json")
+            elif failure == "descriptor-hash":
+                current["reusedComponents"]["sha256"] = "0" * 64
+            elif failure in ("kind", "version", "passed", "source", "browser", "http"):
+                key, value = {"kind": ("kind", "wrong"), "version": ("version", True), "passed": ("passed", 1),
+                    "source": ("sourceUnchanged", 1), "browser": ("browserStarted", True), "http": ("businessHttp", 0)}[failure]
+                old[key] = value
+            elif failure == "saved-tv":
+                old["adapterSavedReplayChecks"] = 6
+            elif failure == "old-source":
+                old["sourcePins"][m.SOURCE_FILES["adapter"]] = selected["adapter"]
+            else:
+                group, key = {"adapter": ("adapterCounts", "fail"), "closer": ("closerCounts", "failed"),
+                    "version3": ("version3Counts", "fail"), "saved-movie": ("savedMovie05ReplayCounts", "failed"),
+                    "movie": ("movieCounts", "fail")}[failure]
+                old[group][key] = False
+            with self.subTest(failure=failure), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+
+    def test_native_verification_rejects_stale_fresh_sources_and_changed_reused_sources(self):
+        for component in m.SOURCE_FILES:
+            current, old, selected = native_verification_fixture()
+            current["sourcePins"][m.SOURCE_FILES[component]] = "0" * 64
+            with self.subTest(component=component), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+        for component in m.SOURCE_FILES:
+            current, old, selected = native_verification_fixture()
+            selected[component] = m.REUSED_AV_SOURCES[component] if component in ("adapter", "subtitles") else "0" * 64
+            current["sourcePins"][m.SOURCE_FILES[component]] = selected[component]
+            with self.subTest(selection=component), patch.object(m, "FROZEN", selected), self.assertRaises(m.RunError):
+                m.validate_native_rejection_verification(current, old)
+
     def test_admission_version_tracks_the_runtime_epoch_and_requires_current_success(self):
         value = successor_admission_fixture()
         check_successor_admission(value)

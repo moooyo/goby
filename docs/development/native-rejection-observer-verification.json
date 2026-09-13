@@ -1,0 +1,136 @@
+{
+  "kind": "native-rejection-observer-checkpoint",
+  "version": 1,
+  "status": "targeted_tools_verified",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T17:27:53.889598+00:00",
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-02/verification.json",
+    "sha256": "17c2b2aafb751417cc98827e642c6f6aac30e3202723d424d96f38cf22d3e9dd"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-controller-verification-01/verification.json",
+    "sha256": "6c89dbb020d86518d90335ebd40a146e9495842cd219d24ec698470b909877ca"
+  },
+  "selectedSources": {
+    "client-browser-audited-candidate.mjs": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-02/client-browser-audited-candidate.mjs",
+      "sha256": "7b8a399d1179dbf4326ebbb860734d3a7355a040a67b50e6e086930bacbd6635"
+    },
+    "client-browser-subtitle-flow.mjs": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-02/client-browser-subtitle-flow.mjs",
+      "sha256": "bc377470137f6f9ee2804de009690f9f0f99b875a6bdb500d9f4709603b91dc0"
+    },
+    "close-audited-candidate-client.mjs": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-02/close-audited-candidate-client.mjs",
+      "sha256": "94910123694fe6f772cb0cfcc80696ed1691a46d33b0669ef8e969f7d81cbb94"
+    }
+  },
+  "controller": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-controller-verification-01/run-audited-candidate-client.py",
+    "sha256": "33b354c13deef73769239069b56f94ee8e4f7721f8f897d0078b3a0a7ef03b93"
+  },
+  "checks": {
+    "adapter": {
+      "tests": 55,
+      "pass": 55,
+      "fail": 0,
+      "skipped": 0
+    },
+    "savedTV": 7,
+    "nativeRejections": {
+      "testCount": 18,
+      "passed": 18,
+      "failed": 0,
+      "sourceUnchanged": true
+    },
+    "subtitleReadiness": {
+      "tests": 3,
+      "pass": 3,
+      "fail": 0,
+      "skipped": 0
+    },
+    "controllerGuards": 35,
+    "savedControllerIntegrations": [
+      "actual_native_component_receipt_and_selected_runtime_sources",
+      "actual_successor_admission_with_new_source_selection",
+      "actual_historical_hosting_with_new_source_selection"
+    ]
+  },
+  "reusedComponents": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-03/verification.json",
+    "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"
+  },
+  "reusedChecks": [
+    "closer",
+    "version3",
+    "savedMovie05",
+    "movie"
+  ],
+  "initialFixtureFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-01/verification.json",
+    "sha256": "a7246f50a523c4ad19078bf3d625821c2a8b59ea72ecb29b3389786986c0c947"
+  },
+  "syntheticExecution": {
+    "browserRunsInFinalScope": 1,
+    "browserRunsIncludingInitialFailure": 2,
+    "browserVersion": "153.0.8010.12",
+    "playwrightVersion": "1.63.0",
+    "browserClosed": true,
+    "contextsClosed": true,
+    "worker": {
+      "unit": "goby-native-rejection-verify-02.service",
+      "current": {
+        "MainPID": "0",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "recursiveCgroupPids": [],
+      "closed": true
+    },
+    "selfOwnedRedirectServer": {
+      "ownerPid": 495303,
+      "host": "127.0.0.1",
+      "port": 38731,
+      "started": true,
+      "closed": true,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/redirect",
+          "status": 302,
+          "responseFinished": true
+        },
+        {
+          "method": "GET",
+          "path": "/redirect-final",
+          "status": 404,
+          "responseFinished": true
+        }
+      ],
+      "unexpectedRequests": 0,
+      "routeContinuations": 1,
+      "remainingSockets": 0,
+      "closeFailure": null
+    }
+  },
+  "sourceUnchangedDuringVerification": true,
+  "originalPageErrorGateUnchanged": true,
+  "credentialRedactionVerified": true,
+  "primitiveUndefinedPreserved": true,
+  "responseAssociationRequiresUniqueIdURLStatus": true,
+  "scope": "Installed document contexts in the current page CDP session; workers and out-of-process frames are not automatically covered.",
+  "limitations": [
+    "Native Response association does not attribute a pageerror or establish harmlessness.",
+    "Historical movie, TV browse and episode errors remain unresolved.",
+    "Synthetic pages do not pass an original-client scenario."
+  ],
+  "originalClientRuns": 0,
+  "businessHttpRequests": 0,
+  "sqlQueries": 0,
+  "targetServiceActions": 0,
+  "clientAcceptance": false,
+  "productBinaryChanged": false,
+  "nextAction": "Freeze the first unused subtitle input against the Episode01 closed state and these verified sources."
+}

@@ -1,0 +1,76 @@
+{
+  "actor": "3f1bf6ff4eb186c681a4c579e50b06ba",
+  "actorAuthenticationHistoryEmpty": true,
+  "actorPlayHistoryEmpty": true,
+  "actorUserdataEmpty": true,
+  "allSessionsRevoked": 20,
+  "automaticBusinessRetry": false,
+  "browserRuns": 0,
+  "businessHttpRequests": 0,
+  "candidateContinuous": true,
+  "capturedAt": "2026-09-13T17:30:58.134502+00:00",
+  "clientPlaybackReferences": 2,
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-observer-verification-02/verification.json",
+    "sha256": "17c2b2aafb751417cc98827e642c6f6aac30e3202723d424d96f38cf22d3e9dd"
+  },
+  "controller": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-controller-verification-01/run-audited-candidate-client.py",
+    "sha256": "33b354c13deef73769239069b56f94ee8e4f7721f8f897d0078b3a0a7ef03b93"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/native-rejection-controller-verification-01/verification.json",
+    "sha256": "6c89dbb020d86518d90335ebd40a146e9495842cd219d24ec698470b909877ca"
+  },
+  "encodingJobs": 0,
+  "foreignPlaysPreserved": 11,
+  "foreignUserdataRowsPreserved": 5,
+  "freshRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-subtitles-client01-entry-review-01/private/runtime.json",
+    "sha256": "80ed354f0fcd956f4ff62bf24bdd3d0f27c71b15b8a936e5966a77325b12891f"
+  },
+  "freshSource": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-subtitles-client01-entry-review-01/private/source.json",
+    "sha256": "1950d572e1106b9ee89252615b5b00b7c3369947e4408027363326223d0f36fe"
+  },
+  "hostingContinuous": true,
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-subtitles-client01-entry-review-01/input.json",
+    "sha256": "3b749ff64459675b4b1b27aa6720cd44eaf7d8afd15a894269bc9ea85f496780"
+  },
+  "kind": "audited-subtitles-client01-entry-review",
+  "leaseExact": true,
+  "newOutputAndUnitsAbsent": true,
+  "ownedTablesExact": 35,
+  "postgresContinuous": true,
+  "priorAdmissionCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission05-closeout.json",
+    "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"
+  },
+  "priorCheckpoint": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-episode01-checkpoint.json",
+    "sha256": "72b24756bcd3e986c4bc3e7a128aebe2236d58e1020c00253b7cb80c4c6c0414"
+  },
+  "priorClientAcceptance": false,
+  "priorInputConsumed": true,
+  "priorOwnedCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-episode01-owned-state-closeout.json",
+    "sha256": "00f8e110eb847b3105ac00047d9b79d71e07d74d4f8e325359742f58a88f7225"
+  },
+  "priorSourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-episode-01/private/source-after.json",
+    "sha256": "011164aacd6aa45ecf5070f6cddaf346cadee45204d30cb9954e8b0538e53ce3"
+  },
+  "reusedComponentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-03/verification.json",
+    "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "sequencesExact": true,
+  "serviceActions": 0,
+  "status": "ready_for_one_bounded_subtitles_run",
+  "version": 1
+}
