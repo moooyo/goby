@@ -1,0 +1,18 @@
+{
+  "count": 2,
+  "kind": "isolated-source-compile",
+  "sources": [
+    {
+      "compiled": true,
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/run-nextup-global-reference.py",
+      "role": "operator",
+      "sha256": "ece90b7ff8a0d56a1b08825bd0dd7ec5b4603da432af6410a4af8ebe4dd968ce"
+    },
+    {
+      "compiled": true,
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/test-run-nextup-global-reference.py",
+      "role": "guards",
+      "sha256": "d5f5d1b9558a104b2209e8c69034696491eeeee6ca6a8ced1081b1de76628b62"
+    }
+  ]
+}

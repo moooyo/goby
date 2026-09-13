@@ -1,11 +1,13 @@
 # Independently attested reference matrix operator
 
-Status: **The frozen playback-contract bundle passed 65 operator guards,
-161 preparation guards, 100 transport guards, 53 matrix guards, and eight
-compile checks. It integrates cleanup v3, strict shared percentage validation,
-and once-per-lifecycle DELETE. The retained 8/10/12 release-v2 population is
-synthetic-only; preparation05 requires the new observer/release integration.
-No new fixture, live matrix result, or client acceptance is established**.
+Status: **Operator TOOL05 passed 101 guards and two compile checks remotely.
+The actual diagnostic04 passed restricted admission, preparation replay and
+two metadata-only calls through the default live identity resolver. The
+reference matrix remains unexecuted. This round closes after handoff and main
+publication, as requested by the user.** See the
+[identity closeout](nextup-live-identity-closeout-05.md) for current source pins,
+actual evidence and remaining work. Historical verification bundles below keep
+their original outcomes; they are not current source authority.
 
 [run-nextup-global-reference.py](../../scripts/test-env/run-nextup-global-reference.py)
 is the outer entry for the source-bound `TransportRunner`. It does not prepare a
@@ -19,11 +21,12 @@ preparation, an administrator-only cleanup, or a boolean-edited execution file
 cannot satisfy this entry. Root also creates the bounded systemd unit; this
 operator only reads its properties and current process identity.
 
-Actual preparation05 remains prohibited until fresh ten-user/twelve-library/
-24-detail observer evidence and the reviewed producer release-v3 contract are
-integrated. The current development source retains the older 8/10/12 baseline,
-release schema v2, and its existing budgets for synthetic checks; neither that
-fixture nor the completed tests authorize another live preparation.
+The fresh ten-user/twelve-library/24-detail observer and reviewed release-v3
+producer were integrated before preparation05. That consumed preparation
+completed 269 requests and four playback calibrations; the later actual
+admissions replayed its authoritative private evidence. Its original worker
+draft remains unchanged and it must not be rerun. The retained older 8/10/12
+release-v2 fixture is historical synthetic evidence only.
 
 ## Entry and attestation
 
@@ -71,8 +74,8 @@ never invents that source approval. Transport and matrix additionally require
 their fixed reviewed digests:
 
 ```text
-transport d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1
-matrix    da3ed22ce15a3cf82bce81be31db1a1d03a202c00d44e9ac8ef124a93a2d5259
+transport 4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8
+matrix    a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d
 ```
 
 `execution` is `{path, sha256}` for a separately written owner-only JSON under
@@ -348,7 +351,7 @@ fake unit/cgroup/process observations, an indexed fake response source, and
 fake matrix HTTP. All Python runs use `/usr/bin/python3 -I -B` through
 `ssh test-env`; no local verification is allowed.
 
-### Current frozen playback-contract verification
+### Historical playback-contract verification
 
 The remote bundle is
 `/opt/goby-test/exec-work-m3e/nextup-playback-contract-tool-01/revision-01`.
@@ -363,7 +366,7 @@ accepted three pinned actual partial-state DTOs. The
 `3f79f264037d657fd4f2dbae0834caf73d049debc077b232a84684145bc85039`,
 records zero actual business HTTP or process probes and no live acceptance claim.
 
-| Current frozen artifact | SHA-256 |
+| Historical playback-contract artifact | SHA-256 |
 | --- | --- |
 | Operator source | `e97667ac01541d2115d0df3d4062239895662d41140637e8030b410b1a05475a` |
 | Operator guards | `2b9d5b76efcaf78af71f61ea606987a9ba2361a82a7885a4b2d3c4c488852371` |
@@ -425,8 +428,8 @@ The separately scoped
 confirmed one DELETE, exact full zero restoration, and new-token closure in six
 requests while preserving 152 protected roots. It does not rewrite that source
 or supply the missing four calibrations. The new shared rule is verified in the
-current bundle; a future preparation still requires the fresh enlarged baseline
-and reviewed release-v3 integration.
+playback-contract bundle; preparation05 subsequently used the fresh enlarged
+baseline and reviewed release-v3 integration.
 Preparation-04 therefore does not provide the successful terminal required by
 this operator. Neither synthetic verification nor completed prior-release
 reconstruction publishes a fixture, completes a live matrix, or establishes

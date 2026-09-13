@@ -18,7 +18,7 @@ if __name__ == "__main__" and (not sys.flags.isolated or not sys.flags.dont_writ
 import argparse
 import base64
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -42,6 +42,10 @@ PREPARATION_FILES = {"manifest": "manifest.json", "plan": "frozen-plan.json", "t
 RUNTIME_PROPERTIES = {"Type", "RemainAfterExit", "Restart", "User", "UMask", "NoNewPrivileges", "ProtectSystem",
     "ProtectHome", "PrivateTmp", "PrivateNetwork", "TimeoutStartUSec", "MemoryMax", "TasksMax", "LimitNOFILE", "ReadWritePaths"}
 SHUTDOWN_PROPERTIES = {"ActiveState", "SubState", "MainPID", "Result", "ExecMainCode", "ExecMainStatus", "ControlGroup", "RemainAfterExit", "ExecStart"}
+LIVE_IDENTITY_POLICY = "owned-proxy-executable-file-object-v1"
+LIVE_IDENTITY_RECEIPT_BYTES = 64 * 1024
+LIVE_IDENTITY_INDEX_BYTES = 2 * 1024 * 1024
+EXECUTABLE_STAT_FIELDS = {"device", "inode", "mode", "nlink", "uid", "gid", "sizeBytes", "mtimeNs", "ctimeNs"}
 
 
 class OperatorError(ValueError):
@@ -218,6 +222,183 @@ class MemoryJournal:
 
     def close(self):
         return None
+
+
+class ProxyExecutableProof:
+    """Hold the kernel executable object with O_PATH; never read its bytes."""
+
+    def __init__(self, endpoint):
+        require(type(endpoint.get("pid")) is int and endpoint["pid"] > 1 and hasattr(os, "O_PATH"),
+                "The owned proxy executable needs an exact PID and metadata-only O_PATH support.")
+        self.pid = endpoint["pid"]
+        self.path = Path("/proc") / str(self.pid) / "exe"
+        self.fd = os.open(self.path, os.O_PATH | os.O_CLOEXEC)
+
+    @staticmethod
+    def fact(info):
+        return {"device": info.st_dev, "inode": info.st_ino, "mode": info.st_mode, "nlink": info.st_nlink,
+                "uid": info.st_uid, "gid": info.st_gid, "sizeBytes": info.st_size,
+                "mtimeNs": info.st_mtime_ns, "ctimeNs": info.st_ctime_ns}
+
+    def snapshot(self):
+        require(self.fd is not None, "The kernel executable proof descriptor is closed.")
+        return {"pid": self.pid, "procPath": str(self.path), "readlink": os.readlink(self.path),
+                "descriptorStat": self.fact(os.fstat(self.fd)), "namedStat": self.fact(os.stat(self.path))}
+
+    def close(self):
+        if self.fd is not None:
+            descriptor, self.fd = self.fd, None
+            os.close(descriptor)
+
+
+class LiveIdentityResolver:
+    """Return a documented bound identity only after durable raw kernel evidence.
+
+    The legacy transport consumes canonicalBoundIdentity. That dictionary is not
+    a raw metadata observation. Original metadata and the sole permitted deleted
+    executable display are retained separately in every private observation.
+    The first successful raw/kernel pair is an anchor for this run. Every callback
+    resamples it; later changes, including linked-to-deleted transitions, stop the run.
+    """
+
+    def __init__(self, admission, journal, *, raw_probe=None, kernel_factory=None):
+        self.admission, self.journal = admission, journal
+        self.raw_probe = raw_probe or admission.support.process_identity
+        self.kernel_factory = kernel_factory or ProxyExecutableProof
+        self.expected = deepcopy(admission.execution["process"])
+        self.expected_sha = digest(canonical(self.expected).encode())
+        self.context = {"runId": admission.value["runId"], "attestationSha256": admission.attestation_sha256,
+            "executionSha256": admission.value["execution"]["sha256"], "operatorSource": deepcopy(admission.value["sources"]["operator"]),
+            "runtime": deepcopy(admission.runtime_observed)}
+        self.context_frozen = canonical(self.context)
+        self.maximum_calls = 3 * admission.matrix.MAX_REQUESTS + 4
+        self.calls = self.verified_calls = self.alias_calls = self.charged_bytes = 0
+        self.entries, self.receipt_chain = [], []
+        self.anchor = self.pending = self.persistence_failure = self.index_descriptor = None
+        self.blocked = False
+        self.raw_metadata_changed = False
+
+    def _record(self, name, value):
+        record = {"schemaVersion": 1, "policyVersion": LIVE_IDENTITY_POLICY, "context": self.context,
+            "expectedBoundIdentitySha256": self.expected_sha, "probeOrdinal": self.calls,
+            "previousReceiptSha256": self.receipt_chain[-1]["sha256"] if self.receipt_chain else None, **value}
+        raw = encoded(record)
+        require(len(raw) <= LIVE_IDENTITY_RECEIPT_BYTES and
+                self.charged_bytes + len(raw) <= 2 * self.maximum_calls * LIVE_IDENTITY_RECEIPT_BYTES,
+                "The live identity proof exceeded its finite receipt budget.")
+        self.pending = {"probeOrdinal": self.calls, "name": name, "expectedSha256": digest(raw), "stage": "receipt-write-unconfirmed"}
+        checksum = self.journal.save(name, record)
+        require(checksum == digest(raw), "The live identity journal returned a different receipt digest.")
+        self.charged_bytes += len(raw)
+        descriptor = {"path": str(self.journal.root / "private" / name), "sha256": checksum}
+        self.receipt_chain.append({"probeOrdinal": self.calls, **descriptor})
+        self.pending = None
+        return descriptor
+
+    def _decision(self, raw, proof):
+        require(isinstance(raw, dict) and set(raw) == set(self.expected) and isinstance(raw.get("endpoint"), dict),
+                "The raw live target identity has a different shape.")
+        bound = deepcopy(raw)
+        exact = same(raw, self.expected)
+        if not exact:
+            require(raw["endpoint"].get("exe") == self.expected["endpoint"]["exe"] + " (deleted)",
+                    "Only the exact owned proxy executable deleted display may differ.")
+            bound["endpoint"]["exe"] = self.expected["endpoint"]["exe"]
+            require(same(bound, self.expected), "A stable target field or application identity changed.")
+        require(isinstance(proof, dict) and set(proof) == {"pid", "procPath", "readlink", "descriptorStat", "namedStat"} and
+                type(proof["pid"]) is int and proof["pid"] == self.expected["endpoint"]["pid"] and
+                proof["procPath"] == "/proc/" + str(proof["pid"]) + "/exe" and proof["readlink"] == raw["endpoint"]["exe"],
+                "The kernel proof names another proxy executable or process.")
+        opened, named = proof["descriptorStat"], proof["namedStat"]
+        require(isinstance(opened, dict) and isinstance(named, dict) and set(opened) == set(named) == EXECUTABLE_STAT_FIELDS and
+                all(type(value) is int for value in opened.values()) and all(type(value) is int for value in named.values()) and same(opened, named) and
+                stat.S_ISREG(opened["mode"]) and opened["nlink"] >= 0 and opened["sizeBytes"] >= 0 and
+                opened["device"] == raw["endpoint"]["exeDevice"] == self.expected["endpoint"]["exeDevice"] and
+                opened["inode"] == raw["endpoint"]["exeInode"] == self.expected["endpoint"]["exeInode"] and
+                (exact or opened["nlink"] == 0), "The kernel proof does not establish the same regular executable file object.")
+        return bound, "raw-exact" if exact else "kernel-deleted-display-same-file-object"
+
+    def __call__(self, expected):
+        require(not self.blocked and self.index_descriptor is None, "A stopped or finalized live identity resolver cannot be reused.")
+        self.calls += 1
+        observations, proof, observation_descriptor = {}, None, None
+        entry = {"probeOrdinal": self.calls, "status": "unresolved", "observation": None, "failure": None}
+        self.entries.append(entry)
+        self.pending = {"probeOrdinal": self.calls, "stage": "metadata-capture"}
+        try:
+            require(self.calls <= self.maximum_calls, "The live identity callback count exceeded its finite bound.")
+            require(same(expected, self.expected) and digest(canonical(self.admission.execution["process"]).encode()) == self.expected_sha and
+                    canonical(self.context) == self.context_frozen and same(self.admission.runtime_observed, self.context["runtime"]) and
+                    same(self.admission.value["sources"]["operator"], self.context["operatorSource"]),
+                    "The live identity resolver's frozen target or operator context changed.")
+            observations["rawBefore"] = deepcopy(self.raw_probe(deepcopy(expected)))
+            self.raw_metadata_changed = self.raw_metadata_changed or not same(observations["rawBefore"], self.expected)
+            proof = self.kernel_factory(deepcopy(expected["endpoint"]))
+            observations["kernelBefore"] = deepcopy(proof.snapshot())
+            observations["rawAfter"] = deepcopy(self.raw_probe(deepcopy(expected)))
+            self.raw_metadata_changed = self.raw_metadata_changed or not same(observations["rawAfter"], self.expected)
+            observations["kernelAfter"] = deepcopy(proof.snapshot())
+            require(same(observations["rawBefore"], observations["rawAfter"]) and same(observations["kernelBefore"], observations["kernelAfter"]),
+                    "The live target or executable object changed during metadata capture.")
+            bound, decision = self._decision(observations["rawAfter"], observations["kernelAfter"])
+            anchor = {"raw": observations["rawAfter"], "kernel": observations["kernelAfter"]}
+            require(self.anchor is None or same(anchor, self.anchor), "A previously verified live identity observation changed.")
+            observation_descriptor = self._record("identity-%04d-observation.json" % self.calls,
+                {"kind": "nextup-live-identity-observation", "capturedAt": datetime.now(timezone.utc).isoformat(),
+                 "observations": observations, "comparisonDecision": decision, "rawMetadataChanged": decision != "raw-exact",
+                 "canonicalBoundIdentity": bound, "canonicalBoundIdentitySha256": digest(canonical(bound).encode()),
+                 "canonicalValueIsRawObservation": False, "stage": "comparison-passed-awaiting-post-persistence-check"})
+            entry["observation"] = observation_descriptor
+            observations["rawBeforeReturn"] = deepcopy(self.raw_probe(deepcopy(expected)))
+            self.raw_metadata_changed = self.raw_metadata_changed or not same(observations["rawBeforeReturn"], self.expected)
+            observations["kernelBeforeReturn"] = deepcopy(proof.snapshot())
+            require(same(observations["rawBeforeReturn"], observations["rawAfter"]) and
+                    same(observations["kernelBeforeReturn"], observations["kernelAfter"]),
+                    "The live target changed after durable proof and before canonical return.")
+            proof.close(); proof = None
+            self.anchor = deepcopy(anchor)
+            self.verified_calls += 1
+            self.alias_calls += int(decision != "raw-exact")
+            self.pending = None
+            entry.update(status="canonical-return-authorized", comparisonDecision=decision, postPersistenceCheckPassed=True,
+                rawBeforeReturnSha256=digest(canonical(observations["rawBeforeReturn"]).encode()),
+                kernelBeforeReturnSha256=digest(canonical(observations["kernelBeforeReturn"]).encode()))
+            return deepcopy(bound)
+        except BaseException as error:
+            self.blocked = True
+            close_failure = None
+            if proof is not None:
+                try:
+                    proof.close()
+                except BaseException as closing_error:
+                    close_failure = type(closing_error).__name__
+            failed_write = deepcopy(self.pending) if self.pending and self.pending.get("stage") == "receipt-write-unconfirmed" else None
+            entry["status"] = "canonical-return-refused"
+            if failed_write is not None:
+                self.persistence_failure = {"errorType": type(error).__name__, "unconfirmedReceipt": failed_write}
+            try:
+                entry["failure"] = self._record("identity-%04d-failure.json" % self.calls,
+                    {"kind": "nextup-live-identity-failure", "capturedAt": datetime.now(timezone.utc).isoformat(),
+                     "observations": observations, "observation": observation_descriptor, "errorType": type(error).__name__,
+                     "message": str(error), "closeFailureType": close_failure, "unconfirmedReceipt": failed_write,
+                     "canonicalReturned": False})
+            except BaseException as persistence_error:
+                self.persistence_failure = {"errorType": type(persistence_error).__name__, "unconfirmedReceipt": deepcopy(self.pending)}
+            raise
+
+    def finalize(self):
+        require(self.index_descriptor is None, "The live identity proof index is single-use.")
+        value = {"schemaVersion": 1, "kind": "nextup-live-identity-index", "policyVersion": LIVE_IDENTITY_POLICY,
+            "context": self.context, "expectedBoundIdentitySha256": self.expected_sha, "maximumProbeCount": self.maximum_calls,
+            "probeCount": self.calls, "canonicalReturnCount": self.verified_calls, "aliasReturnCount": self.alias_calls,
+            "rawMetadataChanged": self.raw_metadata_changed, "canonicalValueIsRawObservation": False,
+            "blocked": self.blocked, "pending": self.pending, "persistenceFailure": self.persistence_failure,
+            "chargedReceiptBytes": self.charged_bytes, "entries": self.entries, "receiptChain": self.receipt_chain}
+        require(len(encoded(value)) <= LIVE_IDENTITY_INDEX_BYTES, "The live identity index exceeded its finite byte bound.")
+        checksum = self.journal.save("identity-index.json", value)
+        require(checksum == digest(encoded(value)), "The live identity index digest differs.")
+        self.index_descriptor = {"path": str(self.journal.root / "private/identity-index.json"), "sha256": checksum}
+        return deepcopy(self.index_descriptor)
 
 
 class Admission:
@@ -702,7 +883,7 @@ class Admission:
         self._runtime(full=full)
 
 
-def execute(admission, *, target_probe=None, runner_factory=None):
+def execute(admission, *, target_probe=None, runner_factory=None, kernel_probe_factory=None):
     """Run once; the operator owns a separate terminal journal and never retries."""
     admission.checkpoint(full=True)
     journal = admission.support.Journal(admission.value["scope"]["operatorEvidenceRoot"], uid=0)
@@ -714,12 +895,14 @@ def execute(admission, *, target_probe=None, runner_factory=None):
     pins = {"attestationSha256": admission.attestation_sha256, "executionSha256": admission.value["execution"]["sha256"],
             "producerTerminalSha256": admission.value["preparation"]["terminal"]["sha256"], "wireIndexSha256": admission.value["preparation"]["wireIndex"]["sha256"],
             "sources": admission.value["sources"], "runtime": admission.runtime_observed}
+    resolver = LiveIdentityResolver(admission, journal, raw_probe=target_probe, kernel_factory=kernel_probe_factory)
     try:
         journal.save("admission.json", {"schemaVersion": 1, "runId": admission.value["runId"], "pins": pins,
-            "replayedPreparationRequests": admission.replay_count, "producerOutputsReproduced": True})
+            "replayedPreparationRequests": admission.replay_count, "producerOutputsReproduced": True,
+            "liveIdentityPolicyVersion": LIVE_IDENTITY_POLICY, "canonicalValueIsRawObservation": False})
         def combined_probe(expected):
             admission.checkpoint(full=True)
-            return (target_probe or admission.support.process_identity)(expected)
+            return resolver(expected)
         factory = runner_factory or admission.support.TransportRunner
         runner = factory(admission.execution, probe=combined_probe)
         result = runner.run()
@@ -729,7 +912,8 @@ def execute(admission, *, target_probe=None, runner_factory=None):
         safe_result_raw = admission._read(matrix_root / "export/result.json")
         safe_result = strict_json(safe_result_raw)
         require(same(safe_result, admission.support.sanitized(result, runner.secrets)), "The transport result does not match its actual retained result receipt.")
-        clean = (result.get("cleanupComplete") is True and result.get("evidenceComplete") is True and private_state.get("blocked") is False and
+        clean = (resolver.verified_calls > 0 and not resolver.blocked and resolver.persistence_failure is None and resolver.pending is None and
+            result.get("cleanupComplete") is True and result.get("evidenceComplete") is True and private_state.get("blocked") is False and
             private_state.get("finished") is True and private_state.get("unverifiedLogins") == {} and private_state.get("unresolvedResponses") == [] and
             private_state.get("matrix", {}).get("pending") is None and set(private_state.get("matrix", {}).get("revokedActors", [])) == {"P", "Q"})
         if clean and result.get("mode") == "closed" and result.get("failure") is None:
@@ -740,8 +924,22 @@ def execute(admission, *, target_probe=None, runner_factory=None):
         failure = {"type": type(error).__name__, "message": str(error)}
     finally:
         secrets = admission.secrets | (set(runner.secrets) if runner is not None and hasattr(runner, "secrets") else set())
+        live_identity = {"policyVersion": LIVE_IDENTITY_POLICY, "index": None, "indexComplete": False,
+            "probeCount": resolver.calls, "canonicalReturnCount": resolver.verified_calls, "aliasReturnCount": resolver.alias_calls,
+            "rawMetadataChanged": resolver.raw_metadata_changed, "canonicalValueIsRawObservation": False,
+            "blocked": resolver.blocked, "pending": resolver.pending, "persistenceFailure": resolver.persistence_failure}
+        try:
+            live_identity.update(index=resolver.finalize(), indexComplete=True)
+            if resolver.blocked or resolver.pending is not None or resolver.persistence_failure is not None:
+                status = "recovery_required"
+        except BaseException as error:
+            status = "recovery_required"
+            live_identity["indexPersistenceFailure"] = type(error).__name__
+            if failure is None:
+                failure = {"type": type(error).__name__, "message": "The live identity proof index could not be committed."}
         terminal = {"schemaVersion": 1, "runId": admission.value["runId"], "status": "awaiting_operator_commit", "candidateStatus": status, "pins": pins,
-            "transportResult": result, "failure": failure, "cleanupComplete": status in ("matrix_protocol_complete", "matrix_observation_failed_cleanup_complete"),
+            "transportResult": result, "failure": failure, "liveIdentity": live_identity,
+            "cleanupComplete": status in ("matrix_protocol_complete", "matrix_observation_failed_cleanup_complete"),
             "completionCommitted": False, "independentRuntimeClosureRequired": True, "clientAcceptanceClaim": False, "resumeOrRetryAllowed": False}
         try:
             private_sha = journal.save("terminal.json", terminal)
@@ -749,6 +947,7 @@ def execute(admission, *, target_probe=None, runner_factory=None):
             commit = {"schemaVersion": 1, "kind": "nextup-global-reference-matrix-operator-commit", "runId": admission.value["runId"],
                 "status": status, "terminalPrivateSha256": private_sha, "terminalExportSha256": export_sha,
                 "attestationSha256": admission.attestation_sha256, "runtime": admission.runtime_observed,
+                "liveIdentity": live_identity,
                 "independentRuntimeClosureRequired": True, "clientAcceptanceClaim": False, "resumeOrRetryAllowed": False}
             commit_sha = journal.save("commit.json", commit)
             terminal = {**terminal, "status": status, "completionCommitted": True, "commitSha256": commit_sha}
@@ -775,7 +974,9 @@ def main(arguments=None):
     result = terminal.get("transportResult") or {}
     print(canonical({"status": terminal["status"], "requestCount": result.get("httpAttempts", 0),
         "cleanupComplete": terminal["cleanupComplete"], "completionCommitted": terminal["completionCommitted"],
-        "commitSha256": terminal.get("commitSha256"), "independentRuntimeClosureRequired": True, "clientAcceptanceClaim": False}))
+        "commitSha256": terminal.get("commitSha256"), "independentRuntimeClosureRequired": True, "clientAcceptanceClaim": False,
+        "liveIdentityPolicyVersion": LIVE_IDENTITY_POLICY, "rawMetadataChanged": terminal.get("liveIdentity", {}).get("rawMetadataChanged"),
+        "canonicalValueIsRawObservation": False}))
     return 0 if terminal["status"] == "matrix_protocol_complete" else 2
 
 

@@ -1,0 +1,42 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "actualProcessProbes": 0,
+  "blockedRealIOAttempts": {
+    "authority": 0,
+    "http": 0,
+    "originalRead": 0,
+    "process": 0
+  },
+  "compileExitCode": 0,
+  "compileReport": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/verification-01/compile.json",
+    "sha256": "ac423c06182fd805271849ba045a5b61458c2d3d5e68806b62fe7870a2ff7184"
+  },
+  "compiledSources": 2,
+  "errors": 0,
+  "failures": 0,
+  "guardExitCode": 0,
+  "guardReport": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/verification-01/operator-guards.json",
+    "sha256": "ce04ecc0cc956c901723dde04216e40403669a2292633e037761a43819d11ed0"
+  },
+  "kind": "nextup-reference-operator-tool-05-verification",
+  "otherSuitesExecuted": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "skips": 0,
+  "sourceSha256": {
+    "grant-worker": "70087cdaeae927c3091b5abcfc1df0c9203cdf35e17d28e5222f491bad46a971",
+    "guards": "d5f5d1b9558a104b2209e8c69034696491eeeee6ca6a8ced1081b1de76628b62",
+    "matrix": "a69ff17c26934abbf09375a7832d7e11cd898d5e696c4ba5ce8a718efd19e65d",
+    "observer": "126d625a9b68871b88a78158584d0fb65720fd605436edf288164336625efbc6",
+    "observer-guards": "b22478e59006e2d9c12af6e69948e5bbbbc16d43fb62d6c66b722e5e883e0a28",
+    "observer-transport": "d93ed5628d23deddd4619013a61b395c4e809857cf2bdd00d7e98f19e137edd1",
+    "operator": "ece90b7ff8a0d56a1b08825bd0dd7ec5b4603da432af6410a4af8ebe4dd968ce",
+    "preparation": "c2687e054f4011468836edc0f29432f19fc8ef8f9cfe57a1f91ef26d1a6556e7",
+    "preparation-guards": "2ff164c6dcb972087e6bacd172b744cf9fe9d88bace196a1f3e385803fa0da5b",
+    "transport": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+  },
+  "testsRun": 101,
+  "wrapperSha256": "f59e3f4cbebcdc025202ffeebc88d9edadf98bf7308913f17f0f47e96d9098a7"
+}

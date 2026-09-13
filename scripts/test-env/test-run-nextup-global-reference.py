@@ -30,6 +30,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
@@ -314,6 +315,15 @@ class OperatorFixture:
         self.observer_former_pid = observer["formerPid"]
         self.unit_values[self.observer_unit["name"]] = deepcopy(self.observer_unit["properties"])
         self.unit_calls, self.cgroup_calls, self.self_calls, self.target_calls, self.pid_calls = [], [], [], [], []
+        self.observed_process = deepcopy(fixture.process)
+        endpoint = fixture.process["endpoint"]
+        executable = {"device": endpoint["exeDevice"], "inode": endpoint["exeInode"],
+            "mode": stat.S_IFREG | 0o755, "nlink": 1, "uid": endpoint["uid"], "gid": 0,
+            "sizeBytes": 4096, "mtimeNs": 1_700_000_000_000_000_000, "ctimeNs": 1_700_000_000_000_000_000}
+        self.kernel_snapshot = {"pid": endpoint["pid"], "procPath": "/proc/" + str(endpoint["pid"]) + "/exe",
+            "readlink": endpoint["exe"], "descriptorStat": deepcopy(executable), "namedStat": deepcopy(executable)}
+        self.kernel_proofs, self.kernel_calls = [], []
+        self.kernel_snapshot_hook = None
         self.cgroup_empty = True
         self.observer_cgroup_empty, self.observer_pid_absent = True, True
         self.factory_calls = 0
@@ -367,7 +377,19 @@ class OperatorFixture:
     def target_probe(self, expected):
         self.testcase.assertEqual(expected, self.prepared.process)
         self.target_calls.append(deepcopy(expected))
-        return deepcopy(self.prepared.process)
+        return deepcopy(self.observed_process)
+
+    def kernel_probe_factory(self, endpoint):
+        self.testcase.assertEqual(endpoint, self.prepared.process["endpoint"])
+        proof = FakeExecutableProof(self)
+        self.kernel_proofs.append(proof)
+        return proof
+
+    def unlink_proxy_executable(self):
+        self.observed_process["endpoint"]["exe"] = self.prepared.process["endpoint"]["exe"] + " (deleted)"
+        self.kernel_snapshot["readlink"] = self.observed_process["endpoint"]["exe"]
+        for key in ("descriptorStat", "namedStat"):
+            self.kernel_snapshot[key]["nlink"] = 0
 
     def save_attestation(self):
         self.attestation_path.write_bytes(encoded(self.attestation))
@@ -428,6 +450,47 @@ class OperatorFixture:
             self.runners.append(runner)
             return runner
         return factory
+
+
+class FakeExecutableProof:
+    """Return only synthetic kernel metadata without opening an executable."""
+
+    def __init__(self, fixture):
+        self.fixture, self.closed, self.calls = fixture, False, 0
+
+    def snapshot(self):
+        self.fixture.testcase.assertFalse(self.closed, "A closed synthetic proof cannot be reused.")
+        self.calls += 1
+        value = deepcopy(self.fixture.kernel_snapshot)
+        self.fixture.kernel_calls.append(deepcopy(value))
+        if self.fixture.kernel_snapshot_hook is not None:
+            value = self.fixture.kernel_snapshot_hook(self, value)
+        return value
+
+    def close(self):
+        self.closed = True
+
+
+class MemoryIdentityJournal:
+    """Capture small negative-case receipts without replacing identity checks."""
+
+    def __init__(self, root, *, after_save=None):
+        self.root, self.records, self.after_save = Path(root), {}, after_save
+
+    def check(self):
+        return None
+
+    def save(self, name, value, *, export=False):
+        if export or name in self.records:
+            raise AssertionError("Identity receipts must be exclusive private records.")
+        raw = encoded(value)
+        self.records[name] = raw
+        if self.after_save is not None:
+            self.after_save(name, value)
+        return digest(raw)
+
+    def close(self):
+        return None
 
 
 class MatrixWire:
@@ -614,7 +677,8 @@ class GuardCase(unittest.TestCase):
 
     def execute(self, admission, *, actual=False, **options):
         factory = self.fixture.actual_factory(admission, **options) if actual else self.fixture.retained_factory(admission, **options)
-        return self.O.execute(admission, target_probe=self.fixture.target_probe, runner_factory=factory)
+        return self.O.execute(admission, target_probe=self.fixture.target_probe,
+                              kernel_probe_factory=self.fixture.kernel_probe_factory, runner_factory=factory)
 
     def assert_recovery(self, terminal):
         self.assertEqual(terminal["status"], "recovery_required")
@@ -1418,6 +1482,480 @@ class RuntimeGuards(GuardCase):
         self.assertEqual(self.boundary.attempts["originalRead"], 0)
 
 
+class LiveIdentityGuards(GuardCase):
+    """Exercise raw identity decisions, durable evidence, and legacy transport entry."""
+
+    def resolver(self, admission, *, journal=None, raw_probe=None, kernel_factory=None):
+        journal = journal or MemoryIdentityJournal(self.fixture.operator_output)
+        resolver = self.O.LiveIdentityResolver(admission, journal,
+            raw_probe=raw_probe or self.fixture.target_probe,
+            kernel_factory=kernel_factory or self.fixture.kernel_probe_factory)
+        return resolver, journal
+
+    def assert_refused(self, resolver, expected, journal):
+        verified = resolver.verified_calls
+        with self.assertRaises((self.O.OperatorError, OSError, ValueError, TypeError)):
+            resolver(expected)
+        self.assertTrue(resolver.blocked)
+        self.assertEqual(resolver.verified_calls, verified)
+        self.assertTrue(any(name.endswith("-failure.json") for name in journal.records))
+        before = len(self.fixture.target_calls), len(self.fixture.kernel_calls)
+        with self.assertRaises(self.O.OperatorError):
+            resolver(expected)
+        self.assertEqual((len(self.fixture.target_calls), len(self.fixture.kernel_calls)), before)
+
+    def test_exact_observations_have_distinct_durable_receipts_and_a_bound_index(self):
+        admission = self.fixture.admit()
+        expected = deepcopy(admission.execution["process"])
+        raw_before, kernel_before = deepcopy(self.fixture.observed_process), deepcopy(self.fixture.kernel_snapshot)
+        journal = admission.support.Journal(self.fixture.operator_output, uid=0)
+        self.addCleanup(journal.close)
+        resolver, _ = self.resolver(admission, journal=journal)
+        self.assertEqual(resolver(expected), expected)
+        self.assertEqual(resolver(expected), expected)
+        self.assertEqual((resolver.calls, resolver.verified_calls, resolver.alias_calls), (2, 2, 0))
+        self.assertFalse(resolver.blocked)
+        self.assertIsNone(resolver.pending)
+        self.assertEqual((self.fixture.observed_process, self.fixture.kernel_snapshot), (raw_before, kernel_before))
+        self.assertEqual(len(self.fixture.target_calls), 6)
+        self.assertEqual(len(self.fixture.kernel_calls), 6)
+        self.assertTrue(all(proof.closed for proof in self.fixture.kernel_proofs))
+        index_descriptor = resolver.finalize()
+        self.assertEqual(index_descriptor, descriptor(self.fixture.operator_output / "private/identity-index.json"))
+        index = read_json(index_descriptor["path"])
+        self.assertEqual((index["probeCount"], index["canonicalReturnCount"], index["aliasReturnCount"]), (2, 2, 0))
+        self.assertEqual(index["context"]["operatorSource"], admission.value["sources"]["operator"])
+        self.assertEqual(index["context"]["runtime"], admission.runtime_observed)
+        self.assertEqual(index["expectedBoundIdentitySha256"], digest(self.O.canonical(expected).encode()))
+        self.assertFalse(index["canonicalValueIsRawObservation"])
+        self.assertEqual(len(index["entries"]), 2)
+        self.assertEqual(len(index["receiptChain"]), 2)
+        previous = None
+        for ordinal, entry in enumerate(index["entries"], 1):
+            receipt = entry["observation"]
+            self.assertEqual(receipt, descriptor(self.fixture.operator_output / "private" / ("identity-%04d-observation.json" % ordinal)))
+            observed = read_json(receipt["path"])
+            self.assertEqual(observed["previousReceiptSha256"], previous)
+            self.assertEqual(observed["observations"]["rawBefore"], expected)
+            self.assertEqual(observed["canonicalBoundIdentity"], expected)
+            self.assertEqual(observed["comparisonDecision"], "raw-exact")
+            self.assertTrue(entry["postPersistenceCheckPassed"])
+            self.assertEqual(index["receiptChain"][ordinal - 1], {"probeOrdinal": ordinal, **receipt})
+            previous = receipt["sha256"]
+        with self.assertRaises(self.O.OperatorError):
+            resolver(expected)
+        with self.assertRaises(self.O.OperatorError):
+            resolver.finalize()
+
+    def test_deleted_proxy_display_reaches_legacy_transport_with_unmodified_raw_evidence(self):
+        admission = self.fixture.admit()
+        expected = deepcopy(admission.execution["process"])
+        self.fixture.unlink_proxy_executable()
+        raw = deepcopy(self.fixture.observed_process)
+        terminal = self.execute(admission, actual=True)
+        self.assertEqual(terminal["status"], "matrix_protocol_complete")
+        live = terminal["liveIdentity"]
+        self.assertTrue(live["rawMetadataChanged"])
+        self.assertFalse(live["canonicalValueIsRawObservation"])
+        self.assertTrue(live["indexComplete"])
+        self.assertEqual(live["probeCount"], 1 + 3 * len(self.fixture.matrix_wires[0].calls))
+        self.assertEqual(live["canonicalReturnCount"], live["probeCount"])
+        self.assertEqual(live["aliasReturnCount"], live["probeCount"])
+        index = read_json(live["index"]["path"])
+        self.assertEqual(live["index"], descriptor(live["index"]["path"]))
+        self.assertEqual(len(index["entries"]), live["probeCount"])
+        for entry in index["entries"]:
+            observed = read_json(entry["observation"]["path"])
+            self.assertEqual(observed["observations"]["rawBefore"], raw)
+            self.assertEqual(observed["observations"]["kernelBefore"]["descriptorStat"]["nlink"], 0)
+            self.assertEqual(observed["canonicalBoundIdentity"], expected)
+            self.assertEqual(observed["comparisonDecision"], "kernel-deleted-display-same-file-object")
+        self.assertEqual(admission.execution["process"], expected)
+        self.assertEqual(self.fixture.observed_process, raw)
+        retained = read_json(self.fixture.operator_output / "private/terminal.json")
+        commit = read_json(self.fixture.operator_output / "private/commit.json")
+        self.assertEqual(retained["liveIdentity"], live)
+        self.assertEqual(commit["liveIdentity"], live)
+        self.assertTrue(all(proof.closed for proof in self.fixture.kernel_proofs))
+
+    def test_alias_does_not_allow_any_other_process_namespace_or_listener_change(self):
+        admission = self.fixture.admit()
+        self.fixture.unlink_proxy_executable()
+        base = deepcopy(self.fixture.observed_process)
+        cases = []
+        for role in ("application", "endpoint"):
+            for key, value in base[role].items():
+                if role == "endpoint" and key == "exe":
+                    continue
+                changed = deepcopy(base)
+                if isinstance(value, list):
+                    replacement = [*value, "unexpected-argument"]
+                elif isinstance(value, dict):
+                    replacement = {**value, "port": value["port"] + 1}
+                elif type(value) is int:
+                    replacement = value + 1
+                else:
+                    replacement = value + "-changed"
+                changed[role][key] = replacement
+                cases.append((role + "." + key, changed))
+        changed = deepcopy(base)
+        changed["endpoint"]["listener"]["socketInode"] += "1"
+        cases.append(("endpoint.listener.socketInode", changed))
+        changed = deepcopy(base)
+        changed["endpoint"]["listener"].pop("socketInode")
+        cases.append(("endpoint.listener.missing-socket", changed))
+        cases += [("workerNetworkNamespace", {**deepcopy(base), "workerNetworkNamespace": "net:[999999]"}),
+                  ("unknown-field", {**deepcopy(base), "unreviewed": True})]
+        for label, changed in cases:
+            with self.subTest(field=label):
+                self.fixture.observed_process = changed
+                resolver, journal = self.resolver(admission)
+                self.assert_refused(resolver, admission.execution["process"], journal)
+
+    def test_only_one_exact_deleted_display_suffix_is_accepted(self):
+        admission = self.fixture.admit()
+        self.fixture.unlink_proxy_executable()
+        expected = admission.execution["process"]
+        for suffix in (" (deleted) (deleted)", "(deleted)", " (Deleted)", " (deleted) ", "/different-python"):
+            with self.subTest(suffix=suffix):
+                changed = expected["endpoint"]["exe"] + suffix
+                self.fixture.observed_process["endpoint"]["exe"] = changed
+                self.fixture.kernel_snapshot["readlink"] = changed
+                resolver, journal = self.resolver(admission)
+                self.assert_refused(resolver, expected, journal)
+
+    def test_kernel_proof_requires_exact_shape_types_object_and_zero_alias_links(self):
+        admission = self.fixture.admit()
+        self.fixture.unlink_proxy_executable()
+        base = deepcopy(self.fixture.kernel_snapshot)
+        cases = []
+        for label, update in (("wrong-pid", {"pid": base["pid"] + 1}), ("bool-pid", {"pid": True}),
+                              ("wrong-proc", {"procPath": "/proc/1/exe"}), ("wrong-link", {"readlink": "/another/executable"}),
+                              ("extra-key", {"extra": 1})):
+            cases.append((label, {**deepcopy(base), **update}))
+        for key in base["descriptorStat"]:
+            changed = deepcopy(base)
+            for name in ("descriptorStat", "namedStat"):
+                changed[name][key] = False
+            cases.append(("bool-" + key, changed))
+        for key, value in (("nlink", 1), ("nlink", -1), ("device", base["descriptorStat"]["device"] + 1),
+                           ("inode", base["descriptorStat"]["inode"] + 1), ("mode", stat.S_IFDIR | 0o755), ("sizeBytes", -1)):
+            changed = deepcopy(base)
+            for name in ("descriptorStat", "namedStat"):
+                changed[name][key] = value
+            cases.append((key + "-" + str(value), changed))
+        changed = deepcopy(base)
+        changed["namedStat"]["inode"] += 1
+        cases.append(("descriptor-named-mismatch", changed))
+        changed = deepcopy(base)
+        changed["descriptorStat"].pop("nlink")
+        cases.append(("missing-stat-key", changed))
+        changed = deepcopy(base)
+        changed["namedStat"]["unknown"] = 1
+        cases.append(("extra-stat-key", changed))
+        changed = deepcopy(base)
+        changed.pop("readlink")
+        cases.append(("missing-proof-key", changed))
+        for label, changed in cases:
+            with self.subTest(proof=label):
+                self.fixture.kernel_snapshot = changed
+                resolver, journal = self.resolver(admission)
+                self.assert_refused(resolver, admission.execution["process"], journal)
+
+    def test_capture_and_post_persistence_races_never_authorize_canonical_return(self):
+        admission = self.fixture.admit()
+        expected = admission.execution["process"]
+        for surface, changed_call in (("raw", 2), ("kernel", 2), ("raw", 3), ("kernel", 3)):
+            with self.subTest(surface=surface, changedCall=changed_call):
+                calls = [0]
+                def raw_probe(value):
+                    calls[0] += 1
+                    observed = self.fixture.target_probe(value)
+                    if surface == "raw" and calls[0] == changed_call:
+                        observed["endpoint"]["startTicks"] += "1"
+                    return observed
+                def kernel_hook(proof, value):
+                    if surface == "kernel" and proof.calls == changed_call:
+                        for name in ("descriptorStat", "namedStat"):
+                            value[name]["ctimeNs"] += 1
+                    return value
+                self.fixture.kernel_snapshot_hook = kernel_hook
+                resolver, journal = self.resolver(admission, raw_probe=raw_probe)
+                self.assert_refused(resolver, expected, journal)
+                self.assertEqual("identity-0001-observation.json" in journal.records, changed_call == 3)
+                self.assertTrue(all(proof.closed for proof in self.fixture.kernel_proofs))
+                resolver.finalize()
+                if surface == "raw":
+                    self.assertTrue(json.loads(journal.records["identity-index.json"])["rawMetadataChanged"])
+        self.fixture.kernel_snapshot_hook = None
+
+    def test_a_durable_observation_is_rechecked_before_the_identity_is_returned(self):
+        admission = self.fixture.admit()
+        def after_save(name, value):
+            if name.endswith("-observation.json"):
+                self.fixture.observed_process["endpoint"]["startTicks"] += "1"
+        journal = MemoryIdentityJournal(self.fixture.operator_output, after_save=after_save)
+        resolver, _ = self.resolver(admission, journal=journal)
+        self.assert_refused(resolver, admission.execution["process"], journal)
+        self.assertIn("identity-0001-observation.json", journal.records)
+        failed = json.loads(journal.records["identity-0001-failure.json"])
+        self.assertFalse(failed["canonicalReturned"])
+        self.assertIsNotNone(failed["observation"])
+
+    def test_a_later_valid_exact_or_alias_representation_cannot_replace_the_anchor(self):
+        admission = self.fixture.admit()
+        original_raw, original_kernel = deepcopy(self.fixture.observed_process), deepcopy(self.fixture.kernel_snapshot)
+        for initially_deleted in (False, True):
+            with self.subTest(initiallyDeleted=initially_deleted):
+                self.fixture.observed_process, self.fixture.kernel_snapshot = deepcopy(original_raw), deepcopy(original_kernel)
+                if initially_deleted:
+                    self.fixture.unlink_proxy_executable()
+                resolver, journal = self.resolver(admission)
+                self.assertEqual(resolver(admission.execution["process"]), admission.execution["process"])
+                if initially_deleted:
+                    self.fixture.observed_process, self.fixture.kernel_snapshot = deepcopy(original_raw), deepcopy(original_kernel)
+                else:
+                    self.fixture.unlink_proxy_executable()
+                self.assert_refused(resolver, admission.execution["process"], journal)
+                self.assertEqual((resolver.calls, resolver.verified_calls), (2, 1))
+                self.assertIn("identity-0002-failure.json", journal.records)
+
+    def test_exact_raw_identity_keeps_nonnegative_link_count_compatibility(self):
+        admission = self.fixture.admit()
+        for nlink in (0, 1, 2):
+            with self.subTest(nlink=nlink):
+                for name in ("descriptorStat", "namedStat"):
+                    self.fixture.kernel_snapshot[name]["nlink"] = nlink
+                resolver, _ = self.resolver(admission)
+                self.assertEqual(resolver(admission.execution["process"]), admission.execution["process"])
+                self.assertEqual((resolver.verified_calls, resolver.alias_calls), (1, 0))
+
+    def test_later_kernel_metadata_drift_cannot_reuse_an_earlier_success(self):
+        admission = self.fixture.admit()
+        resolver, journal = self.resolver(admission)
+        self.assertEqual(resolver(admission.execution["process"]), admission.execution["process"])
+        for name in ("descriptorStat", "namedStat"):
+            self.fixture.kernel_snapshot[name]["ctimeNs"] += 1
+        self.assert_refused(resolver, admission.execution["process"], journal)
+        self.assertEqual((resolver.calls, resolver.verified_calls), (2, 1))
+        self.assertNotIn("identity-0002-observation.json", journal.records)
+
+    def test_changed_expected_authority_is_rejected_before_raw_or_kernel_capture(self):
+        admission = self.fixture.admit()
+        resolver, journal = self.resolver(admission)
+        changed = deepcopy(admission.execution["process"])
+        changed["endpoint"]["pid"] += 1
+        before = len(self.fixture.target_calls), len(self.fixture.kernel_calls)
+        self.assert_refused(resolver, changed, journal)
+        self.assertEqual((len(self.fixture.target_calls), len(self.fixture.kernel_calls)), before)
+
+    def test_raw_kernel_capture_and_descriptor_close_errors_are_retained(self):
+        admission = self.fixture.admit()
+        for surface in ("raw", "kernel-open", "kernel-snapshot", "kernel-close"):
+            with self.subTest(surface=surface):
+                def raw_probe(expected):
+                    if surface == "raw":
+                        raise OSError("Synthetic raw metadata read failure.")
+                    return self.fixture.target_probe(expected)
+                def kernel_factory(endpoint):
+                    if surface == "kernel-open":
+                        raise OSError("Synthetic O_PATH open failure.")
+                    proof = self.fixture.kernel_probe_factory(endpoint)
+                    if surface == "kernel-close":
+                        original = proof.close
+                        def close():
+                            original()
+                            raise OSError("Synthetic proof close failure.")
+                        proof.close = close
+                    return proof
+                def kernel_hook(proof, value):
+                    if surface == "kernel-snapshot":
+                        raise OSError("Synthetic kernel stat failure.")
+                    return value
+                self.fixture.kernel_snapshot_hook = kernel_hook
+                resolver, journal = self.resolver(admission, raw_probe=raw_probe, kernel_factory=kernel_factory)
+                self.assert_refused(resolver, admission.execution["process"], journal)
+                failed = json.loads(journal.records["identity-0001-failure.json"])
+                self.assertFalse(failed["canonicalReturned"])
+                self.assertTrue(all(proof.closed for proof in self.fixture.kernel_proofs))
+        self.fixture.kernel_snapshot_hook = None
+
+    def test_observation_write_failure_blocks_transport_before_its_first_http(self):
+        admission = self.fixture.admit()
+        original = admission.support.Journal.save
+        def save(journal, name, value, *, export=False):
+            if journal.root == self.fixture.operator_output and name.endswith("-observation.json"):
+                raise OSError("Synthetic identity observation persistence failure.")
+            return original(journal, name, value, export=export)
+        with patch.object(admission.support.Journal, "save", new=save):
+            terminal = self.execute(admission, actual=True)
+        self.assert_recovery(terminal)
+        self.assertTrue(terminal["liveIdentity"]["blocked"])
+        self.assertIsNotNone(terminal["liveIdentity"]["persistenceFailure"])
+        self.assertEqual(terminal["liveIdentity"]["canonicalReturnCount"], 0)
+        self.assertFalse(self.fixture.matrix_output.exists())
+        self.assertTrue(all(not wire.calls for wire in self.fixture.matrix_wires))
+        failed = read_json(self.fixture.operator_output / "private/identity-0001-failure.json")
+        self.assertEqual(failed["unconfirmedReceipt"]["name"], "identity-0001-observation.json")
+        self.assertFalse(failed["canonicalReturned"])
+
+    def test_failure_receipt_write_failure_remains_unresolved_and_cannot_authorize_http(self):
+        admission = self.fixture.admit()
+        original = admission.support.Journal.save
+        def save(journal, name, value, *, export=False):
+            if journal.root == self.fixture.operator_output and name.endswith("-failure.json"):
+                raise OSError("Synthetic identity failure-receipt persistence failure.")
+            return original(journal, name, value, export=export)
+        def raw_probe(expected):
+            raise OSError("Synthetic raw metadata unavailable.")
+        with patch.object(admission.support.Journal, "save", new=save):
+            terminal = self.O.execute(admission, target_probe=raw_probe,
+                kernel_probe_factory=self.fixture.kernel_probe_factory,
+                runner_factory=self.fixture.actual_factory(admission))
+        self.assert_recovery(terminal)
+        live = terminal["liveIdentity"]
+        self.assertTrue(live["blocked"])
+        self.assertEqual(live["canonicalReturnCount"], 0)
+        self.assertIsNotNone(live["pending"])
+        self.assertIsNotNone(live["persistenceFailure"])
+        self.assertFalse(self.fixture.matrix_output.exists())
+        self.assertTrue(all(not wire.calls for wire in self.fixture.matrix_wires))
+
+    def test_identity_index_failure_prevents_a_successful_operator_commit(self):
+        admission = self.fixture.admit()
+        original = admission.support.Journal.save
+        def save(journal, name, value, *, export=False):
+            if journal.root == self.fixture.operator_output and name == "identity-index.json":
+                raise OSError("Synthetic identity index persistence failure.")
+            return original(journal, name, value, export=export)
+        with patch.object(admission.support.Journal, "save", new=save):
+            terminal = self.execute(admission)
+        self.assert_recovery(terminal)
+        self.assertFalse(terminal["liveIdentity"]["indexComplete"])
+        self.assertIsNone(terminal["liveIdentity"]["index"])
+        commit = read_json(self.fixture.operator_output / "private/commit.json")
+        self.assertEqual(commit["status"], "recovery_required")
+        self.assertEqual(commit["liveIdentity"], terminal["liveIdentity"])
+
+    def test_a_journal_digest_mismatch_does_not_count_as_durable_proof(self):
+        admission = self.fixture.admit()
+        journal = MemoryIdentityJournal(self.fixture.operator_output)
+        original = journal.save
+        def save(name, value, *, export=False):
+            result = original(name, value, export=export)
+            return "0" * 64 if name.endswith("-observation.json") else result
+        journal.save = save
+        resolver, _ = self.resolver(admission, journal=journal)
+        self.assert_refused(resolver, admission.execution["process"], journal)
+        self.assertIsNotNone(resolver.persistence_failure)
+
+    def test_execute_default_probe_path_uses_the_resolver_and_kernel_proof(self):
+        admission = self.fixture.admit()
+        with patch.object(admission.support, "process_identity", side_effect=self.fixture.target_probe) as raw_probe, \
+             patch.object(self.O, "ProxyExecutableProof", side_effect=self.fixture.kernel_probe_factory) as kernel_factory:
+            terminal = self.O.execute(admission, runner_factory=self.fixture.retained_factory(admission))
+        self.assertEqual(terminal["status"], "matrix_protocol_complete")
+        self.assertEqual(raw_probe.call_count, 3)
+        self.assertEqual(kernel_factory.call_count, 1)
+        self.assertEqual(terminal["liveIdentity"]["canonicalReturnCount"], 1)
+        self.assertFalse(terminal["liveIdentity"]["rawMetadataChanged"])
+        self.assertTrue(all(proof.closed for proof in self.fixture.kernel_proofs))
+
+    def test_identity_drift_after_reserved_write_blocks_the_pending_http(self):
+        admission = self.fixture.admit()
+        original = admission.support.Journal.save
+        def save(journal, name, value, *, export=False):
+            result = original(journal, name, value, export=export)
+            if journal.root == self.fixture.matrix_output and name.endswith("-reserved.json"):
+                self.fixture.observed_process["endpoint"]["startTicks"] += "1"
+            return result
+        with patch.object(admission.support.Journal, "save", new=save):
+            terminal = self.execute(admission, actual=True)
+        self.assert_recovery(terminal)
+        self.assertEqual(terminal["transportResult"]["httpAttempts"], 0)
+        self.assertEqual(terminal["transportResult"]["reservedRequests"], 1)
+        state = read_json(self.fixture.matrix_output / "private/state.json")
+        self.assertIsNotNone(state["matrix"]["pending"])
+        self.assertTrue(state["blocked"])
+        self.assertTrue(all(not wire.calls for wire in self.fixture.matrix_wires))
+
+    def test_identity_drift_after_response_preserves_raw_and_unresolved_responsibility(self):
+        admission = self.fixture.admit()
+        def response_hook(wire, request):
+            self.fixture.observed_process["endpoint"]["startTicks"] += "1"
+            return None
+        terminal = self.execute(admission, actual=True, response_hook=response_hook)
+        self.assert_recovery(terminal)
+        self.assertEqual(len(self.fixture.matrix_wires[0].calls), 1)
+        state = read_json(self.fixture.matrix_output / "private/state.json")
+        self.assertTrue(state["blocked"])
+        self.assertFalse(state["finished"])
+        self.assertIsNotNone(state["matrix"]["pending"])
+        self.assertTrue(state["unresolvedResponses"])
+        self.assertEqual(len(list((self.fixture.matrix_output / "private").glob("*-wire.json"))), 1)
+
+    def test_identity_is_checked_again_before_any_cleanup_http(self):
+        admission = self.fixture.admit()
+        original = self.fixture.target_probe
+        def raw_probe(expected):
+            observed = original(expected)
+            if self.fixture.runners and self.fixture.runners[-1].matrix.cleanup_started:
+                observed["endpoint"]["startTicks"] += "1"
+            return observed
+        terminal = self.O.execute(admission, target_probe=raw_probe,
+            kernel_probe_factory=self.fixture.kernel_probe_factory,
+            runner_factory=self.fixture.actual_factory(admission))
+        self.assert_recovery(terminal)
+        wire = self.fixture.matrix_wires[0]
+        self.assertTrue(wire.calls)
+        self.assertTrue(all(not call["request"].cleanup for call in wire.calls))
+        self.assertTrue(self.fixture.runners[0].matrix.cleanup_started)
+        self.assertTrue(terminal["liveIdentity"]["blocked"])
+
+    def test_native_kernel_proof_uses_only_o_path_metadata_and_closes_once(self):
+        self.fixture.unlink_proxy_executable()
+        endpoint = self.fixture.prepared.process["endpoint"]
+        expected = deepcopy(self.fixture.kernel_snapshot)
+        row = expected["descriptorStat"]
+        info = SimpleNamespace(st_dev=row["device"], st_ino=row["inode"], st_mode=row["mode"],
+            st_nlink=row["nlink"], st_uid=row["uid"], st_gid=row["gid"], st_size=row["sizeBytes"],
+            st_mtime_ns=row["mtimeNs"], st_ctime_ns=row["ctimeNs"])
+        opened, closed = [], []
+        descriptor_number = 60001
+        def open_metadata(path, flags, *args, **kwargs):
+            self.assertEqual(str(path), expected["procPath"])
+            self.assertTrue(flags & os.O_PATH)
+            self.assertTrue(flags & os.O_CLOEXEC)
+            self.assertFalse(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC))
+            opened.append((str(path), flags))
+            return descriptor_number
+        def named_stat(path, *args, **kwargs):
+            self.assertEqual(str(path), expected["procPath"])
+            return info
+        def descriptor_stat(value):
+            self.assertEqual(value, descriptor_number)
+            return info
+        def readlink(path, *args, **kwargs):
+            self.assertEqual(str(path), expected["procPath"])
+            return expected["readlink"]
+        with patch.object(self.O.os, "open", side_effect=open_metadata), \
+             patch.object(self.O.os, "fstat", side_effect=descriptor_stat), \
+             patch.object(self.O.os, "stat", side_effect=named_stat), \
+             patch.object(self.O.os, "readlink", side_effect=readlink), \
+             patch.object(self.O.os, "read", side_effect=AssertionError("Executable byte reads are forbidden.")), \
+             patch.object(self.O.os, "fdopen", side_effect=AssertionError("Executable streams are forbidden.")), \
+             patch.object(self.O.os, "close", side_effect=closed.append):
+            proof = self.O.ProxyExecutableProof(endpoint)
+            observed = proof.snapshot()
+            proof.close()
+            proof.close()
+        self.assertEqual(observed, expected)
+        self.assertEqual(len(opened), 1)
+        self.assertEqual(closed, [descriptor_number])
+        with self.assertRaises(self.O.OperatorError):
+            proof.snapshot()
+
+
 class ExecuteGuards(GuardCase):
     def test_frozen_transport_completes_all_empty_branch_and_retains_terminal(self):
         admission = self.fixture.admit()
@@ -1456,6 +1994,7 @@ class ExecuteGuards(GuardCase):
         attempts = len(wire.calls)
         with self.assertRaises((self.O.OperatorError, OSError)):
             self.O.execute(admission, target_probe=self.fixture.target_probe,
+                           kernel_probe_factory=self.fixture.kernel_probe_factory,
                            runner_factory=self.fixture.actual_factory(admission))
         self.assertEqual(len(wire.calls), attempts)
         self.assertEqual(self.fixture.factory_calls, 1)
@@ -1532,10 +2071,11 @@ class ExecuteGuards(GuardCase):
             self.fixture.unit_values[self.fixture.matrix_unit]["Restart"] = "always"
             return observed
         terminal = self.O.execute(admission, target_probe=target_probe,
+                                 kernel_probe_factory=self.fixture.kernel_probe_factory,
                                  runner_factory=self.fixture.actual_factory(admission))
         self.assert_recovery(terminal)
         self.assertTrue(self.fixture.target_calls)
-        self.assertEqual(self.fixture.matrix_wires[0].calls, [])
+        self.assertTrue(all(not wire.calls for wire in self.fixture.matrix_wires))
 
     def test_outer_admission_persistence_failure_never_constructs_runner(self):
         admission = self.fixture.admit()

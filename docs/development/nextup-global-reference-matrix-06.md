@@ -1,5 +1,10 @@
 # Reference NextUp matrix 06 target identity
 
+Follow-up: the [TOOL05 closeout](nextup-live-identity-closeout-05.md) implements
+and verifies the identity policy described below. Diagnostic04 passed the
+actual metadata observation; matrix06's original failure remains unchanged.
+The reference matrix is deferred to the next round at the user's request.
+
 Checkpoint: `2026-09-12T23:44:52Z`. Matrix06 passed the actual restricted
 operator admission and replayed all 269 preparation requests. Transport
 initialization then rejected the target process metadata before creating the

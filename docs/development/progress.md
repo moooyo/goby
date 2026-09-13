@@ -1,6 +1,36 @@
 # Implementation progress
 
-Latest execution checkpoint: `2026-09-12T23:44:52Z`. Matrix06 passed actual
+Latest closeout checkpoint: `2026-09-13T00:16:48Z`. The user requested that this
+round end after the current proxy identity repair, handoff and integration into
+main. Operator TOOL05 is implemented and passed 101 remote guards and two
+compile checks. The single actual diagnostic04 passed restricted admission,
+the 269-request preparation replay and two calls through the default identity
+resolver. The unit exited0/MainPID0; all 181 protected roots and the complete
+Goby state at 83 sessions/70 devices/185 activity entries remain unchanged.
+The [independent terminal](nextup-live-identity-diagnostic-04-independent-terminal.json),
+SHA-256 `540e1d6b544b94e669007d2efdc488335f26d009e3d202eef5b730acfb137ab7`,
+separately verifies runtime closure, both raw receipts, their full evidence
+bindings, current metadata, preservation and the zero-business-HTTP basis.
+
+The repair retains actual raw metadata, requires stable metadata-only file
+object proof, and labels the canonical binding separately. It only accepts the
+exact proxy executable deleted-display difference. See the
+[closeout record](nextup-live-identity-closeout-05.md) for source pins, verification,
+diagnostic and preservation evidence, and precise resume instructions.
+
+NextUp reference matrix execution, complete matrix wire reconstruction, the
+separate Goby comparison, positive client gate, primary upgrade and remaining
+M2-M6 work are deferred to the next round; M7 remains deferred. Matrix output
+`/opt/goby-test/exec-work-m3e/nextup-global-reference-runs-05/matrix-05`
+is still absent. Preserve the
+existing proxy and all consumed scopes. Do not rerun their business operations,
+resume their journals or rewrite their original outcomes. Read-only evidence
+replay remains permitted. Candidate source55/schema28 and primary
+source32/schema27 are unchanged. No matrix or client acceptance is claimed.
+The checkpoints below describe historical states and are superseded by this
+closeout and its linked evidence where they mention pending implementation.
+
+Previous execution checkpoint: `2026-09-12T23:44:52Z`. Matrix06 passed actual
 restricted operator admission and the 269-request preparation replay, then
 failed before matrix journal creation or business HTTP at target identity.
 Only endpoint.exe changed from `/usr/bin/python3.13` to the same path with

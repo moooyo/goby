@@ -1,0 +1,671 @@
+{
+  "actualBusinessHttpRequests": 0,
+  "all181RootsBeforeAfterEqual": true,
+  "applicationNetworkNamespace": "net:[4026532602]",
+  "authoritativePreparationPrivateOutputsByteExactReplayClaim": true,
+  "canonicalExecutableDisplay": "/usr/bin/python3.13",
+  "canonicalReturnCount": 2,
+  "canonicalValueIsRawObservation": false,
+  "capturedAt": "2026-09-13T00:16:18.767074+00:00",
+  "clientAcceptanceClaim": false,
+  "commit": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/diagnostic-commit.json",
+    "sha256": "536f9bd7f3a5591052ba8a95f3e4b6134301b5b4fd89d2fa7eb11c04ead7b532"
+  },
+  "completeGobyStateEqualExceptCaptureTime": true,
+  "completePrivateOutputSetVerified": true,
+  "config": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/config.json",
+    "sha256": "bdc54e6048357bd254f5a5b84365b55ac55b51c17cd1a493c732da98cca164e7"
+  },
+  "currentProcessMetadataMatchesReceipts": true,
+  "currentProcessMetadataSha256": "8e241e2e9a2a6c6d915ae28bf8361fbbe61245bc3613187e047e8c1e2922b732",
+  "diagnosticAttestation": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/attestation.json",
+    "sha256": "9e3934143f0614e279a3afa7973b52058e8696aa32e1c7d36496c46d88903ea4"
+  },
+  "diagnosticOnly": true,
+  "endpointNetworkNamespace": "net:[4026531840]",
+  "evidence": [
+    {
+      "bytes": 19343,
+      "identity": [
+        2049,
+        2544364,
+        33152,
+        0,
+        0,
+        1,
+        19343,
+        1789257892707183562,
+        1789257892707183562
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/attestation.json",
+      "sha256": "9e3934143f0614e279a3afa7973b52058e8696aa32e1c7d36496c46d88903ea4"
+    },
+    {
+      "bytes": 17650,
+      "identity": [
+        2049,
+        2544313,
+        33152,
+        0,
+        0,
+        1,
+        17650,
+        1789255635830606312,
+        1789255635830606312
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-06/attestation.json",
+      "sha256": "a16f833b942cbd0f7020a9eb2350ec86b7b7ffa3dac57831f0763799c6317de7"
+    },
+    {
+      "bytes": 513,
+      "identity": [
+        2049,
+        2544365,
+        33152,
+        0,
+        0,
+        1,
+        513,
+        1789257892707183562,
+        1789257892707183562
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/config.json",
+      "sha256": "bdc54e6048357bd254f5a5b84365b55ac55b51c17cd1a493c732da98cca164e7"
+    },
+    {
+      "bytes": 17298,
+      "identity": [
+        2049,
+        2544360,
+        33152,
+        0,
+        0,
+        1,
+        17298,
+        1789257892495190778,
+        1789257892495190778
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/audit.py",
+      "sha256": "506612b6551cdfe7ddb9de53eff7d2a140aeebe9dcbee5b9e2fe9b516f043150"
+    },
+    {
+      "bytes": 71133,
+      "identity": [
+        2049,
+        2544346,
+        33152,
+        0,
+        0,
+        1,
+        71133,
+        1789257648839067609,
+        1789257649291053899
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/run-nextup-global-reference.py",
+      "sha256": "ece90b7ff8a0d56a1b08825bd0dd7ec5b4603da432af6410a4af8ebe4dd968ce"
+    },
+    {
+      "bytes": 62780,
+      "identity": [
+        2049,
+        2543066,
+        33188,
+        0,
+        0,
+        1,
+        62780,
+        1789252333963393479,
+        1789252333963393479
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-preparation-tool-09/revision-02/nextup-global-transport.py",
+      "sha256": "4134c66a58a1542fc3c7dc9007bcd9ae289d094bb7db28a95d59a3557be4ceb8"
+    },
+    {
+      "bytes": 9678,
+      "identity": [
+        2049,
+        2544362,
+        33152,
+        0,
+        0,
+        1,
+        9678,
+        1789257892699183834,
+        1789257892699183834
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/published-execution.json",
+      "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+    },
+    {
+      "bytes": 9678,
+      "identity": [
+        2049,
+        2544312,
+        33152,
+        0,
+        0,
+        1,
+        9678,
+        1789255635830606312,
+        1789255635830606312
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-06/published-execution.json",
+      "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+    },
+    {
+      "bytes": 181583,
+      "identity": [
+        2049,
+        2544363,
+        33152,
+        0,
+        0,
+        1,
+        181583,
+        1789257892699183834,
+        1789257892699183834
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/wire-index.json",
+      "sha256": "30e67d5bd9f637caa094bd1a7dae1d17dbc561bc2b3a0eaa87ba15a8f6a042fb"
+    },
+    {
+      "bytes": 181583,
+      "identity": [
+        2049,
+        2544311,
+        33152,
+        0,
+        0,
+        1,
+        181583,
+        1789255635826606468,
+        1789255635826606468
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-06/wire-index.json",
+      "sha256": "30e67d5bd9f637caa094bd1a7dae1d17dbc561bc2b3a0eaa87ba15a8f6a042fb"
+    },
+    {
+      "bytes": 1106,
+      "identity": [
+        2049,
+        2544391,
+        33152,
+        0,
+        0,
+        1,
+        1106,
+        1789258325487597664,
+        1789258325487597664
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/diagnostic-commit.json",
+      "sha256": "536f9bd7f3a5591052ba8a95f3e4b6134301b5b4fd89d2fa7eb11c04ead7b532"
+    },
+    {
+      "bytes": 2156,
+      "identity": [
+        2049,
+        2544389,
+        33152,
+        0,
+        0,
+        1,
+        2156,
+        1789258325483597813,
+        1789258325483597813
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/diagnostic-terminal.json",
+      "sha256": "5716af32a80fdd624744b502b7b73053d1b59f00c04db80a3e2a0a0bfe419896"
+    },
+    {
+      "bytes": 2156,
+      "identity": [
+        2049,
+        2544390,
+        33152,
+        0,
+        0,
+        1,
+        2156,
+        1789258325487597664,
+        1789258325487597664
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/export/diagnostic-terminal.json",
+      "sha256": "5716af32a80fdd624744b502b7b73053d1b59f00c04db80a3e2a0a0bfe419896"
+    },
+    {
+      "bytes": 2784,
+      "identity": [
+        2049,
+        2544388,
+        33152,
+        0,
+        0,
+        1,
+        2784,
+        1789258325419600214,
+        1789258325419600214
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-index.json",
+      "sha256": "3fb840562d6c976b578177fb742eb4513cdab7f046ef41698632e40a882b7d18"
+    },
+    {
+      "bytes": 2356459,
+      "identity": [
+        2049,
+        2544376,
+        33152,
+        0,
+        0,
+        1,
+        2356459,
+        1789258128358878076,
+        1789258128358878076
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/preservation-before.json",
+      "sha256": "758b5e9f1d23d55d071bb5cecf10ffdbce425080d5db1b272ded8d5752df4ef1"
+    },
+    {
+      "bytes": 2356457,
+      "identity": [
+        2049,
+        2544393,
+        33152,
+        0,
+        0,
+        1,
+        2356457,
+        1789258354838494680,
+        1789258354838494680
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/preservation-after.json",
+      "sha256": "8937b0f0c83342cf8a07a4a3ba82e74e7f08bc50311e478f6d25f6d0216a5c18"
+    },
+    {
+      "bytes": 1560,
+      "identity": [
+        2049,
+        2544379,
+        33152,
+        0,
+        0,
+        1,
+        1560,
+        1789258315819960016,
+        1789258315819960016
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/launch-intent.json",
+      "sha256": "22e1aa2fef6ca96fd7528b71eb79e883e8610d215709a766e8f434636031f198"
+    },
+    {
+      "bytes": 825,
+      "identity": [
+        2049,
+        2544380,
+        33152,
+        0,
+        0,
+        1,
+        825,
+        1789258315835959418,
+        1789258315835959418
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/launch-result.json",
+      "sha256": "398341d020eff112c3cfc52069d7dad0591bbb2e74c0eb5bc9b9747779184a85"
+    },
+    {
+      "bytes": 5492,
+      "identity": [
+        2049,
+        2544377,
+        33188,
+        0,
+        0,
+        1,
+        5492,
+        1789258248370474061,
+        1789258248370474061
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/launch.py",
+      "sha256": "006dbf258a96fb07e508c20a447c9524085d1451757bbaf57492660d2ee31e35"
+    },
+    {
+      "bytes": 6532,
+      "identity": [
+        2049,
+        2544386,
+        33152,
+        0,
+        0,
+        1,
+        6532,
+        1789258325295604864,
+        1789258325295604864
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-0001-observation.json",
+      "sha256": "f5c751497df69c6af1ccf1d4fffc37e2ad5614bf3a10386b6c88d1a4e220d76b"
+    },
+    {
+      "bytes": 6594,
+      "identity": [
+        2049,
+        2544387,
+        33152,
+        0,
+        0,
+        1,
+        6594,
+        1789258325355602614,
+        1789258325355602614
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-0002-observation.json",
+      "sha256": "fcf68f2431e7c4b677de0c30b2b9f15ce5a2677d5bc29f078d5cf758b64dbd21"
+    },
+    {
+      "bytes": 1154,
+      "identity": [
+        25,
+        94526,
+        33152,
+        0,
+        0,
+        1,
+        1154,
+        1789257892715183289,
+        1789257892715183289
+      ],
+      "path": "/run/systemd/system/goby-nextup-global-matrix-identity-diagnostic-04.service",
+      "sha256": "d2a8155b3456df588c6f7665b989f69be4b8005081dc27585d331425b6ab0345"
+    },
+    {
+      "bytes": 2339124,
+      "identity": [
+        2049,
+        2544337,
+        33152,
+        0,
+        0,
+        1,
+        2339124,
+        1789256301139695123,
+        1789256301139695123
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-06/preservation-after.json",
+      "sha256": "03fb3fd3eb30523964e605e3cdcca67dcffd5532a86a726edac41a21a4851610"
+    },
+    {
+      "bytes": 8295,
+      "identity": [
+        2049,
+        2544373,
+        33152,
+        0,
+        0,
+        1,
+        8295,
+        1789258108151609651,
+        1789258124655012401
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/capture-preservation.py",
+      "sha256": "932f576669b3ff3a79dbe4d7501dbcb7beacba309df0dc7df8df40e06d2b58ae"
+    },
+    {
+      "bytes": 1401031,
+      "identity": [
+        2049,
+        2544375,
+        33152,
+        0,
+        0,
+        1,
+        1401031,
+        1789258124923002687,
+        1789258124923002687
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/goby-before.json",
+      "sha256": "45b915e130d6c735da2e3e69baedb1245c16b08b0f422ff7c4923469015fa3ea"
+    },
+    {
+      "bytes": 1401032,
+      "identity": [
+        2049,
+        2544392,
+        33152,
+        0,
+        0,
+        1,
+        1401032,
+        1789258351278628684,
+        1789258351278628684
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/goby-after.json",
+      "sha256": "e610f37657261ec2d53b4cec52c5182314fdf87b6f03496d31bea861b1d6f183"
+    },
+    {
+      "bytes": 863424,
+      "identity": [
+        2049,
+        2538632,
+        33152,
+        0,
+        0,
+        1,
+        863424,
+        1789222577673482996,
+        1789222577673482996
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source55-execution-07/independent-after-full.json",
+      "sha256": "31d08d24047da101774db727f4ea6f0ec0e67ce15b0ce3df40ec7ea819555364"
+    },
+    {
+      "bytes": 266,
+      "identity": [
+        2049,
+        2544381,
+        33152,
+        0,
+        0,
+        1,
+        266,
+        1789258325487597664,
+        1789258325487597664
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/unit-stdout.log",
+      "sha256": "e503a92b1c1fae129cb58ea763d3a8b9a717cb2498fdffe96e9f2d49cee94364"
+    },
+    {
+      "bytes": 0,
+      "identity": [
+        2049,
+        2544382,
+        33152,
+        0,
+        0,
+        1,
+        0,
+        1789258315863958368,
+        1789258315863958368
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/unit-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 25171,
+      "identity": [
+        2049,
+        2544394,
+        33152,
+        0,
+        0,
+        1,
+        25171,
+        1789258554926876216,
+        1789258578601965058
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/independent-closure.py",
+      "sha256": "32df2feab69f87254f776103e04b3fa85dfd7ba32fca9cc2d178ea7a006e4d7b"
+    },
+    {
+      "bytes": 426,
+      "identity": [
+        2049,
+        2544395,
+        33152,
+        0,
+        0,
+        1,
+        426,
+        1789258578605964904,
+        1789258578605964904
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/independent-closure-compile.json",
+      "sha256": "f8bbf59008207612eacbc8b52fdc809bf0c1498b4d3fc8544cd61bb0a1731122"
+    }
+  ],
+  "executableBytesRead": false,
+  "gobyAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/goby-after.json",
+    "sha256": "e610f37657261ec2d53b4cec52c5182314fdf87b6f03496d31bea861b1d6f183"
+  },
+  "gobyBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/goby-before.json",
+    "sha256": "45b915e130d6c735da2e3e69baedb1245c16b08b0f422ff7c4923469015fa3ea"
+  },
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "harness": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04/audit.py",
+    "sha256": "506612b6551cdfe7ddb9de53eff7d2a140aeebe9dcbee5b9e2fe9b516f043150"
+  },
+  "historicalV7GobyEqualExceptCaptureTime": true,
+  "identityIndex": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-index.json",
+    "sha256": "3fb840562d6c976b578177fb742eb4513cdab7f046ef41698632e40a882b7d18"
+  },
+  "independentCounters": {
+    "networkAttempts": 0,
+    "originalOrExecutableByteReads": 0
+  },
+  "kernelSameFileObjectAliasCount": 2,
+  "kind": "nextup-live-identity-diagnostic-independent-terminal",
+  "launchResult": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/launch-result.json",
+    "sha256": "398341d020eff112c3cfc52069d7dad0591bbb2e74c0eb5bc9b9747779184a85"
+  },
+  "matrixExecuted": false,
+  "matrixFixtureReleased": false,
+  "observationReceipts": [
+    {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-0001-observation.json",
+      "sha256": "f5c751497df69c6af1ccf1d4fffc37e2ad5614bf3a10386b6c88d1a4e220d76b"
+    },
+    {
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output/operator-04/private/identity-0002-observation.json",
+      "sha256": "fcf68f2431e7c4b677de0c30b2b9f15ce5a2677d5bc29f078d5cf758b64dbd21"
+    }
+  ],
+  "old176RootsEqual": true,
+  "operatorSource": {
+    "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-tool-05/revision-01/run-nextup-global-reference.py",
+    "sha256": "ece90b7ff8a0d56a1b08825bd0dd7ec5b4603da432af6410a4af8ebe4dd968ce"
+  },
+  "originalAttestationSha256": "a16f833b942cbd0f7020a9eb2350ec86b7b7ffa3dac57831f0763799c6317de7",
+  "originalImplementationBytesRead": false,
+  "postPersistenceChecksBoundByIndex": true,
+  "preparationExportReplayClaim": false,
+  "preparationReplayCount": 269,
+  "preservationAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/preservation-after.json",
+    "sha256": "8937b0f0c83342cf8a07a4a3ba82e74e7f08bc50311e478f6d25f6d0216a5c18"
+  },
+  "preservationBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-execution/preservation-before.json",
+    "sha256": "758b5e9f1d23d55d071bb5cecf10ffdbce425080d5db1b272ded8d5752df4ef1"
+  },
+  "rawAndKernelAnchorStable": true,
+  "rawExecutableDisplay": "/usr/bin/python3.13 (deleted)",
+  "rawReceiptCount": 2,
+  "referenceDatabaseRead": false,
+  "regularExecutableObject": {
+    "ctimeNs": 1789253832946653864,
+    "device": 2049,
+    "gid": 0,
+    "inode": 397,
+    "mode": 33261,
+    "mtimeNs": 1781360281000000000,
+    "nlink": 0,
+    "sizeBytes": 6828688,
+    "uid": 0
+  },
+  "resumeOrRetryAllowed": false,
+  "rootCount": 181,
+  "runtimeMatrixAcceptanceClaim": false,
+  "schemaVersion": 1,
+  "servicesAndMainFilesEqual": true,
+  "status": "metadata_identity_diagnostic_independently_verified",
+  "terminalExportSha256": "5716af32a80fdd624744b502b7b73053d1b59f00c04db80a3e2a0a0bfe419896",
+  "terminalPrivateSha256": "5716af32a80fdd624744b502b7b73053d1b59f00c04db80a3e2a0a0bfe419896",
+  "unit": {
+    "argvExact": true,
+    "argvSha256": "63db6c5eb6a00bcf72eeb1fee9bc4877f60a3749bc0d760cd17165ba7ad43e52",
+    "cgroupAbsent": true,
+    "formerPid": 1701431,
+    "formerPidAbsent": true,
+    "invocationId": "e7da22e551f74efbbae4aff2034292e4",
+    "name": "goby-nextup-global-matrix-identity-diagnostic-04.service",
+    "properties": {
+      "ActiveState": "active",
+      "ControlGroup": "",
+      "ExecMainCode": "1",
+      "ExecMainPID": "1701431",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/systemd/system/goby-nextup-global-matrix-identity-diagnostic-04.service",
+      "Id": "goby-nextup-global-matrix-identity-diagnostic-04.service",
+      "InvocationID": "e7da22e551f74efbbae4aff2034292e4",
+      "LimitNOFILE": "4096",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "1073741824",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "no",
+      "PrivateTmp": "yes",
+      "ProtectHome": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-diagnostic-04-output /opt/goby-test/exec-work-m3e/nextup-global-reference-runs-05 /opt/goby-test/exec-work-m3e/reference.lock",
+      "RemainAfterExit": "yes",
+      "Restart": "no",
+      "Result": "success",
+      "SubState": "exited",
+      "TasksMax": "64",
+      "TimeoutStartUSec": "30min",
+      "Type": "oneshot",
+      "UMask": "0077",
+      "User": "root"
+    }
+  },
+  "unitFile": {
+    "path": "/run/systemd/system/goby-nextup-global-matrix-identity-diagnostic-04.service",
+    "sha256": "d2a8155b3456df588c6f7665b989f69be4b8005081dc27585d331425b6ab0345"
+  },
+  "workerCounters": {
+    "executableByteOpenAttempts": 0,
+    "metadataOnlyExecutableOpens": 2,
+    "networkAttempts": 0,
+    "originalReadAttempts": 0,
+    "outsideOutputWriteAttempts": 0,
+    "unexpectedProcessAttempts": 0
+  },
+  "workerNetworkNamespace": "net:[4026531840]",
+  "writeScopeBasis": "Restricted systemd writable paths and the frozen Journal root are evaluated with the path-bearing audit counters; counters alone do not cover every filesystem mutation.",
+  "zeroHttpBasis": [
+    "The frozen harness completed real default Admission and default resolver calls in the exact systemd invocation.",
+    "Admission replays preparation through injected memory-only transport and journal; the harness calls neither execute nor TransportRunner.",
+    "A network-denying audit hook precedes Admission and both resolver calls; the successful isolated invocation retained zero network attempts.",
+    "The matrix evidence root is absent and its parent remains empty; retained private outputs are exactly the diagnostic receipts and commit."
+  ]
+}
