@@ -1,13 +1,13 @@
 # Independently attested reference matrix operator
 
-Status: **Operator TOOL05 passed 101 guards and two compile checks remotely.
-The actual diagnostic04 passed restricted admission, preparation replay and
-two metadata-only calls through the default live identity resolver. The
-reference matrix remains unexecuted. This round closes after handoff and main
-publication, as requested by the user.** See the
-[identity closeout](nextup-live-identity-closeout-05.md) for current source pins,
-actual evidence and remaining work. Historical verification bundles below keep
-their original outcomes; they are not current source authority.
+Status: **TOOL05 completed actual matrix07: 158 requests, 475 identity callbacks,
+independent wire reconstruction and runtime/preservation closure. Global
+results remained empty; positive reference selection and client acceptance
+remain unresolved.** See [matrix07](nextup-global-reference-matrix-07.md) for
+the current execution and resume boundary. The
+[identity closeout](nextup-live-identity-closeout-05.md) retains the 101 guards,
+two compile checks and diagnostic04 evidence for the unchanged operator source.
+Historical verification bundles below retain their original outcomes.
 
 [run-nextup-global-reference.py](../../scripts/test-env/run-nextup-global-reference.py)
 is the outer entry for the source-bound `TransportRunner`. It does not prepare a
@@ -116,15 +116,21 @@ three actors revoked. Successful cleanup is exactly six requests. The operator
 recomputes the plan with the pinned producer source, requires the retained plan
 to match, and reads `plan.normalMaximum` and
 `plan.successMaximumIncludingLogout` from that recomputed plan. The retained
-development plan allows **257 normal requests and 263 including successful cleanup**.
-They replace the historical 232/238 assumptions. All five plan limit fields
-must be positive integers; the success maximum must equal the normal maximum
-plus six, fit the total cap, and leave the required cleanup reserve.
+release-v3 preparation05 plan allows **293 normal requests and 299 including
+successful cleanup**. All five plan limit fields must be positive integers;
+the success maximum must equal the normal maximum plus six, fit the total cap,
+and leave the required cleanup reserve. Preparation05 actually completed
+**269 requests: 263 normal and six cleanup**, including all four calibrations.
+The actual count is distinct from the planned maximum. Its consumed scope and
+original worker draft remain unchanged; admission replays retained evidence
+without repeating its business operations.
 
-The preparation allocation is independently bounded by a **280 normal limit,
-100 cleanup reserve, and 380 total hard cap**. Its maximum failure cleanup is
-**89 requests**. These producer limits do not change the frozen matrix's
-separate **300 total / 220 normal / 80 cleanup** contract.
+The preparation allocation is independently bounded by a **320 normal limit,
+120 cleanup reserve, and 440 total hard cap**. Its maximum failure cleanup is
+**107 requests**. These producer limits do not change the frozen matrix's
+separate **300 total / 220 normal / 80 cleanup** contract. The older release-v2
+257/263 planned maxima, 280/100/380 allocation, and 89-request failure cleanup
+are historical values and must not be used to construct current inputs.
 
 The entry reuses the frozen producer's static input validation. This reads and
 pins its actual release terminal/inventory, closed-token intent/result proofs,
@@ -132,17 +138,24 @@ media approval, and approved synthetic media manifest. Missing or changed
 nested evidence is rejected, rather than trusting a preservation boolean.
 The original implementation or reference database is never read.
 
-The producer release is `nextup-global-preparation-release` with
-`schemaVersion: 2`; the outer matrix attestation above remains version 1.
-The release adds the exact `grantVerification` descriptor for the completed
-independent Guid-grant observation. Admission reconstructs all **109 raw
+The current producer release is `nextup-global-preparation-release` with
+`schemaVersion: 3`; the outer matrix attestation above remains version 1.
+Release-v3 retains the exact `grantVerification` descriptor and historical
+Guid-grant lineage, and adds `baselineObservation={manifest, independent}` for
+the accepted observer03. Admission reconstructs the historical **109 raw
 request/response pairs**, including **86 snapshot GETs** and **two exact token
 closures**, through the pinned producer's static checks. It checks the exact
 ordered method, route, actor, token, headers, form/JSON payload bytes, complete
-bounded response bytes, and timestamps. The latest `afterPublic` descriptor
-must be the new preparation's `publicBaseline`, covering **8 retained users,
-10 retained libraries, 12 full-detail witnesses, and 93 devices**. Summary
-booleans cannot replace those raw observations.
+bounded response bytes, and timestamps.
+
+The fixed observer verifier separately reconstructs all **64 observer03
+requests: 62 normal and two cleanup**, including its exact private/export
+journal. The observer's verified `afterPublic` descriptor must equal
+preparation05's `publicBaseline`, covering **10 retained users, 12 retained
+libraries, 24 full-detail witnesses, and 98 devices**. The older release-v2
+Guid snapshot with 8 users, 10 libraries, 12 details, and 93 devices remains
+historical evidence; its `afterPublic` cannot replace the current observer
+baseline. Summary booleans cannot replace either set of raw observations.
 
 The release evidence also binds the completed Guid worker's invocation,
 source/input argv, and exact cgroup. During real preparation, the producer's

@@ -1,6 +1,11 @@
 # Global NextUp reference and client acceptance plan
 
-Status: **planned; not executed**. Prepared on 2026-09-12 from Goby source and
+Execution checkpoint: the [reference matrix07](nextup-global-reference-matrix-07.md)
+completed R0-R4 and cleanup with independent reconstruction. All global
+responses were empty. The separate bounded original-client discovery below is
+next; the full acceptance plan remains open.
+
+Original plan status: **planned; not executed when authored**. Prepared on 2026-09-12 from Goby source and
 retained public API observations. This document creates no fixture, session,
 request, migration, or service operation. It does not extend the active
 LibraryChanged acceptance run or claim global NextUp compatibility.

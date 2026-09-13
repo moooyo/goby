@@ -1,0 +1,103 @@
+{
+  "capturedAt": "2026-09-13T05:02:19.350429+00:00",
+  "executedSourcePinsMatch": true,
+  "helperCompileCount": 5,
+  "kind": "nextup-matrix07-publication-review",
+  "knownPrivateCredentialsAbsent": true,
+  "localVerificationPerformed": false,
+  "matrixBusinessOperationsRepeated": false,
+  "records": [
+    {
+      "bytes": 10046,
+      "path": "scripts/test-env/capture-nextup-reference-matrix.py",
+      "sha256": "2cf4c28dce425a067cfbd60721705d25680b9127faeb00ae0dbabd6a1838fb37"
+    },
+    {
+      "bytes": 5660,
+      "path": "scripts/test-env/launch-nextup-reference-matrix.py",
+      "sha256": "1b12e09af055e3702d577725ebcb06dbf95b2db4db3b094e0222c5b700642b87"
+    },
+    {
+      "bytes": 19890,
+      "path": "scripts/test-env/resume-nextup-reference-matrix.py",
+      "sha256": "4275a822f45023026a5ba4c04c7b63a4011ca397933ce7a40fb0bc2540004695"
+    },
+    {
+      "bytes": 51238,
+      "path": "scripts/test-env/verify-nextup-matrix-runtime.py",
+      "sha256": "beb754354b1d3a718989b97b8b46cced5f4513ddbc079ecc484f05519687dea1"
+    },
+    {
+      "bytes": 29935,
+      "path": "scripts/test-env/verify-nextup-reference-matrix.py",
+      "sha256": "7b365059aff7003b7c850eecae76d34daac1c1bceef45af1d2e8e759594049bd"
+    },
+    {
+      "bytes": 5338,
+      "path": "docs/development/current-status.md",
+      "sha256": "7743ad101658cc69af1ff15ba25b763383889003ecd8c7ed14e5cf75a3c47468"
+    },
+    {
+      "bytes": 253946,
+      "path": "docs/development/handoff.md",
+      "sha256": "09f03ea5aeaabaa36e90622d3ca52af0a89c8da298841b64008462c5b433b8c5"
+    },
+    {
+      "bytes": 24102,
+      "path": "docs/development/nextup-global-acceptance-plan.md",
+      "sha256": "85d910bd61305da1f05f680892d295d5b0c74c7991b72e9305a4b440e3a8ce3e"
+    },
+    {
+      "bytes": 1608,
+      "path": "docs/development/nextup-global-reference-matrix-07-assembly.json",
+      "sha256": "cd0df0cde3f003b7e53cec7c4e3fc4eab1cee66354b9ca8a763af9b91e5c4f7e"
+    },
+    {
+      "bytes": 335486,
+      "path": "docs/development/nextup-global-reference-matrix-07-independent-runtime.json",
+      "sha256": "782ab2ddb4e1d979f9f93a42b3c1d9cbb9b1078413d5e8a354242ff715eeae93"
+    },
+    {
+      "bytes": 35320,
+      "path": "docs/development/nextup-global-reference-matrix-07-independent-wire.json",
+      "sha256": "4689a670ad80efcd0334c3f1956e540a986cfbc735da8f4e6b93acd68d804d8c"
+    },
+    {
+      "bytes": 1220,
+      "path": "docs/development/nextup-global-reference-matrix-07-operator-commit.json",
+      "sha256": "46e5811f1b2099ad49a20a4915fe0d83bd6adeb3ea0cdd5a51d455b714ba2b18"
+    },
+    {
+      "bytes": 2301,
+      "path": "docs/development/nextup-global-reference-matrix-07-operator-terminal.json",
+      "sha256": "e325d73c771a1ad7659f0ea4d805e9e6acaa36d10fc98c6c78443321f7a2c1b6"
+    },
+    {
+      "bytes": 1449,
+      "path": "docs/development/nextup-global-reference-matrix-07-prelaunch-failure.json",
+      "sha256": "c27b0d3a544ac5b4ca44eaa655f42e4be338ecddb5cf5523ea738f191eff84fa"
+    },
+    {
+      "bytes": 7112,
+      "path": "docs/development/nextup-global-reference-matrix-07.md",
+      "sha256": "5b7b7678f1ccc613b7995e9d10eb7d2519fc2662945ae24adb775b0565cdc885"
+    },
+    {
+      "bytes": 29633,
+      "path": "docs/development/nextup-global-reference-operator.md",
+      "sha256": "572546ace54b420ce2a3b577502f301fd684887c27119e7c8cba8040b581e38c"
+    },
+    {
+      "bytes": 164442,
+      "path": "docs/development/progress.md",
+      "sha256": "752a11bafcfcc944d8eb507c69e29a618f49faf30770c489ff07e39bc0be14c5"
+    },
+    {
+      "bytes": 3993,
+      "path": "docs/development/runtime-drift-20260913.md",
+      "sha256": "6012f7b1b1ff5409491d29039261d196f4a1c4a3b6c64f615a5ef0a0ce49484b"
+    }
+  ],
+  "schemaVersion": 1,
+  "status": "passed"
+}

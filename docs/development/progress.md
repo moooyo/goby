@@ -1,5 +1,20 @@
 # Implementation progress
 
+The `2026-09-13T05:00:23Z` checkpoint completed reference matrix07 with 158
+requests, independent wire reconstruction and independent runtime closure.
+Its ten global responses were empty; EXT/R5/R6 were not run. Cleanup and all
+186 protected roots passed, including complete Goby state. The next reference
+gate is bounded original-client Home/TV discovery. The matrix output is now
+consumed. See [matrix07](nextup-global-reference-matrix-07.md).
+
+Read-only review confirmed the preceding audit's 2,255-test composed evidence,
+41 frontend tests and build/source bindings. Live inspection found a preexisting
+candidate exit and three primary automatic restarts with unchanged binaries;
+the explicitly reconciled service baseline and original failed capture are
+retained in [the runtime investigation](runtime-drift-20260913.md). Audit fixes
+remain undeployed. Candidate recovery, the positive client gate, separate Goby
+comparison and remaining M2-M6 work remain open; M7 remains deferred.
+
 The 2026-09-13 architecture-audit remediation closed at `2026-09-13T03:57:22Z`:
 R01-R21 are fixed and remotely verified, with 2,255 Go tests across all 25 packages
 (24 complete package passes and one explicitly reconciled server package), 41

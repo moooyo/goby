@@ -1,6 +1,22 @@
 # Development handoff
 
-Current closeout: `2026-09-13T03:57:22Z`. The architecture-audit findings R01-R21
+Current checkpoint: `2026-09-13T05:00:23Z`. Reference matrix07 completed 158
+requests and passed independent exact wire reconstruction and runtime closure.
+All ten global responses remain empty; no positive global rule or client
+acceptance is established. All 186 protected roots and complete Goby state
+were preserved. The bound matrix05 output is now consumed and must not be
+rerun. See [matrix07](nextup-global-reference-matrix-07.md) for exact evidence
+and the next bounded original-client Home/TV discovery.
+
+Progress review confirmed the earlier R01-R21 verification evidence. It also
+found preexisting service drift: candidate source55 had exited1 and the unchanged
+source32 primary had automatically restarted. Their binaries and database state
+were preserved; audit fixes remain undeployed. The original failed capture and
+an explicit new service baseline are retained. See the
+[runtime investigation](runtime-drift-20260913.md). Candidate recovery remains
+separate work. The existing proxy and all consumed scopes remain protected.
+
+Previous closeout: `2026-09-13T03:57:22Z`. The architecture-audit findings R01-R21
 are fixed and remotely verified. Evidence covers 2,255 Go tests across 25 packages
 (24 complete package passes and one explicitly reconciled server package), 41
 mocked-API browser tests, and frontend/Linux builds. The containing Git commit

@@ -1,0 +1,52 @@
+{
+  "businessHttpRequests": 0,
+  "captureSourceSHA256": "45aebb3a9e8ecafaff0b973563c68b7633fcac7aedb16d0a3a1d6168b5206040",
+  "capturedAt": "2026-09-13T04:52:59.110483+00:00",
+  "differences": {
+    "goby-client-m3e.service": {
+      "ActiveState": {
+        "actual": "failed",
+        "expected": "active"
+      },
+      "ControlGroup": {
+        "actual": "",
+        "expected": "/system.slice/goby-client-m3e.service"
+      },
+      "ExecMainStatus": {
+        "actual": "1",
+        "expected": "0"
+      },
+      "MainPID": {
+        "actual": "0",
+        "expected": "1458051"
+      },
+      "Result": {
+        "actual": "exit-code",
+        "expected": "success"
+      },
+      "SubState": {
+        "actual": "failed",
+        "expected": "running"
+      }
+    },
+    "goby-foundation-test.service": {
+      "InvocationID": {
+        "actual": "af71e306c80b4d11a7683ac819562e48",
+        "expected": "bb94d74b475f4382a6ec6f6df181dd74"
+      },
+      "MainPID": {
+        "actual": "1778525",
+        "expected": "762090"
+      }
+    }
+  },
+  "gobyBeforeWritten": true,
+  "kind": "nextup-matrix07-prelaunch-preservation-failure",
+  "mainFileHashDifferences": [],
+  "matrixEvidenceRootAbsent": true,
+  "matrixStarted": false,
+  "preservationBeforeWritten": false,
+  "previousPreservationSHA256": "8937b0f0c83342cf8a07a4a3ba82e74e7f08bc50311e478f6d25f6d0216a5c18",
+  "schemaVersion": 1,
+  "status": "service_baseline_drift_before_launch"
+}

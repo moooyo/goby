@@ -1,0 +1,13 @@
+{
+  "corrections": [
+    "Distinguish 15 regression groups from 28 files.",
+    "Distinguish raw wire inputs from 319 byte-reconstructed private outputs.",
+    "Limit the no-executable-byte-read claim to the bound reference application and proxy."
+  ],
+  "kind": "nextup-matrix07-final-document-wording",
+  "path": "docs/development/nextup-global-reference-matrix-07.md",
+  "previousReviewSHA256": "7104b310e46ccd85f673fdad6de40eb555366ea035551e2085c9c7ad4a6f4e53",
+  "schemaVersion": 1,
+  "sha256": "7b63a4351986e3dd7b6696d2abe169cfe9207378be79724263c56a9b75a3a1e3",
+  "status": "passed"
+}
