@@ -63,13 +63,15 @@ Freeze the next independent client input against this selected source and the
 current seventeen revoked sessions; preserve all consumed movie/TV inputs.
 The [actual lineage reader review](../development/tv-parent-client-lineage-review.md)
 and [first MP3 entry](../development/audited-mp3-client01-plan.md) are complete.
-Execute that one bounded MP3 scenario, then reconcile its owned state before
-selecting the following independent scenario.
+MP3 has now passed its first run and [owned closeout](../development/audited-mp3-client01-closeout.json),
+with eighteen revoked sessions and one retained audio-reference row. Execute
+the separately reviewed [first FLAC input](../development/audited-flac-client01-plan.md),
+preserving the complete MP3 state before selecting the following scenario.
 Do not expand this into Live TV or reopen global NextUp research on an error
 timestamp alone.
 
-MP3, FLAC, episode playback and subtitles remain independent later core
-increments. They do not depend functionally on movie passing, but they do use
+MP3 is complete for this profile. FLAC, episode playback and subtitles remain
+independent core increments. They do not depend functionally on movie passing, but they do use
 the shared adapter. Serialize writes and close each owned state before the
 next run. Every increment freezes relevant verified source, fresh actor/state
 facts, expected outcome and existing request/time/cleanup bounds. Movie and TV

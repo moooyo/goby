@@ -1,0 +1,65 @@
+{
+  "actor": "bfd2db47ea6f392645b7d55947958425",
+  "actorPlayHistoryEmpty": true,
+  "actorUserdataEmpty": true,
+  "allSessionsRevoked": 18,
+  "automaticBusinessRetry": false,
+  "browserRuns": 0,
+  "businessHttpRequests": 0,
+  "candidateContinuous": true,
+  "capturedAt": "2026-09-13T16:13:50.240039+00:00",
+  "clientPlaybackReferences": 1,
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-03/verification.json",
+    "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"
+  },
+  "controller": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-02/run-audited-candidate-client.py",
+    "sha256": "e47f8d19e44d3acc51134080f2e5fe6c126cc5937799ec1566e6a7ba8367e835"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-02/verification.json",
+    "sha256": "7835171d5ffd321ed188dff0052efbf91eac05b96c490f447773a02e3a6caf03"
+  },
+  "encodingJobs": 0,
+  "foreignPlaysPreserved": 8,
+  "foreignUserdataRowsPreserved": 3,
+  "freshRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-flac-client01-entry-review-01/private/runtime.json",
+    "sha256": "80ed354f0fcd956f4ff62bf24bdd3d0f27c71b15b8a936e5966a77325b12891f"
+  },
+  "freshSource": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-flac-client01-entry-review-01/private/source.json",
+    "sha256": "22652d4c6a4ad22ba3616f86cb2c6850a43481d3cc7ff45050b11d579558e89b"
+  },
+  "hostingContinuous": true,
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-flac-client01-entry-review-01/input.json",
+    "sha256": "6611e05990ab3508cd02ef246b3480f8239764bbd0ad6ef920e1e377654d87fc"
+  },
+  "kind": "audited-flac-client01-entry-review",
+  "leaseExact": true,
+  "newOutputAndUnitsAbsent": true,
+  "ownedTablesExact": 35,
+  "postgresContinuous": true,
+  "priorAdmissionCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission05-closeout.json",
+    "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"
+  },
+  "priorOwnedCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-mp3-client01-closeout.json",
+    "sha256": "f3a552835da6dbacc2f81c97e30f082bf10e69ab63b68d4d02ed017914e7514d"
+  },
+  "priorSourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-mp3-01/private/source-after.json",
+    "sha256": "9e634223dd44c6e5f5d30a8deb0bf1642a22381467ed6efa3a2de737c1aec515"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "sequencesExact": true,
+  "serviceActions": 0,
+  "status": "ready_for_one_bounded_flac_run",
+  "version": 1
+}

@@ -11,7 +11,7 @@ their original meanings and are not fresh deployment observations.
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Execute the next independently admitted original-client scenario |
-| Core original client | Movie05 playback and TV browse01 navigation observed; both formal results failed and owned states closed | Complete strict movie/TV acceptance, episode, MP3, FLAC and external-subtitle scenarios |
+| Core original client | MP3 passed on the current successor; movie05 playback and TV browse01 navigation were observed with formal failures and closed owned state | FLAC, episode and external subtitles, followed by retained movie/TV acceptance gaps |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -63,6 +63,14 @@ also passes, including the fixed public report and two unknown historical
 credential IDs. The [first MP3 input](audited-mp3-client01-plan.md) is reviewed
 against the exact seventeen-session state. This is API/runtime admission, with
 core client acceptance open.
+
+The [MP3 core scenario](audited-mp3-client01-closeout.json) now passes: 287
+physical exchanges, 2,880,702 bytes of completed audio delivery, one counted
+Stopped lifecycle, count1/55.346884-second userdata and no page errors. All
+eighteen sessions are revoked; both browser/gateway workers are closed. The
+single retained universal-audio reference is bound to the stopped play and
+revoked credential. Old state is exact. The separately reviewed
+[first FLAC input](audited-flac-client01-plan.md) preserves this full state.
 
 ## Movie checkpoints
 
