@@ -13,6 +13,13 @@ without blocking every unrelated internal increment. The project requires
 PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
 updates alone do not close any milestone or reference evidence gap.
 
+The [fresh source32 backup](../development/audited-main-native-backup-completed.json)
+and owned cleanup are now complete; the two isolated restoration proofs are
+next. [Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified
+initial collection for locked dependencies and actual fonts. Project-license,
+relevant upstream/inclusion gaps and the complete packaging/release gate remain
+open; this partial evidence does not narrow the M2-M6 scope.
+
 ## Milestones and dependencies
 
 | Milestone | Work | Completion gate |

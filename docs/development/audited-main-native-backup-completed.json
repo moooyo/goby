@@ -1,0 +1,177 @@
+{
+  "archive": {
+    "bytes": 196310,
+    "ctimeNs": "1789338872547525922",
+    "device": 2049,
+    "gid": 0,
+    "inode": 1896372,
+    "links": 1,
+    "mode": 384,
+    "mtimeNs": "1789338872547525922",
+    "parentMode": 448,
+    "parentUid": 0,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/69f5e597c99f65099647cd3322d3174c.age",
+    "schemaVersion": 27,
+    "serverId": "b051277b616acbdf528b9ff9589121cb",
+    "sha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f",
+    "uid": 995
+  },
+  "backupId": "69f5e597c99f65099647cd3322d3174c",
+  "claims": {
+    "coreAcceptancePassed": false,
+    "mainUpgradePerformed": false,
+    "restorationPerformed": false
+  },
+  "completedAt": "2026-09-13T22:40:29.814988+00:00",
+  "database": {
+    "activitySequenceDelta": 5,
+    "archiveSnapshotRows": 405,
+    "frontendAndBackendClosed": true,
+    "newActivityRows": 5,
+    "newRevokedAdministratorSessions": 1,
+    "oldDevicesExact": true,
+    "originalRowsPreserved": 402,
+    "otherFourSequencesExact": true,
+    "postWorkflowRows": 408,
+    "tables": 35
+  },
+  "files": {
+    "after": {
+      "bytes": 28378,
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/files-after-state.json",
+      "sha256": "bd3a7f7a0068c9a01c316583bc7101f7f59273772ba49f068b9614daac784761"
+    },
+    "archiveRestorationProved": false,
+    "archiveSnapshotIncludesLoginAndRequestedOnly": true,
+    "archiveSnapshotRows": 405,
+    "backupId": "69f5e597c99f65099647cd3322d3174c",
+    "before": {
+      "bytes": 22848,
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/files-before-state.json",
+      "sha256": "7e024f57e718ce56981099b6cfd71c222bb562574f1bacedf3fd12f5cb2c17c6"
+    },
+    "cacheMarkerFilesOnly": true,
+    "controlRevisionAfter": 9,
+    "controlRevisionBefore": 5,
+    "encodingJobSQLProofRequired": true,
+    "intermediateCASBodiesObserved": false,
+    "kind": "main-native-backup-files-closeout",
+    "lastCASPairBytesAndIdentityVerified": true,
+    "lifecycleAndMasterMetadataUnchanged": true,
+    "masterContentsRead": false,
+    "newArchiveMatchesFullHTTPDownload": true,
+    "newClosedDiagnosticFiles": 1,
+    "oldArchiveBodiesRead": false,
+    "oldBackupCatalogAndObjectMetadataUnchanged": true,
+    "oldDiagnosticFilesUnchanged": 11,
+    "oldOperationUnchanged": true,
+    "operationId": "5e1361a97ead01e045ab4daa84bde9d6",
+    "operationRevision": 4,
+    "recoveredRegistryEntries": 0,
+    "retainedBaseline": {
+      "closeout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/post-stop-observation.json",
+        "sha256": "427180ad7e66a26c91cdcf28e482faa6150b11aad557b80854309dd91fc0b55f"
+      },
+      "filesAfter": {
+        "bytes": 22187,
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/private/files-after-state.json",
+        "sha256": "24688d00d9e536dffc8998cdee4b453febf6f180e9c407c713c103f269c74c71"
+      }
+    },
+    "sealedApplicationKeysInNativeSnapshot": 4,
+    "sqlAndServiceCloseoutRequired": true,
+    "status": "expected_file_delta_closed",
+    "unknownOrPendingFiles": 0,
+    "version": 2
+  },
+  "kind": "main-native-backup-completion",
+  "nativeSourceKeyWitness": {
+    "applicationKeyRows": 4,
+    "basis": "Completed source32 native Engine.Create requires WitnessBackup in the same exported snapshot as SourceFacts and pg_dump.",
+    "passed": true
+  },
+  "operation": {
+    "automaticBusinessRetry": false,
+    "completeDownloads": 1,
+    "httpCalls": 13,
+    "logout204": true,
+    "nativeCreates": 1,
+    "parentTotalServiceStarts": 2,
+    "parentTotalServiceStops": 2,
+    "phaseServiceStarts": 1,
+    "phaseServiceStops": 1,
+    "sameCookie401": true
+  },
+  "operationId": "5e1361a97ead01e045ab4daa84bde9d6",
+  "policy": {
+    "capacityProfileRetained": true,
+    "deploymentLockReleasedUnchanged": true,
+    "exactRuntimeFenceRemoved": true,
+    "mainInactive": true,
+    "originalRestartPolicyRestored": true,
+    "ownedEmptyDirectoryRemoved": true,
+    "ownedPidAndCgroupClosed": true,
+    "protectedExternalStateUnchanged": true,
+    "source55Inactive": true
+  },
+  "preservedFailure": {
+    "code": "service_destination_parent_changed",
+    "execution": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/execution.json",
+      "sha256": "2f19b9790d836a9f7548fbd949b670cac4156d6144edd0344affd1e99ad09de5"
+    },
+    "failureReceiptNotRewritten": true,
+    "phase": "owned empty runtime-directory cleanup after completed HTTP/data/files",
+    "resolution": "Pinned shared-parent identity and exact owned child scope were rechecked; one reviewed cleanup completed without service start, HTTP or database work."
+  },
+  "proofs": {
+    "admission": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/admission.json",
+      "sha256": "a153b0630b49aec09f02ab9cdb8e6e081a8229d3abd3549f024956587a78254e"
+    },
+    "dataCloseout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/controller-data-closeout.json",
+      "sha256": "606bcac3d1ac56026ac6c3e5781f64028829582981cd48e33e0ce9e3f67b4f7d"
+    },
+    "databaseAfter": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/controller-after-database-state.json",
+      "sha256": "e33c0556d177e60bddff4c007ea5e0070c55143c43b828d7b6defc2404859213"
+    },
+    "execution": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/execution.json",
+      "sha256": "2f19b9790d836a9f7548fbd949b670cac4156d6144edd0344affd1e99ad09de5"
+    },
+    "fileCloseout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/controller-file-closeout.json",
+      "sha256": "633d296c9f62c96d3839e16c00190da6c8343fd46b3a654152080d1ccd02ed66"
+    },
+    "filesAfter": {
+      "bytes": 28378,
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/files-after-state.json",
+      "sha256": "bd3a7f7a0068c9a01c316583bc7101f7f59273772ba49f068b9614daac784761"
+    },
+    "finalProtectedState": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/private/controller-final-protected-state.json",
+      "sha256": "32b0d52302e7c943902c95385d56ebbc379a8a4a66fccb2939b1f04ad945d76c"
+    },
+    "policyCloseout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/policy-closeout.json",
+      "sha256": "8c05d6628961f34ca398534ca83dce3099e8f8205e6cd38107b2678e9edb16d4"
+    }
+  },
+  "remaining": {
+    "archivePassphraseRestoreAuthentication": true,
+    "coreVideoAcceptance": true,
+    "fullM2ThroughM6": true,
+    "mainPromotion": true,
+    "selectedSchema28Restore": true,
+    "source32Schema27Restore": true
+  },
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review",
+  "source32BinarySha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+  "source32Commit": "b9bb7b1cf11e07e011a6e1726ddb9d53ef8e1fe9",
+  "sourceSchema": 27,
+  "status": "native_backup_and_owned_scope_closed",
+  "version": 1
+}

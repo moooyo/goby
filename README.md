@@ -45,3 +45,9 @@ Device research observes shared registration across ordinary users/clients, cust
 The initial ScheduledTasks read study records 22 definitions, all sampled as `Idle`. The separate fresh study observes real starts, both running-stop forms returning `204` and then `Cancelled`, idle-stop `500`, and bounded trigger updates. Scheduled firing, weekly/system-event execution, DST, maximum-runtime enforcement, and key authority remain unverified reference behavior. Goby's [task implementation](docs/development/tasks.md) has its own accepted scheduling and authorization contract; the reference gaps do not become claims of full Emby timer or client equivalence.
 
 The older static Swagger browser is separately recorded because it exposes a different API surface. Neither document proves that all released clients will work without behavioral testing.
+
+Third-party legal texts and actual font attribution are collected in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and its
+[versioned inventory](docs/development/third-party-notices-inventory.json).
+Collection is incomplete, Goby's project license remains undecided, and the
+packaging and external-distribution gates remain open.

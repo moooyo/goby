@@ -1,0 +1,128 @@
+{
+  "checkpoint": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/checkpoint.json",
+    "sha256": "3a9ff1ddf45213331aa4f23d66d1beedd44da9f18df8e168e9e56badc6a925cf"
+  },
+  "completedAt": "2026-09-13T22:44:28Z",
+  "filesystems": {
+    "/": {
+      "device": 2049,
+      "freeBytes": 464678912,
+      "freeInodes": 3553731,
+      "noExec": false,
+      "totalBytes": 102297296896,
+      "totalInodes": 6348800
+    },
+    "/dev/shm": {
+      "device": 26,
+      "freeBytes": 6261313536,
+      "freeInodes": 1529157,
+      "noExec": false,
+      "totalBytes": 6263459840,
+      "totalInodes": 1529165
+    },
+    "/var/lib/postgresql/17/main": {
+      "device": 2049,
+      "freeBytes": 464678912,
+      "freeInodes": 3553731,
+      "noExec": false,
+      "totalBytes": 102297296896,
+      "totalInodes": 6348800
+    }
+  },
+  "fixtureAdmission": false,
+  "fixtureResourcesCreated": 0,
+  "kind": "main-isolated-restore-resource-summary",
+  "memory": {
+    "MemAvailableBytes": 9930838016,
+    "MemTotalBytes": 12526919680,
+    "ShmemBytes": 1253068800,
+    "SwapFreeBytes": 0
+  },
+  "observation": {
+    "applicationDatabaseConnections": 0,
+    "backendExitObserved": true,
+    "businessSqlWrites": 0,
+    "commitAcknowledged": true,
+    "connectionAttempts": 1,
+    "frontendClosed": true,
+    "frontendExitCode": 0,
+    "masterRead": false,
+    "passphraseRead": false,
+    "runtimeIdentityStable": true,
+    "serviceMutations": 0
+  },
+  "planningOnly": {
+    "acceptedCapacityBound": false,
+    "additionalWalBytesProposed": 134217728,
+    "caveat": "These are provisional planning allowances. Actual restored table/index growth and WAL bounds still require admission evidence; max_wal_size is not a hard limit. No fixture layout is admitted by this observation.",
+    "conservativeCombinedBytesProposed": 553648128,
+    "currentRootVolumeShortfallBytes": 88969216,
+    "evidenceBytesProposed": 16777216,
+    "minimumRetainedFreeBytesProposed": 134217728,
+    "sharedExistingClusterPermittedByNativeContract": true,
+    "twoTargetDatabasesBytesProposed": 268435456
+  },
+  "postgres": {
+    "activeConnections": 6,
+    "maintenanceWorkMem": "64MB",
+    "maxConnections": 100,
+    "maxWalSize": "128MB",
+    "port": 5432,
+    "sharedBuffers": "128MB",
+    "systemIdentifier": "7683277964552005578",
+    "version": 170011,
+    "workMem": "4MB"
+  },
+  "sourceReceipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-native-backup-01/after-ownership-review/restore-resource-observation-01.json",
+    "sha256": "dfdc6fdbbf4945c584afdb3d3e7577b86678aa85ffc160b52edcce56a399ffc0"
+  },
+  "status": "observed_unreserved_layout_candidates",
+  "targets": [
+    {
+      "database": "goby_restore_selected_69f5e597",
+      "databaseNamesAbsent": true,
+      "declaredPrimaryDatabase": "goby_restore_selected_primary_69f5e597",
+      "declaredPrimaryRole": "goby_restore_selected_primary_69f5e597",
+      "fixture": "selected",
+      "pathAbsence": {
+        "/dev/shm/goby-restore-selected-69f5e597": true,
+        "/etc/systemd/system/goby-restore-selected-69f5e597.service": true,
+        "/opt/goby-restore-selected-69f5e597": true,
+        "/run/systemd/system/goby-restore-selected-69f5e597.service": true,
+        "/run/systemd/transient/goby-restore-selected-69f5e597.service": true
+      },
+      "port": 18241,
+      "portUnoccupied": true,
+      "role": "goby_restore_selected_69f5e597",
+      "roleNamesAbsent": true,
+      "root": "/opt/goby-restore-selected-69f5e597",
+      "scratchRoot": "/dev/shm/goby-restore-selected-69f5e597",
+      "unit": "goby-restore-selected-69f5e597.service"
+    },
+    {
+      "database": "goby_restore_source32_69f5e597",
+      "databaseNamesAbsent": true,
+      "declaredPrimaryDatabase": "goby_restore_source32_primary_69f5e597",
+      "declaredPrimaryRole": "goby_restore_source32_primary_69f5e597",
+      "fixture": "source32",
+      "pathAbsence": {
+        "/dev/shm/goby-restore-source32-69f5e597": true,
+        "/etc/systemd/system/goby-restore-source32-69f5e597.service": true,
+        "/opt/goby-restore-source32-69f5e597": true,
+        "/run/systemd/system/goby-restore-source32-69f5e597.service": true,
+        "/run/systemd/transient/goby-restore-source32-69f5e597.service": true
+      },
+      "port": 18242,
+      "portUnoccupied": true,
+      "role": "goby_restore_source32_69f5e597",
+      "roleNamesAbsent": true,
+      "root": "/opt/goby-restore-source32-69f5e597",
+      "scratchRoot": "/dev/shm/goby-restore-source32-69f5e597",
+      "unit": "goby-restore-source32-69f5e597.service"
+    }
+  ],
+  "targetsReserved": false,
+  "version": 1
+}

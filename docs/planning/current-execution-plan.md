@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the source32 startup rejection and owned cleanup. Status: **product and
+Reviewed on 2026-09-14 after native schema27 backup completion and policy cleanup. Status: **product and
 candidate verified; MP3 and FLAC accepted; video client acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
@@ -27,8 +27,8 @@ database identities, schema27 binding and bounded startup candidates. Both
 capacity configurations passed actual parsing; the missing empty cache directory
 was prepared. The old executable and 415 installed administrator assets are
 now archived and verified. The capacity profile is installed. The separate key observer stopped at a
-helper-permission precondition before execution; key authentication remains
-unproved. See the [material review](../development/audited-main-recovery-materials.md).
+helper-permission precondition before execution; authentication remained unproved
+at that [material checkpoint](../development/audited-main-recovery-materials.md).
 
 The [native-backup input](../development/audited-main-native-backup-plan.md) has
 now been consumed. After a corrected reserved-prefix preflight, one source32
@@ -38,17 +38,29 @@ acceptance incorrectly preceded the controller's ability to stop its own
 invocation. Independently reviewed ownership recovery stopped that exact
 process. The [actual closeout](../development/audited-main-native-backup-closeout.json)
 preserves all 402 rows and five sequences; capacity and the restart fence remain
-installed. No new archive or key authentication exists. Pause this experiment
-after its two controller failures and retain the changed cache/log baseline.
+installed at that point. That input paused after two controller failures; its
+changed cache/log baseline and original failed receipts remain preserved.
+
+The [ownership correction](../development/audited-main-backup-ownership-correction.md)
+then passed remote service, retained-file and controller guards and independent
+review. Its separately admitted child phase completed one native backup and
+source-key witness, one full download, same-cookie logout and exact data/file
+reconciliation. The [completed checkpoint](../development/audited-main-native-backup-completed.json)
+binds a 196,310-byte schema27 archive with 405 rows. The operational database has
+408 rows, preserving all 402 old rows and adding one revoked session plus five
+audits. A final shared-parent cleanup rejection remains in the execution receipt;
+reviewed policy-only cleanup removed the exact restored fence and empty owned
+directory. Main is inactive, capacity remains installed and no business request
+was repeated. Both isolated restoration proofs remain open.
 
 The ordering needed a substantive correction: paused video investigation must
 not also prevent the old source32 backup and isolated recovery work. Those
 actions require their own safety admission; core acceptance continues to block
 new-binary main promotion. Separate backup inputs from backup outputs, and allow
 independent M2-M6 obligations to progress under their own prerequisites. The next
-deliverable is a bounded correction of stop authority and the actual systemd
-environment contract before any new backup admission. Preserve the page-error
-rule and every failure; do not extend the generic observation framework.
+deliverable is concrete resource/identity admission for the two isolated
+restoration fixtures consuming this one archive. Preserve the page-error rule
+and every failure; do not extend the generic observation framework.
 
 ## Accepted baseline
 
@@ -60,7 +72,7 @@ rule and every failure; do not extend the generic observation framework.
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
-| Main | [Startup-only closeout](../development/audited-main-native-backup-closeout.json) preserves all 402 rows and five sequences after one owned start/stop. Main is inactive; capacity and the restart fence are installed, cache markers and eleven closed logs are retained; [old installation materials](../development/audited-main-recovery-materials.md) remain archived | No HTTP or native backup occurred. Correct stop authority and environment admission before another start; key authentication, a fresh schema27 archive and both isolated restore proofs remain open |
+| Main | [Native-backup completion](../development/audited-main-native-backup-completed.json) proves one schema27 archive, source-key witness and exact 402-to408 operational delta. Main is inactive, capacity retained, temporary fence removed; cache markers, twelve closed logs and old installation materials are retained | Independently prove selected/schema28 and actual source32/schema27 restoration, activation and restart; archive creation alone does not prove either restoration or main promotion |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -80,8 +92,9 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
 | 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
 | 4. Source32 backup start — consumed; cleanup closed | Two controller failures are preserved; the second installed capacity/fence and started source32 once before environment rejection. The exact invocation was stopped, with zero HTTP and exact database preservation | Do not execute this input again, remove its evidence or reset its file baseline. Native backup creation and key authentication did not occur |
-| 5. Backup admission reassessment — next | Establish exact start-bound stop authority before full configuration/readiness acceptance; incorporate the observed pressure environment. Reuse installed capacity/fence, cache markers, eleven closed logs and the closed database state | Keep strict source/environment checks, independent review, finite business slots and cleanup. No automatic third attempt or new generic runner |
-| 6. Isolated recovery proofs — follows a fresh archive | Use the [actual CLI draft](../development/audited-main-isolated-restore-plan.md) for selected schema28 and separately actual source32/schema27, including legal activation and restart | Each needs fresh isolated identities/paths/ports/capacity. Apply itself temporarily starts listeners and task management. The draft is unadmitted; both proofs precede main promotion and do not require video acceptance |
+| 5. Reviewed native backup — complete | Stop authority was corrected before strict configuration acceptance; a separately admitted child phase created/downloaded the fresh archive and reconciled all data/files. Policy-only cleanup closed the final shared-parent rejection | Retain the original failure and new completion checkpoint. This input is consumed; do not create another backup or start main for a cleanup retry |
+| 6. Isolated recovery proofs — next | Bind the completed archive to two fresh fixtures using the [actual CLI draft](../development/audited-main-isolated-restore-plan.md): selected/schema28, then actual source32/schema27, with legal activation and restart | Admit exact identities/paths/ports/capacity first. Apply itself temporarily starts listeners and task management. Neither fixture has run; both proofs precede main promotion and do not require video acceptance |
+| 7. Distribution notices — partial parallel progress | [Original legal texts and versioned inventory](../../THIRD_PARTY_NOTICES.md) cover current Go requirements, production npm entries and actual fonts; source/copy checks passed remotely | Resolve project license and the relevant upstream/inclusion gaps against the actual future package. This collection does not close M6 or external distribution |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation
@@ -115,10 +128,9 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
 
 ## Remaining work and dependencies
 
-1. Recovery work first corrects the rejected start contract against retained
-   state; no consumed input is replayed. Then separately admit one source32 native backup, retain its
-   schema27 archive and reconcile its exact operational deltas, then complete
-   the two distinct isolated restoration proofs. Fresh ownership, configuration,
+1. Retain the completed source32 native archive and its exact operational
+   closeout. Admit and complete the two distinct isolated restoration proofs;
+   no consumed backup input is replayed. Fresh ownership, configuration,
    capacity, write budgets and private recovery material govern these actions.
 2. Core acceptance remains open for movie/TV playback and external subtitles.
    Reuse accepted MP3/FLAC and unchanged controls. Resume a consumed video path

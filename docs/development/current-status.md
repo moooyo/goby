@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after the source32 startup rejection and owned cleanup. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after native schema27 backup completion and policy cleanup. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,34 +12,69 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main recovery and deployment | One source32 start was rejected before HTTP by the environment checker and then stopped with independently verified ownership. Main is inactive; capacity and the restart fence remain installed; all 402 rows and five sequences are preserved | Reassess stop authority and the actual systemd environment before a new backup admission. No archive or key authentication was produced. Both isolated restore proofs remain required; new-binary main promotion still requires core and complete recovery evidence |
+| Main recovery and deployment | One fresh schema27 native archive and source-key witness are complete; 402 old rows remain exact, with one revoked session and five audits. Main is inactive, capacity retained and the temporary fence removed | Complete separate actual source32/schema27 and selected/schema28 restore/activation/restart proofs. Main promotion still requires core acceptance and complete recovery evidence |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
 executable and 415 administrator files in a verified 16,590,013-byte archive.
-Private credential metadata is reconciled; key and passphrase authentication
-remain unproved. The standalone key observer stopped at a helper-mode mismatch
+At that checkpoint private credential metadata was reconciled, while key and
+passphrase authentication remained unproved. The standalone key observer stopped at a helper-mode mismatch
 before any database connection or master read. The native backup's same-snapshot
-`WitnessBackup` is the required authentication step; no repeat observer is queued.
-Capacity is now installed; no native schema27 backup has been created.
+`WitnessBackup` was the required authentication step; no repeat observer is queued.
+The later native create passed that witness. Archive-passphrase restoration
+authentication remains unproved until the isolated recovery work.
 
 The [native-backup scope](audited-main-native-backup-plan.md) is consumed. Its
 first controller rejected a retained preparation filename before locking. The
 corrected controller started source32 once, then rejected systemd's two memory
 pressure environment variables before login or backup. Full environment checking
 preceded assignment of stop authority, so separate, reviewed ownership recovery
-was required to stop the exact invocation. The scope is paused after those two
-controller failures, with no automatic third attempt.
+was required to stop the exact invocation. That input paused after two
+controller failures and was not executed again.
 
 The [post-stop closeout](audited-main-native-backup-closeout.json) confirms main
 and source55 inactive, 35 tables/402 rows and all five sequences exact, zero new
 sessions/activity/backups, preserved lifecycle/control/old archive/master
 metadata and unchanged external boundaries. Two cache marker files now exist;
 the old 413-byte diagnostic entry and one new 451-byte log are closed. The
-installed capacity and temporary fence remain exact. These are the retained
-inputs for any later admission; the old empty-cache/ten-log baseline is stale.
+installed capacity and temporary fence were exact. These became the retained
+inputs for the reviewed correction; the old empty-cache/ten-log baseline is stale.
+
+The [ownership correction](audited-main-backup-ownership-correction.md) establishes
+stop authority before configuration/readiness checks and precisely admits the
+observed pressure variables. Its 12 service, 10 retained-file and 11 controller
+guard groups passed remotely. A separately admitted child phase then completed
+one create, one full download, 13 HTTP calls and the same-cookie logout rejection.
+The [completed checkpoint](audited-main-native-backup-completed.json) records
+archive `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
+`0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f`.
+Its native source-key witness covers four application-key rows. The archive
+contains 405 rows; the final operational database has 408, with all 402 old rows
+preserved, one new revoked administrator session and five ordered activity rows.
+The other four sequences remain exact. Control revision is9, one new ready object
+exists, the two cache markers and eleven old logs are exact, and a twelfth log
+closed. Main and source55 are inactive.
+
+The original execution receipt retains a final shared-parent metadata rejection
+during empty-directory cleanup. Its recovery restored the fence; a separate
+reviewed cleanup then removed only that exact fence and owned empty directory.
+Capacity remains installed and the original restart policy is restored. No
+HTTP, backup create or service start was repeated for cleanup. The final archive
+bytes and candidate/PostgreSQL boundaries were checked again.
 The [two-fixture restoration draft](audited-main-isolated-restore-plan.md) records
-the actual import/plan/apply/serve/restart contract but is not admitted.
+the actual import/plan/apply/serve/restart contract and now binds this common
+archive, but fixture execution is not yet admitted.
+
+[Third-party notices](../../THIRD_PARTY_NOTICES.md) now retain 182 original legal
+texts and one toolchain VERSION file, with exact-version records for all 11
+current Go requirements, all 87 production npm entries and nine built font
+assets. [Remote source/copy/font checks](third-party-notices-verification.json)
+passed. The inventory remains incomplete:
+historical/optional package gaps, upstream icon scope, the project license and
+actual distribution contents remain open. This does not close the M6 release gate.
+The [staged Git artifact check](third-party-notices-git-verification.json) also
+confirmed that all 183 legal/version files and the inventory retained their
+verified bytes through Git; targeted attributes prevent newline conversion.
 
 The dependency review separates pre-backup operational inputs from archive and
 post-workflow outputs. Independent M2-M6 work can advance under its own gates;
@@ -315,12 +350,14 @@ one-invocation policy before starting.
 The later [material checkpoint](audited-main-recovery-materials.md) preserves
 the old installation and closes the standalone key observer's preflight failure
 without executing it. The later [startup-only closeout](audited-main-native-backup-closeout.json)
-supersedes those runtime prerequisites: one source32 start and owned stop are
-closed; capacity and the fence are installed, both cache markers exist and all
-eleven diagnostic entries are closed. The consumed backup scope is paused after
-two controller failures. Correct stop authority before full environment
-acceptance, then obtain a new admission against this retained state. Native
-backup creation, key authentication and both restoration proofs remain open.
+superseded those runtime prerequisites at that checkpoint: one source32 start
+and owned stop were closed; capacity and the fence were installed, both cache
+markers existed and all eleven diagnostic entries were closed. That input was paused
+after two controller failures. The later
+[reviewed correction](audited-main-backup-ownership-correction.md) used this exact
+retained state and completed the native backup/source-key witness. Both isolated
+restoration proofs and main promotion remain open; the current baseline and
+removed-fence state are in its completed checkpoint.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to

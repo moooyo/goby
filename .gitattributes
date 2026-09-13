@@ -3,3 +3,5 @@
 *.jpg binary
 *.woff2 binary
 *.ps1 text eol=crlf
+third_party/licenses/** -text
+docs/development/third-party-notices-inventory.json -text

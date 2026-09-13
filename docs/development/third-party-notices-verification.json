@@ -1,0 +1,40 @@
+{
+  "boundary": "Artifact byte/provenance verification only; legal coverage gaps and the project-license decision remain open.",
+  "builtFontAssetsByteExact": 9,
+  "completedAt": "2026-09-13T22:30:54.280433+00:00",
+  "databaseCalls": 0,
+  "dependencyInstallations": 0,
+  "distributionApproved": false,
+  "goModRequirements": 11,
+  "goModuleVersions": 23,
+  "httpRequests": 0,
+  "inventory": {
+    "bytes": 1035329,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/docs/development/third-party-notices-inventory.json",
+    "sha256": "fcfd74382b7e8d7bf08fd455ef5816fb6eadd06d34e67d41773dda753f01cfe7"
+  },
+  "kind": "third-party-notices-artifact-verification",
+  "legalFiles": 182,
+  "localLinksChecked": 150,
+  "notices": {
+    "bytes": 24481,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/THIRD_PARTY_NOTICES.md",
+    "sha256": "dad2747cb0ac3a106fce1f4b48d7ba799703d0cd60f67bd90a1e17facb4934c9"
+  },
+  "npmEntriesWithLegalFiles": 110,
+  "npmLockEntries": 154,
+  "npmProductionEntriesWithLegalFiles": 87,
+  "originalLegalCopiesByteExact": 183,
+  "previousValidation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/report.json",
+    "reason": "The first checker added VERSION twice; the file is already a version_evidence entry in goToolchain.files. Delivered notice files did not change.",
+    "sha256": "7e89f97ee7134ce1ab21b69ffc8081d0f0fd3f0cc62616ac9d2d1b3ab560f49c"
+  },
+  "runtimeAcceptance": false,
+  "runtimeExecutions": 0,
+  "serviceChanges": 0,
+  "status": "passed",
+  "testsOrBuildsRun": 0,
+  "version": 2,
+  "versionEvidenceFiles": 1
+}

@@ -2,9 +2,27 @@
 
 Status: **DRAFT / NOT ADMITTED**, prepared on 2026-09-14. This document records
 source-reviewed execution contracts. It creates no fixture, runs no command,
-and reports no successful backup, restoration, activation or restart. The new
-source32 archive and its completed main-workflow closeout are prerequisites
-that must be supplied by the separately admitted backup scope.
+and reports no successful restoration, activation or restart. The
+[completed source32 backup](audited-main-native-backup-completed.json) now supplies
+the common archive and main-workflow closeout. Fixture resource, ownership and
+execution admission remain pending.
+
+The common archive is `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
+`0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f`,
+schema27 with 405 snapshot rows across 35 tables. It is retained privately under
+the backup's `after-ownership-review/private` directory. Its original private
+passphrase is retained in the parent experiment; no value is copied here.
+Native source-key authentication is proved, while decryption/restore validation
+of that archive remains part of these forthcoming proofs.
+
+The [resource observation](audited-main-restore-resources.json) found two unused
+database/role identities and ports18241/18242, with no fixture creation or
+reservation. The root/PostgreSQL volume had 464,678,912 free bytes, while tmpfs
+had about 5.83 GiB available. Sharing the existing PostgreSQL17 cluster is valid
+for distinct fresh target databases, but a provisional 528 MiB combined allowance
+exceeds the observed root free space. That allowance is not an established
+growth bound; target/index/WAL sizing and the final layout must be resolved
+before admission. `max_wal_size=128MB` is a soft target, not a hard storage cap.
 
 This is the isolated-recovery step in the
 [current execution plan](../planning/current-execution-plan.md), under the

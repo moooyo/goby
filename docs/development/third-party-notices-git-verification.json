@@ -1,0 +1,27 @@
+{
+  "applicationExecutions": 0,
+  "archiveSha256": "8576910dea5c47bad6e0c193a4e4130dff4ede7be6edb9a86a0e4b0af02414b9",
+  "completedAt": "2026-09-13T22:52:55.824245+00:00",
+  "databaseCalls": 0,
+  "distributionApproved": false,
+  "gitLineEndingConversionChangedOriginalFiles": false,
+  "gitTree": "d56f71d1dde51c3634f2462e3d8a2062fc12aaaa",
+  "inventorySha256": "fcfd74382b7e8d7bf08fd455ef5816fb6eadd06d34e67d41773dda753f01cfe7",
+  "kind": "third-party-notices-staged-artifact-verification",
+  "noticesSha256": "dad2747cb0ac3a106fce1f4b48d7ba799703d0cd60f67bd90a1e17facb4934c9",
+  "originalLegalAndVersionFilesByteExact": 183,
+  "previousCheckerFailure": {
+    "correction": "Read goToolchain.files.local_path as defined in its source schema, alongside the other fragments localPath fields. No artifact bytes changed.",
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/staged-artifact-failure.json",
+    "sha256": "49d19b163a9ec0424cd813cc8e896de7fed1924cd4d670f05e8a5c6a344a1f03"
+  },
+  "projectLicenseSelected": false,
+  "scope": "Only notices, inventory and original legal-text files from this staged Git tree. This is not a full tree verification.",
+  "serviceActions": 0,
+  "sourceVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/report-02.json",
+    "sha256": "ea2a1b370a94259e6e4bb91ab8affedaa1bea424de196d94869fb525c69bc79a"
+  },
+  "status": "passed",
+  "version": 2
+}
