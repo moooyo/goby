@@ -123,10 +123,13 @@ explicit in a future startup write scope.
 
 ## Next boundary
 
-Verify the selected application-key material against main data, inventory the
-old installation and private recovery materials, and freeze the native backup
-route and finite one-invocation policy. Apply the staged capacity profile only
-through its admitted configuration transition. The fresh schema27 recovery
-point, distinct schema28 and actual source32/schema27 restoration proofs, core
-client acceptance and all remaining M2-M6 obligations remain open. This
-increment did not change product code or rerun the full product suite.
+The subsequent [material review](audited-main-recovery-materials.md) preserves
+the old installation and inventories private material. Its separate key observer
+was rejected before execution and is retired; the native backup must perform
+the witness in its own archive snapshot. Next freeze one concrete source32
+backup input and finite invocation policy. Apply the staged capacity profile
+only through that admitted transition. Old-binary backup and isolated recovery
+rehearsals follow their own safety gates; new-binary main promotion still
+requires core acceptance and complete recovery proof. The fresh schema27 point,
+both distinct restoration proofs and all remaining M2-M6 obligations remain
+open. This increment did not change product code or rerun the full product suite.

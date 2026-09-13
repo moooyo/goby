@@ -3,9 +3,12 @@
 Status: **long-term delivery scope; M2-M6 remain incomplete**. Use the
 [current execution plan](current-execution-plan.md) for work order and the
 [current status](../development/current-status.md) for accepted implementation,
-verification and deployment facts. The 2026-09-13 review pauses execution and
-prioritizes an audited candidate, core client regression and a fresh upgrade
-contract. NextUp and automatic-refresh evidence gaps retain their feature gates
+verification and deployment facts. The 2026-09-13 review prioritized an audited
+candidate, core client regression and a fresh upgrade contract. The 2026-09-14
+dependency review allows a separately admitted source32 backup and isolated
+recovery rehearsals before video acceptance; new-binary main promotion still
+requires both core and complete safety/recovery evidence. Independent M2-M6
+work follows its own prerequisites. NextUp and automatic-refresh gaps retain their feature gates
 without blocking every unrelated internal increment. The project requires
 PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
 updates alone do not close any milestone or reference evidence gap.

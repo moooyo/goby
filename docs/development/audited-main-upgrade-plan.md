@@ -8,8 +8,11 @@ initial service/file observation with private configured-path selection,
 captured lifecycle/control/backup metadata and actual PostgreSQL/schema27 binding.
 The subsequent [startup/capacity preparation](audited-main-startup-preparation.md)
 validates configuration and bounded startup facts, stages the main capacity
-profile and prepares the missing empty cache directory. Main remains inactive.
-These observations do not authorize startup, backup
+profile and prepares the missing empty cache directory. The [material review](audited-main-recovery-materials.md)
+preserves the old executable and installed assets and closes a key-observer
+preflight rejection without executing that observer. Its repeated execution is
+retired; native backup creation must authenticate keys in its own snapshot.
+Main remains inactive. These observations do not authorize startup, backup
 creation, migration, restore or promotion.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
@@ -105,8 +108,9 @@ Neither settled control metadata nor a complete schema27 migration prefix
 would establish a zero-write startup. Source32 still calls `ServerID` with an
 upsert, and subsystem startup may reconcile pending work and retention. Freeze
 those allowed writes from actual data and clock observations before any start.
-The main startup chain, complete effective Go configuration, private key
-witness, operational baseline and recovery proofs remain separate requirements.
+The later configuration and startup observations narrow the preparation gap.
+The admitted operational baseline, finite startup policy, native key witness
+and recovery proofs remain separate requirements at their respective phases.
 The fresh capacity observation also falls below source32's backup-store open
 threshold: 520,519,680 bytes available versus 570,490,880 required with current
 defaults and metadata reserve. Resolve this through an explicit capacity
@@ -127,9 +131,10 @@ Fresh admission must bind this state, the staged capacity transition and a
 bounded policy replacing the current failure-restart loop; these observations
 do not authorize starting main or prove complete data preservation.
 
-The following fields define the required execution input. Reuse the particular
-facts already captured above and acquire the remaining private reads under verified
-main operation/deployment authority. The historical shared deployment lock is
+The following fields distinguish inputs from outputs. Reuse the particular
+facts already captured above and acquire the remaining private reads under
+verified main operation/deployment authority. A fresh archive cannot be a
+precondition of the workflow that creates it. The historical shared deployment lock is
 `/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock`; verify its existing
 identity and ownership before use, and do not recreate an absent lock.
 
@@ -138,8 +143,9 @@ identity and ownership before use, and do not recreate an absent lock.
 | Service and installation | Boot, loaded unit and every permanent/runtime drop-in, ordered environment files, effective paths, UID/GID, sandbox, restart/stop policy, binary/asset bytes and file identities. Record current inactive/PID0/cgroup/listener absence or the actual live PID/start/invocation if independently changed |
 | Active recovery identity | Deployment ID, revision, active slot, generation, selected configuration/master, pending operation state and raw `goby.recovery.binding.v1` bytes. Resolve the effective database using the lifecycle state; the primary URL alone is insufficient |
 | Main database and cluster | Independently bound port5432 cluster/system identifier, PostgreSQL/tool versions, postmaster boot/start, configuration/HBA/socket paths; database/role/public OIDs, owners, raw and expanded ACLs, normalized role properties, complete schema27 migration/catalog and server ID. Historical anchors are `goby_test`, database16385, role16384 and system identifier `7683277964552005578`; drift requires review, not automatic target selection |
-| Data and startup effects | Native archive dump and complete 35-table SourceFacts from one exported snapshot, plus the operational full old-column baseline, root mappings, catalog, all five sequence states/physical facts and application-key witness. Distinguish non-MVCC sequence observations and before/after operational observations from archive snapshot facts. Fresh database clock, pending scans/tasks/playback/encoding/recovery work, runnable triggers, retention and finite startup deadline must explain every allowed startup write |
-| Recovery slot and private materials | Identify `goby_recovery_m5j` independently, including actual catalog/data/marker, OIDs, ACLs, role properties and work/session absence. Resolve and inventory runtime/admin/recovery credentials, default and generation masters, vault, lifecycle files, encrypted archives with available passphrases, operation journal, native pairing and diagnostic paths |
+| Pre-backup operational inputs | A frozen read-only baseline sufficient to account for the old-binary startup and backup workflow: affected old-column data, root mappings, catalog, sequence/physical observations, database clock, pending scans/tasks/playback/encoding/recovery work, runnable triggers and retention. Bind the exact private paths, master metadata and finite startup/write budget. These are observations before the archive snapshot, not a claimed recovery point |
+| Backup outputs and migration inputs | One native schema27 archive with complete 35-table SourceFacts, dump and native key witness from its exported snapshot; matching configuration/master descriptors; a full old-column operational baseline and all five sequence/physical facts reconciled after the workflow. Distinguish non-MVCC sequence observations and post-snapshot writes from archive snapshot facts. These outputs are required before rehearsal or migration, not before backup creation |
+| Recovery slot and private materials | Identify `goby_recovery_m5j` independently, including actual catalog/data/marker, OIDs, ACLs, role properties and work/session absence. Resolve and inventory runtime/admin/recovery credentials, default and generation masters, vault, lifecycle files, retained encrypted objects, operation journal, native pairing and diagnostic paths. Bind the fresh archive/passphrase and usable private operational materials as backup outputs; historical passphrase presence is not an authentication result |
 | Operational isolation | Exact new evidence/staging/rehearsal paths and ownership; free resources and bounded controller budget; candidate, source55 control, proxy, workspace15432 and media boundaries that this action could affect. Record fresh witnesses for those resources and permitted concurrent changes |
 
 If main remains inactive, preserve that baseline through read-only preparation.
@@ -151,6 +157,16 @@ invocation and review its drain boundary. Before migration, require no unowned
 database sessions, prepared work or writers. Missing/pending lifecycle state, an
 unexpected active slot, missing master material or uncertain ownership rejects
 admission.
+
+For the observed initial primary/revision0/default selection with no pending
+transition, a separate cryptographic key observer is not a startup prerequisite.
+The vault constructor only records its path, and ordinary administrator login
+does not require application-key decryption. Preserve the existing 32-byte
+master's exact safe metadata before starting; do not create or replace it.
+`Engine.Create` must authenticate the selected master against all sealed key
+history in the same snapshot used for the archive. A changed generation or
+pending transition requires a new selection review. The retired helper's
+permission failure proves neither a bad master nor a successful witness.
 
 Main SQL must name the freshly pinned main5432 target explicitly. Candidate
 25498, workspace15432, `goby_client_m3e` and either existing recovery slot are
@@ -211,8 +227,11 @@ copied layout appear accepted.
 
 ## Required backup and isolated rehearsal
 
-Prefer the existing source32 HTTP backup workflow once the core gate and fresh
-main safety review pass. Source32's [offline CLI](../../cmd/goby/recovery_cli.go)
+Use the existing source32 HTTP backup workflow after its fresh main safety
+review and concrete input pass. This old-binary preservation scope and the two
+isolated restoration rehearsals do not wait for new-product core video
+acceptance. Core acceptance still blocks new-binary main promotion. Source32's
+[offline CLI](../../cmd/goby/recovery_cli.go)
 has `backup list/import` and restore commands, but no backup create/export.
 [NewOfflineEngine](../../internal/recovery/engine.go) deliberately does not
 connect to the source database or open its vault and cannot create backups.
@@ -247,6 +266,16 @@ master. `Engine.Create` opens its own snapshot and cannot be used to wrap a
 previous dump while claiming the same snapshot. Any such addition needs scoped
 verification; it is not the default reason to build another upgrade framework
 or execute a source55 helper with substituted pins.
+
+Use the actual source32 failure semantics when freezing the scope. Its backup
+manager creates private operation/writer state and admission audit before the
+native witness; a failed witness is not a zero-write operation. Some abort and
+terminal-persistence errors are not propagated, so inspect the actual operation,
+catalog, scratch, worker, session and service terminal states. Neither HTTP
+acceptance nor a returned error proves successful publication or cleanup.
+Source32 also lacks the later `ValidateDump` call in the current engine. Full
+download verification and both independent native restoration proofs remain
+mandatory; do not transfer current implementation guarantees to the old binary.
 
 1. Freeze one fresh native schema27 archive using the selected route, with its
    SourceFacts, configuration/master descriptors, archive size/SHA256 and

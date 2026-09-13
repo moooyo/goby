@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after Subtitles01 and main startup/capacity preparation. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after the execution-order and recovery-material review. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,8 +12,21 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main deployment | Main remains inactive; identity/configuration and bounded startup facts are observed, a capacity profile is tested/staged and the missing cache directory is prepared | Verify key and installation/recovery materials; admit capacity application and bounded startup only through the reviewed workflow; obtain a fresh schema27 backup, distinct restore proofs and core acceptance before promotion |
+| Main recovery and deployment | Main remains inactive; bounded startup facts and staged capacity are recorded; the cache prerequisite and verified old installation archive are prepared; the separate key observer was rejected before execution and is retired | Admit one source32 native backup under its own safety gates, including key authentication, then both isolated restore proofs. These can precede core video acceptance; new-binary main promotion still requires both core and full recovery evidence |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
+
+The [material checkpoint](audited-main-recovery-materials.md) preserves the old
+executable and 415 administrator files in a verified 16,590,013-byte archive.
+Private credential metadata is reconciled; key and passphrase authentication
+remain unproved. The standalone key observer stopped at a helper-mode mismatch
+before any database connection or master read. The native backup's same-snapshot
+`WitnessBackup` is the required authentication step; no repeat observer is queued.
+Capacity remains unapplied and no native schema27 backup has been created.
+
+The dependency review separates pre-backup operational inputs from archive and
+post-workflow outputs. Independent M2-M6 work can advance under its own gates;
+promotion is not a blanket prerequisite. None of these changes waives the
+original client errors, timing gap or full release requirements.
 
 ## Selected product and candidate
 
@@ -252,8 +265,8 @@ The [preparation review](audited-main-readonly-preparation.md) also records an
 actual startup obstacle: backup storage had 520,519,680 available bytes, below
 source32's 570,490,880-byte open threshold with current defaults and metadata
 reserve. Capacity, the complete startup/configuration chain, pending work,
-private recovery materials and key witness remain open. No policy change,
-deletion or startup was attempted. Even settled stores and complete migration
+private recovery materials and key witness remained open at that checkpoint.
+No policy change, deletion or startup was attempted. Even settled stores and complete migration
 history cannot establish a zero-write normal startup because `ServerID()`
 performs an upsert and subsystems can reconcile work and retention.
 
@@ -280,7 +293,10 @@ empty as `goby:goby`, `0700`, without application markers or a service start.
 One unclosed diagnostic file contains 413 complete bytes and requires a registry
 closure update on startup; no truncation or current-age/count pruning is
 expected. Current `Restart=on-failure` still needs a finite one-invocation policy.
-Next verify private key and installation/recovery materials. Main startup,
+The later [material checkpoint](audited-main-recovery-materials.md) preserves
+the old installation and closes the standalone key observer's preflight failure
+without executing it. The next deliverable is one reviewed source32 backup
+input; key authentication belongs to that native archive snapshot. Main startup,
 native backup creation and both restoration proofs remain unperformed.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires

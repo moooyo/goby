@@ -1,0 +1,141 @@
+{
+  "capacity": {
+    "admissionMustRecheck": true,
+    "availableBytesAtSeal": 475693056,
+    "preparedBackupAdmissionFloorBytes": 302055424
+  },
+  "capturedAt": "2026-09-13T20:23:08Z",
+  "closure": {
+    "buildTmpfsRemoved": true,
+    "buildWorkersClosed": true,
+    "existingDeploymentLockReleased": true,
+    "existingDeploymentLockUnchanged": true,
+    "protectedMetadataExact": true,
+    "runtimeIdentityStable": true,
+    "witnessFrontendNeverStarted": true
+  },
+  "credentialMaterials": {
+    "browserCredentialKeysPresent": true,
+    "browserEnvironmentMatchesHistorical": true,
+    "historicalFileMetadataExactAfterFieldMapping": true,
+    "loginAttempted": false,
+    "operatorBodiesRead": false,
+    "operatorFiles": 5,
+    "passphraseUsabilityProven": false,
+    "secretValuesPublished": false
+  },
+  "evidence": {
+    "build": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/key-witness-build.json",
+      "sha256": "c8904da6f6e7beb669cfcc487f85f72a5e21608a98671d4101e318562e67229e"
+    },
+    "bundle": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/old-installation-bundle.json",
+      "sha256": "2d7dfcacb6b1be411ef2f205ac38be83e16ce7be63e6b2533fb95a7c43a0c494"
+    },
+    "credentials": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/credential-material-inventory.json",
+      "sha256": "5cc102c274cf0e450732d36339885a389c77cd37fe585b2b849978ace92e1d88"
+    },
+    "installation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/old-installation.json",
+      "sha256": "1070deb13f1a8b73c67a3c17c4d1cc106202d0ef9ba3b601a5878a02ebc7e2f5"
+    },
+    "preflight": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/key-witness.json",
+      "sha256": "b13544d6bf12c3931077422166884c701fad04bba3f75c13d4602a03cfbbbef8"
+    },
+    "reconciliation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/credential-metadata-reconciliation.json",
+      "sha256": "9341cb7d67b3c77db408a6aa61d0db80b3a202b425c74d4be11d0011b098c963"
+    },
+    "startup": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/checkpoint.json",
+      "sha256": "de375f0056fea60f12b0d3e692de241d3bd1a8cbe462954c2b9023f163aba42a"
+    }
+  },
+  "installation": {
+    "administratorFiles": 415,
+    "archive": {
+      "bytes": 16590013,
+      "metadata": {
+        "bytes": 16590013,
+        "ctimeNs": "1789330290737200413",
+        "device": 2049,
+        "exists": true,
+        "gid": 0,
+        "inode": 1893378,
+        "kind": "regular",
+        "links": 1,
+        "mode": 384,
+        "mtimeNs": "1789330290737200413",
+        "uid": 0
+      },
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/old-installation.tar.gz",
+      "sha256": "f24ad82c66d7a8a1ba2128ed547210a95804f8cd62448ba5ffdb2a14fcac66fb"
+    },
+    "binary": {
+      "bytes": 28172723,
+      "path": "/opt/goby-dev/goby",
+      "sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620"
+    },
+    "databaseBackup": false,
+    "historicalInventoryMatched": true,
+    "readbackVerified": true,
+    "rollbackProven": false
+  },
+  "keyWitness": {
+    "actualHelperMode": "0500",
+    "cryptographicMatchEstablished": false,
+    "databaseConnections": 0,
+    "expectedHelperMode": "0555",
+    "failure": {
+      "code": "witness_binary_metadata_changed",
+      "type": "ReadFailure"
+    },
+    "helperExecutions": 0,
+    "helperModeChanged": false,
+    "masterReads": 0,
+    "repeatAdmitted": false,
+    "status": "preflight_rejected_not_executed"
+  },
+  "kind": "main-recovery-material-preparation",
+  "limits": [
+    "Installation archive is not a native database backup or rollback proof.",
+    "Metadata equality does not authenticate encrypted keys or historical passphrases.",
+    "The separate key observer is retired without a retry; native backup creation must authenticate keys in its own snapshot.",
+    "This checkpoint admits no service start, capacity installation, migration, restore, or promotion.",
+    "Core client acceptance and M2-M6 completion remain open."
+  ],
+  "main": {
+    "activeState": "inactive",
+    "capacityProfileApplied": false,
+    "mainPID": 0,
+    "migrations": 0,
+    "nativeBackupCreates": 0,
+    "restores": 0,
+    "schema27BindingReused": true,
+    "starts": 0,
+    "unit": "goby-foundation-test.service"
+  },
+  "records": {
+    "finalProtectedMetadata": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/materials-final-protected.json",
+      "sha256": "24cb765a12ec7c88ff4faa6199661a8013ae2cde07e0bb9ec0466134799efa06"
+    },
+    "finalRuntime": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/materials-final-runtime.json",
+      "sha256": "b655635ecfe827f09f47187362ac452744291270d992c198fe299236e3d9c86e"
+    },
+    "observerExecutableMetadata": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/materials-observer-metadata.json",
+      "sha256": "7f7ac3e574abfbd272da9bfd62c04d9c59e671d2e0a7d7c67cd30f7c219e1f3a"
+    }
+  },
+  "source": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-recovery-materials-01/private/seal-main-materials.py",
+    "sha256": "4406df10c9b70db7f6ded632e9aafb0efb828c8903c4e0e092d50708bbba2680"
+  },
+  "status": "partial_materials_preserved_witness_not_executed",
+  "version": 1
+}
