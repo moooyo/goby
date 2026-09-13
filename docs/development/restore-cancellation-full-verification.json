@@ -1,0 +1,254 @@
+{
+  "kind": "late-restore-cancellation-full-verification",
+  "status": "passed",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T09:18:31.604629+00:00",
+  "scope": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3",
+  "reportSha256": "57c5f9bae718f7ae91018bf69363edd11e7ca783651a6f62f38e8a8605db003a",
+  "workerReportSha256": "ca28d3e100f02c90db5cf387e2185a64c3d50c7b97844f99ba16a4d0f8f92296",
+  "archiveSha256": "b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b",
+  "sourceManifestSha256": "65e11ed30ffc769eddde99a2b9ce2387707f085f85e813c70f7b7d84c9519732",
+  "sourceArchiveManifestAndActualTreeAgree": true,
+  "changedFiles": {
+    "internal/recovery/manager.go": "f0e1c3f40321695feb752caadba3633ab63cc9ed94c83b3220e6bc4ca17aa193",
+    "internal/recovery/manager_late_cancel_integration_test.go": "095ffdd5cf0e33adeed0d89fafbe883533807ba09c0f4dd7ea43356fb04287f0"
+  },
+  "packagesPassed": 25,
+  "testsPassed": 2264,
+  "failed": 0,
+  "skipped": 0,
+  "raceEnabled": true,
+  "singleFullRunPassed": true,
+  "rawEventsReconciled": true,
+  "packages": [
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 19
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/activity",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 14
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 85
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 32
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/config",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 27
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/database",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 55
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 41
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/events",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/identity",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 134
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/library",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 597
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 17
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/media",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 117
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/playback",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 170
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 26
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/recoverycontrol",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 16
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/server",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 543
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/settings",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 27
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 11
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 12
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 55
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 169
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/recoverydb",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 11
+    }
+  ],
+  "perCommandTimeoutSeconds": 1800,
+  "goPackageTimeoutSeconds": 1770,
+  "retainedReaderCorrection": "The first read-only closer assumed the earlier 1200-second Go timeout; this frozen run used a 1800-second command budget with a 1770-second Go timeout. No verification was rerun.",
+  "actualCancellationRegressionSubcases": [
+    "cancel_after_ready",
+    "cancel_before_ready"
+  ],
+  "realJournalCasConflictRegressionPassed": true,
+  "binary": {
+    "bytes": 29552046,
+    "path": "bin/goby-linux-amd64",
+    "sha256": "477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f",
+    "absolutePath": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/bin/goby-linux-amd64"
+  },
+  "cleanup": {
+    "only_worker_process_remains": true,
+    "owned_postgres_stopped": true,
+    "private_bind_removed": true,
+    "source_unchanged": true
+  },
+  "recursiveCgroupEmpty": true,
+  "serviceMutationsOutsideScope": false,
+  "closureHelper": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/close-cancel-full-v2.py",
+    "sha256": "ed5e9ad56bcb586824e46bf7b0df8577e02fc459f7722052ca7d869793812218"
+  },
+  "candidateUpdated": false,
+  "candidateAdmitted": false,
+  "mainUpdated": false
+}

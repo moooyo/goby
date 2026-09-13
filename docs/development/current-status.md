@@ -15,11 +15,14 @@ gates and complete M2-M6 requirements remain open. Priority 1 is verified;
 priority 2 has a running independent candidate with live admission pending. No new candidate
 admission or main deployment is claimed by this status update.
 
-Promotion is now paused for an independently confirmed
-[late restore cancellation race](restore-cancellation-race.md). A plan can remain
-ready and busy after cancellation during worker cleanup. A deterministic remote
-regression, product fix and new verification take priority over another live
-admission attempt. The seeded candidate and client host remain retained.
+The independently confirmed
+[late restore cancellation race](restore-cancellation-race.md) is fixed. Both windows
+were reproduced on unchanged code. The fix and a real persistence-conflict
+regression passed targeted tests and the
+[full remote race run](restore-cancellation-full-verification.json): 2,264 tests,
+25 packages, zero failures/skips, and a Linux amd64 build. The seeded candidate
+and client host remain retained. The candidate transition and live admission
+remain pending; rebind the verified replacement binary before that admission.
 
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
 [baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate

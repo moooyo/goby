@@ -1,0 +1,19 @@
+{
+  "kind": "late-cancel-fix-source-freeze",
+  "capturedAt": "2026-09-13T08:28:38.640882+00:00",
+  "baseArchive": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/source-exit-diagnostics.tar",
+    "sha256": "74247d7584cb750645474deb2a4fc564f5944a32cd9875b2644209d65fbc89df"
+  },
+  "changedFiles": {
+    "internal/recovery/manager.go": "f0e1c3f40321695feb752caadba3633ab63cc9ed94c83b3220e6bc4ca17aa193",
+    "internal/recovery/manager_late_cancel_integration_test.go": "095ffdd5cf0e33adeed0d89fafbe883533807ba09c0f4dd7ea43356fb04287f0"
+  },
+  "productCodeChanged": true,
+  "archive": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/recovery-cancel-fix-preparation-01/source-final.tar",
+    "sha256": "b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b"
+  },
+  "formatHost": "test-env",
+  "testsExecuted": false
+}

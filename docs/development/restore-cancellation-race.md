@@ -1,8 +1,12 @@
 # Late restore-plan cancellation race
 
-Status: independently confirmed by source review on 2026-09-13; deterministic
-remote regression and implementation are pending. Candidate promotion is paused.
-No runtime failure of this race is claimed yet.
+Status: independently reviewed, reproduced remotely in both timing windows, and
+fixed. [Focused verification](restore-cancellation-targeted-verification.json)
+passes, including a real journal CAS conflict. The
+[single full run](restore-cancellation-full-verification.json) passed 2,264 tests
+across 25 packages with race instrumentation, zero failures/skips and a Linux
+amd64 build for the [frozen snapshot](restore-cancellation-source-freeze.json).
+Candidate promotion still requires the reviewed transition and live admission.
 
 `planJob` publishes `ready` before its deferred archive, database and lease
 cleanup completes. `startLocked` keeps the worker in `m.jobs` until the entire
@@ -25,14 +29,38 @@ Relevant source: [plan publication](../../internal/recovery/plans.go),
 [cancel handling](../../internal/recovery/backup_jobs.go), and
 [existing integration fixture](../../internal/recovery/manager_integration_test.go).
 
-Use the existing isolated manager fixture and channels to reproduce both
-orderings through actual Cancel, persistence and worker completion. First run
-the regression against unchanged product code on `test-env`; then implement a
-narrow terminal-state fix and verify cancellation, busy release and the retained
-inactive stage. Do not force a restart to make the regression pass.
+The regression uses the existing isolated manager fixture and channels through
+actual Cancel, persistence and worker completion. Unchanged product code failed
+both orderings with `ready`, committed cancellation, no remaining worker and a
+busy manager. The test-only archive is
+`2195e8ef4a8b5aaa871f049ab35d10a43f2958fbba7ca55038305a9290242185`.
 
-After the final product snapshot passes affected regressions and required full
-verification, preserve the seeded candidate through a separately reviewed
+The fix settles an explicitly cancelled ready restore after the worker returns,
+before its done signal is closed. It uses an independent five-second persistence
+context and retains the last acknowledged control state on any persistence
+failure, marking the manager unavailable. This also prevents online operation
+queries from reporting an uncommitted cancelled terminal state. It does not
+change completed backups, uncancelled plans or application transitions.
+
+Two focused top-level tests passed with race instrumentation: the two ordering
+subcases, and a real same-payload CAS that advances the journal digest before
+worker completion. That conflict leaves the committed payload intact, prevents
+a false terminal-state response and rejects subsequent mutation. Both red and
+green verification scopes stopped their owned PostgreSQL instances, removed
+private mounts and left empty cgroups. No candidate or main restart was used.
+
+The final archive is
+`b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b`.
+Its one full run is
+`/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3`.
+The built binary SHA256 is
+`477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
+Raw test events, package coverage, source archive/manifest/actual file closure,
+binary bytes and owned PostgreSQL/mount/cgroup cleanup were reconciled. The
+read-only closeout reader was corrected to the actual frozen Go timeout; no
+test or build was repeated. Unchanged frontend evidence remains reusable.
+
+Preserve the seeded candidate through the separately reviewed
 schema28 binary transition. Rebind its process/listener/lease and actual source
 before restarting bounded live admission. Do not rerun bootstrap/scans or reuse
 the consumed admission inputs. Main upgrade and core-client acceptance remain

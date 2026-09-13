@@ -257,12 +257,36 @@ func (m *Manager) startLocked(id string, work func(context.Context)) {
 		defer func() {
 			cancel()
 			m.mu.Lock()
+			m.finishCancelledPlanLocked(id)
 			delete(m.jobs, id)
 			close(job.done)
 			m.mu.Unlock()
 		}()
 		work(ctx)
 	}()
+}
+
+// A plan can publish ready before its deferred resource cleanup returns. An
+// accepted cancellation must still settle if that worker then returns success.
+func (m *Manager) finishCancelledPlanLocked(id string) {
+	op := m.operationLocked(id)
+	if m.fault || op == nil || op.Kind != "restore" || op.State != "ready" || !op.CancelAuthorized || op.ApplyAuthorized {
+		return
+	}
+	previous, err := restoreControl(m.control, m.data.DeploymentID)
+	if err != nil {
+		m.fault = true
+		return
+	}
+	m.changeLocked(op, "cancelled", "finished", "operation_cancelled")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := m.persistLocked(ctx); err != nil {
+		// Online operation reads remain available after a fault. Preserve the
+		// last acknowledged state instead of exposing an unpersisted success.
+		m.data = previous
+		m.fault = true
+	}
 }
 
 func (m *Manager) authorize(ctx context.Context, actor identity.Principal) error {

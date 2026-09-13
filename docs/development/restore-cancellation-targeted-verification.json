@@ -1,0 +1,54 @@
+{
+  "kind": "late-restore-cancellation-targeted-verification",
+  "host": "test-env",
+  "originalCodeReproducedBothWindows": true,
+  "fixedCodePassedBothWindows": true,
+  "realJournalCasFailurePassed": true,
+  "focusedTopLevelTestsPassed": 2,
+  "redFailuresAreExpectedReproduction": true,
+  "runs": {
+    "red": {
+      "scope": "/opt/goby-test/audit-fixes-20260913-20260913T082356Z-512933ee700f",
+      "status": "failed",
+      "reportSha256": "cd0f688494995f80c6b9bad1c418dc6acce15fae2003a40e47980d73f57357a4",
+      "workerReportSha256": "e1dc5d89fb5124882f65d73aaa71317120ca5adcd0b789e79fb2f498a402083f",
+      "archiveSha256": "2195e8ef4a8b5aaa871f049ab35d10a43f2958fbba7ca55038305a9290242185",
+      "eventCounts": {
+        "failed": 3,
+        "passed": 0,
+        "skipped": 0
+      },
+      "cleanup": {
+        "only_worker_process_remains": true,
+        "owned_postgres_stopped": true,
+        "private_bind_removed": true,
+        "source_unchanged": true
+      },
+      "recursiveCgroupEmpty": true
+    },
+    "green": {
+      "scope": "/opt/goby-test/audit-fixes-20260913-20260913T082850Z-c366a7d37224",
+      "status": "passed",
+      "reportSha256": "0ab0e1596e30c29863c3f3f80e5a3d9e2a1b9623cf773bc21c7135f9cda4ad61",
+      "workerReportSha256": "2275426d476200c330f6341277e8f176aeee2dbc1279ed25a936d8bf9f808e49",
+      "archiveSha256": "b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b",
+      "eventCounts": {
+        "failed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "cleanup": {
+        "only_worker_process_remains": true,
+        "owned_postgres_stopped": true,
+        "private_bind_removed": true,
+        "source_unchanged": true
+      },
+      "recursiveCgroupEmpty": true
+    }
+  },
+  "retainedReaderCorrection": "The runner records passing top-level tests only; both passing subcases were verified from raw Go events.",
+  "verificationRerunForReaderCorrection": false,
+  "fullVerificationComplete": false,
+  "candidateUpdated": false,
+  "mainUpdated": false
+}
