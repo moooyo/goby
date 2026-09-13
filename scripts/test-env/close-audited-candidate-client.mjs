@@ -15,6 +15,11 @@ export const RETAINED_BASELINE = { path: RETAINED_ROOT + '/candidate-core-movie0
 export const RETAINED_SNAPSHOT = { path: RETAINED_ROOT + '/candidate-core-client-movie-04/private/source-after.json', sha256: '7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c' };
 export const RETAINED_PLAY = 'play_40969548543a02735b847a89bc34671b';
 export const RETAINED_AUTH = 'aadd2636638e28cc6ceaf5bb8f2cb132';
+export const OCCUPIED_BASELINE = { path: RETAINED_ROOT + '/candidate-core-movie05-owned-state-closeout.json', sha256: '7c38d00bcb4ece5e056e06a22be848cbd5e76c77f7d5b642d06f656be3dc27ab' };
+export const OCCUPIED_SNAPSHOT = { path: RETAINED_ROOT + '/candidate-core-client-movie-05/private/source-after.json', sha256: 'be0dbd70d4f7ea7d4343a3ea6259f80be216b9239e7acfa6552b2c7858b33bb0' };
+export const OCCUPIED_PLAY = 'play_b2977a52015916374e8a8af16188c191';
+export const OCCUPIED_AUTH = 'e5649a6dc8451164243a4213f12d0ba2';
+export const CANDIDATE_LOG = '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/server-unit.log';
 const RETAINED_EPOCH = { path: RETAINED_ROOT + '/candidate-backup-limits-revision-01/private/runtime-epoch.json', sha256: '72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e' };
 export const PREVIOUS_BINARY_EPOCH = { path: RETAINED_ROOT + '/candidate-cancellation-transition-01/private/runtime-epoch.json', sha256: '7bcdbc529fd1ba3f6a62f66585e6788cc9efa1aac22a4accc8d339d69ccf6ae2' };
 const CLOSEOUT_PINS = ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary'];
@@ -378,6 +383,68 @@ function routeItem(exchange) { return /^\/Items\/([^/]+)\/PlaybackInfo\/?$/i.exe
 function bodyPosition(body, fallback) { if (!Object.hasOwn(body, 'PositionTicks')) return fallback; need(integer(body.PositionTicks), 'position_ticks_invalid'); return body.PositionTicks; }
 function mediaSourceMatches(value, canonical, item, correlated) { return value === canonical || item?.type === 'Audio' && correlated && value === item.id; }
 
+export function validateServerLog(receipt, beforeBytes, afterBytes, { manifest, epoch, input, approval, observation, authorizedInput }) {
+  need(exact(receipt, ['kind', 'version', 'runId', 'runtimeEpoch', 'input', 'controller', 'before', 'after']) &&
+    receipt.kind === 'audited-candidate-client-server-log' && receipt.version === 1 && receipt.runId === manifest.runId &&
+    equal(receipt.runtimeEpoch, input.runtimeEpoch) && descriptor(receipt.input) && descriptor(receipt.controller) &&
+    receipt.controller.path.startsWith(RETAINED_ROOT + '/') && path.basename(receipt.controller.path) === 'run-audited-candidate-client.py', 'server_log_receipt_binding');
+  need(approval?.kind === 'audited-candidate-client-approval' && approval.runId === manifest.runId && approval.scenario === manifest.scenario &&
+    approval.sourceManifestSha256 === manifest.source.manifestSha256 && approval.binarySha256 === manifest.source.binarySha256 &&
+    approval.serverId === manifest.serverId && approval.isolatedCandidate === true && equal(approval.authorizedRunInput, receipt.input) &&
+    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === 3 && authorizedInput.runId === manifest.runId &&
+    authorizedInput.scenario === manifest.scenario && authorizedInput.output === path.dirname(manifest.output) &&
+    equal(authorizedInput.runtimeEpoch, input.runtimeEpoch) && equal(authorizedInput.retainedBaseline, input.retainedBaseline) &&
+    equal(authorizedInput.sources, input.sources), 'server_log_authorized_input');
+  for (const [snapshot, bytes] of [[receipt.before, beforeBytes], [receipt.after, afterBytes]]) {
+    need(exact(snapshot, ['capturedAt', 'candidateBefore', 'candidateAfter', 'file', 'length', 'content']) &&
+      equal(snapshot.candidateBefore, epoch.candidateProcess) && equal(snapshot.candidateAfter, epoch.candidateProcess) &&
+      exact(snapshot.file, ['path', 'device', 'inode', 'uid', 'mode', 'links']) && snapshot.file.path === CANDIDATE_LOG &&
+      typeof snapshot.file.device === 'string' && typeof snapshot.file.inode === 'string' && /^[1-9][0-9]*$/.test(snapshot.file.device) && /^[1-9][0-9]*$/.test(snapshot.file.inode) &&
+      snapshot.file.uid === 0 && snapshot.file.mode === 0o600 && snapshot.file.links === 1 &&
+      descriptor(snapshot.content) && path.dirname(snapshot.content.path) === path.dirname(input.serverLog.path) &&
+      integer(snapshot.length) && snapshot.length > 0 && snapshot.length <= MAX_FILE && Buffer.isBuffer(bytes) &&
+      bytes.length === snapshot.length && sha(bytes) === snapshot.content.sha256 && bytes.at(-1) === 10, 'server_log_capture_invalid');
+  }
+  need(equal(receipt.before.file, receipt.after.file) && afterBytes.length >= beforeBytes.length &&
+    afterBytes.subarray(0, beforeBytes.length).equals(beforeBytes), 'server_log_prefix_changed');
+  need(timestampNs(receipt.before.capturedAt) <= timestampNs(observation.started_at) && integer(observation.elapsed_ms) &&
+    timestampNs(receipt.after.capturedAt) + 1000000n >= timestampNs(observation.started_at) + BigInt(observation.elapsed_ms) * 1000000n &&
+    timestampNs(receipt.before.capturedAt) <= timestampNs(receipt.after.capturedAt), 'server_log_capture_window');
+  need(receipt.before.content.path !== receipt.after.content.path, 'server_log_capture_alias');
+  const appended = afterBytes.subarray(beforeBytes.length), events = [], byRequestId = new Map();
+  const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(appended);
+  for (const bytes of appended.length ? text.slice(0, -1).split('\n').map(line => Buffer.from(line)) : []) {
+    const event = strictJSON(bytes, MAX_BODY);
+    need(own(event), 'server_log_entry_invalid');
+    if (event.msg !== 'request completed') continue;
+    // Unrelated requests can append while the before prefix is being read.
+    // A cancellation's lower time bound is its exact physical request below.
+    need(event.level === 'INFO' && typeof event.request_id === 'string' && /^[a-f0-9]{32}$/.test(event.request_id) && !byRequestId.has(event.request_id) &&
+      typeof event.route === 'string' && event.route.length <= 256 && typeof event.method === 'string' &&
+      integer(event.bytes) && integer(event.duration_ms) && ['completed', 'cancelled', 'aborted'].includes(event.outcome) &&
+      (event.status === undefined || integer(event.status) && event.status >= 100 && event.status <= 599) &&
+      timestampNs(event.time) <= timestampNs(receipt.after.capturedAt) + 1000000n,
+    'server_log_request_event_invalid');
+    events.push(event); byRequestId.set(event.request_id, event);
+  }
+  return { events, byRequestId, receipt };
+}
+
+export function cancelledEmptyMedia(exchange, serverLog) {
+  if (!serverLog || exchange.scope?.allowed !== true || exchange.scope.kind !== 'media' || exchange.original?.method !== 'GET' ||
+      exchange.complete !== true || exchange.response?.status !== 200 || exchange.deliveredBodyBytes !== 0 ||
+      exchange.result.responseBodyWireBytes !== 0 || exchange.result.requestBodyWireBytes !== 0 || exchange.requestDelivered !== true ||
+      exchange.result.requestForwardedComplete !== true || exchange.response.get('content-length') !== '0' || exchange.response.get('transfer-encoding') !== null) return null;
+  const ids = exchange.response.headers.get('x-request-id');
+  if (!Array.isArray(ids) || ids.length !== 1 || !/^[a-f0-9]{32}$/.test(ids[0])) return null;
+  const event = serverLog.byRequestId.get(ids[0]), resource = /^\/(?:emby\/)?(Videos|Audio)\//i.exec(exchange.url.pathname)?.[1];
+  if (!event || !resource || event.method !== 'GET' || event.status !== 200 || event.bytes !== 0 || event.outcome !== 'cancelled' ||
+      !new RegExp('^GET /(?:emby/)?' + resource + '/\\{Id\\}/(?:\\{StreamFileName\\}|stream|universal(?:\\.[a-z0-9_-]+)?)/?$', 'i').test(event.route) ||
+      timestampNs(event.time) + 1000000n < timestampNs(exchange.intent.startedAt) || timestampNs(event.time) > timestampNs(exchange.result.completedAt) + 1000000n) return null;
+  return { ordinal: exchange.ordinal, requestId: ids[0], interpretation: 'server_cancelled_empty_response', status: 200,
+    deliveredBodyBytes: 0, contributesMediaDelivery: false, serverEventTime: event.time };
+}
+
 export function requireMediaGET(exchange) {
   need(exchange.original.method === 'GET' && [200, 206].includes(exchange.response?.status) && exchange.deliveredBodyBytes > 0 &&
     (exchange.requestDelivered === true || exchange.result.requestForwardedComplete === true) && exchange.result.requestBodyComplete && exchange.response.get('content-length') !== null &&
@@ -419,8 +486,8 @@ export function verifyPostLogoutTraffic(login, exchanges) {
 }
 
 /** All cardinality here is physical ordinal cardinality, never frame/SW counts. */
-export function analyzePhysical(exchanges, manifest, report, after) {
-  const selected = selectedCandidateItem(manifest), logins = [];
+export function analyzePhysical(exchanges, manifest, report, after, serverLog = null) {
+  const selected = selectedCandidateItem(manifest), logins = [], cancelledEmptyResponses = [];
   for (const exchange of exchanges.filter(row => row.scope?.kind === 'login')) {
     requireACK(exchange, 200); const body = reportBody(exchange), response = completeJSON(exchange, true);
     need(body.Username === manifest.actor.username && typeof body.Pw === 'string' && exchange.token === null, 'physical_login_actor_mismatch');
@@ -428,7 +495,7 @@ export function analyzePhysical(exchanges, manifest, report, after) {
     need(matchesContext(exchange, report).some(row => row.scope === 'frame' && row.main_frame), 'physical_login_not_observed_by_ui');
     need(!logins.some(row => row.tokenHash === identity.token_sha256 || row.sessionId === identity.session_id), 'physical_login_identity_reused');
     logins.push({ ...identity, tokenHash: identity.token_sha256, sessionId: identity.session_id, token: response.AccessToken,
-      login: exchange, logout: null, verification: null, infos: [], chains: [], media: [] });
+      login: exchange, logout: null, verification: null, infos: [], chains: [], media: [], cancelledEmpty: [] });
   }
   need(logins.length === (manifest.scenario === 'movie' ? 2 : 1) && equal(logins.map(row => row.tokenHash), report.sessions.map(row => row.token_sha256)), 'physical_login_count_or_order');
   const byToken = new Map(logins.map(row => [row.tokenHash, row]));
@@ -452,10 +519,15 @@ export function analyzePhysical(exchanges, manifest, report, after) {
       need(exchange.original.method === 'GET' || ['HEAD', 'OPTIONS'].includes(exchange.original.method), 'media_method_invalid');
       if (exchange.original.method === 'GET' && [200, 206].includes(exchange.response?.status) && exchange.deliveredBodyBytes > 0) {
         requireMediaGET(exchange); login.media.push(exchange);
-      } else if (exchange.original.method === 'GET' && exchange.complete && [200, 206].includes(exchange.response?.status))
-        throw new Error('completed_media_get_has_no_entity_bytes');
+      } else if (exchange.original.method === 'GET' && exchange.complete && [200, 206].includes(exchange.response?.status)) {
+        const cancellation = cancelledEmptyMedia(exchange, serverLog);
+        need(cancellation, 'completed_media_get_has_no_entity_bytes');
+        cancelledEmptyResponses.push(cancellation); login.cancelledEmpty.push(cancellation);
+      }
     }
   }
+  for (const cancellation of cancelledEmptyResponses) need(exchanges.filter(row => row.response?.headers.get('x-request-id')?.includes(cancellation.requestId)).length === 1,
+    'cancelled_media_request_id_reused');
   const newPlays = after.tables.play_sessions, references = after.tables.client_playback_references;
   const resolvePlay = (body, login) => {
     need(typeof body.PlaySessionId === 'string' && body.PlaySessionId.length > 0 && body.ItemId === selected?.id &&
@@ -505,10 +577,11 @@ export function analyzePhysical(exchanges, manifest, report, after) {
     need(login.logout.ordinal < login.verification.ordinal, 'logout_verification_order');
     if (selected) need(login.chains.length > 0 && login.media.length > 0 && login.chains.every(chain => chain.stopped[0].exchange.ordinal < login.logout.ordinal), 'login_playback_cleanup_incomplete');
     else need(login.media.length === 0 && login.chains.length === 0, 'browse_performed_playback');
+    need(login.cancelledEmpty.every(row => row.ordinal < login.logout.ordinal), 'cancelled_media_after_logout');
     verifyPostLogoutTraffic(login, exchanges);
   }
   if (manifest.scenario === 'movie') need(logins[0].verification.ordinal < logins[1].login.ordinal, 'movie_relogin_before_revocation_proof');
-  return { logins, chains: [...chains.values()], exchanges };
+  return { logins, chains: [...chains.values()], exchanges, cancelledEmptyResponses };
 }
 
 function visibleVideo(report, label) { const step = one(report.playback.steps.filter(row => row.label === label), 'movie_step_missing');
@@ -598,6 +671,7 @@ function additions(before, after, key, allowedChanged = new Set()) { const old =
 
 /** The one consumed movie04 baseline is an explicit authority, not an empty actor. */
 export function validateRetainedMovieBaseline(closeout, snapshot, seed) {
+  if (closeout?.kind === 'audited-movie05-owned-state-closeout') return validateOccupiedMovieBaseline(closeout, snapshot, seed);
   need(closeout?.kind === 'audited-core-movie04-failure-closeout' && closeout.status === 'closed_failed_attempt_with_retained_unstarted_preparation' &&
     equal(closeout.runtimeEpoch, RETAINED_EPOCH) && equal(closeout.sourceAfter, RETAINED_SNAPSHOT) && closeout.scenario === 'movie' && closeout.runId === 'movie-04' &&
     closeout.browserAndGatewayClosed === true && closeout.allElevenSessionsRevoked === true && closeout.clientAcceptance === false && closeout.playbackStarted === false &&
@@ -622,39 +696,82 @@ export function validateRetainedMovieBaseline(closeout, snapshot, seed) {
   return play;
 }
 
+export function validateOccupiedMovieBaseline(closeout, snapshot, seed) {
+  const data = closeout?.checks?.ownedData, state = closeout?.checks?.savedRuntimeAndWorkers;
+  need(closeout?.kind === 'audited-movie05-owned-state-closeout' && closeout.status === 'owned_state_closed_client_acceptance_pending' &&
+    closeout.clientAcceptance === false && closeout.failure === undefined && equal(closeout.inputEvidence?.after, OCCUPIED_SNAPSHOT) &&
+    equal(closeout.inputEvidence?.epoch, RETAINED_EPOCH) && closeout.browserOutcome === 'failed' &&
+    closeout.browserFailure === 'candidate_playback_chain_incomplete' && closeout.browserExitCode === 1 && closeout.gatewayExitCode === 0 &&
+    state?.candidateContinuous === true && state.postgresContinuous === true && state.leaseExact === true &&
+    ['browser', 'gateway'].every(role => state.workers?.[role]?.pidAbsentAsRecorded === true && state.workers[role].recursiveCgroupEmptyAsRecorded === true),
+  'occupied_movie_closeout_invalid');
+  need(data?.ownedTables === 35 && data.unchangedTables === 30 && data.oldRowsDeleted === 0 && data.clientPlaybackReferences === 0 && data.encodingJobs === 0 &&
+    closeout.checks.authentication?.allSessionsRevoked === 13 && exact(snapshot, ['capturedAt', 'tables', 'sequences']) &&
+    equal(Object.keys(snapshot.tables).sort(), TABLES), 'occupied_movie_inventory');
+  const tables = snapshot.tables, actor = seed.actors.movie, movie = seed.catalog.movie;
+  const user = one(tables.users.filter(row => row.id === actor.id), 'occupied_movie_actor');
+  need(user.name === actor.username && user.is_administrator === false && user.is_disabled === false && equal(user.policy, {}) &&
+    tables.sessions.length === 13 && tables.sessions.every(row => row.revoked_at !== null) && tables.play_sessions.length === 5 &&
+    tables.client_playback_references.length === 0 && tables.encoding_jobs.length === 0, 'occupied_movie_actor_or_residue');
+  const stopped = data.countedStopped, unstarted = data.unstartedPreparations;
+  need(Array.isArray(stopped) && stopped.length === 2 && Array.isArray(unstarted) && unstarted.length === 2 &&
+    data.oldPreparation?.id === RETAINED_PLAY && data.oldPreparation.state === 'Expired', 'occupied_movie_history_shape');
+  const expected = new Set([RETAINED_PLAY, ...stopped.map(row => row.id), ...unstarted.map(row => row.id)]);
+  need(expected.size === 5 && tables.play_sessions.every(row => expected.has(row.id)), 'occupied_movie_play_set');
+  for (const row of tables.play_sessions) {
+    const auth = one(tables.sessions.filter(value => value.id === row.auth_session_id), 'occupied_movie_auth_missing');
+    need(row.user_id === actor.id && row.item_id === movie.id && row.media_source_id === 'mediasource_' + movie.id &&
+      row.duration_ticks === movie.runtimeTicks && row.application_client_id === null && row.client_correlated === false &&
+      auth.user_id === actor.id && auth.kind === 'emby' && auth.device_id === row.device_id && auth.revoked_at !== null, 'occupied_movie_play_owner');
+    const prior = stopped.find(value => value.id === row.id);
+    if (prior) need(row.state === 'Stopped' && row.counted === true && row.position_ticks === prior.positionTicks &&
+      row.auth_session_id === prior.authSessionId && row.started_at === prior.startedAt && row.stopped_at === prior.stoppedAt, 'occupied_movie_counted_history');
+    else need(row.counted === false && row.started_at === null && ['Prepared', 'Expired'].includes(row.state) &&
+      (row.state === 'Prepared' ? row.stopped_at === null : row.stopped_at !== null), 'occupied_movie_unstarted_history');
+  }
+  const play = one(tables.play_sessions.filter(row => row.state === 'Prepared'), 'occupied_movie_prepared_count');
+  need(play.id === OCCUPIED_PLAY && play.auth_session_id === OCCUPIED_AUTH && play.position_ticks === 1217878390 &&
+    unstarted.some(row => row.id === play.id && row.state === 'Prepared' && row.counted === false && row.positionTicks === play.position_ticks), 'occupied_movie_prepared_binding');
+  const userdata = one(tables.user_item_data.filter(row => row.user_id === actor.id), 'occupied_movie_userdata_count');
+  need(equal(userdata, data.userData) && userdata.item_id === movie.id && userdata.play_count === 2 && userdata.playback_position_ticks === 1217878390 &&
+    userdata.is_favorite === false && userdata.played === false && userdata.last_played_at !== null, 'occupied_movie_userdata');
+  return play;
+}
+
 export function verifyRetainedMovieBefore(before, manifest, seed, retained) {
   need(manifest.scenario === 'movie' && exact(retained, ['closeout', 'snapshot']), 'retained_movie_scenario_required');
   const prior = retained.snapshot, play = validateRetainedMovieBaseline(retained.closeout, prior, seed);
   need(exact(before, ['capturedAt', 'tables', 'sequences']) && equal(before.tables, prior.tables) && equal(before.sequences, prior.sequences), 'retained_movie_fresh_state_changed');
-  need(timestampNs(before.capturedAt) >= timestampNs(prior.capturedAt) && timestampNs(before.capturedAt) + 1200n * 1000000000n <
-    timestampNs(play.expires_at) + 7n * 86400n * 1000000000n, 'retained_movie_pruning_deadline');
+  need(timestampNs(before.capturedAt) >= timestampNs(prior.capturedAt) && prior.tables.play_sessions.filter(row => row.user_id === manifest.actor.id).every(row =>
+    timestampNs(before.capturedAt) + 1200n * 1000000000n < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'retained_movie_pruning_deadline');
   return play;
 }
 
 export function verifyRetainedMovieTransition(before, after, manifest, seed, physical, retained) {
   const old = verifyRetainedMovieBefore(before, manifest, seed, retained), actor = manifest.actor.id;
   need(actor === seed.actors.movie.id, 'retained_movie_actor_changed');
-  const current = one(after.tables.play_sessions.filter(row => row.id === RETAINED_PLAY), 'retained_movie_row_missing');
+  const current = one(after.tables.play_sessions.filter(row => row.id === old.id), 'retained_movie_row_missing');
   need(equal(without(current, ['state', 'stopped_at', 'updated_at']), without(old, ['state', 'stopped_at', 'updated_at'])) &&
     current.state === 'Expired' && current.stopped_at !== null && current.updated_at !== null, 'retained_movie_expiration_fields');
   // These are upper bounds on creations, including requests that reused a row.
   const creators = physical.exchanges.filter(row => !row.rejected && (row.scope?.kind === 'playback_info' ||
     row.scope?.kind === 'playback_report' && /^\/Sessions\/Playing\/?$/i.test(row.scope.route)));
-  need(1 + creators.length <= 256 && after.tables.play_sessions.filter(row => row.user_id === actor).length <= 256 &&
-    timestampNs(after.capturedAt) < timestampNs(old.expires_at) + 7n * 86400n * 1000000000n, 'retained_movie_pruning_capacity');
+  const oldPlays = before.tables.play_sessions.filter(row => row.user_id === actor), oldIds = new Set(oldPlays.map(row => row.id)), oldAuth = new Set(before.tables.sessions.map(row => row.id));
+  need(oldPlays.length + creators.length <= 256 && after.tables.play_sessions.filter(row => row.user_id === actor).length <= 256 &&
+    oldPlays.every(row => timestampNs(after.capturedAt) < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'retained_movie_pruning_capacity');
   const infos = physical.logins.flatMap(login => login.infos.map(info => ({ login, info })))
     .filter(({ info }) => info.itemId === old.item_id && info.exchange.complete && info.exchange.response?.status === 200)
     .sort((left, right) => left.info.exchange.ordinal - right.info.exchange.ordinal);
   need(infos.length > 0, 'retained_movie_prepare_window_missing');
   const { login, info } = infos[0], exchange = info.exchange;
   const authentication = one(after.tables.sessions.filter(row => row.id === login.sessionId), 'retained_movie_new_auth_missing');
-  need(login.sessionId !== RETAINED_AUTH && authentication.user_id === actor && authentication.kind === 'emby' && exchange.tokenHash === login.tokenHash &&
-    info.value.PlaySessionId !== RETAINED_PLAY && !physical.chains.some(chain => chain.play.id === RETAINED_PLAY) &&
-    physical.logins.every(row => row.sessionId !== RETAINED_AUTH), 'retained_movie_old_auth_or_play_reused');
+  need(!oldAuth.has(login.sessionId) && authentication.user_id === actor && authentication.kind === 'emby' && exchange.tokenHash === login.tokenHash &&
+    !oldIds.has(info.value.PlaySessionId) && !physical.chains.some(chain => oldIds.has(chain.play.id)) &&
+    physical.logins.every(row => !oldAuth.has(row.sessionId)), 'retained_movie_old_auth_or_play_reused');
   need(within(current.stopped_at, exchange.intent.startedAt, exchange.result.completedAt) &&
     within(current.updated_at, exchange.intent.startedAt, exchange.result.completedAt), 'retained_movie_expiration_outside_prepare');
-  return { playSessionId: RETAINED_PLAY, previousState: 'Prepared', state: 'Expired', prepareOrdinal: exchange.ordinal,
-    changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true, creationUpperBound: 1 + creators.length };
+  return { playSessionId: old.id, previousState: 'Prepared', state: 'Expired', prepareOrdinal: exchange.ordinal,
+    changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true, creationUpperBound: oldPlays.length + creators.length };
 }
 
 export function effectiveStopEvidence(play, stops) {
@@ -722,7 +839,7 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
       row.resource_kind === 'session' && row.resource_id === row.actor_credential_id && row.affected_count === 1 &&
       row.request_id === '' && row.observation_fingerprint === '' && row.state === '' && row.revision === 0 && row.previous_revision === 0 &&
       equal(row.changed_fields, []) && within(row.created_at, before.capturedAt, after.capturedAt), 'unexpected_activity_entry'); activityKeys.add(key); }
-  const plays = additions(before.tables.play_sessions, after.tables.play_sessions, undefined, new Set(retainedExpiration ? [RETAINED_PLAY] : [])),
+  const plays = additions(before.tables.play_sessions, after.tables.play_sessions, undefined, new Set(retainedExpiration ? [retainedExpiration.playSessionId] : [])),
     references = additions(before.tables.client_playback_references, after.tables.client_playback_references, referenceKey);
   const reported = new Map(physical.chains.map(chain => [chain.play.id, chain]));
   const retainedPreparations = [];
@@ -846,10 +963,11 @@ export function validateRuntimeLineage(epoch, seed, lineage = {}) {
 export function validateCloseoutBindings(input, evidence) {
   const { manifest, observation, summary, gatewayAttestation: gateway, runtimeEpoch: epoch, admission, seedBinding: seed, boundary } = evidence;
   validateCandidateManifest(manifest);
-  if (input.version === 2) {
-    need(equal(input.retainedBaseline, RETAINED_BASELINE), 'retained_movie_input_authority');
+  if (input.version === 2 || input.version === 3 && input.retainedBaseline !== null) {
+    need(equal(input.retainedBaseline, input.version === 2 ? RETAINED_BASELINE : OCCUPIED_BASELINE), 'retained_movie_input_authority');
     verifyRetainedMovieBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
-  } else need(input.version === 1 && !Object.hasOwn(input, 'retainedBaseline') && evidence.retained === undefined, 'retained_movie_input_authority');
+  } else need((input.version === 1 && !Object.hasOwn(input, 'retainedBaseline') || input.version === 3 && input.retainedBaseline === null && manifest.scenario !== 'movie') &&
+    evidence.retained === undefined, 'retained_movie_input_authority');
   need(equal(observation.gateway?.admission_request_counts, { normal: 0, cleanup: 0 }), 'gateway_not_fresh_at_client_admission');
   validateCandidateGateway(gateway, manifest, ns(observation.started_monotonic_ns), { normal: 0, cleanup: 0 });
   validateRuntimeLineage(epoch, seed, evidence.lineage);
@@ -888,15 +1006,20 @@ export function validateCloseoutBindings(input, evidence) {
     boundary.gatewayWorker.workerPidAbsent === true && equal(boundary.gatewayWorker.index, input.gatewayIndex), 'workers_not_independently_closed');
   need(ns(boundary.beforeMonotonicNs) <= ns(observation.started_monotonic_ns) &&
     ns(boundary.afterMonotonicNs) >= ns(observation.started_monotonic_ns) + BigInt(observation.elapsed_ms) * 1000000n, 'boundary_time_interval');
+  const serverLog = input.version === 3 ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
+    { manifest, epoch, input, approval: evidence.approval, observation, authorizedInput: evidence.authorizedInput }) : null;
+  if (serverLog) need(timestampNs(serverLog.receipt.before.capturedAt) >= timestampNs(evidence.sourceBefore.capturedAt) &&
+    timestampNs(serverLog.receipt.after.capturedAt) >= timestampNs(evidence.sourceAfter.capturedAt), 'server_log_source_capture_order');
+  return { serverLog };
 }
 
 export function closeEvidence(input, evidence, ledgerRows) {
-  validateCloseoutBindings(input, evidence);
+  const bindings = validateCloseoutBindings(input, evidence);
   const manifest = evidence.manifest, report = evidence.observation;
   const exchanges = verifyLedgerRows(evidence.gatewayAttestation, evidence.gatewayIndex, ledgerRows, manifest);
   need(exchanges.length > 0 && exchanges.every(row => ns(row.intent.startedMonotonicNs) >= ns(evidence.boundary.beforeMonotonicNs) &&
     ns(row.result.completedMonotonicNs) <= ns(evidence.boundary.afterMonotonicNs)), 'ledger_outside_capture_interval');
-  const physical = analyzePhysical(exchanges, manifest, report, evidence.sourceAfter), partialMedia = verifyUI(report, manifest, physical);
+  const physical = analyzePhysical(exchanges, manifest, report, evidence.sourceAfter, bindings.serverLog), partialMedia = verifyUI(report, manifest, physical);
   const partialOrdinals = new Set(partialMedia.map(row => row.ordinal));
   for (const row of exchanges) if (!row.rejected && !row.complete && row.request.kind !== 'websocket')
     need(partialOrdinals.has(row.ordinal) || row.request.kind === 'web' && row.original.method === 'GET' && matchesContext(row, report).some(event => event.failed && event.failure_error_text === 'net::ERR_ABORTED'), 'unexplained_upstream_interruption');
@@ -909,7 +1032,7 @@ export function closeEvidence(input, evidence, ledgerRows) {
       countingReportOrdinals: chain.countingReports.map(row => row.ordinal), mediaGetOrdinals: chain.media.map(row => row.ordinal) })),
     logoutVerification: physical.logins.map(login => ({ authSessionId: login.sessionId, loginOrdinal: login.login.ordinal, logoutOrdinal: login.logout.ordinal,
       rejectionOrdinal: login.verification.ordinal, rejectionStatus: 401, rejectionBodyReconstructed: login.verification.responseEntity !== null })),
-    partialMedia, durable, auxiliaryRejections: exchanges.filter(row => row.response?.status >= 400 && row.scope?.kind !== 'login' && row.original.get('user-agent') !== 'GobyBrowserPostLogoutVerification/1')
+    partialMedia, cancelledEmptyResponses: physical.cancelledEmptyResponses, durable, auxiliaryRejections: exchanges.filter(row => row.response?.status >= 400 && row.scope?.kind !== 'login' && row.original.get('user-agent') !== 'GobyBrowserPostLogoutVerification/1')
       .map(row => ({ ordinal: row.ordinal, kind: row.scope?.kind ?? null, status: row.response.status })),
     rejectedBeforeUpstream: exchanges.filter(row => row.rejected && !row.handshake).length,
     physicalCounting: 'One gateway ordinal per admitted physical exchange; frame and Service Worker observations are not added to this count.',
@@ -946,10 +1069,11 @@ async function saveNew(filename, value) {
 }
 
 export function validateCloseoutInput(input) {
-  need([1, 2].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version === 2 ? ['retainedBaseline'] : [])]) &&
+  need([1, 2, 3].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []), ...(input.version === 3 ? ['serverLog'] : [])]) &&
     input.kind === 'audited-candidate-client-closeout-input' && CLOSEOUT_PINS.every(key => descriptor(input[key])) &&
     exact(input.sources, Object.keys(SOURCE_FILES)) && typeof input.output === 'string' && input.output.startsWith('/opt/goby-test/'), 'closeout_input_invalid');
   if (input.version === 2) need(equal(input.retainedBaseline, RETAINED_BASELINE), 'retained_movie_input_authority');
+  if (input.version === 3) need((input.retainedBaseline === null || equal(input.retainedBaseline, OCCUPIED_BASELINE)) && descriptor(input.serverLog), 'version3_evidence_authority');
   return input;
 }
 
@@ -964,10 +1088,19 @@ export async function runCloseout(inputPin) {
   const evidence = {}; for (const key of names) evidence[key] = ['sourceBefore', 'sourceAfter'].includes(key)
     ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) :
       key === 'observation' ? observationJSON(await readPin(input[key]), evidence.manifest) : strictJSON(await readPin(input[key]));
-  if (input.version === 2) {
+  if (input.version >= 2 && input.retainedBaseline !== null) {
     const closeout = strictJSON(await readPin(input.retainedBaseline));
-    need(equal(closeout.sourceAfter, RETAINED_SNAPSHOT), 'retained_movie_snapshot_changed');
-    evidence.retained = { closeout, snapshot: sourceSnapshotJSON(await readPin(closeout.sourceAfter)) };
+    const snapshot = input.version === 2 ? closeout.sourceAfter : closeout.inputEvidence?.after;
+    need(equal(snapshot, input.version === 2 ? RETAINED_SNAPSHOT : OCCUPIED_SNAPSHOT), 'retained_movie_snapshot_changed');
+    evidence.retained = { closeout, snapshot: sourceSnapshotJSON(await readPin(snapshot)) };
+  }
+  if (input.version === 3) {
+    evidence.serverLog = strictJSON(await readPin(input.serverLog));
+    evidence.serverLogBefore = await readPin(evidence.serverLog.before.content);
+    evidence.serverLogAfter = await readPin(evidence.serverLog.after.content);
+    evidence.approval = strictJSON(await readPin(evidence.manifest.approval));
+    evidence.authorizedInput = strictJSON(await readPin(evidence.serverLog.input));
+    await readPin(evidence.serverLog.controller, MAX_FILE, false);
   }
   if (evidence.runtimeEpoch.version === 2) {
     const epoch = evidence.runtimeEpoch, seed = evidence.seedBinding;

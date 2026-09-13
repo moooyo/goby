@@ -125,7 +125,7 @@ function durableFixture() {
     chains: [{ play, stopped: [stopped], reports: [started, stopped] }], exchanges: [] } };
 }
 
-function retainedFixture(closer) {
+export function retainedFixture(closer) {
   const value = durableFixture(), at = second => '2026-01-01T00:00:' + String(second).padStart(2, '0') + '.000000000Z';
   const movie = { id: ITEM, type: 'Movie', runtimeTicks: 6000000000 };
   value.manifest = { ...clone(manifest), scenario: 'movie', catalog: { movie } };

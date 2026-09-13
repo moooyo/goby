@@ -21,6 +21,9 @@ const PINS = {
   failure: pin(S + '/private/failure.json', 'f6f9e2f869bc02689b0673f7623d803b8d36cb6022474df9e1caec4ff55bf249'),
   ownedState: pin(R + '/candidate-core-movie05-owned-state-closeout.json', '7c38d00bcb4ece5e056e06a22be848cbd5e76c77f7d5b642d06f656be3dc27ab'),
   serverLogs: pin(R + '/candidate-movie05-server-log-review-01/server-file-review.json', 'd7d2548ea614527f25717355637f78cd35cfeef4009f68e53d80a132a38cf3e9'),
+  seed: pin(R + '/candidate-backup-limits-revision-01/private/seed-runtime-binding.json', '92ee92478475390e514f39e554619f322be81062a6d0256820c00bf4c8e0969f'),
+  originalRetainedCloseout: pin(R + '/candidate-core-movie04-failure-closeout.json', '5843a790e3c4ba09109d145b64fbda58f94c7ee94092e898ab584bab37880e8d'),
+  originalRetainedSnapshot: pin(R + '/candidate-core-client-movie-04/private/source-after.json', '7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c'),
 };
 
 async function readProtected(filename, privateMode = true) {
@@ -186,6 +189,31 @@ async function main() {
   await check('full_physical_acceptance_stays_closed_without_an_explicit_cancelled_empty_response_contract', () => {
     assert.throws(() => closer.analyzePhysical(exchanges, manifest, observation, after), /completed_media_get_has_no_entity_bytes/);
   });
+  await check('saved_cancellation_evidence_closes_physical_and_durable_analysis_without_changing_failed_ui', async () => {
+    const prefix = await readPin(logs.capturedPrefix), lines = prefix.toString('utf8').split('\n'), events = [];
+    for (const media of logs.mediaRequests) {
+      const matched = lines.filter(line => line.includes(media.requestId)); assert.equal(matched.length, 1);
+      const event = JSON.parse(matched[0]); assert.equal(event.request_id, media.requestId); events.push(event);
+    }
+    const savedServerLog = { events, byRequestId: new Map(events.map(event => [event.request_id, event])) };
+    // This reuses the prior immutable log review. It does not manufacture
+    // pre-run log captures or a version-3 input for the old version-2 run.
+    const physical = closer.analyzePhysical(exchanges, manifest, observation, after, savedServerLog);
+    assert.equal(physical.exchanges.length, 355); assert.equal(physical.logins.length, 2); assert.equal(physical.chains.length, 2);
+    assert.equal(physical.cancelledEmptyResponses.length, 1); assert.equal(physical.cancelledEmptyResponses[0].ordinal, 339);
+    assert.equal(physical.cancelledEmptyResponses[0].contributesMediaDelivery, false);
+    assert(physical.chains.every(chain => chain.media.every(exchange => exchange.deliveredBodyBytes > 0 && exchange.ordinal !== 339)));
+    const reused = exchanges.map(exchange => exchange.ordinal !== 338 ? exchange : { ...exchange, response: { ...exchange.response,
+      headers: new Map([...exchange.response.headers, ['x-request-id', [physical.cancelledEmptyResponses[0].requestId]]]) } });
+    assert.throws(() => closer.analyzePhysical(reused, manifest, observation, after, savedServerLog), /cancelled_media_request_id_reused/);
+    const retained = { closeout: closer.strictJSON(raw.originalRetainedCloseout), snapshot: closer.sourceSnapshotJSON(raw.originalRetainedSnapshot) };
+    const durable = closer.verifyDurable(before, after, manifest, closer.strictJSON(raw.seed), physical, retained);
+    assert.equal(durable.countedPlays, 2); assert.equal(durable.selectedUserdata.play_count, 2);
+    assert.equal(durable.selectedUserdata.playback_position_ticks, 1217878390);
+    assert.equal(durable.retainedBaselineExpiration.playSessionId, closer.RETAINED_PLAY);
+    assert.throws(() => closer.verifyUI(observation, manifest, physical), /client_ui_or_cleanup_incomplete/);
+    assert.equal(observation.outcome, 'failed'); assert.equal(failure.workers.browser.terminal.ExecMainStatus, '1');
+  });
   await check('unknown_page_errors_and_original_failed_exit_are_preserved', () => {
     assert.equal(observation.outcome, 'failed'); assert.equal(observation.failure, 'candidate_playback_chain_incomplete');
     assert.deepEqual(observation.page_errors.map(row => row.elapsed_ms), [16877, 16993, 24867, 24902]);
@@ -208,7 +236,7 @@ async function main() {
     testCount: tests.length, passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, originalOutcome: observation.outcome, originalBrowserExitCode: 1,
     clientAcceptance: false, newBrowserRuns: 0, httpCalls: 0, sqlCalls: 0, serviceActions: 0,
-    remainingAcceptanceGaps: ['Unknown historical page-error causes.', 'Physical media/context Range attribution and explicit cancelled-empty-response handling.'] };
+    remainingAcceptanceGaps: ['Unknown historical page-error causes.', 'A fresh version-3 controller run with admitted occupied state and real before/after server log captures.'] };
   const bytes = Buffer.from(JSON.stringify(result, null, 2) + '\n');
   await fs.writeFile(output, bytes, { flag: 'wx', mode: 0o600 });
   process.stdout.write(JSON.stringify({ output: pin(output, sha(bytes)), testCount: result.testCount, passed: result.passed,

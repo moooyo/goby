@@ -1,0 +1,41 @@
+{
+  "kind": "audited-movie06-readiness-checkpoint",
+  "status": "offline_readiness_correction_verified",
+  "host": "test-env",
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/movie06-readiness-verification-01/verification.json",
+    "sha256": "67025af18b57864e29229df022c5a95248cfaf3211e9e8e89d75e61e7b463715"
+  },
+  "sources": {
+    "movie": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325",
+    "tests": "9ce6a3ca7b9e40f4c6f151ca4d138137142d619ab9148a0c2859a674e481d1ce",
+    "originalMovie": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619"
+  },
+  "originalFailureReproduced": true,
+  "originalFailureCode": "movie_control_not_unique",
+  "fixedChecks": {
+    "tests": 19,
+    "pass": 19,
+    "fail": 0,
+    "skipped": 0
+  },
+  "coverage": [
+    "Item URL changes while two Home titles remain visible",
+    "No initial playback click or Playing observer before action readiness",
+    "Delayed Play and From Beginning complete both independent lifecycles",
+    "From Beginning resets retained progress for the initial lifecycle",
+    "Duplicate action controls remain rejected with owned logout",
+    "Resume cannot replace an unavailable initial playback action",
+    "Existing relogin identity, response completion and cleanup guards"
+  ],
+  "verificationActions": {
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "browserRuns": 0,
+    "serviceActions": 0
+  },
+  "controllerSourceSelectionChanged": false,
+  "retainedMovieBaselineAdjustment": "pending_before_any_future_movie_execution",
+  "clientAcceptance": false,
+  "nextPlan": "audited-movie06-plan-review.md"
+}

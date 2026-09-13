@@ -188,7 +188,10 @@ export async function runMovieWorkflow({ page, report, snapshot, repeatLogin, ta
     const observedItem = movieItemFromLocation(page.url(), target);
     requireMovie(!itemId || observedItem === itemId, 'movie_relogin_item_changed'); itemId = observedItem; result.item_id = itemId;
     operation('movie_detail_title');
-    await ready([{ key: 'movie_detail_title', locator: page.getByText(MOVIE, { exact: true }).filter({ visible: true }) }]);
+    // The item URL can change while both Home cards are still visible.
+    const detailTitles = page.getByText(MOVIE, { exact: true }).filter({ visible: true });
+    await detailTitles.first().waitFor({ state: 'visible', timeout: 10000 });
+    counts([{ control: 'movie_detail_title', count: await detailTitles.count() }]);
   }
 
   async function beginPlayback(resume) {

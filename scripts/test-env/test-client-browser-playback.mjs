@@ -141,18 +141,21 @@ test('cleanup attempts logout after a failed stop and retains safe budget failur
 });
 
 function movieFixture({ failedSnapshot = null, failFirstStopCompletion = false, failRepeatLogin = false, changedReloginItem = false,
-  reusedPlaySession = false, mediaStopGate = null, menuGate = null } = {}) {
-  let state = 'home', video = null, menu = false, selectedItem = ITEM, position = 0, playNumber = 0, loginNumber = 1;
-  const waiters = [], calls = [], snapshots = [], report = { requests: [], logout: { attempted: false } };
-  const mediaStopWaiting = deferred(), menuWaiting = deferred();
+  reusedPlaySession = false, mediaStopGate = null, menuGate = null, detailGate = null, homeTitleCount = 1,
+  initialPosition = 0, duplicateInitialAction = false, resumeOnlyInitial = false } = {}) {
+  let state = 'home', video = null, menu = false, selectedItem = ITEM, position = initialPosition, playNumber = 0, loginNumber = 1;
+  const waiters = [], calls = [], snapshots = [], armedEvents = [], report = { requests: [], logout: { attempted: false } };
+  const mediaStopWaiting = deferred(), menuWaiting = deferred(), detailWaiting = deferred();
   const invoke = (fn, input) => runInNewContext('(' + fn.toString() + ')(input)', { document: document(), input });
   const visibleButton = key => {
-    if (key === 'card' || key === 'image') return state === 'home' ? 1 : 0;
+    if (key === 'card' || key === 'image') return ['home', 'detail_pending'].includes(state) ? 1 : 0;
     if (key === 'Settings') return state !== 'login' ? 1 : 0;
     if (key === 'Sign Out') return menu === true && state !== 'login' ? 1 : 0;
-    if (key === 'Play') return state === 'detail' && position === 0 || video?.paused ? 1 : 0;
+    if (key === 'Play') return video?.paused ? 1 : state === 'detail' && position === 0 && !(resumeOnlyInitial && loginNumber === 1)
+      ? duplicateInitialAction && loginNumber === 1 ? 2 : 1 : 0;
     if (key === 'Resume') return state === 'detail' && position > 0 ? 1 : 0;
-    if (key === 'From Beginning') return 0;
+    if (key === 'From Beginning') return state === 'detail' && position > 0 && !(resumeOnlyInitial && loginNumber === 1)
+      ? duplicateInitialAction && loginNumber === 1 ? 2 : 1 : 0;
     if (key === 'Pause' || key === 'Back') return video ? 1 : 0;
     return 0;
   };
@@ -166,12 +169,13 @@ function movieFixture({ failedSnapshot = null, failFirstStopCompletion = false, 
   };
   const click = async key => {
     calls.push(key);
-    if (key === 'card' || key === 'image') { state = 'detail'; return; }
+    if (key === 'card' || key === 'image') { state = detailGate && loginNumber === 1 ? 'detail_pending' : 'detail'; return; }
     if (key === 'Settings') { menu = menuGate && calls.filter(value => value === 'Settings').length === 1 ? 'pending' : !menu; return; }
     if (key === 'Sign Out') { emit('logout', {}); state = 'login'; menu = false; video = null; return; }
     if (key === 'Pause') { video.paused = true; return; }
     if (key === 'Play' && video) { video.paused = false; return; }
-    if (key === 'Play' || key === 'Resume') {
+    if (key === 'From Beginning') position = 0;
+    if (key === 'Play' || key === 'From Beginning' || key === 'Resume') {
       playNumber++; state = 'playing'; video = { currentTime: position || 1.1, duration: 600, paused: false, ended: false, seeking: false,
         readyState: 4, networkState: 2, videoWidth: 320, videoHeight: 180, frames: 40,
         getVideoPlaybackQuality() { return { totalVideoFrames: this.frames, droppedVideoFrames: 0 }; },
@@ -190,15 +194,19 @@ function movieFixture({ failedSnapshot = null, failFirstStopCompletion = false, 
     return { querySelectorAll(selector) {
       if (selector === 'video' || selector === 'video,audio') return video ? [video] : [];
       if (selector === 'input[type="range"]') return video ? [slider] : [];
-      return ['Play', 'Resume', 'Pause', 'Back', 'Settings', 'Sign Out'].filter(key => visibleButton(key)).map(key => ({
+      const titles = ['home', 'detail_pending'].includes(state) ? Array.from({ length: homeTitleCount }, () => ({
+        tagName: 'BUTTON', className: 'synthetic-home-card', innerText: 'M3e Client Movie', getClientRects: () => [{}],
+        getAttribute: name => name === 'title' ? 'M3e Client Movie' : name === 'type' ? 'button' : null })) : [];
+      return titles.concat(['Play', 'From Beginning', 'Resume', 'Pause', 'Back', 'Settings', 'Sign Out']
+        .flatMap(key => Array.from({ length: visibleButton(key) }, () => ({
         tagName: 'BUTTON', className: 'synthetic-control', innerText: key, getClientRects: () => [{}],
-        getAttribute: name => ['aria-label', 'title'].includes(name) ? key : name === 'type' ? 'button' : null }));
+        getAttribute: name => ['aria-label', 'title'].includes(name) ? key : name === 'type' ? 'button' : null }))));
     } };
   }
   const locator = (kind, key) => ({
     filter() { return this; }, first() { return this; }, nth() { return this; },
     async count() {
-      if (kind === 'title') return ['home', 'detail'].includes(state) ? 1 : 0;
+      if (kind === 'title') return ['home', 'detail_pending'].includes(state) ? homeTitleCount : state === 'detail' ? 1 : 0;
       if (kind === 'manual') return state === 'login' ? 1 : 0;
       if (kind === 'form') return 0;
       if (kind === 'video' || kind === 'ranges') return video ? 1 : 0;
@@ -206,7 +214,14 @@ function movieFixture({ failedSnapshot = null, failFirstStopCompletion = false, 
     },
     async waitFor() {
       if (kind === 'button' && key === 'Sign Out' && menu === 'pending') { menuWaiting.resolve(); await menuGate.promise; menu = true; }
-      if (!await this.count()) await never();
+      if (kind === 'button' && ['Play', 'From Beginning'].includes(key) && state === 'detail_pending') {
+        detailWaiting.resolve(); await detailGate.promise; state = 'detail';
+      }
+      if (!await this.count()) {
+        if (kind === 'button' && ['Play', 'From Beginning'].includes(key) && resumeOnlyInitial && loginNumber === 1)
+          throw new Error('synthetic initial action wait expired');
+        await never();
+      }
     },
     locator(selector) {
       if (selector.startsWith('xpath=ancestor-or-self')) return locator('button', 'card');
@@ -232,10 +247,14 @@ function movieFixture({ failedSnapshot = null, failFirstStopCompletion = false, 
       }
       assert.equal(invoke(fn, input), true, 'synthetic UI completion condition');
     },
-    waitForResponse(predicate) { const item = deferred(); waiters.push({ predicate, resolve: item.resolve }); return item.promise; },
+    waitForResponse(predicate) {
+      const event = ['started', 'stopped', 'logout'].find(event => predicate(response(event, currentBody())));
+      assert.ok(event, 'synthetic response registration must have a known event'); armedEvents.push(event);
+      const item = deferred(); waiters.push({ predicate, resolve: item.resolve }); return item.promise;
+    },
     waitForTimeout: never,
   };
-  return { page, report, calls, snapshots, target: TARGET, mediaStopWaiting, menuWaiting,
+  return { page, report, calls, snapshots, armedEvents, target: TARGET, mediaStopWaiting, menuWaiting, detailWaiting,
     async snapshot(label) { snapshots.push(label); if (label === failedSnapshot || Array.isArray(failedSnapshot) && failedSnapshot.includes(label)) throw new Error('synthetic private screenshot detail'); },
     async repeatLogin() { loginNumber++; state = 'home'; menu = false; if (changedReloginItem) selectedItem = OTHER;
       if (failRepeatLogin) throw new Error('synthetic login completion detail'); },
@@ -254,6 +273,54 @@ test('the complete original contract runs two independent play lifecycles withou
   for (const label of ['movie-home', 'movie-detail', 'movie-playing', 'movie-seek-forward', 'movie-seek-backward', 'movie-stopped',
     'movie-before-relogin', 'movie-relogin-home', 'movie-before-resume', 'movie-resumed', 'movie-sign-out-after']) assert.ok(fixture.snapshots.includes(label), label);
   assert.equal(fixture.report.logout_history.length, 2); assert.equal(fixture.state().state, 'login');
+});
+
+test('movie06 navigation keeps two Home titles visible until the actual initial action mounts, then completes both lifecycles', async () => {
+  for (const initialPosition of [0, 121.787839]) {
+    const gate = deferred(), fixture = movieFixture({ detailGate: gate, homeTitleCount: 2, initialPosition });
+    const pending = runMovieWorkflow(fixture);
+    assert.equal(await Promise.race([fixture.detailWaiting.promise.then(() => 'waiting'), pending.then(() => 'completed')]), 'waiting');
+    await tick();
+    assert.equal(movieItemFromLocation(fixture.page.url(), TARGET), ITEM);
+    assert.equal(fixture.state().state, 'detail_pending');
+    assert.equal(fixture.report.playback.operation, 'initial_play_ready');
+    assert.deepEqual(fixture.report.playback.steps.find(row => row.operation === 'movie_detail_title').controls,
+      [{ control: 'movie_detail_title', count: 2 }]);
+    const visible = await fixture.page.evaluate(() => [...document.querySelectorAll('button')].map(element => element.innerText));
+    assert.equal(visible.filter(text => text === 'M3e Client Movie').length, 2);
+    assert.equal(visible.some(text => ['Play', 'From Beginning', 'Resume'].includes(text)), false);
+    assert.deepEqual(fixture.calls, ['card']); assert.deepEqual(fixture.armedEvents, []);
+    gate.resolve(); await pending;
+    const firstAction = initialPosition ? 'From Beginning' : 'Play';
+    assert.equal(fixture.calls.find(key => ['Play', 'From Beginning', 'Resume'].includes(key)), firstAction);
+    assert.equal(fixture.report.playback.steps.find(row => row.label === 'playing-start').videos[0].current_time, 1.1);
+    assert.equal(fixture.calls.filter(key => key === 'Resume').length, 1);
+    assert.deepEqual(fixture.report.playback.lifecycles.map(row => [row.play_session_id, row.started_complete, row.stopped_complete]),
+      [['play_1', true, true], ['play_2', true, true]]);
+    assert.deepEqual(fixture.armedEvents, ['started', 'stopped', 'logout', 'started', 'stopped', 'logout']);
+    assert.equal(fixture.calls.filter(key => key === 'Back').length, 2);
+    assert.equal(fixture.calls.filter(key => key === 'Sign Out').length, 2);
+    assert.equal(fixture.report.playback.outcome, 'movie_ui_flow_completed');
+  }
+});
+
+test('duplicate initial playback actions still fail before Playing is armed and preserve UI logout', async () => {
+  for (const initialPosition of [0, 121.787839]) {
+    const fixture = movieFixture({ homeTitleCount: 2, initialPosition, duplicateInitialAction: true });
+    await assert.rejects(runMovieWorkflow(fixture), { message: 'movie_control_not_unique' });
+    assert.deepEqual(fixture.report.playback.failure, { phase: 'play', operation: 'initial_play_ready', code: 'movie_control_not_unique' });
+    assert.equal(fixture.calls.some(key => ['Play', 'From Beginning', 'Resume'].includes(key)), false);
+    assert.deepEqual(fixture.armedEvents, ['logout']);
+    assert.equal(fixture.state().playNumber, 0); assert.equal(fixture.calls.filter(key => key === 'Sign Out').length, 1);
+  }
+});
+
+test('an initial Resume button cannot replace an unavailable Play or From Beginning action', async () => {
+  const fixture = movieFixture({ initialPosition: 121.787839, resumeOnlyInitial: true });
+  await assert.rejects(runMovieWorkflow(fixture), { message: 'movie_control_not_ready' });
+  assert.deepEqual(fixture.report.playback.failure, { phase: 'play', operation: 'initial_play_ready', code: 'movie_control_not_ready' });
+  assert.equal(fixture.calls.includes('Resume'), false); assert.deepEqual(fixture.armedEvents, ['logout']);
+  assert.equal(fixture.state().playNumber, 0); assert.equal(fixture.calls.filter(key => key === 'Sign Out').length, 1);
 });
 
 test('an incomplete existing Stop is not fabricated or replaced by another Back during cleanup', async () => {

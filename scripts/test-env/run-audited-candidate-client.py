@@ -9,10 +9,11 @@ import os
 from pathlib import Path
 import re
 import signal
+import stat
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 R = Path("/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14")
 EPOCH = {"path": str(R / "candidate-backup-limits-revision-01/private/runtime-epoch.json"), "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"}
@@ -21,15 +22,28 @@ RETAINED_BASELINE = {"path": str(R / "candidate-core-movie04-failure-closeout.js
 RETAINED_SNAPSHOT = {"path": str(R / "candidate-core-client-movie-04/private/source-after.json"), "sha256": "7209b3845d8290cd3883c76f5a95f00066d85d61103b8c5765493472196ad01c"}
 RETAINED_PLAY = "play_40969548543a02735b847a89bc34671b"
 RETAINED_AUTH = "aadd2636638e28cc6ceaf5bb8f2cb132"
+MOVIE05_BASELINE = {"path": str(R / "candidate-core-movie05-owned-state-closeout.json"), "sha256": "7c38d00bcb4ece5e056e06a22be848cbd5e76c77f7d5b642d06f656be3dc27ab"}
+MOVIE05_SNAPSHOT = {"path": str(R / "candidate-core-client-movie-05/private/source-after.json"), "sha256": "be0dbd70d4f7ea7d4343a3ea6259f80be216b9239e7acfa6552b2c7858b33bb0"}
+MOVIE05_PREPARED = "play_b2977a52015916374e8a8af16188c191"
+MOVIE05_AUTH = "e5649a6dc8451164243a4213f12d0ba2"
+MOVIE05_HISTORY = {
+    RETAINED_PLAY: ("Expired", RETAINED_AUTH, False, 0),
+    "play_513080f4c7ffda49dba8a7002defdb6e": ("Expired", "85c836316077f2acd5e4ee2ed56d675d", False, 1197474760),
+    MOVIE05_PREPARED: ("Prepared", MOVIE05_AUTH, False, 1217878390),
+    "play_d8e2ffb318faa1277e4894f4c0496660": ("Stopped", MOVIE05_AUTH, True, 1217878390),
+    "play_fd6ee1392b1de37c01e28d4e32377a06": ("Stopped", "85c836316077f2acd5e4ee2ed56d675d", True, 1197474760),
+}
+SERVER_LOG = Path("/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/server-unit.log")
+SERVER_LOG_LIMIT = 32 << 20
 ADMISSION = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
 ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission04-closeout.json"), "sha256": "c2aea574a3196b5ef486a2ba2b664d59bb75f5208d3a1a0c53ecaaab81b81eb4"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "offline-movie-lifecycle-verification-02/verification.json"), "sha256": "5f98f41b695fdd59eafd7f91814ea7d39d008eb465bba3d1e95aea271c5b45f9"}
+AV_VERIFICATION = {"path": str(R / "client-v3-component-verification-01/verification.json"), "sha256": "994c013949005f3de6171588f1bf234ac13c4026f0cafdd3bf562871a34a0366"}
 RUNTIME = {"path": str(R / "backup-limits-tool-verification-01/audited-candidate-runtime.py"), "sha256": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3", "closer": "13594b2d40b3befd14e17b9a54fed626d93ec7f841d7c4e22115254fbc30bfca",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "3ecbffb851c6d75549a884c0fab6956564708bc6f78fae397cb2b88077cdeda3", "closer": "dedb3b54a1df8120c0a9baf1d2fe33a0f166557d60009c2e04ce462178416827",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
     "movie": "a3ad0b64e8587dbb27fa33897661ddbb5bc7acc6dfa17f3a230620fcc355a619", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
@@ -57,6 +71,10 @@ def need(value, code):
         raise RunError(code)
 
 
+def canonical(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
 def descriptor(pin):
     need(isinstance(pin, dict) and set(pin) == {"path", "sha256"} and isinstance(pin["path"], str) and Path(pin["path"]).is_absolute() and
          ".." not in Path(pin["path"]).parts and isinstance(pin["sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]), "descriptor_invalid")
@@ -64,10 +82,12 @@ def descriptor(pin):
 
 def validate_input(value):
     version = value.get("version")
-    need(type(version) is int and version in (1, 2) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version == 2 else set()) and value["kind"] == "audited-candidate-client-run-input" and
+    need(type(version) is int and version in (1, 2, 3) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version in (2, 3) else set()) and value["kind"] == "audited-candidate-client-run-input" and
          value["scenario"] in SCENARIOS and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,55}", value["runId"]), "client_run_input_invalid")
     if version == 2:
         need(value["scenario"] == "movie" and value["retainedBaseline"] == RETAINED_BASELINE, "retained_movie_input_authority")
+    if version == 3:
+        need(value["retainedBaseline"] == MOVIE05_BASELINE if value["scenario"] == "movie" else value["retainedBaseline"] is None, "version3_retained_input_authority")
     for key in INPUT_KEYS - {"kind", "version", "runId", "scenario", "output", "sources", "budgets", "gatewayBudgets"}:
         descriptor(value[key])
     need(value["runtimeEpoch"] == EPOCH and value["seedBinding"] == BINDING and value["admission"] == ADMISSION and value["admissionCloseout"] == ADMISSION_CLOSEOUT and
@@ -188,7 +208,39 @@ def validate_retained_movie_baseline(closeout, snapshot, binding):
     return play
 
 
-def verify_actor_before(snapshot, binding, scenario, retained=None):
+def validate_movie05_baseline(closeout, snapshot, binding):
+    """Retain completed owned-state proof without claiming browser acceptance."""
+    need(closeout.get("kind") == "audited-movie05-owned-state-closeout" and closeout.get("status") == "owned_state_closed_client_acceptance_pending" and
+         closeout.get("clientAcceptance") is False and closeout.get("failure") is None and closeout.get("inputEvidence", {}).get("after") == MOVIE05_SNAPSHOT and
+         closeout["inputEvidence"].get("epoch") == EPOCH and closeout.get("browserOutcome") == "failed" and closeout.get("browserExitCode") == 1 and
+         closeout.get("gatewayExitCode") == 0, "movie05_closeout_invalid")
+    need(set(snapshot) == {"capturedAt", "tables", "sequences"} and len(snapshot["tables"]) == 35, "movie05_snapshot_inventory")
+    tables, actor, movie = snapshot["tables"], binding["actors"]["movie"], binding["catalog"]["movie"]
+    users = [row for row in tables["users"] if row["id"] == actor["id"]]
+    need(len(users) == 1 and users[0]["name"] == actor["username"] and users[0]["is_administrator"] is False and users[0]["is_disabled"] is False and users[0]["policy"] == {}, "movie05_actor_changed")
+    auth = {row["id"]: row for row in tables["sessions"]}
+    plays = {row["id"]: row for row in tables["play_sessions"]}
+    need(len(tables["sessions"]) == len(auth) == 13 and all(row["revoked_at"] is not None for row in auth.values()) and
+         len(tables["play_sessions"]) == len(plays) == 5 and set(plays) == set(MOVIE05_HISTORY) and not tables["client_playback_references"] and not tables["encoding_jobs"], "movie05_history_inventory")
+    for identity, (state, credential, counted, position) in MOVIE05_HISTORY.items():
+        row, session = plays[identity], auth.get(credential, {})
+        need(row["state"] == state and row["auth_session_id"] == credential and row["counted"] is counted and type(row["position_ticks"]) is int and
+             row["position_ticks"] == position and row["user_id"] == actor["id"] and row["item_id"] == movie["id"] and row["media_source_id"] == "mediasource_" + movie["id"] and
+             row["duration_ticks"] == movie["runtimeTicks"] and row["application_client_id"] is None and row["client_correlated"] is False and
+             session.get("kind") == "emby" and session.get("user_id") == actor["id"] and session.get("device_id") == row["device_id"] and
+             (row["started_at"] is not None if counted else row["started_at"] is None) and
+             (row["stopped_at"] is None if state == "Prepared" else row["stopped_at"] is not None), "movie05_history_identity")
+    data = [row for row in tables["user_item_data"] if row["user_id"] == actor["id"]]
+    need(len(data) == 1 and data[0]["item_id"] == movie["id"] and type(data[0]["play_count"]) is int and data[0]["play_count"] == 2 and
+         type(data[0]["playback_position_ticks"]) is int and data[0]["playback_position_ticks"] == 1217878390 and data[0]["is_favorite"] is False and
+         data[0]["played"] is False and data[0]["last_played_at"] is not None, "movie05_userdata_changed")
+    checks = closeout.get("checks", {})
+    need(checks.get("authentication", {}).get("allSessionsRevoked") == 13 and checks.get("ownedData", {}).get("ownedTables") == 35 and
+         checks["ownedData"].get("oldRowsDeleted") == 0 and canonical(checks["ownedData"].get("userData")) == canonical(data[0]), "movie05_closeout_state_binding")
+    return plays[MOVIE05_PREPARED]
+
+
+def verify_actor_before(snapshot, binding, scenario, retained=None, version=2):
     actor = binding["actors"][scenario]["id"]
     rows = [row for row in snapshot["tables"]["users"] if row["id"] == actor]
     need(len(rows) == 1 and rows[0]["is_administrator"] is False and rows[0]["is_disabled"] is False, "scenario_actor_not_ordinary")
@@ -198,14 +250,43 @@ def verify_actor_before(snapshot, binding, scenario, retained=None):
         return
     need(scenario == "movie" and set(retained) == {"closeout", "snapshot"}, "retained_movie_scenario_required")
     prior = retained["snapshot"]
-    play = validate_retained_movie_baseline(retained["closeout"], prior, binding)
+    need(version in (2, 3), "retained_movie_version")
+    play = validate_movie05_baseline(retained["closeout"], prior, binding) if version == 3 else validate_retained_movie_baseline(retained["closeout"], prior, binding)
     # Python equality conflates booleans and integers inside JSONB documents.
-    canonical = lambda value: json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
     need(set(snapshot) == set(prior) and canonical(snapshot["tables"]) == canonical(prior["tables"]) and
          canonical(snapshot["sequences"]) == canonical(prior["sequences"]), "retained_movie_fresh_state_changed")
     timestamp = lambda value: datetime.fromisoformat(value.replace("Z", "+00:00"))
-    need(timestamp(snapshot["capturedAt"]) >= timestamp(prior["capturedAt"]) and
-         timestamp(snapshot["capturedAt"]) + timedelta(seconds=BUDGETS["maximumSeconds"]) < timestamp(play["expires_at"]) + timedelta(days=7), "retained_movie_pruning_deadline")
+    old_plays = [row for row in prior["tables"]["play_sessions"] if row["user_id"] == actor] if version == 3 else [play]
+    need(timestamp(snapshot["capturedAt"]) >= timestamp(prior["capturedAt"]) and len(old_plays) < 256 and all(
+         timestamp(snapshot["capturedAt"]) + timedelta(seconds=BUDGETS["maximumSeconds"]) < timestamp(row["expires_at"]) + timedelta(days=7) for row in old_plays), "retained_movie_pruning_deadline")
+
+
+def server_log_file_facts(path, info, stdout):
+    need(Path(path) == SERVER_LOG and stat.S_ISREG(info.st_mode) and stat.S_ISREG(stdout.st_mode) and info.st_uid == stdout.st_uid == 0 and
+         stat.S_IMODE(info.st_mode) == stat.S_IMODE(stdout.st_mode) == 0o600 and info.st_nlink == stdout.st_nlink == 1 and
+         info.st_dev == stdout.st_dev and info.st_ino == stdout.st_ino and info.st_dev > 0 and info.st_ino > 0, "server_log_file_authority")
+    return {"path": str(SERVER_LOG), "device": str(info.st_dev), "inode": str(info.st_ino), "uid": 0, "mode": 0o600, "links": 1}
+
+
+def validate_server_log_read(expected, candidate_before, candidate_after, file_before, file_after, raw, length):
+    need(canonical(candidate_before) == canonical(candidate_after) == canonical(expected), "server_log_process_changed")
+    need(canonical(file_before) == canonical(file_after), "server_log_rotated")
+    need(isinstance(raw, bytes) and type(length) is int and 0 < length <= SERVER_LOG_LIMIT and len(raw) == length and raw.endswith(b"\n"), "server_log_prefix_incomplete")
+
+
+def validate_server_log_pair(expected, before, after, before_raw, after_raw):
+    keys = {"capturedAt", "candidateBefore", "candidateAfter", "file", "length", "content"}
+    for snapshot, raw in ((before, before_raw), (after, after_raw)):
+        need(set(snapshot) == keys and set(snapshot["file"]) == {"path", "device", "inode", "uid", "mode", "links"}, "server_log_snapshot_schema")
+        facts = snapshot["file"]
+        need(facts["path"] == str(SERVER_LOG) and all(type(facts[key]) is int for key in ("uid", "mode", "links")) and facts["uid"] == 0 and facts["mode"] == 0o600 and facts["links"] == 1 and
+             all(isinstance(facts[key], str) for key in ("device", "inode")) and
+             re.fullmatch(r"[1-9][0-9]*", facts["device"]) and re.fullmatch(r"[1-9][0-9]*", facts["inode"]), "server_log_snapshot_file")
+        descriptor(snapshot["content"])
+        need(hashlib.sha256(raw).hexdigest() == snapshot["content"]["sha256"], "server_log_content_changed")
+        validate_server_log_read(expected, snapshot["candidateBefore"], snapshot["candidateAfter"], facts, facts, raw, snapshot["length"])
+    need(canonical(before["file"]) == canonical(after["file"]) and after_raw.startswith(before_raw), "server_log_prefix_changed")
+    need(datetime.fromisoformat(before["capturedAt"].replace("Z", "+00:00")) <= datetime.fromisoformat(after["capturedAt"].replace("Z", "+00:00")), "server_log_capture_order")
 
 
 def verify_signal_target(state, row, process, boot_id):
@@ -234,6 +315,7 @@ class ClientRun:
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.units = {role: "goby-core-client-" + value["runId"] + "-" + role + ".service" for role in ("gateway", "browser")}
         self.workers, self.failures = {}, []
+        self.server_log_captures, self.server_log_pin = {}, None
 
     def remaining(self, cleanup=False):
         left = BUDGETS["maximumSeconds"] - (0 if cleanup else BUDGETS["cleanupSeconds"]) - (time.monotonic() - self.started)
@@ -271,13 +353,20 @@ class ClientRun:
             need(closeout["sourceAfter"] == RETAINED_SNAPSHOT, "retained_movie_snapshot_changed")
             self.retained = {"closeout": closeout, "snapshot": self.s.descriptor(closeout["sourceAfter"])}
             validate_retained_movie_baseline(closeout, self.retained["snapshot"], self.binding)
+        elif self.value["version"] == 3 and self.value["retainedBaseline"] is not None:
+            closeout = self.s.descriptor(self.value["retainedBaseline"])
+            need(closeout["inputEvidence"]["after"] == MOVIE05_SNAPSHOT, "movie05_snapshot_changed")
+            self.retained = {"closeout": closeout, "snapshot": self.s.descriptor(closeout["inputEvidence"]["after"])}
+            validate_movie05_baseline(closeout, self.retained["snapshot"], self.binding)
         report = self.s.descriptor(self.value["admission"])
         admitted(report, self.value, epoch)
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
         need(verification["passed"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
-             verification["adapterCounts"] == {"tests": 39, "pass": 39, "fail": 0, "skipped": 0} and
-             verification["closerCounts"] == {"testCount": 20, "passed": 20, "failed": 0, "sourceUnchanged": True} and
+             verification["adapterCounts"] == {"tests": 48, "pass": 48, "fail": 0, "skipped": 0} and
+             verification["closerCounts"] == {"testCount": 24, "passed": 24, "failed": 0, "sourceUnchanged": True} and
+             verification["version3Counts"] == {"tests": 12, "pass": 12, "fail": 0, "skipped": 0} and
+             verification["savedMovie05ReplayCounts"] == {"testCount": 13, "passed": 13, "failed": 0, "sourceUnchanged": True} and
              verification["movieCounts"] == {"tests": 16, "pass": 16, "fail": 0, "skipped": 0} and
              all(verification["sourcePins"][filename] == FROZEN[key] for key, filename in SOURCE_FILES.items() if filename.endswith(".mjs")), "verified_client_sources_differ")
         for pin in [self.value["node"], *self.value["sources"].values()]:
@@ -330,6 +419,46 @@ class ClientRun:
         pin = self.save("source-" + label + ".json", value)
         self.save("source-" + label + "-runtime.json", {"candidate": before, "postgres": postgres, "lease": lease})
         return value, pin, before, postgres, lease
+
+    def capture_server_log(self, label):
+        need(self.value["version"] == 3 and label in ("before", "after") and label not in self.server_log_captures, "server_log_capture_scope")
+        self.remaining(cleanup=label == "after")
+        expected = self.epoch["candidateProcess"]
+        metadata = self.modules["gateway"].metadata
+        candidate_before = metadata(expected["pid"])
+        need(canonical(candidate_before) == canonical(expected), "server_log_process_changed")
+        stdout = Path("/proc") / str(expected["pid"]) / "fd/1"
+        path_before = self.s.safe_path(SERVER_LOG)
+        file_before = server_log_file_facts(SERVER_LOG, path_before, stdout.stat())
+        with os.fdopen(os.open(SERVER_LOG, os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
+            opened = os.fstat(stream.fileno())
+            need(canonical(server_log_file_facts(SERVER_LOG, opened, stdout.stat())) == canonical(file_before), "server_log_rotated")
+            length = opened.st_size
+            need(path_before.st_size <= length and 0 < length <= SERVER_LOG_LIMIT, "server_log_file_bound")
+            raw = stream.read(length)
+            final_fd = os.fstat(stream.fileno())
+            need(final_fd.st_size >= length and canonical(server_log_file_facts(SERVER_LOG, final_fd, stdout.stat())) == canonical(file_before), "server_log_truncated_or_redirected")
+        path_after = self.s.safe_path(SERVER_LOG)
+        file_after = server_log_file_facts(SERVER_LOG, path_after, stdout.stat())
+        need(path_after.st_size >= length, "server_log_truncated_or_redirected")
+        candidate_after = metadata(expected["pid"])
+        validate_server_log_read(expected, candidate_before, candidate_after, file_before, file_after, raw, length)
+        captured_at = datetime.now(timezone.utc).isoformat()
+        content = self.s.write_once(self.private / ("server-stdout-" + label + ".raw"), raw)
+        snapshot = {"capturedAt": captured_at, "candidateBefore": candidate_before, "candidateAfter": candidate_after,
+                    "file": file_after, "length": length, "content": content}
+        self.server_log_captures[label] = self.save("server-log-" + label + ".json", snapshot)
+        return snapshot, raw
+
+    def finish_server_log(self):
+        need(all(row.get("closure") and row["closure"]["unit"].get("MainPID") == "0" and row["closure"]["workerPidAbsent"] is True and
+                 row["closure"]["recursiveCgroupPids"] == [] for row in self.workers.values()), "server_log_workers_not_closed")
+        after, raw = self.capture_server_log("after")
+        before, before_raw = self.server_log_before
+        validate_server_log_pair(self.epoch["candidateProcess"], before, after, before_raw, raw)
+        receipt = {"kind": "audited-candidate-client-server-log", "version": 1, "runId": self.value["runId"], "runtimeEpoch": self.value["runtimeEpoch"],
+                   "input": self.input_pin, "controller": self.source_pin, "before": before, "after": after}
+        self.server_log_pin = self.save("server-log.json", receipt)
 
     def show_worker(self, role):
         fields = "Id,LoadState,ActiveState,SubState,MainPID,ExecMainPID,InvocationID,Result,ExecMainStatus,ExecMainCode,ControlGroup,Description,ExecStart,Transient,User,PrivateNetwork,ProtectHome,Restart,RemainAfterExit"
@@ -478,7 +607,10 @@ class ClientRun:
         self.open()
         self.stage = "source_before"
         before, self.before_pin, self.candidate_before, self.postgres_before, self.lease_before = self.source_sample("before")
-        verify_actor_before(before, self.binding, self.value["scenario"], self.retained)
+        verify_actor_before(before, self.binding, self.value["scenario"], self.retained, self.value["version"])
+        if self.value["version"] == 3:
+            self.stage = "server_log_before"
+            self.server_log_before = self.capture_server_log("before")
         self.before_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
         candidate_process = {key: self.candidate_before[key] for key in self.gateway.PROCESS_FIELDS}
         self.gateway_config = {"schemaVersion": 1, "runId": self.value["runId"], "proxyOrigin": self.epoch["candidate"]["publicUrl"], "browserOrigin": self.epoch["candidate"]["publicUrl"],
@@ -517,6 +649,9 @@ class ClientRun:
                     self.failures.append({"stage": "close_" + role, "code": str(error) if isinstance(error, RunError) else "worker_close_failed", "errorType": type(error).__name__})
         self.stage = "source_after"
         after, after_pin, candidate_after, postgres_after, lease_after = self.source_sample("after")
+        if self.value["version"] == 3:
+            self.stage = "server_log_after"
+            self.finish_server_log()
         self.verify_hosting()
         self.after_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
         need(not self.failures, "worker_responsibility_unclosed")
@@ -537,8 +672,10 @@ class ClientRun:
             "observation": self.pin_file(self.output / "browser/observation.json"), "summary": self.pin_file(self.output / "browser/summary.json"), "gatewayAttestation": self.gateway_pin,
             "gatewayIndex": index_pin, "runtimeEpoch": self.value["runtimeEpoch"], "admission": self.value["admission"], "seedBinding": self.value["seedBinding"],
             "sourceBefore": self.before_pin, "sourceAfter": after_pin, "boundary": boundary_pin, "sources": self.value["sources"], "output": str(self.output / "closeout")}
-        if self.value["version"] == 2:
+        if self.value["version"] in (2, 3):
             closeout["retainedBaseline"] = self.value["retainedBaseline"]
+        if self.value["version"] == 3:
+            closeout["serverLog"] = self.server_log_pin
         closeout_input = self.save("closeout-input.json", closeout)
         self.stage = "offline_closeout"
         self.remaining(cleanup=True)
@@ -588,6 +725,8 @@ def main():
         result = {"status": "core_client_run_incomplete", "stage": job.stage, "code": str(error) if isinstance(error, RunError) else "outer_client_operation_failed",
             "errorType": type(error).__name__, "runId": value["runId"], "scenario": value["scenario"], "failures": job.failures, "workers": job.workers,
             "automaticBusinessRetry": False, "controllerBusinessHttpRequests": 0, "receipt": None}
+        if value["version"] == 3:
+            result.update(serverLog=job.server_log_pin, serverLogCaptures=job.server_log_captures)
         try:
             if job.created:
                 result["receipt"] = job.save("failure.json", result)

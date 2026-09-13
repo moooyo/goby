@@ -1,0 +1,79 @@
+{
+  "kind": "audited-movie06-owned-state-checkpoint",
+  "status": "owned_state_closed_client_acceptance_pending",
+  "host": "test-env",
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie06-owned-state-closeout.json",
+    "sha256": "2634f867924b4d28078669ba87069265560b1e8b0b0ba8c67ac5514a3739139f"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-movie06-entry-review-01/close-movie06-owned-state.py",
+    "sha256": "4d4d1d6c58c83ecb5dc7b8049087308cbb3b6dc3630fcbf16b326a73a98a1fb4"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-06/private/source-after.json",
+    "sha256": "c0adcc6fa122b663822c6eaaa76e0d1de0b877385ca51e2433b827e0b1e433bc"
+  },
+  "originalBrowserOutcome": "failed",
+  "originalBrowserFailure": "movie_control_not_unique",
+  "originalBrowserFailurePhase": "movie_detail",
+  "originalBrowserFailureOperation": "movie_detail_title",
+  "clientAcceptance": false,
+  "diagnosticTargetReached": false,
+  "state": {
+    "ownedTablesReviewed": 35,
+    "unchangedTables": 31,
+    "oldRowsDeleted": 0,
+    "allSessionsRevoked": 14,
+    "newSessions": 1,
+    "newDevices": 1,
+    "deviceSequenceDelta": 1,
+    "newActivityEntries": 2,
+    "activitySequenceDelta": 2,
+    "otherSequencesExact": true,
+    "newCountedPlays": 0,
+    "preservedCountedStoppedPlays": 2,
+    "newUnstartedPreparations": 1,
+    "newPreparedId": "play_14f681a7520cf20f4c9234258a75ea97",
+    "previousPreparedId": "play_b2977a52015916374e8a8af16188c191",
+    "previousPreparedState": "Expired",
+    "previousPreparedChangedFields": ["state", "stopped_at", "updated_at"],
+    "preparationPhysicalOrdinal": 254,
+    "userDataExact": true,
+    "userPlayCount": 2,
+    "userResumePositionTicks": 1217878390,
+    "clientPlaybackReferences": 0,
+    "encodingJobs": 0
+  },
+  "savedEvidenceChecks": {
+    "physicalIndexRows": 263,
+    "savedIndexMembersVerified": 526,
+    "completeObservedHttpExchanges": 261,
+    "transportConnectRows": 1,
+    "deniedBeforeUpstreamRows": 1,
+    "criticalCompleteHttpExchanges": 4,
+    "playingReports": 0,
+    "mediaRequests": 0,
+    "pageErrorsBeforePlayback": 0,
+    "sameTokenRejectedAfterLogout": true,
+    "candidateContinuousAsRecorded": true,
+    "postgresContinuousAsRecorded": true,
+    "leaseExactAsRecorded": true,
+    "browserExitCode": 1,
+    "gatewayExitCode": 0,
+    "bothWorkerPidsAbsentAsRecorded": true,
+    "bothWorkerCgroupsEmptyAsRecorded": true,
+    "serverLogPrefixPreserved": true,
+    "serverLogBeforeBytes": 99152,
+    "serverLogAfterBytes": 107828,
+    "originalReceiptsPreserved": true
+  },
+  "closeoutActions": {
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "browserRuns": 0,
+    "serviceActions": 0,
+    "businessWrites": 0
+  },
+  "nextAction": "Keep movie execution paused. Readiness is now verified; its closed-baseline contract remains pending before another movie run. Prepare independent TV browse, MP3, FLAC, episode and subtitle scenarios under separate frozen decisions and serialized owned-state closure. Preserve movie06 history; do not reset the actor, reuse the consumed run or treat zero pre-play page errors as resolution of movie05."
+}

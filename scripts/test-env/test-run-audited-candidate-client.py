@@ -5,6 +5,7 @@ import importlib.util
 import json
 import hashlib
 from pathlib import Path
+import stat
 import sys
 import types
 import unittest
@@ -16,6 +17,9 @@ spec.loader.exec_module(m)
 REPLAY_SAVED = "--replay-retained-snapshot" in sys.argv
 if REPLAY_SAVED:
     sys.argv.remove("--replay-retained-snapshot")
+REPLAY_MOVIE05 = "--replay-movie05-snapshot" in sys.argv
+if REPLAY_MOVIE05:
+    sys.argv.remove("--replay-movie05-snapshot")
 
 
 def fixture():
@@ -54,6 +58,39 @@ def retained_fixture():
         "browserAndGatewayClosed": True, "allElevenSessionsRevoked": True, "clientAcceptance": False, "playbackStarted": False,
         "clientPlaybackReferences": 0, "encodingJobs": 0, "retainedPreparation": {"id": m.RETAINED_PLAY, "authSessionId": m.RETAINED_AUTH, "itemId": item, "ownerCredentialRevoked": True}}
     return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
+
+
+def movie05_fixture():
+    before, binding, unused = retained_fixture()
+    actor = binding["actors"]["movie"]["id"]
+    before["capturedAt"] = "2026-09-13T12:20:00Z"
+    for identity in ("85c836316077f2acd5e4ee2ed56d675d", m.MOVIE05_AUTH):
+        before["tables"]["sessions"].append({"id": identity, "user_id": actor, "kind": "emby", "device_id": "movie05-device", "revoked_at": "2026-09-13T12:10:00Z"})
+    template = before["tables"]["play_sessions"][0]
+    plays = []
+    for identity, (state, auth, counted, position) in m.MOVIE05_HISTORY.items():
+        plays.append({**copy.deepcopy(template), "id": identity, "auth_session_id": auth, "state": state, "counted": counted, "position_ticks": position,
+            "device_id": "synthetic-device" if auth == m.RETAINED_AUTH else "movie05-device",
+            "started_at": "2026-09-13T12:01:00Z" if counted else None, "stopped_at": None if state == "Prepared" else "2026-09-13T12:02:00Z"})
+    before["tables"]["play_sessions"] = plays
+    before["tables"]["user_item_data"][0].update(play_count=2, playback_position_ticks=1217878390, last_played_at="2026-09-13T12:01:00Z")
+    closeout = {"kind": "audited-movie05-owned-state-closeout", "status": "owned_state_closed_client_acceptance_pending", "clientAcceptance": False,
+        "inputEvidence": {"after": copy.deepcopy(m.MOVIE05_SNAPSHOT), "epoch": copy.deepcopy(m.EPOCH)}, "browserOutcome": "failed", "browserExitCode": 1, "gatewayExitCode": 0,
+        "checks": {"authentication": {"allSessionsRevoked": 13}, "ownedData": {"ownedTables": 35, "oldRowsDeleted": 0, "userData": copy.deepcopy(before["tables"]["user_item_data"][0])}}}
+    return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
+
+
+def log_fixture():
+    process = {"pid": 123, "startTicks": "1234", "bootId": "synthetic-boot", "uid": 1001, "exe": "/fixed/goby", "exeDevice": 1,
+        "exeInode": 3, "cmdline": ["/fixed/goby"], "networkNamespace": "net:[1]", "cgroup": "0::/system.slice/candidate.service\n"}
+    info = types.SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=0, st_nlink=1, st_dev=1, st_ino=2)
+    facts = m.server_log_file_facts(m.SERVER_LOG, info, info)
+    raw_before = b'{"msg":"before"}\n'
+    raw_after = raw_before + b'{"msg":"after"}\n'
+    def snapshot(raw, label, at):
+        return {"capturedAt": at, "candidateBefore": copy.deepcopy(process), "candidateAfter": copy.deepcopy(process), "file": copy.deepcopy(facts),
+            "length": len(raw), "content": {"path": str(m.R / ("synthetic-server-" + label + ".raw")), "sha256": hashlib.sha256(raw).hexdigest()}}
+    return process, info, snapshot(raw_before, "before", "2026-09-13T12:20:00Z"), snapshot(raw_after, "after", "2026-09-13T12:20:01Z"), raw_before, raw_after
 
 
 def startup_fixture():
@@ -103,6 +140,130 @@ def startup_fixture():
 
 
 class Guards(unittest.TestCase):
+    def test_version3_requires_movie05_or_null_without_changing_legacy_versions(self):
+        for scenario in m.SCENARIOS:
+            value = fixture()
+            value.update(version=3, scenario=scenario, retainedBaseline=copy.deepcopy(m.MOVIE05_BASELINE) if scenario == "movie" else None)
+            self.assertIs(m.validate_input(value), value)
+            changed = copy.deepcopy(value)
+            changed["retainedBaseline"] = None if scenario == "movie" else copy.deepcopy(m.MOVIE05_BASELINE)
+            with self.subTest(scenario=scenario), self.assertRaisesRegex(m.RunError, "version3_retained_input_authority"):
+                m.validate_input(changed)
+        old = fixture()
+        old.update(version=2, retainedBaseline=copy.deepcopy(m.RETAINED_BASELINE))
+        m.validate_input(old)
+        with self.assertRaises(m.RunError):
+            m.validate_input({**old, "version": 3})
+
+    def test_movie05_baseline_preserves_all_five_plays_and_checks_every_pruning_deadline(self):
+        before, binding, retained = movie05_fixture()
+        self.assertEqual(m.validate_movie05_baseline(retained["closeout"], before, binding)["id"], m.MOVIE05_PREPARED)
+        m.verify_actor_before(before, binding, "movie", retained, 3)
+        for mutate in (lambda row: row["tables"]["play_sessions"].pop(),
+                       lambda row: row["tables"]["play_sessions"][0].update(state="Prepared"),
+                       lambda row: row["tables"]["sessions"][-1].update(revoked_at=None),
+                       lambda row: row["tables"]["user_item_data"][0].update(play_count=0),
+                       lambda row: row["tables"]["client_playback_references"].append({"id": "unknown"})):
+            changed = copy.deepcopy(before)
+            mutate(changed)
+            with self.assertRaises(m.RunError):
+                m.validate_movie05_baseline(retained["closeout"], changed, binding)
+        changed = copy.deepcopy(before)
+        changed["tables"]["play_sessions"][-1]["player_state"]["CanSeek"] = True
+        with self.assertRaisesRegex(m.RunError, "retained_movie_fresh_state_changed"):
+            m.verify_actor_before(changed, binding, "movie", retained, 3)
+        expired = copy.deepcopy(before)
+        expired["tables"]["play_sessions"][-1]["expires_at"] = "2026-09-06T00:00:00Z"
+        retained["snapshot"] = copy.deepcopy(expired)
+        with self.assertRaisesRegex(m.RunError, "retained_movie_pruning_deadline"):
+            m.verify_actor_before(expired, binding, "movie", retained, 3)
+
+    def test_server_log_metadata_requires_fixed_root_file_and_matching_stdout(self):
+        unused, info, before, unused_after, raw, unused_raw = log_fixture()
+        self.assertEqual(before["file"]["device"], "1")
+        self.assertEqual(before["file"]["mode"], 0o600)
+        for fields in ({"st_ino": 3}, {"st_dev": 2}, {"st_uid": 1001}, {"st_nlink": 2}, {"st_mode": stat.S_IFREG | 0o640}, {"st_mode": stat.S_IFIFO | 0o600}):
+            wrong = types.SimpleNamespace(**{**vars(info), **fields})
+            with self.subTest(fields=fields), self.assertRaisesRegex(m.RunError, "server_log_file_authority"):
+                m.server_log_file_facts(m.SERVER_LOG, info, wrong)
+        with self.assertRaises(m.RunError):
+            m.server_log_file_facts("/tmp/another.log", info, info)
+
+    def test_server_log_prefix_guard_rejects_rotation_process_change_truncation_and_partial_lines(self):
+        process, unused, before, after, raw_before, raw_after = log_fixture()
+        m.validate_server_log_pair(process, before, after, raw_before, raw_after)
+        for mutate in (lambda row: row["file"].update(inode="3"), lambda row: row["candidateAfter"].update(startTicks="other"),
+                       lambda row: row.update(length=row["length"]-1), lambda row: row.update(capturedAt="2026-09-13T12:19:59Z"),
+                       lambda row: row["file"].update(uid=False)):
+            changed = copy.deepcopy(after)
+            mutate(changed)
+            with self.assertRaises(m.RunError):
+                m.validate_server_log_pair(process, before, changed, raw_before, raw_after)
+        for raw in (raw_before[:-1], b'X'+raw_after[1:]):
+            changed = copy.deepcopy(after)
+            changed["length"] = len(raw)
+            changed["content"]["sha256"] = hashlib.sha256(raw).hexdigest()
+            with self.assertRaises(m.RunError):
+                m.validate_server_log_pair(process, before, changed, raw_before, raw)
+        with self.assertRaisesRegex(m.RunError, "server_log_prefix_incomplete"):
+            m.validate_server_log_read(process, process, process, before["file"], before["file"], raw_before, m.SERVER_LOG_LIMIT+1)
+
+    def test_server_log_is_saved_after_source_after_even_when_browser_exit_is_one(self):
+        value = fixture()
+        value.update(version=3, retainedBaseline=copy.deepcopy(m.MOVIE05_BASELINE))
+        job = make_job(value)
+        source, job.binding, job.retained = movie05_fixture()
+        actor = job.binding["actors"]["movie"]
+        actor["credentials"] = {"path": str(m.R / "synthetic-credential.json"), "sha256": "a"*64}
+        job.binding["serverId"] = "b"*32
+        process, unused, before, after, raw_before, raw_after = log_fixture()
+        candidate = {**process, "listener": {"host": "127.0.0.1", "port": 19181, "socketInode": "4"}}
+        job.epoch = {"candidateProcess": process, "candidate": {"publicUrl": "http://127.0.0.1:19180", "directUrl": "http://127.0.0.1:19181", "database": "synthetic"},
+            "currentSource": {"sourceManifest": {"sha256": "c"*64}, "binary": {"sha256": "d"*64}}}
+        job.gateway = types.SimpleNamespace(PROCESS_FIELDS=set(process))
+        job.hosting = {"process": process, "listener": candidate["listener"], "executableSha256": "e"*64}
+        job.io = types.SimpleNamespace(pin=lambda: candidate)
+        job.preflight, job.open, job.verify_hosting, job.wait_client = Mock(), Mock(), Mock(), Mock()
+        events = []
+        pin = {"path": str(m.R / "synthetic.json"), "sha256": "f"*64}
+        def save(name, content):
+            events.append(name)
+            return {"path": str(job.private / name), "sha256": "f"*64}
+        def sample(label):
+            events.append("source_"+label)
+            return source, pin, candidate, {"pid": 456}, {"owned": True}
+        def capture(label):
+            events.append("log_"+label)
+            return (before, raw_before) if label == "before" else (after, raw_after)
+        job.save, job.source_sample, job.capture_server_log = save, sample, capture
+        job.start_worker = lambda role, argv: events.append("start_"+role)
+        job.close_worker = lambda role: events.append("close_"+role)
+        job.wait_gateway = lambda: ({"process": process, "listener": {"host": "127.0.0.1", "port": 19180, "socketInode": "5"}}, pin)
+        closed = {"unit": {"MainPID": "0"}, "workerPidAbsent": True, "recursiveCgroupPids": []}
+        job.workers = {"browser": {"closure": closed, "terminal": {"Result": "exit-code", "ExecMainStatus": "1"}},
+                       "gateway": {"closure": closed, "terminal": {"Result": "success", "ExecMainStatus": "0"}}}
+        with self.assertRaisesRegex(m.RunError, "browser_worker_failed"):
+            job.run()
+        self.assertLess(events.index("log_before"), events.index("start_gateway"))
+        self.assertLess(events.index("close_gateway"), events.index("source_after"))
+        self.assertLess(events.index("source_after"), events.index("log_after"))
+        self.assertLess(events.index("log_after"), events.index("server-log.json"))
+        self.assertIsNotNone(job.server_log_pin)
+
+    if REPLAY_MOVIE05:
+        def test_saved_movie05_snapshot_offline_replay(self):
+            def read(pin):
+                raw = Path(pin["path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), pin["sha256"])
+                return json.loads(raw)
+            closeout, saved, binding = read(m.MOVIE05_BASELINE), read(m.MOVIE05_SNAPSHOT), read(m.BINDING)
+            retained = {"closeout": closeout, "snapshot": saved}
+            m.verify_actor_before(copy.deepcopy(saved), binding, "movie", retained, 3)
+            changed = copy.deepcopy(saved)
+            changed["tables"]["play_sessions"][0]["counted"] = True
+            with self.assertRaises(m.RunError):
+                m.verify_actor_before(changed, binding, "movie", retained, 3)
+
     def test_retained_version_is_movie_only_and_preserves_legacy_input(self):
         value = fixture()
         value.update(version=2, retainedBaseline=copy.deepcopy(m.RETAINED_BASELINE))

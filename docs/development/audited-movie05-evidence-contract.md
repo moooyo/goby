@@ -1,5 +1,12 @@
 # Movie05 evidence contract correction
 
+This records the 84-check checkpoint before version-3 integration. The later
+[v3 contract and verification](audited-client-v3-verification.json) integrated
+the cancellation receipt and movie05 baseline, and its single movie06 attempt
+is consumed. The [movie06 plan review](audited-movie06-plan-review.md) controls
+current work; the pending steps described at this historical boundary are not
+a second execution queue.
+
 The [offline verification](audited-movie05-offline-evidence-verification.json)
 passed 84 remote checks: 48 adapter, 24 closeout and 12 whole-run saved-evidence
 checks. No browser, business HTTP, SQL or service operation was performed.

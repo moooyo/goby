@@ -1,0 +1,54 @@
+{
+  "kind": "audited-client-v3-integration-verification",
+  "status": "verified_for_one_bounded_diagnostic_execution",
+  "host": "test-env",
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-v3-component-verification-01/verification.json",
+    "sha256": "994c013949005f3de6171588f1bf234ac13c4026f0cafdd3bf562871a34a0366"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-v3-controller-verification-01/verification.json",
+    "sha256": "8f5bcbc15b04be86943b0722c34a029ed748d75909e61689e39329c46d2627b5"
+  },
+  "sourceSha256": {
+    "controller": "8e32fe7b73457059c978b33eff91b5b790a6682061b7780ab6863a4977d24545",
+    "closer": "dedb3b54a1df8120c0a9baf1d2fe33a0f166557d60009c2e04ce462178416827",
+    "adapter": "3ecbffb851c6d75549a884c0fab6956564708bc6f78fae397cb2b88077cdeda3"
+  },
+  "checks": {
+    "legacyCloseoutAndRetainedSnapshot": 24,
+    "version3GuardsAndOccupiedStateOverlay": 12,
+    "completeSavedMovie05Replay": 13,
+    "controllerAndTwoSavedBaselines": 22,
+    "totalPassed": 71,
+    "failed": 0,
+    "unchangedAdapterChecksReused": 48,
+    "unchangedMovieLifecycleChecksReused": 16,
+    "actualReadOnlyStdoutCapturePassed": true,
+    "stdoutPrefixPreserved": true,
+    "stdoutBeforeBytes": 99152,
+    "stdoutAfterBytes": 99152,
+    "readOnlyCaptureIsNotABrowserRunReceipt": true
+  },
+  "scope": {
+    "physicalAndDurableMovie05EvidenceReplayed": true,
+    "movie05OriginalUiFailurePreserved": true,
+    "syntheticFutureOverlayIsNotObservedPlayback": true,
+    "occupiedHistoryProtected": true,
+    "cancelledEmptyResponseProvidesNoMediaBytes": true,
+    "duplicateOrUnboundCancellationEvidenceRejected": true,
+    "unknownPageErrorGateUnchanged": true
+  },
+  "verificationBusinessActions": {
+    "browserRuns": 0,
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "serviceActions": 0
+  },
+  "clientAcceptance": false,
+  "executionDecision": "audited-movie06-execution-decision.md",
+  "executionStatus": "consumed_by_failed_movie06",
+  "executionCloseout": "audited-core-movie06-owned-state-closeout.json",
+  "diagnosticTargetReached": false,
+  "currentPlanReview": "audited-movie06-plan-review.md"
+}
