@@ -601,6 +601,43 @@ class GatewayTests(unittest.TestCase):
                     self.assertEqual(result["responseBodyWireBytes"], len(response_body))
                     self.assertEqual(result["clientBytesWritten"], len(expected))
 
+    def test_11_listener_inventory_binds_both_protocol_tables_and_pid_ownership(self):
+        listener = {"host": "127.0.0.1", "port": 18250, "socketInode": "7001"}
+        pin, foreign = "7001", "7002"
+
+        def row(address, inode):
+            return ("0: " + address + ":" + format(listener["port"], "04X") + " " +
+                    "0" * len(address) + ":0000 0A 00000000:00000000 00:00000000 00000000 0 0 " +
+                    inode + " 1 0000000000000000\n")
+
+        def table(*rows):
+            return "sl local_address rem_address st tx_queue tr retrnsmt uid timeout inode\n" + "".join(rows)
+
+        empty = table()
+        ipv6_pin = table(row("0" * 32, pin))
+        for name, tcp, tcp6 in (
+            ("ipv4_loopback", table(row("0100007F", pin)), empty),
+            ("ipv4_wildcard", table(row("00000000", pin)), empty),
+            ("ipv6_wildcard", empty, ipv6_pin),
+        ):
+            with self.subTest(listener=name):
+                self.assertEqual(GATEWAY.verify_listener_inventory(tcp, tcp6, listener, {pin}), [pin])
+
+        for address in ("0100007F", "00000000"):
+            with self.subTest(competing_ipv4_address=address):
+                with self.assertRaisesRegex(GATEWAY.GatewayRejected, "^listener_changed$"):
+                    GATEWAY.verify_listener_inventory(table(row(address, foreign)), ipv6_pin, listener, {pin})
+
+        with self.subTest(listener="sole_foreign_inode"):
+            with self.assertRaisesRegex(GATEWAY.GatewayRejected, "^listener_changed$"):
+                GATEWAY.verify_listener_inventory(table(row("0100007F", foreign)), empty, listener, {pin, foreign})
+        with self.subTest(listener="pin_without_pid_fd"):
+            with self.assertRaisesRegex(GATEWAY.GatewayRejected, "^listener_owner_changed$"):
+                GATEWAY.verify_listener_inventory(empty, ipv6_pin, listener, set())
+        with self.subTest(listener="unsupported_address_with_valid_pin"):
+            with self.assertRaisesRegex(GATEWAY.GatewayRejected, "^listener_address_unsupported$"):
+                GATEWAY.verify_listener_inventory(table(row("0100000A", foreign)), ipv6_pin, listener, {pin})
+
 
 def main():
     global GATEWAY, BASE, SUPPORT
@@ -638,7 +675,7 @@ def main():
         os.fsync(stream.fileno())
     print(json.dumps({"test_count": report["test_count"], "passed": report["passed"], "failed": report["failed"],
                       "errors": report["errors"], "source_unchanged": unchanged}), flush=True)
-    return 0 if result.testsRun == 10 and result.wasSuccessful() and unchanged else 1
+    return 0 if result.testsRun == 11 and result.wasSuccessful() and unchanged else 1
 
 
 if __name__ == "__main__":

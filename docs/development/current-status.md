@@ -12,7 +12,7 @@ diagnosis, an audited candidate, core original-client regression and a new main
 upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
 gates and complete M2-M6 requirements remain open. Priority 1 is verified;
-priority 2, independent candidate preparation, is in progress. No new candidate
+priority 2 has a running independent candidate with live admission pending. No new candidate
 admission or main deployment is claimed by this status update.
 
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
@@ -30,7 +30,21 @@ failure classes now survive final shutdown wrappers. The original exit cause
 remains unresolved. A fresh frontend build contains 57 assets, with all 64
 inputs matching the earlier 41-test mocked-API verification. These artifacts
 are selected for the [new candidate](audited-candidate-admission-plan.md);
-they are not yet a deployment or new original-client acceptance.
+they are installed only in that new isolated candidate. Its
+[independent inspection](audited-candidate-runtime-inspection.json) verified
+artifact/configuration, process/listener/lease identity, schema28, an empty
+separate recovery database and three public health responses. One bootstrap
+then created eight accounts and three libraries, copied fourteen approved media
+files, and completed all three scans. Both tool sessions were revoked and their
+tokens rejected. The seed stopped at a mapping check because it accepted only
+`eng` while the recorded English subtitle language is `en`; a read-only mapping
+correction is in progress. Live admission and original-client acceptance remain
+pending, and the seed operation must not be rerun.
+
+The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
+It explicitly separates schema28 forward restoration from source32/schema27
+rollback and supports a main service that remains inactive after reboot.
+No main upgrade or restart has been performed in this increment.
 
 The resumed round closed after reference matrix07, two bounded original-client
 discoveries, a separate Goby comparison contract and independently verified
@@ -88,7 +102,7 @@ feature claims; follow the revised execution plan before creating another run.
 
 | Area | Implemented/verified boundary | Remaining release work |
 | --- | --- | --- |
-| Foundation | Linux Go service, PostgreSQL, native/compatibility identity; audit fixes verified but undeployed | Bounded exit diagnosis, audited candidate admission, migration and recovery safety |
+| Foundation | Linux Go service, PostgreSQL, native/compatibility identity; diagnostic/audit fixes verified and installed in an isolated candidate | Live candidate admission, migration and recovery safety |
 | Catalog | Scanning, local metadata/artwork, stable identities, schema28 root binding, bounded storage observation ownership | Capacity profile, actual blocked-NAS measurements, reboot and filesystem matrix |
 | Playback | Direct playback/state, selected subtitles/events, HLS and progressive software paths | Complete pinned original-client journey and broader formats/seeks |
 | Administration | Users, metadata, sessions, keys, devices, tasks, settings, activity/logs, native backups; audit fixes verified | Selected policy/executor/provider extensions |

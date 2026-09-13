@@ -1,15 +1,20 @@
 # Audited candidate admission
 
-Status: preparation in progress under the
+Status: an isolated candidate is running, pending live admission under the
 [current execution plan](../planning/current-execution-plan.md). No candidate
 has been admitted by this document. Remote verification uses `ssh test-env`.
 
 ## Selected product and existing evidence
 
-Use product commit `a623375`, including R01-R21, plus the bounded exit-diagnostic
-fix once remotely verified. A new build is required for changed backend bytes;
-the previous audit binary is not a build of the diagnostic fix. Schema remains
-28 unless source review and the frozen manifest establish an explicit change.
+The selected product includes R01-R21 and diagnostic commit `a9c541a`.
+The [diagnostic verification](exit-diagnostics-full-verification.json) passed
+2,262 tests across 25 packages with race instrumentation and a Linux build.
+The frozen source archive is
+`74247d7584cb750645474deb2a4fc564f5944a32cd9875b2644209d65fbc89df`;
+the installed candidate binary is
+`a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7`.
+Schema remains 28. The matching frontend has 57 freshly built assets;
+its 64 inputs match the earlier 41-test mocked-API verification.
 
 The [audit receipt](audit-remediation-20260913-verification.json) covers 2,255
 Go tests through composed package evidence, 41 mocked-API frontend tests and a
@@ -26,7 +31,10 @@ It supports `cmd` packages, runs packages serially, reserves recoverydb for last
 retains failures and verifies its own PostgreSQL/process cleanup. Its private
 network's port15432 is not the existing host workspace cluster.
 
-## Verification sequence
+## Completed product verification
+
+The following sequence is complete for the frozen snapshot. Reuse the linked
+receipts; these steps are not a request to repeat the full suite or build.
 
 1. Transfer the tracked source snapshot plus the exact diagnostic changes into
    a new preparation directory. Format changed Go files remotely, return those
@@ -78,3 +86,73 @@ Admission releases this candidate for the existing core client journeys. It
 does not establish original-client playback, NextUp, automatic refresh, a main
 upgrade or M2-M6 completion. The main upgrade still requires a fresh contract and
 independent backup/restore/rollback rehearsal after the core client gate.
+
+## Current scope and bounded live admission
+
+The new scope is
+`/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`, with PostgreSQL
+on loopback 25498 and Goby on loopback 28498. The reserved browser gateway
+origin is `http://127.0.0.1:28496`. Provisioning started each new unit once.
+Its private manifest has SHA256
+`022ca1e48aac6159750df72157dcddff3738e67962012f556825e26b0f0dfb09`.
+It contains secrets and must not be copied into published evidence. Initial
+source state has 28 migrations and zero users; the separate recovery database
+is empty. These initial facts are not a durable claim about later state.
+
+Complete independent process, listener, lease, database, recovery and isolation
+inspection before bootstrap. Then perform one owned bootstrap/seed operation:
+one administrator, six ordinary scenario accounts, one ordinary control account
+with no library access, and three libraries using verified copies of approved
+fixtures. Save actual catalog mappings and private credential descriptors.
+Intent and uncertain write outcomes must survive a controller failure. Only
+the controller's own confirmed credentials are revoked at its closeout.
+
+Freeze a separate admission input after seeding. Use at most 120 HTTP requests
+and 15 minutes, including ten reserved cleanup requests. Observe one continuous
+ten-minute stability window with eleven health/readiness samples, fixed process
+and lease identity, and start/end resource counters. Run the following work
+serially inside that window; polling is bounded by the same request/time limit.
+
+1. Verify native administrator login, cookie/CSRF separation, ordinary-token
+   rejection at native backup routes, and rejection of conflicting credential
+   carriers. Confirm a supported matching query carrier still works.
+2. Verify the seed's three completed scans and exact item/media mappings.
+   Compare visible libraries and item access for the ordinary scenario actor
+   and the denied control actor. Preserve their initial durable playback state.
+3. Create one encrypted backup with a new request ID and retained private
+   passphrase. Require completed operation, ready object, complete bounded
+   download and matching size/SHA256. Plan restoration into the new inactive
+   database, require a ready plan, then cancel that exact plan and verify its
+   terminal state. Cancellation retains the staged inactive database and its
+   ownership marker; require `Rollback.MustReplace=true`, no available rollback,
+   and an unchanged active generation. Do not apply or roll back here.
+4. Close the exact controller sessions and compare owned source data, fixtures,
+   process identity, lease, operation state and resource counters. Retain the
+   encrypted backup, passphrase, operation/audit history and accounts as declared
+   candidate-owned state, together with the cancelled plan's inactive stage.
+   A later replacement must explicitly bind this stage and use
+   `ReplaceRollback=true`; it must not assume the target is still empty.
+   Preserve failed or uncertain operations for review.
+
+Do not infer candidate admission from an HTTP 202, readiness alone, or the
+existing test suite. Unexpected exit, readiness failure, lost lease, OOM or
+memory-limit failures, unexplained data changes or unfinished cleanup fail this admission.
+The window is a bounded integration check, not an availability guarantee.
+Real media advancement, seek/resume durability and user isolation under playback
+remain priority 3. Actual restore application and rollback remain priority 4.
+
+## Original-client hosting preparation
+
+The approved 4.9.5.0 package is extracted into a new persistent scope with a
+new program-data directory and isolated service. The first preparation started
+the service once but its IPv4-only listener checker missed the actual IPv6
+wildcard socket; it sent zero HTTP requests. The
+[failed preparation](audited-original-client-hosting-preparation.json) is retained.
+The gateway's corrected listener check passed
+[11 remote cases](audited-client-gateway-listener-verification.json), including
+rejection of a competing IPv4 listener. A separate
+[read-only reconciliation](audited-original-client-hosting-reconciliation.json)
+made one successful public request against the original invocation, with zero
+new starts, and produced the [hosting binding](audited-original-client-hosting.json).
+The package, executable and launcher were unchanged. This establishes a host
+for subsequent `/web` delivery; it does not establish any browser journey.

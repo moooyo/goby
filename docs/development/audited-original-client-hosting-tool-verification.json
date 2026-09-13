@@ -1,0 +1,44 @@
+{
+  "errors": 0,
+  "failures": 0,
+  "fixtureParent": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/original-client-tool-verification-01",
+  "httpRequests": 0,
+  "kind": "core-av-original-client-pure-guard-report",
+  "namespaceEntered": false,
+  "packageExtracted": false,
+  "passed": 4,
+  "referenceDatabaseRead": false,
+  "reportPath": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/original-client-tool-verification-01/guards.json",
+  "schemaVersion": 1,
+  "scope": "Static unit and argv guards plus isolated filesystem guards; no startup or extraction acceptance",
+  "serviceStarted": false,
+  "source": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/original-client-tool-verification-01/prepare-core-av-original-client.py",
+    "sha256": "9250d0bf71bbc224619677ebd2a8ecc53c4c1156381d7dba8f02459a1f585761"
+  },
+  "sourceUnchanged": true,
+  "testCount": 4,
+  "tests": [
+    {
+      "outcome": "passed",
+      "test": "__main__.HostingGuardTests.test_01_fixed_static_unit_contract_is_accepted_without_mutation"
+    },
+    {
+      "outcome": "passed",
+      "test": "__main__.HostingGuardTests.test_02_restart_launcher_and_writable_scope_drift_are_rejected"
+    },
+    {
+      "outcome": "passed",
+      "test": "__main__.HostingGuardTests.test_03_canonical_and_exclusive_save_preserve_existing_bytes"
+    },
+    {
+      "outcome": "passed",
+      "test": "__main__.HostingGuardTests.test_04_service_arguments_use_only_the_fresh_package_and_programdata"
+    }
+  ],
+  "testsSource": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/original-client-tool-verification-01/test-prepare-core-av-original-client.py",
+    "sha256": "8b6b5e80b5d275667f012563d1ad93baf55ececf0aa4b50bede45eba4faff076"
+  },
+  "vendorAssetsRead": false
+}

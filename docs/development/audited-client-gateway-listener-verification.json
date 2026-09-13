@@ -1,0 +1,27 @@
+{
+  "kind": "audited-client-gateway-listener-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T07:51:02.656998+00:00",
+  "sourcePins": {
+    "client-acceptance-proxy.py": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874",
+    "test-client-acceptance-proxy.py": "91b45b6b05b88c66e22c18f8142b6b0dbf02af71173e28b112ba794ee3e4207d",
+    "client-acceptance-gateway.py": "8c8e962b8d55e1143972e720e55aa99a89dcb49610b729040bbc773b4bab0c2a",
+    "test-client-acceptance-gateway.py": "b283b71bdb601bc0550e8b2b992fffbfb9bbfeaa3422b5d5094f952f7aa9ca27",
+    "reconcile-core-av-original-client.py": "be098b24aab91883e613aec196ad061e2975061e309cf561442853e28a44cc9f"
+  },
+  "compileChecksPassed": 5,
+  "gatewayExitCode": 0,
+  "gateway": {
+    "test_count": 11,
+    "passed": 11,
+    "failed": 0,
+    "errors": 0,
+    "source_unchanged": true
+  },
+  "gatewayReportSha256": "f56b98a4611db3a1f13be42ce42d939366cff026ad1de0293f4fab8c9827eaef",
+  "reusedProxyTests": 16,
+  "reusedProxyReportSha256": "4101eb5511182122668282f2273b5c7105979e3a90744ebc28bfe174637f1b17",
+  "browserStarted": false,
+  "applicationServicesContacted": false,
+  "passed": true
+}

@@ -1,0 +1,129 @@
+{
+  "errorType": "ValueError",
+  "failedCheck": "Actual external subtitle fields differ.",
+  "httpRequests": 0,
+  "itemCount": 10,
+  "items": [
+    {
+      "Id": "36b446dc1c9133016916d8110ad560c8",
+      "IndexNumber": null,
+      "Name": "M3e Client Movie",
+      "ParentId": "170654578a0adf1f8c7d29e5d83ac6ab",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/Movies/M3e Client Movie.mp4",
+      "RunTimeTicks": 6000000000,
+      "Type": "Movie"
+    },
+    {
+      "Id": "5038ef1baea88313732b7897a6fb1f11",
+      "IndexNumber": 1,
+      "Name": "Episode 1-1",
+      "ParentId": "8fb3a7780cc1b69baf64b0535df6e2a5",
+      "ParentIndexNumber": 1,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series/Season 01/M3e Client Series S01E01.mp4",
+      "RunTimeTicks": 6000000000,
+      "Type": "Episode"
+    },
+    {
+      "Id": "ee68f0df8f91b123a39b4d1156a938ff",
+      "IndexNumber": 2,
+      "Name": "Episode 1-2",
+      "ParentId": "8fb3a7780cc1b69baf64b0535df6e2a5",
+      "ParentIndexNumber": 1,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series/Season 01/M3e Client Series S01E02.mp4",
+      "RunTimeTicks": 6000000000,
+      "Type": "Episode"
+    },
+    {
+      "Id": "e080e73964a530dc8e6c52a150362f65",
+      "IndexNumber": 1,
+      "Name": "Episode 2-1",
+      "ParentId": "4e89ec0ac271bc9a2d95819d8b5c6361",
+      "ParentIndexNumber": 2,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series/Season 02/M3e Client Series S02E01.mp4",
+      "RunTimeTicks": 6000000000,
+      "Type": "Episode"
+    },
+    {
+      "Id": "703e75d14ce740875d25ff77975d5d91",
+      "IndexNumber": null,
+      "Name": "M3e Client Series",
+      "ParentId": "120f91ff598066277929b9615f12a5ca",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series",
+      "RunTimeTicks": null,
+      "Type": "Series"
+    },
+    {
+      "Id": "8fb3a7780cc1b69baf64b0535df6e2a5",
+      "IndexNumber": 1,
+      "Name": "Season 01",
+      "ParentId": "703e75d14ce740875d25ff77975d5d91",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series/Season 01",
+      "RunTimeTicks": null,
+      "Type": "Season"
+    },
+    {
+      "Id": "4e89ec0ac271bc9a2d95819d8b5c6361",
+      "IndexNumber": 2,
+      "Name": "Season 02",
+      "ParentId": "703e75d14ce740875d25ff77975d5d91",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/TV/M3e Client Series/Season 02",
+      "RunTimeTicks": null,
+      "Type": "Season"
+    },
+    {
+      "Id": "b9995f7657b8681a93c86562e68faacf",
+      "IndexNumber": null,
+      "Name": "M3e FLAC",
+      "ParentId": "a23be03b7f35efc3c123ebaea8130945",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/Music/M3e Client Audio.flac",
+      "RunTimeTicks": 1800000000,
+      "Type": "Audio"
+    },
+    {
+      "Id": "cf415af8b3ec0a0c93d66c85a94165ca",
+      "IndexNumber": null,
+      "Name": "M3e MP3",
+      "ParentId": "a23be03b7f35efc3c123ebaea8130945",
+      "ParentIndexNumber": null,
+      "Path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/media/Music/M3e Client Audio.mp3",
+      "RunTimeTicks": 1800000000,
+      "Type": "Audio"
+    },
+    {
+      "Id": "a23be03b7f35efc3c123ebaea8130945",
+      "IndexNumber": null,
+      "Name": "M3e Synthetic Album",
+      "ParentId": "7d5760fb7209f90073ced9384b570aba",
+      "ParentIndexNumber": null,
+      "Path": null,
+      "RunTimeTicks": null,
+      "Type": "MusicAlbum"
+    }
+  ],
+  "kind": "recorded-seed-mapping-inspection",
+  "listing": [
+    {
+      "items": 1,
+      "label": "catalog-movies",
+      "total": 1
+    },
+    {
+      "items": 6,
+      "label": "catalog-tv",
+      "total": 6
+    },
+    {
+      "items": 3,
+      "label": "catalog-music",
+      "total": 3
+    }
+  ],
+  "mapping": "failed",
+  "retainedFailureSha256": "5a9c5ff8698ef3746cda143913e7b7a69506d5bbb334b59ead670511114fac82",
+  "sqlQueries": 0
+}

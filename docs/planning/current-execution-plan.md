@@ -2,11 +2,18 @@
 
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
-**priority 1 complete; priority 2 preparation in progress**. The
+**priority 1 complete; priority 2 candidate running, live admission pending**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
 subsequent execution must supply its own evidence and meet the gates below.
+
+The new candidate has passed independent process, lease, database and public
+health [inspection](../development/audited-candidate-runtime-inspection.json).
+The [bounded live admission](../development/audited-candidate-admission-plan.md)
+and core client gates are still open. The
+[new main upgrade contract](../development/audited-main-upgrade-plan.md) is a
+draft; it requires distinct forward-restoration and old-binary rollback proof.
 
 This is the current work queue. [Current status](../development/current-status.md)
 records accepted facts; [delivery and verification](delivery-and-verification.md)
@@ -76,6 +83,13 @@ applicable safety/core-workflow evidence. Do not substitute hashes in an old
 frozen input. NextUp and automatic refresh remain open requirements for their
 full feature claims; they have not passed and have not been removed from scope.
 
+The selected executable migrates a schema27 restore to schema28. Such a restore
+does not establish a usable source32/schema27 rollback database. The draft main
+contract therefore requires an actual old-binary restoration/start in isolation
+from the same fresh recovery point. Likewise, cancelling a ready restore plan
+retains its inactive staged database; later operations must bind that retained
+state explicitly instead of treating the slot as empty.
+
 ## NextUp and automatic-refresh research stop rules
 
 The existing matrix, browser and recovery scopes are closed and consumed. Do
@@ -123,6 +137,14 @@ closure even when the product suite already passed.
 
 Tool changes require targeted checks for the changed failure mode and input
 contract; citing an old helper receipt does not verify newly edited helper code.
+
+Keep public projections distinct from persisted rows. The seed exposed ten
+catalog entries while storage also held the three library collection rows;
+stored policy retained two legacy account flags omitted from the six-field
+managed-policy projection. Before dispatching another reconciliation, exercise
+its complete comparison against the already captured DTOs and stored snapshot.
+Bind explicit representation mappings rather than assuming equal field sets or
+counts, or weakening checks to ignore unexplained extra data.
 
 Preserve old receipts and private artifacts. Reuse their accepted manifests and
 checksums; do not recursively reconstruct every historical scope before every

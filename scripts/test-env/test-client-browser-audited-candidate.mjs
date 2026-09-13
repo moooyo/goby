@@ -80,6 +80,20 @@ function loginBody(manifest, number = 1) {
   };
 }
 
+test('subtitle language keeps either observed English code without normalization', () => {
+  for (const language of ['en', 'eng']) {
+    const manifest = syntheticManifest('subtitles');
+    manifest.catalog.subtitles.forEach(track => { track.language = language; });
+    validateCandidateManifest(manifest);
+    assert.deepEqual(manifest.catalog.subtitles.map(track => track.language), [language, language]);
+  }
+  for (const language of ['fra', 'english', 'EN', '', null]) {
+    const manifest = syntheticManifest('subtitles');
+    manifest.catalog.subtitles[0].language = language;
+    assert.throws(() => validateCandidateManifest(manifest));
+  }
+});
+
 function syntheticGateway(manifest, maxSeconds = 600, started = 9007199254740993000n) {
   const { listener: candidateListener, ...candidateProcess } = clone(manifest.processes.candidate);
   const { listener: gatewayListener, ...gatewayProcess } = clone(manifest.processes.gateway);

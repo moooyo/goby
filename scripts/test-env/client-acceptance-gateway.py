@@ -179,18 +179,40 @@ def metadata(pid):
             "networkNamespace": os.readlink(process / "ns/net"), "cgroup": (process / "cgroup").read_text()}
 
 
+def verify_listener_inventory(tcp, tcp6, listener, owned_inodes):
+    """Require one eligible socket across both protocol tables and its PID owner.
+
+    A wildcard IPv6 row alone does not prove IPv4 reachability. The subsequent
+    IPv4 connect must succeed, and no competing IPv4 listener may be present.
+    """
+    eligible = set()
+    port = format(listener["port"], "04X")
+    for raw, addresses in ((tcp, {"0100007F", "00000000"}), (tcp6, {"0" * 32})):
+        for line in raw.splitlines()[1:]:
+            row = line.split()
+            require(len(row) > 9, "listener_inventory_invalid")
+            address, separator, actual_port = row[1].rpartition(":")
+            require(separator and row[9].isdigit(), "listener_inventory_invalid")
+            if row[3] == "0A" and actual_port == port:
+                require(address in addresses, "listener_address_unsupported")
+                eligible.add(row[9])
+    require(eligible == {listener["socketInode"]}, "listener_changed")
+    require(listener["socketInode"] in owned_inodes, "listener_owner_changed")
+    return sorted(eligible)
+
+
 def verify_listener(pid, listener):
     root = Path("/proc") / str(pid)
-    rows = [line.split() for line in (root / "net/tcp").read_text().splitlines()[1:]]
-    require(any(row[1] in ("0100007F:" + format(listener["port"], "04X"), "00000000:" + format(listener["port"], "04X")) and
-                row[3] == "0A" and row[9] == listener["socketInode"] for row in rows), "listener_changed")
+    tcp, tcp6 = [(root / "net" / name).read_text() for name in ("tcp", "tcp6")]
+    owned = set()
     for path in (root / "fd").iterdir():
         try:
-            if os.readlink(path) == "socket:[" + listener["socketInode"] + "]":
-                return
+            match = re.fullmatch(r"socket:\[([0-9]+)\]", os.readlink(path))
+            if match:
+                owned.add(match[1])
         except FileNotFoundError:
             continue
-    raise GatewayRejected("listener_owner_changed")
+    return verify_listener_inventory(tcp, tcp6, listener, owned)
 
 
 class BoundEndpoint:

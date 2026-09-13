@@ -1,0 +1,35 @@
+{
+  "actualLanguageCodesPreserved": [
+    "en",
+    "en"
+  ],
+  "businessWrites": 0,
+  "capturedAt": "2026-09-13T08:01:34.510698+00:00",
+  "capturedDtoCount": 10,
+  "capturedDtos": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-01/private/actual-catalog-dtos.json",
+    "sha256": "1bb8452924b9f26c45d05b93d62ba0f19ba8c9afea361287dc7a3951aa135404"
+  },
+  "compileChecksPassed": 3,
+  "host": "test-env",
+  "httpRequests": 0,
+  "kind": "audited-candidate-seed-language-verification",
+  "originalFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-01/private/failure.json",
+    "sha256": "5a9c5ff8698ef3746cda143913e7b7a69506d5bbb334b59ead670511114fac82"
+  },
+  "passed": true,
+  "reconciliationInput": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-tool-verification-02/reconciliation-input.json",
+    "sha256": "8deeaf36116f41e60e7ade7936f68e78faf9ddbe129b86eae4f8449d80bed987"
+  },
+  "sourcePins": {
+    "reconcile-audited-candidate-seed.py": "634f27cdb4fb258e3336300870e9c17c9ffda0004d0fd63dbd12bbdd53885252",
+    "seed-audited-candidate.py": "1ec61809d3a161e58fa9f441a9bb21e5256fc8e2509562878810522e55050335",
+    "test-seed-audited-candidate.py": "ab4f1f0bb7a1a18d741f8070ef9616f1fcbe9ed90f5d801d206ade6fa94e7106"
+  },
+  "sqlQueries": 0,
+  "stderrSha256": "698d16d7b93c4bd9707d3cfacda6fb1e0fea99ed0cda6e69bedc42772940540a",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "testsRun": 8
+}

@@ -1,0 +1,203 @@
+{
+  "artifactAndEnvironmentProofReusedFrom": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-runtime-inspection-01/report.json",
+    "sha256": "931ffefb5983d98eef144b3b963950c7c1a74223d57800813b13245b5b6444ce"
+  },
+  "artifactBytesRehashedInFollowup": false,
+  "artifacts": {
+    "binaryBytes": 29552528,
+    "binarySha256": "a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7",
+    "frontendAssetCount": 57,
+    "frontendAssetSetSha256": "e86c3ad020b2cef95ff314f4b42e7e13a8c2e6b25bc0fea15d7425113a7b58fb",
+    "frontendReport": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/frontend-build.json",
+      "sha256": "8a2716ac0fd55c20572bc85ee574b62b9bd23b268e58e1bd759bfad1506fc38f"
+    },
+    "historicalBackendScopeRead": false,
+    "reusedBackendVerificationReference": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T063334Z-935b86b650b6/report.json",
+      "sha256": "c6b154db95f84a9b220bdc0ede367cba0b17ab6ec0ed261de8bb1f2e88dd397b"
+    }
+  },
+  "bootstrapPerformed": false,
+  "candidateAdmissionComplete": false,
+  "capturedAt": "2026-09-13T07:41:22.575411+00:00",
+  "clientAcceptance": false,
+  "counters": {
+    "publicHttpRequests": 3,
+    "readOnlySqlSessions": 8,
+    "unitMetadataCalls": 40
+  },
+  "database": {
+    "allSqlTransactionsReadOnly": true,
+    "cluster": {
+      "dataDirectory": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/postgres/data",
+      "port": "25498",
+      "systemIdentifier": "7684919710846761936",
+      "version": "170011"
+    },
+    "deploymentLease": {
+      "application": "goby",
+      "backendPid": 363615,
+      "backendStart": "2026-09-13T07:33:23.849071+00:00",
+      "candidateConnection": {
+        "localPort": 35524,
+        "pid": 363605,
+        "remotePort": 25498,
+        "socketInode": "310474"
+      },
+      "clientHost": "127.0.0.1",
+      "clientPort": 35524,
+      "database": "goby_candidate_ef77f9ffcf0b",
+      "granted": true,
+      "mode": "ExclusiveLock",
+      "user": "goby_candidate_ef77f9ffcf0b"
+    },
+    "recoveryTargetEmpty": true,
+    "slots": {
+      "recovery": {
+        "identity": {
+          "bypassRls": false,
+          "createDb": false,
+          "createRole": false,
+          "database": "goby_recovery_ef77f9ffcf0b",
+          "databaseOid": 16387,
+          "inherit": false,
+          "login": true,
+          "memberships": 0,
+          "owner": "goby_recovery_ef77f9ffcf0b",
+          "publicDatabasePrivileges": 0,
+          "replication": false,
+          "roleOid": 16386,
+          "superuser": false
+        },
+        "objects": {
+          "foreignFunctions": 0,
+          "foreignRelations": 0,
+          "functions": 0,
+          "relations": 0,
+          "schemaOwner": "pg_database_owner",
+          "schemas": [
+            "public"
+          ],
+          "types": 0
+        }
+      },
+      "source": {
+        "identity": {
+          "bypassRls": false,
+          "createDb": false,
+          "createRole": false,
+          "database": "goby_candidate_ef77f9ffcf0b",
+          "databaseOid": 16385,
+          "inherit": false,
+          "login": true,
+          "memberships": 0,
+          "owner": "goby_candidate_ef77f9ffcf0b",
+          "publicDatabasePrivileges": 0,
+          "replication": false,
+          "roleOid": 16384,
+          "superuser": false
+        },
+        "objects": {
+          "foreignFunctions": 0,
+          "foreignRelations": 0,
+          "functions": 6,
+          "relations": 143,
+          "schemaOwner": "pg_database_owner",
+          "schemas": [
+            "public"
+          ],
+          "types": 70
+        }
+      }
+    },
+    "sourceMigrationCount": 28,
+    "sourceSchemaVersion": 28,
+    "sourceUsers": 0
+  },
+  "failure": null,
+  "firstInspectionRetained": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-runtime-inspection-01/report.json",
+    "sha256": "931ffefb5983d98eef144b3b963950c7c1a74223d57800813b13245b5b6444ce"
+  },
+  "helper": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-runtime-inspection-01/inspect-02.py",
+    "sha256": "2347a80728803612de59d4de34f6a90f7a1005a30f5ed4092813f1915548c5bf"
+  },
+  "historicalScopesRead": false,
+  "httpListener": {
+    "localPort": 28498,
+    "pid": 363605,
+    "remotePort": null,
+    "socketInode": "304982"
+  },
+  "kind": "audited-candidate-runtime-inspection",
+  "manifest": {
+    "path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/manifest.json",
+    "sha256": "022ca1e48aac6159750df72157dcddff3738e67962012f556825e26b0f0dfb09"
+  },
+  "priorFailureInterpretation": "PostgreSQL inet-to-text retained the /32 mask; host(client_addr) now verifies the exact address without changing lease ownership requirements.",
+  "processes": {
+    "postgres": {
+      "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+      "cgroup": "/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-postgres.service",
+      "exe": "/usr/lib/postgresql/17/bin/postgres",
+      "executableDevice": 2049,
+      "executableInode": 365692,
+      "invocationId": "450637ff9d32447eb68ba2f8eeee2fd7",
+      "pid": 363520,
+      "startTicks": "447753",
+      "uid": 103
+    },
+    "server": {
+      "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+      "cgroup": "/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service",
+      "exe": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+      "executableDevice": 2049,
+      "executableInode": 1648910,
+      "invocationId": "c20d6a49979549e8bd905c8396a6e963",
+      "pid": 363605,
+      "startTicks": "447815",
+      "uid": 995
+    }
+  },
+  "publicResponses": [
+    {
+      "bodySha256": "cca55903fc065c308bc958d7cebc0f93c5fdf986deab6c1709d9f63aea917c73",
+      "bytes": 16,
+      "noCookieIssued": true,
+      "route": "/healthz",
+      "status": 200
+    },
+    {
+      "bodySha256": "b203293a5c60843c978abbeaddcb4ccc573aaa9784115b8c35a84b948a3a28c7",
+      "bytes": 19,
+      "noCookieIssued": true,
+      "route": "/readyz",
+      "status": 200
+    },
+    {
+      "bodySha256": "94dda34d73b17516f1c0fe3f0c01f0c963c9efe5da3810cce9085fc5bf809af8",
+      "bytes": 200,
+      "noCookieIssued": true,
+      "route": "/emby/System/Info/Public",
+      "serverId": "e00712d2b622e29aa5e47912995978b9",
+      "startupWizardCompleted": false,
+      "status": 200
+    }
+  ],
+  "restorePerformed": false,
+  "serviceChangesPerformed": false,
+  "softwareProfile": {
+    "actualEncodeAcceptance": false,
+    "decoder": "software",
+    "effectiveEnvironmentMatchesPinnedFile": true,
+    "enabled": true,
+    "encoder": "software",
+    "name": "software-baseline-v1"
+  },
+  "stage": "complete",
+  "status": "ready_pending_live_acceptance",
+  "version": 2
+}

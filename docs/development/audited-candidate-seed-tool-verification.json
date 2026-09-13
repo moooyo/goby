@@ -1,0 +1,18 @@
+{
+  "kind": "audited-candidate-seed-pure-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T07:52:42.000171+00:00",
+  "sourcePins": {
+    "seed-audited-candidate.py": "365363509c9e9b71c2b5ae323ddc9c4a39605a5f6f8596a84a5693d933e1ced7",
+    "test-seed-audited-candidate.py": "06674df27a663be2ccb6fd70e0af0d003f20112b39e17d87dae2c1e8e47daa76"
+  },
+  "compileChecksPassed": 2,
+  "guardExitCode": 0,
+  "testsRun": 7,
+  "passed": true,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "83166b089fbcb82fac63f22522fa6ae99bb5e46368cd35d756277fd463dd6346",
+  "serviceStarts": 0,
+  "databaseOperations": 0,
+  "runtimeProbes": 0
+}

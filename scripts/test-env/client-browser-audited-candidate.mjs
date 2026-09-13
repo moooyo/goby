@@ -83,7 +83,7 @@ export function validateCandidateManifest(value) {
   if (value.scenario === 'subtitles') {
     need(Array.isArray(value.catalog.subtitles) && value.catalog.subtitles.length === 2 &&
       value.catalog.subtitles.every((track, index) => exact(track, ['index', 'codec', 'language', 'external', 'sha256']) &&
-        Number.isSafeInteger(track.index) && track.index >= 0 && track.codec === ['srt', 'vtt'][index] && track.language === 'eng' &&
+        Number.isSafeInteger(track.index) && track.index >= 0 && track.codec === ['srt', 'vtt'][index] && ['en', 'eng'].includes(track.language) &&
         track.external === true && SHA.test(track.sha256)) && value.catalog.subtitles[0].index !== value.catalog.subtitles[1].index);
   }
   if (['mp3', 'flac'].includes(value.scenario)) {
