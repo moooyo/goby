@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after Subtitles01 and main read-only identity preparation. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after Subtitles01 and main startup/capacity preparation. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main deployment | Main remains inactive with matching source32 bytes; private preparation resolves configured paths, lifecycle selection and matching schema27 database binding | Resolve observed backup capacity deficit, startup writes and private recovery materials; then obtain a fresh schema27 backup, distinct restore proofs and core acceptance before promotion |
+| Main deployment | Main remains inactive; identity/configuration and bounded startup facts are observed, a capacity profile is tested/staged and the missing cache directory is prepared | Verify key and installation/recovery materials; admit capacity application and bounded startup only through the reviewed workflow; obtain a fresh schema27 backup, distinct restore proofs and core acceptance before promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 ## Selected product and candidate
@@ -256,6 +256,32 @@ private recovery materials and key witness remain open. No policy change,
 deletion or startup was attempted. Even settled stores and complete migration
 history cannot establish a zero-write normal startup because `ServerID()`
 performs an upsert and subsystems can reconcile work and retention.
+
+The subsequent [startup/capacity checkpoint](audited-main-startup-preparation.json)
+passed the actual configuration loader for current defaults and a prepared
+64 MiB object / 256 MiB total / 128 MiB minimum-free profile. Its conservative
+creation floor is 302,055,424 bytes; final free space was 512,126,976 bytes.
+The profile is staged and installed settings remain unchanged. The default
+8 GiB scratch reservation explains why fixing only the earlier open threshold
+would not make native backup creation fit.
+
+The bounded main read found no scan, task-run, child or encoding recovery
+candidates, no eligible triggers and no thirty-day-expired activity. Setup is
+complete, the managed singleton exists and the task definition matches compiled
+values. The first read stopped before connecting because only socket timestamps
+differed from the earlier observation. The equality check was too strict for
+fields PostgreSQL normally refreshes. Its narrow correction passed seventeen
+remote saved-snapshot checks, then the
+single actual transaction committed and its owned connection/lock closed.
+
+The [startup review](audited-main-startup-preparation.md) records the explicit
+filesystem prerequisite: an absent tmpfs cache path was exclusively created
+empty as `goby:goby`, `0700`, without application markers or a service start.
+One unclosed diagnostic file contains 413 complete bytes and requires a registry
+closure update on startup; no truncation or current-age/count pruning is
+expected. Current `Restart=on-failure` still needs a finite one-invocation policy.
+Next verify private key and installation/recovery materials. Main startup,
+native backup creation and both restoration proofs remain unperformed.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to

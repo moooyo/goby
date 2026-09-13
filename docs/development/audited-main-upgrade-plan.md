@@ -6,7 +6,10 @@ Core original-client acceptance and full main safety facts remain open. The
 [read-only preparation review](audited-main-readonly-preparation.md) extends the
 initial service/file observation with private configured-path selection,
 captured lifecycle/control/backup metadata and actual PostgreSQL/schema27 binding.
-Main remains inactive. These observations do not authorize startup, backup
+The subsequent [startup/capacity preparation](audited-main-startup-preparation.md)
+validates configuration and bounded startup facts, stages the main capacity
+profile and prepares the missing empty cache directory. Main remains inactive.
+These observations do not authorize startup, backup
 creation, migration, restore or promotion.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
@@ -108,7 +111,21 @@ The fresh capacity observation also falls below source32's backup-store open
 threshold: 520,519,680 bytes available versus 570,490,880 required with current
 defaults and metadata reserve. Resolve this through an explicit capacity
 decision before admitting startup; do not test it by starting main or silently
-inherit the candidate's lower limits.
+inherit the candidate's lower limits. The later preparation stages a separately
+validated 64 MiB object / 256 MiB total / 128 MiB minimum-free main profile with
+a 302,055,424-byte conservative creation floor. It is not installed. The current
+default scratch reservation requires 9,160,425,472 free bytes, so passing the
+open threshold alone is insufficient.
+
+The later startup query observes no active scan/task/encoding candidates,
+eligible triggers or expired activity at its clock. The existing binding,
+bootstrap, managed singleton and task-definition presentation are consistent.
+Expected startup effects still include the server-ID upsert, closure of one
+complete 413-byte diagnostic file in its registry and creation of a new log.
+The current-boot cache path has been prepared empty with native markers absent.
+Fresh admission must bind this state, the staged capacity transition and a
+bounded policy replacing the current failure-restart loop; these observations
+do not authorize starting main or prove complete data preservation.
 
 The following fields define the required execution input. Reuse the particular
 facts already captured above and acquire the remaining private reads under verified

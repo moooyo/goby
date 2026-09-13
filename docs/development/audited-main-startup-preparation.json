@@ -1,0 +1,346 @@
+{
+  "kind": "audited-main-startup-preparation-checkpoint",
+  "version": 1,
+  "status": "configuration_and_startup_facts_observed_cache_prepared_capacity_staged",
+  "createdAt": "2026-09-13T19:27:50.049275+00:00",
+  "evidence": {
+    "configurationInspection": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/config-inspection.json",
+      "sha256": "e6077de4ad4e18ecf73920b7b3c71f481e90ec3987bb7c043069d9085bc2fa4c"
+    },
+    "startupFacts": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/startup-facts-02.json",
+      "sha256": "ca97377588948cdf9d8485c36d08346fe5b2e5c2203054df70e1d179a6c2f104"
+    },
+    "startupGuardFailure": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/startup-facts.json",
+      "sha256": "ab8469009262333ce7d6d6a39762506477f6f8721f7e5fe5766561ed1948a38c"
+    },
+    "socketGuardReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/socket-identity-guard-review.json",
+      "sha256": "e88b9e9fe63006c3db7df9604186e5ea93ca472dc7bd96453679296484b81e74"
+    },
+    "fileObservation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/runtime-file-observation.json",
+      "sha256": "b5cc951b42dbf75a2a250505dbc0a94db6251ee3986ff63137ade9ac0f14dee4"
+    },
+    "diagnosticRecovery": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/diagnostic-recovery-observation.json",
+      "sha256": "898e010695d1bc3cef473b76be487b7302763705428c864e09afdad387693ef9"
+    },
+    "cachePreparation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/cache-directory-preparation.json",
+      "sha256": "79776e749c5c22aab048061b0b1aff36c662418abcb69eac7a5deb77c3cb7016"
+    },
+    "unitPolicy": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/unit-policy-review.json",
+      "sha256": "02342cbca69130b116834ecf85cde0745cb6a06667de007b9ea19c0e3a76f756"
+    },
+    "finalOsObservation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/final-os-observation.json",
+      "sha256": "ffeb7ebe0d53bc48d5dc475a23694989719a49eb97118a27644fec904329a105"
+    },
+    "preparedCapacityEnvironment": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/private/proposed-main-backup-capacity.env",
+      "sha256": "7178db15784e3c975b47a80cb7a0387ecf314e4d2880a19cd627ab12b8650ed3"
+    }
+  },
+  "configuration": {
+    "current": {
+      "APIKeyMasterKeyFile": "/var/lib/goby-test/application-key-vault/master.key",
+      "ActivityRetentionDays": 30,
+      "CookieSecure": false,
+      "Database": {
+        "configured": true,
+        "connected": false,
+        "connectionOptions": {
+          "sslmode": "disable"
+        },
+        "database": "goby_test",
+        "host": "127.0.0.1",
+        "passwordPresent": true,
+        "port": 5432,
+        "portExplicit": true,
+        "scheme": "postgresql",
+        "user": "goby_test"
+      },
+      "Diagnostics": {
+        "Directory": "/var/log/goby-test",
+        "MaxFileBytes": 4194304,
+        "MaxFiles": 16,
+        "MinFreeBytes": 33554432,
+        "RetentionDays": 7
+      },
+      "FFmpegPath": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+      "FFprobePath": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+      "ListenAddress": "127.0.0.1:18096",
+      "MediaRoots": [
+        "/opt/goby-fixtures"
+      ],
+      "PublicURL": "http://127.0.0.1:18096",
+      "Recovery": {
+        "Backups": {
+          "Directory": "/var/lib/goby-test/backups-m5j",
+          "MaxObjectBytes": 8589934592,
+          "MaxObjects": 128,
+          "MaxTotalBytes": 34359738368,
+          "MinFreeBytes": 536870912
+        },
+        "Database": {
+          "configured": true,
+          "connected": false,
+          "connectionOptions": {
+            "sslmode": "disable"
+          },
+          "database": "goby_recovery_m5j",
+          "host": "127.0.0.1",
+          "passwordPresent": true,
+          "port": 5432,
+          "portExplicit": true,
+          "scheme": "postgresql",
+          "user": "goby_recovery_m5j"
+        },
+        "Directory": "/var/lib/goby-test/recovery-m5j",
+        "OperationTimeout": "30m0s",
+        "OperationTimeoutNanoseconds": "1800000000000",
+        "OperationsDirectory": "/var/lib/goby-test/recovery-operations-m5j",
+        "PGDumpPath": "/usr/lib/postgresql/17/bin/pg_dump",
+        "PGRestorePath": "/usr/lib/postgresql/17/bin/pg_restore"
+      },
+      "ServerName": "Goby",
+      "SetupTokenPresent": true,
+      "StartupTimeout": "5m0s",
+      "StartupTimeoutNanoseconds": "300000000000",
+      "Transcoding": {
+        "CacheDirectory": "/dev/shm/goby-transcodes-test",
+        "Enabled": true,
+        "Hardware": {
+          "Decode": "software",
+          "Encode": "software"
+        },
+        "MaxAudioChannels": 8,
+        "MaxBitrate": 20000000,
+        "MaxCacheBytes": 134217728,
+        "MaxHeight": 1080,
+        "MaxJobBytes": 33554432,
+        "MaxJobs": 2,
+        "MaxQueueJobs": 16,
+        "MaxRetainedJobs": 128,
+        "MaxSessionJobs": 1,
+        "MaxUserJobs": 1,
+        "MaxWidth": 1920,
+        "MinFreeBytes": 16777216,
+        "Threads": 2
+      },
+      "TrustedProxies": [],
+      "WebDirectory": "/opt/goby-dev/admin"
+    },
+    "proposedBackupPolicy": {
+      "Directory": "/var/lib/goby-test/backups-m5j",
+      "MaxObjectBytes": 67108864,
+      "MaxObjects": 128,
+      "MaxTotalBytes": 268435456,
+      "MinFreeBytes": 134217728
+    },
+    "currentAndProposedLoadValidated": true,
+    "onlyThreeBackupSettingsDiffer": true,
+    "appliedToMain": false,
+    "environmentSourceFilesStillExact": true,
+    "observerBinary": {
+      "bytes": 6820073,
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/private/config-observer",
+      "sha256": "cf9f2cc3a1c44b510c157c0b675bab1f1c64409359e163119c6cf7125aa5ca24"
+    },
+    "temporaryBuildDirectoryRemoved": true,
+    "managedRuntimeSettingsAreSeparate": true
+  },
+  "startupData": {
+    "observedAt": "2026-09-13T19:12:10.376068+00:00",
+    "database": "goby_test",
+    "databasePhysicalBytes": 47494835,
+    "physicalBytesAreNotDumpUpperBound": true,
+    "users": {
+      "administrator_count": 4,
+      "count": 10,
+      "credential_validation_performed": false,
+      "enabled_administrator_count": 4,
+      "enabled_administrator_with_password_count": 4
+    },
+    "setupCompleted": "true",
+    "managedSettings": {
+      "count": 1,
+      "overflow_rejected": false,
+      "review_limit": 128,
+      "rows": [
+        {
+          "compatibility_max_width": 0,
+          "id": 1,
+          "max_audio_channels": null,
+          "max_bitrate": null,
+          "max_height": null,
+          "max_width": null,
+          "revision": 8,
+          "server_name_bytes": null,
+          "server_name_mode": "deployment",
+          "server_name_present": false,
+          "updated_at": "2026-09-10T10:26:41.410062+00:00"
+        }
+      ],
+      "singleton_count": 1
+    },
+    "scanRecoveryCandidates": 0,
+    "taskRunRecoveryCandidates": 0,
+    "linkedChildContextCount": 0,
+    "encodingRecoveryCandidates": 0,
+    "eligibleTriggerCount": 0,
+    "libraryCount": 5,
+    "taskDefinitions": {
+      "compiled_definition_missing": false,
+      "count": 1,
+      "overflow_rejected": false,
+      "review_limit": 128,
+      "rows": [
+        {
+          "category_matches_compiled": true,
+          "description_matches_compiled": true,
+          "emby_key_matches_compiled": true,
+          "enabled": true,
+          "id": "5522b1254d60713dcb79950d818e2310",
+          "key": "library.scan",
+          "name_matches_compiled": true,
+          "revision": 3,
+          "updated_at": "2026-09-10T04:02:43.772246+00:00",
+          "would_disable_unregistered_definition": false,
+          "would_refresh_compiled_presentation": false
+        }
+      ]
+    },
+    "activityExpiredAt30Days": {
+      "configuration_confirmation_required": true,
+      "cutoff_exclusive": "2026-08-14T19:12:10.376068+00:00",
+      "expired_count": 0,
+      "expired_max_created_at": null,
+      "expired_min_created_at": null,
+      "retention_hours": 720
+    },
+    "rawFacts": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/startup-facts-02-facts.json",
+      "sha256": "094d8013885e3d24f255c053f930311723bcce521df4fcf7e6a6b5782f9f8840"
+    },
+    "allDeclaredRowsWithinBounds": true
+  },
+  "unitPolicy": {
+    "commandsFromVerifiedFiles": [
+      {
+        "key": "ExecStart",
+        "value": "/opt/goby-dev/goby"
+      }
+    ],
+    "loadedFilesAndInlineEnvironmentMatch": true,
+    "environmentFilesInOrder": [
+      "/opt/goby-test/runtime.env",
+      "/opt/goby-test/recovery-m5j.env"
+    ],
+    "managerGobyKeys": [],
+    "restart": "on-failure",
+    "restartSec": "3s",
+    "boundedOneInvocationPolicyStillRequired": true,
+    "firstParserFailure": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-startup-preparation-01/unit-policy-attempt-01.json",
+      "sha256": "5662a79b2f5608e583d2c065e0c19c89932063d95cbcfabd70f7924590a2512a"
+    }
+  },
+  "filesystemPreparation": {
+    "cache": {
+      "path": "/dev/shm/goby-transcodes-test",
+      "beforeAbsent": true,
+      "createdEmpty": true,
+      "after": {
+        "bytes": 40,
+        "ctimeNs": "1789327147858920069",
+        "device": 26,
+        "exists": true,
+        "gid": 986,
+        "inode": 5215,
+        "kind": "directory",
+        "links": 2,
+        "mode": 448,
+        "mtimeNs": "1789327147858920069",
+        "uid": 995
+      },
+      "applicationMarkersCreated": 0,
+      "mainStarted": false,
+      "lifetime": "Current boot only; the tmpfs path must be provisioned and validated again after reboot."
+    },
+    "diagnostics": {
+      "registeredFiles": 10,
+      "closedFiles": 9,
+      "unclosedFiles": 1,
+      "unclosedActualBytes": 413,
+      "expectedTruncateBytes": 0,
+      "expectedExistingRegistryClosureUpdate": true,
+      "expectedNewActiveLog": true,
+      "pruningExpectedAtObservation": false,
+      "onlyUnclosedTailReadPrivately": true
+    }
+  },
+  "capacity": {
+    "observedAvailableBytes": 512126976,
+    "metadataReserveBytes": 33619968,
+    "currentOpenRequiredBytes": 570490880,
+    "currentScratchReservationRequiredBytes": 9160425472,
+    "proposedConservativeFreeBytes": 302055424,
+    "proposedConservativeFloorSatisfied": true,
+    "mainConfigurationChanged": false,
+    "nativeArchiveSizeVerified": false,
+    "profileScope": "Small main test fixture only; not a broad catalog capacity claim."
+  },
+  "observationCorrection": {
+    "firstStartupReadConnectedToDatabase": false,
+    "excludedIdentityFields": [
+      "socketFile.mtimeNs",
+      "socketFile.ctimeNs"
+    ],
+    "allOtherIdentityFieldsComparedExactly": true,
+    "fullMetadataObservationsRetained": true,
+    "remoteSavedSnapshotChecks": 17,
+    "specificTouchSyscallCauseClaimed": false,
+    "postgresSourceURLs": [
+      "https://github.com/postgres/postgres/blob/REL_17_11/src/backend/postmaster/postmaster.c#L1825",
+      "https://github.com/postgres/postgres/blob/REL_17_11/src/backend/libpq/pqcomm.c#L829"
+    ]
+  },
+  "closure": {
+    "mainInactive": true,
+    "source55ControlInactive": true,
+    "postgresIdentityStable": true,
+    "ownedDatabaseConnectionsCommittedAndExited": true,
+    "existingDeploymentLockReleasedUnchanged": true,
+    "configurationAndOriginalDiagnosticFilesUnchanged": true,
+    "newCacheDirectoryEmptyAndOwned": true,
+    "configBuildAndObserverProcessesExited": true,
+    "configTmpfsWorkspaceRemoved": true
+  },
+  "activity": {
+    "mainDatabaseReadOnlyConnections": 1,
+    "businessSqlWrites": 0,
+    "mainServiceStarts": 0,
+    "applicationHttpRequests": 0,
+    "applicationConfigurationChanges": 0,
+    "newRuntimeDirectories": 1,
+    "existingEvidenceDeleted": 0,
+    "localVerificationRuns": 0
+  },
+  "limits": {
+    "mainStartupAdmitted": false,
+    "wholeStartupZeroWritesClaimed": false,
+    "privateKeyWitnessChecked": false,
+    "credentialAuthenticationChecked": false,
+    "freshNativeSchema27ArchiveCreated": false,
+    "forwardRestoreProven": false,
+    "source32RollbackProven": false,
+    "coreClientAcceptance": false,
+    "completeDelivery": false
+  },
+  "nextAction": "Verify the selected application-key material against main data, inventory the old installation and recovery materials, then freeze the native backup route and one-invocation startup policy. Keep the capacity profile staged until an admitted transition; preserve the core-client gate and all M2-M6 obligations."
+}

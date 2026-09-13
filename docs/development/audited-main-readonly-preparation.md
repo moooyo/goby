@@ -131,6 +131,11 @@ identity observation is not a future migration freeze or preservation baseline.
 
 ## Remaining preparation
 
+The later [startup/capacity preparation](audited-main-startup-preparation.md)
+completes the configuration and candidate-data observations below, stages a
+validated capacity profile and separately records one empty cache-directory
+creation. This document retains the boundary of the earlier read-only increment.
+
 Static review of source32 (`b9bb7b1cf11e07e011a6e1726ddb9d53ef8e1fe9`)
 narrows the next startup observations:
 
