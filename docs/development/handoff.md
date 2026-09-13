@@ -1,5 +1,16 @@
 # Development handoff
 
+Current planning checkpoint, 2026-09-13: execution is paused at the user's
+request. The [revised execution plan](../planning/current-execution-plan.md)
+is the sole current queue: bounded failure diagnosis, audited candidate
+admission, core client regression, then a freshly designed main upgrade.
+NextUp/global and automatic-refresh research are parked pending new evidence;
+their full feature claims and M2-M6 completion remain open. The old source55
+upgrade design is superseded. This document-only revision ran no tests, probes,
+browser actions or service operations and changed no historical result.
+
+The closeouts below describe completed work, not instructions to resume it.
+
 Current closeout: `2026-09-13T06:01:44Z`. Matrix07 and client01/client02 are
 independently closed. The matrix made 158 requests with ten empty global
 responses; both zero-history clients made no physical NextUp request, including

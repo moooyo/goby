@@ -1,5 +1,20 @@
 # Main service schema28 upgrade plan
 
+Planning revision, 2026-09-13: **superseded design; not an executable upgrade plan**.
+The [current execution plan](../planning/current-execution-plan.md) requires a
+fresh plan for the selected audited product, including R01-R21 and matching
+frontend assets. The source55 pins and historical main PID below are retained
+only as design/evidence history. Do not substitute new hashes or current PIDs
+into an old frozen input or run its source55 promotion sequence.
+
+The former blanket source55 original-client/automatic-refresh prerequisite is
+replaced explicitly: a new internal promotion requires admitted audited bytes,
+core original-client regression, current authority checks and independently
+verified migration/backup/rollback safety. Positive NextUp and automatic refresh
+still gate their feature claims and remain open. They are not prerequisites for
+every unrelated internal upgrade. The revised plan admits no upgrade by itself;
+all new execution inputs and applicable evidence must be concrete first.
+
 Status: design only, 2026-09-12. This document does not authorize replay of an
 existing execution directory and does not report a main-service deployment.
 The original design was prepared from local source and recorded evidence.

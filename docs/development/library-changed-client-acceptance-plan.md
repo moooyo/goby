@@ -1,5 +1,12 @@
 # Source44 original-client automatic refresh acceptance
 
+Planning revision, 2026-09-13: this is a historical consumed design. Automatic
+refresh remains unverified; new research is parked under the
+[current execution plan](../planning/current-execution-plan.md) until there is
+new discriminating evidence. Its feature gate does not block all unrelated
+internal upgrades. The source44-specific lineage and discovery instructions
+below are not a current execution baseline or the next task.
+
 Status: the first candidate-only scope was executed and is now consumed.
 It failed during Movies navigation before any native login or metadata write.
 The original client raised a TypeError after a successful CollectionFolder

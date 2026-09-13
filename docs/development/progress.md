@@ -1,5 +1,13 @@
 # Implementation progress
 
+The 2026-09-13 planning review paused execution and revised the next work order.
+See the [current execution plan](../planning/current-execution-plan.md): bounded
+failure diagnosis, an audited candidate, core client regression and a fresh main
+upgrade contract precede further speculative NextUp research. Feature-specific
+evidence gaps remain open; the complete M2-M6 goal is unchanged. This is a
+documentation checkpoint with no new implementation, verification or deployment.
+The dated entries below retain their original observations and next-step context.
+
 The `2026-09-13T06:01:44Z` closeout completed independent verification of both
 bounded original-client discoveries and source55 candidate recovery. The two
 clients used 61,178 ms cumulatively, made 68 recorder requests, closed all six

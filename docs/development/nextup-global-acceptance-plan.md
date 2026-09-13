@@ -1,5 +1,13 @@
 # Global NextUp reference and client acceptance plan
 
+Planning revision, 2026-09-13: **parked with inconclusive global/client evidence**.
+The [current execution plan](../planning/current-execution-plan.md) controls work
+order and reopening criteria. The future sequence below is a feature-acceptance
+design, not the next task or permission to repeat closed scopes. Reopening
+requires new discriminating public evidence and one bounded hypothesis; unused
+time from the closed discovery is not a new allowance. Positive global NextUp
+still gates this feature's compatibility claims, not every internal deployment.
+
 Execution checkpoint: the [reference matrix07](nextup-global-reference-matrix-07.md)
 completed R0-R4 and cleanup with independent reconstruction. All global
 responses were empty. The [bounded original-client discoveries](nextup-client-discovery-closeout.md)
@@ -256,10 +264,12 @@ appears.
    authenticated actor binding, ordered response IDs, and the visible cards.
    Record the real screen label instead of assuming it is named Next Up. A
    Series details request or injected fetch does not satisfy this step.
-2. If the API gate had no positive global response, use this one bounded UI
-   discovery to observe the client's real parameters and initialization. If
-   it remains empty, stop with the unresolved reference result. Any new
-   parameter hypothesis requires a separately frozen public control; do not
+2. If the API gate had no positive global response, use one bounded UI
+   discovery to observe the client's real parameters and initialization. This
+   allowance was consumed by client01/client02. An observed empty response and
+   no observed request are different outcomes; either leaves positive evidence
+   unresolved. Any newly justified run follows the current reopening criteria.
+   A new parameter hypothesis requires a separately frozen public control; do not
    guess EnableResumable or EnableRewatching behavior.
 3. In a verified positive state, select the card whose ID maps to the expected
    episode. Prove actual media delivery and a progressing player timeline,

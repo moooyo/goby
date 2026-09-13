@@ -1,7 +1,12 @@
 # Separate Goby NextUp comparison contract
 
-Status: planned; not executed. This contract defines a new Goby comparison
-against the completed [reference matrix07](nextup-global-reference-matrix-07.md).
+Status: **parked; not executed**, following the 2026-09-13
+[planning review](../planning/current-execution-plan.md). Run a selected comparison
+only when it resolves a specific product regression or compatibility decision;
+it is not the default next task. The request ceiling below is a maximum, not a
+target or permission to execute every retained control. This contract defines
+a new Goby comparison against the completed
+[reference matrix07](nextup-global-reference-matrix-07.md).
 It creates no fixture, login, database change, service operation or compatibility
 claim. All future execution and verification must use `ssh test-env`.
 

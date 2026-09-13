@@ -44,6 +44,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | Document | Purpose |
 | --- | --- |
 | [Current status](development/current-status.md) | Current implementation, verification, deployment, and remaining delivery gates |
+| [Current execution plan](planning/current-execution-plan.md) | Reviewed work order, gate dependencies, research stop rules and verification scope |
 | [Architecture audit remediation](development/audit-remediation-20260913.md) | Audit findings, repair scope, and the new verification evidence |
 | [Implementation scope](api/implementation-scope.md) | Required API families, staged delivery, explicit exclusions, and legacy candidates |
 | [Implemented surface](api/implemented.md) | Current Go handlers, tested workflows, and remaining compatibility limits |

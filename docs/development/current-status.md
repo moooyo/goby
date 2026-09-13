@@ -4,6 +4,16 @@ This file is the concise current-state index. Historical handoff checkpoints and
 immutable verification receipts retain their original results. Do not interpret
 an old deployment paragraph elsewhere as a fresh process observation.
 
+## Current plan
+
+Execution is paused for the 2026-09-13 planning review. The revised
+[execution plan](../planning/current-execution-plan.md) prioritizes bounded exit
+diagnosis, an audited candidate, core original-client regression and a new main
+upgrade contract. Global NextUp and automatic-refresh research are parked until
+new discriminating evidence justifies another bounded experiment. Their feature
+gates and complete M2-M6 requirements remain open. This review changes no source
+code, runtime or historical verification result.
+
 ## Latest increment
 
 The resumed round closed after reference matrix07, two bounded original-client
@@ -53,21 +63,22 @@ calibrations and 269 requests were completed and replayed. The reference NextUp
 matrix07 has now run and its original bound matrix05 output is consumed. The
 existing proxy remains preserved.
 Consumed preparation, observer, diagnostic, and matrix scopes must not be rerun.
-Client01/client02 and candidate recovery scopes are also consumed. Use the
-[comparison contract](nextup-goby-comparison-contract.md) for a fresh future run;
-the positive global/client prerequisite remains unmet.
+Client01/client02 and candidate recovery scopes are also consumed. The
+[comparison contract](nextup-goby-comparison-contract.md) is parked, not the next
+default action. Positive global/client evidence remains unmet for the relevant
+feature claims; follow the revised execution plan before creating another run.
 
 ## Delivery gates
 
 | Area | Implemented/verified boundary | Remaining release work |
 | --- | --- | --- |
-| Foundation | Linux Go service, PostgreSQL, native/compatibility identity | Preserve migration, upgrade and failure-recovery guarantees |
+| Foundation | Linux Go service, PostgreSQL, native/compatibility identity; audit fixes verified but undeployed | Bounded exit diagnosis, audited candidate admission, migration and recovery safety |
 | Catalog | Scanning, local metadata/artwork, stable identities, schema28 root binding, bounded storage observation ownership | Capacity profile, actual blocked-NAS measurements, reboot and filesystem matrix |
 | Playback | Direct playback/state, selected subtitles/events, HLS and progressive software paths | Complete pinned original-client journey and broader formats/seeks |
 | Administration | Users, metadata, sessions, keys, devices, tasks, settings, activity/logs, native backups; audit fixes verified | Selected policy/executor/provider extensions |
-| NextUp/reference | 158-request matrix and bounded client discovery independently closed; global rule remains unresolved | Positive reference/client control and actual separate Goby comparison |
-| Original-client refresh | Reference v4 and Goby v7 observations are negative | Positive gate remains unmet; no Goby-specific failure is established |
-| Main upgrade | Candidate upgrade accepted | Positive-client gate and fresh independent upgrade preparation |
+| NextUp/reference | 158-request matrix and bounded client discovery independently closed; global rule remains unresolved | Parked until new discriminating evidence; comparison only for a concrete product decision |
+| Original-client refresh | Reference v4 and Goby v7 observations are negative | Automatic-refresh feature gate remains unmet; no Goby-specific failure is established |
+| Main upgrade | Historical source55 candidate upgrade accepted; original main plan superseded | Audited candidate, core client regression and fresh migration/backup/rollback preparation; internal promotion remains partial |
 | Hardware | Software baseline and explicit hardware configuration | Actual remote GPU decode, encode, and combined-path evidence |
 | Packaging | Linux amd64/systemd with external frontend assets | arm64/OCI/embedded assets, supported profile, license and notices |
 | M7 | Deferred | Explicit feature selection and independent acceptance |

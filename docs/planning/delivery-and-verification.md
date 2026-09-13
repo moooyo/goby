@@ -1,6 +1,14 @@
 # Delivery plan and remote compatibility verification
 
-Status: **service foundation, ingestion, metadata/artwork, and original playback increments delivered; full client playback remains in progress**. The current implementation request replaces the initial database proposal with PostgreSQL, requires stable Go/FFmpeg releases, and includes Linux hardware decoding. Completion gates below remain requirements until evidence is recorded; documentation updates alone do not close the reference-server evidence gaps.
+Status: **long-term delivery scope; M2-M6 remain incomplete**. Use the
+[current execution plan](current-execution-plan.md) for work order and the
+[current status](../development/current-status.md) for accepted implementation,
+verification and deployment facts. The 2026-09-13 review pauses execution and
+prioritizes an audited candidate, core client regression and a fresh upgrade
+contract. NextUp and automatic-refresh evidence gaps retain their feature gates
+without blocking every unrelated internal increment. The project requires
+PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
+updates alone do not close any milestone or reference evidence gap.
 
 ## Milestones and dependencies
 
@@ -83,7 +91,12 @@ This is a design checklist for future reviews, not a suite executed during this 
 - URL generation, proxy host/base path, token propagation and redaction, cache/range behavior.
 - Source version, unresolved document conflicts, accepted divergence, and evidence-linked support status.
 
-## Highest-priority evidence gaps
+## Original evidence-gap inventory
+
+This is the initial research inventory, not today's priority queue. Some rows
+now have scoped implementation or reference evidence. Consult the current
+execution plan and status before opening work; retain any broader unsupported
+claim as an open requirement rather than repeating completed research.
 
 | Gap | Resolve before |
 | --- | --- |
@@ -97,7 +110,11 @@ This is a design checklist for future reviews, not a suite executed during this 
 | Plugin/core origin of backup routes and archive format | Any Emby backup import claim |
 | Chosen dependencies, project license and distribution notices | First implementation/source/package release |
 
-## Initial implementation backlog
+## Historical initial implementation sequence
+
+The following sequence records the initial architecture plan. Its foundation,
+authentication and ingestion work is already implemented; do not treat those
+items as new tasks. Current increments and remaining gates are tracked above.
 
 1. Create a Go 1.27.1 module, HTTP transport skeleton, native admin API contract, Linux packaging skeleton with PostgreSQL and FFmpeg 9.0.1 dependencies, and React/MUI admin shell.
 2. Implement one shared authentication/authorization model, PostgreSQL repositories and transactional migrations with pgx/v5, and first-administrator workflow.
