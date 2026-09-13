@@ -25,6 +25,36 @@ def input_value():
     return value
 
 
+def epoch_fixture():
+    value = {key: pin(key) for key in ("runtimeEpoch", "seedRuntimeBinding", "runtimeHelper", "admissionHelper", "compiledCatalog")}
+    value.update(kind="audited-candidate-admission-input", version=2, runId="epoch-admission-01",
+                 output="/opt/goby-test/work/candidate-live-admission-03", budgets=dict(admission.LIMITS))
+    business = {key: {} for key in ("admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources")}
+    seed = {**business, "serverId": "synthetic-server", "helper": pin("original-seed-executor"), "input": pin("original-seed-input"),
+            "candidateManifest": pin("original-provision"), "cleanup": [],
+            "source": {"manifestSha256": "1" * 64, "binarySha256": "2" * 64}, "processes": {"candidate": {"pid": 101}}}
+    current = {"archiveSha256": admission.EPOCH_ARCHIVE_SHA, "schema": 28, "fullReport": pin("current-full-report"),
+               "sourceManifest": {"path": "/opt/goby-test/current-source-manifest", "sha256": "3" * 64},
+               "binary": {"path": "/opt/goby-test/installed-binary", "sha256": "4" * 64}}
+    helpers = {key: pin("runtime-" + key) for key in ("seed", "provision", "gateway", "admission", "reconcile")}
+    epoch = {"runtimeHelper": copy.deepcopy(value["runtimeHelper"]), "seedProvenance": pin("original-seed"),
+             "originalProvision": copy.deepcopy(seed["candidateManifest"]), "currentSource": copy.deepcopy(current),
+             "transitionInput": pin("transition-input"), "helpers": copy.deepcopy(helpers),
+             "candidateProcess": {"pid": 202, "startTicks": "222"},
+             "candidate": {"backendReport": copy.deepcopy(current["fullReport"]), "currentSourceManifest": copy.deepcopy(current["sourceManifest"]),
+                           "binary": copy.deepcopy(current["binary"]), "input": pin("transition-input"),
+                           "serverIdentity": {"pid": 202, "startTicks": "222"},
+                           "listener": {"pid": 202, "port": 28498, "socketInode": "333"}, "ports": {"http": 28498}}}
+    binding = {**copy.deepcopy(business), "serverId": seed["serverId"], "runtimeEpoch": copy.deepcopy(value["runtimeEpoch"]),
+               "originalSeed": copy.deepcopy(epoch["seedProvenance"]), "seedExecutor": copy.deepcopy(seed["helper"]),
+               "seedInput": copy.deepcopy(seed["input"]), "seedCleanup": copy.deepcopy(seed["cleanup"])}
+    full = {"archive_sha256": admission.EPOCH_ARCHIVE_SHA, "worker": {"binary": {"sha256": "4" * 64}}}
+    transition = {"newFullReport": copy.deepcopy(current["fullReport"]), "newSourceManifest": copy.deepcopy(current["sourceManifest"]),
+                  "newBinary": {"path": "/opt/goby-test/build-binary", "sha256": "4" * 64},
+                  "compiledCatalog": copy.deepcopy(value["compiledCatalog"]), "helpers": copy.deepcopy(helpers)}
+    return value, epoch, binding, seed, full, transition
+
+
 def status(staged=False):
     return {"Available": True, "UnavailableReason": "", "RestoreAvailable": True, "RestoreUnavailableReason": "",
             "Busy": False, "ActiveOperationId": "", "GenerationRevision": "0", "Limits": {
@@ -41,6 +71,52 @@ def operation():
 
 
 class AdmissionGuards(unittest.TestCase):
+    def test_v2_input_selects_epoch_without_legacy_runtime_pins(self):
+        value, *_ = epoch_fixture()
+        admission.validate_input(value)
+        legacy = {**value, "inspectionHelper": pin("old-inspector")}
+        with self.assertRaises(admission.AdmissionError):
+            admission.validate_input(legacy)
+        value["budgets"]["maximumRequests"] = 121
+        with self.assertRaises(admission.AdmissionError):
+            admission.validate_input(value)
+
+    def test_v2_preserves_original_seed_and_selects_current_process(self):
+        values = epoch_fixture()
+        original = copy.deepcopy(values[3])
+        current = admission.validate_epoch_admission(*values)
+        self.assertEqual(current, {"pid": 202, "startTicks": "222", "listener": {"host": "127.0.0.1", "port": 28498, "socketInode": "333"}})
+        self.assertEqual(values[3], original)
+        self.assertEqual(values[3]["processes"]["candidate"]["pid"], 101)
+
+    def test_v2_rejects_cross_epoch_or_original_seed_bindings(self):
+        for mutation in (
+                lambda values: values[2].update(runtimeEpoch=pin("another-epoch")),
+                lambda values: values[2].update(originalSeed=pin("another-seed")),
+                lambda values: values[2].update(seedExecutor=pin("another-executor")),
+                lambda values: values[2].update(catalog={"unobserved": True}),
+                lambda values: values[1].update(runtimeHelper=pin("another-runtime")),
+                lambda values: values[1]["candidateProcess"].update(pid=101)):
+            values = epoch_fixture()
+            mutation(values)
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_epoch_admission(*values)
+
+    def test_v2_rejects_full_source_archive_binary_or_catalog_mismatch(self):
+        for mutation in (
+                lambda values: values[1]["currentSource"].update(archiveSha256="a" * 64),
+                lambda values: values[4].update(archive_sha256="a" * 64),
+                lambda values: values[4]["worker"]["binary"].update(sha256="a" * 64),
+                lambda values: values[1]["candidate"].update(backendReport=pin("another-full-report")),
+                lambda values: values[1]["candidate"].update(currentSourceManifest=pin("another-source")),
+                lambda values: values[5].update(compiledCatalog=pin("another-catalog")),
+                lambda values: values[5]["helpers"].update(seed=pin("another-recorder")),
+                lambda values: values[3]["source"].update(manifestSha256="3" * 64)):
+            values = epoch_fixture()
+            mutation(values)
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_epoch_admission(*values)
+
     def test_native_overview_requires_observed_ready_health(self):
         class ReachedNextApi(Exception):
             pass

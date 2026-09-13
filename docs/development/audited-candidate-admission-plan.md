@@ -1,17 +1,26 @@
 # Audited candidate admission
 
-Status: an isolated candidate is running, pending live admission under the
-[current execution plan](../planning/current-execution-plan.md). No candidate
-has been admitted by this document. Remote verification uses `ssh test-env`.
+Status: the isolated candidate is seeded, and live admission is paused under the
+[current execution plan](../planning/current-execution-plan.md). The cancellation
+fix must finish full verification and one owned runtime transition must close
+before admission v2 can run. Admission01 and admission02 are consumed failures;
+admission03 has not started. No candidate has been admitted. Remote verification
+uses `ssh test-env`.
 
 ## Selected product and existing evidence
 
-The selected product includes R01-R21 and diagnostic commit `a9c541a`.
-The [diagnostic verification](exit-diagnostics-full-verification.json) passed
+The selected admission target adds the ready-plan cancellation fix to R01-R21
+and diagnostic commit `a9c541a`. Its frozen archive is
+`b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b`.
+Its full race verification and build are still running. A completed full report,
+source manifest and binary must be bound by the subsequent runtime epoch;
+the initial candidate build is not the new admission target.
+
+The earlier [diagnostic verification](exit-diagnostics-full-verification.json) passed
 2,262 tests across 25 packages with race instrumentation and a Linux build.
-The frozen source archive is
+Its source archive was
 `74247d7584cb750645474deb2a4fc564f5944a32cd9875b2644209d65fbc89df`;
-the installed candidate binary is
+the initially installed candidate binary was
 `a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7`.
 Schema remains 28. The matching frontend has 57 freshly built assets;
 its 64 inputs match the earlier 41-test mocked-API verification.
@@ -26,14 +35,15 @@ The existing isolated runner at
 `/opt/goby-test/audit-fixes-upload-bd962cdf0722/verify-isolated.py` can create fresh
 private network/mount/PostgreSQL scopes for `pure`, `target` and `full` modes.
 Its exact bytes are bound by the [reboot baseline](resumed-delivery-reboot-baseline.json).
-Reuse it unchanged for the new product verification; do not reopen its old runs.
+The current cancellation-fix verification reuses it unchanged in a fresh scope;
+do not reopen its old runs.
 It supports `cmd` packages, runs packages serially, reserves recoverydb for last,
 retains failures and verifies its own PostgreSQL/process cleanup. Its private
 network's port15432 is not the existing host workspace cluster.
 
-## Completed product verification
+## Completed diagnostic product verification
 
-The following sequence is complete for the frozen snapshot. Reuse the linked
+The following sequence is complete for the earlier diagnostic snapshot. Reuse the linked
 receipts; these steps are not a request to repeat the full suite or build.
 
 1. Transfer the tracked source snapshot plus the exact diagnostic changes into
@@ -56,11 +66,11 @@ the resource or ownership checks fail.
 
 ## Candidate ownership and admission
 
-Create a separate candidate installation, systemd unit, endpoint, database/role,
-state directory, credentials and frontend assets after the product gate passes.
-Choose actual names and a free port from fresh observations and record them in
-the execution input. Do not overwrite source55, reuse its private runtime.env,
-clone its recovery binding, or redirect an old reference/client proxy.
+The provisioned candidate has its own installation, systemd unit, endpoint,
+database/role, state directory, credentials and frontend assets. Its names and
+ports are recorded in the original provision manifest. Do not overwrite source55,
+reuse its private runtime.env, clone its recovery binding, or redirect an old
+reference/client proxy.
 
 The [host reboot](resumed-delivery-reboot-baseline.json) invalidated previous
 process identities. Existing source55 and primary files remain controls; their
@@ -68,11 +78,11 @@ inactive service states are the fresh baseline. Inspect the reference/client
 hosting prerequisites before the later browser phase. Any necessary restoration
 uses a fresh owned operation; it is not a rerun of a consumed experiment.
 
-Bootstrap the candidate with its own administrator and ordinary accounts. Use
-read-only copies of the approved movie/TV, MP3/FLAC and SRT/WebVTT fixture bytes
-in new owned roots. Record semantic identity mappings and initial state through
-the candidate's public APIs. Candidate-specific PostgreSQL inspection may verify
-durability; no reference database or vendor source inspection is allowed.
+Bootstrap, account/library creation, fixture copying and the three scans are
+complete and must not be repeated. Reuse the closed seed's actual semantic
+mappings and private credential descriptors. Candidate-specific PostgreSQL
+inspection may verify durability; no reference database or vendor source
+inspection is allowed.
 
 Require a frozen source/binary/asset/schema/process identity; healthy and ready
 responses; correct startup, lease and recovery ownership; relevant live checks
@@ -96,27 +106,38 @@ retained; subsequent closure performed no business writes or HTTP requests.
 
 ## Current scope and bounded live admission
 
-The new scope is
+The provisioned scope is
 `/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`, with PostgreSQL
 on loopback 25498 and Goby on loopback 28498. The reserved browser gateway
 origin is `http://127.0.0.1:28496`. Provisioning started each new unit once.
 Its private manifest has SHA256
 `022ca1e48aac6159750df72157dcddff3738e67962012f556825e26b0f0dfb09`.
-It contains secrets and must not be copied into published evidence. Initial
-source state has 28 migrations and zero users; the separate recovery database
-is empty. These initial facts are not a durable claim about later state.
+It contains secrets and must not be copied into published evidence. At initial
+provisioning the source had 28 migrations and zero users, and the separate
+recovery database was empty. These are historical facts, not the current seeded
+state or the identity of a later runtime epoch.
 
-Complete independent process, listener, lease, database, recovery and isolation
-inspection before bootstrap. Then perform one owned bootstrap/seed operation:
-one administrator, six ordinary scenario accounts, one ordinary control account
-with no library access, and three libraries using verified copies of approved
-fixtures. Save actual catalog mappings and private credential descriptors.
-Intent and uncertain write outcomes must survive a controller failure. Only
-the controller's own confirmed credentials are revoked at its closeout.
+Independent runtime inspection and the one-time seed are complete. Admission01
+stopped during preflight with zero HTTP requests. Admission02 stopped at its
+overview assertion and revoked its one new administrator session, with same-token
+401 proof. Neither attempt created a backup or restore plan; both failure scopes
+remain closed. Do not use admission03 to repeat their operations on the old binary.
 
-Freeze a separate admission input after seeding. Use at most 120 HTTP requests
-and 15 minutes, including ten reserved cleanup requests. Observe one continuous
-ten-minute stability window with eleven health/readiness samples, fixed process
+After the b712 full gate passes, one transition replaces the existing candidate
+binary while preserving seeded data and PostgreSQL continuity. Its closed epoch
+records the current full report, source manifest, installed binary, processes and
+lease. Admission input version 2 selects `runtimeEpoch`, `seedRuntimeBinding`,
+`runtimeHelper` and the matching `compiledCatalog`, together with its own helper,
+run ID, output and budgets. It derives current source authority from the epoch.
+The original seed, its executor and its business mappings remain separate
+provenance; do not rewrite old seed source/process fields to describe the new
+runtime. Transition validation retains the admission02 helper as its historical
+pure validator, while the admission v2 executable has a separate source pin.
+
+Freeze the v2 admission input only after that epoch closes. Use at most 120 HTTP
+requests and 15 minutes: 110 normal requests within 720 seconds and ten cleanup
+requests within the remaining 180 seconds. Observe one continuous
+ten-minute stability window with eleven health/readiness pairs, fixed process
 and lease identity, and start/end resource counters. Run the following work
 serially inside that window; polling is bounded by the same request/time limit.
 

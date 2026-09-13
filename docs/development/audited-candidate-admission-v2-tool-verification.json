@@ -1,0 +1,21 @@
+{
+  "kind": "audited-candidate-admission-v2-pure-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T09:11:01.974606+00:00",
+  "sourcePins": {
+    "admit-audited-candidate.py": "5383501ce76df4511541113e0267956deac8b01150392c5bd2e0b3e15df8333b",
+    "test-admit-audited-candidate.py": "45336404fe9922630670f920c37cb45541412ab96d7cc5fc850c8f9300037de4"
+  },
+  "compileChecksPassed": 2,
+  "guardExitCode": 0,
+  "testsRun": 23,
+  "passed": true,
+  "sourceUnchanged": true,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "b6102bd16e5928fe3d6d717be042b7db700fa15fa3eddabd5d6a7b6641c73368",
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "serviceStarts": 0,
+  "runtimeProbes": 0,
+  "candidateAdmitted": false
+}

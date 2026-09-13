@@ -1,0 +1,37 @@
+{
+  "kind": "audited-candidate-transition-state-review",
+  "status": "reviewed_for_single_transition",
+  "reviewedStateContract": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-transition-state-capture-01/private/reviewed-state-contract.json",
+    "sha256": "f567da53eab55df4a8981b69864b8e7bbfb3db3f349501393deb3c94f9a0e7df"
+  },
+  "retainedAdmission02": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-02/private/report.json",
+    "sha256": "7df6fd2587697c4ef9e10e6f0adf7b11cea975523ddd2eb4f29cb0394398ded1"
+  },
+  "reviewedSnapshot": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-transition-state-capture-01/private/source-snapshot.json",
+    "sha256": "a05c8aa5fe79172e95426bbfa834d9168e0ad0a3f1b64e03f1d240613699f8c6"
+  },
+  "previousSnapshot": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-02/private/source-before.json",
+    "sha256": "f493e13daf379895e5822961a401ba0d41354d6bd4ff497cd34d4edfc51cf906"
+  },
+  "all35TablesReconciled": true,
+  "unchangedTables": 33,
+  "allPreviousRowsPreserved": true,
+  "attributedNewNativeRevokedSessions": 1,
+  "attributedNewSessionActivityRows": 2,
+  "originalMediaFilesAndPermissionsMatched": 14,
+  "currentUsers": 8,
+  "currentLibraries": 3,
+  "currentStoredItems": 13,
+  "currentRevokedSessions": 3,
+  "recoveryEmpty": true,
+  "newSqlQueries": 0,
+  "httpRequests": 0,
+  "serviceActions": 0,
+  "candidateTransitionExecuted": false,
+  "retainedReaderCorrection": "The raw activity table uses actor_id; the first read-only reader used actor_user_id and was retained without recapturing state.",
+  "finalProductGateStillRequired": true
+}

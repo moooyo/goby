@@ -1,0 +1,23 @@
+{
+  "kind": "audited-candidate-transition-pure-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T09:09:41.869048+00:00",
+  "sourcePins": {
+    "audited-candidate-runtime.py": "a984d2b7311e0badf75da0fa201c88141432d16b7d3cd7b1b30183443f87af9d",
+    "transition-audited-candidate.py": "5f0956adcadfb63711a141dd850b4ce39dd763f39f71cf26cc26c55934ce404e",
+    "test-audited-candidate-runtime.py": "eaac32d51f30d64e4266cf5b26e78a02d5ac6b80e46835c153077abca6784f06"
+  },
+  "compileChecksPassed": 3,
+  "guardExitCode": 0,
+  "testsRun": 7,
+  "passed": true,
+  "sourceUnchanged": true,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "bd8b6e98c3fde35b63ab6d268fdd3a11412f774f5efed5e707ad2bef28c91f16",
+  "serviceStarts": 0,
+  "serviceStops": 0,
+  "databaseOperations": 0,
+  "runtimeProbes": 0,
+  "productGateEvaluated": false,
+  "candidateTransitionExecuted": false
+}

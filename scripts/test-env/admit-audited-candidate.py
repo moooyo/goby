@@ -31,6 +31,7 @@ LIMITS = {"maximumSeconds": 900, "cleanupSeconds": 180,
 CATALOG_RELATIVE = "internal/backuppg/catalogs/schema-28-postgresql-17.json"
 SOURCE_MANIFEST_SHA = "6382c327bada158e06a3fda318d6bf85836a7be4457cf523314f87fbb64f8c0b"
 INSPECTION_SHA = "2347a80728803612de59d4de34f6a90f7a1005a30f5ed4092813f1915548c5bf"
+EPOCH_ARCHIVE_SHA = "b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b"
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[a-z][a-z0-9_]{0,62}\Z")
@@ -165,23 +166,55 @@ def import_bytes(name, path, raw):
 
 
 def validate_input(value):
-    fields = {"kind", "version", "runId", "candidateManifest", "seedManifest", "runtimeHelper",
-              "runtimeInspection", "seedHelper", "admissionHelper", "inspectionHelper",
-              "sourceManifest", "compiledCatalog", "output", "budgets"}
+    common = {"kind", "version", "runId", "runtimeHelper", "admissionHelper", "compiledCatalog", "output", "budgets"}
+    versions = {1: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest"},
+                2: common | {"runtimeEpoch", "seedRuntimeBinding"}}
+    need(isinstance(value, dict) and type(value.get("version")) is int and value["version"] in versions,
+         "admission_input_version")
+    fields = versions[value["version"]]
     need(isinstance(value, dict) and set(value) == fields and value["kind"] == "audited-candidate-admission-input"
-         and value["version"] == 1 and value["budgets"] == LIMITS, "admission_input_contract")
+         and value["budgets"] == LIMITS, "admission_input_contract")
     need(isinstance(value["runId"], str) and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}", value["runId"]),
          "invalid_admission_run_id")
     for key in fields - {"kind", "version", "runId", "output", "budgets"}:
         descriptor(value[key])
-    need(value["sourceManifest"]["sha256"] == SOURCE_MANIFEST_SHA and
-         value["inspectionHelper"]["sha256"] == INSPECTION_SHA, "wrong_frozen_source_or_inspector")
+    if value["version"] == 1:
+        need(value["sourceManifest"]["sha256"] == SOURCE_MANIFEST_SHA and
+             value["inspectionHelper"]["sha256"] == INSPECTION_SHA, "wrong_frozen_source_or_inspector")
     output = Path(value["output"])
     need(output.is_absolute() and str(output).startswith("/opt/goby-test/") and ".." not in output.parts and
          output.name.startswith("candidate-live-admission-") and
          all(not Path(value[key]["path"]).is_relative_to(output) for key in fields
              - {"kind", "version", "runId", "output", "budgets"}), "invalid_admission_output_scope")
     return value
+
+
+def validate_epoch_admission(value, epoch, binding, seed, full_report, transition):
+    """Cross-bind current runtime facts without rewriting original seed provenance."""
+    need(value["version"] == 2 and epoch["runtimeHelper"] == value["runtimeHelper"] and
+         binding["runtimeEpoch"] == value["runtimeEpoch"] and binding["originalSeed"] == epoch["seedProvenance"] and
+         binding["seedExecutor"] == seed["helper"] and binding["seedInput"] == seed["input"] and
+         epoch["originalProvision"] == seed["candidateManifest"], "epoch_admission_provenance_cross_binding")
+    for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources"):
+        need(binding[key] == seed[key], "epoch_original_seed_business_changed:" + key)
+    need(binding["seedCleanup"] == seed["cleanup"], "epoch_original_seed_cleanup_changed")
+    source, candidate = epoch["currentSource"], epoch["candidate"]
+    need(source["archiveSha256"] == EPOCH_ARCHIVE_SHA and source["schema"] == 28 and
+         full_report["archive_sha256"] == EPOCH_ARCHIVE_SHA and
+         source["fullReport"] == transition["newFullReport"] == candidate["backendReport"] and
+         source["sourceManifest"] == transition["newSourceManifest"] == candidate["currentSourceManifest"] and
+         source["binary"] == candidate["binary"] and
+         source["binary"]["sha256"] == transition["newBinary"]["sha256"] == full_report["worker"]["binary"]["sha256"] and
+         value["compiledCatalog"] == transition["compiledCatalog"] and candidate["input"] == epoch["transitionInput"] and
+         epoch["helpers"] == transition["helpers"],
+         "epoch_current_source_cross_binding")
+    need(source["sourceManifest"]["sha256"] != seed["source"]["manifestSha256"] and
+         source["binary"]["sha256"] != seed["source"]["binarySha256"], "epoch_cannot_relabel_original_seed_source")
+    process, listener = epoch["candidateProcess"], candidate["listener"]
+    need(process["pid"] == candidate["serverIdentity"]["pid"] == listener["pid"] and
+         process["startTicks"] == candidate["serverIdentity"]["startTicks"] and
+         listener["port"] == candidate["ports"]["http"], "epoch_current_process_cross_binding")
+    return {**process, "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
 
 
 def validate_catalog(catalog, source, pin):
@@ -421,8 +454,10 @@ def reconcile_source(before, after, logins, create_id, backup_id, plan_id):
 
 
 class Admission:
-    def __init__(self, io, helper, inspector, seed, catalog):
+    def __init__(self, io, helper, inspector, seed, catalog, *, epoch=None, binding=None, expected_process=None):
         self.io, self.helper, self.inspector, self.seed, self.catalog = io, helper, inspector, seed, catalog
+        self.epoch, self.binding = epoch, binding
+        self.expected_process = expected_process if epoch is not None else seed["processes"]["candidate"]
         self.phase, self.phase_counts = "preflight", Counter()
         self.logins, self.operations, self.cancel_attempts = {}, {}, set()
         self.samples, self.failures, self.evidence = [], [], {}
@@ -517,18 +552,26 @@ class Admission:
     def preflight(self):
         seed = self.seed
         need(seed["kind"] == "audited-candidate-seed-manifest" and seed["version"] == 1 and
-             seed["status"] == "seeded_pending_live_acceptance" and seed["candidateManifest"] == self.io.value["candidateManifest"] and
-             seed["runtimeInspection"] == self.io.value["runtimeInspection"] and seed["helper"] == self.io.value["seedHelper"] and
-             seed["source"] == {"manifestSha256": SOURCE_MANIFEST_SHA, "binarySha256": self.io.candidate["binary"]["sha256"], "schema": 28} and
-             seed["processes"]["candidate"] == self.io.pin() and seed["playbackRequests"] == 0 and
+             seed["status"] == "seeded_pending_live_acceptance" and seed["playbackRequests"] == 0 and
              len(seed["cleanup"]) == 2 and all(row["logoutAcknowledged"] and row["sameTokenRejected"] for row in seed["cleanup"]),
              "seed_candidate_or_cleanup_binding")
+        if self.epoch is None:
+            need(seed["candidateManifest"] == self.io.value["candidateManifest"] and
+                 seed["runtimeInspection"] == self.io.value["runtimeInspection"] and seed["helper"] == self.io.value["seedHelper"] and
+                 seed["source"] == {"manifestSha256": SOURCE_MANIFEST_SHA, "binarySha256": self.io.candidate["binary"]["sha256"], "schema": 28},
+                 "seed_candidate_or_cleanup_binding")
+            source_input = self.load(self.io.candidate["input"])
+            need(source_input["sourceManifest"] == self.io.value["sourceManifest"], "candidate_source_manifest_cross_binding")
+        else:
+            need(self.io.epoch == self.epoch and self.io.binding == self.binding and self.io.candidate == self.epoch["candidate"],
+                 "epoch_runtime_reader_cross_binding")
+        need(self.expected_process == self.io.pin(), "current_candidate_process_changed")
         need(self.load(seed["catalogFile"]) == seed["catalog"], "seed_catalog_descriptor_changed")
-        source_input = self.load(self.io.candidate["input"])
-        need(source_input["sourceManifest"] == self.io.value["sourceManifest"], "candidate_source_manifest_cross_binding")
         self.inspector.assert_target_cluster()
         self.inspector.database_facts("recovery")
         self.lease = self.inspector.deployment_lease()
+        if self.epoch is not None:
+            need(self.lease == self.epoch["lease"], "epoch_deployment_lease_changed")
         self.before = self.snapshot("source-before")
         tables = self.before["tables"]
         need(len(tables["users"]) == 8 and len(tables["libraries"]) == 3 and
@@ -936,7 +979,7 @@ class Admission:
         need(self.before is not None, "source_baseline_unavailable")
         proof = reconcile_source(self.before, after, self.logins, self.operations["create"]["Id"], self.backup["Id"], self.operations["restore"]["Id"])
         need(self.fixture_files("fixtures-after") == self.fixtures_before, "candidate_fixture_closure_changed")
-        need(self.inspector.deployment_lease() == self.lease and self.io.pin() == self.seed["processes"]["candidate"], "final_process_or_lease_changed")
+        need(self.inspector.deployment_lease() == self.lease and self.io.pin() == self.expected_process, "final_process_or_lease_changed")
         resources = self.resource_counters("resources-after")
         for filename, keys in (("memory.events", ("max", "oom", "oom_kill", "oom_group_kill")), ("pids.events", ("max",))):
             for key in keys:
@@ -958,19 +1001,47 @@ def main():
     os.umask(0o077)
     value = validate_input(parse(initial_read(args.input, args.input_sha256)))
     input_pin = {"path": str(Path(args.input)), "sha256": args.input_sha256}
-    helper_pin = value["seedHelper"]
-    helper = import_bytes("frozen_admission_seed", helper_pin["path"], initial_read(helper_pin["path"], helper_pin["sha256"]))
     need(value["admissionHelper"]["path"] == str(Path(__file__).absolute()), "admission_source_path_differs")
+    epoch, binding, expected_process = None, None, None
+    if value["version"] == 1:
+        helper_pin = value["seedHelper"]
+        helper = import_bytes("frozen_admission_seed", helper_pin["path"], initial_read(helper_pin["path"], helper_pin["sha256"]))
+        inspector_pin = value["inspectionHelper"]
+        inspector_module = import_bytes("frozen_admission_inspection", inspector_pin["path"], helper.read_checked(inspector_pin["path"], inspector_pin["sha256"]))
+        seed = parse(helper.read_checked(**value["seedManifest"]))
+        source_pin = value["sourceManifest"]
+        io = helper.CandidateIO(value, input_pin, value["admissionHelper"])
+        inspector = inspector_module.CandidateInspection()
+        provenance = {"seed": value["seedManifest"], "candidateManifest": value["candidateManifest"]}
+    else:
+        runtime_pin = value["runtimeHelper"]
+        runtime = import_bytes("frozen_admission_epoch", runtime_pin["path"], initial_read(runtime_pin["path"], runtime_pin["sha256"]))
+        epoch = runtime.validate_epoch(parse(initial_read(value["runtimeEpoch"]["path"], value["runtimeEpoch"]["sha256"])))
+        transition = runtime.validate_transition_input(parse(initial_read(epoch["transitionInput"]["path"], epoch["transitionInput"]["sha256"])))
+        need(epoch["runtimeHelper"] == runtime_pin and epoch["helpers"] == transition["helpers"], "epoch_runtime_helper_cross_binding")
+        modules = {key: runtime.load_helper(key, pin) for key, pin in epoch["helpers"].items()}
+        helper = modules["seed"]
+        binding = parse(helper.read_checked(**value["seedRuntimeBinding"]))
+        need(binding["runtimeEpoch"] == value["runtimeEpoch"] and binding["originalSeed"] == epoch["seedProvenance"],
+             "epoch_original_seed_descriptor_changed")
+        seed = parse(helper.read_checked(**binding["originalSeed"]))
+        runtime.validate_seed_runtime_binding(binding, value["runtimeEpoch"], epoch, seed)
+        source_pin = epoch["currentSource"]["sourceManifest"]
+        full_report = parse(helper.read_checked(**epoch["currentSource"]["fullReport"]))
+        runtime.validate_full_report(full_report, full_report["worker"], {"newBinary": epoch["currentSource"]["binary"]})
+        expected_process = validate_epoch_admission(value, epoch, binding, seed, full_report, transition)
+        io = runtime.EpochIO(value, input_pin, value["admissionHelper"], value["runtimeEpoch"], value["seedRuntimeBinding"], modules)
+        inspector = None
+        provenance = {"runtimeEpoch": value["runtimeEpoch"], "seedRuntimeBinding": value["seedRuntimeBinding"],
+                      "runtimeHelper": runtime_pin, "originalProvision": epoch["originalProvision"],
+                      "originalSeed": binding["originalSeed"], "seedExecutor": binding["seedExecutor"],
+                      "currentSource": epoch["currentSource"]}
     helper.read_checked(__file__, value["admissionHelper"]["sha256"])
-    inspector_pin = value["inspectionHelper"]
-    inspector_module = import_bytes("frozen_admission_inspection", inspector_pin["path"], helper.read_checked(inspector_pin["path"], inspector_pin["sha256"]))
-    seed = parse(helper.read_checked(**value["seedManifest"]))
     catalog = parse(helper.read_checked(**value["compiledCatalog"]))
-    source = parse(helper.read_checked(**value["sourceManifest"]))
+    source = parse(helper.read_checked(**source_pin))
     validate_catalog(catalog, source, value["compiledCatalog"])
-    io = helper.CandidateIO(value, input_pin, value["admissionHelper"])
     io.started = run_started
-    job = Admission(io, helper, inspector_module.CandidateInspection(), seed, catalog)
+    job = Admission(io, helper, inspector, seed, catalog, epoch=epoch, binding=binding, expected_process=expected_process)
     def expired(_number, _frame):
         raise AdmissionError("absolute_admission_deadline")
     signal.signal(signal.SIGALRM, expired)
@@ -980,6 +1051,8 @@ def main():
     failure, proof = None, None
     try:
         io.open()
+        if epoch is not None:
+            job.inspector = io.reader
         job.run()
     except Exception as error:
         failure = safe_failure(error, job.phase)
@@ -992,8 +1065,8 @@ def main():
         except Exception as error:
             failure = safe_failure(error, "reconciliation")
     successful = failure is None and not job.failures and proof is not None
-    result = {"kind": "audited-candidate-live-admission", "version": 1, "status": "admitted_for_core_client" if successful else "admission_failed_resources_retained",
-              "input": input_pin, "helper": value["admissionHelper"], "seed": value["seedManifest"], "candidateManifest": value["candidateManifest"],
+    result = {"kind": "audited-candidate-live-admission", "version": value["version"], "status": "admitted_for_core_client" if successful else "admission_failed_resources_retained",
+              "input": input_pin, "helper": value["admissionHelper"], **provenance,
               "failure": failure, "cleanupFailures": job.failures, "budgets": LIMITS, "requests": io.requests, "phaseRequests": dict(job.phase_counts),
               "elapsedMilliseconds": round((time.monotonic() - io.started) * 1000), "stabilitySamples": job.samples,
               "operations": job.operations, "backup": job.backup, "evidence": job.evidence, "preservation": proof,
