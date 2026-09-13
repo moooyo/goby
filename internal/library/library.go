@@ -60,6 +60,7 @@ type Item struct {
 	ChildCount                                                    *int
 	LocalTrailerCount                                             *int
 	Album                                                         *AlbumRef
+	Series, Season                                                *TVParentRef
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
 	Metadata                                                      *metadata.Metadata
@@ -74,6 +75,12 @@ type Item struct {
 type AlbumRef struct {
 	ID, Name     string
 	AlbumArtists []EntityRef
+}
+
+// TVParentRef identifies a validated television parent in the item's library.
+// Name is the parent's current effective catalog display name.
+type TVParentRef struct {
+	ID, Name string
 }
 
 type Query struct {

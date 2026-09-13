@@ -1,0 +1,68 @@
+{
+  "kind": "tv-parent-metadata-targeted-verification",
+  "status": "focused_checks_passed_with_original_fixture_failure_retained",
+  "host": "test-env",
+  "sourceFreeze": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-metadata-preparation-02/source-freeze.json",
+    "sha256": "333128db42477bbfcaab2d00773faacbbdc14dc0ba416a0fc216aa879ca70fbc"
+  },
+  "archive": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-metadata-preparation-02/source-final.tar",
+    "sha256": "b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177"
+  },
+  "initialRun": {
+    "report": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T141156Z-d5a363e3ec72/report.json",
+      "sha256": "90f26801b1047a30513717c51610ca6aeb172206947957eac4b638ba1afd1793"
+    },
+    "workerReportSha256": "e2ddf7206cf3723bc0089bb10e6de876e1141ef61354968ad872f0cca4f66652",
+    "status": "failed",
+    "passed": 20,
+    "failed": 1,
+    "skipped": 0,
+    "failedTest": "TestHTTPTVParentMetadataPreservesAuthorizedHierarchyAcrossRoutes",
+    "cause": "The new HTTP fixture expected a normalized season name and used an unsupported item-detail route.",
+    "sourceAndCleanupExact": true
+  },
+  "correctedHttpRun": {
+    "report": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T141528Z-81b3e90b6eef/report.json",
+      "sha256": "3075d6faf5bb5f13581a0d78d34ab6b72183e2f6081721799ff2ed4334b35ae9"
+    },
+    "workerReportSha256": "fe09ce3b95bdbc29f1748b354e76a5e80b27a64f4e05e071d230efee462e7a75",
+    "status": "passed",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "onlyChangedFile": "internal/server/items_tv_parents_integration_test.go",
+    "sourceAndCleanupExact": true
+  },
+  "effectiveFocusedTestsPassed": 21,
+  "unchangedChecksExplicitlyReused": 20,
+  "raceEnabled": true,
+  "coverage": [
+    "Authorized direct, list and batch parent projections",
+    "Effective catalog rename and legal virtual parents",
+    "Cross-library, wrong-type, missing and repeated parent edges",
+    "Permanent auxiliary and reserved-parent exclusion",
+    "Default Episode and Season DTO relationships",
+    "Ordinary and administrator HTTP access boundaries",
+    "Existing metadata and music projection",
+    "Historical schema13 projection"
+  ],
+  "existingServicesModified": false,
+  "allWorkersClosed": true,
+  "subsequentCacheRelease": {
+    "report": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-target-cache-release-01/report.json",
+      "sha256": "07cb53c839cd7d94ca3eef2028718355c1d3da8f078a5d4fcb67ebe2a81c3529"
+    },
+    "scope": "Only the build-cache directories of these two completed targeted runs",
+    "logicalBytesReleased": 518562973,
+    "originalReportsSourceLogsModulesDatabasesAndArtifactsRetained": true,
+    "currentFullTouched": false
+  },
+  "fullVerification": "tv-parent-metadata-full-verification.json",
+  "candidateUpdated": false,
+  "clientAcceptance": false
+}

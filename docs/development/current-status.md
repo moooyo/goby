@@ -9,7 +9,7 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, exit diagnostics and the late restore-cancellation fix are implemented and verified | Address the evidenced TV parent DTO difference; verify changed product inputs before selection |
+| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Install and admit the verified TV metadata successor through the reviewed transition |
 | Audited candidate | Selected binary/configuration, seeded catalog and live admission04 passed | Preserve its identity and owned state during client work |
 | Core original client | Movie05 playback and TV browse01 navigation observed; both formal results failed and owned states closed | Complete strict movie/TV acceptance, episode, MP3, FLAC and external-subtitle scenarios |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
@@ -127,9 +127,19 @@ remain. The controller still pins the prior adapter; no new browser run has
 used the correction.
 
 An existing reference Episode detail also proves a distinct product difference:
-SeriesId, SeasonId and their names are present there but absent from Goby's
-mapper. The next bounded increment adds authorized parent metadata and verifies
-its hierarchy/access and DTO behavior. This is not a Live TV feature expansion;
+SeriesId, SeasonId and their names were absent from Goby's mapper. The
+[authorized parent metadata increment](tv-parent-metadata.md) now implements
+the observed default Episode and Season fields through the existing read
+transaction, with same-library ordinary-parent constraints. Its 21 effective
+[focused checks](tv-parent-metadata-targeted-verification.json) passed: twenty
+unchanged checks plus a corrected HTTP fixture rerun. The first fixture failure
+remains retained. [Full verification](tv-parent-metadata-full-verification.json)
+passed 2,270 tests/25 packages with race instrumentation and a Linux build,
+without failures or skips. Raw test events, source/archive/manifest and binary
+were independently reconciled; the isolated worker/PG are closed. Binary
+`b0d6769c...` from archive `b363afdc...` is the selected successor, awaiting the
+[current-state transition](tv-parent-candidate-transition-plan.md). The running
+candidate remains `477d26ad...`. This is not a Live TV feature expansion;
 the nearby `/LiveTv/Programs` 404 is only a timing lead for the unresolved error.
 Affected client runs stay paused while the selected product/tools are prepared.
 The consumed TV actor now needs retained-state admission before any future

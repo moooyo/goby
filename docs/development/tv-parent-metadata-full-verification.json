@@ -1,0 +1,257 @@
+{
+  "kind": "tv-parent-metadata-full-verification",
+  "status": "passed",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T15:06:50.360801+00:00",
+  "report": {
+    "path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/report.json",
+    "sha256": "2dc580db7e44bc2b01f6dc843f147d70588fa381bfd706560fbec2f68b228bfc"
+  },
+  "workerReport": {
+    "path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/worker-report.json",
+    "sha256": "4d65de4801e261de49ed41024a0506d23a521957ee4b312494a12b5031bf99f5"
+  },
+  "archive": {
+    "path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source.tar",
+    "sha256": "b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177"
+  },
+  "sourceManifest": {
+    "path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json",
+    "sha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff"
+  },
+  "sourceArchiveManifestAndActualTreeAgree": true,
+  "sourceFileCount": 4870,
+  "packagesPassed": 25,
+  "testsPassed": 2270,
+  "failed": 0,
+  "skipped": 0,
+  "raceEnabled": true,
+  "rawEventsReconciled": true,
+  "newTestsPassed": [
+    "TestHTTPTVParentMetadataPreservesAuthorizedHierarchyAcrossRoutes",
+    "TestTVParentDTODoesNotInventUnprovenOrInapplicableRelationships",
+    "TestTVParentDTOObservedRelationshipsAreDefaultFields",
+    "TestTVParentQueriesHideAuxiliaryAndReservedParents",
+    "TestTVParentQueriesRejectInvalidEdgesAndKeepProvenSeason",
+    "TestTVParentQueriesUseCurrentCatalogNamesAcrossReadEntrypoints"
+  ],
+  "packages": [
+    {
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 19
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/activity",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 14
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 85
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 32
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/config",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 27
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 55
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 41
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/events",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 134
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 600
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 17
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 117
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/playback",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 170
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 26
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverycontrol",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 16
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 546
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/settings",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 27
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 11
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 12
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 55
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 169
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverydb",
+      "result": "pass",
+      "exit_code": 0,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_passes": 11
+    }
+  ],
+  "binary": {
+    "bytes": 29561402,
+    "path": "bin/goby-linux-amd64",
+    "sha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+    "absolutePath": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/bin/goby-linux-amd64"
+  },
+  "cleanup": {
+    "only_worker_process_remains": true,
+    "owned_postgres_stopped": true,
+    "private_bind_removed": true,
+    "source_unchanged": true
+  },
+  "recursiveCgroupEmpty": true,
+  "existingServicesModified": false,
+  "candidateUpdated": false,
+  "candidateAdmitted": false,
+  "mainUpdated": false
+}

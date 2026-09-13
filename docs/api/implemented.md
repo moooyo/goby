@@ -233,8 +233,8 @@ The [configuration contract](configuration.md) defines the five closed projectio
 | `GET /emby/Items/{Id}/Similar` | Same-type authorized candidates, reference-constrained scoring, returned-page counts and artist exclusions; source20's tests and scoped original-client 200 transfer are historical evidence; see [current status](../development/current-status.md) for present deployment and acceptance boundaries |
 | `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
 | `GET /emby/Shows/NextUp` | SeriesId selects the unplayed sequence after the watched cursor; global mode selects one continuation per series under a documented Goby policy; [evidence boundary](../development/next-up.md) |
-| `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
-| `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; the query-result envelope is confirmed by the reference capture |
+| `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order; proved same-library SeriesId/SeriesName are default relationship fields |
+| `GET /emby/Shows/{Id}/Episodes` | Episodes with `Season`/`SeasonId` filtering and season/episode ordering; proved Series/Season IDs and catalog names are default fields in lists and details; [parent projection boundary](../development/tv-parent-metadata.md) |
 | `GET /emby/Genres`, `/emby/Tags`, `/emby/Studios`, `/emby/Persons` | ACL-filtered entity lists with search, selected source-item filters, paging, and pre-pagination totals; Tags returns `{Name, Id}` entries with string IDs |
 | `GET /emby/Genres/{Name}`, `/emby/Studios/{Name}`, `/emby/Persons/{Name}` | A single visible entity DTO; no list envelope and no fabricated entity user state |
 | `GET /emby/Items/{Id}/Images` | Authenticated, library-authorized image metadata array; actual dimensions and size, with authorized local paths |

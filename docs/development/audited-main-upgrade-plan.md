@@ -25,6 +25,15 @@ The [full verification](restore-cancellation-full-verification.json) passed
 2,264 tests across 25 packages with race instrumentation and a Linux build.
 Bind these identities and all 57 frontend assets from their exact receipts.
 
+The later [TV parent metadata increment](tv-parent-metadata.md) has also passed
+full verification: 2,270 tests/25 packages and a Linux build. Its selected
+successor binary is `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
+pending the [candidate transition](tv-parent-candidate-transition-plan.md) and
+affected live admission. The `477d26ad...` identity above records the currently
+running admitted predecessor. Freeze main against the final admitted successor
+and its actual core-client evidence, rather than promoting that predecessor
+through stale product pins.
+
 [Live admission04](audited-candidate-live-admission-closeout.json) passed under
 configuration epoch SHA256
 `72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e`.

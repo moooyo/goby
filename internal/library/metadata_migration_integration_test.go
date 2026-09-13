@@ -186,7 +186,7 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		// The historical catalog predates permanent theme classification. Supply
 		// its original ordinary-child and ordinary-ancestor semantics without
 		// querying the tables introduced by migrations 26 and 27.
-		for _, alias := range []string{"child", "parent"} {
+		for _, alias := range []string{"child", "parent", "tv_parent", "tv_series"} {
 			columns = strings.ReplaceAll(columns, ordinaryItemSQL(alias), "true")
 		}
 		if strings.Contains(columns, "item_metadata_state") {

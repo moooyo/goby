@@ -2,7 +2,7 @@
 
 Reviewed on 2026-09-13 after TV browse01. Status: **audited product verified and
 candidate admitted; core client acceptance open; client execution paused;
-authorized TV parent metadata is the next product increment**. This is the active work queue.
+TV parent metadata verified; its candidate transition is in preparation**. This is the active work queue.
 [Current status](../development/current-status.md) records accepted facts;
 [delivery and verification](delivery-and-verification.md) retains the complete
 M2-M6 obligations. Historical plans and consumed run inputs are evidence, not
@@ -45,9 +45,15 @@ a real TV parent-metadata difference in the product; fixing the checker alone
 does not resolve it.
 
 Follow the [TV evidence review](../development/audited-tv-browse01-evidence-review.md).
-The next bounded increment implements the evidenced Series/Season identity and
-name projection through existing authorized queries, with meaningful access,
-hierarchy and DTO regressions and the required final product verification.
+The evidenced Series/Season identity and name projection is implemented through
+existing authorized queries. Its 21 effective focused tests and the
+[full verification](../development/tv-parent-metadata-full-verification.json)
+passed: 2,270 tests/25 packages with race instrumentation and a Linux build,
+zero failures/skips, reconciled source/artifacts and complete isolated cleanup.
+The corrected HTTP fixture and its original failed run remain recorded.
+Prepare the [current-epoch candidate successor](../development/tv-parent-candidate-transition-plan.md)
+using the existing transition tool, with exact retained state and historical
+hosting provenance. The new binary is selected but has not been installed.
 Keep client runs paused until the selected product/tool inputs are reviewed.
 Do not expand this into Live TV or reopen global NextUp research on an error
 timestamp alone.

@@ -458,6 +458,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	}
 	addLocalMetadata(dto, item.Metadata, item.Entities, fields, detail)
 	addMusicCatalogFields(dto, item)
+	addTVParentFields(dto, item)
 	if item.UserData != nil {
 		dto["UserData"] = userDataDTO(*item.UserData, false)
 	}
