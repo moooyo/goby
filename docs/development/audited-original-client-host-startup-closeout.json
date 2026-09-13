@@ -1,0 +1,72 @@
+{
+  "clientAcceptance": false,
+  "completeApiResponses": 12,
+  "hosting": {
+    "path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json",
+    "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"
+  },
+  "kind": "audited-original-client-host-startup-closeout",
+  "libraryCount": 0,
+  "networkConfiguration": {
+    "AutoRunWebApp": false,
+    "EnableAutoUpdate": false,
+    "EnableAutomaticRestart": false,
+    "EnableHttps": false,
+    "EnableRemoteAccess": false,
+    "EnableUPnP": false,
+    "HttpServerPortNumber": 28497,
+    "LocalNetworkAddresses": [
+      "127.0.0.1"
+    ],
+    "PublicPort": 28497,
+    "ServerName": "Goby Core AV Original Client Host 01"
+  },
+  "ownedAdminCount": 1,
+  "preservation": {
+    "candidateContinuous": true,
+    "hostingContinuous": true,
+    "leaseExact": true,
+    "ownedTablesExact": 35,
+    "postgresContinuous": true,
+    "sequencesExact": true
+  },
+  "requests": {
+    "cleanup": 2,
+    "normal": 11
+  },
+  "reviewHttpRequests": 0,
+  "reviewSqlQueries": 0,
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-backup-limits-revision-01/private/runtime-epoch.json",
+    "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"
+  },
+  "serviceActions": 0,
+  "setupTokenRevoked": true,
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-startup-01/private/source-after.json",
+    "sha256": "07020c2843da7e32f75d7d5d746be2cf7be6accdc43e483fa04d344feb09b1b5"
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-startup-01/private/source-before.json",
+    "sha256": "8f42d581483196fa818010f0544fbb92b80e6cdb8f5e9c7e5c5709700ff6bc92"
+  },
+  "startupReport": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-startup-01/private/report.json",
+    "sha256": "3b951bbee3f124321ca6f8f05b90b3a3243969aa27fff6bc348d157b044b6a8d"
+  },
+  "status": "ready_for_core_client",
+  "toolVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/host-startup-tool-verification-01/verification.json",
+    "sha256": "c56084ff7e221e3d6075b663716a525128786e61d883624ec49a71a451a5b5ec"
+  },
+  "webIndex": {
+    "bodyRead": false,
+    "location": null,
+    "response": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-startup-01/private/10-web-index-response.json",
+      "sha256": "db7a6411196b8704a91a2001c1cb970b3de5d1f2b7d4ed4d8d743643f9cb26e7"
+    },
+    "status": 200
+  },
+  "wizardCompleted": true
+}

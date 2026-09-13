@@ -1,0 +1,53 @@
+{
+  "kind": "audited-core-client-prelogin-failure-closeout",
+  "status": "closed_prelogin_hosting_setup_required",
+  "scenario": "movie",
+  "runId": "movie-01",
+  "failure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/private/failure.json",
+    "sha256": "13544d1f6f931cb6f54db169e5feba6b130dcf279a5c2e4869a178c5346ae630"
+  },
+  "observation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/browser/observation.json",
+    "sha256": "707891b0665672c81d0be72e01c05e3fa0ae9cd86120e6a7e59187586efd15f7"
+  },
+  "gatewayIndex": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/gateway/index.json",
+    "sha256": "73e8a5acfe36bc0d40c906705d92e058bafb4e0412b4151aeef92cd56c0b77ba"
+  },
+  "redirect": {
+    "ordinal": 1,
+    "locations": [
+      "index.html?start=wizard#!/wizard/wizardstart.html"
+    ],
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/gateway/private/request-000001-result.json",
+      "sha256": "a566bcae80fc030c175b92b2e6d94e7dfeb1df3f6605b454fb6266a06b5d64fd"
+    }
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/private/source-before.json",
+    "sha256": "6043c5ce2af872e9690453a35fdae20a04d11ffb98d3c62328ee6871501dce70"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-01/private/source-after.json",
+    "sha256": "6a01b863534c29d5ef9fd686ebeaf6d78f065a4220b30f14f296e138f49f7713"
+  },
+  "sourceTablesExact": 35,
+  "sequencesExact": true,
+  "newLogins": 0,
+  "playbackStarted": false,
+  "allNineSessionsStillRevoked": true,
+  "browserAndGatewayClosed": true,
+  "gatewayExitCode": 0,
+  "browserExitCode": 1,
+  "actorPlaybackHistoryStillEmpty": true,
+  "physicalRequests": 198,
+  "pairedGatewayLedgerComplete": true,
+  "clientAcceptance": false,
+  "candidateAdmissionStillValid": true,
+  "reviewHttpRequests": 0,
+  "reviewSqlQueries": 0,
+  "reviewBusinessWrites": 0,
+  "newScopeRequired": true
+}

@@ -3,7 +3,7 @@
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
 **diagnostic and cancellation fixes verified; candidate admitted;
-core original-client acceptance is next**. The
+core original-client acceptance is in progress**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -31,8 +31,17 @@ the host's available space. The bounded
 and its separately closed environment revision preserve that failed attempt.
 Admission04 passed on the new configuration epoch: a full ten-minute window,
 79 complete responses, backup download, ready-plan cancellation, exact owned
-cleanup and source-data reconciliation. Continue with the original-client movie,
-TV, audio and subtitle scenarios. The product
+cleanup and source-data reconciliation. The first movie attempt stopped before
+login because the retained original-client host redirected the entry page to its
+unfinished startup wizard. Its [failure closeout](../development/audited-core-movie01-prelogin-closeout.json)
+records no new session or playback, all 35 tables and sequences unchanged, and
+both workers closed. That host's [public startup initialization](../development/audited-original-client-host-startup-closeout.json)
+is now complete: the web entry returns 200, the setup session is revoked,
+the library remains empty, and Goby state is exact. Its tools passed 22 targeted
+remote checks. Run the fresh movie scope using that explicit startup receipt.
+This changes a demonstrated preparation prerequisite; the failed scope remains
+consumed. Continue with TV, audio and subtitle
+scenarios after the movie closes. The product
 binary remains unchanged; its full verification is reusable. An earlier passing suite does not
 override a subsequently identified unsafe state transition. The existing seed
 and original-client host remain useful; they must not be rebuilt to hide this

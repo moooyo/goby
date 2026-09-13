@@ -1,0 +1,36 @@
+{
+  "kind": "audited-client-host-startup-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T10:45:06.276097+00:00",
+  "sourcePins": {
+    "initialize-audited-client-host.py": "f2c09174daac557040a214061844825e1c0e03a604ff3992089aa1da82ec64ce",
+    "test-initialize-audited-client-host.py": "567a209c4e2f4a45bef97e51c2986bb8add41405d877b38cd6f1f57e00880055",
+    "run-audited-candidate-client.py": "068930b00902ddb770f5bea0e49cf32530361fb587313c8cde25831172ca3a11",
+    "test-run-audited-candidate-client.py": "5dfa6af54103ac924dc908a2c99413c8397febf1d89b83127adc86cd8e2cff67"
+  },
+  "compileChecksPassed": 4,
+  "checks": [
+    {
+      "test": "test-initialize-audited-client-host.py",
+      "exitCode": 0,
+      "testsRun": 11,
+      "passed": true,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "770a5a7cfd5ed30408387c611037fc3fb16dc0c5873dba409dd6aae6c67d7bb1"
+    },
+    {
+      "test": "test-run-audited-candidate-client.py",
+      "exitCode": 0,
+      "testsRun": 11,
+      "passed": true,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "404e3ede6372af82c4c59ae50e7e0200973613bf5443cee8bc04b33de393cdcc"
+    }
+  ],
+  "sourcesUnchanged": true,
+  "passed": true,
+  "browserStarted": false,
+  "serviceActions": 0,
+  "sqlQueries": 0,
+  "httpRequests": 0
+}

@@ -13,7 +13,7 @@ upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
 gates and complete M2-M6 requirements remain open. Priorities 1 and 2 are complete:
 the corrected product is verified and its isolated candidate has passed live
-admission. Core original-client acceptance is next; no main deployment is claimed.
+admission. Core original-client acceptance is in progress; no main deployment is claimed.
 
 The independently confirmed
 [late restore cancellation race](restore-cancellation-race.md) is fixed. Both windows
@@ -79,6 +79,21 @@ All 79 responses were complete. It added three revoked sessions, two devices and
 All nine test sessions are revoked. The inactive stage remains exact, and the
 active generation and PostgreSQL process are unchanged. Failed records remain
 retained and the unchanged product verification is reused.
+
+The first real movie attempt [stopped before login](audited-core-movie01-prelogin-closeout.json).
+The original-client host redirected `/web/index.html` to its unfinished startup
+wizard. All 35 Goby tables and sequences were exact, all nine sessions remained
+revoked, and both browser and gateway workers closed. This is a hosting
+preparation failure, not accepted client playback. The same host's
+[public-API startup initialization](audited-original-client-host-startup-closeout.json)
+has since completed: 12 complete API responses plus one headers-only web GET,
+one owned administrator, no media libraries, retained network restrictions and
+verified logout/401. All 35 Goby tables and sequences, its processes and lease,
+and the hosting process remain exact. The initializer and new pre-browser gate
+passed [22 targeted remote checks](audited-client-host-startup-tool-verification.json).
+A fresh movie scope consumes that explicit initialization receipt; acceptance
+remains pending. The previous attempt and hosting evidence remain retained;
+the admitted Goby binary and configuration remain unchanged.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27
