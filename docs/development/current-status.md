@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-13 after movie06. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-13 after TV browse01. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -9,9 +9,9 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, exit diagnostics and the late restore-cancellation fix are implemented and verified | Reuse the selected product verification unless product code changes |
+| Product correctness | R01-R21, exit diagnostics and the late restore-cancellation fix are implemented and verified | Address the evidenced TV parent DTO difference; verify changed product inputs before selection |
 | Audited candidate | Selected binary/configuration, seeded catalog and live admission04 passed | Preserve its identity and owned state during client work |
-| Core original client | Movie05 UI playback, seeking and resume observed; failed-run owned state closed | Complete strict movie acceptance and episode, TV browse, MP3, FLAC and external-subtitle scenarios |
+| Core original client | Movie05 playback and TV browse01 navigation observed; both formal results failed and owned states closed | Complete strict movie/TV acceptance, episode, MP3, FLAC and external-subtitle scenarios |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -43,7 +43,7 @@ database remains retained; it is not an empty slot. Candidate admission is
 complete. The [original-client host initialization](audited-original-client-host-startup-closeout.json)
 is also closed, with an empty hosting library and its setup credential revoked.
 
-## Latest client increment
+## Movie checkpoints
 
 The [v3 input contract](audited-client-v3-input.md) integrates occupied movie05
 history and request-ID-bound server cancellation evidence into the existing
@@ -82,11 +82,11 @@ Before another movie attempt, its per-attempt baseline constants must become an
 explicitly reviewed closed-state input with matching saved-state regression.
 The current v3 controller remains bound to movie05 and cannot admit movie06's
 changed state. No movie07 input or run is claimed. The independent existing
-actors can proceed without that movie-only adjustment: TV browse, MP3, FLAC,
-then episode and subtitles under their own prerequisites. Each receives a
-separate frozen decision, serialized execution and complete state closure;
-movie06 history remains protected as foreign state. Their success does not
-resolve movie errors or authorize main promotion.
+actors do not depend on that movie-only adjustment. TV browse subsequently
+consumed its own decision, as recorded below; MP3, FLAC, episode and subtitles
+remain later increments after the shared prerequisites. Each needs a separate
+frozen decision, serialized execution and complete state closure. Their success
+does not resolve movie errors or authorize main promotion.
 
 Earlier failures remain consumed and linked through their closeouts:
 [movie01](audited-core-movie01-prelogin-closeout.json),
@@ -97,6 +97,44 @@ Earlier failures remain consumed and linked through their closeouts:
 [movie05 evidence correction](audited-movie05-evidence-contract.md).
 They establish neither passing client acceptance nor a reason for automatic
 retries. Product verification remains reusable because the binary is unchanged.
+
+## Latest increment: TV browse
+
+[TV browse01](audited-tv-browse01-execution-decision.md) completed the visible
+library-to-series, two season selections, Episode 2-1 detail, Home return and
+logout workflow in the original client. Its observed cross-season list does not
+prove strict season filtering. The browser then failed the adapter's
+`candidate_item_detail_binding_changed` assertion; one page error remains
+unclassified. The [evidence review](audited-tv-browse01-evidence-review.md)
+identifies a missing `SeriesId`: seed mapping derived it from parent edges,
+while the checker treated it as a required observed response field. Other
+identity, parent, index and duration fields matched.
+
+The [owned-state closeout](audited-core-tv-browse01-owned-state-closeout.json)
+passed from saved evidence. Of 35 tables, 30 are exact. The new TV session/device,
+two audit rows, one unstarted Prepared play and one zero-history userdata row
+are fully explained. All fifteen sessions are revoked; both workers are closed;
+all six movie plays and its complete userdata are exact. There are no playback
+references, encoding jobs, Playing reports or media requests. Candidate,
+PostgreSQL, lease and log prefix remain exact as recorded.
+
+The [adapter correction](audited-tv-browse01-adapter-verification.json) passed
+55 remote adapter tests and seven saved-response/failure checks. It preserves
+requested-item and parent identity, rejects conflicting SeriesId when present,
+and permits redacted diagnostics only for the precisely classified
+non-credential assertion. The original failed result and unknown page error
+remain. The controller still pins the prior adapter; no new browser run has
+used the correction.
+
+An existing reference Episode detail also proves a distinct product difference:
+SeriesId, SeasonId and their names are present there but absent from Goby's
+mapper. The next bounded increment adds authorized parent metadata and verifies
+its hierarchy/access and DTO behavior. This is not a Live TV feature expansion;
+the nearby `/LiveTv/Programs` 404 is only a timing lead for the unresolved error.
+Affected client runs stay paused while the selected product/tools are prepared.
+The consumed TV actor now needs retained-state admission before any future
+rerun, just as movie does. No main service change or complete core acceptance
+is claimed.
 
 ## Main and parked investigations
 

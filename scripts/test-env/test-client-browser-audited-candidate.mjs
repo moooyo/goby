@@ -6,6 +6,8 @@ import {
   validateCandidateManifest,
   selectedCandidateItem,
   candidateRequestScope,
+  validateCandidateItemDetail,
+  candidatePageErrorAuthorityComplete,
   validateCandidateLogin,
   candidateRequestBody,
   candidateLoginControls,
@@ -90,6 +92,121 @@ function loginBody(manifest, number = 1) {
       Client: 'Synthetic Original Client', ApplicationVersion: 'synthetic-version' },
   };
 }
+
+function itemDetailFixture() {
+  const manifest = syntheticManifest('tv-browse'), item = manifest.catalog.episodes[2];
+  const route = '/Users/' + manifest.actor.id + '/Items/' + item.id;
+  const row = { ordinal: 272, method: 'GET', url: manifest.browserOrigin + '/emby' + route, route,
+    kind: 'read', allowed: true, origin: 'target', scope: 'frame', main_frame: true, status: 200, completed: true };
+  const value = { Id: item.id, Type: item.type, Name: item.name, Path: item.path, ParentId: item.parentId,
+    IndexNumber: item.indexNumber, ParentIndexNumber: item.parentIndexNumber, RunTimeTicks: item.runtimeTicks,
+    UserData: { PlayCount: 0, PlaybackPositionTicks: 0 } };
+  const observer = { failures: [{ ordinal: row.ordinal, operation: 'response_save', reason: 'candidate_item_detail_binding_changed',
+    started_elapsed_ms: 100, finished_elapsed_ms: 110 }], pending: [], drain_timeouts: [] };
+  return { manifest, row, value, authority: { secretRegistryComplete: true, observer, requests: [row], manifest } };
+}
+
+test('an otherwise complete item detail may omit the seed-derived SeriesId without changing its DTO', () => {
+  const { manifest, row, value } = itemDetailFixture(), before = clone(value);
+  assert.equal(Object.hasOwn(value, 'SeriesId'), false);
+  assert.equal(validateCandidateItemDetail(value, row, manifest), value);
+  assert.deepEqual(value, before); assert.equal(Object.hasOwn(value, 'SeriesId'), false);
+});
+
+test('a present derived SeriesId must match and explicit null or undefined is not omission', () => {
+  const { manifest, row, value } = itemDetailFixture();
+  value.SeriesId = manifest.catalog.series.id;
+  assert.equal(validateCandidateItemDetail(value, row, manifest), value);
+  for (const seriesId of [id(999), null, undefined, 0]) {
+    const changed = { ...value, SeriesId: seriesId };
+    assert.throws(() => validateCandidateItemDetail(changed, row, manifest), /candidate_item_detail_binding_changed/);
+  }
+});
+
+test('known item fields and the requested target ID remain required and exact', () => {
+  const { manifest, row, value } = itemDetailFixture();
+  for (const field of ['Id', 'Type', 'Name', 'Path', 'ParentId', 'IndexNumber', 'ParentIndexNumber', 'RunTimeTicks']) {
+    for (const omit of [false, true]) {
+      const changed = clone(value);
+      if (omit) delete changed[field]; else changed[field] = null;
+      assert.throws(() => validateCandidateItemDetail(changed, row, manifest), /candidate_item_detail_binding_changed/);
+    }
+  }
+  const other = { ...value, Id: manifest.catalog.episodes[0].id };
+  assert.throws(() => validateCandidateItemDetail(other, row, manifest), /candidate_item_detail_binding_changed/);
+});
+
+test('item detail validation binds the observed own-actor GET and its URL to the known request target', () => {
+  for (const mutate of [
+    row => { row.method = 'HEAD'; }, row => { row.method = 'POST'; }, row => { row.kind = 'login'; },
+    row => { row.allowed = false; }, row => { row.origin = 'external'; }, row => { row.status = 201; },
+    row => { row.url = row.url.replace('127.0.0.1:19196', 'external.invalid'); },
+    row => { row.route = row.route.replace('/Users/' + id(2), '/Users/' + id(999)); },
+    row => { row.url += '?UserId=' + id(999); },
+    row => { row.route = row.route.replace(id(36), id(34)); row.url = row.url.replace(id(36), id(34)); },
+  ]) {
+    const { manifest, row, value } = itemDetailFixture(); mutate(row);
+    assert.throws(() => validateCandidateItemDetail(value, row, manifest), /candidate_item_detail_binding_changed/);
+  }
+  const duplicate = itemDetailFixture(); duplicate.manifest.catalog.episodes.push(clone(duplicate.manifest.catalog.episodes[2]));
+  assert.throws(() => validateCandidateItemDetail(duplicate.value, duplicate.row, duplicate.manifest), /candidate_item_detail_binding_changed/);
+});
+
+test('the exact saved item validation failure preserves redacted unknown page errors without clearing formal failure', () => {
+  const { authority } = itemDetailFixture(), token = 'synthetic-late-tv-token', secrets = ['synthetic-tv-password'];
+  const report = { failure: 'candidate_item_detail_binding_changed', observer: authority.observer };
+  const collector = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext({ phase: 'episode_detail', requests: authority.requests }) });
+  collector.record({ name: 'TypeError', message: 'Unknown UI error ' + token, stack: 'TypeError' });
+  assert.equal(registerCandidateSecret(secrets, token), true);
+  const authorityComplete = candidatePageErrorAuthorityComplete(authority);
+  assert.equal(authorityComplete, true);
+  const captured = collector.snapshot({ authorityComplete }), event = captured.events[0];
+  assert.equal(event.name, 'TypeError'); assert.equal(event.message, 'Unknown UI error [redacted]');
+  assert.equal(event.phase, 'episode_detail'); assert.equal(event.attribution, 'unattributed');
+  assert.equal(event.review_required, true); assert.equal(captured.summary.review_required, true);
+  assert.equal(report.failure, 'candidate_item_detail_binding_changed'); assert.equal(report.observer.failures.length, 1);
+  assert.equal(JSON.stringify(captured).includes(token), false);
+  assert.equal(candidatePageErrorAuthorityComplete({ secretRegistryComplete: true, observer: { failures: [], pending: [], drain_timeouts: [] } }), true);
+});
+
+test('credential uncertainty, other observer failures, and ambiguous or foreign request bindings still conceal diagnostics', () => {
+  for (const mutate of [
+    value => { value.secretRegistryComplete = false; }, value => { value.observer.pending.push({ ordinal: 1 }); },
+    value => { value.observer.drain_timeouts.push({ elapsed_ms: 1 }); }, value => { value.observer.failures = null; },
+    value => { value.observer.failures[0].reason = 'candidate_request_headers_timeout'; },
+    value => { value.observer.failures[0].reason = 'candidate_login_identity_rejected'; },
+    value => { value.observer.failures[0].reason = 'candidate_public_json_invalid'; },
+    value => { value.observer.failures[0].reason = 'candidate_observation_failed'; },
+    value => { value.observer.failures[0].operation = 'request_headers'; },
+    value => { value.observer.failures[0].operation = 'response_body'; },
+    value => { value.observer.failures[0].operation = 'request_save'; },
+    value => { value.observer.failures[0].operation = 'response_observation'; },
+    value => { value.observer.failures[0].ordinal = 999; },
+    value => { value.observer.failures.push(clone(value.observer.failures[0])); },
+    value => { value.requests.push(clone(value.requests[0])); },
+    value => { value.requests[0].method = 'HEAD'; }, value => { value.requests[0].kind = 'login'; },
+    value => { value.requests[0].status = 500; }, value => { delete value.requests[0].allowed; },
+    value => { value.requests[0].origin = 'external'; },
+    value => { value.requests[0].route = value.requests[0].route.replace('/Users/' + id(2), '/Users/' + id(999)); },
+    value => { value.requests[0].url = value.requests[0].url.replace('127.0.0.1:19196', 'external.invalid'); },
+    value => { value.requests[0].route = value.requests[0].route.replace(id(36), id(999)); value.requests[0].url = value.requests[0].url.replace(id(36), id(999)); },
+  ]) {
+    const { authority } = itemDetailFixture(); mutate(authority);
+    assert.equal(candidatePageErrorAuthorityComplete(authority), false);
+    const collector = createCandidatePageErrorCollector({ secrets: ['synthetic-tv-password'], context: () => pageErrorContext() });
+    collector.record({ name: 'TypeError', message: 'Unknown error detail', stack: 'TypeError' });
+    assert.equal(collector.snapshot({ authorityComplete: candidatePageErrorAuthorityComplete(authority) }).events[0].message, null);
+  }
+});
+
+test('every permitted diagnostic failure needs its own unique known-item request binding', () => {
+  const { authority } = itemDetailFixture(), second = clone(authority.requests[0]);
+  second.ordinal++; second.route = second.route.replace(id(36), id(34)); second.url = second.url.replace(id(36), id(34));
+  authority.requests.push(second); authority.observer.failures.push({ ...authority.observer.failures[0], ordinal: second.ordinal });
+  assert.equal(candidatePageErrorAuthorityComplete(authority), true);
+  authority.observer.failures.push({ ...authority.observer.failures[0], ordinal: 999, reason: 'candidate_public_json_invalid' });
+  assert.equal(candidatePageErrorAuthorityComplete(authority), false);
+});
 
 function syntheticLoginControls({ visible = false, counts = {}, formFailure = null } = {}) {
   const events = [], phases = [];

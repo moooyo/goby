@@ -1,0 +1,42 @@
+{
+  "kind": "audited-tv-browse01-adapter-checkpoint",
+  "status": "offline_adapter_correction_verified",
+  "host": "test-env",
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-browse01-adapter-verification-01/verification.json",
+    "sha256": "aba01a649f098d367e7c33e793c084bb9b531e47c3947005a633c38eafd4210d"
+  },
+  "sourceSha256": {
+    "adapter": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0",
+    "tests": "cc1a7cfa6132af82489a3f143eb9101c3cdee822e2d7134cdebd48184e13769d"
+  },
+  "checks": {
+    "adapterTestsPassed": 55,
+    "savedResponseAndFailureChecksPassed": 7,
+    "totalPassed": 62,
+    "failed": 0,
+    "skipped": 0,
+    "sourceUnchanged": true
+  },
+  "boundaries": {
+    "missingDerivedSeriesIdDoesNotInventAResponseField": true,
+    "contradictoryPresentSeriesIdRejected": true,
+    "requestedItemAndObservedParentFieldsRemainBound": true,
+    "nonCredentialAssertionRequiresExactDiagnosticClassification": true,
+    "unknownPageErrorStillRequiresReview": true,
+    "originalBrowserFailurePreserved": true,
+    "originalErrorTextStillUnavailable": true,
+    "savedReplayCredentialCompletenessIsExplicitTestInput": true,
+    "syntheticFutureErrorIsNotTheOriginalError": true,
+    "controllerSourceSelectionChanged": false,
+    "productDtoDifferenceRemainsOpen": true
+  },
+  "verificationActions": {
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "browserRuns": 0,
+    "serviceActions": 0
+  },
+  "clientAcceptance": false,
+  "nextAction": "Implement and verify the separately evidenced authorized TV parent metadata projection. Integrate the final selected product/tools before a new client decision; preserve all consumed runs and retained actors."
+}

@@ -1,0 +1,77 @@
+{
+  "kind": "audited-tv-browse01-owned-state-checkpoint",
+  "status": "owned_state_closed_client_acceptance_pending",
+  "host": "test-env",
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-tv-browse01-owned-state-closeout.json",
+    "sha256": "b9cbc7ad57f7381c1c6c8d267827cb24a907376a17944fe5b3bd5d8dcdd3f4a0"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-browse01-entry-review-01/close-tv-browse01-owned-state.py",
+    "sha256": "9090d7987bbe13428b5191e0f69d5f94309da3d144f8d0033a9db2227542bf5a"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-01/private/source-after.json",
+    "sha256": "541dc489d1592612485aa4e18955cec3adac3cbb8070b1405d4af8f6818a92a6"
+  },
+  "observedUiOutcome": "tv_browse_ui_flow_completed_with_cross_season_list",
+  "originalBrowserOutcome": "failed",
+  "originalBrowserFailure": "candidate_item_detail_binding_changed",
+  "observerFailureOrdinal": 272,
+  "clientAcceptance": false,
+  "pageErrors": 1,
+  "pageErrorDiagnosticsComplete": false,
+  "state": {
+    "ownedTablesReviewed": 35,
+    "unchangedTables": 30,
+    "oldRowsDeleted": 0,
+    "allSessionsRevoked": 15,
+    "newSessions": 1,
+    "newDevices": 1,
+    "deviceSequenceDelta": 1,
+    "newActivityEntries": 2,
+    "activitySequenceDelta": 2,
+    "otherSequencesExact": true,
+    "foreignMoviePlaysExact": 6,
+    "foreignMovieUserDataExact": true,
+    "foreignMoviePlayCount": 2,
+    "foreignMovieResumePositionTicks": 1217878390,
+    "newUnstartedPreparedId": "play_6916f7ed83857393883651d299387c32",
+    "preparationPhysicalOrdinal": 277,
+    "newCountedPlays": 0,
+    "newUserdataCount": 1,
+    "newUserdataPlaybackHistoryZero": true,
+    "clientPlaybackReferences": 0,
+    "encodingJobs": 0
+  },
+  "savedEvidenceChecks": {
+    "physicalIndexRows": 291,
+    "savedIndexMembersVerified": 582,
+    "completeObservedHttpExchanges": 289,
+    "transportConnectRows": 1,
+    "deniedBeforeUpstreamRows": 1,
+    "criticalCompleteHttpExchanges": 4,
+    "playingReports": 0,
+    "mediaRequests": 0,
+    "sameTokenRejectedAfterLogout": true,
+    "candidateContinuousAsRecorded": true,
+    "postgresContinuousAsRecorded": true,
+    "leaseExactAsRecorded": true,
+    "browserExitCode": 1,
+    "gatewayExitCode": 0,
+    "bothWorkerPidsAbsentAsRecorded": true,
+    "bothWorkerCgroupsEmptyAsRecorded": true,
+    "serverLogPrefixPreserved": true,
+    "serverLogBeforeBytes": 107828,
+    "serverLogAfterBytes": 122345,
+    "originalReceiptsPreserved": true
+  },
+  "closeoutActions": {
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "browserRuns": 0,
+    "serviceActions": 0,
+    "businessWrites": 0
+  },
+  "nextAction": "Pause affected client paths for offline review of the derived SeriesId assertion and diagnostic authority classification. Track the separately observed reference DTO difference. Do not reuse this run, reset its actor or treat UI completion as full acceptance."
+}

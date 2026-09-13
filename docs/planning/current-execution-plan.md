@@ -1,8 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-13 after movie06. Status: **product fixes verified and
-candidate admitted; core client acceptance open; movie execution paused;
-independent TV browse is the next bounded client increment**. This is the active work queue.
+Reviewed on 2026-09-13 after TV browse01. Status: **audited product verified and
+candidate admitted; core client acceptance open; client execution paused;
+authorized TV parent metadata is the next product increment**. This is the active work queue.
 [Current status](../development/current-status.md) records accepted facts;
 [delivery and verification](delivery-and-verification.md) retains the complete
 M2-M6 obligations. Historical plans and consumed run inputs are evidence, not
@@ -34,14 +34,32 @@ paused: its current v3 baseline is bound to movie05, and any later movie run
 needs an explicitly reviewed closed-state input without per-attempt code
 constants, saved-state replay and a reachable page-error observation.
 
-Proceed with the existing independent core actors in this order: TV browse,
-MP3, FLAC, then episode playback and subtitles under their own prerequisites.
-These paths do not call the movie workflow and already support a null retained
-baseline while protecting foreign state. They do not depend on movie passing.
-Serialize their writes and close each owned state before the next run. This
-review creates no new execution input: each increment still freezes relevant
-verified source, fresh actor/runtime/state facts, expected outcome and the
-existing request/time/cleanup bounds. Success closes only that scenario's gate.
+TV browse01 has now consumed its separate decision. It completed the visible
+cross-season navigation, but a derived `SeriesId` assertion failed and one page
+error remains unclassified. Its [owned state is closed](../development/audited-core-tv-browse01-owned-state-closeout.json):
+all fifteen sessions are revoked, both workers closed, and the movie history
+preserved. The shared adapter correction passed
+[62 remote checks](../development/audited-tv-browse01-adapter-verification.json),
+including saved-response replay. A separate retained reference response shows
+a real TV parent-metadata difference in the product; fixing the checker alone
+does not resolve it.
+
+Follow the [TV evidence review](../development/audited-tv-browse01-evidence-review.md).
+The next bounded increment implements the evidenced Series/Season identity and
+name projection through existing authorized queries, with meaningful access,
+hierarchy and DTO regressions and the required final product verification.
+Keep client runs paused until the selected product/tool inputs are reviewed.
+Do not expand this into Live TV or reopen global NextUp research on an error
+timestamp alone.
+
+MP3, FLAC, episode playback and subtitles remain independent later core
+increments. They do not depend functionally on movie passing, but they do use
+the shared adapter. Serialize writes and close each owned state before the
+next run. Every increment freezes relevant verified source, fresh actor/state
+facts, expected outcome and existing request/time/cleanup bounds. Movie and TV
+actors are now consumed; future reruns need reviewed retained-state admission,
+not new actor identities or another null-baseline input. Success closes only
+that scenario's gate.
 
 The [main upgrade contract](../development/audited-main-upgrade-plan.md) remains
 a draft. It needs core acceptance and distinct forward-restoration and actual

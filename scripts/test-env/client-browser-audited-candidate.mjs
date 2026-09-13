@@ -155,6 +155,49 @@ export function candidateRequestScope(raw, method, manifest) {
   } catch { return { allowed: false, kind: 'invalid' }; }
 }
 
+function candidateItemDetailRequest(row, manifest) {
+  if (!object(row) || row.method !== 'GET' || row.kind !== 'read' || row.allowed !== true || row.origin !== 'target' || row.status !== 200) return null;
+  const scope = candidateRequestScope(row.url, row.method, manifest);
+  const match = new RegExp('^/Users/' + manifest.actor.id + '/Items/([a-f0-9]{32})/?$', 'i').exec(row.route ?? '');
+  if (!match || scope.allowed !== true || scope.kind !== 'read' || scope.route !== row.route) return null;
+  const itemId = match[1].toLowerCase(), catalog = manifest.catalog;
+  const known = [catalog.movie, catalog.series, catalog.mp3, catalog.flac, ...(catalog.episodes ?? []), ...(catalog.seasons ?? [])]
+    .filter(item => item?.id === itemId);
+  if (known.length > 1) return null;
+  return { itemId, known: known[0] ?? null };
+}
+
+export function validateCandidateItemDetail(value, row, manifest) {
+  const binding = candidateItemDetailRequest(row, manifest), known = binding?.known;
+  need(binding && object(value) && value.Id === binding.itemId, 'candidate_item_detail_binding_changed');
+  if (known) need(value.Type === known.type && (!known.name || value.Name === known.name) &&
+    (!known.path || value.Path === known.path) && (!known.parentId || value.ParentId === known.parentId) &&
+    (known.indexNumber === undefined || value.IndexNumber === known.indexNumber) &&
+    (known.parentIndexNumber === undefined || value.ParentIndexNumber === known.parentIndexNumber) &&
+    (known.runtimeTicks === undefined || value.RunTimeTicks === known.runtimeTicks) &&
+    // SeriesId is derived from seed parent edges; absence is not a DTO mismatch.
+    (!known.seriesId || !Object.hasOwn(value, 'SeriesId') || value.SeriesId === known.seriesId), 'candidate_item_detail_binding_changed');
+  return value;
+}
+
+export function candidatePageErrorAuthorityComplete({ secretRegistryComplete, observer, requests, manifest }) {
+  try {
+    if (secretRegistryComplete !== true || !object(observer) || !Array.isArray(observer.failures) ||
+      !Array.isArray(observer.pending) || observer.pending.length !== 0 || !Array.isArray(observer.drain_timeouts) || observer.drain_timeouts.length !== 0) return false;
+    if (observer.failures.length === 0) return true;
+    if (!Array.isArray(requests)) return false;
+    const ordinals = new Set();
+    return observer.failures.every(failure => {
+      if (!object(failure) || failure.reason !== 'candidate_item_detail_binding_changed' || failure.operation !== 'response_save' ||
+        !Number.isSafeInteger(failure.ordinal) || failure.ordinal <= 0 || ordinals.has(failure.ordinal)) return false;
+      ordinals.add(failure.ordinal);
+      const rows = requests.filter(row => row.ordinal === failure.ordinal);
+      // This exact failure is raised only after body parsing and private saving.
+      return rows.length === 1 && Boolean(candidateItemDetailRequest(rows[0], manifest)?.known);
+    });
+  } catch { return false; }
+}
+
 export function validateCandidateLogin(value, manifest) {
   need(object(value) && typeof value.AccessToken === 'string' && value.AccessToken.length >= 16 && value.AccessToken.length <= 4096 &&
     value.ServerId === manifest.serverId && value.User?.Id === manifest.actor.id && value.User.Name === manifest.actor.username &&
@@ -551,7 +594,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
   const secrets = [credential.password], entries = new WeakMap(), processAnchors = {};
   let secretRegistryComplete = true;
   const pageErrors = createCandidatePageErrorCollector({ secrets, context: () => ({ elapsed_ms: elapsed(),
-    phase: cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.episode_phase ?? report.login_phase ?? null,
+    phase: cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.tv_browse?.phase ?? report.episode_phase ?? report.login_phase ?? null,
     operation: report.playback?.operation ?? report.logout_phase ?? report.login_phase ?? null, location: page?.url() ?? null, requests: report.requests }) });
   const remaining = () => candidateRemainingMilliseconds(manifest.budgets, elapsed(), cleanupMode);
   const observations = createCandidateObserverQueue({ elapsed,
@@ -876,16 +919,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
               activeSession = { ...proof, token: value.AccessToken, logged_out: false };
               report.sessions.push(proof); await save('session-' + report.sessions.length + '-private.json', activeSession);
             } else if (row.kind === 'playback_info') row.playback_info = value;
-            else if (value.Id) {
-              const known = [manifest.catalog.movie, manifest.catalog.series, manifest.catalog.mp3, manifest.catalog.flac,
-                ...(manifest.catalog.episodes ?? []), ...(manifest.catalog.seasons ?? [])].filter(Boolean).find(item => item.id === value.Id);
-              if (known) need(value.Type === known.type && (!known.name || value.Name === known.name) &&
-                (!known.path || value.Path === known.path) && (!known.seriesId || value.SeriesId === known.seriesId) &&
-                (!known.parentId || value.ParentId === known.parentId) && (known.indexNumber === undefined || value.IndexNumber === known.indexNumber) &&
-                (known.parentIndexNumber === undefined || value.ParentIndexNumber === known.parentIndexNumber) &&
-                (known.runtimeTicks === undefined || value.RunTimeTicks === known.runtimeTicks), 'candidate_item_detail_binding_changed');
-              row.detail = value;
-            }
+            else if (row.kind === 'read') row.detail = validateCandidateItemDetail(value, row, manifest);
           }
         }
         if (row.kind === 'logout' && row.scope === 'frame' && row.main_frame && row.status >= 200 && row.status < 300 && activeSession) {
@@ -951,8 +985,8 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     report.cleanup.gateway_closure = 'owned_by_outer_controller';
     try { await pin(); } catch { report.failure ??= 'candidate_final_pin_failed'; }
     report.observer.pending = observations.snapshot();
-    const pageErrorDiagnostics = pageErrors.snapshot({ authorityComplete: secretRegistryComplete && report.observer.failures.length === 0 &&
-      report.observer.drain_timeouts.length === 0 && report.observer.pending.length === 0 });
+    const pageErrorDiagnostics = pageErrors.snapshot({ authorityComplete: candidatePageErrorAuthorityComplete({
+      secretRegistryComplete, observer: report.observer, requests: report.requests, manifest }) });
     report.page_errors = pageErrorDiagnostics.events; report.page_error_diagnostics = pageErrorDiagnostics.summary;
     report.elapsed_ms = elapsed();
     if (report.elapsed_ms > manifest.budgets.maximumSeconds * 1000) report.failure ??= 'candidate_time_budget_exhausted';
