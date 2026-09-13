@@ -69,6 +69,9 @@ type CopySink interface {
 // configuration. URLs never appear in errors or command lines. Unsupported
 // libpq URI options are rejected rather than silently weakening TLS settings.
 // SourceURL is trusted deployment configuration, never archive or HTTP input.
+// MaxDumpBytes independently bounds the compressed custom archive and its
+// expanded pg_restore text. Generated archives must pass ValidateDump before
+// publication so compression cannot conceal an unsupported expanded size.
 type Options struct {
 	SourceURL         string
 	PGDump            string

@@ -109,7 +109,7 @@ func (s *Store) Available() bool {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return !s.closed && s.ownership != nil && !s.ownership.lost.Load()
+	return !s.closed && !s.closing.Load() && s.ownership != nil && !s.ownership.lost.Load()
 }
 
 // CheckOwnership verifies the existing lock session without reconnecting or

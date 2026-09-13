@@ -197,7 +197,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
           <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
             {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
             {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} />}
+            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
@@ -205,7 +205,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'settings' && <SettingsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'observability' && <ObservabilityPage />}
-            {page === 'backups' && <BackupsPage onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>

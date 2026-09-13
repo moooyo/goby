@@ -2,6 +2,7 @@ package library
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestSubtitleDirectoryIndexUsesCompleteMediaBasenames(t *testing.T) {
 		"Feature extended.srt", "Feature2.srt", "Feature.unknown.srt", "Feature.en.mkv.srt",
 		"Feature.en.fr.commentary.vtt", "../Feature.fr.srt", `nested\Feature.fr.srt`,
 		"Feature.fr.forced.forced.srt", "Feature.fr.srt.tmp", "Feature.ass"}
-	index := newSubtitleDirectoryIndex(names, nil)
+	index := newSubtitleDirectoryIndex(subtitleTestDirectoryEntries(names...), "movies", nil)
 	tracks, overflow := index.candidates("Feature.mkv")
 	if overflow || !reflect.DeepEqual(subtitleCandidateFilenames(tracks), []string{"Feature.srt", "Feature.zh-CN.default.forced.sdh.VTT"}) {
 		t.Fatalf("base movie received another movie's subtitle or an unsupported name: %+v, overflow=%t", tracks, overflow)
@@ -39,8 +40,9 @@ func TestSubtitleDirectoryIndexBoundsEachGroupAndOwnsItsNames(t *testing.T) {
 	for number := 0; number < 100; number++ {
 		names = append(names, fmt.Sprintf("Feature.en-%02d.srt", number))
 	}
-	index := newSubtitleDirectoryIndex(names, nil)
-	names[2] = "changed.srt"
+	entries := subtitleTestDirectoryEntries(names...)
+	index := newSubtitleDirectoryIndex(entries, "movies", nil)
+	entries[2] = subtitleDirectoryTestEntry{name: "changed.srt"}
 	tracks, overflow := index.candidates("Feature.mkv")
 	if !overflow || len(tracks) != maxActiveSubtitles {
 		t.Fatalf("subtitle candidate group was not bounded: count=%d overflow=%t", len(tracks), overflow)
@@ -52,12 +54,49 @@ func TestSubtitleDirectoryIndexBoundsEachGroupAndOwnsItsNames(t *testing.T) {
 }
 
 func TestSubtitleDirectoryIndexHandlesUnicodeBasenames(t *testing.T) {
-	index := newSubtitleDirectoryIndex([]string{"Kelvin.mkv", "Kelvin.en.srt", "電影.mkv", "電影.zh-Hant.srt"}, nil)
+	index := newSubtitleDirectoryIndex(subtitleTestDirectoryEntries("Kelvin.mkv", "Kelvin.en.srt", "電影.mkv", "電影.zh-Hant.srt"), "movies", nil)
 	for _, name := range []string{"Kelvin.mkv", "電影.mkv"} {
 		tracks, overflow := index.candidates(name)
 		if len(tracks) != 1 || overflow {
 			t.Fatalf("Unicode basename %q lost its track: %+v", name, tracks)
 		}
+	}
+}
+
+func TestSubtitleDirectoryIndexOnlyAdmitsScannableMediaOwners(t *testing.T) {
+	for _, test := range []struct {
+		name, collectionType, primary, shadow string
+		mode                                  os.FileMode
+		shadowOwns                            bool
+	}{
+		{name: "directory", collectionType: "movies", primary: "Feature.mkv", shadow: "Feature.en.mkv", mode: os.ModeDir},
+		{name: "symlink", collectionType: "movies", primary: "Feature.mkv", shadow: "Feature.en.mkv", mode: os.ModeSymlink},
+		{name: "named pipe", collectionType: "movies", primary: "Feature.mkv", shadow: "Feature.en.mkv", mode: os.ModeNamedPipe},
+		{name: "movie audio", collectionType: "movies", primary: "Feature.mkv", shadow: "Feature.en.mp3"},
+		{name: "episode audio", collectionType: "tvshows", primary: "Feature.mkv", shadow: "Feature.en.mp3"},
+		{name: "music video", collectionType: "music", primary: "Feature.mp3", shadow: "Feature.en.mkv"},
+		{name: "mixed audio", collectionType: "mixed", primary: "Feature.mkv", shadow: "Feature.en.mp3", shadowOwns: true},
+		{name: "movie video", collectionType: "movies", primary: "Feature.mkv", shadow: "Feature.en.mkv", shadowOwns: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			entries := []os.DirEntry{
+				subtitleDirectoryTestEntry{name: test.primary},
+				subtitleDirectoryTestEntry{name: test.shadow, mode: test.mode},
+				subtitleDirectoryTestEntry{name: "Feature.en.srt"},
+			}
+			index := newSubtitleDirectoryIndex(entries, test.collectionType, nil)
+			owner, other, language := test.primary, test.shadow, "en"
+			if test.shadowOwns {
+				owner, other, language = test.shadow, test.primary, ""
+			}
+			tracks, overflow := index.candidates(owner)
+			if overflow || len(tracks) != 1 || tracks[0].filename != "Feature.en.srt" || tracks[0].info.Language != language {
+				t.Fatalf("sidecar was not assigned to admitted owner %q: tracks=%+v overflow=%t", owner, tracks, overflow)
+			}
+			if tracks, _ := index.candidates(other); len(tracks) != 0 {
+				t.Fatalf("nonowner %q received a sidecar: %+v", other, tracks)
+			}
+		})
 	}
 }
 
@@ -97,4 +136,22 @@ func subtitleCandidateFilenames(candidates []subtitleCandidate) []string {
 		names[index] = candidate.filename
 	}
 	return names
+}
+
+type subtitleDirectoryTestEntry struct {
+	name string
+	mode os.FileMode
+}
+
+func (entry subtitleDirectoryTestEntry) Name() string               { return entry.name }
+func (entry subtitleDirectoryTestEntry) IsDir() bool                { return entry.mode.IsDir() }
+func (entry subtitleDirectoryTestEntry) Type() os.FileMode          { return entry.mode.Type() }
+func (entry subtitleDirectoryTestEntry) Info() (os.FileInfo, error) { return nil, os.ErrInvalid }
+
+func subtitleTestDirectoryEntries(names ...string) []os.DirEntry {
+	entries := make([]os.DirEntry, len(names))
+	for index, name := range names {
+		entries[index] = subtitleDirectoryTestEntry{name: name}
+	}
+	return entries
 }

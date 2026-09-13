@@ -25,6 +25,8 @@ type ConversionLimits struct {
 // Method is DirectStream for remuxing and Transcode when a stream is encoded.
 // Output contains the selected external subtitle representation for the HLS
 // container. No decision here performs authorization or starts an encoder.
+// OutputSource.Info.Bitrate is a planning budget including transport headroom;
+// copied stream bitrates remain unknown unless declared by the source stream.
 type ConversionDecision struct {
 	Original     Decision
 	Output       Decision
@@ -308,6 +310,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		caps.audioBitrate = min(caps.audioBitrate, int64(*request.DeviceProfile.MusicStreamingTranscodingBitrate))
 	}
 	var video, audio *media.Stream
+	// A copied stream may use the complete source bitrate as a conservative
+	// planning cost. Keep that budget separate from the stream's known facts.
+	var videoCost, audioCost int64
 	if selection.video != nil && kind == DlnaProfileTypeVideo {
 		stream := *selection.video
 		video = &stream
@@ -326,8 +331,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				return fail("conversion_video_copy_codec_unsupported", "VideoCodec", "The selected video cannot be copied into the declared H.264 HLS output.")
 			}
 			plan.VideoCodec = "copy"
-			if video.Bitrate <= 0 {
-				video.Bitrate = source.Info.Bitrate
+			videoCost = video.Bitrate
+			if videoCost <= 0 {
+				videoCost = source.Info.Bitrate
 			}
 		} else {
 			plan.VideoCodec = "h264"
@@ -356,8 +362,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				return fail("conversion_audio_copy_codec_unsupported", "AudioCodec", "The selected audio cannot be copied into the declared AAC or MP3 HLS output.")
 			}
 			plan.AudioCodec = "copy"
-			if audio.Bitrate <= 0 {
-				audio.Bitrate = source.Info.Bitrate
+			audioCost = audio.Bitrate
+			if audioCost <= 0 {
+				audioCost = source.Info.Bitrate
 			}
 		} else {
 			codec := ""
@@ -417,7 +424,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		}
 		if audio != nil {
 			if audioCopy {
-				if audio.Channels > caps.channels || audio.SampleRate <= 0 || audio.SampleRate > caps.sampleRate || audio.Bitrate <= 0 || audio.Bitrate > caps.audioBitrate {
+				if audio.Channels > caps.channels || audio.SampleRate <= 0 || audio.SampleRate > caps.sampleRate || audioCost <= 0 || audioCost > caps.audioBitrate {
 					return fail("conversion_audio_copy_limit", "AudioCodec", "Copied audio exceeds an output limit or lacks facts needed to verify it.")
 				}
 			} else {
@@ -430,7 +437,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				if video != nil {
 					reserved := int64(128_000)
 					if videoCopy {
-						reserved = video.Bitrate
+						reserved = videoCost
 					}
 					audioBudget -= reserved
 				}
@@ -444,13 +451,14 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				audio.ChannelLayout = ""
 			}
 			if !audioCopy {
+				audioCost = audio.Bitrate
 				plan.AudioBitrate, plan.AudioChannels, plan.AudioSampleRate = audio.Bitrate, audio.Channels, audio.SampleRate
 			}
 		}
 		if video != nil {
 			if videoCopy {
-				if video.Width > caps.width || video.Height > caps.height || video.Bitrate <= 0 || video.Bitrate > caps.videoBitrate || conversionFrameRate(video) > caps.frameRate {
-					return fail("conversion_video_copy_limit", "VideoCodec", "Copied video exceeds an output limit or lacks bitrate facts needed to verify it.")
+				if video.Width > caps.width || video.Height > caps.height || videoCost <= 0 || videoCost > caps.videoBitrate || conversionFrameRate(video) > caps.frameRate {
+					return fail("conversion_video_copy_limit", "VideoCodec", "Copied video exceeds an output limit or lacks a usable bitrate planning budget.")
 				}
 			} else {
 				video.Width, video.Height = conversionDimensions(video.Width, video.Height, caps.width, caps.height)
@@ -462,7 +470,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				video.AverageFrameRate, video.RealFrameRate = strconv.FormatFloat(fps, 'f', 6, 64), ""
 				budget := totalLimit * 9 / 10
 				if audio != nil {
-					budget -= audio.Bitrate
+					budget -= audioCost
 				}
 				if budget < 128_000 {
 					return fail("conversion_video_bitrate_too_low", "VideoBitrate", "The remaining video bitrate budget is below the supported encoder range.")
@@ -478,16 +486,11 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				}
 			}
 			if !videoCopy {
+				videoCost = video.Bitrate
 				plan.Width, plan.Height, plan.FrameRate, plan.VideoBitrate = video.Width, video.Height, conversionFrameRate(video), video.Bitrate
 			}
 		}
-		var payloadBitrate int64
-		if video != nil {
-			payloadBitrate += video.Bitrate
-		}
-		if audio != nil {
-			payloadBitrate += audio.Bitrate
-		}
+		payloadBitrate := videoCost + audioCost
 		// Reserve ten percent for transport overhead. This is an advertised media
 		// planning budget, not a claim of packet-level peak bandwidth policing.
 		if payloadBitrate <= 0 || payloadBitrate > totalLimit*9/10 {

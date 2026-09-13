@@ -1,6 +1,16 @@
 # Development handoff
 
-Latest closeout checkpoint: `2026-09-13T00:16:48Z`. The user requested that this
+Current closeout: `2026-09-13T03:57:22Z`. The architecture-audit findings R01-R21
+are fixed and remotely verified. Evidence covers 2,255 Go tests across 25 packages
+(24 complete package passes and one explicitly reconciled server package), 41
+mocked-API browser tests, and frontend/Linux builds. The containing Git commit
+records this verified increment on main; deployment remains pending. See the
+[verification receipt](audit-remediation-20260913-verification.json).
+Use [current status](current-status.md) and [the remediation record](audit-remediation-20260913.md)
+for the latest increment. Checkpoints below retain their original results and
+deployment identities; they are historical evidence, not pending repair tasks.
+
+Historical closeout checkpoint: `2026-09-13T00:16:48Z`. The user requested that this
 round end after the current proxy identity repair, handoff and integration into
 main. Operator TOOL05 is implemented and passed 101 remote guards and two
 compile checks. The single actual diagnostic04 passed restricted admission,

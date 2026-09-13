@@ -6,12 +6,12 @@ The completed M5i observability increment adds transactional activity history,
 bounded sanitized diagnostic files, four native and four Emby activity/log GET routes, and the
 React/MUI administrator-only page at `/admin/observability`. See the
 [API contract](../api/observability.md) and
-[storage and operating notes](observability.md). The current schema is
+[storage and operating notes](observability.md). The historical M5i schema was
 **22**: migration `0022` adds the initially empty `activity_entries`
 table without backfilling business history or requiring a media rescan.
 The probe cache version remains **6**. The complete remote race suite, source
 and build reconciliation, real browser/restart acceptance, protected upgrade,
-and deployed workflow passed. The current running deployment is M5i at
+and deployed workflow passed. That accepted deployment was M5i at
 schema 22. See [M5i verification](verification-m5i-observability.md) for the
 retained evidence and limits. This completes the observability increment;
 the broader M4, M5, and M6 milestones and full product goal remain open.
@@ -38,7 +38,7 @@ partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
 reported roughly 96G total and 60G available; existing service PIDs, root
 identity, and boot partitions were preserved. See the
 [capacity evidence](test-env-disk-growth.json). This resolves the earlier root
-capacity shortage. The current M5i deployment uses schema 22.
+capacity shortage. The current candidate/primary checkpoint is listed in [current status](current-status.md).
 
 Subsequent [Go cache](m5h-go-cache-relocation.json) and
 [inactive dependency](m5h-dependency-relocation.json) relocations moved verified
@@ -57,17 +57,17 @@ operators must not be replayed after normal cache or dependency use resumes.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
-## Build on Windows
+## Build invocation from Windows
 
-These are compilation commands, authorized for local use in the current task:
+Run compilation inside a newly prepared remote workspace through `ssh test-env`. The commands below describe the build steps within that workspace; they are not authorization for local execution:
 
-```powershell
+```text
 npm --prefix web/admin ci
 npm --prefix web/admin run build
 go build ./...
 ```
 
-Local authorization covers compilation only. Run tests, validators, runtime
+Compilation and formatting also require the remote environment. Run tests, validators, runtime
 probes, browser acceptance, and FFmpeg checks through `ssh test-env` unless
 the current task separately authorizes local verification. If `test-env` is
 unavailable, that verification is blocked; do not fall back to local execution.

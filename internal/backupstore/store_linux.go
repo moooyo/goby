@@ -62,9 +62,9 @@ func Open(config Config) (*Store, error) {
 	if err := s.recover(); err != nil {
 		return nil, err
 	}
-	if err := s.space(0); err != nil {
-		return nil, err
-	}
+	// A reserve limits new allocations, not access to an intact existing
+	// catalog. Keep downloads and journaled deletion available so an operator
+	// can reclaim space; Begin, Write, and Scratch enforce allocation policy.
 	success = true
 	return s, nil
 }

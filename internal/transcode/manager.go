@@ -30,32 +30,37 @@ var (
 
 type runnerFunc func(context.Context, string, string, *os.File, Plan, int, func(Progress)) (RunResult, error)
 
-// Options bounds process concurrency, queued source descriptors, retained job
-// metadata, and cache storage. Zero values select defaults. Storage limits are
-// checked before admission and periodically during execution; a process can
+// Options bounds process concurrency, accepted source descriptors, retained job
+// metadata, and cache storage. Admission budgets combine execution and queue
+// allowances, including jobs awaiting persistence. User and credential queue
+// allowances default to half the global queue (at least one). Zero values select
+// defaults. Storage limits are checked before admission and periodically during
+// execution; a process can
 // write additional bytes between checks. The cache must be a dedicated local
 // Linux directory, and Repository must persist records in the catalog database.
 type Options struct {
-	Root              string
-	FFmpegPath        string
-	Threads           int
-	MaxJobs           int
-	MaxUserJobs       int
-	MaxSessionJobs    int
-	MaxQueueJobs      int
-	MaxRetainedJobs   int
-	MaxReaders        int
-	MaxJobReaders     int
-	MaxBytes          int64
-	MaxJobBytes       int64
-	MinFreeBytes      int64
-	IdleTimeout       time.Duration
-	StartupTimeout    time.Duration
-	NoProgressTimeout time.Duration
-	MaxRuntime        time.Duration
-	Repository        Repository
-	run               runnerFunc
-	pollInterval      time.Duration
+	Root                string
+	FFmpegPath          string
+	Threads             int
+	MaxJobs             int
+	MaxUserJobs         int
+	MaxSessionJobs      int
+	MaxQueueJobs        int
+	MaxUserQueueJobs    int
+	MaxSessionQueueJobs int
+	MaxRetainedJobs     int
+	MaxReaders          int
+	MaxJobReaders       int
+	MaxBytes            int64
+	MaxJobBytes         int64
+	MinFreeBytes        int64
+	IdleTimeout         time.Duration
+	StartupTimeout      time.Duration
+	NoProgressTimeout   time.Duration
+	MaxRuntime          time.Duration
+	Repository          Repository
+	run                 runnerFunc
+	pollInterval        time.Duration
 }
 
 type managedJob struct {
@@ -168,6 +173,12 @@ func normalizeManagerOptions(o Options) (Options, error) {
 	if o.MaxQueueJobs == 0 {
 		o.MaxQueueJobs = 16
 	}
+	if o.MaxUserQueueJobs == 0 {
+		o.MaxUserQueueJobs = max(1, o.MaxQueueJobs/2)
+	}
+	if o.MaxSessionQueueJobs == 0 {
+		o.MaxSessionQueueJobs = max(1, o.MaxQueueJobs/2)
+	}
 	if o.MaxRetainedJobs == 0 {
 		o.MaxRetainedJobs = 128
 	}
@@ -207,6 +218,8 @@ func normalizeManagerOptions(o Options) (Options, error) {
 	if o.Threads < 1 || o.Threads > 64 || o.MaxJobs < 1 || o.MaxJobs > 64 ||
 		o.MaxUserJobs < 1 || o.MaxUserJobs > o.MaxJobs || o.MaxSessionJobs < 1 || o.MaxSessionJobs > o.MaxJobs ||
 		o.MaxQueueJobs < 1 || o.MaxQueueJobs > 1024 || o.MaxRetainedJobs < o.MaxJobs || o.MaxRetainedJobs > 4096 ||
+		o.MaxUserQueueJobs < 1 || o.MaxUserQueueJobs > o.MaxQueueJobs ||
+		o.MaxSessionQueueJobs < 1 || o.MaxSessionQueueJobs > o.MaxQueueJobs ||
 		o.MaxReaders < 1 || o.MaxReaders > 4096 || o.MaxJobReaders < 1 || o.MaxJobReaders > o.MaxReaders ||
 		o.MaxBytes < 1 || o.MaxJobBytes < 1 || o.MaxJobBytes > o.MaxBytes || o.MinFreeBytes < 0 ||
 		o.IdleTimeout < time.Millisecond || o.StartupTimeout < time.Millisecond || o.NoProgressTimeout < time.Millisecond ||
@@ -296,7 +309,7 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 		m.mu.Unlock()
 		return record, err
 	}
-	if len(m.jobs) >= m.options.MaxRetainedJobs || m.queuedLocked() >= m.options.MaxQueueJobs {
+	if !m.admissionAvailableLocked(spec.Scope) {
 		m.mu.Unlock()
 		return Record{}, ErrBusy
 	}
@@ -341,7 +354,7 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 		owned = true
 		return m.Ensure(ctx, spec, input)
 	}
-	if len(m.jobs) >= m.options.MaxRetainedJobs || m.queuedLocked() >= m.options.MaxQueueJobs {
+	if !m.admissionAvailableLocked(spec.Scope) {
 		m.mu.Unlock()
 		cancel()
 		return Record{}, ErrBusy
@@ -391,14 +404,60 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 	return record, nil
 }
 
-func (m *Manager) queuedLocked() int {
-	count := 0
+// Admission reserves each subject's execution allowance as well as its waiting
+// allowance. Counting every accepted, unfinished job includes creation and
+// scheduling races without making idle execution slots unavailable merely
+// because another subject has filled its queue. Application clients sharing a
+// credential share the credential allowance; user sessions also share a user
+// allowance. Stopping jobs remain bounded by MaxRetainedJobs until reaped.
+func (m *Manager) admissionAvailableLocked(scope Scope) bool {
+	if len(m.jobs) >= m.options.MaxRetainedJobs {
+		return false
+	}
+	active, user, auth := 0, 0, 0
 	for _, j := range m.jobs {
-		if !j.running && !j.finished && j.stopCode == "" {
-			count++
+		if j.finished || j.stopCode != "" {
+			continue
+		}
+		active++
+		owner := j.record.Spec.Scope
+		if !scope.ApplicationKey && !owner.ApplicationKey && owner.UserID == scope.UserID {
+			user++
+		}
+		if owner.AuthSessionID == scope.AuthSessionID {
+			auth++
 		}
 	}
-	return count
+	// A small retained-record budget must not erase the execution capacity
+	// reserved for other subjects. Completed history is still independently
+	// bounded by the global retention limit and existing idle reclamation.
+	userLimit := min(m.options.MaxUserJobs+m.options.MaxUserQueueJobs,
+		m.options.MaxRetainedJobs-m.options.MaxJobs+m.options.MaxUserJobs)
+	authLimit := min(m.options.MaxSessionJobs+m.options.MaxSessionQueueJobs,
+		m.options.MaxRetainedJobs-m.options.MaxJobs+m.options.MaxSessionJobs)
+	return active < m.options.MaxJobs+m.options.MaxQueueJobs &&
+		(scope.ApplicationKey || user < userLimit) && auth < authLimit
+}
+
+// Health reports whether the engine can accept work, independently of temporary
+// queue, reader, or storage pressure. A guarded cache cleanup failure is sticky
+// and requires operator repair and a service restart. Codes contain no paths,
+// credentials, or raw filesystem errors.
+type Health struct {
+	Available bool
+	Code      string
+}
+
+func (m *Manager) Health() Health {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.cacheFailed {
+		return Health{Code: "cache_unavailable"}
+	}
+	if m.closing {
+		return Health{Code: "manager_closed"}
+	}
+	return Health{Available: true, Code: "ready"}
 }
 
 func (m *Manager) touchLocked(j *managedJob) { j.record.LastAccessAt = time.Now().UTC() }

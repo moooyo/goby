@@ -60,6 +60,7 @@ type scanReconciliationRootEvidence struct {
 // deletion authority. Repeated filesystem observations are not an atomic lock
 // shared with the catalog transaction.
 type scanReconciliationEvidence struct {
+	observation           storageObservationLifetime
 	limits                scanReconciliationEvidenceLimits
 	directories           int
 	entries               int
@@ -359,13 +360,15 @@ func (evidence *scanReconciliationEvidence) Disable(cause error) error {
 }
 
 func (evidence *scanReconciliationEvidence) Close() error {
-	if evidence == nil || evidence.closed {
+	if evidence == nil {
 		return nil
 	}
-	if evidence.err == nil {
-		evidence.err = errScanReconciliationEvidenceUnavailable
-	}
-	return evidence.release()
+	return evidence.observation.retire(func() error {
+		if evidence.err == nil {
+			evidence.err = errScanReconciliationEvidenceUnavailable
+		}
+		return evidence.release()
+	})
 }
 
 func (evidence *scanReconciliationEvidence) release() error {

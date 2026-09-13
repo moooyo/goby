@@ -128,7 +128,7 @@ than relying only on an earlier middleware principal.
 
 Paths work with or without `/emby`. Route literals such as `Devices`, `Info`,
 `Options`, and `Delete` accept case-insensitive aliases. Query names are
-case-insensitive; duplicate aliases are rejected. Identifier values retain
+case-insensitive; duplicate business aliases are rejected. Identifier values retain
 their spelling and case.
 
 | Method and canonical path | Successful behavior |
@@ -152,8 +152,9 @@ actual count; Goby does not reproduce the observed Emby zero total for
 nonempty `Items`. Pagination and native search fields are not accepted here.
 
 Other operations require a single `Id` of 1–256 UTF-8 bytes without controls
-or surrounding whitespace. `api_key` remains an accepted authentication query
-parameter. Unknown query fields return `400`.
+or surrounding whitespace. The declared
+[compatibility transport carriers](compatibility-transport.md) are accepted
+independently of those business parameters. Unknown query fields return `400`.
 
 A canonical positive decimal identifier within the signed 64-bit range
 addresses exactly that numeric generation. It never falls back to another

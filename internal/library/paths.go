@@ -33,7 +33,7 @@ func (s *Store) authorizePath(path string) (*rootBindingRegistration, error) {
 		return nil, fmt.Errorf("%w: media directory cannot be resolved", ErrUnavailable)
 	}
 	s.mu.Lock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		s.mu.Unlock()
 		return nil, ErrUnavailable
 	}
@@ -96,22 +96,80 @@ func openApprovedRoot(approved *approvedRoot) error {
 }
 
 func (s *Store) openLibraryRoot(root libraryRoot) (*os.Root, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	approved, err := s.approvedLibraryRootLocked(root)
-	if err != nil {
-		return nil, err
-	}
-	opened, err := openRegisteredRoot(approved, root.relativePath)
-	if err != nil {
-		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
-	}
-	return opened, nil
+	return s.withLibraryRootAnchor(root, func(approved *os.Root) (*os.Root, error) {
+		opened, err := openRegisteredRoot(approved, root.relativePath)
+		if err != nil {
+			return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
+		}
+		return opened, nil
+	})
 }
 
-// The caller holds Store.mu while finding or initializing the approved anchor.
+// Keep admission and descriptor retention in the same short memory-only
+// critical section. The borrowed generation remains usable across replacement
+// while every filesystem operation, including lazy initialization, runs outside
+// Store.mu. The private callback permits deterministic slow-storage tests.
+func (s *Store) withLibraryRootAnchor(root libraryRoot, open func(*os.Root) (*os.Root, error)) (*os.Root, error) {
+	return s.withLibraryRootAnchorCapture(root, openApprovedRoot, open)
+}
+
+func (s *Store) withLibraryRootAnchorCapture(root libraryRoot, capture func(*approvedRoot) error, open func(*os.Root) (*os.Root, error)) (*os.Root, error) {
+	s.mu.Lock()
+	approved, err := s.approvedLibraryRootLocked(root)
+	if err != nil {
+		s.mu.Unlock()
+		return nil, err
+	}
+	s.rootOpens.Add(1)
+	defer s.rootOpens.Done()
+	if approved != nil {
+		reference := s.borrowRootAnchorLocked(approved)
+		s.mu.Unlock()
+		defer s.releaseRootAnchor(reference)
+		return open(approved)
+	}
+	s.mu.Unlock()
+
+	// More than one first opener may prepare an anchor. Only the first current
+	// candidate is installed; the others use that winner or a newer explicit
+	// binding, and close their own unused candidates without holding the mutex.
+	candidate := approvedRoot{path: root.allowedPath}
+	defer func() {
+		if candidate.root != nil {
+			_ = candidate.root.Close()
+		}
+	}()
+	if err := capture(&candidate); err != nil {
+		return nil, err
+	}
+	if candidate.root == nil {
+		return nil, ErrUnavailable
+	}
+	s.mu.Lock()
+	approved, err = s.approvedLibraryRootLocked(root)
+	if err != nil {
+		s.mu.Unlock()
+		return nil, err
+	}
+	if approved == nil {
+		for index := range s.roots {
+			if s.roots[index].path == root.allowedPath {
+				s.roots[index].root = candidate.root
+				approved, candidate.root = candidate.root, nil
+				break
+			}
+		}
+	}
+	reference := s.borrowRootAnchorLocked(approved)
+	s.mu.Unlock()
+	defer s.releaseRootAnchor(reference)
+	return open(approved)
+}
+
+// The caller holds Store.mu. A nil descriptor requests lazy initialization;
+// this lookup never opens or closes storage while holding the admission mutex.
 func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return nil, ErrUnavailable
 	}
 	if hasTraversal(root.relativePath) || filepath.IsAbs(root.relativePath) {
@@ -129,9 +187,6 @@ func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
 		if rebound {
 			return bound.approved, nil
 		}
-		if err := openApprovedRoot(approved); err != nil {
-			return nil, err
-		}
 		return approved.root, nil
 	}
 	return nil, fmt.Errorf("%w: media directory is no longer configured", ErrUnavailable)
@@ -146,15 +201,15 @@ type libraryRootLease struct {
 }
 
 func (s *Store) leaseLibraryRoot(root libraryRoot) (*libraryRootLease, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	approved, err := s.approvedLibraryRootLocked(root)
+	held, err := s.withLibraryRootAnchor(root, func(approved *os.Root) (*os.Root, error) {
+		held, err := approved.OpenRoot(".")
+		if err != nil {
+			return nil, fmt.Errorf("%w: approved media anchor cannot be retained", ErrUnavailable)
+		}
+		return held, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	held, err := approved.OpenRoot(".")
-	if err != nil {
-		return nil, fmt.Errorf("%w: approved media anchor cannot be retained", ErrUnavailable)
 	}
 	return &libraryRootLease{approved: held, relativePath: strings.Clone(root.relativePath)}, nil
 }

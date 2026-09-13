@@ -1,11 +1,60 @@
 package server
 
 import (
+	"bytes"
+	"log/slog"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/moooyo/goby/internal/diagnostics"
 )
+
+func TestHTTPLibraryCreationRemainsCommittedWhenOptionalScanFails(t *testing.T) {
+	f, root := newLibraryServerFixture(t)
+	writeAPIMediaFile(t, root, "movies/Optional Scan.mp4")
+	f.bootstrap(t)
+	login := f.embyLogin(t, "Administrator", "administrator-password")
+	headers := http.Header{"X-Emby-Token": {stringValue(t, login, "AccessToken")}}
+	var log bytes.Buffer
+	f.app.log = slog.New(diagnostics.NewHandler(nil, slog.NewJSONHandler(&log, nil)))
+	// This fixture owns its schema. Reject only scan admission, after library
+	// creation has independently committed, without exhausting shared workers.
+	if _, err := f.pool.Exec(f.ctx, `CREATE FUNCTION reject_initial_scan() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'synthetic scan admission failure'; END $$;
+		CREATE TRIGGER reject_initial_scan BEFORE INSERT ON scan_jobs FOR EACH ROW EXECUTE FUNCTION reject_initial_scan()`); err != nil {
+		t.Fatal(err)
+	}
+	created := f.request(t, http.MethodPost, "/emby/Library/VirtualFolders", map[string]any{
+		"Name": "Optional scan contract", "CollectionType": "movies", "Paths": []string{filepath.Join(root, "movies")}, "RefreshLibrary": true,
+	}, headers)
+	expectStatus(t, created, http.StatusNoContent)
+	if created.Body.Len() != 0 || created.Header().Get("Content-Type") != "" {
+		t.Fatal("committed compatibility creation must retain its empty success response")
+	}
+	items, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Library/VirtualFolders/Query", nil, headers))
+	if total != 1 || len(items) != 1 {
+		t.Fatalf("creation was not committed exactly once: %#v", items)
+	}
+	id := stringValue(t, items[0], "ItemId")
+	var scans int
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM scan_jobs WHERE library_id=$1`, id).Scan(&scans); err != nil || scans != 0 {
+		t.Fatalf("failed optional admission retained a scan: count=%d error=%v", scans, err)
+	}
+	if !strings.Contains(log.String(), `"event":"library.initial_scan.failed"`) || !strings.Contains(log.String(), id) || strings.Contains(log.String(), "synthetic scan admission failure") {
+		t.Fatalf("optional scan failure lost its safe operational diagnostic: %s", log.String())
+	}
+	if _, err := f.pool.Exec(f.ctx, `DROP TRIGGER reject_initial_scan ON scan_jobs; DROP FUNCTION reject_initial_scan()`); err != nil {
+		t.Fatal(err)
+	}
+	// Operators retry scanning the existing library, not library creation.
+	job, err := f.app.library.StartScan(f.ctx, id)
+	if err != nil || job.LibraryID != id {
+		t.Fatalf("existing library scan could not be retried: job=%+v error=%v", job, err)
+	}
+}
 
 func TestHTTPLibraryMutationStatusesMatchReference(t *testing.T) {
 	f, root := newLibraryServerFixture(t)

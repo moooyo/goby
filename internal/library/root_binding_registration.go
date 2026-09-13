@@ -16,12 +16,13 @@ import (
 // shared anchors. Unsupported storage can remain unbound without releasing the
 // directories whose safe names were accepted for this registration.
 type rootBindingRegistration struct {
-	root       libraryRoot
-	lease      *libraryRootLease
-	registered *os.Root
-	topology   rootBindingRegistrationTopology
-	document   []byte
-	anchor     *os.Root
+	observation storageObservationLifetime
+	root        libraryRoot
+	lease       *libraryRootLease
+	registered  *os.Root
+	topology    rootBindingRegistrationTopology
+	document    []byte
+	anchor      *os.Root
 }
 
 // The private factory permits observation-boundary tests while every caller
@@ -216,6 +217,20 @@ func (registration *rootBindingRegistration) Close() error {
 	if registration == nil {
 		return nil
 	}
+	return registration.observation.retire(registration.closeResources)
+}
+
+// RevalidateBounded preserves final registration evidence without allowing a
+// stalled storage call to retain catalog admission indefinitely. Close retires
+// the independent registration resources until its filesystem worker returns.
+func (registration *rootBindingRegistration) RevalidateBounded(ctx context.Context) error {
+	if registration == nil {
+		return ErrUnavailable
+	}
+	return runStorageObservation(ctx, []*storageObservationLifetime{&registration.observation}, registration.Revalidate)
+}
+
+func (registration *rootBindingRegistration) closeResources() error {
 	var result error
 	if registration.topology != nil {
 		result = errors.Join(result, registration.topology.Close())

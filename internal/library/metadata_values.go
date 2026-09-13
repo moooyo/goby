@@ -209,14 +209,18 @@ func composeMetadataValues(automatic []byte, overrides, locked map[string]json.R
 	if err != nil {
 		return MetadataValues{}, nil, err
 	}
-	for _, layer := range []map[string]json.RawMessage{locked, overrides} {
+	for index, layer := range []map[string]json.RawMessage{locked, overrides} {
 		for field, raw := range layer {
 			if !knownMetadataValueField(field) {
 				return MetadataValues{}, nil, &MetadataValidationError{Fields: map[string]string{
 					field: "Unknown metadata field.",
 				}}
 			}
-			value, err := normalizeMetadataValue(field, raw)
+			normalize := normalizeMetadataValue
+			if index == 0 {
+				normalize = normalizeMetadataLockValue
+			}
+			value, err := normalize(field, raw)
 			if err != nil {
 				return MetadataValues{}, nil, &MetadataValidationError{Fields: map[string]string{field: err.Error()}}
 			}
@@ -463,6 +467,24 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 		return nil, fmt.Errorf("Could not encode the metadata value.")
 	}
 	return encoded, nil
+}
+
+// Accepted source names may contain significant surrounding whitespace, or
+// consist entirely of whitespace. A lock freezes those values without applying
+// the normalization required for a new manual name. Keep the same type, UTF-8,
+// NUL, and byte limits; all other fields retain their existing domain checks.
+func normalizeMetadataLockValue(field string, raw json.RawMessage) (json.RawMessage, error) {
+	if field != "Name" && field != "SortName" {
+		return normalizeMetadataValue(field, raw)
+	}
+	if !utf8.Valid(raw) || !json.Valid(raw) {
+		return nil, fmt.Errorf("Must contain valid UTF-8 JSON.")
+	}
+	text, err := metadataStringValue(raw, false, metadataValueMaxName, false)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(text)
 }
 
 func metadataStringValue(raw []byte, nonempty bool, maximum int, trim bool) (string, error) {

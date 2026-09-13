@@ -80,6 +80,8 @@ async function error(route: Route, code: string, message: string, responseStatus
 }
 
 class BackupMock {
+  actorId = '55555555555555555555555555555555';
+  serverId = '44444444444444444444444444444444';
   status: unknown = status();
   backups: unknown[] = [];
   operations: unknown[] = [];
@@ -123,8 +125,14 @@ class BackupMock {
       if (captured.method === 'GET') {
         if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (captured.path === '/admin/v1/session') return json(route, {
-          User: { Id: '55555555555555555555555555555555', Name: 'Browser administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp },
+          User: { Id: this.actorId, Name: 'Browser administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp },
           CSRFToken: csrfToken,
+        });
+        if (captured.path === '/admin/v1/overview') return json(route, {
+          Server: { Id: this.serverId, Name: 'Browser server', Version: '0.1.0' },
+          Database: { Status: 'ready' }, Counts: { Users: 1, Libraries: 0, Items: 0, ActiveSessions: 1 },
+          Runtime: { GoVersion: 'test' },
+          Features: { LibraryManagement: true, Playback: true, Transcoding: false, ApplicationKeys: true },
         });
         if (captured.path === '/admin/v1/backups/status') return json(route, this.status);
         if (captured.path === '/admin/v1/backups' || captured.path === '/admin/v1/backup-operations') {
@@ -586,6 +594,151 @@ test('a lost apply response remains uncertain while the old plan is still ready 
   await expect(warning).not.toBeVisible();
   await expect(jobCard(page)).toContainText('Applying');
   expect(api.mutations(`/admin/v1/restores/${operationId}/apply`)).toHaveLength(1);
+});
+
+test('an unresolved activation survives navigation and reload, and stays scoped to its actor and server', async ({ page, api }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const ready = operation({ Kind: 'restore', State: 'ready', Phase: 'ready', CanApply: true, Source: source() });
+  api.operations = [ready];
+  api.on('POST', `/admin/v1/restores/${operationId}/apply`, async (route) => route.abort('connectionreset'));
+  const warning = page.getByText(/Activation could not be confirmed\. A ready plan alone does not confirm that it was applied\./);
+  const receipts = () => page.evaluate(() => Object.entries(sessionStorage).filter(([key]) => key.startsWith('goby.backup-attempt.v1.')));
+  async function inspectBlocked() {
+    await expect(warning).toBeVisible();
+    await jobCard(page).getByRole('button', { name: 'Inspect plan', exact: true }).click();
+    const inspection = page.getByRole('dialog', { name: 'Inspect plan', exact: true });
+    await expect(inspection.getByText('An earlier activation request still has an unknown outcome. Check the jobs before submitting another request.', { exact: true })).toBeVisible();
+    await expect(inspection.getByRole('button', { name: 'Apply restore', exact: true })).toBeDisabled();
+    await inspection.getByRole('button', { name: 'Close', exact: true }).click();
+  }
+  async function inspectIndependentScope() {
+    await expect(jobCard(page)).toContainText('Ready');
+    await expect(warning).not.toBeVisible();
+    await jobCard(page).getByRole('button', { name: 'Inspect plan', exact: true }).click();
+    const inspection = page.getByRole('dialog', { name: 'Inspect plan', exact: true });
+    await expect(inspection.getByRole('button', { name: 'Apply restore', exact: true })).toBeEnabled();
+    await inspection.getByRole('button', { name: 'Close', exact: true }).click();
+  }
+
+  await openBackups(page);
+  await jobCard(page).getByRole('button', { name: 'Inspect plan', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Inspect plan', exact: true }).getByRole('button', { name: 'Apply restore', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Apply restore', exact: true });
+  await expect(confirmation.getByRole('button', { name: 'Apply restore', exact: true })).toBeDisabled();
+  await confirmation.getByRole('checkbox', { name: 'I understand that everyone must sign in again', exact: true }).check();
+  await confirmation.getByRole('button', { name: 'Apply restore', exact: true }).click();
+  await expect(confirmation).not.toBeVisible();
+  await inspectBlocked();
+  const [stored] = await receipts();
+  expect(stored).toBeDefined();
+  expect(JSON.parse(stored[1])).toEqual({ Version: 1, Origin: new URL(page.url()).origin,
+    ActorId: api.actorId, ServerId: api.serverId,
+    Attempt: { RequestId: ready.RequestId, Kind: 'restore', OperationId: ready.Id, ApplyingRevision: ready.Revision } });
+  expect(stored[1]).not.toContain(csrfToken);
+
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Overview', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Backups & recovery', exact: true }).click();
+  await inspectBlocked();
+  await page.reload();
+  await inspectBlocked();
+  expect(await receipts()).toEqual([stored]);
+
+  const originalActor = api.actorId;
+  const originalServer = api.serverId;
+  api.actorId = '66666666666666666666666666666666';
+  await page.reload();
+  await inspectIndependentScope();
+  expect(await receipts()).toEqual([stored]);
+  api.actorId = originalActor;
+  api.serverId = '77777777777777777777777777777777';
+  await page.reload();
+  await inspectIndependentScope();
+  expect(await receipts()).toEqual([stored]);
+  api.serverId = originalServer;
+  await page.reload();
+  await inspectBlocked();
+  expect(api.mutations(`/admin/v1/restores/${operationId}/apply`)).toHaveLength(1);
+
+  for (const stale of [
+    { ...ready, State: 'running', Phase: 'staging', CanApply: false, Revision: '7' },
+    { ...ready, State: 'applying', Phase: 'activation', CanApply: false, Revision: ready.Revision },
+  ]) {
+    api.operations = [stale];
+    await page.getByRole('button', { name: 'Check jobs again', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Check jobs again', exact: true })).toBeEnabled();
+    await expect(warning).toBeVisible();
+    expect(await receipts()).toEqual([stored]);
+  }
+
+  // An authoritative change of the matching operation resolves the receipt.
+  api.operations = [{ ...ready, State: 'applying', Phase: 'activation', CanApply: false, CanCancel: false, Revision: '9007199254740994' }];
+  await page.getByRole('button', { name: 'Check jobs again', exact: true }).click();
+  await expect(warning).not.toBeVisible();
+  await expect(jobCard(page)).toContainText('Applying');
+  expect(await receipts()).toEqual([]);
+  expect(api.mutations(`/admin/v1/restores/${operationId}/apply`)).toHaveLength(1);
+});
+
+test('an admission receipt is stored before the response and restores its reconciliation after reload', async ({ page, api }) => {
+  const responseGate = gate();
+  const requested = gate();
+  api.on('POST', '/admin/v1/backups', async (route) => {
+    requested.release();
+    await responseGate.reached;
+    await route.abort('connectionreset');
+  });
+  const passphrase = 'private phrase never in receipts';
+  try {
+    await openBackups(page);
+    await page.getByRole('button', { name: 'Create backup', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Create backup', exact: true });
+    await dialog.getByLabel(/^Passphrase(?:\s*\*)?$/).fill(passphrase);
+    await dialog.getByLabel(/^Confirm passphrase(?:\s*\*)?$/).fill(passphrase);
+    await dialog.getByRole('button', { name: 'Create backup', exact: true }).click();
+    await requested.reached;
+    const stored = await page.evaluate(() => Object.entries(sessionStorage).filter(([key]) => key.startsWith('goby.backup-attempt.v1.')));
+    expect(stored).toHaveLength(1);
+    const attempt = JSON.parse(stored[0][1]).Attempt;
+    expect(attempt).toEqual({ RequestId: api.mutations('/admin/v1/backups')[0].json!.RequestId, Kind: 'create' });
+    expect(stored[0][1]).not.toContain(passphrase);
+    expect(stored[0][1]).not.toContain(csrfToken);
+    await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
+    responseGate.release();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByText('Admission could not be confirmed. Check the jobs before starting another attempt.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('Admission could not be confirmed. Check the jobs before starting another attempt.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create backup', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Start a new attempt', exact: true })).toBeEnabled();
+    expect(api.mutations('/admin/v1/backups')).toHaveLength(1);
+    await page.getByRole('button', { name: 'Start a new attempt', exact: true }).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel(/^Passphrase(?:\s*\*)?$/)).toHaveValue('');
+    expect(await page.evaluate(() => Object.keys(sessionStorage).filter((key) => key.startsWith('goby.backup-attempt.v1.')))).toEqual([]);
+    expect(api.mutations('/admin/v1/backups')).toHaveLength(1);
+  } finally {
+    responseGate.release();
+  }
+});
+
+test('recovery requests are not sent when their non-secret receipt cannot be stored', async ({ page, context, api }) => {
+  await context.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key.startsWith('goby.backup-attempt.v1.')) throw new DOMException('Storage unavailable', 'QuotaExceededError');
+      original.call(this, key, value);
+    };
+  });
+  await openBackups(page);
+  await page.getByRole('button', { name: 'Create backup', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Create backup', exact: true });
+  await dialog.getByLabel(/^Passphrase(?:\s*\*)?$/).fill('a sufficiently long phrase');
+  await dialog.getByLabel(/^Confirm passphrase(?:\s*\*)?$/).fill('a sufficiently long phrase');
+  await dialog.getByRole('button', { name: 'Create backup', exact: true }).click();
+  await expect(dialog.getByText(/The pending recovery receipt could not be stored or read/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeEnabled();
+  expect(api.mutations()).toHaveLength(0);
 });
 
 for (const blockedBy of ['server capability', 'changed generation'] as const) {

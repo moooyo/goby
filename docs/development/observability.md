@@ -81,6 +81,14 @@ facts. Bulk credential revocation is represented by its owning account/device
 operation; clients must not infer a separate activity entry for every changed
 session row.
 
+Shared application-key server devices follow the same owning-operation rule.
+A changed shared-device name records `device.updated`; first removal records
+`device.removed` with the number of newly revoked parent credentials. Previously
+revoked parents and retained client contexts do not inflate that count. These
+events commit in the device transaction before its final authority check, and
+activity insertion failure rolls back the device and credential changes. An
+unchanged name or idempotent removal retry does not create another event.
+
 Application-key reveal entries mean that decryption succeeded and the secret
 was prepared for authorized display in the transaction. They do not claim
 network delivery. A compatibility key-list read that reveals active tokens

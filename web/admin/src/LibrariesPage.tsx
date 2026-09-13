@@ -14,6 +14,7 @@ import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, Storage
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
 import { RootBindingDialog } from './RootBindingDialog';
+import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const collectionTypes: { value: LibraryInput['CollectionType']; label: string }[] = [
   { value: 'movies', label: 'Movies' },
@@ -182,7 +183,7 @@ function RefreshMediaDialog({ library, outcomeUnknown, onUnknown, onClose, onSta
   );
 }
 
-export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void; onManageItems: (library: Library) => void }) {
+export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange }: { onTasks: () => void; onManageItems: (library: Library) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [libraries, setLibraries] = useState<LibrariesResponse>();
   const [roots, setRoots] = useState<StorageRootsResponse>();
   const [error, setError] = useState<unknown>(null);
@@ -295,7 +296,7 @@ export function LibrariesPage({ onTasks, onManageItems }: { onTasks: () => void;
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
       {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
-      {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} />}
+      {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>
   );

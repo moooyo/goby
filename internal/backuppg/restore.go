@@ -130,20 +130,9 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err != nil {
 		return result, err
 	}
-	if facts.DatabaseSchema != options.Schema || facts.PostgreSQLVersionNum/10000 != 17 || facts.ProbeVersion < 1 || facts.ProbeVersion > options.ProbeVersion {
-		return result, ErrArchive
-	}
-	catalog, migrations, err := loadCatalog(facts.SchemaVersion, options.Schema)
+	catalog, migrations, err := archiveCatalog(facts, options)
 	if err != nil {
 		return result, err
-	}
-	if facts.SchemaSHA256 != catalog.SHA256 || !equalJSON(facts.MigrationChecksums, migrations) || len(facts.Tables) != len(catalog.Tables) {
-		return result, ErrArchive
-	}
-	for i, table := range catalog.Tables {
-		if facts.Tables[i].Name != table.Name || facts.Tables[i].Rows < 0 {
-			return result, ErrArchive
-		}
 	}
 	ctx, cancel := context.WithTimeout(ctx, options.Timeout)
 	defer cancel()

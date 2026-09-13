@@ -7,6 +7,8 @@ import type { Library } from './api';
 import { ErrorNotice } from './components';
 import { rootBindingsApi } from './rootBindingsApi';
 import type { RegisteredRoot, RootBinding, StorageIdentity } from './rootBindingsApi';
+import { useUserDraftNavigation } from './userDraftNavigation';
+import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const mono = { fontFamily: 'ui-monospace, Consolas, monospace', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', minWidth: 0 } as const;
 const acknowledgement = 'I understand that a later complete scan which verifies this storage may remove catalog records for missing files.';
@@ -140,7 +142,7 @@ function mutationRecovery(error: unknown): string {
   return 'Refresh the observation and review the current storage before approving again.';
 }
 
-export function RootBindingDialog({ library, onClose }: { library: Library; onClose: () => void }) {
+export function RootBindingDialog({ library, onClose, onNavigationGuardChange }: { library: Library; onClose: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [roots, setRoots] = useState<RegisteredRoot[]>();
   const [rootId, setRootId] = useState('');
   const [rootsVersion, setRootsVersion] = useState(0);
@@ -155,6 +157,7 @@ export function RootBindingDialog({ library, onClose }: { library: Library; onCl
   const [saved, setSaved] = useState(false);
   const mounted = useRef(true);
   const mutation = useRef<AbortController | undefined>(undefined);
+  useUserDraftNavigation(false, saving, onNavigationGuardChange);
 
   useEffect(() => {
     mounted.current = true;

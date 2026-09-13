@@ -312,7 +312,7 @@ Emby GET operations. The canonical paths below also work without the `/emby`
 prefix through the existing namespace adapter. No additional case-variant
 guarantee is made for these route literals; filenames remain case-sensitive.
 
-| GET route | Allowed query fields besides `api_key` | Result |
+| GET route | Allowed business query fields | Result |
 | --- | --- | --- |
 | `/emby/System/ActivityLog/Entries` | `StartIndex`, `Limit`, `MinDate` | Activity query result |
 | `/emby/System/Logs/Query` | `StartIndex`, `Limit` | Registered file query result |
@@ -321,8 +321,8 @@ guarantee is made for these route literals; filenames remain case-sensitive.
 
 GET requires a current ordinary Emby administrator token or a complete
 application-key principal. The native administrator cookie is a separate
-audience. Existing Emby token transports, including `X-Emby-Token` and the
-single lowercase `api_key` query field, remain supported. Missing/invalid
+audience. The declared [compatibility transport carriers](compatibility-transport.md)
+are accepted separately from the business fields above. Missing/invalid
 credentials receive `401` with `Access token is invalid or expired.` A valid
 viewer receives `403` with
 `User {Name} does not have access to ManageServer feature.` These text errors
@@ -343,7 +343,7 @@ actor details, revisions, and snapshot byte counts are not added.
 
 ### Compatibility pagination
 
-Query names are exact and single-valued, with the same 4096-byte, UTF-8, and
+Business query names are exact and single-valued, with the same 4096-byte, UTF-8, and
 control-character limits as native queries. Numeric values must be canonical
 signed int32 decimal strings: `+1`, `01`, and `-0` are invalid. The table below
 defines the implemented differences from the native API.

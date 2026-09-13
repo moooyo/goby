@@ -64,7 +64,11 @@ type migration struct {
 }
 
 func migrations() ([]migration, error) {
-	entries, err := fs.ReadDir(migrationFiles, "migrations")
+	return readMigrations(migrationFiles)
+}
+
+func readMigrations(source fs.FS) ([]migration, error) {
+	entries, err := fs.ReadDir(source, "migrations")
 	if err != nil {
 		return nil, fmt.Errorf("read embedded migrations: %w", err)
 	}
@@ -80,19 +84,24 @@ func migrations() ([]migration, error) {
 			return nil, fmt.Errorf("invalid migration filename: %s", entry.Name())
 		}
 		seen[version] = true
-		content, err := migrationFiles.ReadFile("migrations/" + entry.Name())
+		content, err := fs.ReadFile(source, "migrations/"+entry.Name())
 		if err != nil {
 			return nil, fmt.Errorf("read migration %s: %w", entry.Name(), err)
 		}
 		result = append(result, migration{version: version, name: entry.Name(), sql: string(content)})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].version < result[j].version })
+	if err := validatePublishedMigrations(result); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
 // Migrate atomically applies embedded migrations under a PostgreSQL advisory lock.
 // Concurrent server startups serialize before inspecting or modifying the schema.
 // The caller's deadline is capped at 30 minutes, including lock acquisition.
+// Embedded SQL must match the published manifest, and existing history must be
+// its contiguous prefix. Historical rows do not attest to executed SQL bytes.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	if pool == nil {
 		return errors.New("database pool is required")
@@ -128,7 +137,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return fmt.Errorf("read migration history: %w", err)
 	}
-	applied := make(map[int64]string)
+	applied := 0
 	for rows.Next() {
 		var version int64
 		var name string
@@ -136,28 +145,25 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 			rows.Close()
 			return fmt.Errorf("scan migration history: %w", err)
 		}
-		applied[version] = name
+		if version < 1 || version > available[len(available)-1].version || applied >= len(available) {
+			rows.Close()
+			return fmt.Errorf("database migration %d is unsupported by this server", version)
+		}
+		if version != available[applied].version {
+			rows.Close()
+			return fmt.Errorf("database migration history is not a contiguous published prefix: expected version %d, found %d", available[applied].version, version)
+		}
+		if name != available[applied].name {
+			rows.Close()
+			return fmt.Errorf("migration %d has an unexpected filename", version)
+		}
+		applied++
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("read migration history: %w", err)
 	}
-	known := make(map[int64]bool, len(available))
-	for _, item := range available {
-		known[item.version] = true
-		if name, ok := applied[item.version]; ok && name != item.name {
-			return fmt.Errorf("migration %d has an unexpected filename", item.version)
-		}
-	}
-	for version := range applied {
-		if !known[version] {
-			return fmt.Errorf("database migration %d is unsupported by this server", version)
-		}
-	}
-	for _, item := range available {
-		if _, ok := applied[item.version]; ok {
-			continue
-		}
+	for _, item := range available[applied:] {
 		if err := beforeMigration(ctx, tx, item.version); err != nil {
 			return fmt.Errorf("prepare migration %s: %w", item.name, err)
 		}

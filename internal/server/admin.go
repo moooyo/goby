@@ -84,14 +84,33 @@ func implementedFeatures() map[string]bool {
 }
 
 func (s *Server) runtimeFeatures() map[string]bool {
+	return featuresForTranscoding(s.transcodingStatus())
+}
+
+func featuresForTranscoding(status transcodingStatus) map[string]bool {
 	features := implementedFeatures()
-	if s.hls != nil {
-		features["Transcoding"] = true
-		hardware := s.cfg.Transcoding.Hardware
-		features["HardwareDecoding"] = hardware.Decode != "" && hardware.Decode != "software"
-		features["HardwareEncoding"] = hardware.Encode != "" && hardware.Encode != "software"
-	}
+	features["Transcoding"] = status.Available
+	// Hardware settings describe operator intent, not a verified device or codec.
+	// Keep hardware feature flags false until an actual runtime proof exists.
 	return features
+}
+
+type transcodingStatus struct {
+	Configured bool
+	Available  bool
+	Reason     string
+}
+
+func (s *Server) transcodingStatus() transcodingStatus {
+	configured := s.cfg.Transcoding.Enabled || s.hls != nil
+	if !configured {
+		return transcodingStatus{Reason: "disabled"}
+	}
+	if s.hls == nil {
+		return transcodingStatus{Configured: true, Reason: "engine_unavailable"}
+	}
+	health := s.hls.health()
+	return transcodingStatus{Configured: true, Available: health.Available, Reason: health.Code}
 }
 
 func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
@@ -106,27 +125,31 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
+	transcoding := s.transcodingStatus()
 	jsonResponse(w, 200, map[string]any{
 		"Server":   map[string]string{"Id": s.serverID, "Name": snapshot.Effective.ServerName, "Version": s.version},
 		"Database": map[string]string{"Status": "connected", "Engine": "PostgreSQL"},
 		"Counts":   map[string]int{"Users": userCount, "Libraries": libraryCount, "Items": itemCount, "ActiveSessions": sessionCount},
-		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": s.runtimeFeatures(),
+		"Runtime":  map[string]string{"GoVersion": runtime.Version()}, "Features": featuresForTranscoding(transcoding),
+		"Transcoding": transcoding,
 	})
 }
 
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	decode, encode := []string{}, []string{}
 	hardware := s.cfg.Transcoding.Hardware
-	if s.hls != nil && hardware.Decode != "" && hardware.Decode != "software" {
+	if hardware.Decode != "" && hardware.Decode != "software" {
 		decode = append(decode, hardware.Decode)
 	}
-	if s.hls != nil && hardware.Encode != "" && hardware.Encode != "software" {
+	if hardware.Encode != "" && hardware.Encode != "software" {
 		encode = append(encode, hardware.Encode)
 	}
+	transcoding := s.transcodingStatus()
 	jsonResponse(w, 200, map[string]any{
-		"ServerVersion": s.version, "Features": s.runtimeFeatures(),
-		"Toolchain": map[string]string{"Go": config.GoVersion, "FFmpeg": config.FFmpegVersion},
-		"Hardware":  map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Decode": decode, "Encode": encode},
+		"ServerVersion": s.version, "Features": featuresForTranscoding(transcoding),
+		"Toolchain":   map[string]string{"Go": config.GoVersion, "FFmpeg": config.FFmpegVersion},
+		"Hardware":    map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Decode": decode, "Encode": encode},
+		"Transcoding": transcoding,
 	})
 }
 

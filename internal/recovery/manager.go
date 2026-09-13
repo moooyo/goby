@@ -136,8 +136,12 @@ func (m *Manager) healthyLocked() error {
 }
 
 func (m *Manager) persistLocked(ctx context.Context) error {
+	compactControl(&m.data)
 	updated, err := writeControl(ctx, m.runtime, m.control, m.data)
 	if err != nil {
+		if errors.Is(recoverCapacity(&m.data, m.control, err), ErrCapacity) {
+			return ErrCapacity
+		}
 		m.fault = true
 		return ErrUnavailable
 	}
@@ -183,21 +187,23 @@ func (m *Manager) newOperationLocked(actor identity.Principal, requestID, kind, 
 	if m.busyLocked("") {
 		return nil, ErrBusy
 	}
-	// Idempotency history is retained for at least seven days. A bounded
-	// journal rejects admission rather than silently evicting recent requests.
-	if len(m.data.Operations) >= maxOperations {
-		cutoff := time.Now().Add(-7 * 24 * time.Hour)
-		m.data.Operations = slices.DeleteFunc(m.data.Operations, func(op operationRecord) bool {
-			for _, slot := range m.data.Slots {
-				if slot.Operation == op.ID {
-					return false
-				}
+	// Build admission separately so a known capacity refusal cannot leave a
+	// phantom operation or discard the last durable idempotency history.
+	candidate := m.data
+	candidate.Operations = slices.Clone(m.data.Operations)
+	compactControl(&candidate)
+	// Eligible history is pruned independently of the count threshold. Recent
+	// request IDs and operations referenced by either slot remain available.
+	cutoff := time.Now().Add(-7 * 24 * time.Hour)
+	candidate.Operations = slices.DeleteFunc(candidate.Operations, func(op operationRecord) bool {
+		for _, slot := range candidate.Slots {
+			if slot.Operation == op.ID {
+				return false
 			}
-			return terminalOperation(op.State) && op.UpdatedAt.Before(cutoff) &&
-				(m.data.Transition == nil || m.data.Transition.OperationID != op.ID)
-		})
-	}
-	if len(m.data.Operations) >= maxOperations {
+		}
+		return settledOperation(candidate, op) && op.UpdatedAt.Before(cutoff)
+	})
+	if len(candidate.Operations) >= maxOperations {
 		return nil, ErrCapacity
 	}
 	id, err := randomOperationID()
@@ -205,11 +211,19 @@ func (m *Manager) newOperationLocked(actor identity.Principal, requestID, kind, 
 		return nil, err
 	}
 	now := time.Now().UTC()
-	m.data.Operations = append(m.data.Operations, operationRecord{
+	candidate.Operations = append(candidate.Operations, operationRecord{
 		ID: id, RequestID: requestID, Fingerprint: fingerprint, Revision: 1,
 		Kind: kind, State: "pending", Phase: "admission", SourceState: m.current,
 		ActorID: actor.User.ID, CredentialID: actor.SessionID, Operator: m.operator, CreatedAt: now, UpdatedAt: now,
 	})
+	reserve := 0
+	if kind == "create" || kind == "restore" {
+		reserve = int(backupformat.DefaultLimits().MaxManifestBytes)
+	}
+	if _, err := encodeControl(candidate, reserve); err != nil {
+		return nil, err
+	}
+	m.data = candidate
 	return &m.data.Operations[len(m.data.Operations)-1], nil
 }
 

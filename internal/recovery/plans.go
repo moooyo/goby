@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -317,6 +318,9 @@ func (m *Manager) Apply(ctx context.Context, actor identity.Principal, id string
 	if generation != m.current.Revision || op.SourceState != m.current || op.Revision != revision || !operationView(*op).CanApply || m.busyLocked(id) {
 		return OperationView{}, ErrConflict
 	}
+	if err := m.checkApplyCapacityLocked(op); err != nil {
+		return OperationView{}, err
+	}
 	if err := m.grantLocked(ctx, actor, op, activity.ActionRestoreApplyRequested); err != nil {
 		return OperationView{}, err
 	}
@@ -366,6 +370,9 @@ func (m *Manager) Rollback(ctx context.Context, actor identity.Principal, reques
 		return OperationView{}, err
 	}
 	op.TargetSlot, op.GenerationID, op.Target = slot.Slot, slot.ImageID, slot.Retained
+	if err := m.checkApplyCapacityLocked(op); err != nil {
+		return OperationView{}, err
+	}
 	if err := m.persistLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
@@ -385,4 +392,27 @@ func (m *Manager) Rollback(ctx context.Context, actor identity.Principal, reques
 		return OperationView{}, ErrBusy
 	}
 	return operationView(*op), nil
+}
+
+// Check the complete target-proof expansion before committing apply authority.
+// The drained source proof is measured again before lifecycle publication.
+func (m *Manager) checkApplyCapacityLocked(op *operationRecord) error {
+	candidate := m.data
+	candidate.Operations = slices.Clone(m.data.Operations)
+	for index := range candidate.Operations {
+		if candidate.Operations[index].ID == op.ID {
+			pending := &candidate.Operations[index]
+			pending.Authorized, pending.ApplyAuthorized = true, true
+			pending.State, pending.Phase = "applying", "activation"
+			pending.Revision++
+			pending.UpdatedAt = time.Now().UTC()
+			break
+		}
+	}
+	candidate.Transition = &transitionRecord{OperationID: op.ID, Phase: "requested", Before: m.current}
+	compactControl(&candidate)
+	if _, err := encodeControl(candidate, 0); err != nil {
+		return recoverCapacity(&m.data, m.control, err)
+	}
+	return nil
 }

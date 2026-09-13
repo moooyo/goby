@@ -8,14 +8,99 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/media"
 )
 
 const extraPublicationChildSchema = "GOBY_TEST_EXTRA_PUBLICATION_CHILD_SCHEMA"
+
+type extraPublicationProber struct {
+	fixture libraryFixtureProber
+	armed   atomic.Bool
+	ready   chan time.Time
+}
+
+func newExtraPublicationProber() *extraPublicationProber {
+	return &extraPublicationProber{ready: make(chan time.Time, 1)}
+}
+
+func (prober *extraPublicationProber) ProbeFile(ctx context.Context, file *os.File) (media.Info, error) {
+	info, err := prober.fixture.ProbeFile(ctx, file)
+	if err == nil && prober.armed.Load() && filepath.Base(file.Name()) == "Clip.mp4" {
+		select {
+		case prober.ready <- time.Now():
+		default:
+		}
+	}
+	return info, err
+}
+
+func waitExtraPublicationGate(t *testing.T, ctx context.Context, pool *pgxpool.Pool, store *Store,
+	jobID string, blocker uint32, prober *extraPublicationProber) {
+	t.Helper()
+	started := time.Now()
+	tick := time.NewTicker(25 * time.Millisecond)
+	defer tick.Stop()
+	var prepared time.Time
+	var job Job
+	for prepared.IsZero() {
+		select {
+		case prepared = <-prober.ready:
+			t.Logf("final extra source probe completed %s after publication preparation wait began", prepared.Sub(started))
+		case <-tick.C:
+			var err error
+			job, err = store.GetJob(ctx, jobID)
+			if err != nil {
+				t.Fatalf("read extra preparation job: %v; last job=%+v; probes=%v", err, job, prober.fixture.calls())
+			}
+			if job.Status != "Queued" && job.Status != "Running" {
+				t.Fatalf("scan stopped before preparing the extra source: job=%+v; probes=%v", job, prober.fixture.calls())
+			}
+		case <-ctx.Done():
+			t.Fatalf("extra preparation did not reach its source probe: %v; last job=%+v; probes=%v", ctx.Err(), job, prober.fixture.calls())
+		}
+	}
+	// Extras publish after the entire ordinary root walk. Keep preparation
+	// outside the lock-observation budget and still prove the exact SQL gate.
+	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	ownerPID := store.ownership.conn.Conn().PgConn().PID()
+	var state, waitType, waitEvent string
+	for {
+		var blocked bool
+		if err := pool.QueryRow(waitCtx, `SELECT COALESCE(state,''), COALESCE(wait_event_type,''), COALESCE(wait_event,''),
+			$2::integer = ANY(pg_blocking_pids(pid)) FROM pg_stat_activity WHERE pid=$1`, ownerPID, blocker).
+			Scan(&state, &waitType, &waitEvent, &blocked); err != nil {
+			t.Fatalf("observe extra publication SQL gate: %v; last job=%+v; backend=%s/%s/%s; probes=%v",
+				err, job, state, waitType, waitEvent, prober.fixture.calls())
+		}
+		var err error
+		job, err = store.GetJob(waitCtx, jobID)
+		if err != nil {
+			t.Fatalf("read extra publication job at SQL gate: %v; backend=%s/%s/%s; probes=%v",
+				err, state, waitType, waitEvent, prober.fixture.calls())
+		}
+		if waitType == "Lock" && blocked {
+			t.Logf("extra publication reached its SQL gate %s after the final source probe: job=%+v", time.Since(prepared), job)
+			return
+		}
+		if job.Status != "Queued" && job.Status != "Running" {
+			t.Fatalf("scan stopped before the extra publication SQL gate: job=%+v; backend=%s/%s/%s; probes=%v",
+				job, state, waitType, waitEvent, prober.fixture.calls())
+		}
+		select {
+		case <-tick.C:
+		case <-waitCtx.Done():
+			t.Fatalf("extra publication did not reach its SQL gate: last job=%+v; backend=%s/%s/%s; probes=%v",
+				job, state, waitType, waitEvent, prober.fixture.calls())
+		}
+	}
+}
 
 func TestExtraPublicationConcurrentLibraryDeletion(t *testing.T) {
 	if schema := os.Getenv(extraPublicationChildSchema); schema != "" {
@@ -48,7 +133,7 @@ func TestExtraPublicationConcurrentLibraryDeletion(t *testing.T) {
 	// test. Isolate it while the parent retains ownership of schema/root cleanup.
 	childCtx, cancel := context.WithTimeout(ctx, 35*time.Second)
 	defer cancel()
-	command := exec.CommandContext(childCtx, executable, "-test.run=^TestExtraPublicationConcurrentLibraryDeletion$", "-test.timeout=25s")
+	command := exec.CommandContext(childCtx, executable, "-test.run=^TestExtraPublicationConcurrentLibraryDeletion$", "-test.timeout=25s", "-test.v")
 	command.Env = append(os.Environ(), extraPublicationChildSchema+"="+schema,
 		"GOBY_TEST_EXTRA_PUBLICATION_ROOT="+root, "GOBY_TEST_EXTRA_PUBLICATION_SCANNED="+scanned.ID,
 		"GOBY_TEST_EXTRA_PUBLICATION_DELETED="+deleted.ID)
@@ -56,6 +141,7 @@ func TestExtraPublicationConcurrentLibraryDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("isolated extra publication/deletion did not finish without a lock inversion (%T):\n%s", err, output)
 	}
+	t.Logf("isolated extra publication/deletion evidence:\n%s", output)
 	var removed bool
 	if err := pool.QueryRow(ctx, "SELECT NOT EXISTS(SELECT 1 FROM libraries WHERE id=$1)", deleted.ID).Scan(&removed); err != nil || !removed {
 		t.Fatal("the independent library deletion was not committed")
@@ -84,7 +170,8 @@ func runExtraPublicationDeletionChild(t *testing.T, schema string) {
 		t.Fatal("open the parent-owned publication schema")
 	}
 	defer pool.Close()
-	store, err := New(pool, &libraryFixtureProber{}, []string{os.Getenv("GOBY_TEST_EXTRA_PUBLICATION_ROOT")})
+	prober := newExtraPublicationProber()
+	store, err := New(pool, prober, []string{os.Getenv("GOBY_TEST_EXTRA_PUBLICATION_ROOT")})
 	if err != nil {
 		t.Fatalf("open the isolated publication owner (%T)", err)
 	}
@@ -97,8 +184,9 @@ func runExtraPublicationDeletionChild(t *testing.T, schema string) {
 	}()
 	gate := holdExtraPublicationGate(t, ctx, pool)
 	defer rollback(gate)
+	prober.armed.Store(true)
 	job := themeScanTestForce(t, ctx, store, os.Getenv("GOBY_TEST_EXTRA_PUBLICATION_SCANNED"))
-	taskScanWaitOwnerBlocked(t, ctx, pool, store, gate.Conn().PgConn().PID())
+	waitExtraPublicationGate(t, ctx, pool, store, job.ID, gate.Conn().PgConn().PID(), prober)
 	deleted := make(chan error, 1)
 	go func() {
 		deleted <- store.DeleteLibrary(ctx, os.Getenv("GOBY_TEST_EXTRA_PUBLICATION_DELETED"))
@@ -170,7 +258,8 @@ func waitExtraDeletionStoreLock(t *testing.T, ctx context.Context, store *Store,
 func TestExtraPublicationRejectsSourceChangesAfterTransactionStarts(t *testing.T) {
 	for _, mutation := range []string{"registered root", "file pathname", "file contents"} {
 		t.Run(mutation, func(t *testing.T) {
-			ctx, pool, store, root, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+			prober := newExtraPublicationProber()
+			ctx, pool, store, root, _ := libraryIntegrationStore(t, prober)
 			registered := filepath.Join(root, "registered")
 			libraryIntegrationFile(t, root, "registered/Film/Main.mp4", "video:main")
 			clip := libraryIntegrationFile(t, root, "registered/Film/featurettes/Clip.mp4", "video:accepted-extra")
@@ -181,8 +270,9 @@ func TestExtraPublicationRejectsSourceChangesAfterTransactionStarts(t *testing.T
 			before := extraScanTestSnapshot(t, ctx, pool, lib.ID)
 			gate := holdExtraPublicationGate(t, ctx, pool)
 			defer rollback(gate)
+			prober.armed.Store(true)
 			job := themeScanTestForce(t, ctx, store, lib.ID)
-			taskScanWaitOwnerBlocked(t, ctx, pool, store, gate.Conn().PgConn().PID())
+			waitExtraPublicationGate(t, ctx, pool, store, job.ID, gate.Conn().PgConn().PID(), prober)
 			switch mutation {
 			case "registered root":
 				if err := os.Rename(registered, registered+"-original"); err != nil {

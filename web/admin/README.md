@@ -1,6 +1,6 @@
 # Goby administrator dashboard
 
-React, TypeScript, and MUI provide an administrator-only Material Design interface. The dashboard has no media browser or player. It includes first-run setup, administrator sessions, a live server overview, user creation, library directory management, and scan tasks. Sessions and settings stay disabled until their management APIs are implemented.
+React, TypeScript, and MUI provide an administrator-only Material Design interface. The dashboard has no media browser or player. It includes first-run setup, overview, users, libraries and storage bindings, metadata, sessions, devices, application keys, tasks and schedules, settings, activity/logs, and native backup/recovery. Consult the [current status](../../docs/development/current-status.md) for verification and deployment boundaries.
 
 ## Build
 
@@ -8,7 +8,7 @@ Use Node.js 20.19 or Node.js 22.12 and later. Install the pinned dependency tree
 
 The base URL is `/admin/`. Serve `dist/index.html` for dashboard paths such as `/admin/users`, and serve `dist/assets/*` as static assets. API routes under `/admin/v1/` must take precedence over the SPA fallback. Return `Cache-Control: no-store` for the HTML entry and API responses; hashed assets can use immutable caching. M1 serves the packaged `dist/` directory through `GOBY_WEB_DIR`. A future build may embed these files into the Go binary. Generated `dist/` content is not committed here.
 
-For remote development, `npm run dev` proxies `/admin/v1/` to `http://127.0.0.1:8096`. Set `GOBY_DEV_API` to change that target. Configure the backend `GOBY_PUBLIC_URL` to match the dashboard origin used by the browser so origin checks also work through the development proxy. Run tests and browser verification in `test-env`; local authorization covers build compilation only.
+For remote development, `npm run dev` proxies `/admin/v1/` to `http://127.0.0.1:8096`. Set `GOBY_DEV_API` to change that target. Configure the backend `GOBY_PUBLIC_URL` to match the dashboard origin used by the browser so origin checks also work through the development proxy. Run builds, type checks, tests, and browser verification through `ssh test-env`; local verification requires explicit authorization in the current task.
 
 MUI uses Emotion to insert style elements at runtime. A deployment content security policy must allow these styles with a supported nonce strategy or an appropriate `style-src` directive. Scripts and font files are served from the dashboard origin.
 

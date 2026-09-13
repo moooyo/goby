@@ -66,11 +66,7 @@ func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info
 			state.warnings++
 			return nil
 		}
-		names := make([]string, 0, len(entries))
-		for _, entry := range entries {
-			names = append(names, entry.Name())
-		}
-		index = newSubtitleDirectoryIndex(names, directoryInfo)
+		index = newSubtitleDirectoryIndex(entries, state.library.CollectionType, directoryInfo)
 		if state.subtitleDirectories == nil {
 			state.subtitleDirectories = make(map[string]*subtitleDirectoryIndex)
 		}

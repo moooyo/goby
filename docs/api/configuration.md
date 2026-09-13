@@ -82,8 +82,9 @@ ambiguous Content-Type, and wrong value types fail.
 Supported field names are case-insensitive on this surface. Duplicate decoded
 names, escaped aliases, and aliases differing only by case are rejected.
 For example, `ServerName` plus `servername` in one object is invalid. Queries
-are limited to 4096 raw bytes and permit only one exact lowercase `api_key`
-parameter; configuration values and unknown query parameters are rejected.
+are limited to 4096 raw bytes and permit the declared
+[compatibility transport carriers](compatibility-transport.md); configuration
+values and unknown query parameters are rejected.
 
 | Request | Server-name effect | Other settings |
 | --- | --- | --- |

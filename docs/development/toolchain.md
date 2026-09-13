@@ -18,7 +18,7 @@ These version pins describe the required target. They do not establish that Go, 
 
 ## Build and test boundary
 
-The current user authorization permits local builds to detect compilation/build errors, including Go compilation and the administrator frontend production build. It does not authorize local test suites, schema validators, smoke tests, server execution, HTTP probes, FFmpeg probing, media conversion, or GPU capability checks.
+All formatting, compilation, production builds, type checks, test suites, schema validators, smoke tests, server execution, HTTP probes, media conversion, and GPU checks run through `ssh test-env`. Local verification requires explicit authorization in the current task; historical permissions do not carry forward automatically.
 
 Run unit, integration, compatibility, browser, media, and operational checks through `ssh test-env` on Linux. The user authorizes installing and removing packages/software on that remote environment for this work. Use isolated project databases and synthetic/licensed media fixtures. If the environment is unavailable, record the affected checks as blocked and continue only work that does not require those results; do not execute the checks locally.
 
@@ -26,7 +26,7 @@ Linux is the production platform. Local compilation success is evidence of build
 
 ## PostgreSQL integration
 
-Use `pgx/v5` and `pgxpool` with explicit pool bounds, timeouts, transaction scopes, and shutdown. Apply numbered migrations under a database advisory lock, retaining version/checksum records. Keep transactions short and enforce invariants using database constraints and row-level coordination. Bound worker concurrency without serializing all PostgreSQL writes through a single writer.
+Use `pgx/v5` and `pgxpool` with explicit pool bounds, timeouts, transaction scopes, and shutdown. Apply numbered migrations under a database advisory lock and check the published migration-content baseline. Historical database rows record version/name; do not infer their original SQL checksums from current source. Keep transactions short and enforce invariants using database constraints and row-level coordination. Bound worker concurrency without serializing all PostgreSQL writes through a single writer.
 
 Deployment must supply a PostgreSQL service, persistent database storage, a least-privilege application role, and explicit credentials/TLS configuration. Backups use a compatible `pg_dump --format=custom`; restores use `pg_restore` into a staged database under application maintenance mode. Record source/target PostgreSQL versions, schema version, ownership/ACL handling, server identity behavior, and recovery evidence. [PostgreSQL dump/restore](https://www.postgresql.org/docs/current/backup-dump.html).
 

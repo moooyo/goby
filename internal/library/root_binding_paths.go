@@ -9,6 +9,71 @@ type rootBindingAnchor struct {
 	approved *os.Root
 }
 
+// Store.mu protects these counters. A borrow pins the exact published
+// descriptor while its filesystem open or clone runs without Store.mu.
+type rootAnchorReference struct {
+	approved *os.Root
+	borrowed int
+	retired  bool
+}
+
+func (s *Store) borrowRootAnchorLocked(approved *os.Root) *rootAnchorReference {
+	if s.rootAnchorReferences == nil {
+		s.rootAnchorReferences = make(map[*os.Root]*rootAnchorReference)
+	}
+	reference := s.rootAnchorReferences[approved]
+	if reference == nil {
+		reference = &rootAnchorReference{approved: approved}
+		s.rootAnchorReferences[approved] = reference
+	}
+	reference.borrowed++
+	return reference
+}
+
+// Retirement removes admission authority immediately. The descriptor closes
+// only after its last admitted open finishes; even Close itself runs unlocked.
+func (s *Store) retireRootAnchorLocked(approved *os.Root) {
+	if approved == nil {
+		return
+	}
+	if s.rootAnchorReferences == nil {
+		s.rootAnchorReferences = make(map[*os.Root]*rootAnchorReference)
+	}
+	reference := s.rootAnchorReferences[approved]
+	if reference == nil {
+		reference = &rootAnchorReference{approved: approved}
+		s.rootAnchorReferences[approved] = reference
+	}
+	if reference.retired {
+		return
+	}
+	reference.retired = true
+	s.rootClosures.Add(1)
+	if reference.borrowed == 0 {
+		go s.closeRetiredRootAnchor(reference)
+	}
+}
+
+func (s *Store) releaseRootAnchor(reference *rootAnchorReference) {
+	s.mu.Lock()
+	reference.borrowed--
+	closeRoot := reference.retired && reference.borrowed == 0
+	s.mu.Unlock()
+	if closeRoot {
+		s.closeRetiredRootAnchor(reference)
+	}
+}
+
+func (s *Store) closeRetiredRootAnchor(reference *rootAnchorReference) {
+	_ = reference.approved.Close()
+	s.mu.Lock()
+	if s.rootAnchorReferences[reference.approved] == reference {
+		delete(s.rootAnchorReferences, reference.approved)
+	}
+	s.mu.Unlock()
+	s.rootClosures.Done()
+}
+
 // The caller holds Store.mu across the successful binding commit and this
 // installation. The exact approved anchor was cloned before the transaction;
 // ownership transfers here, without reopening any filesystem name after commit.
@@ -19,10 +84,8 @@ func (s *Store) installRootBindingAnchorLocked(root libraryRoot, approved *os.Ro
 	}
 	previous := s.rootBindingAnchors[root.id]
 	s.rootBindingAnchors[root.id] = rootBindingAnchor{root: root, approved: approved}
-	// Opens and publication leases retain independent clones while Store.mu is
-	// held, so closing the retired Store handle cannot invalidate their lifetime.
 	if previous.approved != nil && previous.approved != approved {
-		_ = previous.approved.Close()
+		s.retireRootAnchorLocked(previous.approved)
 	}
 }
 
@@ -34,8 +97,6 @@ func (s *Store) retireRootBindingAnchorsLocked(libraryID string) {
 			continue
 		}
 		delete(s.rootBindingAnchors, rootID)
-		if anchor.approved != nil {
-			_ = anchor.approved.Close()
-		}
+		s.retireRootAnchorLocked(anchor.approved)
 	}
 }

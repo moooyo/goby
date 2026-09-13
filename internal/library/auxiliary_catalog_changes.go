@@ -36,7 +36,8 @@ func (item auxiliaryCatalogItem) fact(kind CatalogChangeKind) CatalogChange {
 
 // Hash accepted properties in PostgreSQL so a batch retains bounded digests,
 // not an entire media/metadata document for every resource. Private inspection
-// timestamps and metadata bookkeeping are deliberately excluded.
+// timestamps and metadata bookkeeping are deliberately excluded. A trailer
+// still depends on its owner's name while either display field is automatic.
 var auxiliaryCatalogProperties = `encode(sha256(convert_to(jsonb_build_object(
 	'RootId', i.root_id, 'ParentId', i.parent_id, 'Type', i.type, 'IsFolder', i.is_folder,
 	'Path', i.path, 'RelativePath', i.relative_path, 'Name', i.name, 'SortName', i.sort_name,
@@ -54,6 +55,12 @@ var auxiliaryCatalogProperties = `encode(sha256(convert_to(jsonb_build_object(
 				WHERE credit.item_id=owner.id AND entity.kind='Genre' AND credit.credit_group=0 AND credit.credit_type=''))
 		FROM items owner LEFT JOIN item_metadata_state owner_state ON owner_state.item_id=owner.id
 		WHERE owner.id=theme.owner_item_id AND owner.library_id=i.library_id AND ` + ordinaryItemSQL("owner") + `) END,
+	'InheritedTrailerName', CASE WHEN extra.active AND extra.kind='trailer'
+		AND (NOT COALESCE(ms.overrides ? 'Name' OR ms.locked_values ? 'Name', false)
+			OR NOT COALESCE(ms.overrides ? 'SortName' OR ms.locked_values ? 'SortName', false))
+		AND ` + database.ExtraResourceItemSQL("i", true) + ` THEN (
+		SELECT owner.name FROM items owner WHERE owner.id=extra.owner_item_id AND owner.library_id=i.library_id
+			AND ` + ordinaryItemSQL("owner") + `) END,
 	'ThemeOwner', CASE WHEN theme.active THEN theme.owner_item_id END,
 	'ThemeKind', CASE WHEN theme.active THEN theme.kind END,
 	'ExtraOwner', CASE WHEN extra.active THEN extra.owner_item_id END,

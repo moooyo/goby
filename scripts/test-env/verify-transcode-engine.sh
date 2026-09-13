@@ -40,7 +40,18 @@ cleanup() {
   fi
   rmdir "$work"
 }
-trap cleanup EXIT
+finish() {
+  local status=$?
+  trap - EXIT
+  if ! cleanup; then
+    status=1
+  fi
+  if [[ "$status" == 0 ]]; then
+    echo "Unprivileged conversion verification passed."
+  fi
+  exit "$status"
+}
+trap finish EXIT
 umask 077
 printf '%s\n' "$marker" > "$owner"
 mount -t tmpfs -o size=128m,nosuid,nodev,mode=0755 tmpfs "$work"
@@ -54,4 +65,3 @@ export TMPDIR="$work/tmp" GOTMPDIR="$work/tmp"
 echo "Running conversion verification as the unprivileged goby account."
 /usr/sbin/runuser --user goby --preserve-environment -- "$work/transcode.test" -test.v \
   -test.run '^(TestManagerPersistsAndDecodesPlannedMedia|TestRunActualFFmpegEncodeRemuxAndAudioOnly|TestRunCancellationKillsEntireProcessGroup|TestRunSuccessfulParentExitRetiresSurvivingChildren)$'
-echo "Unprivileged conversion verification passed."

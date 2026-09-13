@@ -73,7 +73,8 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	if capture == nil {
 		return RootBindingInfo{}, ErrUnavailable
 	}
-	defer capture.Close()
+	var observation storageObservationLifetime
+	defer observation.retire(capture.Close)
 	observed, err := capture.Snapshot()
 	if err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
@@ -114,7 +115,7 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	// ownership mutex. Capture revalidation never consults the Store or its cache.
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed || !s.rootBindingPathConfiguredLocked(previous.root.allowedPath) {
+	if s.closed || s.closing.Load() || !s.rootBindingPathConfiguredLocked(previous.root.allowedPath) {
 		return RootBindingInfo{}, ErrUnavailable
 	}
 	tx, err := s.beginOwnedTx(ctx)
@@ -178,7 +179,7 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	}
 	// The held named paths, mount namespace, and every boundary must still match
 	// before commit. Request cancellation cannot cancel the owned session here.
-	if err := capture.Revalidate(protected); err != nil {
+	if err := runStorageObservation(protected, []*storageObservationLifetime{&observation}, capture.Revalidate); err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
 	if err := administrator.check(protected, tx, false); err != nil {

@@ -2,6 +2,8 @@
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
+Use [current status](../development/current-status.md) for the active implementation, verification, and deployment boundaries, and [the audit remediation record](../development/audit-remediation-20260913.md) for the current repair scope. Historical source-specific results below retain their original acceptance limits.
+
 The routes below exist in source. Authentication, permission and ingestion workflows have passed Goby's PostgreSQL-backed HTTP tests on Linux. Selected behavior has also been corrected using [real Emby 4.9.5.0 captures](../research/reference-server.md). The [M3e record](../development/client-acceptance-m3e.md) now includes scoped original-client movie, TV, subtitle and audio evidence. Per-increment results and remaining limits are recorded in the [implementation progress](../development/progress.md). These results do not establish complete differential compatibility or every client/media profile.
 
 The M5j native backup/recovery routes were accepted and deployed at schema
@@ -14,8 +16,9 @@ After the test-host reboot, the M3e source18 checkpoint completed a fresh backup
 restore rehearsal and protected schema23-to25 main upgrade. Its
 [deployment](../development/m3e-source18-main-deployment.json) passed readiness,
 native login/read/logout and historical-archive checks as PID 539535. The
-isolated acceptance candidate remains a separate service and database. See the
-[current handoff](../development/handoff.md) before operating either.
+isolated acceptance candidate remains a separate service and database. See
+[current status](../development/current-status.md) for their accepted deployment
+checkpoints and the [handoff](../development/handoff.md) before operating either.
 
 The official reference inventory contains 2462 sanitized JSON records. The [activity/log study](../research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one initial connection-refused readiness record, and one audit; all 76 capture HTTP exchanges are complete. Its [report](../development/m5i-observability-reference.json) is reference evidence, not product acceptance. The earlier [4K encoding-width study](../research/encoding-width-reference.md) added 61 records to the preceding 2305. The [fresh configuration mutation study](../research/configuration-mutation-reference.md) added 254 records after the [read study](../research/configuration-reference.md) brought the corpus to 2051. The [fresh ScheduledTasks mutation study](../research/scheduled-tasks-mutation-reference.md) reached the earlier 1965 checkpoint with 171 records. The earlier [task read study](../research/scheduled-tasks-reference.md), [key-device](../research/key-devices-reference.md), [ordinary user-device](../research/devices-reference.md), [key playback](../research/api-key-playback-reference.md), [client-context](../research/api-key-context-reference.md), and [target-scope](../research/api-key-scope-reference.md) evidence remain intact. Record totals include observations, probes and preserved incomplete responses; they are not counts of implemented endpoints or complete playback successes. Native metadata editing and its durable lock guarantees remain a separate contract from the observed Emby mutation routes.
 
@@ -85,6 +88,9 @@ That earlier M5i deployment used schema 22/probe 6 and PID 3668655. See the
 | `POST /admin/v1/libraries` | Cookie, CSRF, `{Name, CollectionType, Paths, Scan}` | `201 {Library, Job?}`; optional `ScanError` if catalog creation succeeded but initial scan admission failed |
 | `DELETE /admin/v1/libraries/{id}` | Cookie and CSRF | `204`; remove catalog records, retain every media file; active scans prevent removal |
 | `POST /admin/v1/libraries/{id}/scan` | Cookie and CSRF; empty body or optional JSON `ForceProbe` boolean; no query | `202 {Job}`; durable normal/forced media scanning with per-library deduplication; [contract](admin-scans.md) |
+| `GET /admin/v1/libraries/{id}/roots` | Administrator cookie; no query | `200 {Items, TotalRecordCount}`; registered root IDs, configured and relative paths, and current revision strings |
+| `GET /admin/v1/libraries/{id}/roots/{rootId}/binding` | Administrator cookie; no query | `200 {Binding}`; current status, approved/observed topology and fingerprints, and recorded binding authority |
+| `PUT /admin/v1/libraries/{id}/roots/{rootId}/binding` | Cookie, CSRF, exact `{Revision, ObservedFingerprint, AcknowledgeMissingRemoval: true}`; no query | `200 {Binding}`; approve the reviewed observation with revision checks; changed binding or observation returns `409 root_binding_conflict`; no scan is started |
 | `GET /admin/v1/libraries/{id}/items` | Administrator cookie; optional `SearchTerm`, `Types`, `StartIndex`, `Limit` | Library-scoped lightweight summaries and paging; no user-state writes |
 | `GET /admin/v1/items/{id}/metadata` | Administrator cookie; no query parameters | Item context, revision, automatic/effective values, overrides, locks and inactive settings |
 | `PUT /admin/v1/items/{id}/metadata` | Cookie, CSRF, complete `{Revision, Overrides, LockedFields}` | Atomic effective metadata/entity update; stale source or editor revision returns 409 |
@@ -224,7 +230,7 @@ The [configuration contract](configuration.md) defines the five closed projectio
 | `GET /emby/Users/{UserId}/Items/Root` | Stable virtual navigation root |
 | `GET /emby/Users/{UserId}/Items` and `GET /emby/Items` | ACL-filtered browsing/search, recursive parents, IDs/types/media-type filters, paging and selected sorts |
 | `GET /emby/Users/{UserId}/Items/{Id}` | Authorized item detail and probe metadata, including the item's path; also resolves visible catalog entities by positive decimal ID |
-| `GET /emby/Items/{Id}/Similar` | Source20 candidate: same-type authorized candidates, reference-constrained scoring, returned-page counts and artist exclusions; complete tests and scoped original-client 200 transfer passed; primary deployment and complete auxiliary navigation remain separate |
+| `GET /emby/Items/{Id}/Similar` | Same-type authorized candidates, reference-constrained scoring, returned-page counts and artist exclusions; source20's tests and scoped original-client 200 transfer are historical evidence; see [current status](../development/current-status.md) for present deployment and acceptance boundaries |
 | `GET /emby/Users/{UserId}/Items/Latest` | Bare array; default grouping maps episodes to series and audio to albums before paging |
 | `GET /emby/Shows/NextUp` | SeriesId selects the unplayed sequence after the watched cursor; global mode selects one continuation per series under a documented Goby policy; [evidence boundary](../development/next-up.md) |
 | `GET /emby/Shows/{Id}/Seasons` | Series seasons in numeric order |
@@ -301,9 +307,9 @@ Library authorization currently implements administrator access plus `EnableAllF
 
 The query adapter supports `ParentId`, `Recursive`, `SearchTerm`, `StartIndex`, `Limit`, `Ids`, `IncludeItemTypes`, `MediaTypes`, and a limited single-key `SortBy` set. Optional `IsFolder`, `IsSpecialSeason`, and `IsSpecialEpisode` filters use actual typed catalog facts before counting or paging; season-zero classification and the unmodeled `IsStandaloneSpecial` boundary are documented in [TV query filters](../development/client-tv-query-filters.md). User-state filters include `IsPlayed`, `IsFavorite`, and the documented initial `Filters` subset in the playback guide. Entity filters include `Genres`, `Tags`, `Studios`, `Person`, `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, and `PersonTypes`. Name lists use a pipe delimiter; IDs accept pipes or commas. Same-dimension values use OR, separate dimensions use AND, and person/type conditions match the same credit association. Other upstream filters, default subtleties, composite sort expressions and the complete field model remain compatibility work.
 
-MusicAlbum and Audio DTOs expose non-null music arrays. The schema25 music implementation derives `Artists`, `ArtistItems`, and `AlbumArtists` from actual accepted format tags and authorized MusicArtist relationships; composer extraction remains absent. Source20 adds explicit `album_artist` through music probe version 2, preserving technical probe version 6 and stored music-source version 1. A track's own accepted album-artist group takes precedence over physical-album fallback, including artist filtering. MusicAlbum `ChildCount` counts actual same-library direct children; Audio album references use the physical authorized album. See [music metadata](../development/music-metadata.md) for source precedence, stable IDs, incomplete-member publication and scope. Source20 passed [43 targeted remote tests](../development/m3e-source20-targeted.json) and [1,763 full-source tests](../development/m3e-source20-full.json). Its [candidate and scoped client evidence](../development/verification-m3e-source20-similar.md) remains separate from primary deployment and complete auxiliary navigation. The deployed source18 checkpoint retains its earlier music probe and original-client evidence: both audio core journeys passed, FLAC completed Home, and MP3 retains its original Home harness failure.
+MusicAlbum and Audio DTOs expose non-null music arrays. The schema25 music implementation derives `Artists`, `ArtistItems`, and `AlbumArtists` from actual accepted format tags and authorized MusicArtist relationships; composer extraction remains absent. Source20 introduced explicit `album_artist` through music probe version 2, preserving technical probe version 6 and stored music-source version 1. A track's own accepted album-artist group takes precedence over physical-album fallback, including artist filtering. MusicAlbum `ChildCount` counts actual same-library direct children; Audio album references use the physical authorized album. See [music metadata](../development/music-metadata.md) for source precedence, stable IDs, incomplete-member publication and scope. The historical source20 run passed [43 targeted remote tests](../development/m3e-source20-targeted.json) and [1,763 full-source tests](../development/m3e-source20-full.json). Its [candidate and scoped client evidence](../development/verification-m3e-source20-similar.md) retains that source's acceptance boundary. The historical deployed source18 checkpoint retains its earlier music probe and original-client evidence: both audio core journeys passed, FLAC completed Home, and MP3 retains its original Home harness failure. These records do not describe the current candidate or primary version; consult [current status](../development/current-status.md).
 
-Source20 implements `GET /emby/Items/{Id}/Similar` for authorized catalog items,
+Source20 introduced `GET /emby/Items/{Id}/Similar` for authorized catalog items,
 using the observed item projection switches and same-type candidate scope.
 Authorization, effective metadata scoring and UserData share a repeatable-read
 snapshot. All eligible candidates are scored before pagination; the returned
@@ -313,9 +319,12 @@ Explicit sorting overrides score order, while equal-score order is randomized.
 `ExcludeArtistIds` considers the candidate's own Artist and effective AlbumArtist
 groups. The scorer is a Goby model fitted to the [recorded comparison fixtures](../development/client-auxiliary-reads-plan.md),
 not a uniquely recovered private ranking algorithm. Visible entity seeds and
-unindexed `ListItemIds` remain unsupported. ThemeMedia, wider aliases and broader
-music compatibility remain open. Source18 still returns the recorded auxiliary
-404 responses until a later deployment is separately accepted.
+unindexed `ListItemIds` remain unsupported. At that historical checkpoint,
+ThemeMedia, wider aliases and broader music compatibility were open, and the
+source18 deployment returned the recorded auxiliary 404 responses. Later
+ThemeMedia and auxiliary increments have their own implementation and evidence;
+those old 404 results do not describe the current source. Follow
+[current status](../development/current-status.md) for current acceptance limits.
 
 Music browsing supports the observed three-key `ProductionYear,PremiereDate,SortName` order and corresponding directions, plus current-user played-date/play-count ordering. Artist/album filters use actual authorized associations. `ListItemIds` has no membership model: ordinary item browsing can return a proven empty candidate set, but a nonempty candidate universe returns `501 unsupported_filter`; other related query paths reject it explicitly. This does not claim playlist or collection membership support.
 

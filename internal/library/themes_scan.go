@@ -810,7 +810,8 @@ func (state *scanState) publishThemeDirectory(relative string) error {
 		state.themeLibrary.collection = append(state.themeLibrary.collection, files...)
 		return nil
 	}
-	deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files, nil)
+	deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files, nil,
+		map[string]*scanState{state.root.id: state})
 	if errors.Is(err, ErrInvalidInput) {
 		state.warnings++
 		state.noteThemeIssue(err.Error())
@@ -982,6 +983,172 @@ type themePublicationPlan struct {
 	retire []string
 }
 
+type auxiliaryPublicationSource struct {
+	state       *scanState
+	lease       *libraryRootLease
+	directories map[string]bool
+	complete    bool
+}
+
+type auxiliaryPublicationWitness struct {
+	observation storageObservationLifetime
+	sources     map[string]*auxiliaryPublicationSource
+	files       []*preparedThemeFile
+	plan        themePublicationPlan
+}
+
+func (witness *auxiliaryPublicationWitness) Close() error {
+	if witness == nil {
+		return nil
+	}
+	return witness.observation.retire(witness.closeResources)
+}
+
+func (witness *auxiliaryPublicationWitness) closeResources() error {
+	closeThemeFiles(witness.files)
+	for _, source := range witness.sources {
+		if source.lease != nil {
+			_ = source.lease.Close()
+		}
+	}
+	return nil
+}
+
+// Retain approved anchors before taking ownership.mu. Final publication checks
+// reopen the registered name chains without acquiring Store.mu under ownership.
+// Independent file descriptors and directory snapshots let a timed-out caller
+// release its scan state while the bounded observation worker finishes safely.
+func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Library, files []*preparedThemeFile,
+	completedRoots map[string]bool, states map[string]*scanState, plan themePublicationPlan) (*auxiliaryPublicationWitness, error) {
+	witness := &auxiliaryPublicationWitness{sources: make(map[string]*auxiliaryPublicationSource), plan: plan}
+	accepted := false
+	defer func() {
+		if !accepted {
+			_ = witness.Close()
+		}
+	}()
+	add := func(rootID string) (*auxiliaryPublicationSource, error) {
+		if source := witness.sources[rootID]; source != nil {
+			return source, nil
+		}
+		state := states[rootID]
+		if state == nil || state.store != s || state.task != task || state.library.ID != library.ID ||
+			state.root.id != rootID || state.themes == nil {
+			return nil, fmt.Errorf("%w: auxiliary publication lacks its observed source root", ErrUnavailable)
+		}
+		lease, err := s.leaseLibraryRoot(state.root)
+		if err != nil {
+			return nil, err
+		}
+		directories := make(map[string]os.FileInfo, len(state.themes.directories))
+		for relative, info := range state.themes.directories {
+			directories[relative] = info
+		}
+		observed := &scanState{task: task, root: state.root, themes: &themeScan{directories: directories}}
+		source := &auxiliaryPublicationSource{state: observed, lease: lease, directories: make(map[string]bool), complete: completedRoots[rootID]}
+		witness.sources[rootID] = source
+		return source, nil
+	}
+	for rootID, complete := range completedRoots {
+		if complete {
+			if _, err := add(rootID); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, file := range files {
+		source, err := add(file.state.root.id)
+		if err != nil {
+			return nil, err
+		}
+		if states[file.state.root.id] != file.state {
+			return nil, fmt.Errorf("%w: auxiliary publication changed its observed source", ErrUnavailable)
+		}
+		if file.role == scannedRoleExtra {
+			classification, err := classifyExtraPath(file.candidate.relative, 0)
+			if err != nil || classification.Kind == "" || file.candidate.kind != themePathKindVideo {
+				return nil, fmt.Errorf("%w: extra publication changed its observed source", ErrUnavailable)
+			}
+			source.directories[classification.OwnerDirectory] = true
+		} else {
+			classification, err := classifyThemePath(file.candidate.relative, 0)
+			if err != nil || classification.Kind != file.candidate.kind {
+				return nil, fmt.Errorf("%w: theme publication changed its observed source", ErrUnavailable)
+			}
+			source.directories[classification.OwnerDirectory] = true
+		}
+		copyFile, copyInput := *file, *file.input
+		copyInput.file = nil
+		copyFile.state, copyFile.input = source.state, &copyInput
+		witness.files = append(witness.files, &copyFile)
+	}
+	if err := verifyPreparedThemeFilesWithRoots(witness.files, witness.openFileRoot); err != nil {
+		return nil, fmt.Errorf("%w: auxiliary sources changed before publication", ErrUnavailable)
+	}
+	accepted = true
+	return witness, nil
+}
+
+func (witness *auxiliaryPublicationWitness) openFileRoot(state *scanState) (*os.Root, error) {
+	source := witness.sources[state.root.id]
+	if source == nil || source.state != state {
+		return nil, fmt.Errorf("auxiliary source changed its registered root")
+	}
+	return source.lease.Open()
+}
+
+func (witness *auxiliaryPublicationWitness) validate(ctx context.Context) error {
+	retire := make(map[string]bool, len(witness.plan.retire))
+	for _, id := range witness.plan.retire {
+		retire[id] = true
+	}
+	for rootID, source := range witness.sources {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		root, err := source.lease.Open()
+		if err != nil {
+			return fmt.Errorf("%w: auxiliary source root changed before commit", ErrUnavailable)
+		}
+		verify := func() error {
+			defer root.Close()
+			if source.complete {
+				if err := source.state.verifyThemeDirectoriesAt(root, ".", true); err != nil {
+					return err
+				}
+			} else {
+				for directory := range source.directories {
+					if err := source.state.verifyThemeDirectoriesAt(root, directory, false); err != nil {
+						return err
+					}
+				}
+			}
+			for _, resource := range witness.plan.active {
+				if resource.RootID != rootID || !retire[resource.ID] {
+					continue
+				}
+				absent, err := themePathAbsent(root, resource.Relative)
+				if err != nil || !absent {
+					return fmt.Errorf("a retiring auxiliary source is present or its absence is uncertain")
+				}
+			}
+			return nil
+		}
+		if err := verify(); err != nil {
+			return fmt.Errorf("%w: auxiliary source directories changed before commit", ErrUnavailable)
+		}
+	}
+	if err := verifyPreparedThemeFilesWithRoots(witness.files, func(state *scanState) (*os.Root, error) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return witness.openFileRoot(state)
+	}); err != nil {
+		return fmt.Errorf("%w: auxiliary sources changed before commit", ErrUnavailable)
+	}
+	return nil
+}
+
 func (s *Store) planThemePublication(task *scanTask, library Library, owner themeDirectoryOwner,
 	files []*preparedThemeFile, expected []string, completeRoots map[string]bool, possibleRoots []string) (themePublicationPlan, bool, error) {
 	active, err := readThemeActiveResources(task.ctx, s.pool, owner.id)
@@ -1053,7 +1220,7 @@ func (s *Store) planThemePublication(task *scanTask, library Library, owner them
 // authority, a full 256-to-256 replacement is deferred rather than activating
 // a temporary 512-resource population or publishing a truncated subset.
 func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDirectoryOwner,
-	files []*preparedThemeFile, completedRoots map[string]bool, retainedIDs ...string) (bool, error) {
+	files []*preparedThemeFile, completedRoots map[string]bool, states map[string]*scanState, retainedIDs ...string) (bool, error) {
 	if err := task.ctx.Err(); err != nil {
 		return false, err
 	}
@@ -1089,6 +1256,16 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if err != nil || deferred {
 		return deferred, err
 	}
+	var witness *auxiliaryPublicationWitness
+	if len(files) != 0 || len(plan.retire) != 0 {
+		// A no-op collection visit publishes no source or absence observation.
+		// Do not rewalk its complete roots while holding catalog ownership.
+		witness, err = s.prepareAuxiliaryPublicationWitness(task, library, files, completedRoots, states, plan)
+		if err != nil {
+			return false, err
+		}
+	}
+	defer witness.Close()
 	tx, err := s.beginOwnedTx(task.ctx)
 	if err != nil {
 		return false, err
@@ -1219,6 +1396,14 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if err := beforeAuxiliary.record(task.ctx, tx, forcedIDs); err != nil {
 		return false, err
 	}
+	if witness != nil {
+		if err := runStorageObservation(task.ctx, []*storageObservationLifetime{&witness.observation}, witness.validate); err != nil {
+			if task.ctx.Err() != nil {
+				return false, task.ctx.Err()
+			}
+			return false, fmt.Errorf("%w: theme publication could not verify its final sources", ErrUnavailable)
+		}
+	}
 	if err := task.ctx.Err(); err != nil {
 		return false, err
 	}
@@ -1265,7 +1450,8 @@ func (state *scanState) finishThemeScan() error {
 		if files == nil {
 			return nil
 		}
-		deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files, map[string]bool{state.root.id: true})
+		deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files,
+			map[string]bool{state.root.id: true}, map[string]*scanState{state.root.id: state})
 		closeThemeFiles(files)
 		if errors.Is(err, ErrInvalidInput) || deferred {
 			state.warnings++
@@ -1332,7 +1518,7 @@ func (state *scanState) finishThemeScan() error {
 		}
 		owner := owners[ownerID]
 		deferred, err := state.store.publishThemeOwner(state.task, state.library, owner.owner, nil,
-			map[string]bool{state.root.id: true}, owner.ids...)
+			map[string]bool{state.root.id: true}, map[string]*scanState{state.root.id: state}, owner.ids...)
 		if errors.Is(err, ErrInvalidInput) || deferred {
 			state.warnings++
 			return nil
@@ -1441,7 +1627,7 @@ func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *
 		return 0, err
 	}
 	deferred, err := s.publishThemeOwner(task, library, themeDirectoryOwner{id: library.ID, itemType: "CollectionFolder"},
-		shared.collection, completeRoots)
+		shared.collection, completeRoots, shared.roots)
 	if errors.Is(err, ErrInvalidInput) || deferred {
 		shared.issues["cross-root replacement requires a complete supported owner set"]++
 		return 1, nil

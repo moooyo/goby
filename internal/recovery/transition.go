@@ -3,6 +3,7 @@ package recovery
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -51,8 +52,12 @@ func loadSwitchJournal(ctx context.Context, runtime *Runtime) (*switchJournal, e
 }
 
 func (j *switchJournal) save(ctx context.Context) error {
+	compactControl(&j.data)
 	snapshot, err := writeControl(ctx, j.runtime, j.snapshot, j.data)
 	if err != nil {
+		if errors.Is(recoverCapacity(&j.data, j.snapshot, err), ErrCapacity) {
+			return ErrCapacity
+		}
 		j.fault = true
 		return ErrUnavailable
 	}

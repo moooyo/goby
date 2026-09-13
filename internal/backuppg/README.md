@@ -23,6 +23,16 @@ accepted for bounded tests. Arbitrary streams are rejected because a blocked Go
 reader or writer cannot be cancelled reliably. The complete private file must
 be discarded on any failure.
 
+Before publishing a generated archive, `ValidateDump` runs its private custom
+dump through the same `pg_restore` command and `Decode` grammar used by a real
+restore. `MaxDumpBytes` bounds both compressed custom input and expanded text
+independently; compression does not increase the supported logical data size.
+The preflight verifies complete COPY and sequence sections, row-size limits,
+and the snapshot's table row counts while discarding the data. It creates no
+target database or tables. The caller rewinds the archive before packaging.
+Source fingerprints, target constraints, sequence consumer maxima, migrations,
+and application finalization still require the ordinary restore transaction.
+
 Source connection configuration is a single explicit PostgreSQL URI with
 host, database, user, and SSL mode. It must equal the pool's original URI; decoded
 identity fields and TLS policy are independently compared with the live pool

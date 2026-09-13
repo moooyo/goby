@@ -264,13 +264,15 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 		}
 		retire = append(retire, resource.ID)
 	}
-	// Retain an independent approved anchor before taking ownership.mu. The
-	// final checks still reopen the registered name chain from that anchor.
-	rootLease, err := state.store.leaseLibraryRoot(state.root)
+	// The witness owns independent descriptors so a bounded final observation
+	// can outlive a timed-out transaction without using the caller's scan files.
+	witness, err := state.store.prepareAuxiliaryPublicationWitness(state.task, state.library, files,
+		map[string]bool{state.root.id: true}, map[string]*scanState{state.root.id: state},
+		themePublicationPlan{active: active, retire: retire})
 	if err != nil {
 		return err
 	}
-	defer rootLease.Close()
+	defer witness.Close()
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return err
@@ -365,22 +367,11 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	if err := beforeAuxiliary.record(state.task.ctx, tx, forcedIDs); err != nil {
 		return err
 	}
-	root, err := rootLease.Open()
-	if err != nil {
-		return fmt.Errorf("%w: extra source root changed before commit", ErrUnavailable)
-	}
-	verifyErr := state.verifyThemeDirectoriesAt(root, ".", true)
-	_ = root.Close()
-	if verifyErr != nil {
-		return fmt.Errorf("%w: extra source directories changed before commit", ErrUnavailable)
-	}
-	if err := verifyPreparedThemeFilesWithRoots(files, func(candidate *scanState) (*os.Root, error) {
-		if candidate != state {
-			return nil, fmt.Errorf("%w: extra source changed its registered root", ErrUnavailable)
+	if err := runStorageObservation(state.task.ctx, []*storageObservationLifetime{&witness.observation}, witness.validate); err != nil {
+		if state.task.ctx.Err() != nil {
+			return state.task.ctx.Err()
 		}
-		return rootLease.Open()
-	}); err != nil {
-		return fmt.Errorf("%w: extra sources changed before commit", ErrUnavailable)
+		return fmt.Errorf("%w: extra publication could not verify its final sources", ErrUnavailable)
 	}
 	if err := state.task.ctx.Err(); err != nil {
 		return err

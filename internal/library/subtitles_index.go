@@ -24,17 +24,21 @@ type subtitleDirectoryIndex struct {
 	overflow map[string]bool
 }
 
-func newSubtitleDirectoryIndex(names []string, info os.FileInfo) *subtitleDirectoryIndex {
+func newSubtitleDirectoryIndex(entries []os.DirEntry, collectionType string, info os.FileInfo) *subtitleDirectoryIndex {
 	index := &subtitleDirectoryIndex{info: info, byStem: make(map[string][]subtitleCandidate), overflow: make(map[string]bool)}
 	mediaStems := make(map[string]bool)
-	for _, name := range names {
-		if safeSubtitleFilename(name) && !ignoredName(name) && extensionKind(name) != "" {
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		name := entry.Name()
+		names = append(names, name)
+		// Only media admitted by the main scanner can own a sidecar. Keep all
+		// subtitle names below so invalid existing sources retain their snapshots.
+		if entry.Type().IsRegular() && safeSubtitleFilename(name) && !ignoredName(name) && scannedMediaKind(name, collectionType) != "" {
 			mediaStems[strings.ToLower(strings.TrimSuffix(name, filepath.Ext(name)))] = true
 		}
 	}
 	// Sorting makes the finite candidate subset deterministic across directory
 	// enumeration order; overflow never authorizes deletion of previous rows.
-	names = append([]string(nil), names...)
 	sort.Strings(names)
 	for _, name := range names {
 		if !safeSubtitleFilename(name) || ignoredName(name) {
@@ -68,6 +72,15 @@ func newSubtitleDirectoryIndex(names []string, info os.FileInfo) *subtitleDirect
 		index.byStem[owner] = append(index.byStem[owner], subtitleCandidate{filename: name, info: track})
 	}
 	return index
+}
+
+// scannedMediaKind applies the shared media-type admission for a library scan.
+func scannedMediaKind(name, collectionType string) string {
+	kind := extensionKind(name)
+	if (collectionType == "music" && kind != "audio") || ((collectionType == "movies" || collectionType == "tvshows") && kind != "video") {
+		return ""
+	}
+	return kind
 }
 
 func safeSubtitleFilename(name string) bool {

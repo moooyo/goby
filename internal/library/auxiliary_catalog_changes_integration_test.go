@@ -379,6 +379,116 @@ func TestAuxiliaryCatalogChangesTrackInheritedThemeGenresAndHonorEmptyControls(t
 	assertThemeGenres()
 }
 
+func TestAuxiliaryCatalogChangesTrackTrailerOwnerNamesAndIndependentControls(t *testing.T) {
+	prober := &libraryFixtureProber{}
+	ctx, pool, store, root, userID := libraryIntegrationStore(t, prober)
+	main := libraryIntegrationFile(t, root, "movies/Film/Main.mp4", "video:trailer-name-owner")
+	nfo := libraryIntegrationFile(t, root, "movies/Film/Main.nfo", `<movie><title>Initial movie</title></movie>`)
+	paths := make(map[string]string)
+	for _, name := range []string{"Automatic", "BothControlled", "NameControlled", "SortControlled"} {
+		paths[name] = libraryIntegrationFile(t, root, "movies/Film/trailers/"+name+".mp4", "video:trailer-name-"+name)
+	}
+	clipPath := libraryIntegrationFile(t, root, "movies/Film/featurettes/Clip.mp4", "video:independent-clip")
+	libraryIntegrationFile(t, root, "movies/Other/Other.mp4", "video:independent-owner")
+	otherPath := libraryIntegrationFile(t, root, "movies/Other/trailers/Other.mp4", "video:independent-trailer")
+	collection := libraryIntegrationCreate(t, ctx, store, "Trailer name notifications", "movies", filepath.Join(root, "movies"))
+	if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+		t.Fatalf("prepare trailer name references: %+v", job)
+	}
+	owner := nfoCatalogItem(t, ctx, store, userID, collection.ID, main)
+	resources := extraScanTestResources(t, ctx, pool, collection.ID)
+	byPath := make(map[string]themeScanTestResource)
+	for _, resource := range resources {
+		byPath[resource.path] = resource
+	}
+	if len(resources) != 6 || byPath[clipPath].kind != ExtraKindClip || byPath[otherPath].ownerID == owner.ID {
+		t.Fatal("the fixture did not establish unrelated and independently controlled extra resources")
+	}
+	actor := metadataEditTestActor(t, ctx, pool, "trailer-name-reference-editor")
+	for _, control := range []struct {
+		name   string
+		values map[string]json.RawMessage
+		locks  []string
+	}{
+		{"BothControlled", map[string]json.RawMessage{"Name": json.RawMessage(`"Fixed title"`), "SortName": json.RawMessage(`"Fixed order"`)}, []string{"Name", "SortName"}},
+		{"NameControlled", map[string]json.RawMessage{"Name": json.RawMessage(`"Fixed title"`)}, nil},
+		{"SortControlled", map[string]json.RawMessage{"SortName": json.RawMessage(`"Fixed order"`)}, []string{"SortName"}},
+	} {
+		id := byPath[paths[control.name]].id
+		detail := metadataEditTestDetail(t, ctx, store, actor, id)
+		metadataEditTestUpdate(t, ctx, store, actor, detail, control.values, control.locks)
+	}
+	automatic := byPath[paths["Automatic"]]
+	userDataSeed(t, ctx, pool, userID, UserData{ItemID: automatic.id, IsFavorite: true, PlayCount: 4})
+	beforeUserData := forceProbeUserDataSnapshot(t, ctx, pool, automatic.id)
+	beforeResources := make(map[string]string)
+	for _, resource := range resources {
+		beforeResources[resource.id] = metadataEditTestSnapshot(t, ctx, pool, resource.id)
+	}
+	probeCount := len(prober.calls())
+	notifications := catalogChangesTestListener(t, store)
+	assertRenamed := func(name string) {
+		t.Helper()
+		batches := auxiliaryCatalogBatches(t, notifications)
+		if len(batches) != 1 || len(batches[0].Changes) != 4 {
+			t.Fatalf("owner and three inherited trailer names must invalidate in one commit: %+v", batches)
+		}
+		requireAuxiliaryCatalogFact(t, batches, CatalogUpdated, owner.ID, collection.ID)
+		for _, key := range []string{"Automatic", "NameControlled", "SortControlled"} {
+			resource := byPath[paths[key]]
+			assertAuxiliaryCatalogKinds(t, batches, resource.id, CatalogUpdated)
+			requireAuxiliaryCatalogResource(t, batches, CatalogUpdated, resource.id, collection.ID, owner.ID)
+		}
+		for _, resource := range []themeScanTestResource{byPath[paths["BothControlled"]], byPath[clipPath], byPath[otherPath]} {
+			assertAuxiliaryCatalogKinds(t, batches, resource.id)
+		}
+		trailers, err := store.QueryLocalTrailers(ctx, owner.ID, Subject{UserID: userID})
+		if err != nil || len(trailers) != 4 {
+			t.Fatalf("owner rename changed the authorized trailer population: %+v, %v", trailers, err)
+		}
+		for _, item := range trailers {
+			if item.ExtraOwnerName != name || item.ParentID != owner.ID || item.LibraryID != collection.ID {
+				t.Fatalf("the notified trailer did not expose its current scoped owner name: %+v", item)
+			}
+			expectedNameControl := item.ID == byPath[paths["BothControlled"]].id || item.ID == byPath[paths["NameControlled"]].id
+			expectedSortControl := item.ID == byPath[paths["BothControlled"]].id || item.ID == byPath[paths["SortControlled"]].id
+			if item.ExtraNameControlled != expectedNameControl || item.ExtraSortNameControlled != expectedSortControl {
+				t.Fatal("owner rename lost independent trailer control provenance")
+			}
+		}
+		for _, resource := range resources {
+			if metadataEditTestSnapshot(t, ctx, pool, resource.id) != beforeResources[resource.id] {
+				t.Fatal("an owner-derived notification rewrote the independent extra source or metadata controls")
+			}
+		}
+		if forceProbeUserDataSnapshot(t, ctx, pool, automatic.id) != beforeUserData || len(prober.calls()) != probeCount {
+			t.Fatal("owner renaming changed trailer user history or repeated media probing")
+		}
+	}
+	if err := os.WriteFile(nfo, []byte(`<movie><title>Revised local movie</title></movie>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+		t.Fatalf("scan the movie NFO rename: %+v", job)
+	}
+	assertRenamed("Revised local movie")
+	detail := metadataEditTestDetail(t, ctx, store, actor, owner.ID)
+	controls := map[string]json.RawMessage{"Name": json.RawMessage(`"Administrator movie"`)}
+	detail = metadataEditTestUpdate(t, ctx, store, actor, detail, controls, nil)
+	assertRenamed("Administrator movie")
+	unchanged, err := store.UpdateItemMetadata(ctx, actor, owner.ID, MetadataEdit{
+		Revision: detail.Revision, Overrides: controls, LockedFields: []string{},
+	})
+	if err != nil || unchanged.Revision != detail.Revision {
+		t.Fatalf("an unchanged movie edit advanced its revision: %+v, %v", unchanged, err)
+	}
+	assertNoCatalogTestNotification(t, notifications)
+	if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+		t.Fatalf("scan unchanged trailer references: %+v", job)
+	}
+	assertNoCatalogTestNotification(t, notifications)
+}
+
 func TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable(t *testing.T) {
 	for _, role := range []string{"theme", "extra"} {
 		t.Run(role, func(t *testing.T) {

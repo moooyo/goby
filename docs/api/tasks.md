@@ -176,8 +176,9 @@ All path IDs above are definition IDs, including `LastExecutionResult.Id`;
 native run IDs are not compatibility task IDs. Paths support the existing
 root aliases and case-insensitive route literals. Listing accepts optional
 case-insensitive `IsHidden` and `IsEnabled` names with exact `true`/`false`
-values. Duplicate aliases and unsupported queries are rejected. Other task
-routes accept only the `api_key` authentication query. Queries are at most
+values. Duplicate business aliases and unsupported queries are rejected. Other
+task routes accept only the declared
+[compatibility transport carriers](compatibility-transport.md). Queries are at most
 4 KiB. No paging envelope or placeholder reference tasks are returned.
 
 TaskInfo contains `Id`, `Name`, `Key`, `Description`, `Category`, `IsHidden`,

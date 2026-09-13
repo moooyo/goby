@@ -75,6 +75,95 @@ func TestScanSubtitlesPreservesIndexesAcrossCachedScansAndRetiresDeletedNames(t 
 	}
 }
 
+func TestScanSubtitlesIgnoresUnscannableMediaOwners(t *testing.T) {
+	for _, kind := range []string{"directory", "symlink", "unsupported audio"} {
+		t.Run(kind, func(t *testing.T) {
+			prober := &libraryFixtureProber{}
+			fixture := mediaSourceTestCatalog(t, prober)
+			directory := filepath.Dir(fixture.path)
+			if err := os.WriteFile(filepath.Join(directory, "Feature.en.srt"), []byte(subtitleTestSRT), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if job := libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed"); job.Error != "" {
+				t.Fatalf("initial subtitle scan reported a warning: %+v", job)
+			}
+			tracks := subtitleTestTracks(t, fixture)
+			if len(tracks) != 1 || tracks[0].Filename != "Feature.en.srt" || tracks[0].Language != "en" {
+				t.Fatalf("initial scan did not attach the English subtitle: %+v", tracks)
+			}
+			track := tracks[0]
+			probeCalls := len(prober.calls())
+			shadow := filepath.Join(directory, "Feature.en.mkv")
+			switch kind {
+			case "directory":
+				if err := os.Mkdir(shadow, 0700); err != nil {
+					t.Fatal(err)
+				}
+			case "symlink":
+				if err := os.Symlink(fixture.path, shadow); err != nil {
+					t.Fatal(err)
+				}
+			case "unsupported audio":
+				if err := os.WriteFile(filepath.Join(directory, "Feature.en.mp3"), []byte("audio:shadow"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if job := libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed"); job.Error != "" {
+				t.Fatalf("unscannable owner caused an incomplete subtitle scan: %+v", job)
+			}
+			if tracks := subtitleTestTracks(t, fixture); !reflect.DeepEqual(tracks, []Subtitle{track}) {
+				t.Fatalf("unscannable owner changed the existing subtitle identity: %+v", tracks)
+			}
+			content, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index)
+			if err != nil || string(content.Data) != subtitleTestSRT || !reflect.DeepEqual(content.Info, track) {
+				t.Fatalf("original subtitle URL no longer reads its indexed source: content=%+v error=%v", content, err)
+			}
+			if len(prober.calls()) != probeCalls {
+				t.Fatalf("unscannable owner caused a media probe: before=%d after=%d", probeCalls, len(prober.calls()))
+			}
+		})
+	}
+}
+
+func TestScanSubtitlesAssignsTracksToMoreSpecificScannableMedia(t *testing.T) {
+	fixture := mediaSourceTestCatalog(t, nil)
+	directory := filepath.Dir(fixture.path)
+	if err := os.WriteFile(filepath.Join(directory, "Feature.en.srt"), []byte(subtitleTestSRT), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if job := libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed"); job.Error != "" {
+		t.Fatalf("initial subtitle scan reported a warning: %+v", job)
+	}
+	tracks := subtitleTestTracks(t, fixture)
+	if len(tracks) != 1 {
+		t.Fatalf("initial scan did not attach the subtitle: %+v", tracks)
+	}
+	previous := tracks[0]
+	path := filepath.Join(directory, "Feature.en.mkv")
+	if err := os.WriteFile(path, []byte("video:more-specific"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if job := libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed"); job.Error != "" {
+		t.Fatalf("more specific media scan reported a warning: %+v", job)
+	}
+	if tracks := subtitleTestTracks(t, fixture); len(tracks) != 0 {
+		t.Fatalf("less specific media retained another media's subtitle: %+v", tracks)
+	}
+	if _, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), previous.Index); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("retired subtitle URL remained readable on the previous owner: %v", err)
+	}
+	owner := libraryIntegrationItemByPath(t, libraryIntegrationQuery(t, fixture.ctx, fixture.store, Query{
+		UserID: fixture.userID, ParentID: fixture.library.ID, Recursive: true, IncludeItemTypes: []string{"Movie"},
+	}).Items, path)
+	if len(owner.Subtitles) != 1 || owner.Subtitles[0].Filename != "Feature.en.srt" || owner.Subtitles[0].Language != "" || owner.Subtitles[0].Title != "" {
+		t.Fatalf("more specific media did not own its basename subtitle: %+v", owner.Subtitles)
+	}
+	content, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, owner.ID, media.SourceID(owner.ID), owner.Subtitles[0].Index)
+	if err != nil || string(content.Data) != subtitleTestSRT {
+		t.Fatalf("subtitle was not readable through its more specific owner: content=%+v error=%v", content, err)
+	}
+}
+
 func TestScanSubtitlesInvalidExistingCandidateRetainsSnapshotAndStableListingPrunes(t *testing.T) {
 	fixture, track, path := subtitleTestCatalog(t)
 	if err := os.WriteFile(path, []byte("invalid replacement"), 0600); err != nil {

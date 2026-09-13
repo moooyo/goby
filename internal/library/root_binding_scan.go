@@ -15,11 +15,12 @@ import (
 // it does not establish complete walking or authorize missing-item deletion.
 // The caller must Close every result, including non-verified observations.
 type rootBindingScanCapture struct {
-	row     rootBindingRow
-	status  RootBindingStatus
-	opened  *os.Root
-	capture rootBindingWriteCapture
-	closed  bool
+	observation storageObservationLifetime
+	row         rootBindingRow
+	status      RootBindingStatus
+	opened      *os.Root
+	capture     rootBindingWriteCapture
+	closed      bool
 }
 
 // Revalidate never accesses Store.mu and can run inside an owned transaction.
@@ -42,7 +43,14 @@ func (capture *rootBindingScanCapture) Revalidate(ctx context.Context) error {
 }
 
 func (capture *rootBindingScanCapture) Close() error {
-	if capture == nil || capture.closed {
+	if capture == nil {
+		return nil
+	}
+	return capture.observation.retire(capture.closeResources)
+}
+
+func (capture *rootBindingScanCapture) closeResources() error {
+	if capture.closed {
 		return nil
 	}
 	capture.closed = true
@@ -154,10 +162,10 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return nil, err
 	}
-	var matched rootBindingWriteCapture
+	var matched *rootBindingScanCapture
 	var candidate **os.Root
 	if result.status == RootBindingVerified {
-		matched, candidate = result.capture, &anchor
+		matched, candidate = result, &anchor
 	}
 	// Recheck the job and exact row even after an unavailable observation. Only
 	// filesystem observation errors are recoverable; a lost owner or changed
@@ -174,11 +182,16 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 		if errors.Is(observationErr, context.Canceled) || errors.Is(observationErr, context.DeadlineExceeded) {
 			return nil, observationErr
 		}
-		result.status = RootBindingUnavailable
+		// The observation may still be finishing a blocked filesystem call.
+		// Retire its owned descriptors without mutating the worker's capture;
+		// return an independent unavailable result with no deletion authority.
+		_ = result.Close()
+		result = &rootBindingScanCapture{row: previous, status: RootBindingUnavailable}
 	}
 	if result.status != RootBindingVerified {
+		row, status := result.row, result.status
 		_ = result.Close()
-		result.closed = false
+		result = &rootBindingScanCapture{row: row, status: status}
 	}
 	retained = true
 	return result, nil
@@ -220,13 +233,13 @@ func rootBindingScanObservationOnly(err error) (error, bool) {
 // admitRootBindingScan retains admission through commit and anchor publication.
 // All filesystem acquisition precedes this call, and revalidation never takes
 // Store.mu. The lock order is Store.mu followed by ownership.mu throughout.
-func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous *rootBindingRow, capture rootBindingWriteCapture, anchor **os.Root) (rootBindingRow, error) {
+func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous *rootBindingRow, capture *rootBindingScanCapture, anchor **os.Root) (rootBindingRow, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := task.ctx.Err(); err != nil {
 		return rootBindingRow{}, err
 	}
-	if s.closed || !s.rootBindingPathConfiguredLocked(root.allowedPath) {
+	if s.closed || s.closing.Load() || !s.rootBindingPathConfiguredLocked(root.allowedPath) {
 		return rootBindingRow{}, ErrUnavailable
 	}
 	if s.active[task.job.ID] != task || task.job.LibraryID != root.libraryID || task.job.Status != "Running" {
@@ -262,7 +275,7 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 			return ErrRootBindingConflict
 		}
 		if capture != nil {
-			if err := capture.Revalidate(task.ctx); err != nil {
+			if err := runStorageObservation(task.ctx, scanObservationLifetimes([]*rootBindingScanCapture{capture}, nil), capture.Revalidate); err != nil {
 				return rootBindingScanObservationFailure{err: err}
 			}
 		}

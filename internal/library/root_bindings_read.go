@@ -289,7 +289,7 @@ func (row rootBindingRow) same(other rootBindingRow) bool {
 func (s *Store) configuredRootBindingPath(root libraryRoot) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return "", ErrUnavailable
 	}
 	for _, approved := range s.roots {

@@ -139,6 +139,12 @@ objects and in-progress writes count toward the byte limit. The free-space
 check additionally reserves bounded metadata-replacement space. Requests and
 integer policy ranges are finite and checked before arithmetic.
 
+The minimum-free-space reserve gates new object and scratch allocations. It
+does not prevent an intact existing store from opening, listing, downloading,
+or deleting objects to reclaim space. Ownership, inventory, and crash-recovery
+checks still fail closed; a real metadata write or sync failure is not treated
+as a capacity-only condition.
+
 `Snapshot` pins a file descriptor and a fixed size. Its `Read`, `Seek`, and `Close`
 support range downloads without following a request-supplied path. Concurrent
 `Close` calls wait until the reader slot has actually been released. Context

@@ -120,6 +120,11 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 		s.playbackError(w, r, ctx.Err())
 		return
 	}
+	writer, err := newIdleResponseWriter(w, r.Context(), mediaWriteIdle)
+	if err != nil {
+		panic(http.ErrAbortHandler)
+	}
+	defer writer.finish()
 	digest := sha256.Sum256(result.Data)
 	w.Header().Set("ETag", strconv.Quote(hex.EncodeToString(digest[:])))
 	w.Header().Set("Content-Type", result.ContentType)
@@ -127,7 +132,7 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified")
 	// The indexed source and its current permissions were checked before either
 	// a cached/conditional response or the rendered representation is served.
-	http.ServeContent(w, r, "subtitle."+string(options.Format), content.ModifiedAt, bytes.NewReader(result.Data))
+	http.ServeContent(writer, r, "subtitle."+string(options.Format), content.ModifiedAt, bytes.NewReader(result.Data))
 }
 
 func (s *Server) subtitleError(w http.ResponseWriter, r *http.Request, err error) {

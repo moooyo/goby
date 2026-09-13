@@ -92,7 +92,7 @@ func (s *Store) beginSubjectStateWrite(ctx context.Context, subject Subject, req
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
 	s.mu.Lock()
-	closed := s.closed
+	closed := s.closed || s.closing.Load()
 	s.mu.Unlock()
 	if closed {
 		return nil, libraryAccess{}, ErrUnavailable

@@ -241,8 +241,11 @@ func (s *Server) embyCreateLibrary(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.RefreshLibrary {
 		if _, err := s.library.StartScanAsAdministrator(r.Context(), actor, identity.AdministratorEmby, item.ID, library.ScanOptions{}); err != nil {
-			s.libraryError(w, r, err)
-			return
+			// Creation is already committed. A failed optional initial scan must
+			// not tell a client to retry creation and duplicate the library.
+			// Keep the observed empty success contract; scan admission failure
+			// is an operational diagnostic, not a claim that scanning succeeded.
+			s.log.Warn("created library initial scan unavailable", "actor_id", actor.User.ID, "library_id", item.ID, "error", err)
 		}
 	}
 	w.WriteHeader(http.StatusNoContent)

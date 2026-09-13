@@ -306,6 +306,12 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 			locked[field] = values[metadataInternalField(field)]
 		}
 	}
+	// Validate newly captured snapshots before writing, then use this exact
+	// final composition for both persisted values and the returned detail.
+	effective, _, err = composeMetadataValues(record.automatic, activeOverrides, activeMetadataControls(record.itemType, locked))
+	if err != nil {
+		return ItemMetadataDetail{}, err
+	}
 	overridesJSON, err := json.Marshal(edit.Overrides)
 	if err != nil {
 		return ItemMetadataDetail{}, err
@@ -321,7 +327,14 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		return ItemMetadataDetail{}, fmt.Errorf("compare metadata edit: %w", err)
 	}
 	var beforeAuxiliary auxiliaryCatalogSnapshot
+	var beforeCatalog scanCatalogSnapshot
 	if changed {
+		if record.itemType == "MusicAlbum" && record.isFolder {
+			beforeCatalog, err = readScanCatalogItem(ctx, tx, itemID)
+			if err != nil {
+				return ItemMetadataDetail{}, err
+			}
+		}
 		beforeAuxiliary, err = readAuxiliaryCatalogSnapshot(ctx, tx, []string{itemID})
 		if err != nil {
 			return ItemMetadataDetail{}, err
@@ -352,10 +365,6 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		record.overrides, record.locked = overridesJSON, lockedJSON
 		record.lastEditedBy, record.name = actor.User.ID, effective.Name
 	}
-	// Session expiry is clock-based and can pass while waiting for catalog rows.
-	if err := administrator.check(ctx, tx, false); err != nil {
-		return ItemMetadataDetail{}, err
-	}
 	detail, err := metadataDetail(record)
 	if err != nil {
 		return ItemMetadataDetail{}, err
@@ -369,9 +378,23 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 		if err := recordCatalogChanges(tx, change); err != nil {
 			return ItemMetadataDetail{}, err
 		}
+		if beforeCatalog.present {
+			afterCatalog, err := readScanCatalogItem(ctx, tx, itemID)
+			if err != nil {
+				return ItemMetadataDetail{}, err
+			}
+			if err := recordMusicAlbumReferenceChanges(ctx, tx, record.libraryID, itemID, beforeCatalog, afterCatalog); err != nil {
+				return ItemMetadataDetail{}, err
+			}
+		}
 		if err := beforeAuxiliary.record(ctx, tx, nil); err != nil {
 			return ItemMetadataDetail{}, err
 		}
+	}
+	// Notification snapshots can also outlive the session. Keep this fresh
+	// authorization check as the final database operation before commit.
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return ItemMetadataDetail{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemMetadataDetail{}, fmt.Errorf("commit metadata edit: %w", err)

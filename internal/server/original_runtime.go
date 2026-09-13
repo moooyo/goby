@@ -20,24 +20,56 @@ type originalStreamRuntime struct {
 	cancel   context.CancelFunc
 	closing  bool
 	requests sync.WaitGroup
+	owners   map[originalStreamOwner]int
+}
+
+const maxOriginalOwnerStreams = 8
+
+type originalStreamOwner struct {
+	application bool
+	id          string
 }
 
 func newOriginalStreamRuntime() *originalStreamRuntime {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &originalStreamRuntime{ctx: ctx, cancel: cancel}
+	return &originalStreamRuntime{ctx: ctx, cancel: cancel, owners: make(map[originalStreamOwner]int)}
 }
 
-func (runtime *originalStreamRuntime) enter() (context.Context, func(), bool) {
+func (runtime *originalStreamRuntime) enter(principal identity.Principal) (context.Context, func(), error) {
 	if runtime == nil {
-		return nil, nil, false
+		return nil, nil, context.Canceled
 	}
 	runtime.mu.Lock()
 	defer runtime.mu.Unlock()
 	if runtime.closing {
-		return nil, nil, false
+		return nil, nil, context.Canceled
 	}
+	owner := originalStreamOwner{id: principal.User.ID}
+	if principal.IsApplicationKey() {
+		owner.application, owner.id = true, principal.SessionID
+	}
+	if owner.id == "" {
+		return nil, nil, identity.ErrUnauthorized
+	}
+	if runtime.owners[owner] >= maxOriginalOwnerStreams {
+		return nil, nil, library.ErrBusy
+	}
+	runtime.owners[owner]++
 	runtime.requests.Add(1)
-	return runtime.ctx, runtime.requests.Done, true
+	var once sync.Once
+	leave := func() {
+		once.Do(func() {
+			runtime.mu.Lock()
+			if runtime.owners[owner] <= 1 {
+				delete(runtime.owners, owner)
+			} else {
+				runtime.owners[owner]--
+			}
+			runtime.mu.Unlock()
+			runtime.requests.Done()
+		})
+	}
+	return runtime.ctx, leave, nil
 }
 
 func (runtime *originalStreamRuntime) stop() {
@@ -82,15 +114,15 @@ func (s *Server) authorizeOriginal(ctx context.Context, principal identity.Princ
 // transient database or storage observations do not erase an existing grant.
 // Cleanup joins the watcher before the connection can serve another request.
 func (s *Server) guardOriginalMedia(w http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile) (context.Context, func(), error) {
-	lifetime, leave, entered := s.originals.enter()
-	if !entered {
-		return nil, nil, context.Canceled
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	lifetime, leave, err := s.originals.enter(principal)
+	if err != nil {
+		return nil, nil, err
 	}
 	work, cancel := context.WithCancel(r.Context())
 	stopLifetime := context.AfterFunc(lifetime, cancel)
-	principal := r.Context().Value(principalKey).(identity.Principal)
 	check, stopCheck := context.WithTimeout(work, 10*time.Second)
-	err := s.authorizeOriginal(check, principal, source)
+	err = s.authorizeOriginal(check, principal, source)
 	stopCheck()
 	if err != nil {
 		stopLifetime()
@@ -98,7 +130,6 @@ func (s *Server) guardOriginalMedia(w http.ResponseWriter, r *http.Request, file
 		leave()
 		return nil, nil, err
 	}
-	controller := http.NewResponseController(w)
 	finished, watched := make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(watched)
@@ -106,7 +137,6 @@ func (s *Server) guardOriginalMedia(w http.ResponseWriter, r *http.Request, file
 		defer ticker.Stop()
 		abort := func() {
 			cancel()
-			_ = controller.SetWriteDeadline(time.Now())
 			_ = file.Close()
 		}
 		for {
@@ -132,7 +162,6 @@ func (s *Server) guardOriginalMedia(w http.ResponseWriter, r *http.Request, file
 		stopLifetime()
 		cancel()
 		<-watched
-		_ = controller.SetWriteDeadline(time.Time{})
 		leave()
 	}
 	return work, finish, nil

@@ -35,7 +35,7 @@ func (s *Store) StartScanAsAdministrator(ctx context.Context, actor identity.Pri
 func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrator, libraryID string, options ScanOptions) (Job, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return Job{}, ErrUnavailable
 	}
 	var job Job

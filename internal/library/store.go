@@ -155,7 +155,7 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 	// happened outside Store.mu; its revalidation never consults the Store.
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return Library{}, ErrUnavailable
 	}
 	for _, registration := range roots {
@@ -206,9 +206,11 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		IsFolder: true, IsCollectionFolder: true}); err != nil {
 		return Library{}, err
 	}
+	finalObservationCtx, cancelFinalObservation := context.WithTimeout(protected, storageObservationTimeout)
+	defer cancelFinalObservation()
 	for _, registration := range roots {
-		if err := registration.Revalidate(protected); err != nil {
-			return Library{}, err
+		if err := registration.RevalidateBounded(finalObservationCtx); err != nil {
+			return Library{}, rootBindingRegistrationError(err)
 		}
 	}
 	if err := administrator.check(protected, tx, false); err != nil {
@@ -268,7 +270,7 @@ func (s *Store) DeleteLibraryAsAdministrator(ctx context.Context, actor identity
 func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdministrator, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return ErrUnavailable
 	}
 	tx, err := s.beginOwnedTx(ctx)
@@ -324,32 +326,33 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 // Close cancels all owned jobs, drains the queue, then releases catalog ownership
 // and root handles. A caller deadline does not abandon cleanup.
 func (s *Store) Close(ctx context.Context) error {
-	s.mu.Lock()
-	if !s.closed {
-		s.closed = true
-		s.cancel()
-		close(s.queue)
+	// Fence new opens before waiting for admission. A slow already-admitted
+	// operation must not prevent this caller from observing its own deadline.
+	s.closing.Store(true)
+	s.closeOnce.Do(func() {
 		go func() {
+			s.mu.Lock()
+			s.closed = true
+			s.cancel()
+			close(s.queue)
+			s.mu.Unlock()
 			s.workers.Wait()
 			ownershipErr := s.ownership.release()
 			s.closeCatalogChangeListener()
 			s.mu.Lock()
 			s.shutdownErr = errors.Join(s.shutdownErr, ownershipErr)
 			for _, root := range s.roots {
-				if root.root != nil {
-					_ = root.root.Close()
-				}
+				s.retireRootAnchorLocked(root.root)
 			}
 			s.retireRootBindingAnchorsLocked("")
 			s.mu.Unlock()
+			s.rootOpens.Wait()
+			s.rootClosures.Wait()
 			close(s.done)
 		}()
-	}
-	s.mu.Unlock()
+	})
 	select {
 	case <-s.done:
-		s.mu.Lock()
-		defer s.mu.Unlock()
 		return s.shutdownErr
 	case <-ctx.Done():
 		return ctx.Err()

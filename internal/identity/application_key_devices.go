@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 // ErrApplicationKeyDeviceRemoved preserves a known shared-device family's
@@ -246,13 +248,27 @@ func (s *Store) UpdateApplicationKeyDeviceOptions(ctx context.Context, actor Pri
 	if deletedAt != nil {
 		return ManagedDevice{}, ErrApplicationKeyDeviceRemoved
 	}
-	if _, err := tx.Exec(ctx, `UPDATE application_key_devices SET custom_name = $2, revision = revision + 1
-		WHERE id = $1 AND custom_name IS DISTINCT FROM $2`, id, name); err != nil {
+	changed, err := tx.Exec(ctx, `UPDATE application_key_devices SET custom_name = $2, revision = revision + 1
+		WHERE id = $1 AND custom_name IS DISTINCT FROM $2`, id, name)
+	if err != nil {
 		return ManagedDevice{}, fmt.Errorf("update application server device options: %w", err)
 	}
 	result, err := readApplicationKeyDevice(ctx, tx, id)
 	if err != nil {
 		return ManagedDevice{}, err
+	}
+	if changed.RowsAffected() != 0 {
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return ManagedDevice{}, err
+		}
+		if err := activity.Record(ctx, tx, activity.Event{
+			Action: activity.ActionDeviceUpdated, Source: activity.SourceEmby, Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceDevice, ID: strconv.FormatInt(id, 10)},
+			Revision: result.Revision, Count: 1, ChangedFields: []activity.Field{activity.FieldCustomName},
+		}); err != nil {
+			return ManagedDevice{}, err
+		}
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, false, nil); err != nil {
 		return ManagedDevice{}, err
@@ -307,7 +323,9 @@ func (s *Store) DeleteApplicationKeyDevice(ctx context.Context, actor Principal,
 			return DeviceDeletion{}, fmt.Errorf("revoke application server device credentials: %w", err)
 		}
 		result.RevokedLoginCount = updated.RowsAffected()
-		if _, err := tx.Exec(ctx, `UPDATE application_key_devices SET deleted_at = $2, revision = revision + 1 WHERE id = $1`, id, result.DeletedAt); err != nil {
+		var revision int64
+		if err := tx.QueryRow(ctx, `UPDATE application_key_devices SET deleted_at = $2, revision = revision + 1
+			WHERE id = $1 RETURNING revision`, id, result.DeletedAt).Scan(&revision); err != nil {
 			return DeviceDeletion{}, fmt.Errorf("remove application server device generation: %w", err)
 		}
 		if actor.IsApplicationKey() {
@@ -317,6 +335,19 @@ func (s *Store) DeleteApplicationKeyDevice(ctx context.Context, actor Principal,
 					break
 				}
 			}
+		}
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return DeviceDeletion{}, err
+		}
+		// The owning removal records the exact newly revoked parent count.
+		// Client contexts remain history; they do not create duplicate events.
+		if err := activity.Record(ctx, tx, activity.Event{
+			Action: activity.ActionDeviceRemoved, Source: activity.SourceEmby, Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceDevice, ID: strconv.FormatInt(id, 10)},
+			Revision: revision, Count: result.RevokedLoginCount,
+		}); err != nil {
+			return DeviceDeletion{}, err
 		}
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, false, selfRevocation); err != nil {

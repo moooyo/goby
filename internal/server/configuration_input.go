@@ -5,7 +5,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"net/url"
 	"strings"
 	"unicode/utf8"
 
@@ -24,16 +23,10 @@ func configurationQuery(w http.ResponseWriter, r *http.Request) bool {
 		configurationInputError(w, r)
 		return false
 	}
-	query, err := url.ParseQuery(r.URL.RawQuery)
-	if err != nil {
+	query, err := embyBusinessQuery(r)
+	if err != nil || len(query) != 0 {
 		configurationInputError(w, r)
 		return false
-	}
-	for field, values := range query {
-		if field != "api_key" || len(values) != 1 {
-			configurationInputError(w, r)
-			return false
-		}
 	}
 	return true
 }

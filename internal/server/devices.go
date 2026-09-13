@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"unicode"
@@ -53,7 +52,7 @@ func embyDeviceOptionsDTO(device identity.ManagedDevice) map[string]any {
 // Reject duplicate aliases before selecting a value. SortOrder is accepted but
 // does not change the registry's deterministic activity order, as observed.
 func parseEmbyDeviceQuery(r *http.Request, list bool) (string, error) {
-	values, err := url.ParseQuery(r.URL.RawQuery)
+	values, err := embyBusinessQuery(r)
 	if err != nil {
 		return "", identity.ErrInvalidInput
 	}
@@ -66,8 +65,6 @@ func parseEmbyDeviceQuery(r *http.Request, list bool) (string, error) {
 		}
 		seen[field] = true
 		switch {
-		case field == "api_key":
-			// Credential parsing already validated the transport before dispatch.
 		case list && field == "sortorder":
 			if len(entries[0]) > 256 || strings.IndexFunc(entries[0], unicode.IsControl) >= 0 {
 				return "", identity.ErrInvalidInput

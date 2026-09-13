@@ -17,6 +17,7 @@ type rootBindingScanTestCapture struct {
 	anchor       *os.Root
 	checks       int
 	closes       int
+	closeHook    func()
 }
 
 func (capture *rootBindingScanTestCapture) Snapshot() (RootTopologySnapshot, error) {
@@ -52,6 +53,9 @@ func (capture *rootBindingScanTestCapture) Revalidate(ctx context.Context) error
 
 func (capture *rootBindingScanTestCapture) Close() error {
 	capture.closes++
+	if capture.closeHook != nil {
+		capture.closeHook()
+	}
 	return nil
 }
 

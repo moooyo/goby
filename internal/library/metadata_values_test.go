@@ -179,6 +179,81 @@ func TestComposeMetadataValuesPrecedenceClearAndUnknownSource(t *testing.T) {
 	}
 }
 
+func TestComposeMetadataValuesPreservesAcceptedNameLockSnapshots(t *testing.T) {
+	for _, original := range []string{"  Title \u00e9 \U0001f3b5  ", " ", ""} {
+		for _, field := range []string{"Name", "SortName"} {
+			t.Run(field+"/"+original, func(t *testing.T) {
+				source := MetadataValues{Name: "Current source name", SortName: "current source sort"}
+				locks := map[string]json.RawMessage{field: metadataTestRaw(t, original)}
+				before := append(json.RawMessage(nil), locks[field]...)
+				values, _, err := composeMetadataValues(metadataTestRaw(t, source), nil, locks)
+				if err != nil {
+					t.Fatalf("compose accepted name snapshot: %v", err)
+				}
+				object, err := metadataValueObject(values)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(object[field], before) || !bytes.Equal(locks[field], before) {
+					t.Fatalf("lock did not preserve the accepted name: effective=%s snapshot=%s want=%s", object[field], locks[field], before)
+				}
+				other := "Name"
+				if field == "Name" {
+					other = "SortName"
+				}
+				unlocked := metadataTestObject(t, metadataTestRaw(t, source))
+				if !bytes.Equal(object[other], unlocked[other]) {
+					t.Fatalf("locking %s changed independent %s", field, other)
+				}
+				manual := map[string]json.RawMessage{field: json.RawMessage(`"  Manual value  "`)}
+				values, _, err = composeMetadataValues(metadataTestRaw(t, source), manual, locks)
+				if err != nil {
+					t.Fatal(err)
+				}
+				object, err = metadataValueObject(values)
+				if err != nil || string(object[field]) != `"Manual value"` || !bytes.Equal(locks[field], before) {
+					t.Fatalf("manual precedence or normalization changed the retained lock: values=%+v snapshot=%s error=%v", values, locks[field], err)
+				}
+			})
+		}
+	}
+}
+
+func TestComposeMetadataValuesRejectsUnsafeLockSnapshots(t *testing.T) {
+	for _, fixture := range []struct {
+		name, field string
+		raw         json.RawMessage
+	}{
+		{"null name", "Name", json.RawMessage(`null`)},
+		{"numeric name", "Name", json.RawMessage(`1`)},
+		{"invalid UTF-8 name", "Name", json.RawMessage{34, 0xff, 34}},
+		{"NUL name", "Name", json.RawMessage(`"unsafe\u0000name"`)},
+		{"oversized untrimmed name", "Name", metadataTestRaw(t, strings.Repeat(" ", metadataValueMaxName)+"x")},
+		{"null sort name", "SortName", json.RawMessage(`null`)},
+		{"NUL sort name", "SortName", json.RawMessage(`"unsafe\u0000sort"`)},
+		{"oversized sort name", "SortName", metadataTestRaw(t, strings.Repeat("s", metadataValueMaxName+1))},
+		{"unknown field", "Kind", json.RawMessage(`"movie"`)},
+		{"invalid year", "ProductionYear", json.RawMessage(`10000`)},
+		{"nonfinite rating", "CommunityRating", json.RawMessage(`1e999`)},
+		{"invalid date", "PremiereDate", json.RawMessage(`"2025-02-29"`)},
+		{"null episode", "IndexNumber", json.RawMessage(`null`)},
+		{"unsafe provider", "ProviderIds", json.RawMessage(`{"Imdb":"unsafe/id"}`)},
+		{"duplicate provider", "ProviderIds", json.RawMessage(`{"Imdb":"tt1","Imdb":"tt2"}`)},
+		{"invalid genre", "Genres", json.RawMessage(`[null]`)},
+		{"invalid person", "People", json.RawMessage(`[{"Name":"Person","Type":"Unknown"}]`)},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			_, _, err := composeMetadataValues(nil, map[string]json.RawMessage{
+				"Name": json.RawMessage(`"Safe manual name"`),
+			}, map[string]json.RawMessage{fixture.field: fixture.raw})
+			var validation *MetadataValidationError
+			if !errors.Is(err, ErrInvalidInput) || !errors.As(err, &validation) || validation.Fields[fixture.field] == "" {
+				t.Fatalf("unsafe lock snapshot bypassed validation: %v", err)
+			}
+		})
+	}
+}
+
 func TestBuildMetadataProjectionOnlyChangesControlledFields(t *testing.T) {
 	source := []byte(`{"Kind":"tvshow","Name":"Source name","Overview":"Source overview","ProviderIDs":{"Vendor":"keep"},"People":[{"Name":"Person","Type":"Actor","FutureCredit":"keep"}],"Future":{"Value":12345678901234567890}}`)
 	original := append([]byte(nil), source...)

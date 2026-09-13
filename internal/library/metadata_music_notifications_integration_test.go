@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -10,6 +11,109 @@ import (
 
 	"github.com/moooyo/goby/internal/media"
 )
+
+func TestMusicAlbumCatalogChangesInvalidateNFOAndAdministratorNameReferences(t *testing.T) {
+	prober := &metadataMusicScanProber{}
+	for _, fixture := range []struct{ file, album string }{
+		{"Outer.flac", "Embedded outer"}, {"Inner.flac", "Embedded inner"}, {"Sibling.flac", "Embedded sibling"},
+	} {
+		prober.set(fixture.file, &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion,
+			Title: fixture.file, Album: fixture.album, Artist: "Stable artist"}, false)
+	}
+	ctx, pool, store, root, userID := libraryIntegrationStore(t, prober)
+	outerPath := libraryIntegrationFile(t, root, "music/Outer/Outer.flac", "audio:outer-name-reference")
+	innerPath := libraryIntegrationFile(t, root, "music/Outer/Nested/Inner.flac", "audio:inner-name-reference")
+	siblingPath := libraryIntegrationFile(t, root, "music/Sibling/Sibling.flac", "audio:sibling-name-reference")
+	nfoPath := libraryIntegrationFile(t, root, "music/Outer/album.nfo", `<album><title>Initial local album</title></album>`)
+	collection := libraryIntegrationCreate(t, ctx, store, "Album name notifications", "music", filepath.Join(root, "music"))
+	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	outerTrack := nfoCatalogItem(t, ctx, store, userID, collection.ID, outerPath)
+	innerTrack := nfoCatalogItem(t, ctx, store, userID, collection.ID, innerPath)
+	siblingTrack := nfoCatalogItem(t, ctx, store, userID, collection.ID, siblingPath)
+	album := nfoCatalogItem(t, ctx, store, userID, collection.ID, filepath.Dir(outerPath))
+	if outerTrack.Album == nil || outerTrack.Album.Name != "Initial local album" ||
+		innerTrack.Album == nil || innerTrack.Album.ID == album.ID {
+		t.Fatal("the fixture did not establish independent nearest album names")
+	}
+	userDataSeed(t, ctx, pool, userID, UserData{ItemID: outerTrack.ID, IsFavorite: true, PlayCount: 3})
+	beforeUserData := forceProbeUserDataSnapshot(t, ctx, pool, outerTrack.ID)
+	beforeTrack := metadataEditTestSnapshot(t, ctx, pool, outerTrack.ID)
+	beforeSource := metadataMusicScanSource(t, ctx, pool, album.ID)
+	probeCount := len(prober.calls())
+	actor := metadataEditTestActor(t, ctx, pool, "album-name-reference-editor")
+	notifications := catalogChangesTestListener(t, store)
+	assertRenamed := func(want string) {
+		t.Helper()
+		batch := nextCatalogTestNotification(t, notifications)
+		if batch.Resync || len(batch.Changes) != 2 {
+			t.Fatalf("one album rename must publish the album and its direct reference in one commit: %+v", batch)
+		}
+		seen := make(map[string]bool)
+		for _, change := range batch.Changes {
+			if change.Kind != CatalogUpdated || change.LibraryID != collection.ID || seen[change.ItemID] {
+				t.Fatalf("album rename emitted a duplicate or incorrectly scoped fact: %+v", change)
+			}
+			seen[change.ItemID] = true
+			switch change.ItemID {
+			case album.ID:
+				if !change.IsFolder || change.ParentID != album.ParentID {
+					t.Fatalf("album rename changed its browse scope: %+v", change)
+				}
+			case outerTrack.ID:
+				if change.IsFolder || change.ParentID != album.ID {
+					t.Fatalf("album reference notification changed the audio scope: %+v", change)
+				}
+			default:
+				t.Fatalf("album rename invalidated an unrelated or nested album reference: %+v", change)
+			}
+		}
+		assertNoCatalogTestNotification(t, notifications)
+		current, err := store.GetItem(ctx, userID, outerTrack.ID)
+		if err != nil || current.Album == nil || current.Album.ID != album.ID || current.Album.Name != want {
+			t.Fatalf("notified audio does not expose the committed album name: %+v, %v", current, err)
+		}
+		for _, original := range []Item{innerTrack, siblingTrack} {
+			current, err := store.GetItem(ctx, userID, original.ID)
+			if err != nil || !reflect.DeepEqual(current.Album, original.Album) {
+				t.Fatalf("renaming an outer album changed an independent album reference: %+v, %v", current, err)
+			}
+		}
+		if metadataEditTestSnapshot(t, ctx, pool, outerTrack.ID) != beforeTrack ||
+			metadataMusicScanSource(t, ctx, pool, album.ID) != beforeSource ||
+			forceProbeUserDataSnapshot(t, ctx, pool, outerTrack.ID) != beforeUserData || len(prober.calls()) != probeCount {
+			t.Fatal("a derived-name notification rewrote accepted audio, music sources, or user history")
+		}
+	}
+	writeNFO := func(name string) {
+		t.Helper()
+		if err := os.WriteFile(nfoPath, []byte("<album><title>"+name+"</title></album>"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+			t.Fatalf("scan the changed album title: %+v", job)
+		}
+	}
+	writeNFO("Revised local album")
+	assertRenamed("Revised local album")
+	detail := metadataEditTestDetail(t, ctx, store, actor, album.ID)
+	controls := map[string]json.RawMessage{"Name": json.RawMessage(`"Manual album"`), "SortName": json.RawMessage(`"Manual order"`)}
+	detail = metadataEditTestUpdate(t, ctx, store, actor, detail, controls, nil)
+	assertRenamed("Manual album")
+	unchanged, err := store.UpdateItemMetadata(ctx, actor, album.ID, MetadataEdit{
+		Revision: detail.Revision, Overrides: controls, LockedFields: []string{},
+	})
+	if err != nil || unchanged.Revision != detail.Revision {
+		t.Fatalf("an unchanged album edit advanced its revision: %+v, %v", unchanged, err)
+	}
+	assertNoCatalogTestNotification(t, notifications)
+	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	assertNoCatalogTestNotification(t, notifications)
+	writeNFO("Hidden local album")
+	assertNoCatalogTestNotification(t, notifications)
+	detail = metadataEditTestDetail(t, ctx, store, actor, album.ID)
+	metadataEditTestUpdate(t, ctx, store, actor, detail, nil, nil)
+	assertRenamed("Hidden local album")
+}
 
 func TestMusicAlbumCatalogChangesPublishDerivedMetadataAndKeepCachedScansQuiet(t *testing.T) {
 	prober := &metadataMusicScanProber{}

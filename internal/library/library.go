@@ -124,6 +124,8 @@ type Store struct {
 	cancel      context.CancelFunc
 	mu          sync.Mutex
 	closed      bool
+	closing     atomic.Bool
+	closeOnce   sync.Once
 	shutdownErr error
 	active      map[string]*scanTask
 	queue       chan *scanTask
@@ -131,7 +133,10 @@ type Store struct {
 	workers     sync.WaitGroup
 	done        chan struct{}
 
-	rootBindingAnchors map[string]rootBindingAnchor
+	rootBindingAnchors   map[string]rootBindingAnchor
+	rootAnchorReferences map[*os.Root]*rootAnchorReference
+	rootOpens            sync.WaitGroup
+	rootClosures         sync.WaitGroup
 
 	catalogListener      atomic.Pointer[catalogChangeListener]
 	catalogChangesClosed atomic.Bool

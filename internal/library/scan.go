@@ -283,8 +283,8 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 			}
 			continue
 		}
-		kind := extensionKind(entry.Name())
-		if kind == "" || (state.library.CollectionType == "music" && kind != "audio") || ((state.library.CollectionType == "movies" || state.library.CollectionType == "tvshows") && kind != "video") {
+		kind := scannedMediaKind(entry.Name(), state.library.CollectionType)
+		if kind == "" {
 			continue
 		}
 		fileWarnings := state.warnings
@@ -584,6 +584,9 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	// ForceProbe refreshes media files. A directory has no successful probe to
 	// invalidate, so its notifications still require changed effective facts.
 	if err := recordScanCatalogChange(tx, state.library.ID, beforeCatalog, afterCatalog, false); err != nil {
+		return "", err
+	}
+	if err := recordMusicAlbumReferenceChanges(state.task.ctx, tx, state.library.ID, id, beforeCatalog, afterCatalog); err != nil {
 		return "", err
 	}
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {

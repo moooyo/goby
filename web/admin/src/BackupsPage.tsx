@@ -7,9 +7,11 @@ import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import RestoreRounded from '@mui/icons-material/RestoreRounded';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
-import { ApiError, isAbortError } from './api';
+import { adminApi, ApiError, isAbortError } from './api';
 import { backupsApi, newBackupRequestId, validateBackupPassphrase } from './backupsApi';
 import type { BackupPage, BackupView, OperationPage, OperationView, SourceView, StatusView } from './backupsApi';
+import { backupAttemptMatchesOperation, backupAttemptResolvedByOperation, readBackupAttempt, removeBackupAttempt, sameBackupAttempt, storeBackupAttempt } from './backupReceipts';
+import type { BackupAttempt, BackupReceiptScope } from './backupReceipts';
 import { ErrorNotice, PageHeading } from './components';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
@@ -35,6 +37,7 @@ const recoveryMessages: Record<string, string> = {
   invalid_response: 'The server returned an unexpected response. Refresh to check the actual job state.',
   network_error: 'The server could not be reached. Reconnect to check the actual job state.',
   secure_random_unavailable: 'Secure request IDs are unavailable. Open the administrator page over HTTPS before starting a job.',
+  backup_receipt_unavailable: 'The pending recovery receipt could not be stored or read. Allow session storage and reconnect before starting another recovery request.',
 };
 const kindLabels: Record<OperationView['Kind'], string> = { create: 'Create backup', import: 'Import backup', delete: 'Delete backup', restore: 'Restore backup', rollback: 'Roll back' };
 const phaseLabels: Record<OperationView['Phase'], string> = {
@@ -43,7 +46,7 @@ const phaseLabels: Record<OperationView['Phase'], string> = {
   activation: 'Starting recovered server', rollback: 'Returning to the retained copy', cleanup: 'Finishing up', finished: 'Finished',
 };
 
-interface AdmissionAttempt { RequestId: string; Kind: OperationView['Kind']; ApplyingRevision?: string }
+type AdmissionAttempt = BackupAttempt;
 interface Snapshot { status: StatusView; backups: BackupPage; operations: OperationPage }
 type DialogState = { kind: 'create' | 'import' }
   | { kind: 'plan'; backup: BackupView; status: StatusView }
@@ -51,6 +54,8 @@ type DialogState = { kind: 'create' | 'import' }
   | { kind: 'inspect'; operationId: string }
   | { kind: 'rollback'; status: StatusView };
 interface AdmissionCallbacks {
+  onAttempt: (attempt: AdmissionAttempt) => void;
+  onRejected: () => void;
   onAccepted: (operation: OperationView) => void;
   onUnknown: (attempt: AdmissionAttempt) => void;
   onClose: () => void;
@@ -116,7 +121,7 @@ function PassphraseFields({ passphrase, confirmation, disabled, onPassphrase, on
   </>;
 }
 
-function BackupAdmissionDialog({ kind, status, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { kind: 'create' | 'import'; status: StatusView }) {
+function BackupAdmissionDialog({ kind, status, onAttempt, onRejected, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { kind: 'create' | 'import'; status: StatusView }) {
   const [passphrase, setPassphrase] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [file, setFile] = useState<File>();
@@ -138,8 +143,11 @@ function BackupAdmissionDialog({ kind, status, onAccepted, onUnknown, onClose, o
     event.preventDefault();
     if (!valid || controller.current) return;
     const pending = new AbortController(); controller.current = pending; setBusy(true); setError(undefined);
+    let recorded = false;
     try {
       requestId.current ??= newBackupRequestId();
+      onAttempt({ RequestId: requestId.current, Kind: kind });
+      recorded = true;
       const operation = kind === 'create'
         ? await backupsApi.createBackup({ RequestId: requestId.current, Passphrase: passphrase }, { signal: pending.signal })
         : await backupsApi.importBackup(file!, requestId.current, { signal: pending.signal });
@@ -151,7 +159,7 @@ function BackupAdmissionDialog({ kind, status, onAccepted, onUnknown, onClose, o
       if (uncertain(cause) && requestId.current) {
         setPassphrase(''); setConfirmation(''); setFile(undefined);
         onUnknown({ RequestId: requestId.current, Kind: kind });
-      } else { setError(safeError(cause)); requestId.current = undefined; }
+      } else { if (recorded) onRejected(); setError(safeError(cause)); requestId.current = undefined; }
     } finally { if (controller.current === pending) controller.current = undefined; if (!pending.signal.aborted) setBusy(false); }
   }
   return <Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="backup-admission-title" aria-describedby="backup-admission-description"
@@ -174,7 +182,7 @@ function BackupAdmissionDialog({ kind, status, onAccepted, onUnknown, onClose, o
   </Dialog>;
 }
 
-function RestorePlanDialog({ backup, status, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { backup: BackupView; status: StatusView }) {
+function RestorePlanDialog({ backup, status, onAttempt, onRejected, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { backup: BackupView; status: StatusView }) {
   const [passphrase, setPassphrase] = useState('');
   const [restoreDefaults, setRestoreDefaults] = useState(false);
   const [replaceRollback, setReplaceRollback] = useState(false);
@@ -190,14 +198,17 @@ function RestorePlanDialog({ backup, status, onAccepted, onUnknown, onClose, onN
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!valid || controller.current) return;
     const pending = new AbortController(); controller.current = pending; setBusy(true); setError(undefined);
+    let recorded = false;
     try {
       requestId.current ??= newBackupRequestId();
+      onAttempt({ RequestId: requestId.current, Kind: 'restore' });
+      recorded = true;
       const operation = await backupsApi.planRestore({ RequestId: requestId.current, BackupId: backup.Id, SHA256: backup.SHA256, Passphrase: passphrase, RestoreDefaults: restoreDefaults, ReplaceRollback: status.Rollback.MustReplace && replaceRollback, GenerationRevision: status.GenerationRevision }, { signal: pending.signal });
       if (!pending.signal.aborted) { setPassphrase(''); onAccepted(operation); }
     } catch (cause) {
       if (pending.signal.aborted || isAbortError(cause)) return;
       if (uncertain(cause) && requestId.current) { setPassphrase(''); onUnknown({ RequestId: requestId.current, Kind: 'restore' }); }
-      else { setError(safeError(cause)); requestId.current = undefined; }
+      else { if (recorded) onRejected(); setError(safeError(cause)); requestId.current = undefined; }
     } finally { if (controller.current === pending) controller.current = undefined; if (!pending.signal.aborted) setBusy(false); }
   }
   return <Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="restore-plan-title" aria-describedby="restore-plan-description">
@@ -218,7 +229,7 @@ function RestorePlanDialog({ backup, status, onAccepted, onUnknown, onClose, onN
   </Dialog>;
 }
 
-function DeleteBackupDialog({ backup, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { backup: BackupView }) {
+function DeleteBackupDialog({ backup, onAttempt, onRejected, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { backup: BackupView }) {
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
@@ -229,14 +240,17 @@ function DeleteBackupDialog({ backup, onAccepted, onUnknown, onClose, onNavigati
   async function remove() {
     if (!confirmed || controller.current) return;
     const pending = new AbortController(); controller.current = pending; setBusy(true); setError(undefined);
+    let recorded = false;
     try {
       requestId.current ??= newBackupRequestId();
+      onAttempt({ RequestId: requestId.current, Kind: 'delete' });
+      recorded = true;
       const operation = await backupsApi.deleteBackup(backup.Id, { RequestId: requestId.current, SHA256: backup.SHA256 }, { signal: pending.signal });
       if (!pending.signal.aborted) onAccepted(operation);
     } catch (cause) {
       if (pending.signal.aborted || isAbortError(cause)) return;
       if (uncertain(cause) && requestId.current) onUnknown({ RequestId: requestId.current, Kind: 'delete' });
-      else { setError(safeError(cause)); requestId.current = undefined; }
+      else { if (recorded) onRejected(); setError(safeError(cause)); requestId.current = undefined; }
     } finally { if (controller.current === pending) controller.current = undefined; if (!pending.signal.aborted) setBusy(false); }
   }
   return <Dialog open onClose={() => { if (!busy) onClose(); }} fullWidth maxWidth="sm" aria-labelledby="delete-backup-title">
@@ -249,7 +263,7 @@ function DeleteBackupDialog({ backup, onAccepted, onUnknown, onClose, onNavigati
   </Dialog>;
 }
 
-function InspectPlanDialog({ operationId, applicationUncertain, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { operationId: string; applicationUncertain: boolean }) {
+function InspectPlanDialog({ operationId, applicationUncertain, onAttempt, onRejected, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { operationId: string; applicationUncertain: boolean }) {
   const [details, setDetails] = useState<{ operation: OperationView; status: StatusView }>();
   const [error, setError] = useState<unknown>();
   const [refresh, setRefresh] = useState(0);
@@ -271,13 +285,16 @@ function InspectPlanDialog({ operationId, applicationUncertain, onAccepted, onUn
   async function apply() {
     if (!details || !canApply || !confirmed || mutation.current) return;
     const controller = new AbortController(); mutation.current = controller; setBusy(true); setError(undefined);
+    let recorded = false;
     try {
+      onAttempt({ RequestId: details.operation.RequestId, Kind: 'restore', OperationId: operationId, ApplyingRevision: details.operation.Revision });
+      recorded = true;
       const operation = await backupsApi.applyRestore(operationId, { Revision: details.operation.Revision, GenerationRevision: details.status.GenerationRevision }, { signal: controller.signal });
       if (!controller.signal.aborted) onAccepted(operation);
     } catch (cause) {
       if (controller.signal.aborted || isAbortError(cause)) return;
-      if (uncertain(cause)) onUnknown({ RequestId: details.operation.RequestId, Kind: 'restore', ApplyingRevision: details.operation.Revision });
-      else { setError(safeError(cause)); setConfirmed(false); }
+      if (uncertain(cause)) onUnknown({ RequestId: details.operation.RequestId, Kind: 'restore', OperationId: operationId, ApplyingRevision: details.operation.Revision });
+      else { if (recorded) onRejected(); setError(safeError(cause)); setConfirmed(false); }
     } finally { if (mutation.current === controller) mutation.current = undefined; if (!controller.signal.aborted) setBusy(false); }
   }
   return <Dialog open onClose={() => { if (!busy) onClose(); }} fullWidth maxWidth="sm" aria-labelledby="inspect-plan-title">
@@ -301,7 +318,7 @@ function InspectPlanDialog({ operationId, applicationUncertain, onAccepted, onUn
   </Dialog>;
 }
 
-function RollbackDialog({ status, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { status: StatusView }) {
+function RollbackDialog({ status, onAttempt, onRejected, onAccepted, onUnknown, onClose, onNavigationGuardChange }: AdmissionCallbacks & { status: StatusView }) {
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
@@ -312,14 +329,17 @@ function RollbackDialog({ status, onAccepted, onUnknown, onClose, onNavigationGu
   async function rollback() {
     if (!confirmed || mutation.current) return;
     const controller = new AbortController(); mutation.current = controller; setBusy(true); setError(undefined);
+    let recorded = false;
     try {
       requestId.current ??= newBackupRequestId();
+      onAttempt({ RequestId: requestId.current, Kind: 'rollback' });
+      recorded = true;
       const operation = await backupsApi.rollback({ RequestId: requestId.current, GenerationRevision: status.GenerationRevision }, { signal: controller.signal });
       if (!controller.signal.aborted) onAccepted(operation);
     } catch (cause) {
       if (controller.signal.aborted || isAbortError(cause)) return;
       if (uncertain(cause) && requestId.current) onUnknown({ RequestId: requestId.current, Kind: 'rollback' });
-      else { setError(safeError(cause)); requestId.current = undefined; setConfirmed(false); }
+      else { if (recorded) onRejected(); setError(safeError(cause)); requestId.current = undefined; setConfirmed(false); }
     } finally { if (mutation.current === controller) mutation.current = undefined; if (!controller.signal.aborted) setBusy(false); }
   }
   return <Dialog open onClose={() => { if (!busy) onClose(); }} fullWidth maxWidth="sm" aria-labelledby="rollback-title">
@@ -335,16 +355,16 @@ function RollbackDialog({ status, onAccepted, onUnknown, onClose, onNavigationGu
 }
 
 async function findAttempt(attempt: AdmissionAttempt, first: OperationPage, signal: AbortSignal): Promise<OperationView | undefined> {
-  const current = first.Items.find((operation) => operation.RequestId === attempt.RequestId && operation.Kind === attempt.Kind);
+  const current = first.Items.find((operation) => backupAttemptMatchesOperation(attempt, operation));
   if (current) return current;
   const initial = await backupsApi.getOperations({ StartIndex: 0, Limit: 100 }, { signal });
-  const found = initial.Items.find((operation) => operation.RequestId === attempt.RequestId && operation.Kind === attempt.Kind);
+  const found = initial.Items.find((operation) => backupAttemptMatchesOperation(attempt, operation));
   if (found) return found;
   const seen = new Set(initial.Items.map((operation) => operation.Id));
   if (initial.Items.length !== Math.min(initial.Limit, initial.TotalRecordCount)) throw new ApiError('The job list changed during reconciliation.', { code: 'source_changed' });
   for (let start = 100; start < initial.TotalRecordCount; start += 100) {
     const page = await backupsApi.getOperations({ StartIndex: start, Limit: 100 }, { signal });
-    const operation = page.Items.find((item) => item.RequestId === attempt.RequestId && item.Kind === attempt.Kind);
+    const operation = page.Items.find((item) => backupAttemptMatchesOperation(attempt, item));
     if (operation) return operation;
     if (page.TotalRecordCount !== initial.TotalRecordCount || page.Items.length !== Math.min(page.Limit, initial.TotalRecordCount - start)
       || page.Items.some((item) => seen.has(item.Id))) throw new ApiError('The job list changed during reconciliation.', { code: 'source_changed' });
@@ -353,7 +373,7 @@ async function findAttempt(attempt: AdmissionAttempt, first: OperationPage, sign
   return undefined;
 }
 
-export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChange: UserNavigationGuardChange }) {
+export function BackupsPage({ currentUserId, onNavigationGuardChange }: { currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [loadError, setLoadError] = useState<unknown>();
   const [actionError, setActionError] = useState<unknown>();
@@ -364,6 +384,9 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
   const [dialog, setDialog] = useState<DialogState>();
   const [tracked, setTracked] = useState<OperationView>();
   const [unknownAttempt, setUnknownAttempt] = useState<AdmissionAttempt>();
+  const [receiptScope, setReceiptScope] = useState<BackupReceiptScope>();
+  const [identityRevision, setIdentityRevision] = useState(0);
+  const pendingAttempt = useRef<AdmissionAttempt | undefined>(undefined);
   const [attemptNotFound, setAttemptNotFound] = useState(false);
   const [notice, setNotice] = useState('');
   const [focusVersion, setFocusVersion] = useState(0);
@@ -373,8 +396,28 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
   const readController = useRef<AbortController | undefined>(undefined);
   const snapshotVersion = useRef(0);
   const trackedId = tracked?.Id;
-  const reload = () => { readController.current?.abort(); snapshotVersion.current += 1; setLoading(true); setRefresh((value) => value + 1); };
+  const reload = () => {
+    readController.current?.abort(); snapshotVersion.current += 1; setLoading(true);
+    if (receiptScope) setRefresh((value) => value + 1);
+    else setIdentityRevision((value) => value + 1);
+  };
   useEffect(() => () => action.current?.abort(), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    // Resolve the server identity before enabling any recovery action. A receipt
+    // from another administrator or another server at this origin is independent.
+    void adminApi.getOverview({ signal: controller.signal }).then((overview) => {
+      if (controller.signal.aborted) return;
+      const scope = { ActorId: currentUserId, ServerId: overview.Server?.Id };
+      const attempt = readBackupAttempt(scope);
+      pendingAttempt.current = attempt;
+      setUnknownAttempt(attempt);
+      setReceiptScope(scope);
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted && !isAbortError(cause)) { setLoadError(safeError(cause)); setLoading(false); }
+    });
+    return () => controller.abort();
+  }, [currentUserId, identityRevision]);
   useEffect(() => {
     if (focusVersion === 0) return;
     const frame = requestAnimationFrame(() => {
@@ -388,6 +431,8 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
     return () => document.removeEventListener('visibilitychange', changed);
   }, []);
   useEffect(() => {
+    if (!receiptScope) return;
+    const scope: BackupReceiptScope = receiptScope;
     const controller = new AbortController(); setLoading(true);
     readController.current = controller;
     const version = ++snapshotVersion.current;
@@ -408,9 +453,12 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
         if (unknownAttempt) {
           const admitted = await findAttempt(unknownAttempt, operations, controller.signal);
           if (!admitted) status = await backupsApi.getStatus({ signal: controller.signal });
-          const applyStillUnknown = unknownAttempt.ApplyingRevision !== undefined && admitted?.State === 'ready';
           if (controller.signal.aborted || version !== snapshotVersion.current) return;
-          if (admitted && !applyStillUnknown) { selected = admitted; setUnknownAttempt(undefined); setAttemptNotFound(false); setNotice('The server acknowledged the job. Follow its current state below.'); }
+          if (admitted && backupAttemptResolvedByOperation(unknownAttempt, admitted)) {
+            removeBackupAttempt(scope, unknownAttempt);
+            if (pendingAttempt.current && sameBackupAttempt(pendingAttempt.current, unknownAttempt)) pendingAttempt.current = undefined;
+            selected = admitted; setUnknownAttempt(undefined); setAttemptNotFound(false); setNotice('The server acknowledged the job. Follow its current state below.');
+          }
           else setAttemptNotFound(!admitted && !status.Busy && unknownAttempt.ApplyingRevision === undefined);
         }
         if (controller.signal.aborted || version !== snapshotVersion.current) return;
@@ -421,7 +469,7 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
     }
     void read();
     return () => { controller.abort(); if (readController.current === controller) readController.current = undefined; };
-  }, [backupStart, operationStart, refresh, trackedId, unknownAttempt]);
+  }, [backupStart, operationStart, refresh, trackedId, unknownAttempt, receiptScope]);
   const knownActive = snapshot?.operations.Items.some(activeOperation) || Boolean(tracked && activeOperation(tracked));
   // Parallel responses can observe completion before the backup list catches up.
   const changingBackup = snapshot?.backups.Items.some((backup) => backup.State === 'writing' || backup.State === 'deleting');
@@ -434,9 +482,33 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
     const timer = window.setTimeout(() => setRefresh((value) => value + 1), unknownAttempt ? 5000 : 3000);
     return () => window.clearTimeout(timer);
   }, [polling, loading, refresh, unknownAttempt]);
+  function clearAttempt(): boolean {
+    if (!pendingAttempt.current) return true;
+    if (!receiptScope) return false;
+    try {
+      removeBackupAttempt(receiptScope, pendingAttempt.current);
+      pendingAttempt.current = undefined;
+      setUnknownAttempt(undefined);
+      return true;
+    } catch (cause) {
+      setUnknownAttempt(pendingAttempt.current);
+      setLoadError(safeError(cause));
+      return false;
+    }
+  }
+  function beginAttempt(attempt: AdmissionAttempt) {
+    if (!receiptScope) throw new ApiError('Recovery identity is not available. Reconnect before continuing.', { code: 'backup_receipt_unavailable' });
+    storeBackupAttempt(receiptScope, attempt);
+    pendingAttempt.current = attempt;
+  }
   function accepted(operation: OperationView) {
     snapshotVersion.current += 1;
-    setTracked(operation); setDialog(undefined); setUnknownAttempt(undefined); setActionError(undefined);
+    const attempt = pendingAttempt.current;
+    if (attempt && backupAttemptMatchesOperation(attempt, operation)) {
+      if (!backupAttemptResolvedByOperation(attempt, operation)) { unknown(attempt); return; }
+      if (!clearAttempt()) { setDialog(undefined); reload(); return; }
+    }
+    setTracked(operation); setDialog(undefined); setActionError(undefined);
     setFocusVersion((value) => value + 1);
     setAttemptNotFound(false);
     setNotice('The server acknowledged the job. Follow its current state below.'); reload();
@@ -451,7 +523,8 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
     if (!unknownAttempt || !attemptNotFound || unknownAttempt.ApplyingRevision !== undefined || snapshot?.status.Busy || loading || loadError) return;
     snapshotVersion.current += 1;
     const kind = unknownAttempt.Kind;
-    setUnknownAttempt(undefined); setAttemptNotFound(false);
+    if (!clearAttempt()) return;
+    setAttemptNotFound(false);
     setNotice('A new attempt will use a new request ID. The earlier request may still appear in the job list.');
     if (kind === 'create' || kind === 'import') setDialog({ kind });
     reload();
@@ -476,11 +549,11 @@ export function BackupsPage({ onNavigationGuardChange }: { onNavigationGuardChan
     } catch (cause) { if (!controller.signal.aborted && !isAbortError(cause)) setActionError(safeError(cause)); }
     finally { if (action.current === controller) action.current = undefined; if (!controller.signal.aborted) setActionBusy(''); }
   }
-  const unavailable = !snapshot?.status.Available || Boolean(loadError) || Boolean(actionBusy) || Boolean(unknownAttempt) || loading;
+  const unavailable = !receiptScope || !snapshot?.status.Available || Boolean(loadError) || Boolean(actionBusy) || Boolean(unknownAttempt) || loading;
   const admissionBusy = unavailable || Boolean(snapshot?.status.Busy);
   const operations = snapshot ? [ ...(tracked && !snapshot.operations.Items.some((operation) => operation.Id === tracked.Id) ? [tracked] : []), ...snapshot.operations.Items.map((operation) => tracked?.Id === operation.Id ? tracked : operation) ] : [];
   const recovering = operations.some((operation) => (operation.Kind === 'restore' || operation.Kind === 'rollback') && (operation.State === 'applying' || operation.Phase === 'activation' || operation.Phase === 'rollback')) || unknownAttempt?.Kind === 'restore' || unknownAttempt?.Kind === 'rollback';
-  const callbacks: AdmissionCallbacks = { onAccepted: accepted, onUnknown: unknown, onClose: () => setDialog(undefined), onNavigationGuardChange };
+  const callbacks: AdmissionCallbacks = { onAttempt: beginAttempt, onRejected: clearAttempt, onAccepted: accepted, onUnknown: unknown, onClose: () => setDialog(undefined), onNavigationGuardChange };
   return <>
     <PageHeading title="Backups & recovery" description="Keep encrypted server backups and review recovery changes before applying them." action={<Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button variant="outlined" startIcon={<UploadFileRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'import' })}>Import backup</Button><Button variant="contained" startIcon={<AddRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'create' })}>Create backup</Button></Stack>} />
     <Stack spacing={3}>

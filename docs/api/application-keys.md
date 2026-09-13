@@ -72,6 +72,11 @@ Authentication accepts the existing Emby token carriers, including
 administrator login or an application key can manage keys; ordinary users
 receive `403`, and absent, conflicting, or revoked credentials receive `401`.
 
+Key query parsing accepts the declared
+[compatibility transport carriers](compatibility-transport.md). Creation still
+requires exactly one `App` business field; revocation accepts no business query
+fields. Unknown fields cannot change or be silently ignored by these operations.
+
 | Method and canonical path | Successful behavior |
 | --- | --- |
 | `GET /emby/Auth/Keys` | `200`, `{Items, TotalRecordCount}` with every returned active key's full `AccessToken` |

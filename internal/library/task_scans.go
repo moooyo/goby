@@ -277,7 +277,7 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return ScanAdmission{}, ErrUnavailable
 	}
 	var result ScanAdmission

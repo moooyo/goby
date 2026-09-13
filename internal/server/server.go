@@ -218,7 +218,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested resource was not found.")
 	})
-	return s.withSettingsSnapshot(s.middleware(mux))
+	return s.withSettingsSnapshot(withBoundedRequestBodies(s.middleware(mux)))
 }
 
 type contextKey int
@@ -264,6 +264,13 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
+	// Readiness includes an enabled conversion engine. Temporary capacity
+	// pressure does not make the engine unhealthy; sticky cache failure and
+	// shutdown do. A deliberately disabled engine does not block readiness.
+	if status := s.transcodingStatus(); status.Configured && !status.Available {
+		apiError(w, r, http.StatusServiceUnavailable, "transcoding_"+status.Reason, "The conversion engine is unavailable. Check its reported status and restart after repairing the cause.")
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	if s.db.Ping(ctx) != nil {

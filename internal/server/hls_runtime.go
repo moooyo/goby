@@ -51,6 +51,22 @@ type hlsJobs interface {
 	Close(context.Context) error
 }
 
+// health is separate from the media lookup interface so adapters that cannot
+// report engine health are explicitly unavailable rather than assumed healthy.
+func (h *hlsRuntime) health() transcode.Health {
+	h.mu.Lock()
+	closing, manager := h.closing, h.manager
+	h.mu.Unlock()
+	if closing {
+		return transcode.Health{Code: "manager_closed"}
+	}
+	reporter, ok := manager.(interface{ Health() transcode.Health })
+	if !ok {
+		return transcode.Health{Code: "engine_status_unavailable"}
+	}
+	return reporter.Health()
+}
+
 type hlsSession struct {
 	mu                 sync.Mutex
 	id                 string

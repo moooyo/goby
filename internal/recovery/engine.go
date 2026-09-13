@@ -188,6 +188,12 @@ func (e *Engine) Create(ctx context.Context, writer *backupstore.Writer, passphr
 	if err != nil {
 		return manifest, err
 	}
+	if err := backuppg.ValidateDump(ctx, scratch.File(), facts, e.options); err != nil {
+		return manifest, err
+	}
+	if _, err := scratch.File().Seek(0, io.SeekStart); err != nil {
+		return manifest, ErrUnavailable
+	}
 	manifest = backupformat.Manifest{
 		Format: backupformat.FormatVersion, ID: writer.Metadata().ID,
 		CreatedAt: time.Now().UTC(), GobyVersion: e.version, Source: facts,

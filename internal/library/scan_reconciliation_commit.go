@@ -208,13 +208,18 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	}
 	var albums []string
 	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
+		// Share one wall-clock observation allowance across this transaction.
+		// Filesystem stalls must leave time to roll back on the healthy owner
+		// connection rather than consume its independent SQL lifetime.
+		proofCtx, cancelProof := context.WithTimeout(task.ctx, storageObservationTimeout)
+		defer cancelProof()
 		if err := lockScanReconciliationTask(tx, task, library.ID); err != nil {
 			return err
 		}
 		if err := validateScanReconciliationRoots(tx, library, roots); err != nil {
 			return err
 		}
-		if err := revalidateScanReconciliation(task.ctx, captures, evidence); err != nil {
+		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
 			return err
 		}
 		candidates, err := readScanReconciliationItems(tx, budget, `i.library_id=$1 AND i.root_id IS NOT NULL
@@ -223,26 +228,14 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if err != nil {
 			return err
 		}
-		members := make(map[string]scanReconciliationItem)
-		for _, item := range candidates {
-			if evidence.Seen(item.id) {
-				continue
-			}
-			if err := validateScanReconciliationPhysical(item, library.ID, roots); err != nil {
-				return err
-			}
-			absent, err := evidence.PathAbsent(task.ctx, item.rootID, item.relative)
-			if err != nil {
-				return scanReconciliationObservation(task.ctx, err)
-			}
-			if absent {
-				members[item.id] = item
-			}
+		members, err := observeScanReconciliationCandidates(proofCtx, library.ID, roots, evidence, candidates)
+		if err != nil {
+			return err
 		}
 		if len(members) == 0 {
 			return task.ctx.Err()
 		}
-		if err := expandScanReconciliation(tx, task.ctx, library.ID, roots, evidence, budget, members); err != nil {
+		if err := expandScanReconciliation(tx, proofCtx, library.ID, roots, evidence, budget, members); err != nil {
 			return err
 		}
 		ancestors, err := readScanReconciliationAncestors(tx, library.ID, roots, budget, members)
@@ -261,10 +254,10 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if err := validateScanReconciliationRoots(tx, library, roots); err != nil {
 			return err
 		}
-		if err := revalidateScanReconciliation(task.ctx, captures, evidence); err != nil {
+		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
 			return err
 		}
-		if err := proveScanReconciliationMembers(task.ctx, library.ID, roots, evidence, members); err != nil {
+		if err := proveScanReconciliationMembers(proofCtx, library.ID, roots, evidence, members); err != nil {
 			return err
 		}
 		if _, supportsMusic := s.prober.(interface{ MusicMetadataVersion() int }); supportsMusic {
@@ -339,10 +332,10 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if err := validateScanReconciliationRoots(tx, library, roots); err != nil {
 			return err
 		}
-		if err := revalidateScanReconciliation(task.ctx, captures, evidence); err != nil {
+		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
 			return err
 		}
-		if err := proveScanReconciliationMembers(task.ctx, library.ID, roots, evidence, members); err != nil {
+		if err := proveScanReconciliationMembers(proofCtx, library.ID, roots, evidence, members); err != nil {
 			return err
 		}
 		// SQL uses the owned transaction's protected context. Cancellation of
@@ -390,7 +383,7 @@ func (s *Store) admitScanReconciliationLocked(task *scanTask, roots map[string]*
 	if err := task.ctx.Err(); err != nil {
 		return err
 	}
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		return ErrUnavailable
 	}
 	if s.active[task.job.ID] != task || task.job.Status != "Running" {
@@ -478,6 +471,16 @@ func validateScanReconciliationRoots(tx OwnedTx, library Library, roots map[stri
 }
 
 func revalidateScanReconciliation(ctx context.Context, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence) error {
+	err := runStorageObservation(ctx, scanObservationLifetimes(captures, evidence), func(observation context.Context) error {
+		return revalidateScanReconciliationNow(observation, captures, evidence)
+	})
+	return scanReconciliationObservation(ctx, err)
+}
+
+// All post-walk filesystem calls run without a transaction handle in a bounded
+// observation worker. A timed-out caller may roll back while the worker retains
+// its independent witnesses; it can never resume SQL after that rollback.
+func revalidateScanReconciliationNow(ctx context.Context, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -521,6 +524,13 @@ func validateScanReconciliationPhysical(item scanReconciliationItem, libraryID s
 }
 
 func proveScanReconciliationMembers(ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, members map[string]scanReconciliationItem) error {
+	err := runStorageObservation(ctx, scanObservationLifetimes(scanReconciliationCaptureValues(roots), evidence), func(observation context.Context) error {
+		return proveScanReconciliationMembersNow(observation, libraryID, roots, evidence, members)
+	})
+	return scanReconciliationObservation(ctx, err)
+}
+
+func proveScanReconciliationMembersNow(ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, members map[string]scanReconciliationItem) error {
 	for _, item := range members {
 		if err := validateScanReconciliationPhysical(item, libraryID, roots); err != nil {
 			return err
@@ -537,6 +547,42 @@ func proveScanReconciliationMembers(ctx context.Context, libraryID string, roots
 		}
 	}
 	return ctx.Err()
+}
+
+func scanReconciliationCaptureValues(roots map[string]*rootBindingScanCapture) []*rootBindingScanCapture {
+	captures := make([]*rootBindingScanCapture, 0, len(roots))
+	for _, capture := range roots {
+		captures = append(captures, capture)
+	}
+	return captures
+}
+
+func observeScanReconciliationCandidates(ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, candidates []scanReconciliationItem) (map[string]scanReconciliationItem, error) {
+	var members map[string]scanReconciliationItem
+	err := runStorageObservation(ctx, scanObservationLifetimes(scanReconciliationCaptureValues(roots), evidence), func(observation context.Context) error {
+		observed := make(map[string]scanReconciliationItem)
+		for _, item := range candidates {
+			if evidence.Seen(item.id) {
+				continue
+			}
+			if err := validateScanReconciliationPhysical(item, libraryID, roots); err != nil {
+				return err
+			}
+			absent, err := evidence.PathAbsent(observation, item.rootID, item.relative)
+			if err != nil {
+				return err
+			}
+			if absent {
+				observed[item.id] = item
+			}
+		}
+		members = observed
+		return observation.Err()
+	})
+	if err != nil {
+		return nil, scanReconciliationObservation(ctx, err)
+	}
+	return members, nil
 }
 
 func scanReconciliationIDs(items map[string]scanReconciliationItem) []string {

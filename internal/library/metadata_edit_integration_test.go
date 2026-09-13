@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -328,6 +329,65 @@ func TestStoreMetadataEditingRechecksCurrentAdministratorAndSession(t *testing.T
 				}
 			})
 			assertRejected(t, actor)
+		})
+	}
+}
+
+func TestStoreMetadataRejectsUnsafeNewAndRetainedLockSnapshotsAtomically(t *testing.T) {
+	ctx, pool, store, root, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
+	actor := metadataEditTestActor(t, ctx, pool, "metadata-lock-validation-editor")
+	path := libraryIntegrationFile(t, root, "movies/Film.mp4", "video:lock-validation")
+	collection := libraryIntegrationCreate(t, ctx, store, "Lock snapshot validation", "movies", filepath.Dir(path))
+	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	item := nfoCatalogItem(t, ctx, store, userID, collection.ID, path)
+	detail := metadataEditTestDetail(t, ctx, store, actor, item.ID)
+	automatic := metadataEditTestRaw(t, detail.Automatic)
+	notifications := catalogChangesTestListener(t, store)
+	for _, fixture := range []struct {
+		name, field string
+		raw         json.RawMessage
+		retained    bool
+	}{
+		{"new oversized name", "Name", metadataEditTestRaw(t, strings.Repeat(" ", metadataValueMaxName)+"x"), false},
+		{"new oversized sort name", "SortName", metadataEditTestRaw(t, strings.Repeat("s", metadataValueMaxName+1)), false},
+		{"new invalid rating", "CommunityRating", json.RawMessage(`11`), false},
+		{"new unsafe provider", "ProviderIds", json.RawMessage(`{"Imdb":"unsafe/id"}`), false},
+		{"retained null name", "Name", json.RawMessage(`null`), true},
+		{"retained numeric sort name", "SortName", json.RawMessage(`1`), true},
+		{"retained oversized name", "Name", metadataEditTestRaw(t, strings.Repeat("n", metadataValueMaxName+1)), true},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			// Seed malformed historical state directly so the real edit boundary
+			// must reject it, including invalid locks hidden by a safe override.
+			if _, err := pool.Exec(ctx, `UPDATE item_metadata_state SET automatic = $2::jsonb, locked_values = '{}'::jsonb
+				WHERE item_id = $1`, item.ID, automatic); err != nil {
+				t.Fatal(err)
+			}
+			overrides := map[string]json.RawMessage{"Overview": json.RawMessage(`"Must roll back"`)}
+			if fixture.retained {
+				if _, err := pool.Exec(ctx, `UPDATE item_metadata_state SET locked_values = $2::jsonb WHERE item_id = $1`,
+					item.ID, metadataEditTestRaw(t, map[string]json.RawMessage{fixture.field: fixture.raw})); err != nil {
+					t.Fatal(err)
+				}
+				overrides[fixture.field] = json.RawMessage(`"Safe manual name"`)
+			} else {
+				if _, err := pool.Exec(ctx, `UPDATE item_metadata_state SET automatic = jsonb_set(automatic, ARRAY[$2::text], $3::jsonb)
+					WHERE item_id = $1`, item.ID, metadataInternalField(fixture.field), fixture.raw); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := catalogAuditSnapshot(t, ctx, pool)
+			_, err := store.UpdateItemMetadata(ctx, actor, item.ID, MetadataEdit{
+				Revision: detail.Revision, Overrides: overrides, LockedFields: []string{fixture.field},
+			})
+			var validation *MetadataValidationError
+			if !errors.Is(err, ErrInvalidInput) || !errors.As(err, &validation) || validation.Fields[fixture.field] == "" {
+				t.Fatalf("unsafe captured or retained lock was accepted: %v", err)
+			}
+			if after := catalogAuditSnapshot(t, ctx, pool); after != before {
+				t.Fatal("rejected lock snapshot changed metadata, entities, revision, or activity")
+			}
+			assertNoCatalogTestNotification(t, notifications)
 		})
 	}
 }

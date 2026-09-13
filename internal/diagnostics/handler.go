@@ -475,6 +475,8 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	add("request.completed", "request completed", "request_id", "method", "route", "status", "duration_ms", "bytes", "outcome")
 	add("request.panic", "request panic", "request_id")
 	add("activity.retention.retry", "activity retention will retry", "error_class")
+	add("task.scheduling.retry", "Task scheduling will retry; scheduler readiness is unavailable", "error_class")
+	add("task.coordination.retry", "Task coordination will retry", "error_class")
 	add("administrator.setup.completed", "administrator setup completed", "user_id")
 	add("user.created", "user created", "actor_id", "user_id", "administrator")
 	add("administrator.device.updated", "administrator device options updated", "actor_id", "device_id")
@@ -490,6 +492,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	add("library.created", "library created", "actor_id", "library_id")
 	add("library.removed", "library removed", "actor_id", "library_id")
 	add("library.scan.requested", "library scan requested", "actor_id", "library_id", "job_id", "force_probe")
+	add("library.initial_scan.failed", "created library initial scan unavailable", "actor_id", "library_id", "error_class")
 	add("library.scan.finalization.retry", "Retrying scan job finalization", "job_id", "error_class")
 	for _, operation := range []string{"task", "settings", "identity", "library", "compatibility configuration", "compatibility task"} {
 		add(strings.ReplaceAll(operation, " ", ".")+".operation.failed", operation+" operation failed", "request_id", "error_class")

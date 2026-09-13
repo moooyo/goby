@@ -36,12 +36,16 @@ func musicAlbumCatalogSnapshot(snapshot scanCatalogSnapshot) (scanCatalogSnapsho
 
 // Audio and MusicVideo responses inherit their nearest album's name and album
 // artists. Those item projections change even when their own rows stay cached.
+// Every catalog name writer may call this helper with its transaction snapshots;
+// unrelated item types and new items have no existing album reference to change.
 func recordMusicAlbumReferenceChanges(ctx context.Context, tx pgx.Tx, libraryID, albumID string, before, after scanCatalogSnapshot) error {
-	if before.properties == after.properties {
+	if !before.present || !after.present || before.properties == after.properties {
 		return nil
 	}
 	type reference struct {
 		Name     string
+		Type     string
+		IsFolder bool
 		Entities struct {
 			AlbumArtists json.RawMessage
 		}
@@ -53,7 +57,16 @@ func recordMusicAlbumReferenceChanges(ctx context.Context, tx pgx.Tx, libraryID,
 	if err := json.Unmarshal([]byte(after.properties), &newReference); err != nil {
 		return fmt.Errorf("read current album notification projection: %w", err)
 	}
-	if oldReference.Name == newReference.Name && bytes.Equal(oldReference.Entities.AlbumArtists, newReference.Entities.AlbumArtists) {
+	wasAlbum := oldReference.Type == "MusicAlbum" && oldReference.IsFolder
+	isAlbum := newReference.Type == "MusicAlbum" && newReference.IsFolder
+	if !wasAlbum && !isAlbum {
+		return nil
+	}
+	if before.change.ItemID != albumID || after.change.ItemID != albumID ||
+		before.change.LibraryID != libraryID || after.change.LibraryID != libraryID {
+		return fmt.Errorf("%w: album notification identities changed inside the transaction", ErrUnavailable)
+	}
+	if wasAlbum == isAlbum && oldReference.Name == newReference.Name && bytes.Equal(oldReference.Entities.AlbumArtists, newReference.Entities.AlbumArtists) {
 		return nil
 	}
 	var encoded []byte

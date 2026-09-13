@@ -72,6 +72,12 @@ class RootBindingMock {
         if (captured.path === '/admin/v1/session') return json(route, {
           User: { Id: 'current-administrator', Name: 'Browser administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp }, CSRFToken: csrfToken,
         });
+        if (captured.path === '/admin/v1/overview') return json(route, {
+          Server: { Id: 'root-binding-mock-server', Name: 'Browser server', Version: '0.1.0' },
+          Database: { Status: 'ready' }, Counts: { Users: 1, Libraries: 1, Items: 0, ActiveSessions: 1 },
+          Runtime: { GoVersion: 'test' },
+          Features: { LibraryManagement: true, Playback: true, Transcoding: false, ApplicationKeys: true },
+        });
         if (captured.path === '/admin/v1/libraries') return json(route, { Items: [{ ...library, Paths: this.roots.map((item) => item.Path) }], TotalRecordCount: 1 });
         if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true }] });
         if (captured.path === `/admin/v1/libraries/${library.Id}/roots`) return json(route, { Items: this.roots, TotalRecordCount: this.roots.length });
@@ -141,6 +147,56 @@ test('an unbound root requires consent and sends one exact approval while contro
   await expect(consent(page)).toHaveCount(0);
   expect(api.requests.filter((request) => request.method !== 'GET')).toHaveLength(1);
   expect(pageErrors).toEqual([]);
+});
+
+test('a pending root approval blocks browser history and unloading until its outcome is known', async ({ page, api }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  let release!: () => void;
+  const responseGate = new Promise<void>((resolve) => { release = resolve; });
+  let replyFinished = false;
+  api.handlers.set(`PUT ${bindingPath()}`, async (route) => {
+    await responseGate;
+    await json(route, { Binding: accepted(unbound()) });
+    replyFinished = true;
+  });
+  const beforeUnloadBlocked = () => page.evaluate(() => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  try {
+    await page.goto('/admin/');
+    await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+    await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Libraries', exact: true }).click();
+    await page.getByRole('button', { name: `Storage bindings for ${library.Name}`, exact: true }).click();
+    await expect(dialog(page)).toBeVisible();
+    await expect(submit(page)).toBeDisabled();
+    expect(await beforeUnloadBlocked()).toBe(false);
+    await consent(page).check();
+    await submit(page).click();
+    await expect.poll(() => api.puts().length).toBe(1);
+    await expect(dialog(page).getByRole('button', { name: 'Close', exact: true })).toBeDisabled();
+    await expect(dialog(page).getByRole('button', { name: 'Saving...', exact: true })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(dialog(page)).toBeVisible();
+    expect(await beforeUnloadBlocked()).toBe(true);
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(page).toHaveURL(/\/admin\/libraries$/);
+    await expect(dialog(page)).toBeVisible();
+    expect(replyFinished).toBe(false);
+    expect(api.puts()).toHaveLength(1);
+    expect(JSON.parse(api.puts()[0].body!)).toEqual({ Revision: root.Revision,
+      ObservedFingerprint: fingerprint, AcknowledgeMissingRemoval: true });
+    release();
+    await expect(dialog(page).getByText('Storage binding saved.', { exact: true })).toBeVisible();
+    expect(await beforeUnloadBlocked()).toBe(false);
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+    await expect(dialog(page)).toHaveCount(0);
+    expect(api.puts()).toHaveLength(1);
+  } finally {
+    release();
+  }
 });
 
 test('replacement review shows all boundary changes and fits a narrow viewport with long paths and IDs', async ({ page, api }, testInfo) => {

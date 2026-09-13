@@ -1,6 +1,6 @@
 # Linux architecture: Go backend and React administrator dashboard
 
-Status: **implementation design; M1 service foundation in progress**. Requirements were updated on 2026-09-09 to use PostgreSQL. This document defines the target architecture; a described feature is not a claim of completed implementation or runtime compatibility. The external contract baseline is described in [source provenance](../sources/README.md).
+Status: **target architecture with an implemented modular service foundation**. Requirements were updated on 2026-09-09 to use PostgreSQL. The [current status](../development/current-status.md) distinguishes implementation, verification, and deployment. Proposed layout, embedded frontend packaging, and platform expansion below remain target decisions where the implementation differs; a described feature is not a claim of runtime compatibility. The external contract baseline is described in [source provenance](../sources/README.md).
 
 ## Architecture decision
 
@@ -93,7 +93,7 @@ Keep API IDs opaque strings. Do not derive identity solely from a path or expose
 
 Use short PostgreSQL transactions for related writes and commit scan batches without holding a transaction open during filesystem access, provider calls, or FFmpeg execution. PostgreSQL supports concurrent writers; coordinate conflicting rows with appropriate row locks or conditional updates, rather than imposing a global application write queue. Enforce unique user/item state and identity constraints in the database. Add indexes around library/parent/type queries and `(user_id,item_id)` state. Establish case folding and Unicode search correctness before adding PostgreSQL full-text or trigram indexes. [PostgreSQL concurrency control](https://www.postgresql.org/docs/current/mvcc.html).
 
-Apply numbered migrations under a PostgreSQL advisory lock so concurrent startup attempts cannot race. Record the applied version and checksum, use a transaction for each migration that supports it, and fail startup on a mismatched or failed migration. First-administrator creation, token revocation, and final-administrator protection require transactional invariants. Durable jobs can use leases and `FOR UPDATE SKIP LOCKED` for bounded worker claims; a job must not hold an open database transaction while it runs.
+Apply numbered migrations under a PostgreSQL advisory lock so concurrent startup attempts cannot race. The implementation checks embedded SQL against a fixed publication manifest and requires applied version/name rows to form its contiguous prefix; existing rows do not record the original execution checksum. Pending migrations commit atomically. Fail startup on a mismatched package, invalid history or failed migration, and do not invent historical execution hashes. First-administrator creation, token revocation, and final-administrator protection require transactional invariants. Durable jobs can use leases and `FOR UPDATE SKIP LOCKED` for bounded worker claims; a job must not hold an open database transaction while it runs.
 
 Media may reside on mounted NFS/SMB storage. Keep the active transcode cache on the application host's local disk and PostgreSQL data in storage managed by the database service; the application never opens PostgreSQL data files directly. Multiple serving nodes remain a later deployment design. A shared database alone does not distribute sessions, filesystem identity, job ownership, or transcode output.
 
@@ -152,7 +152,7 @@ Use a separately versioned OpenAPI 3 contract for these routes with explicit err
 
 ## Linux packaging and operations
 
-Deliver Linux amd64 and arm64 artifacts. Build React assets and embed them in the Go artifact. Local builds may check compilation under the current authorization; execution and acceptance checks run on `test-env`. Package a documented PostgreSQL service connection and either a version-pinned system FFmpeg dependency or a reproducible container image containing an audited FFmpeg build. Do not claim a single static binary includes the database server or media codecs.
+Target delivery includes Linux amd64 and arm64 artifacts and an embedded administrator frontend. The current deployment uses amd64 and a separate immutable frontend asset directory; arm64, OCI packaging, and embedding remain unverified release work. All builds, tests, and runtime checks run through `ssh test-env` unless the current task explicitly authorizes local verification. Package a documented PostgreSQL service connection and either a version-pinned system FFmpeg dependency or a reproducible container image containing an audited FFmpeg build. Do not claim a single static binary includes the database server or media codecs.
 
 | Concern | Proposed default |
 | --- | --- |

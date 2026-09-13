@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/diagnostics"
@@ -49,9 +52,28 @@ type embyObservabilityPageOptions struct {
 }
 
 func embyObservabilityQuery(r *http.Request, allowed ...string) (url.Values, error) {
-	// The established Emby authentication query transport is not a paging or
-	// file-selection parameter. It remains single-valued and byte bounded.
-	return observabilityQuery(r, append(allowed, "api_key")...)
+	// Preserve the original total byte bound and business-field rules while
+	// separating the same transport carriers accepted by authentication.
+	if len(r.URL.RawQuery) > 4096 || !utf8.ValidString(r.URL.RawQuery) {
+		return nil, activity.ErrInvalidInput
+	}
+	values, err := embyBusinessQuery(r)
+	if err != nil {
+		return nil, activity.ErrInvalidInput
+	}
+	for name, entries := range values {
+		found := false
+		for _, field := range allowed {
+			if name == field {
+				found = true
+				break
+			}
+		}
+		if !found || len(entries) != 1 || !utf8.ValidString(entries[0]) || strings.IndexFunc(entries[0], unicode.IsControl) >= 0 {
+			return nil, activity.ErrInvalidInput
+		}
+	}
+	return values, nil
 }
 
 func embyObservabilityPage(values url.Values, defaultLimit, maximum int, nonpositiveEmpty bool) (embyObservabilityPageOptions, error) {

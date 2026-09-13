@@ -74,7 +74,7 @@ func parseEmbyTaskQuery(r *http.Request, list bool) (tasks.ListOptions, error) {
 	if len(r.URL.RawQuery) > 4096 || r.URL.ForceQuery && r.URL.RawQuery == "" {
 		return options, tasks.ErrInvalidInput
 	}
-	values, err := url.ParseQuery(r.URL.RawQuery)
+	values, err := embyBusinessQuery(r)
 	if err != nil {
 		return options, tasks.ErrInvalidInput
 	}
@@ -85,10 +85,6 @@ func parseEmbyTaskQuery(r *http.Request, list bool) (tasks.ListOptions, error) {
 			return options, tasks.ErrInvalidInput
 		}
 		seen[field] = true
-		if field == "api_key" {
-			// Authentication query transport is not a task-management parameter.
-			continue
-		}
 		if !list || field != "ishidden" && field != "isenabled" || entries[0] != "true" && entries[0] != "false" {
 			return options, tasks.ErrInvalidInput
 		}

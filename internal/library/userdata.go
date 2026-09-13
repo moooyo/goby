@@ -59,7 +59,7 @@ func (s *Store) beginStateWrite(ctx context.Context, userID string, requirePlayb
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
 	s.mu.Lock()
-	closed := s.closed
+	closed := s.closed || s.closing.Load()
 	s.mu.Unlock()
 	if closed {
 		return nil, libraryAccess{}, ErrUnavailable

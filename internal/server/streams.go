@@ -61,6 +61,9 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	if err != nil {
 		if errors.Is(err, identity.ErrUnauthorized) {
 			s.identityError(w, r, err)
+		} else if errors.Is(err, library.ErrBusy) {
+			w.Header().Set("Retry-After", "2")
+			apiError(w, r, http.StatusTooManyRequests, "stream_limit", "The authenticated owner has reached its active original stream limit.")
 		} else if errors.Is(err, context.Canceled) {
 			if r.Context().Err() == nil {
 				apiError(w, r, http.StatusServiceUnavailable, "media_cancelled", "The original media response was cancelled.")
@@ -72,6 +75,11 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	}
 	defer finish()
 	r = r.WithContext(work)
+	writer, err := newIdleResponseWriter(w, work, mediaWriteIdle)
+	if err != nil {
+		panic(http.ErrAbortHandler)
+	}
+	defer writer.finish()
 	w.Header().Set("Content-Type", source.MIMEType)
 	w.Header().Set("ETag", source.ETag)
 	w.Header().Set("Cache-Control", "private, no-transform")
@@ -87,7 +95,7 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	// conditional responses. Ticks never become a guessed source-byte offset.
 	// Linux ctime invalidates date validators when a writer restores mtime;
 	// ETags remain the precise validator because HTTP dates have second precision.
-	http.ServeContent(w, r, "original."+source.Container, modified, file)
+	http.ServeContent(writer, r, "original."+source.Container, modified, file)
 	if work.Err() != nil {
 		panic(http.ErrAbortHandler)
 	}

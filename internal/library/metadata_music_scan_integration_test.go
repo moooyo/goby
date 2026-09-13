@@ -286,6 +286,114 @@ func TestStoreMusicMetadataPreservesControlsAndCachedRelations(t *testing.T) {
 	})
 }
 
+func TestStoreMusicMetadataLocksAcceptedNamesWithoutOverrides(t *testing.T) {
+	for _, fixture := range []struct {
+		name, title string
+		fields      []string
+	}{
+		{"name", "  Embedded Title \u00e9  ", []string{"Name"}},
+		{"sort name", "  Embedded Title \u00e9  ", []string{"SortName"}},
+		{"whitespace names", "   ", []string{"Name", "SortName"}},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			prober := &metadataMusicScanProber{}
+			facts := &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: fixture.title, Album: "Stable album", Artist: "Stable artist"}
+			prober.set("Track.flac", facts, false)
+			ctx, pool, store, root, userID := libraryIntegrationStore(t, prober)
+			actor := metadataEditTestActor(t, ctx, pool, "music-name-lock-editor")
+			path := libraryIntegrationFile(t, root, "music/Album/Track.flac", "audio:verbatim-name-lock")
+			collection := libraryIntegrationCreate(t, ctx, store, "Verbatim music locks", "music", filepath.Join(root, "music"))
+			libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+			item := nfoCatalogItem(t, ctx, store, userID, collection.ID, path)
+			detail := metadataEditTestDetail(t, ctx, store, actor, item.ID)
+			if detail.Automatic.Name != fixture.title || detail.Automatic.SortName != strings.ToLower(fixture.title) {
+				t.Fatalf("fixture did not preserve accepted embedded names: %+v", detail.Automatic)
+			}
+			detail = metadataEditTestUpdate(t, ctx, store, actor, detail, nil, fixture.fields)
+			captured := metadataEditTestCopy(detail.LockedValues)
+			assertNames := func(current ItemMetadataDetail, wantName, wantSort string) {
+				t.Helper()
+				if current.Name != wantName || current.Effective.Name != wantName || current.Effective.SortName != wantSort ||
+					!reflect.DeepEqual(current.LockedValues, captured) {
+					t.Fatalf("response changed or inconsistently applied accepted lock snapshots: %+v", current)
+				}
+				stored, err := store.GetItem(ctx, userID, item.ID)
+				if err != nil || stored.Name != wantName || stored.SortName != wantSort {
+					t.Fatalf("catalog names differ from the metadata response: %+v, %v", stored, err)
+				}
+				var projectedName, projectedSort string
+				if err := pool.QueryRow(ctx, `SELECT COALESCE(effective->>'Name', ''), COALESCE(effective->>'SortName', '')
+					FROM item_metadata_state WHERE item_id = $1`, item.ID).Scan(&projectedName, &projectedSort); err != nil {
+					t.Fatal(err)
+				}
+				for field, snapshot := range captured {
+					want, actual := wantName, projectedName
+					if field == "SortName" {
+						want, actual = wantSort, projectedSort
+					}
+					if string(snapshot) != string(metadataEditTestRaw(t, want)) || actual != want {
+						t.Fatalf("persisted %s projection or lock lost accepted text: projection=%q snapshot=%s want=%q", field, actual, snapshot, want)
+					}
+				}
+			}
+			assertNames(detail, fixture.title, strings.ToLower(fixture.title))
+			if len(detail.Overrides) != 0 || len(captured) != len(fixture.fields) {
+				t.Fatalf("locking automatic fields introduced overrides or independent locks: %+v", detail)
+			}
+			notifications := catalogChangesTestListener(t, store)
+			before := catalogAuditSnapshot(t, ctx, pool)
+			unchanged, err := store.UpdateItemMetadata(ctx, actor, item.ID, MetadataEdit{
+				Revision: detail.Revision, Overrides: map[string]json.RawMessage{}, LockedFields: fixture.fields,
+			})
+			if err != nil || unchanged.Revision != detail.Revision || catalogAuditSnapshot(t, ctx, pool) != before {
+				t.Fatalf("round-tripping an accepted lock changed catalog or audit state: %+v, %v", unchanged, err)
+			}
+			assertNoCatalogTestNotification(t, notifications)
+			assertNames(unchanged, fixture.title, strings.ToLower(fixture.title))
+			detail = metadataEditTestUpdate(t, ctx, store, actor, detail,
+				map[string]json.RawMessage{"Overview": json.RawMessage(`"Unrelated manual overview"`)}, fixture.fields)
+			assertNames(detail, fixture.title, strings.ToLower(fixture.title))
+			for len(notifications) != 0 {
+				<-notifications
+			}
+			before = metadataEditTestSnapshot(t, ctx, pool, item.ID)
+			if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Added != 0 || job.Updated != 0 || job.Error != "" {
+				t.Fatalf("cached accepted locks made unchanged audio appear changed: %+v", job)
+			}
+			if metadataEditTestSnapshot(t, ctx, pool, item.ID) != before {
+				t.Fatal("cached scan rewrote accepted lock snapshots or item state")
+			}
+			assertNoCatalogTestNotification(t, notifications)
+			if job := forceProbeTestScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+				t.Fatal(job.Error)
+			}
+			current := metadataEditTestDetail(t, ctx, store, actor, item.ID)
+			assertNames(current, fixture.title, strings.ToLower(fixture.title))
+			if current.Revision != detail.Revision {
+				t.Fatal("unchanged accepted source advanced metadata revision")
+			}
+			facts.Title = "  Changed Embedded Title  "
+			prober.set("Track.flac", facts, false)
+			if job := forceProbeTestScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+				t.Fatal(job.Error)
+			}
+			current = metadataEditTestDetail(t, ctx, store, actor, item.ID)
+			wantName, wantSort := facts.Title, strings.ToLower(facts.Title)
+			if _, exists := captured["Name"]; exists {
+				wantName = fixture.title
+			}
+			if _, exists := captured["SortName"]; exists {
+				wantSort = strings.ToLower(fixture.title)
+			}
+			assertNames(current, wantName, wantSort)
+			if current.Automatic.Name != facts.Title || current.Automatic.SortName != strings.ToLower(facts.Title) ||
+				current.Effective.Overview != "Unrelated manual overview" {
+				t.Fatalf("independent source refresh or manual field was lost behind locks: %+v", current)
+			}
+		})
+	}
+}
+
 func TestStoreMusicMetadataRequiresCompleteMembersBeforeAlbumPublication(t *testing.T) {
 	for _, scenario := range []struct {
 		name         string

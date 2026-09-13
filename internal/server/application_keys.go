@@ -89,6 +89,9 @@ func parseApplicationKeyQuery(r *http.Request, native bool) (identity.Applicatio
 		filter.Limit, filter.RevealTokens = 200, true
 	}
 	values, err := url.ParseQuery(r.URL.RawQuery)
+	if !native {
+		values, err = embyBusinessQuery(r)
+	}
 	if err != nil {
 		return filter, identity.ErrInvalidInput
 	}
@@ -97,9 +100,6 @@ func parseApplicationKeyQuery(r *http.Request, native bool) (identity.Applicatio
 		field := name
 		if !native {
 			field = strings.ToLower(name)
-		}
-		if field == "api_key" && !native {
-			continue
 		}
 		if len(entries) != 1 || seen[field] || !utf8.ValidString(entries[0]) {
 			return filter, identity.ErrInvalidInput
@@ -280,7 +280,20 @@ func (s *Server) createEmbyApplicationKey(w http.ResponseWriter, r *http.Request
 	if !s.keyManager(w, r) {
 		return
 	}
-	values, err := url.ParseQuery(r.URL.RawQuery)
+	name, err := embyApplicationKeyName(r)
+	if err != nil {
+		s.applicationKeyError(w, r, err)
+		return
+	}
+	if _, err := s.createKey(r, name); err != nil {
+		s.applicationKeyError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func embyApplicationKeyName(r *http.Request) (string, error) {
+	values, err := embyBusinessQuery(r)
 	var name string
 	found := false
 	if err == nil {
@@ -291,26 +304,25 @@ func (s *Server) createEmbyApplicationKey(w http.ResponseWriter, r *http.Request
 					break
 				}
 				name, found = entries[0], true
-			} else if field != "api_key" {
+			} else {
 				err = identity.ErrInvalidInput
 				break
 			}
 		}
 	}
 	if err != nil || !found {
-		s.applicationKeyError(w, r, identity.ErrInvalidInput)
-		return
+		return "", identity.ErrInvalidInput
 	}
-	if _, err := s.createKey(r, name); err != nil {
-		s.applicationKeyError(w, r, err)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+	return name, nil
 }
 
 func (s *Server) revokeEmbyApplicationKey(w http.ResponseWriter, r *http.Request) {
 	noKeyCache(w)
 	if !s.keyManager(w, r) {
+		return
+	}
+	if query, err := embyBusinessQuery(r); err != nil || len(query) != 0 {
+		s.applicationKeyError(w, r, identity.ErrInvalidInput)
 		return
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)

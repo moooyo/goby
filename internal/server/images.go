@@ -20,6 +20,8 @@ import (
 
 const imageCacheBytes = 64 << 20
 const imageCacheEntries = 256
+const imageTransferBytes = 128 << 20
+const imageTransferCount = 8
 
 type cachedImage struct {
 	key, contentType, etag string
@@ -29,11 +31,34 @@ type cachedImage struct {
 // Cache entries contain immutable validated bytes. Source files are opened and
 // checked before every lookup, including a conditional request or cache hit.
 type imageCache struct {
-	mu      sync.Mutex
-	entries map[string]*list.Element
-	order   *list.List
-	bytes   int
-	slots   chan struct{}
+	mu              sync.Mutex
+	entries         map[string]*list.Element
+	order           *list.List
+	bytes           int
+	slots           chan struct{}
+	activeTransfers int
+	activeBytes     int
+}
+
+// Rendering and transmission have separate budgets. A slow transfer does not
+// retain a decode/processing slot or admit unbounded in-memory response bodies.
+func (c *imageCache) beginTransfer(size int) (func(), bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if size < 0 || c.activeTransfers >= imageTransferCount || size > imageTransferBytes-c.activeBytes {
+		return nil, false
+	}
+	c.activeTransfers++
+	c.activeBytes += size
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			c.mu.Lock()
+			c.activeTransfers--
+			c.activeBytes -= size
+			c.mu.Unlock()
+		})
+	}, true
 }
 
 func newImageCache() *imageCache {
@@ -242,9 +267,17 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
+	processing := false
+	releaseProcessing := func() {
+		if processing {
+			<-s.images.slots
+			processing = false
+		}
+	}
 	select {
 	case s.images.slots <- struct{}{}:
-		defer func() { <-s.images.slots }()
+		processing = true
+		defer releaseProcessing()
 	case <-ctx.Done():
 		s.imageError(w, r, ctx.Err())
 		return
@@ -276,13 +309,31 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		s.imageError(w, r, err)
 		return
 	}
+	transferSize := cap(result.data)
+	if r.Method == http.MethodHead || matchesImageETag(strings.Join(r.Header.Values("If-None-Match"), ","), result.etag) {
+		transferSize = 0
+	}
+	releaseTransfer, ok := s.images.beginTransfer(transferSize)
+	if !ok {
+		releaseProcessing()
+		w.Header().Set("Retry-After", "2")
+		apiError(w, r, http.StatusTooManyRequests, "image_transfer_limit", "The active image transfer limit has been reached.")
+		return
+	}
+	defer releaseTransfer()
+	releaseProcessing()
+	writer, err := newIdleResponseWriter(w, r.Context(), mediaWriteIdle)
+	if err != nil {
+		panic(http.ErrAbortHandler)
+	}
+	defer writer.finish()
 	w.Header().Set("Content-Type", result.contentType)
 	w.Header().Set("ETag", result.etag)
 	if matchesImageETag(strings.Join(r.Header.Values("If-None-Match"), ","), result.etag) {
 		// These omissions match the recorded reference GET and HEAD 304s.
 		w.Header().Del("Content-Length")
 		w.Header().Del("Cache-Control")
-		w.WriteHeader(http.StatusNotModified)
+		writer.WriteHeader(http.StatusNotModified)
 		return
 	}
 	w.Header().Set("Cache-Control", "public")
@@ -294,9 +345,9 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(result.data)))
-	w.WriteHeader(http.StatusOK)
+	writer.WriteHeader(http.StatusOK)
 	if r.Method != http.MethodHead {
-		_, _ = w.Write(result.data)
+		_, _ = writer.Write(result.data)
 	}
 }
 

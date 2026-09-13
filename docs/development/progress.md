@@ -1,6 +1,17 @@
 # Implementation progress
 
-Latest closeout checkpoint: `2026-09-13T00:16:48Z`. The user requested that this
+The 2026-09-13 architecture-audit remediation closed at `2026-09-13T03:57:22Z`:
+R01-R21 are fixed and remotely verified, with 2,255 Go tests across all 25 packages
+(24 complete package passes and one explicitly reconciled server package), 41
+mocked-API browser tests, and frontend/Linux builds. The containing Git commit
+records this verified increment on main; deployment remains pending. See the
+[verification receipt](audit-remediation-20260913-verification.json) and
+[current status](current-status.md) for the concise implementation, acceptance
+and deployment boundaries, and [the remediation record](audit-remediation-20260913.md)
+for repaired findings and new verification. Earlier checkpoints below retain
+their original outcomes and do not supersede that current-state index.
+
+Historical closeout checkpoint: `2026-09-13T00:16:48Z`. The user requested that this
 round end after the current proxy identity repair, handoff and integration into
 main. Operator TOOL05 is implemented and passed 101 remote guards and two
 compile checks. The single actual diagnostic04 passed restricted admission,
@@ -1666,7 +1677,12 @@ passed its separate backup/rehearsal/migration/native-smoke gate.
 - Include explicit hardware **decode** and **encode** selection and evidence; software-only success is not GPU verification.
 - The resumed task requires all builds, tests, validation and runtime/browser probes through `ssh test-env`; local verification is not authorized.
 
-## Increment status
+## Historical increment status
+
+This table preserves the earlier increment checkpoints and their then-open work.
+Use [current status](current-status.md) and [the remediation record](audit-remediation-20260913.md)
+for current implementation, verification, and deployment boundaries. In particular,
+the historical pending identity-resolver statement below is superseded by TOOL05.
 
 | Increment | Status | Evidence / remaining work |
 | --- | --- | --- |

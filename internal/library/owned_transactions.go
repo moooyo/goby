@@ -58,7 +58,7 @@ func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) e
 	// Admission and shutdown use Store.mu before the owner mutex. Release the
 	// admission mutex before invoking repository code; never take it from there.
 	s.mu.Lock()
-	if s.closed {
+	if s.closed || s.closing.Load() {
 		s.mu.Unlock()
 		return ErrUnavailable
 	}

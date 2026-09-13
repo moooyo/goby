@@ -1,9 +1,9 @@
 # Linux verification environment
 
-Goby runtime and integration verification runs on `ssh test-env`, a Debian 13
-amd64 host. Local Windows execution is limited to the explicitly authorized
-compilation checks. Do not run application tests, smoke tests, browser tests,
-or runtime probes on Windows.
+Goby compilation, formatting, runtime and integration verification run through
+`ssh test-env`, a Debian 13 amd64 host. Local verification requires explicit
+authorization in the current task; historical compilation permissions do not
+authorize local tests, builds, browser checks or runtime probes.
 
 ## Toolchain baseline
 

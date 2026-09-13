@@ -114,7 +114,7 @@ func TestConfigurationDecoderRejectsAmbiguousAndLossyInput(t *testing.T) {
 }
 
 func TestConfigurationClosedQueriesAndNamedRegistry(t *testing.T) {
-	for _, query := range []string{"ServerName=private-marker", "api_key=a&api_key=a", "Api_Key=a", "x=%zz", strings.Repeat("a", 4097)} {
+	for _, query := range []string{"ServerName=private-marker", "api_key=a&api_key=b", "Api_Key=a&api_key=b", "x=%zz", strings.Repeat("a", 4097)} {
 		r := httptest.NewRequest(http.MethodGet, "/emby/System/Configuration", nil)
 		r.URL.RawQuery = query
 		w := httptest.NewRecorder()

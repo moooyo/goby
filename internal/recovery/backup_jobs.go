@@ -84,6 +84,10 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 		if err := m.updateOperation(id, "running", "publication", "", func(op *operationRecord) {
 			op.Digest, op.Size, op.Manifest, op.Source = proof.Digest, proof.Size, &manifest, source
 		}); err != nil {
+			if errors.Is(err, ErrCapacity) {
+				abortWriter(writer, backupstore.CodeQuota)
+				m.failJob(id, err)
+			}
 			return
 		}
 		m.publishPrepared(work, id, writer, proof, &summary)
@@ -237,6 +241,10 @@ func (m *Manager) Import(ctx context.Context, actor identity.Principal, requestI
 	op.Phase = "publication"
 	if err := m.persistLocked(ctx); err != nil {
 		m.mu.Unlock()
+		if errors.Is(err, ErrCapacity) {
+			abortWriter(writer, backupstore.CodeQuota)
+			m.failJob(id, err)
+		}
 		return OperationView{}, err
 	}
 	if err := m.grantLocked(ctx, actor, op, activity.ActionBackupImported); err != nil {

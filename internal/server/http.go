@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -69,11 +70,19 @@ func decodeJSONBodyTypes(w http.ResponseWriter, r *http.Request, dst any, allowP
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(dst); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			apiError(w, r, http.StatusRequestTimeout, "request_timeout", "The request body was not received within its time limit.")
+			return false
+		}
 		apiError(w, r, 400, "invalid_json", "The request must contain a valid JSON object.")
 		return false
 	}
 	var extra any
-	if decoder.Decode(&extra) != io.EOF {
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if errors.Is(err, context.DeadlineExceeded) {
+			apiError(w, r, http.StatusRequestTimeout, "request_timeout", "The request body was not received within its time limit.")
+			return false
+		}
 		apiError(w, r, 400, "invalid_json", "The request must contain exactly one JSON object.")
 		return false
 	}
