@@ -41,6 +41,69 @@ def operation():
 
 
 class AdmissionGuards(unittest.TestCase):
+    def test_native_overview_requires_observed_ready_health(self):
+        class ReachedNextApi(Exception):
+            pass
+
+        def exercise(health):
+            overview = {"Server": {"Id": "synthetic-server"}, "Counts": {"Users": 8, "Libraries": 3},
+                        "Database": {"Status": "connected"}, "Transcoding": health}
+
+            def request(_label, _method, route, **_kwargs):
+                if route == "/emby/System/Info/Public":
+                    raise ReachedNextApi()
+                return {"body": overview if route == "/admin/v1/overview" else {}}
+
+            job = SimpleNamespace(server_id="synthetic-server", login=lambda _role: None, req=request)
+            admission.Admission.authenticate(job)
+
+        with self.assertRaises(ReachedNextApi):
+            exercise({"Configured": True, "Available": True, "Reason": "ready"})
+        for health in ({"Configured": True, "Available": True, "Reason": ""},
+                       {"Configured": False, "Available": False, "Reason": "disabled"},
+                       {"Configured": True, "Available": False, "Reason": "engine_unavailable"},
+                       {"Configured": True, "Available": False, "Reason": "cache_unavailable"},
+                       {"Configured": True, "Available": False, "Reason": "manager_closed"}):
+            with self.assertRaisesRegex(admission.AdmissionError, "native_overview_admission"):
+                exercise(health)
+
+    def test_only_captured_raw_actor_policies_are_admitted(self):
+        for role in ("admin", "P"):
+            admission.validate_actor_policy(role, {"policy": {}})
+        admission.validate_actor_policy("Q", {"policy": dict(admission.CONTROL_POLICY)})
+        for role, policy in (("P", {"EnableAllFolders": True}), ("P", {"Unknown": False}),
+                             ("Q", {}), ("Q", {**admission.CONTROL_POLICY, "Unknown": False}),
+                             ("Q", {**admission.CONTROL_POLICY, "EnableAllFolders": True}),
+                             ("Q", {**admission.CONTROL_POLICY, "EnableMediaPlayback": 1})):
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_actor_policy(role, {"policy": policy})
+
+    def test_captured_album_omits_path_but_binds_empty_storage_path_and_parent(self):
+        seed = {"serverId": "server", "catalog": {"album": {"id": "album"}}, "libraries": {"Music": {"Id": "music"}}}
+        dto = {"Id": "album", "Type": "MusicAlbum", "ServerId": "server", "ParentId": "music"}
+        row = {"id": "album", "type": "MusicAlbum", "path": "", "parent_id": "music"}
+        admission.validate_actual_dto(dto, row, seed)
+        for changed_dto, changed_row in (({**dto, "Path": ""}, row), (dto, {**row, "path": "/unexpected"}),
+                                          ({**dto, "ParentId": "other"}, row), (dto, {**row, "parent_id": "other"}),
+                                          ({**dto, "Id": "other"}, {**row, "id": "other"})):
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_actual_dto(changed_dto, changed_row, seed)
+
+    def test_other_captured_dtos_still_require_exact_path_and_parent(self):
+        seed = {"serverId": "server"}
+        row = {"id": "series", "type": "Series", "path": "/series", "parent_id": "television"}
+        dto = {"Id": "series", "Type": "Series", "ServerId": "server", "Path": "/series", "ParentId": "television"}
+        admission.validate_actual_dto(dto, row, seed)
+        for changed in ({key: value for key, value in dto.items() if key != "Path"}, {**dto, "ParentId": "other"}):
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_actual_dto(changed, row, seed)
+
+    def test_key_errors_report_only_allowlisted_field_names(self):
+        self.assertEqual(admission.safe_failure(KeyError("EnableAllFolders"), "preflight")["field"], "EnableAllFolders")
+        result = admission.safe_failure(KeyError("private-token-or-url"), "preflight")
+        self.assertEqual(result["field"], "unrecognized_field")
+        self.assertNotIn("private-token-or-url", str(result))
+
     def test_unexpected_native_success_preserves_cleanup_authority(self):
         auth = {"kind": "native", "token": "synthetic-token", "csrf": "synthetic-csrf"}
         helper = SimpleNamespace(response_auth=lambda response, kind: auth)

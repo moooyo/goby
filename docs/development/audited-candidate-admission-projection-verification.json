@@ -1,0 +1,31 @@
+{
+  "kind": "audited-candidate-admission-projection-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T08:13:51.779494+00:00",
+  "sourcePins": {
+    "admit-audited-candidate.py": "9f3d92cf374c2a6ad72637e8c00f5ec34d8cfbf39d32b1446224861ff79b941d",
+    "test-admit-audited-candidate.py": "fdbb5b108d223df665fdaa78e93ed7497e002ec755d4eab26f867a1718965094"
+  },
+  "compileChecksPassed": 2,
+  "testsRun": 18,
+  "passed": true,
+  "completePreflightProjectionReplay": true,
+  "runtimeChecksReplacedByRecordedDataForReplay": true,
+  "snapshot": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-01/private/source-before.json",
+    "sha256": "32ca9c422840dc90cb5b868e2f206d38035402804017821c745accb641affca0"
+  },
+  "originalAdmissionFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-01/private/report.json",
+    "sha256": "363cecb92ecf3302ed4e78ae8dad41c442bee4750392e507f4f12e2c3f23bb85"
+  },
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/admission-tool-verification-02/admission-input.json",
+    "sha256": "8f961c87e2a3ac4c28de4a9b58dec0468fc7fa8737b8750d9e2a53575ce4ba7f"
+  },
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "businessWrites": 0,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "a93cfa7bf7fe0a1507bc3830da553ec02bf6af25c6d91f43ef4927e91e89b690"
+}

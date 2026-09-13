@@ -1,0 +1,25 @@
+{
+  "candidateAdmissionComplete": false,
+  "cleanupFailures": [],
+  "clientAcceptance": false,
+  "elapsedMilliseconds": 807,
+  "failure": {
+    "code": "native_overview_admission",
+    "sourceFile": "admit-audited-candidate.py",
+    "sourceLine": 63,
+    "stage": "authentication",
+    "type": "AdmissionError"
+  },
+  "inactiveStageRetained": false,
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-02/private/report.json",
+    "sha256": "7df6fd2587697c4ef9e10e6f0adf7b11cea975523ddd2eb4f29cb0394398ded1"
+  },
+  "reportUnavailable": null,
+  "requests": {
+    "cleanup": 2,
+    "normal": 5
+  },
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-02",
+  "status": "admission_failed_resources_retained"
+}

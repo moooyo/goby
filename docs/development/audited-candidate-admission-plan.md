@@ -87,6 +87,13 @@ does not establish original-client playback, NextUp, automatic refresh, a main
 upgrade or M2-M6 completion. The main upgrade still requires a fresh contract and
 independent backup/restore/rollback rehearsal after the core client gate.
 
+The one-time seed is now [closed](audited-candidate-seed-closeout.json): eight
+accounts, three libraries, three completed scans and fourteen read-only copied
+files. Its ten public catalog entries correspond to thirteen stored rows because
+the database also contains the three library collection roots. Both seed-tool
+sessions are revoked. The original seed and first reconciliation failures remain
+retained; subsequent closure performed no business writes or HTTP requests.
+
 ## Current scope and bounded live admission
 
 The new scope is

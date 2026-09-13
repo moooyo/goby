@@ -2,7 +2,8 @@
 
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
-**priority 1 complete; priority 2 candidate running, live admission pending**. The
+**diagnostic increment complete; candidate seeded; promotion paused for a
+restore-cancellation race**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -14,6 +15,16 @@ The [bounded live admission](../development/audited-candidate-admission-plan.md)
 and core client gates are still open. The
 [new main upgrade contract](../development/audited-main-upgrade-plan.md) is a
 draft; it requires distinct forward-restoration and old-binary rollback proof.
+
+Immediate next work is the independently confirmed
+[late restore cancellation race](../development/restore-cancellation-race.md).
+First establish a deterministic regression in isolation, fix the terminal-state
+transition, and verify the final changed product. Then preserve the existing
+seeded candidate through a reviewed schema28 binary transition and rebind its
+runtime identity before live admission. An earlier passing suite does not
+override a subsequently identified unsafe state transition. The existing seed
+and original-client host remain useful; they must not be rebuilt to hide this
+finding or the retained checker failures.
 
 This is the current work queue. [Current status](../development/current-status.md)
 records accepted facts; [delivery and verification](delivery-and-verification.md)

@@ -15,6 +15,12 @@ gates and complete M2-M6 requirements remain open. Priority 1 is verified;
 priority 2 has a running independent candidate with live admission pending. No new candidate
 admission or main deployment is claimed by this status update.
 
+Promotion is now paused for an independently confirmed
+[late restore cancellation race](restore-cancellation-race.md). A plan can remain
+ready and busy after cancellation during worker cleanup. A deterministic remote
+regression, product fix and new verification take priority over another live
+admission attempt. The seeded candidate and client host remain retained.
+
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
 [baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate
 and source32 primary inactive, with their original installed bytes retained;
@@ -35,11 +41,22 @@ they are installed only in that new isolated candidate. Its
 artifact/configuration, process/listener/lease identity, schema28, an empty
 separate recovery database and three public health responses. One bootstrap
 then created eight accounts and three libraries, copied fourteen approved media
-files, and completed all three scans. Both tool sessions were revoked and their
-tokens rejected. The seed stopped at a mapping check because it accepted only
-`eng` while the recorded English subtitle language is `en`; a read-only mapping
-correction is in progress. Live admission and original-client acceptance remain
-pending, and the seed operation must not be rerun.
+files, and completed all three scans. Its
+[read-only closeout](audited-candidate-seed-closeout.json) binds ten public
+catalog entries to thirteen stored rows, preserves the actual English subtitle
+code `en`, and proves both tool sessions revoked with their exact type/token
+bindings. Original checker failures remain retained. Bootstrap and scans were
+not repeated. Live admission and original-client acceptance remain pending.
+
+The first live-admission attempt stopped in preflight with zero HTTP requests,
+before login or backup creation. Its captured source snapshot exposed another
+checker assumption about the ordinary user's empty stored default policy.
+The corrected complete preflight passed a captured-data replay. Admission02
+then performed five normal requests and two cleanup requests before its checker
+incorrectly required an empty healthy-transcoding reason instead of `ready`.
+Its administrator session was revoked; no backup or restore was admitted.
+Both scopes remain consumed. Complete the product-race correction before a new
+live admission attempt.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27

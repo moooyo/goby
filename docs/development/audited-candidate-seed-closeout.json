@@ -1,0 +1,70 @@
+{
+  "kind": "audited-candidate-seed-closeout",
+  "status": "seeded_pending_live_acceptance",
+  "manifest": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-reconciliation-02/private/manifest.json",
+    "sha256": "1c4e3b5b0005281b33eaaad3e5b7819f6a3bb93db8559bf91713d73ac1bf50e1"
+  },
+  "candidateManifest": {
+    "path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/private/manifest.json",
+    "sha256": "022ca1e48aac6159750df72157dcddff3738e67962012f556825e26b0f0dfb09"
+  },
+  "originalExecutedHelper": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-tool-verification-01/seed-audited-candidate.py",
+    "sha256": "365363509c9e9b71c2b5ae323ddc9c4a39605a5f6f8596a84a5693d933e1ced7"
+  },
+  "originalInput": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-tool-verification-01/candidate-seed-input.json",
+    "sha256": "0ab40213b9db4f4ec5c157cf03060cd99d64b1111ce854f655c80dd82c56daf9"
+  },
+  "originalSeedFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-01/private/failure.json",
+    "sha256": "5a9c5ff8698ef3746cda143913e7b7a69506d5bbb334b59ead670511114fac82"
+  },
+  "retainedReconciliationFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-reconciliation-01/private/failure.json",
+    "sha256": "e089750ca279b2296d1017ee100cb4ff46c321dc9166ceaff43123b5e4757d48"
+  },
+  "completedReadOnlyReconciliationHelper": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-reconciliation-verification-01/reconcile-audited-candidate-seed.py",
+    "sha256": "fc96032f575e44645b9c9a26a719a6d42f92523fafb51b2be024cbe26782b5f3"
+  },
+  "sessionBindingAddendum": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-session-binding-verification-01/verification.json",
+    "sha256": "f17c3b5d8885d4002e8dc7d2f39961f85a40c578951d38f8661664efb9859dd4"
+  },
+  "source": {
+    "binarySha256": "a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7",
+    "manifestSha256": "6382c327bada158e06a3fda318d6bf85836a7be4457cf523314f87fbb64f8c0b",
+    "schema": 28
+  },
+  "counts": {
+    "users": 8,
+    "libraries": 3,
+    "roots": 3,
+    "completedScans": 3,
+    "storedItems": 13,
+    "publicItems": 10,
+    "collectionRoots": 3,
+    "revokedHelperSessions": 2,
+    "historyRows": 0
+  },
+  "copiedMediaFiles": 14,
+  "actualSubtitleLanguages": [
+    "en",
+    "en"
+  ],
+  "originalRequests": {
+    "cleanup": 4,
+    "normal": 46
+  },
+  "readOnlyReconciliationHttpRequests": 0,
+  "helperSessionTypesAndTokensBound": true,
+  "allHelperSessionsRevoked": true,
+  "bootstrapRerun": false,
+  "scanRerun": false,
+  "businessWritesDuringReconciliation": 0,
+  "recoveryTargetStillEmpty": true,
+  "candidateAdmissionComplete": false,
+  "clientAcceptance": false
+}

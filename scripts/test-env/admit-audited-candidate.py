@@ -21,6 +21,7 @@ import signal
 import stat
 import sys
 import time
+import traceback
 from urllib.parse import urlencode
 
 
@@ -43,6 +44,14 @@ BACKUPS = "/admin/v1/backups"
 OPERATIONS = "/admin/v1/backup-operations"
 CONFIGURATION = "/emby/System/Configuration"
 TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
+CONTROL_POLICY = {"EnableAllFolders": False, "EnabledFolders": [], "EnableMediaPlayback": True,
+                  "EnablePlaybackRemuxing": True, "EnableAudioPlaybackTranscoding": True,
+                  "EnableVideoPlaybackTranscoding": True, "IsAdministrator": False, "IsDisabled": False}
+SAFE_ERROR_FIELDS = set("EnableAllFolders EnabledFolders Path ParentId Id Type Name ServerId MediaSources ItemId "
+                       "DurationTicks RunTimeTicks ProbeVersion media policy source catalog actualCatalogDtos "
+                       "binding_revision storage_binding last_scan_at Revision GenerationRevision Limits Rollback "
+                       "Storage CanApply CanCancel Operation Backup AccessToken CSRFToken SessionInfo User Error "
+                       "ResponseStatus Code ErrorCode token_hash device_registry_id actor_credential_id".split())
 
 
 class AdmissionError(ValueError):
@@ -60,6 +69,40 @@ def sha(raw):
 
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+
+
+def safe_failure(error, stage):
+    result = {"stage": stage, "type": type(error).__name__,
+              "code": str(error) if isinstance(error, AdmissionError) else "admission_operation_failed"}
+    if isinstance(error, KeyError):
+        field = error.args[0] if error.args and isinstance(error.args[0], str) else None
+        result["field"] = field if field in SAFE_ERROR_FIELDS else "unrecognized_field"
+    frames = [frame for frame in traceback.extract_tb(error.__traceback__) if frame.filename == __file__]
+    if frames:
+        result.update(sourceFile="admit-audited-candidate.py", sourceLine=frames[-1].lineno)
+    return result
+
+
+def validate_actor_policy(role, user):
+    need(role in {"admin", "P", "Q"} and isinstance(user.get("policy"), dict) and
+         canonical(user["policy"]) == canonical(CONTROL_POLICY if role == "Q" else {}),
+         "admission_observed_raw_policy_changed")
+
+
+def validate_actual_dto(dto, row, seed):
+    need(row is not None and dto["Id"] == row["id"] and dto["Type"] == row["type"] and
+         dto["ServerId"] == seed["serverId"], "seed_actual_dto_source_binding")
+    if dto["Type"] == "MusicAlbum":
+        need(dto["Id"] == seed["catalog"]["album"]["id"] and "Path" not in dto and row["path"] == "" and
+             dto.get("ParentId") == row["parent_id"] == seed["libraries"]["Music"]["Id"],
+             "seed_actual_album_projection_binding")
+    else:
+        need(dto.get("Path") == row["path"] and dto.get("ParentId") == row["parent_id"],
+             "seed_actual_dto_path_or_parent_binding")
+    if row["type"] in {"Movie", "Episode", "Audio"}:
+        need(dto["RunTimeTicks"] == row["media"]["DurationTicks"] and len(dto["MediaSources"]) == 1 and
+             dto["MediaSources"][0]["ItemId"] == row["id"] and dto["MediaSources"][0]["Path"] == row["path"],
+             "seed_actual_dto_media_binding")
 
 
 def parse(raw):
@@ -508,9 +551,7 @@ class Admission:
             user = users[credential["actorId"]]
             need(user["name"] == credential["username"] and user["is_disabled"] is False and
                  user["is_administrator"] is (role == "admin"), "admission_actor_current_authority")
-            if role != "admin":
-                need(user["policy"]["EnableAllFolders"] is (role == "P") and user["policy"]["EnabledFolders"] == [],
-                     "admission_library_policy_changed")
+            validate_actor_policy(role, user)
         expected_items = [seed["catalog"][key] for key in ("movie", "series", "mp3", "flac")] + seed["catalog"]["episodes"] + seed["catalog"]["seasons"]
         actual = indexed(tables["items"])
         for item in expected_items:
@@ -525,12 +566,7 @@ class Admission:
         need(len(details) == len({row["Id"] for row in details}) == 10, "seed_actual_dto_inventory")
         for dto in details:
             row = actual.get(dto["Id"])
-            need(row is not None and dto["Type"] == row["type"] and dto["ServerId"] == self.server_id and
-                 dto.get("Path") == row["path"], "seed_actual_dto_source_binding")
-            if row["type"] in {"Movie", "Episode", "Audio"}:
-                need(dto["RunTimeTicks"] == row["media"]["DurationTicks"] and len(dto["MediaSources"]) == 1 and
-                     dto["MediaSources"][0]["ItemId"] == row["id"] and dto["MediaSources"][0]["Path"] == row["path"],
-                     "seed_actual_dto_media_binding")
+            validate_actual_dto(dto, row, seed)
         subtitles = [row for row in tables["item_subtitles"] if row["item_id"] == seed["catalog"]["movie"]["id"] and row["active"]]
         need(len(subtitles) == 2 and {(row["stream_index"], row["codec"], row["language"], row["source_hash"]) for row in subtitles} ==
              {(row["index"], row["codec"], row["language"], row["sha256"]) for row in seed["catalog"]["subtitles"]},
@@ -597,7 +633,7 @@ class Admission:
         self.overview = self.req("overview", "GET", "/admin/v1/overview", role="admin")["body"]
         need(self.overview["Server"]["Id"] == self.server_id and self.overview["Counts"]["Users"] == 8 and
              self.overview["Counts"]["Libraries"] == 3 and self.overview["Database"]["Status"] == "connected" and
-             self.overview["Transcoding"] == {"Configured": True, "Available": True, "Reason": ""}, "native_overview_admission")
+             self.overview["Transcoding"] == {"Configured": True, "Available": True, "Reason": "ready"}, "native_overview_admission")
         info = self.req("public-info", "GET", "/emby/System/Info/Public")["body"]
         need(info["Id"] == self.server_id and info["StartupWizardCompleted"] is True and
              info["LocalAddress"] == self.io.candidate["publicUrl"], "public_candidate_identity")
@@ -856,7 +892,7 @@ class Admission:
                 try:
                     self.cancel_owned(kind, cleanup=True)
                 except Exception as error:
-                    self.failures.append({"stage": "emergency_cancel", "type": type(error).__name__})
+                    self.failures.append(safe_failure(error, "emergency_cancel"))
         for role in reversed(list(self.logins)):
             login = self.logins[role]
             try:
@@ -883,7 +919,7 @@ class Admission:
                 self.save("logout-" + role.lower(), {"credentialId": login["initialSession"]["id"],
                     "tokenSha256": sha(login["auth"]["token"].encode()), "logoutResponse": response["receipt"], "sameToken401": denied["receipt"]})
             except Exception as error:
-                self.failures.append({"stage": "logout_" + role, "type": type(error).__name__})
+                self.failures.append(safe_failure(error, "logout_" + role))
 
     def run(self):
         self.preflight()
@@ -946,7 +982,7 @@ def main():
         io.open()
         job.run()
     except Exception as error:
-        failure = {"stage": job.phase, "type": type(error).__name__, "code": str(error) if isinstance(error, AdmissionError) else "admission_operation_failed"}
+        failure = safe_failure(error, job.phase)
     finally:
         if io.created:
             job.close_sessions()
@@ -954,7 +990,7 @@ def main():
         try:
             proof = job.reconcile()
         except Exception as error:
-            failure = {"stage": "reconciliation", "type": type(error).__name__, "code": str(error) if isinstance(error, AdmissionError) else "admission_reconciliation_failed"}
+            failure = safe_failure(error, "reconciliation")
     successful = failure is None and not job.failures and proof is not None
     result = {"kind": "audited-candidate-live-admission", "version": 1, "status": "admitted_for_core_client" if successful else "admission_failed_resources_retained",
               "input": input_pin, "helper": value["admissionHelper"], "seed": value["seedManifest"], "candidateManifest": value["candidateManifest"],

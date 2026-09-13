@@ -1,0 +1,52 @@
+{
+  "kind": "audited-candidate-seed-stored-projection-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T08:07:35.990941+00:00",
+  "sourcePins": {
+    "reconcile-audited-candidate-seed.py": "fc96032f575e44645b9c9a26a719a6d42f92523fafb51b2be024cbe26782b5f3",
+    "test-reconcile-audited-candidate-seed.py": "a1b8aa6f98547163763460cf47cab48cef4552862d520154ff5cf7c5727fe7c9"
+  },
+  "compileChecksPassed": 2,
+  "testsRun": 7,
+  "passed": true,
+  "recordedStateReplay": {
+    "status": "pure_state_replay_passed",
+    "snapshot": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-reconciliation-01/private/002-reconcile-source-state.stdout",
+      "sha256": "a44d4dd775a8b90ca0d5b54ce2d0c54e243db742bb8474a82408574b0353fdd8"
+    },
+    "capturedDtos": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-01/private/actual-catalog-dtos.json",
+      "sha256": "1bb8452924b9f26c45d05b93d62ba0f19ba8c9afea361287dc7a3951aa135404"
+    },
+    "validation": {
+      "users": 8,
+      "libraries": 3,
+      "roots": 3,
+      "completedScans": 3,
+      "storedItems": 13,
+      "publicItems": 10,
+      "collectionRoots": 3,
+      "revokedHelperSessions": 2,
+      "historyRows": 0
+    },
+    "businessWrites": 0,
+    "httpRequests": 0,
+    "newSqlQueries": 0
+  },
+  "snapshot": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-seed-reconciliation-01/private/002-reconcile-source-state.stdout",
+    "sha256": "a44d4dd775a8b90ca0d5b54ce2d0c54e243db742bb8474a82408574b0353fdd8"
+  },
+  "reconciliationInput": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/seed-reconciliation-verification-01/reconciliation-input.json",
+    "sha256": "238b910dcab116c966d6ab3a162d35d2e97406226f133460da52bc382d96caf4"
+  },
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "businessWrites": 0,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "83166b089fbcb82fac63f22522fa6ae99bb5e46368cd35d756277fd463dd6346",
+  "replayStdoutSha256": "7e5b7154d8f08f0f9ba8d88e1726eed6d51e95625602df4295e522a99239d5bf",
+  "replayStderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
