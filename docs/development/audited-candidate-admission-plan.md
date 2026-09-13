@@ -1,11 +1,11 @@
 # Audited candidate admission
 
-Status: the isolated candidate is seeded, and live admission is paused under the
+Status: the isolated candidate passed
+[live admission04](audited-candidate-live-admission-closeout.json) under the
 [current execution plan](../planning/current-execution-plan.md). The cancellation
-fix passed full verification and its single binary transition closed. Admission03
-then failed at backup scratch capacity and is closed, along with admission01/02.
-One explicit environment revision must close before a new admission scope runs.
-No candidate has been admitted. Remote verification uses `ssh test-env`.
+fix, single binary transition and explicit capacity configuration revision are
+complete. Admission01/02/03 remain consumed and retained. The next gate is core
+original-client acceptance. Remote verification uses `ssh test-env`.
 
 ## Selected product and existing evidence
 
@@ -16,8 +16,11 @@ Its [full race verification and build](restore-cancellation-full-verification.js
 passed 2,264 tests across 25 packages. The
 [closed binary transition](audited-candidate-cancellation-transition.json) installed
 `477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
-The upcoming capacity-profile revision preserves that binary, full report and
-source manifest; it does not require a new Go verification run.
+The completed capacity-profile revision preserved that binary, full report and
+source manifest. Live admission then passed its full ten-minute window, 79 complete
+responses, backup download, ready-plan cancellation, session cleanup and exact
+source reconciliation. The inactive stage is retained for an explicitly bound
+later replacement; no restore application or rollback was performed.
 
 The earlier [diagnostic verification](exit-diagnostics-full-verification.json) passed
 2,262 tests across 25 packages with race instrumentation and a Linux build.

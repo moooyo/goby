@@ -164,6 +164,17 @@ export function validateCandidateLogin(value, manifest) {
     client_version: value.SessionInfo.ApplicationVersion ?? null, token_sha256: sha(value.AccessToken) };
 }
 
+export function candidateRequestBody(scope, method, contentType, bytes) {
+  if (!Buffer.isBuffer(bytes) || bytes.length > 1048576) return {};
+  const type = typeof contentType === 'string' ? contentType : '';
+  const playbackPlain = scope?.allowed === true && method === 'POST' &&
+    ['playback_report', 'playback_info'].includes(scope.kind) && type.split(';', 1)[0].trim().toLowerCase() === 'text/plain';
+  if (!/json/i.test(type) && !playbackPlain) return {};
+  // This is an observation of the existing payload, never a request rewrite.
+  try { return { body: JSON.parse(bytes.toString('utf8')) }; }
+  catch { return { body_parse_failed: true }; }
+}
+
 export function candidateLogoutProven(proof, tokenHash) {
   const entries = proof?.entries?.filter(row => row.token_fingerprint === tokenHash) ?? [];
   return proof?.observer_errors === 0 && proof?.logout_overflow === 0 && entries.length === 1 &&
@@ -279,7 +290,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
   const started = process.hrtime.bigint(), elapsed = () => Number((process.hrtime.bigint() - started) / 1000000n);
   const normalLimit = (manifest.budgets.maximumSeconds - manifest.budgets.cleanupSeconds) * 1000;
   const report = { kind: 'audited-candidate-client-report', version: 1, run_id: manifest.runId, scenario: manifest.scenario,
-    manifest_sha256: manifestSha256, source: manifest.source, started_at: new Date().toISOString(), requests: [], sessions: [],
+    manifest_sha256: manifestSha256, source: manifest.source, started_at: new Date().toISOString(), started_monotonic_ns: started.toString(), requests: [], sessions: [],
     snapshots: [], page_errors: [], blocked_external: [], external_attempts: [], scope_observations: [], observed_rejections: [],
     logout: { attempted: false }, cleanup: {}, failure: null,
     browser_environment: { service_workers: 'allow', fresh_context: true, proxy_bypass: '<-loopback>', quic: 'disabled', nonproxied_webrtc_udp: 'disabled' },
@@ -482,12 +493,14 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     const paused = (await metrics())[0]; need(paused.paused);
     await page.waitForTimeout(700); const held = (await metrics())[0]; need(held.paused && Math.abs(held.current_time - paused.current_time) <= 0.35);
     const seeks = [];
+    report.episode_phase = 'seek';
     for (const fraction of [0.30, 0.10]) {
       await show(); const slider = page.locator('input.videoOsdPositionSlider:visible'); need(await slider.count() === 1);
       const box = await slider.boundingBox(); need(box && box.width > 50); await slider.click({ position: { x: box.width * fraction, y: box.height / 2 } });
       await page.waitForTimeout(700); const current = (await metrics())[0];
       need(Math.abs(current.current_time - current.duration * fraction) <= Math.max(5, current.duration * 0.03)); seeks.push(current);
     }
+    report.episode_phase = 'resume';
     await show(); if ((await metrics())[0].paused) await control('Play'); await page.waitForTimeout(2200); const resumed = (await metrics())[0];
     need(!resumed.paused && resumed.current_time > seeks[1].current_time + 1 && resumed.frames > seeks[1].frames);
     await snapshot('episode-playing'); await show(); await control('Back'); await page.waitForTimeout(1000);
@@ -543,7 +556,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       track((async () => {
         row.headers = await request.allHeaders(); const token = tokenFrom(row.headers, request.url()); row.token_sha256 = token ? sha(token) : null;
         const bytes = request.postDataBuffer(); row.payload_base64 = bytes?.toString('base64') ?? null;
-        if (bytes && bytes.length <= 1048576 && /json/i.test(row.headers['content-type'] ?? '')) { try { row.body = JSON.parse(bytes.toString('utf8')); } catch { row.body_parse_failed = true; } }
+        Object.assign(row, candidateRequestBody(row, row.method, row.headers['content-type'], bytes));
         await save('request-' + row.ordinal + '.json', row);
       })());
     });
@@ -588,6 +601,9 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     context.on('requestfinished', request => { const row = entries.get(request); if (row) { row.completed = true; row.finished_elapsed_ms = elapsed(); } });
     context.on('requestfailed', request => {
       const row = entries.get(request); if (!row) return; row.failed = true;
+      row.failed_elapsed_ms = elapsed();
+      row.failure_error_text = request.failure()?.errorText ?? null;
+      row.failure_ui_phase = cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.episode_phase ?? null;
       const rejection = { ordinal: row.ordinal, kind: row.kind, route: row.route ?? null, status: row.status, failed: true,
         attribution: 'browser_context_failure; gateway association pending' };
       report.observed_rejections.push(rejection); if (row.kind === 'external') report.blocked_external.push(rejection);

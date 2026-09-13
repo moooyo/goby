@@ -1,7 +1,9 @@
 # Candidate runtime epoch contracts
 
 Status: the product gate, binary transition and backup-limit environment
-revision are complete. Live admission04 is running against runtime epoch v2.
+revision are complete. Live admission04 passed against runtime epoch v2; its
+[separate closeout](audited-candidate-live-admission-closeout.json) is the gate
+for core client work. Historical epoch records remain immutable.
 The revised readers passed five new and seven compatibility guards. See the
 [environment closeout](audited-candidate-backup-limits-revision.json),
 [revision checks](audited-candidate-backup-limits-tool-verification.json),

@@ -1,0 +1,19 @@
+{
+  "candidateAdmissionComplete": true,
+  "cleanupFailures": [],
+  "clientAcceptance": false,
+  "elapsedMilliseconds": 601057,
+  "failure": null,
+  "inactiveStageRetained": true,
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-04/private/report.json",
+    "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"
+  },
+  "reportUnavailable": null,
+  "requests": {
+    "cleanup": 6,
+    "normal": 73
+  },
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-04",
+  "status": "admitted_for_core_client"
+}

@@ -1,0 +1,53 @@
+{
+  "kind": "audited-candidate-core-client-closeout-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T10:06:09.737117+00:00",
+  "sourcePins": {
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-close-audited-candidate-client.mjs": "d67f36cc16c4592d930698fd2ec4259716bdd19d239b0879b78c23adc6f1c85c",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "close-audited-candidate-client.mjs": "38e8a96e057fee491b4c2324d510779e55890d37e04fdc93d0be71df23cca8ce",
+    "client-browser-playback.mjs": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac",
+    "test-client-browser-audited-candidate.mjs": "0ed734074a925704a642db310ac45e38a44b4d661eab16c32c98e992ed9a1f99",
+    "client-browser-audited-candidate.mjs": "9ff2692ec10254a16f9505ba06c33d81d5980f3421f61a96f8ee917f695b87f6",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016"
+  },
+  "compileChecks": [
+    {
+      "source": "client-browser-audited-candidate.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "test-client-browser-audited-candidate.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "close-audited-candidate-client.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "test-close-audited-candidate-client.mjs",
+      "exitCode": 0
+    }
+  ],
+  "adapterExitCode": 0,
+  "adapterCounts": {
+    "tests": 28,
+    "pass": 28,
+    "fail": 0,
+    "skipped": 0
+  },
+  "closerExitCode": 0,
+  "closerCounts": {
+    "testCount": 12,
+    "passed": 12,
+    "failed": 0,
+    "sourceUnchanged": true
+  },
+  "closerReportSha256": "0ddbe84738a8ce5f3ad4cd6e0b11dab92436cbbba007989844456778b4afa83c",
+  "browserStarted": false,
+  "businessHttp": false,
+  "sqlQueries": 0,
+  "passed": true
+}

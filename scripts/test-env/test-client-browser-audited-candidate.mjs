@@ -7,6 +7,7 @@ import {
   selectedCandidateItem,
   candidateRequestScope,
   validateCandidateLogin,
+  candidateRequestBody,
   candidateLogoutProven,
   candidateRemainingMilliseconds,
   validateCandidateGateway,
@@ -511,6 +512,35 @@ test('each single-playback scenario needs a successful media request and matched
     assert.equal(candidatePlaybackEvidence(rows.filter(row => row.kind !== 'media'), manifest, [actorSession]).passed, false);
     assert.equal(candidatePlaybackEvidence([], manifest, [actorSession]).passed, false);
   }
+});
+
+test('fixed playback POST text/plain JSON is parsed by the actual observation branch without changing bytes', () => {
+  const manifest = syntheticManifest('mp3'), actorSession = session(), rows = lifecycle(manifest, actorSession);
+  for (const row of rows.filter(value => value.kind === 'playback_report')) {
+    const bytes = Buffer.from(' \n' + JSON.stringify(row.body) + '\n'), before = Buffer.from(bytes);
+    const scope = candidateRequestScope(manifest.browserOrigin + '/emby' + row.route, 'POST', manifest);
+    delete row.body;
+    Object.assign(row, candidateRequestBody(scope, 'POST', 'text/plain; charset=UTF-8', bytes));
+    assert.deepEqual(bytes, before); assert.equal(row.body.ItemId, selectedCandidateItem(manifest).id);
+  }
+  assert.equal(candidatePlaybackEvidence(rows, manifest, [actorSession]).passed, true);
+  const info = candidateRequestScope(manifest.browserOrigin + '/emby/Items/' + selectedCandidateItem(manifest).id + '/PlaybackInfo', 'POST', manifest);
+  assert.deepEqual(candidateRequestBody(info, 'POST', 'TEXT/PLAIN', Buffer.from('{"StartTimeTicks":0}')), { body: { StartTimeTicks: 0 } });
+});
+
+test('text/plain observation remains bounded and limited to allowed playback POST routes', () => {
+  const manifest = syntheticManifest('mp3'), payload = Buffer.from('{"ItemId":"synthetic"}');
+  for (const [route, method, type] of [
+    ['/emby/Sessions/Logout', 'POST', 'text/plain'], ['/emby/Sessions/Capabilities', 'POST', 'text/plain'],
+    ['/emby/Users/AuthenticateByName', 'POST', 'text/plain'], ['/emby/Sessions/Playing', 'GET', 'text/plain'],
+    ['/emby/Sessions/PlayingExtra', 'POST', 'text/plain'], ['/emby/Sessions/Playing', 'POST', 'application/x-www-form-urlencoded'],
+  ]) assert.deepEqual(candidateRequestBody(candidateRequestScope(manifest.browserOrigin + route, method, manifest), method, type, payload), {});
+  const scope = candidateRequestScope(manifest.browserOrigin + '/emby/Sessions/Playing', 'POST', manifest);
+  assert.deepEqual(candidateRequestBody({ ...scope, allowed: false }, 'POST', 'text/plain', payload), {});
+  assert.deepEqual(candidateRequestBody(scope, 'POST', 'text/plain', Buffer.alloc(1048577, 32)), {});
+  assert.deepEqual(candidateRequestBody(scope, 'POST', 'text/plain', Buffer.from('{')), { body_parse_failed: true });
+  assert.deepEqual(candidateRequestBody(scope, 'POST', 'text/plain', null), {});
+  assert.deepEqual(candidateRequestBody({ kind: 'login', allowed: true }, 'POST', 'application/json', payload), { body: { ItemId: 'synthetic' } });
 });
 
 test('movie requires two independent login tokens and playback lifecycles', () => {

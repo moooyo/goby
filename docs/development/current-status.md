@@ -11,9 +11,9 @@ Execution resumed on 2026-09-13 after the planning review. The revised
 diagnosis, an audited candidate, core original-client regression and a new main
 upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
-gates and complete M2-M6 requirements remain open. Priority 1 is verified;
-priority 2 has a running independent candidate with live admission pending. No new candidate
-admission or main deployment is claimed by this status update.
+gates and complete M2-M6 requirements remain open. Priorities 1 and 2 are complete:
+the corrected product is verified and its isolated candidate has passed live
+admission. Core original-client acceptance is next; no main deployment is claimed.
 
 The independently confirmed
 [late restore cancellation race](restore-cancellation-race.md) is fixed. Both windows
@@ -26,7 +26,8 @@ and client host remain retained. The
 completed with all 35 tables and owned state unchanged and PostgreSQL continuous.
 The [backup-capacity configuration correction](audited-candidate-backup-capacity.md)
 also completed with the existing failed history and all 35 tables preserved.
-Live admission04 is running on that new runtime epoch.
+Live admission04 [passed](audited-candidate-live-admission-closeout.json) on that
+new runtime epoch.
 
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
 [baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate
@@ -53,7 +54,8 @@ files, and completed all three scans. Its
 catalog entries to thirteen stored rows, preserves the actual English subtitle
 code `en`, and proves both tool sessions revoked with their exact type/token
 bindings. Original checker failures remain retained. Bootstrap and scans were
-not repeated. Live admission and original-client acceptance remain pending.
+not repeated. The subsequent live admission passed; original-client acceptance
+remains pending.
 
 The first live-admission attempt stopped in preflight with zero HTTP requests,
 before login or backup creation. Its captured source snapshot exposed another
@@ -70,9 +72,13 @@ correctly refused: the default 8 GiB scratch reservation exceeded approximately
 three new revoked sessions, two devices and eight expected audit rows, with all
 earlier rows and the other 32 tables exact. No restore was admitted in that attempt.
 The small fixture now has explicit 64 MiB object/256 MiB total limits. Admission04
-has completed backup creation/download and ready-plan cancellation; its stability
-window, session cleanup and final preservation reconciliation are still pending.
-All failed records remain retained and the unchanged product verification is reused.
+completed backup creation and its 290,550-byte download, ready-plan cancellation,
+eleven health/readiness samples spanning ten minutes, and final reconciliation.
+All 79 responses were complete. It added three revoked sessions, two devices and
+14 expected audit rows; all earlier rows and other source tables were preserved.
+All nine test sessions are revoked. The inactive stage remains exact, and the
+active generation and PostgreSQL process are unchanged. Failed records remain
+retained and the unchanged product verification is reused.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27

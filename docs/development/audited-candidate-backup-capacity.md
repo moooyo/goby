@@ -2,7 +2,8 @@
 
 Status: the failed attempt and the
 [environment revision](audited-candidate-backup-limits-revision.json) are closed;
-fresh live admission04 is running. The verified product binary is unchanged.
+fresh live admission04 [passed](audited-candidate-live-admission-closeout.json).
+The verified product binary is unchanged.
 The revision passed [five new and seven compatibility guards](audited-candidate-backup-limits-tool-verification.json);
 the adapted admission passed [26 guards](audited-candidate-admission-environment-verification.json).
 

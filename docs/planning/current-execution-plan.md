@@ -2,8 +2,8 @@
 
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
-**diagnostic and cancellation fixes verified; candidate binary and capacity
-profile updated; live admission04 running**. The
+**diagnostic and cancellation fixes verified; candidate admitted;
+core original-client acceptance is next**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -11,8 +11,8 @@ subsequent execution must supply its own evidence and meet the gates below.
 
 The new candidate has passed independent process, lease, database and public
 health [inspection](../development/audited-candidate-runtime-inspection.json).
-The [bounded live admission](../development/audited-candidate-admission-plan.md)
-and core client gates are still open. The
+The [bounded live admission](../development/audited-candidate-live-admission-closeout.json)
+passed; the core client gate remains open. The
 [new main upgrade contract](../development/audited-main-upgrade-plan.md) is a
 draft; it requires distinct forward-restoration and old-binary rollback proof.
 
@@ -29,7 +29,10 @@ encountered a real scratch-capacity refusal: the default 8 GiB reservation excee
 the host's available space. The bounded
 [candidate profile correction](../development/audited-candidate-backup-capacity.md)
 and its separately closed environment revision preserve that failed attempt.
-Admission04 is now running on the new configuration epoch. The product
+Admission04 passed on the new configuration epoch: a full ten-minute window,
+79 complete responses, backup download, ready-plan cancellation, exact owned
+cleanup and source-data reconciliation. Continue with the original-client movie,
+TV, audio and subtitle scenarios. The product
 binary remains unchanged; its full verification is reusable. An earlier passing suite does not
 override a subsequently identified unsafe state transition. The existing seed
 and original-client host remain useful; they must not be rebuilt to hide this
