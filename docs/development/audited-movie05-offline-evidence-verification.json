@@ -1,0 +1,52 @@
+{
+  "kind": "movie05-offline-evidence-verification-checkpoint",
+  "status": "verified_offline_client_acceptance_pending",
+  "host": "test-env",
+  "verification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie05-evidence-verification-02/verification.json",
+    "sha256": "457caa88300460e748adca695381eab04aa51066a8b475843d14550bdbf73fb0"
+  },
+  "savedRunReplay": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/offline-movie05-evidence-verification-02/movie05-replay-report.json",
+    "sha256": "de1c4513c96069c9de8c4a914c383ed070d3ff5c374d4905fd753030b4fb52c1"
+  },
+  "serverLogReview": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-movie05-server-log-review-01/server-file-review.json",
+    "sha256": "d7d2548ea614527f25717355637f78cd35cfeef4009f68e53d80a132a38cf3e9"
+  },
+  "sourceSha256": {
+    "adapter": "3ecbffb851c6d75549a884c0fab6956564708bc6f78fae397cb2b88077cdeda3",
+    "closer": "84bd18b0839f8ee3367aaa8f98a4f7d30a56148af97f09b06bc3c11ef2e50913",
+    "savedRunReplay": "325d8290ea3336c69cc6de7a134c4fef1fd44fe4b1088e588bf4ef6160cb6797"
+  },
+  "checks": {
+    "adapter": 48,
+    "closeoutWithRetainedSnapshot": 24,
+    "completeSavedMovie05Fixture": 12,
+    "totalPassed": 84,
+    "failed": 0,
+    "skipped": 0,
+    "unchangedMovieLifecycleChecksReused": 16,
+    "sourcesUnchangedDuringVerification": true
+  },
+  "establishedFacts": {
+    "physicalExchangeCountPreserved": 355,
+    "logicalMediaCandidateCount": 7,
+    "physicalMediaGetCount": 8,
+    "physicalMediaGetsWithDeliveredBytes": 7,
+    "physicalPartialResponsesAssociatedWithoutChangingFlags": 6,
+    "mediaRequestIdsMatchedToOwnedServerLog": 8,
+    "emptyResponseOrdinal": 339,
+    "emptyResponseServerOutcome": "cancelled",
+    "emptyResponseDeliveredBytes": 0,
+    "historicalPageErrorsWithUnknownCause": 4,
+    "originalFailedBrowserOutcomePreserved": true
+  },
+  "newBrowserRuns": 0,
+  "newHttpCalls": 0,
+  "newSqlCalls": 0,
+  "serviceActions": 0,
+  "productChanged": false,
+  "clientAcceptance": false,
+  "nextAction": "Integrate an explicit, request-ID-bound server-cancellation receipt and the occupied owned-state baseline into the existing controller/closeout contract. Define the page-error diagnostic observation needed for one fresh bounded execution; do not rewrite movie05 or claim its unknown historical errors are harmless."
+}

@@ -17,6 +17,7 @@ const PLAYWRIGHT = '/opt/goby-test/inactive-dependencies-m5h/node_modules/playwr
 const SCENARIOS = ['movie', 'episode', 'mp3', 'flac', 'subtitles', 'tv-browse'];
 export const GATEWAY_CLOSEOUT_SECONDS = 30;
 export const REQUEST_HEADER_TIMEOUT_MS = 5000;
+export const PAGE_ERROR_LIMITS = Object.freeze({ events: 64, name: 128, message: 4096, stack: 8192, location: 4096, outputMessage: 512, sources: 3, requests: 8 });
 const sha = value => createHash('sha256').update(value).digest('hex');
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const need = (value, reason = 'candidate_guard_rejected') => { if (!value) throw new Error(reason); };
@@ -324,11 +325,147 @@ export function validateCandidateGateway(gateway, manifest, currentMonotonicNs, 
   return gateway;
 }
 
+export function registerCandidateSecret(secrets, value) {
+  if (typeof value !== 'string' || !value || value.length > 4096) return false;
+  if (secrets.includes(value)) return true;
+  if (secrets.length >= 64) return false;
+  secrets.push(value); return true;
+}
+
+function candidateDiagnosticRedactor(secrets) {
+  const marker = '\ufffc', variants = new Set(); let usable = true;
+  for (const secret of secrets) {
+    if (typeof secret !== 'string' || secret.length < 8 || secret.length > 4096) { usable = false; continue; }
+    try {
+      for (const value of [secret, JSON.stringify(secret).slice(1, -1), encodeURI(secret), encodeURIComponent(secret),
+        encodeURIComponent(secret).replaceAll('%20', '+'), secret.replaceAll(' ', '+'),
+        Buffer.from(secret).toString('base64'), Buffer.from(secret).toString('base64url')]) variants.add(value);
+    } catch { usable = false; }
+  }
+  const ordered = [...variants].sort((left, right) => right.length - left.length);
+  const replace = value => { for (const secret of ordered) value = value.split(secret).join(marker); return value; };
+  const normalize = input => {
+    if (!usable || typeof input !== 'string') return null;
+    let value = input;
+    for (let pass = 0; pass < 4; pass++) {
+      value = replace(value); let failed = false;
+      const decoded = value.replace(/(?:%[0-9a-f]{2})+/gi, encoded => {
+        try { return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.from(encoded.replaceAll('%', ''), 'hex')); }
+        catch { failed = true; return ''; }
+      }).replace(/\\{1,4}u([0-9a-f]{4})/gi, (_, code) => String.fromCharCode(Number.parseInt(code, 16)))
+        .replace(/\\{1,4}x([0-9a-f]{2})/gi, (_, code) => String.fromCharCode(Number.parseInt(code, 16)));
+      if (failed) return null;
+      if (decoded === value) break;
+      value = decoded;
+    }
+    value = replace(value);
+    if (/%[0-9a-z]{1,2}|\\{1,4}[ux][0-9a-f]/i.test(value)) return null;
+    return value;
+  };
+  const output = value => value.replaceAll(marker, '[redacted]').replace(/[\x00-\x1f\x7f]/g, ' ');
+  const location = input => {
+    const value = normalize(input); if (value === null) return null;
+    try {
+      const url = new URL(value);
+      if (!['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol)) return null;
+      const origin = normalize(url.origin), pathname = normalize(url.pathname);
+      if (origin === null || pathname === null) return null;
+      const safeOrigin = output(origin), safePath = output(pathname);
+      if (ordered.some(secret => safeOrigin.includes(secret) || safePath.includes(secret))) return null;
+      return { origin: safeOrigin.slice(0, 256), path: safePath.slice(0, 512) };
+    } catch { return null; }
+  };
+  const text = (input, maximum) => {
+    let value = normalize(input); if (value === null) return null;
+    value = value.replace(/\b(?:https?|wss?|file|data|blob|javascript):[^\s<>"']+/gi, raw => {
+      const safe = location(raw); return safe ? safe.origin + safe.path : '[location omitted]';
+    }).replace(/\b(api_key|access_token|accesstoken|token|authorization|x-emby-token|x-mediabrowser-token|pw|password)\s*[:=]\s*(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s&,;]+)/gi,
+      (_, key) => key + '=[redacted]');
+    value = output(value);
+    // A final scan also catches any credential accidentally introduced by normalization.
+    if (ordered.some(secret => value.includes(secret))) return null;
+    return value.slice(0, maximum);
+  };
+  return { text, location };
+}
+
+export function createCandidatePageErrorCollector({ secrets, context = () => ({}) }) {
+  const retained = []; let total = 0, overflow = 0;
+  const boundedString = (value, maximum) => typeof value !== 'string' ? { value: null, state: 'unavailable' } :
+    value.length > maximum ? { value: null, state: 'size_limit' } : { value, state: 'captured' };
+  const property = (value, key, maximum) => {
+    try { return boundedString(value?.[key], maximum); } catch { return { value: null, state: 'read_failed' }; }
+  };
+  const ordinal = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+  const label = value => typeof value === 'string' && /^[a-z][a-z0-9_-]{0,63}$/i.test(value) ? value : null;
+  return {
+    record(error) {
+      total = Math.min(Number.MAX_SAFE_INTEGER, total + 1);
+      if (retained.length >= PAGE_ERROR_LIMITS.events) { overflow = Math.min(Number.MAX_SAFE_INTEGER, overflow + 1); return null; }
+      try {
+      let current = {}, contextFailed = false;
+      try { current = context() ?? {}; } catch { contextFailed = true; }
+      const name = property(error, 'name', PAGE_ERROR_LIMITS.name), message = property(error, 'message', PAGE_ERROR_LIMITS.message),
+        stack = property(error, 'stack', PAGE_ERROR_LIMITS.stack), sources = [];
+      if (stack.value !== null) for (const line of stack.value.split(/\r?\n/).slice(1, 17)) {
+        const found = /(?:\(|@|\s)(https?:\/\/[^\s)]+):(\d+):(\d+)\)?$/.exec(line);
+        if (found && found[1].length <= PAGE_ERROR_LIMITS.location) sources.push({ url: found[1], line: ordinal(Number(found[2])), column: ordinal(Number(found[3])) });
+        if (sources.length === PAGE_ERROR_LIMITS.sources) break;
+      }
+      const metadata = { elapsed_ms: ordinal(current.elapsed_ms), phase: label(current.phase), operation: label(current.operation),
+        attribution: 'unattributed', review_required: true };
+      const requests = Array.isArray(current.requests) ? current.requests.slice(-PAGE_ERROR_LIMITS.requests).map(row => ({
+        ordinal: ordinal(row.ordinal), kind: label(row.kind), method: label(row.method), elapsed_ms: ordinal(row.elapsed_ms),
+        status: Number.isInteger(row.status) && row.status >= 100 && row.status <= 599 ? row.status : null,
+        failed: row.failed === true, failed_elapsed_ms: ordinal(row.failed_elapsed_ms) })) : [];
+      retained.push({ metadata, name, message, sources, page: boundedString(current.location, PAGE_ERROR_LIMITS.location), requests,
+        incomplete: contextFailed || [name, message, stack].some(row => row.state !== 'captured') });
+      return { ...metadata, diagnostic_state: 'pending_final_redaction' };
+      } catch {
+        const metadata = { elapsed_ms: null, phase: null, operation: null, attribution: 'unattributed', review_required: true };
+        const missing = { value: null, state: 'read_failed' };
+        retained.push({ metadata, name: missing, message: missing, page: missing, sources: [], requests: [], incomplete: true });
+        return { ...metadata, diagnostic_state: 'capture_failed' };
+      }
+    },
+    snapshot(options = {}) {
+      try {
+      const authorityComplete = options?.authorityComplete === true;
+      const redact = candidateDiagnosticRedactor(secrets), events = retained.map(row => {
+        const name = authorityComplete ? redact.text(row.name.value, 64) : null;
+        const message = authorityComplete ? redact.text(row.message.value, PAGE_ERROR_LIMITS.outputMessage) : null;
+        const page = authorityComplete ? redact.location(row.page.value) : null;
+        const sources = authorityComplete ? row.sources.flatMap(source => { const safe = redact.location(source.url);
+          return safe ? [{ ...safe, line: source.line, column: source.column }] : []; }) : [];
+        return { ...row.metadata,
+          phase: authorityComplete ? redact.text(row.metadata.phase, 64) : null,
+          operation: authorityComplete ? redact.text(row.metadata.operation, 64) : null,
+          name, message, page_location: page, source_locations: sources,
+          request_context: row.requests.map(request => ({ ...request,
+            kind: authorityComplete ? redact.text(request.kind, 64) : null, method: authorityComplete ? redact.text(request.method, 64) : null })),
+          request_context_interpretation: 'Nearby request metadata only; no causal or harmlessness inference.',
+          diagnostic_state: !authorityComplete ? 'credential_context_incomplete' :
+            row.incomplete || name === null || message === null || row.page.state !== 'captured' || page === null ||
+              sources.length !== row.sources.length ? 'partially_unavailable' : 'captured_redacted',
+          field_capture: { name: row.name.state, message: row.message.state, page_location: row.page.state } };
+      });
+      return { events, summary: { count: total, retained_count: events.length, overflow_count: overflow, review_required: total > 0,
+        diagnostics_complete: overflow === 0 && authorityComplete && events.every(row => row.diagnostic_state === 'captured_redacted') } };
+      } catch {
+        const events = retained.map(row => ({ elapsed_ms: row.metadata.elapsed_ms, phase: null, operation: null,
+          attribution: 'unattributed', review_required: true, name: null, message: null, page_location: null, source_locations: [],
+          request_context: [], diagnostic_state: 'final_redaction_failed' }));
+        return { events, summary: { count: total, retained_count: events.length, overflow_count: overflow, review_required: total > 0, diagnostics_complete: false } };
+      }
+    },
+  };
+}
+
 export function candidatePlaybackEvidence(requests, manifest, sessions) {
   const selected = selectedCandidateItem(manifest);
   if (!selected) return { required: false, passed: true };
   const tokens = new Set(sessions.map(row => row.token_sha256)), sessionIds = new Set(sessions.map(row => row.session_id));
-  const completed = requests.filter(row => row.completed && row.status >= 200 && row.status < 300 && tokens.has(row.token_sha256));
+  const completed = requests.filter(row => row.completed === true && row.failed !== true && row.status >= 200 && row.status < 300 && tokens.has(row.token_sha256));
   const playback = completed.filter(row => row.kind === 'playback_report' && row.body?.ItemId === selected.id &&
     typeof row.body.PlaySessionId === 'string' && row.body.PlaySessionId.length > 0 && typeof row.body.MediaSourceId === 'string' &&
     row.body.MediaSourceId.length > 0 && (!row.body.SessionId || sessionIds.has(row.body.SessionId)));
@@ -341,11 +478,17 @@ export function candidatePlaybackEvidence(requests, manifest, sessions) {
     if (stop && !seen.has(key)) { seen.add(key); pairs.push({ started: start.ordinal, stopped: stop.ordinal, item_id: selected.id,
       media_source_id: start.body.MediaSourceId, play_session_id: start.body.PlaySessionId, token_sha256: start.token_sha256 }); }
   }
-  const media = completed.filter(row => row.kind === 'media' && new RegExp('^/(?:Videos|Audio)/' + selected.id + '/','i').test(row.route));
+  const media = requests.filter(row => row.kind === 'media' && row.origin === 'target' && row.allowed === true && row.method === 'GET' &&
+    [200, 206].includes(row.status) && tokens.has(row.token_sha256) && new RegExp('^/(?:Videos|Audio)/' + selected.id + '/','i').test(row.route));
+  const mediaTokens = new Set(media.map(row => row.token_sha256));
   return { required: true, passed: pairs.length >= (manifest.scenario === 'movie' ? 2 : 1) && media.length > 0 &&
+      pairs.every(row => mediaTokens.has(row.token_sha256)) &&
       (manifest.scenario !== 'movie' || new Set(pairs.map(row => row.token_sha256)).size === 2),
-    event_scope: 'BrowserContext frame and Service Worker events; physical request cardinality belongs to the gateway ledger.',
+    evidence_stage: 'owned_browser_context_candidates', physical_validation: 'pending_outer_gateway_closure',
+    event_scope: 'BrowserContext candidates only; the physical closer decides actual bytes, transfer completion, and partial attribution.',
     item_id: selected.id, lifecycles: pairs, media_request_ordinals: media.map(row => row.ordinal),
+    media_candidates: media.map(row => ({ ordinal: row.ordinal, method: row.method, status: row.status,
+      completed: row.completed ?? null, failed: row.failed ?? null })),
     progress_request_ordinals: playback.filter(row => /\/Progress\/?$/i.test(row.route)).map(row => row.ordinal) };
 }
 
@@ -406,6 +549,10 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     evidence_boundary: 'Original UI and frame/Service Worker context observations; physical gateway validation and P/Q state checks are external. No vendor asset bodies are read.' };
   let browser, context, page, sessionProof, activeSession, episodeLocation = null, cleanupMode = false, requestOrdinal = 0;
   const secrets = [credential.password], entries = new WeakMap(), processAnchors = {};
+  let secretRegistryComplete = true;
+  const pageErrors = createCandidatePageErrorCollector({ secrets, context: () => ({ elapsed_ms: elapsed(),
+    phase: cleanupMode ? 'cleanup' : report.playback?.phase ?? report.audio_flow?.phase ?? report.subtitle_flow?.phase ?? report.episode_phase ?? report.login_phase ?? null,
+    operation: report.playback?.operation ?? report.logout_phase ?? report.login_phase ?? null, location: page?.url() ?? null, requests: report.requests }) });
   const remaining = () => candidateRemainingMilliseconds(manifest.budgets, elapsed(), cleanupMode);
   const observations = createCandidateObserverQueue({ elapsed,
     onFailure: failure => { report.observer.failures.push(failure); report.failure ??= failure.reason; },
@@ -689,6 +836,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
           const headers = await candidateRequestHeaders(request, row, manifest, Math.min(REQUEST_HEADER_TIMEOUT_MS, remaining()));
           if (headers !== null) {
             row.headers = headers; const token = tokenFrom(headers, request.url()); row.token_sha256 = token ? sha(token) : null;
+            if (token) secretRegistryComplete = registerCandidateSecret(secrets, token) && secretRegistryComplete;
             const bytes = request.postDataBuffer(); row.payload_base64 = bytes?.toString('base64') ?? null;
             Object.assign(row, candidateRequestBody(row, row.method, headers['content-type'], bytes));
           }
@@ -712,13 +860,20 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
         if (capture) {
           operation('response_body');
           const bytes = await bounded(response.body(), Math.min(15000, remaining())); need(bytes.length <= 1048576, 'candidate_public_body_limit');
+          let value, parseFailure = null;
+          if (row.status === 200) {
+            try {
+              value = JSON.parse(bytes.toString('utf8'));
+              if (row.kind === 'login') secretRegistryComplete = registerCandidateSecret(secrets, value?.AccessToken) && secretRegistryComplete;
+            } catch { parseFailure = new Error('candidate_public_json_invalid'); if (row.kind === 'login') secretRegistryComplete = false; }
+          }
           operation('response_save');
           await save('response-' + row.ordinal + '.json', { status: row.status, headers: row.response_headers, body_base64: bytes.toString('base64'), body_sha256: sha(bytes) });
+          if (parseFailure) throw parseFailure;
           if (row.status === 200) {
-            const value = JSON.parse(bytes.toString('utf8'));
             if (row.kind === 'login' && row.scope === 'frame' && row.main_frame) {
               const proof = validateCandidateLogin(value, manifest); need(!report.sessions.some(prior => prior.token_sha256 === proof.token_sha256), 'candidate_token_reused');
-              secrets.push(value.AccessToken); activeSession = { ...proof, token: value.AccessToken, logged_out: false };
+              activeSession = { ...proof, token: value.AccessToken, logged_out: false };
               report.sessions.push(proof); await save('session-' + report.sessions.length + '-private.json', activeSession);
             } else if (row.kind === 'playback_info') row.playback_info = value;
             else if (value.Id) {
@@ -751,7 +906,8 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
         attribution: 'browser_context_failure; gateway association pending' };
       report.observed_rejections.push(rejection); if (row.kind === 'external') report.blocked_external.push(rejection);
     });
-    page = budgetedUI(await context.newPage()); page.on('pageerror', () => report.page_errors.push({ elapsed_ms: elapsed() }));
+    page = budgetedUI(await context.newPage());
+    page.on('pageerror', error => { const entry = pageErrors.record(error); if (entry) report.page_errors.push(entry); });
     await loginUI(true);
     const shared = { page, context, report, snapshot, target: new URL(manifest.clientUrl) };
     if (manifest.scenario === 'movie') await runMovieWorkflow({ ...shared, repeatLogin: async () => {
@@ -795,6 +951,9 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     report.cleanup.gateway_closure = 'owned_by_outer_controller';
     try { await pin(); } catch { report.failure ??= 'candidate_final_pin_failed'; }
     report.observer.pending = observations.snapshot();
+    const pageErrorDiagnostics = pageErrors.snapshot({ authorityComplete: secretRegistryComplete && report.observer.failures.length === 0 &&
+      report.observer.drain_timeouts.length === 0 && report.observer.pending.length === 0 });
+    report.page_errors = pageErrorDiagnostics.events; report.page_error_diagnostics = pageErrorDiagnostics.summary;
     report.elapsed_ms = elapsed();
     if (report.elapsed_ms > manifest.budgets.maximumSeconds * 1000) report.failure ??= 'candidate_time_budget_exhausted';
     report.outcome = report.failure ? 'failed' : 'scenario_completed';
@@ -809,9 +968,13 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       context_observed_rejection_event_count: report.observed_rejections.length,
       login_count: report.sessions.length, login_phase: report.login_phase ?? null, login_failure_phase: report.login_failure_phase ?? null,
       logout_phase: report.logout_phase ?? null, logout_failure_phase: report.logout_failure_phase ?? null,
+      page_error_count: pageErrorDiagnostics.summary.count, page_error_review_required: pageErrorDiagnostics.summary.review_required,
+      page_error_diagnostics_complete: pageErrorDiagnostics.summary.diagnostics_complete, page_error_overflow_count: pageErrorDiagnostics.summary.overflow_count,
       observer: report.observer,
       playback_evidence: { required: report.playback_evidence.required, passed: report.playback_evidence.passed,
+        evidence_stage: report.playback_evidence.evidence_stage ?? null, physical_validation: report.playback_evidence.physical_validation ?? null,
         lifecycle_count: report.playback_evidence.lifecycles?.length ?? 0, media_event_count: report.playback_evidence.media_request_ordinals?.length ?? 0,
+        media_candidate_count: report.playback_evidence.media_candidates?.length ?? 0,
         progress_event_count: report.playback_evidence.progress_request_ordinals?.length ?? 0 }, cleanup: report.cleanup,
       private_report_sha256: receipt.sha256, evidence_boundary: report.evidence_boundary };
     const text = JSON.stringify(summary); need(secrets.every(secret => !text.includes(secret)), 'candidate_summary_contains_secret');

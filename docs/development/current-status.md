@@ -16,7 +16,7 @@ the corrected product is verified and its isolated candidate has passed live
 admission. Core original-client acceptance remains open. The verified offline
 movie alignment enabled one new bounded movie05 run. Its UI completed playback,
 seeking and resume, but final evidence reconciliation remains open; browser
-execution is paused under the [saved-evidence review](audited-movie05-evidence-review.md).
+execution is paused under the [evidence-contract correction](audited-movie05-evidence-contract.md).
 No main deployment is claimed.
 
 The independently confirmed
@@ -145,6 +145,14 @@ body decoding and page-error diagnostics. The independent
 all 35 tables and sequences against 29 complete critical API exchanges, with
 all thirteen sessions revoked and two counted plays Stopped. Movie05 is consumed; browser
 execution is paused again. This does not establish complete movie acceptance.
+The subsequent [offline correction](audited-movie05-offline-evidence-verification.json)
+passed 48 adapter, 24 closeout and 12 whole-run saved-evidence checks. It fixes
+the candidate-media predicate, actual form/int64 body readers and bounded
+partial-range association, and retains useful redacted page-error diagnostics
+for future observations. All eight media request IDs now match retained server
+logs; the empty response was explicitly cancelled. The controller still needs
+an explicit cancellation-receipt and occupied-baseline contract before one new
+bounded diagnostic run. The four old error causes remain unrecoverable.
 The old movie02 generic failure cannot establish
 which individual guard failed. Both attempts and hosting evidence remain
 retained; acceptance is pending and the admitted Goby binary and configuration

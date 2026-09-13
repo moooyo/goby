@@ -7,6 +7,11 @@ The adapter then reported `candidate_playback_chain_incomplete` and exited 1.
 The original outcome and all raw artifacts remain unchanged. This is observed
 workflow progress, **not completed client acceptance**.
 
+The subsequent [verified evidence-contract correction](audited-movie05-evidence-contract.md)
+resolves the preliminary-media and protocol-decoding defects, associates the
+partial ranges and recovers the server's cancellation log for physical 339.
+The original failed record and unknown historical page-error causes remain.
+
 The source remains product binary
 `477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
 No candidate, PostgreSQL or original-client host restart, account creation or
@@ -50,7 +55,7 @@ Thirty tables are exact, no old row was deleted, and only the expected owned
 session/device/activity/play/userdata changes remain. It reads saved artifacts
 only and preserves the browser failure; no additional business cleanup was needed.
 
-## Why acceptance remains open
+## Findings at the initial review
 
 1. The adapter requires a completed BrowserContext media event when assembling
    its preliminary evidence. All seven context media events ended with
@@ -82,7 +87,7 @@ only and preserves the browser failure; no additional business cleanup was neede
    the errors were harmless. The present zero-page-error gate therefore remains
    unmet. A targeted error diagnostic is needed before a future execution.
 
-## Revised next increment
+## Increment defined by the initial review
 
 Keep browser execution paused and use movie05's complete saved artifacts as one
 whole-run regression fixture. Review preliminary browser evidence, physical

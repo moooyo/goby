@@ -2,9 +2,12 @@
 
 `close-audited-candidate-client.mjs` closes one `movie`, `episode`, `mp3`, `flac`,
 `subtitles`, or `tv-browse` run using retained evidence only. It performs no SQL,
-HTTP, browser, process, or service operation. Each scenario uses its separately
-seeded ordinary actor once. The actor must have no preexisting playback sessions
-or client references; other actors' completed history remains protected.
+HTTP, browser, process, or service operation. The normal version-1 input uses
+each scenario's separately seeded ordinary actor once, with no preexisting
+playback sessions or client references. Other actors' completed history remains
+protected. The narrowly bound version-2 movie exception follows the
+[retained movie04 baseline](audited-movie-retained-baseline.md); its consumed
+movie05 execution does not authorize replacing that baseline with a new hash.
 
 ## Input
 
@@ -12,7 +15,9 @@ Use `--input <path> --input-sha256 <sha256>` under authorized root SSH. The exac
 input fields are `kind`, `version`, `manifest`, `observation`, `summary`,
 `gatewayAttestation`, `gatewayIndex`, `runtimeEpoch`, `admission`, `seedBinding`,
 `sourceBefore`, `sourceAfter`, `boundary`, `sources`, and `output`.
-`kind` is `audited-candidate-client-closeout-input`; `version` is integer `1`.
+`kind` is `audited-candidate-client-closeout-input`; the normal `version` is
+integer `1`. Version `2` additionally requires the exact `retainedBaseline`
+descriptor and its fixed movie-only authority from the linked contract.
 Every field from `manifest` through `boundary` is exactly a descriptor
 `{"path":"/absolute/path","sha256":"64 lowercase hex digits"}`.
 `output` is a fresh, empty, root-owned 0700 directory beneath `/opt/goby-test/`.
@@ -89,6 +94,11 @@ transfer framing, with bounded gzip/deflate/Brotli decoding for retained JSON.
 `index.complete` only establishes paired receipts. Every critical successful
 API requires complete request/response and delivery evidence independently.
 Fixed playback POST routes may retain `text/plain` JSON without rewriting it.
+Login bodies are dispatched by their recorded content type: strict UTF-8
+URLencoded forms and the existing JSON representation are both supported.
+The opaque signed-int64 `PlaybackStartTimeTicks` field is decoded losslessly only
+for actual Playing/Progress/Stopped requests and their body-bound observations.
+All other generic JSON and business integer checks retain their original limits.
 The 401 verifier's `text/plain` response is intentionally not retained; complete
 status/header/write-count evidence, the same token, logical logout proof and the
 revoked database row establish rejection, not exact response-body reconstruction.
@@ -105,6 +115,21 @@ the actual failure time/reason/UI phase privately. Gateway interruption records
 can conservatively mark the request incomplete even when its entire GET header
 was written; the closer derives header delivery from byte counts without
 changing any recorded response completeness flag.
+
+Exact Range association is preferred. A single physical byte range can also be
+associated with a containing logical range only with the same full URL/token,
+allowed GET 200/206 evidence, one candidate per frame/Service Worker scope and
+the bounded terminal-time checks. A logical event can describe multiple physical
+exchanges; each physical ordinal and its original completion flags remain in
+the result. This establishes an explicit association, not a claim about internal
+browser caching. Empty completed media responses remain rejected by the full
+analysis path until an independently bound cancellation receipt is admitted.
+
+BrowserContext media observations are preliminary candidates, not byte-delivery
+proof. Page errors retain bounded, redacted diagnostics for review. New metadata
+cannot retroactively explain an old timestamp-only error or make it harmless;
+the full UI gate still requires no unexplained page errors and currently retains
+its zero-page-error predicate.
 
 Playback reports bind token, authentication session, user, device, item, media
 source, canonical play and any retained client-reference mapping. Every observed

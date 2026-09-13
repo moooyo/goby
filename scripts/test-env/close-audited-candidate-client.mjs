@@ -101,6 +101,40 @@ export function runtimeEpochJSON(bytes, pin, maximum = MAX_FILE) {
   return equal(pin, PREVIOUS_BINARY_EPOCH) ? previousBinaryEpochJSON(bytes, pin, maximum) : strictJSON(bytes, maximum);
 }
 
+const PLAYBACK_REPORT_ROUTE = /^\/Sessions\/Playing(?:\/(?:Progress|Stopped))?\/?$/i;
+function bodyMediaType(raw, allowed) {
+  need(typeof raw === 'string', 'request_content_type_required');
+  const match = /^\s*([a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+)\s*(?:;\s*charset\s*=\s*(?:"utf-8"|utf-8)\s*)?$/i.exec(raw);
+  need(match && allowed.includes(match[1].toLowerCase()), 'request_content_type_unsupported');
+  return match[1].toLowerCase();
+}
+
+function playbackJSON(bytes) {
+  const value = scanJSON(bytes, MAX_BODY, location => location.length === 1 && location[0] === 'PlaybackStartTimeTicks' ? -9223372036854775808n : null);
+  need(own(value), 'playback_body_not_object'); return value;
+}
+
+/** Only actual report-route observations may contain this opaque int64 hint. */
+export function observationJSON(bytes, manifest, maximum = MAX_FILE) {
+  const rows = new Set();
+  const value = scanJSON(bytes, maximum, location => {
+    if (location.length === 4 && location[0] === 'requests' && typeof location[1] === 'number' && location[2] === 'body' && location[3] === 'PlaybackStartTimeTicks') {
+      rows.add(location[1]); return -9223372036854775808n;
+    }
+    return null;
+  });
+  for (const index of rows) {
+    const row = value.requests[index], scope = candidateRequestScope(row.url, row.method, manifest);
+    need(row.method === 'POST' && row.allowed === true && row.origin === 'target' && ['frame', 'service_worker'].includes(row.scope) &&
+      row.kind === 'playback_report' && scope.allowed === true && scope.kind === 'playback_report' && row.route === scope.route &&
+      PLAYBACK_REPORT_ROUTE.test(scope.route), 'observation_playback_int64_scope');
+    bodyMediaType(row.headers?.['content-type'], ['application/json', 'text/plain']);
+    const payload = bytes64(row.payload_base64);
+    need(equal(row.body, playbackJSON(payload)), 'observation_playback_body_payload_mismatch');
+  }
+  return value;
+}
+
 export function parseHead(bytes, response = false) {
   need(Buffer.isBuffer(bytes) && bytes.length <= 65536 && bytes.subarray(-4).equals(Buffer.from('\r\n\r\n')), 'http_head_boundary');
   const lines = bytes.subarray(0, -4).toString('latin1').split('\r\n'), line = lines.shift(), headers = new Map();
@@ -220,6 +254,53 @@ function completeJSON(exchange, response = false) {
   need(Buffer.isBuffer(entity) && entity.length > 0, 'critical_json_missing'); return strictJSON(entity, MAX_BODY);
 }
 
+function requestEntity(exchange) {
+  need(exchange.complete && exchange.result.bodyEvidenceComplete === true, 'critical_api_not_complete');
+  need(Buffer.isBuffer(exchange.requestEntity) && exchange.requestEntity.length > 0 && exchange.requestEntity.length <= MAX_BODY, 'critical_request_body_missing');
+  return exchange.requestEntity;
+}
+
+function bodyRoute(exchange, kind, route) {
+  need(exchange.request?.kind === 'api' && exchange.original?.method === 'POST' && exchange.scope?.allowed === true && exchange.scope.kind === kind &&
+    typeof exchange.scope.route === 'string' && route.test(exchange.scope.route) && exchange.url &&
+    decodeURIComponent(exchange.url.pathname).replace(/^\/emby(?=\/)/i, '') === exchange.scope.route, 'request_body_route_scope');
+}
+
+/** Decode only the body, never query credentials; retain original wire bytes. */
+export function loginRequestBody(exchange) {
+  bodyRoute(exchange, 'login', /^\/Users\/AuthenticateByName\/?$/i);
+  const bytes = requestEntity(exchange), type = bodyMediaType(exchange.original.get('content-type'), ['application/json', 'application/x-www-form-urlencoded']);
+  if (type === 'application/json') { const value = strictJSON(bytes, MAX_BODY); need(own(value), 'login_body_not_object'); return value; }
+  need(exchange.original.get('content-encoding') === null, 'login_form_content_encoding');
+  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes), parts = text.split('&');
+  need(parts.length <= 16 && !text.includes(';'), 'login_form_invalid');
+  const fields = new Map();
+  for (const part of parts.filter(Boolean)) {
+    const at = part.indexOf('='), keyBytes = at < 0 ? part : part.slice(0, at), valueBytes = at < 0 ? '' : part.slice(at + 1);
+    let key, value;
+    try { key = decodeURIComponent(keyBytes.replace(/\+/g, ' ')).toLowerCase(); value = decodeURIComponent(valueBytes.replace(/\+/g, ' ')); }
+    catch { throw new Error('login_form_invalid_utf8_or_escape'); }
+    need(['username', 'pw'].includes(key) && !fields.has(key) && !value.includes('\0'), 'login_form_duplicate_or_unknown_field');
+    fields.set(key, value);
+  }
+  need(fields.size > 0 && fields.size <= 2, 'login_form_invalid');
+  return { Username: fields.get('username') ?? '', Pw: fields.get('pw') ?? '' };
+}
+
+export function playbackRequestBody(exchange) {
+  bodyRoute(exchange, 'playback_report', PLAYBACK_REPORT_ROUTE);
+  bodyMediaType(exchange.original.get('content-type'), ['application/json', 'text/plain']);
+  return playbackJSON(requestEntity(exchange));
+}
+
+export function protocolRequestBody(exchange) {
+  if (exchange.scope?.kind === 'login') return loginRequestBody(exchange);
+  if (exchange.scope?.kind === 'playback_report') return playbackRequestBody(exchange);
+  bodyRoute(exchange, 'playback_info', /^\/Items\/[a-f0-9]{32}\/PlaybackInfo\/?$/i);
+  bodyMediaType(exchange.original.get('content-type'), ['application/json', 'text/plain']);
+  const value = completeJSON(exchange); need(own(value), 'playback_body_not_object'); return value;
+}
+
 function requireACK(exchange, status) { need(exchange.complete && exchange.response?.status === status && exchange.requestEntity !== null, 'critical_ack_incomplete'); }
 
 export function verifyLedgerRows(attestation, index, rows, manifest) {
@@ -248,12 +329,12 @@ export function verifyLedgerRows(attestation, index, rows, manifest) {
   return exchanges;
 }
 
-function matchesContext(exchange, report) {
+function matchesContext(exchange, report, requireExactRange = true) {
   if (!exchange.url) return [];
   const start = ns(report.started_monotonic_ns), observed = ns(exchange.intent.startedMonotonicNs);
   return report.requests.filter(row => {
     if (!['frame', 'service_worker'].includes(row.scope) || row.method !== exchange.original.method || row.token_sha256 !== exchange.tokenHash || !integer(row.elapsed_ms)) return false;
-    try { if (new URL(row.url).href !== exchange.url.href || (row.headers?.range ?? null) !== exchange.original.get('range')) return false; } catch { return false; }
+    try { if (new URL(row.url).href !== exchange.url.href || requireExactRange && (row.headers?.range ?? null) !== exchange.original.get('range')) return false; } catch { return false; }
     const delta = start + BigInt(row.elapsed_ms) * 1000000n - observed;
     if (delta < -5000000000n || delta > 5000000000n) return false;
     if (exchange.requestEntity && !bytes64(row.payload_base64 ?? '').equals(exchange.requestEntity)) return false;
@@ -261,7 +342,38 @@ function matchesContext(exchange, report) {
   });
 }
 
-function reportBody(exchange) { const value = completeJSON(exchange); need(own(value), 'playback_body_not_object'); return value; }
+function singleByteRange(value) {
+  const match = typeof value === 'string' && /^bytes=(\d+)-(\d*)$/i.exec(value);
+  if (!match) return null;
+  const start = Number(match[1]), end = match[2] === '' ? null : Number(match[2]);
+  return integer(start) && (end === null || integer(end) && end >= start) ? { start, end } : null;
+}
+
+/** A contained physical range is associated only with one terminal event per scope. */
+export function mediaContextEvidence(exchange, report) {
+  if (exchange.scope?.allowed !== true || exchange.scope.kind !== 'media' || exchange.original?.method !== 'GET' ||
+      ![200, 206].includes(exchange.response?.status)) return [];
+  const exact = matchesContext(exchange, report);
+  if (exact.length) return exact.map(row => ({ row, association: 'exact_range' }));
+  const physical = singleByteRange(exchange.original.get('range'));
+  if (!physical) return [];
+  const started = ns(report.started_monotonic_ns), wireStart = ns(exchange.intent.startedMonotonicNs), wireEnd = ns(exchange.result.completedMonotonicNs);
+  const candidates = matchesContext(exchange, report, false).filter(row => {
+    const logical = singleByteRange(row.headers?.range);
+    if (row.kind !== 'media' || row.allowed !== true || row.origin !== 'target' || ![200, 206].includes(row.status) ||
+        row.failed !== true || row.failure_error_text !== 'net::ERR_ABORTED' || !integer(row.failed_elapsed_ms) ||
+        row.failed_elapsed_ms < row.elapsed_ms || !logical || physical.start < logical.start ||
+        logical.end !== null && (physical.end === null || physical.end > logical.end)) return false;
+    const failed = started + BigInt(row.failed_elapsed_ms) * 1000000n, delta = failed - wireEnd;
+    // The browser timestamp is truncated to milliseconds; do not attach a later
+    // physical request to an already terminal logical request.
+    return wireStart < failed + 1000000n && delta >= -2000000000n && delta <= 2000000000n;
+  });
+  if (!candidates.length || new Set(candidates.map(row => row.scope)).size !== candidates.length) return [];
+  return candidates.map(row => ({ row, association: 'unique_contained_range_with_terminal_time' }));
+}
+
+function reportBody(exchange) { return protocolRequestBody(exchange); }
 function routeItem(exchange) { return /^\/Items\/([^/]+)\/PlaybackInfo\/?$/i.exec(exchange.scope.route)?.[1] ?? null; }
 function bodyPosition(body, fallback) { if (!Object.hasOwn(body, 'PositionTicks')) return fallback; need(integer(body.PositionTicks), 'position_ticks_invalid'); return body.PositionTicks; }
 function mediaSourceMatches(value, canonical, item, correlated) { return value === canonical || item?.type === 'Audio' && correlated && value === item.id; }
@@ -403,7 +515,7 @@ function visibleVideo(report, label) { const step = one(report.playback.steps.fi
   return one(step.videos.filter(row => row.visible), 'unique_movie_video_missing'); }
 
 export function explainMediaPartial(exchange, report, login) {
-  const matches = matchesContext(exchange, report), groups = new Map();
+  const associated = mediaContextEvidence(exchange, report), matches = associated.map(value => value.row), groups = new Map();
   for (const row of matches) { need(integer(row.failed_elapsed_ms) && row.failed === true && row.failure_error_text === 'net::ERR_ABORTED', 'media_partial_not_browser_abort');
     need(!groups.has(row.scope), 'media_partial_ambiguous_context'); groups.set(row.scope, row); }
   need(groups.size > 0 && groups.size <= 2, 'media_partial_context_missing');
@@ -416,6 +528,7 @@ export function explainMediaPartial(exchange, report, login) {
     ns(next.intent.startedMonotonicNs) >= end - 1000000000n && ns(next.intent.startedMonotonicNs) <= end + 5000000000n);
   need(nearbyStop || nearbySeek, 'media_partial_without_seek_or_stop');
   return { ordinal: exchange.ordinal, interpretation: nearbyStop ? 'browser_abort_near_owned_stop' : 'browser_abort_near_range_seek',
+    contextAssociation: associated[0].association, contextOrdinals: matches.map(row => row.ordinal ?? null),
     completeHTTP: exchange.result.completeHTTP, responseForwardedComplete: exchange.result.responseForwardedComplete, deliveredBodyBytes: exchange.deliveredBodyBytes };
 }
 
@@ -849,7 +962,8 @@ export async function runCloseout(inputPin) {
     (!filename.endsWith('.mjs') || input.sources[key].path === path.join(ownDirectory, filename)), 'closeout_source_path'); await readPin(input.sources[key], MAX_FILE, false); }
   await protectedDirectory(input.output, true); need((await fs.readdir(input.output)).length === 0, 'fresh_closeout_output_required');
   const evidence = {}; for (const key of names) evidence[key] = ['sourceBefore', 'sourceAfter'].includes(key)
-    ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) : strictJSON(await readPin(input[key]));
+    ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) :
+      key === 'observation' ? observationJSON(await readPin(input[key]), evidence.manifest) : strictJSON(await readPin(input[key]));
   if (input.version === 2) {
     const closeout = strictJSON(await readPin(input.retainedBaseline));
     need(equal(closeout.sourceAfter, RETAINED_SNAPSHOT), 'retained_movie_snapshot_changed');

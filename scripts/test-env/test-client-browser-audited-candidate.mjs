@@ -15,6 +15,9 @@ import {
   createCandidateObserverQueue,
   candidateOwnedUICleanup,
   REQUEST_HEADER_TIMEOUT_MS,
+  PAGE_ERROR_LIMITS,
+  registerCandidateSecret,
+  createCandidatePageErrorCollector,
   candidateLogoutProven,
   candidateRemainingMilliseconds,
   validateCandidateGateway,
@@ -347,7 +350,7 @@ function lifecycle(manifest, actorSession = session(), firstOrdinal = 1, playSes
   const selected = selectedCandidateItem(manifest);
   const body = { ItemId: selected.id, SessionId: actorSession.session_id, PlaySessionId: playSession,
     MediaSourceId: 'synthetic-media-source-' + selected.id };
-  const row = (ordinal, kind, route, content) => ({ ordinal, kind, route, completed: true, status: kind === 'media' ? 206 : 204,
+  const row = (ordinal, kind, route, content) => ({ ordinal, kind, route, allowed: true, origin: 'target', method: kind === 'media' ? 'GET' : 'POST', completed: true, status: kind === 'media' ? 206 : 204,
     token_sha256: actorSession.token_sha256, ...(content ? { body: clone(content) } : {}) });
   return [
     row(firstOrdinal, 'playback_report', '/Sessions/Playing', body),
@@ -780,6 +783,148 @@ test('movie requires two independent login tokens and playback lifecycles', () =
   assert.equal(candidatePlaybackEvidence([...initial, ...sameLogin], manifest, [first, second]).passed, false);
 });
 
+test('movie05 aborted logical media remain owned candidates without becoming complete physical transfers', () => {
+  const manifest = syntheticManifest('movie'), first = session(1), second = session(2);
+  const initial = lifecycle(manifest, first, 281, 'play_first'), repeated = lifecycle(manifest, second, 334, 'play_second');
+  initial[2].ordinal = 283; initial[3].ordinal = 293; repeated[2].ordinal = 337; repeated[3].ordinal = 338;
+  const media = (base, ordinal) => ({ ...clone(base), ordinal, completed: false, failed: true, failure_error_text: 'net::ERR_ABORTED' });
+  const rows = [initial[0], initial[2], initial[3], repeated[0], repeated[2], repeated[3],
+    ...[279, 286, 289].map(ordinal => media(initial[1], ordinal)), ...[330, 332, 333, 336].map(ordinal => media(repeated[1], ordinal))];
+  const before = clone(rows), evidence = candidatePlaybackEvidence(rows, manifest, [first, second]);
+  assert.equal(evidence.passed, true); assert.equal(evidence.lifecycles.length, 2);
+  assert.equal(evidence.evidence_stage, 'owned_browser_context_candidates');
+  assert.equal(evidence.physical_validation, 'pending_outer_gateway_closure');
+  assert.deepEqual(evidence.media_request_ordinals, [279, 286, 289, 330, 332, 333, 336]);
+  assert.equal(evidence.media_candidates.every(row => row.completed === false && row.failed === true), true);
+  assert.deepEqual(rows, before);
+});
+
+test('each movie login still needs an allowed owned GET candidate and HEAD or rejected responses cannot substitute', () => {
+  const manifest = syntheticManifest('movie'), first = session(1), second = session(2);
+  const rows = [...lifecycle(manifest, first), ...lifecycle(manifest, second, 5, 'second-play')];
+  assert.equal(candidatePlaybackEvidence(rows.filter(row => row.ordinal !== 6), manifest, [first, second]).passed, false);
+  for (const mutate of [row => { row.method = 'HEAD'; }, row => { row.status = 404; }, row => { row.status = 204; },
+    row => { row.status = 304; }, row => { row.token_sha256 = digest(999); }, row => { row.origin = 'external'; },
+    row => { row.allowed = false; }, row => { delete row.allowed; }]) {
+    const changed = clone(rows); mutate(changed[5]);
+    assert.equal(candidatePlaybackEvidence(changed, manifest, [first, second]).passed, false);
+  }
+});
+
+function pageErrorContext(overrides = {}) {
+  return { elapsed_ms: 100, phase: 'resume', operation: 'started_complete', location: 'http://127.0.0.1:19196/web/index.html', requests: [], ...overrides };
+}
+
+test('page errors recorded before token registration are redacted only against the final credential set', () => {
+  const password = 'synthetic password + "quoted" / percent%', token = 'synthetic-late-AccessToken-42';
+  const secrets = [password], encoded = [...token].map(character => '%' + character.charCodeAt(0).toString(16)).join('');
+  const escaped = [...token].map(character => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0')).join('');
+  const collector = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext({
+    location: 'http://account:' + encodeURIComponent(password) + '@127.0.0.1:19196/web/' + token + '.js?api_key=' + token + '#token=' + token }) });
+  const recorded = collector.record({ name: token, message: [token, encoded, escaped, JSON.stringify(password),
+    encodeURIComponent(encodeURIComponent(password)), encodeURIComponent(password).replaceAll('%20', '+'), Buffer.from(token).toString('base64'),
+    'https://account:unknown@external.invalid/path?api_key=' + token + '#private'].join(' '),
+    stack: 'Error\n at play (http://127.0.0.1:19196/web/' + token + '.js?api_key=' + token + ':42:7)' });
+  assert.equal(recorded.diagnostic_state, 'pending_final_redaction');
+  assert.equal(JSON.stringify(recorded).includes(token), false);
+  assert.equal(collector.snapshot().events[0].message, null);
+  assert.equal(registerCandidateSecret(secrets, token), true);
+  const snapshot = collector.snapshot({ authorityComplete: true }), event = snapshot.events[0], text = JSON.stringify(snapshot);
+  for (const secret of [password, token, encoded, escaped, encodeURIComponent(password), Buffer.from(token).toString('base64')]) assert.equal(text.includes(secret), false);
+  assert.equal(event.name, '[redacted]'); assert.equal(event.message.includes('[redacted]'), true);
+  assert.deepEqual(event.page_location, { origin: 'http://127.0.0.1:19196', path: '/web/[redacted].js' });
+  assert.deepEqual(event.source_locations, [{ origin: 'http://127.0.0.1:19196', path: '/web/[redacted].js', line: 42, column: 7 }]);
+  assert.equal(JSON.stringify(event.page_location).includes('api_key'), false);
+});
+
+test('a rejected login identity still registers its observed token and incomplete authority conceals free text', () => {
+  const manifest = syntheticManifest(), login = loginBody(manifest), secrets = ['synthetic-password-for-diagnostics'];
+  login.User.Id = id(999);
+  const collector = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext() });
+  collector.record({ name: 'TypeError', message: login.AccessToken, stack: 'TypeError' });
+  assert.equal(registerCandidateSecret(secrets, login.AccessToken), true);
+  assert.throws(() => validateCandidateLogin(login, manifest));
+  assert.equal(collector.snapshot({ authorityComplete: true }).events[0].message, '[redacted]');
+  const incomplete = collector.snapshot({ authorityComplete: false });
+  assert.equal(incomplete.events[0].name, null); assert.equal(incomplete.events[0].message, null);
+  assert.equal(incomplete.events[0].diagnostic_state, 'credential_context_incomplete');
+  assert.equal(incomplete.summary.diagnostics_complete, false);
+  const full = Array.from({ length: 64 }, (_, index) => 'synthetic-secret-number-' + index);
+  assert.equal(registerCandidateSecret(full, 'synthetic-overflow-secret'), false); assert.equal(full.length, 64);
+});
+
+test('lowercase and partially encoded form credentials are removed after bounded percent decoding', () => {
+  const secret = 'alpha beta+gamma';
+  for (const message of ['alpha+beta%2bgamma', 'al%70ha+be%74a%2bgamma']) {
+    const collector = createCandidatePageErrorCollector({ secrets: [secret], context: () => pageErrorContext() });
+    collector.record({ name: 'TypeError', message, stack: 'TypeError' });
+    const snapshot = collector.snapshot({ authorityComplete: true });
+    assert.equal(snapshot.events[0].message, '[redacted]');
+    assert.equal(JSON.stringify(snapshot).includes('alpha+beta+gamma'), false);
+  }
+});
+
+test('diagnostic limits omit whole oversized fields and redact before output truncation', () => {
+  const token = 'synthetic-secret-crossing-boundary', secrets = [token];
+  const collector = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext({
+    location: 'http://127.0.0.1/' + 'x'.repeat(PAGE_ERROR_LIMITS.location) + token }) });
+  collector.record({ name: 'x'.repeat(PAGE_ERROR_LIMITS.name) + token,
+    message: 'x'.repeat(PAGE_ERROR_LIMITS.message - 8) + token, stack: 'Error\n' + 'x'.repeat(PAGE_ERROR_LIMITS.stack) });
+  const oversized = collector.snapshot({ authorityComplete: true });
+  assert.equal(oversized.events[0].name, null); assert.equal(oversized.events[0].message, null); assert.equal(oversized.events[0].page_location, null);
+  assert.equal(oversized.events[0].field_capture.message, 'size_limit'); assert.equal(oversized.summary.diagnostics_complete, false);
+  const short = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext() });
+  short.record({ name: 'Error', message: 'x'.repeat(PAGE_ERROR_LIMITS.outputMessage - 5) + token + ' tail', stack: 'Error' });
+  const text = short.snapshot({ authorityComplete: true }).events[0].message;
+  assert.ok(text.length <= PAGE_ERROR_LIMITS.outputMessage); assert.equal(text.includes(token.slice(0, 12)), false);
+  const malformed = createCandidatePageErrorCollector({ secrets, context: () => pageErrorContext() });
+  malformed.record({ name: 'Error', message: 'invalid encoded credential %e9', stack: 'Error' });
+  assert.equal(malformed.snapshot({ authorityComplete: true }).events[0].message, null);
+});
+
+test('unknown errors and overflow remain visible for review without unbounded capture', () => {
+  const collector = createCandidatePageErrorCollector({ secrets: ['synthetic-diagnostic-password'], context: () => pageErrorContext() });
+  const hostile = { get name() { throw new Error('private getter detail'); }, message: {}, stack: null };
+  assert.doesNotThrow(() => collector.record(hostile));
+  for (let index = 0; index < PAGE_ERROR_LIMITS.events + 2; index++) collector.record({ name: 'Error', message: '', stack: 'Error' });
+  const snapshot = collector.snapshot({ authorityComplete: true });
+  assert.equal(snapshot.summary.count, PAGE_ERROR_LIMITS.events + 3);
+  assert.equal(snapshot.summary.retained_count, PAGE_ERROR_LIMITS.events); assert.equal(snapshot.summary.overflow_count, 3);
+  assert.equal(snapshot.summary.diagnostics_complete, false); assert.equal(snapshot.events[0].attribution, 'unattributed');
+  assert.equal(snapshot.events[0].review_required, true); assert.equal(snapshot.events[0].name, null);
+});
+
+test('nearby external failures remain context rather than a harmlessness or causal classification', () => {
+  const collector = createCandidatePageErrorCollector({ secrets: ['synthetic-diagnostic-password'], context: () => pageErrorContext({
+    requests: Array.from({ length: 12 }, (_, index) => ({ ordinal: index + 1, kind: 'external', method: 'POST', elapsed_ms: 99,
+      failed: true, failed_elapsed_ms: 100, url: 'https://external.invalid/?api_key=not-copied' })) }) });
+  collector.record({ name: 'TypeError', message: 'Failed to fetch', stack: 'TypeError\n at play (http://127.0.0.1:19196/web/player.js?private=omitted:12:4)' });
+  const snapshot = collector.snapshot({ authorityComplete: true }), event = snapshot.events[0];
+  assert.equal(event.attribution, 'unattributed'); assert.equal(event.review_required, true);
+  assert.equal(event.request_context.length, PAGE_ERROR_LIMITS.requests); assert.equal(event.request_context[0].ordinal, 5);
+  assert.equal(event.request_context.some(row => Object.hasOwn(row, 'url')), false);
+  assert.deepEqual(event.source_locations, [{ origin: 'http://127.0.0.1:19196', path: '/web/player.js', line: 12, column: 4 }]);
+  assert.deepEqual(Object.keys(snapshot.summary).sort(), ['count', 'diagnostics_complete', 'overflow_count', 'retained_count', 'review_required']);
+});
+
+test('capture and final redaction faults do not prevent already-entered cleanup responsibilities', async () => {
+  const secrets = ['synthetic-diagnostic-password'];
+  secrets[Symbol.iterator] = () => { throw new Error('private registry detail'); };
+  const collector = createCandidatePageErrorCollector({ secrets, context: () => { throw new Error('private context detail'); } });
+  const calls = [], failures = [];
+  await candidateOwnedUICleanup({
+    async observe() {
+      const entry = collector.record({ name: 'Error', message: 'private text', stack: 'Error' });
+      assert.equal(typeof entry?.then, 'undefined');
+      const snapshot = collector.snapshot({ authorityComplete: true });
+      assert.equal(snapshot.events[0].diagnostic_state, 'final_redaction_failed'); assert.equal(snapshot.events[0].message, null);
+    },
+    async stopMedia() { calls.push('media'); }, async logout() { calls.push('logout'); },
+    onFailure(operation) { failures.push(operation); },
+  });
+  assert.deepEqual(calls, ['media', 'logout']); assert.deepEqual(failures, []);
+});
+
 test('playback evidence rejects mismatched item, media source, play session, actor session, token, and ordering', () => {
   const manifest = syntheticManifest('episode'), actorSession = session();
   for (const mutate of [
@@ -788,7 +933,7 @@ test('playback evidence rejects mismatched item, media source, play session, act
     rows => { rows[3].token_sha256 = digest(999); }, rows => { rows[0].completed = false; },
     rows => { rows[3].status = 500; }, rows => { rows[3].ordinal = 0; },
     rows => { rows[1].route = '/Videos/' + id(999) + '/stream'; }, rows => { rows[1].token_sha256 = digest(999); },
-    rows => { rows[1].completed = false; }, rows => { delete rows[0].body.MediaSourceId; },
+    rows => { rows[1].method = 'HEAD'; }, rows => { delete rows[0].body.MediaSourceId; }, rows => { rows[0].failed = true; },
   ]) {
     const rows = lifecycle(manifest, actorSession); mutate(rows);
     assert.equal(candidatePlaybackEvidence(rows, manifest, [actorSession]).passed, false);

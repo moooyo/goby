@@ -18,6 +18,22 @@ const manifest = { browserOrigin: ORIGIN, actor: { id: ACTOR, username: 'synthet
   catalog: { mp3: { id: ITEM, type: 'Audio', container: 'mp3', runtimeTicks: 6000000000 } } };
 const TABLES = 'activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users'.split(' ');
 
+function protocolFixture(closer, body, { route = '/Sessions/Playing', type = 'text/plain;charset=UTF-8', method = 'POST', kind = 'playback_report', encoding = null } = {}) {
+  const target = '/emby' + route, bytes = Buffer.isBuffer(body) ? body : Buffer.from(body);
+  const original = closer.parseHead(Buffer.from([method + ' ' + target + ' HTTP/1.1', 'Host: 127.0.0.1:19180',
+    'Content-Type: ' + type, ...(encoding === null ? [] : ['Content-Encoding: ' + encoding]), 'Content-Length: ' + bytes.length, '', ''].join('\r\n')));
+  return { complete: true, result: { bodyEvidenceComplete: true }, request: { kind: 'api' }, original,
+    url: new URL(target, ORIGIN), scope: { allowed: true, kind, route }, requestEntity: bytes };
+}
+
+function observedBodyBytes(body, overrides = {}) {
+  const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body);
+  const row = { ordinal: 1, method: 'POST', url: ORIGIN + '/emby/Sessions/Playing', allowed: true, origin: 'target', scope: 'frame',
+    main_frame: true, kind: 'playback_report', route: '/Sessions/Playing', headers: { 'content-type': 'text/plain;charset=UTF-8' },
+    payload_base64: bytes.toString('base64'), body: '__RAW_PROTOCOL_BODY__', ...overrides };
+  return Buffer.from(JSON.stringify({ requests: [row] }).replace('"__RAW_PROTOCOL_BODY__"', bytes.toString('utf8')));
+}
+
 function responseHead(status, headers) {
   return Buffer.from(['HTTP/1.1 ' + status, ...headers.map(([key, value]) => key + ': ' + value), '', ''].join('\r\n'), 'latin1');
 }
@@ -61,11 +77,11 @@ function exchangeFixture({ media = false, method = 'GET', delivered = media ? 12
 function partialFixture(closer) {
   const fixture = exchangeFixture({ media: true });
   const exchange = closer.verifyExchange(fixture.intent, fixture.result, manifest);
-  const row = { method: 'GET', url: exchange.url.href, token_sha256: exchange.tokenHash, elapsed_ms: 1000,
+  const row = { method: 'GET', kind: 'media', origin: 'target', allowed: true, status: 206, url: exchange.url.href, token_sha256: exchange.tokenHash, elapsed_ms: 1000,
     failed_elapsed_ms: 3000, failed: true, failure_error_text: 'net::ERR_ABORTED', headers: { range: 'bytes=0-999' }, payload_base64: '' };
   const report = { started_monotonic_ns: '9000000000', requests: [
-    { ...clone(row), scope: 'frame', main_frame: true },
-    { ...clone(row), scope: 'service_worker', elapsed_ms: 1001, failed_elapsed_ms: 3001 },
+    { ...clone(row), ordinal: 101, scope: 'frame', main_frame: true },
+    { ...clone(row), ordinal: 102, scope: 'service_worker', elapsed_ms: 1001, failed_elapsed_ms: 3001 },
   ] };
   const login = { chains: [{ stopped: [{ exchange: { intent: { startedMonotonicNs: '12000000000' } } }] }], media: [] };
   return { fixture, exchange, report, login };
@@ -242,6 +258,77 @@ function runtimeLineageFixture() {
 
 function guardCases(closer) {
   return [
+    ['login_request_decoder_dispatches_json_and_utf8_body_form_without_query_merge', () => {
+      const options = { route: '/Users/AuthenticateByName', kind: 'login', type: 'application/x-www-form-urlencoded; charset=UTF-8' };
+      const exchange = protocolFixture(closer, 'Username=synthetic+actor&Pw=p%2B%3D%26%E4%B8%AD', options), raw = Buffer.from(exchange.requestEntity);
+      exchange.url.search = '?Username=another&Pw=ignored';
+      assert.deepEqual(closer.protocolRequestBody(exchange), { Username: 'synthetic actor', Pw: 'p+=&中' });
+      assert.deepEqual(exchange.requestEntity, raw);
+      assert.deepEqual(closer.loginRequestBody(protocolFixture(closer, 'uSeRnAmE=actor&pW=secret', options)), { Username: 'actor', Pw: 'secret' });
+      const json = protocolFixture(closer, '{"Username":"actor","Pw":"secret"}', { ...options, type: 'application/json; charset="utf-8"' });
+      assert.deepEqual(closer.protocolRequestBody(json), { Username: 'actor', Pw: 'secret' });
+      for (const body of ['Username=a&Username=b&Pw=p', 'Username=a&username=b&Pw=p', 'User%6Eame=a&Username=b&Pw=p',
+        'Username=a&Password=p', 'Username=a&Pw=%FF', 'Username=a&Pw=%C3%28', 'Username=a&Pw=%', 'Username=a&Pw=%00',
+        'Username=a&Pw=p;q', '', 'Username=a&' + '&'.repeat(16)])
+        assert.throws(() => closer.loginRequestBody(protocolFixture(closer, body, options)));
+      assert.throws(() => closer.loginRequestBody(protocolFixture(closer, Buffer.from([0xff]), options)));
+      for (const type of ['text/plain', 'application/octet-stream', 'application/x-www-form-urlencoded; charset=latin1',
+        'application/x-www-form-urlencoded; charset=utf-8; charset=utf-8', 'application/x-www-form-urlencoded; other=utf-8'])
+        assert.throws(() => closer.loginRequestBody(protocolFixture(closer, 'Username=a&Pw=p', { ...options, type })), /request_content_type_unsupported/);
+      assert.throws(() => closer.loginRequestBody(protocolFixture(closer, 'Username=a&Pw=p', { ...options, encoding: 'identity' })), /login_form_content_encoding/);
+      assert.throws(() => closer.loginRequestBody(protocolFixture(closer, '{"Username":"a","Username":"b","Pw":"p"}', { ...options, type: 'application/json' })), /json_duplicate_key/);
+      assert.throws(() => closer.loginRequestBody(protocolFixture(closer, '{}', { ...options, route: '/Users/New' })), /request_body_route_scope/);
+    }],
+    ['playback_request_int64_hint_is_lossless_only_on_the_three_report_routes', () => {
+      for (const route of ['/Sessions/Playing', '/Sessions/Playing/Progress', '/Sessions/Playing/Stopped']) for (const type of ['application/json', 'text/plain; charset=UTF-8']) {
+        const raw = Buffer.from('{"ItemId":"' + ITEM + '","PositionTicks":123,"PlaybackStartTimeTicks":639249846659000000}');
+        const exchange = protocolFixture(closer, raw, { route, type }), value = closer.protocolRequestBody(exchange);
+        assert.equal(value.PlaybackStartTimeTicks, '639249846659000000'); assert.equal(value.PositionTicks, 123); assert.equal(value.ItemId, ITEM);
+        assert.deepEqual(exchange.requestEntity, raw); assert.throws(() => closer.strictJSON(raw), /json_unsafe_number/);
+      }
+      for (const token of ['-9223372036854775808', '9223372036854775807'])
+        assert.equal(closer.playbackRequestBody(protocolFixture(closer, '{"PlaybackStartTimeTicks":' + token + '}')).PlaybackStartTimeTicks, token);
+      for (const token of ['"639249846659000000"', 'null', '{}', '[]', 'true', '1e3', '1.0', '9223372036854775808', '-9223372036854775809'])
+        assert.throws(() => closer.playbackRequestBody(protocolFixture(closer, '{"PlaybackStartTimeTicks":' + token + '}')));
+      for (const body of ['{"PositionTicks":9007199254740992}', '{"ItemId":9007199254740992}', '{"nested":{"PlaybackStartTimeTicks":639249846659000000}}'])
+        assert.throws(() => closer.playbackRequestBody(protocolFixture(closer, body)), /json_unsafe_number/);
+      assert.throws(() => closer.playbackRequestBody(protocolFixture(closer, '{"PlaybackStartTimeTicks":1,"PlaybackStartTimeTicks":2}')), /json_duplicate_key/);
+      for (const changes of [{ method: 'GET' }, { route: '/Sessions/Playing/Other' }, { kind: 'metadata' }, { type: 'application/x-www-form-urlencoded' }])
+        assert.throws(() => closer.playbackRequestBody(protocolFixture(closer, '{"PlaybackStartTimeTicks":1}', changes)));
+      const info = protocolFixture(closer, '{"PlaybackStartTimeTicks":639249846659000000}', { kind: 'playback_info', route: '/Items/' + ITEM + '/PlaybackInfo' });
+      assert.throws(() => closer.protocolRequestBody(info), /json_unsafe_number/);
+    }],
+    ['observation_int64_reader_recomputes_scope_and_matches_original_payload', () => {
+      const body = Buffer.from('{"ItemId":"' + ITEM + '","PositionTicks":123,"PlaybackStartTimeTicks":639249846659000000}');
+      const raw = observedBodyBytes(body), untouched = Buffer.from(raw), observed = closer.observationJSON(raw, manifest);
+      assert.deepEqual(observed.requests[0].body, closer.playbackRequestBody(protocolFixture(closer, body)));
+      assert.equal(observed.requests[0].payload_base64, body.toString('base64')); assert.deepEqual(raw, untouched);
+      assert.throws(() => closer.strictJSON(raw), /json_unsafe_number/);
+      for (const changes of [{ method: 'GET' }, { allowed: false }, { origin: 'external' }, { scope: 'metadata' }, { kind: 'read' },
+        { route: '/Sessions/Playing/Progress' }, { url: ORIGIN + '/emby/System/Info' }, { url: ORIGIN + '/emby/Sessions/Playing/Other' },
+        { url: 'http://127.0.0.1:19181/emby/Sessions/Playing' }])
+        assert.throws(() => closer.observationJSON(observedBodyBytes(body, changes), manifest), /observation_playback_int64_scope/);
+      assert.throws(() => closer.observationJSON(observedBodyBytes(body, { headers: { 'content-type': 'application/octet-stream' } }), manifest), /request_content_type_unsupported/);
+      const different = Buffer.from(body.toString().replace('639249846659000000', '639249846659000001'));
+      assert.throws(() => closer.observationJSON(observedBodyBytes(different, { payload_base64: body.toString('base64') }), manifest), /observation_playback_body_payload_mismatch/);
+      assert.throws(() => closer.observationJSON(observedBodyBytes(body, { payload_base64: null }), manifest), /invalid_base64/);
+      const worker = closer.observationJSON(observedBodyBytes(body, { scope: 'service_worker', main_frame: false }), manifest);
+      assert.equal(worker.requests[0].body.PlaybackStartTimeTicks, '639249846659000000');
+    }],
+    ['observation_int64_exceptions_do_not_extend_to_metadata_identity_or_position', () => {
+      for (const token of ['-9223372036854775808', '9223372036854775807']) {
+        const raw = observedBodyBytes('{"PlaybackStartTimeTicks":' + token + '}');
+        assert.equal(closer.observationJSON(raw, manifest).requests[0].body.PlaybackStartTimeTicks, token);
+      }
+      for (const token of ['null', '"1"', '1.0', '1e2', 'true', '{}', '9223372036854775808', '-9223372036854775809'])
+        assert.throws(() => closer.observationJSON(observedBodyBytes('{"PlaybackStartTimeTicks":' + token + '}'), manifest));
+      for (const body of ['{"PositionTicks":9007199254740992}', '{"UserId":9007199254740992}',
+        '{"metadata":{"PlaybackStartTimeTicks":639249846659000000}}'])
+        assert.throws(() => closer.observationJSON(observedBodyBytes(body), manifest), /json_unsafe_number/);
+      assert.throws(() => closer.observationJSON(Buffer.from('{"metadata":{"PlaybackStartTimeTicks":639249846659000000}}'), manifest), /json_unsafe_number/);
+      assert.throws(() => closer.observationJSON(Buffer.from('{"requests":{"0":{"body":{"PlaybackStartTimeTicks":639249846659000000}}}}'), manifest), /json_unsafe_number/);
+      assert.throws(() => closer.observationJSON(observedBodyBytes('{"PlaybackStartTimeTicks":1,"PlaybackStartTimeTicks":2}'), manifest), /json_duplicate_key/);
+    }],
     ['snapshot_int64_metadata_decodes_exactly_without_rounding_or_changing_other_types', () => {
       const raw = Buffer.from('{"tables":{"item_subtitles":[{"change_time_ns":1789286066604301243},{"change_time_ns":0}],"items":[{"media":{"FileChangeTimeNs":1789286066604301244}},{"media":null},{"media":{"FileChangeTimeNs":-9223372036854775808}},{"media":{"FileChangeTimeNs":9223372036854775807}}]},"count":7}');
       const copy = Buffer.from(raw), value = closer.sourceSnapshotJSON(raw);
@@ -413,7 +500,7 @@ function guardCases(closer) {
       const { exchange, report, login } = partialFixture(closer);
       const before = jsonBytes(exchange.result);
       const proof = closer.explainMediaPartial(exchange, report, login);
-      assert.deepEqual(proof, { ordinal: 7, interpretation: 'browser_abort_near_owned_stop', completeHTTP: false,
+      assert.deepEqual(proof, { ordinal: 7, interpretation: 'browser_abort_near_owned_stop', contextAssociation: 'exact_range', contextOrdinals: [101, 102], completeHTTP: false,
         responseForwardedComplete: false, deliveredBodyBytes: 128 });
       assert.equal(report.requests.length, 2); assert.deepEqual(jsonBytes(exchange.result), before);
       const seekLogin = { chains: [], media: [{ ordinal: 8, original: { get: key => key === 'range' ? 'bytes=1000-' : null },
@@ -700,7 +787,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 20 : 19) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (replay ? 24 : 23) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

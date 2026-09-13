@@ -3,7 +3,7 @@
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
 **diagnostic and cancellation fixes verified; candidate admitted;
-movie UI completed, evidence reconciliation and client acceptance still open**. The
+movie UI observed and evidence tools verified; client acceptance still open**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -81,9 +81,15 @@ it also identifies Range-association gaps, incorrect protocol-body assumptions
 and four page errors with no recorded cause. The
 [owned-state delta is closed](../development/audited-core-movie05-owned-state-closeout.json),
 including all 35 tables and sequences, 29 critical API exchanges and both workers.
-Full acceptance is not claimed. Keep browser execution paused and
-review the complete saved run as one regression fixture for the evidence
-contract and missing diagnostics before another execution decision. Full authentication
+The [evidence-contract correction](../development/audited-movie05-evidence-contract.md)
+now passes 84 remote checks, including the complete saved movie05 fixture. It
+fixes preliminary media evidence, form/int64 readers and bounded partial-range
+association, and adds bounded page-error diagnostics. Existing server access
+logs bind the empty response to an actual cancelled request. Full acceptance
+is not claimed. Keep browser execution paused while integrating that
+request-ID-bound cancellation evidence and the occupied movie05 baseline into
+the existing input contract. Then define one fresh diagnostic observation for
+the unrecoverable page-error causes before a new execution decision. Full authentication
 and media evidence remain strict;
 the rejected external registration attempt was blocked before any upstream
 connection and does not justify wider network access. The retained movie02 evidence supports
