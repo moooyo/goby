@@ -1,0 +1,21 @@
+{
+  "kind": "audited-candidate-admission-environment-lineage-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T09:43:45.937553+00:00",
+  "sourcePins": {
+    "admit-audited-candidate.py": "c64dc94d7dd8e1d0195430788de0afbcf05e9c909af39b2cff853a15f3d3b71b",
+    "test-admit-audited-candidate.py": "3464a82a9437ea0a388afa557727e592271a9f4cfc896b37d3947d1681b24c8a"
+  },
+  "compileChecksPassed": 2,
+  "guardExitCode": 0,
+  "testsRun": 26,
+  "passed": true,
+  "sourceUnchanged": true,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "9562de2a6ec65628118dd9062f412650a6749b4ed9a39313346fdca45cecb775",
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "serviceStarts": 0,
+  "runtimeProbes": 0,
+  "candidateAdmitted": false
+}

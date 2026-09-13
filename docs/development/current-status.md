@@ -24,8 +24,9 @@ regression passed targeted tests and the
 and client host remain retained. The
 [candidate binary transition](audited-candidate-cancellation-transition.json)
 completed with all 35 tables and owned state unchanged and PostgreSQL continuous.
-Live admission remains pending a
-[backup-capacity configuration correction](audited-candidate-backup-capacity.md).
+The [backup-capacity configuration correction](audited-candidate-backup-capacity.md)
+also completed with the existing failed history and all 35 tables preserved.
+Live admission04 is running on that new runtime epoch.
 
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
 [baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate
@@ -67,9 +68,11 @@ correctly refused: the default 8 GiB scratch reservation exceeded approximately
 3.9 GB available disk space. Its
 [failure closeout](audited-candidate-admission03-failure-closeout.json) verified
 three new revoked sessions, two devices and eight expected audit rows, with all
-earlier rows and the other 32 tables exact. No restore was admitted. Configure
-the small fixture's explicit 64 MiB object/256 MiB total limits before a fresh
-attempt; preserve all failed records and reuse the unchanged product verification.
+earlier rows and the other 32 tables exact. No restore was admitted in that attempt.
+The small fixture now has explicit 64 MiB object/256 MiB total limits. Admission04
+has completed backup creation/download and ready-plan cancellation; its stability
+window, session cleanup and final preservation reconciliation are still pending.
+All failed records remain retained and the unchanged product verification is reused.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27

@@ -1,7 +1,10 @@
 # Candidate backup capacity correction
 
-Status: the failed attempt is closed; the environment revision and a new live
-admission are pending. The verified product binary is unchanged.
+Status: the failed attempt and the
+[environment revision](audited-candidate-backup-limits-revision.json) are closed;
+fresh live admission04 is running. The verified product binary is unchanged.
+The revision passed [five new and seven compatibility guards](audited-candidate-backup-limits-tool-verification.json);
+the adapted admission passed [26 guards](audited-candidate-admission-environment-verification.json).
 
 The [single binary transition](audited-candidate-cancellation-transition.json)
 installed the cancellation fix and preserved all 35 source tables, sequences,
@@ -58,8 +61,10 @@ invocation; record one candidate stop, one environment replacement and one start
 with a new runtime epoch explicitly linked to its predecessor. Do not relabel
 an environment replacement as a binary replacement or change old manifests.
 
-After the revision passes its preservation and runtime checks, freeze a new
-admission scope. Admission03 cannot be resumed. Reuse the unchanged product's
+The revision preserved all 35 tables, sequences, failed records and other fixed
+files; only the exact environment append and expected log changes occurred.
+The candidate has a new bound process and the same PostgreSQL invocation.
+Admission04 uses a newly frozen input. Admission03 cannot be resumed. Reuse the unchanged product's
 2,264-test race run and Linux build; verify only the changed configuration
 operator/readers and the new live workflow. Future capacity planning must account
 for declared scratch reservations as well as expected database/archive size.

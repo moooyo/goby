@@ -1,9 +1,11 @@
 # Candidate runtime epoch contracts
 
-Status: implementation frozen and seven remote pure guards passed; the current
-candidate baseline was captured and reviewed without HTTP or business writes.
-The actual transition and product gate remain pending. See the
-[tool verification](audited-candidate-transition-tool-verification.json) and
+Status: the product gate, binary transition and backup-limit environment
+revision are complete. Live admission04 is running against runtime epoch v2.
+The revised readers passed five new and seven compatibility guards. See the
+[environment closeout](audited-candidate-backup-limits-revision.json),
+[revision checks](audited-candidate-backup-limits-tool-verification.json),
+[binary-transition tool verification](audited-candidate-transition-tool-verification.json) and
 [state review](audited-candidate-transition-state-review.json).
 The schemas below are enforced by
 [`audited-candidate-runtime.py`](../../scripts/test-env/audited-candidate-runtime.py).
@@ -140,3 +142,57 @@ Use root SSH with `python3 -I -B`. Both modes take `--input`, `--input-sha256`,
 output and issues no SQL/HTTP/service calls. Its result explicitly says that no
 product was admitted. Omit that flag only for the separately frozen single
 transition after full verification and operator review have completed.
+
+## Candidate backup-limit configuration revision
+
+`revise-audited-candidate-backup-limits.py` performs one environment revision.
+Its version 1 input has exactly `kind` (`audited-candidate-environment-revision-input`),
+`version`, `output`, `previousEpoch`, `previousSeedBinding`, `admission03`,
+`failureCloseout`, `closedState`, `runtimeHelper`, `additions`, and `budgets`.
+The output is a fresh `R/candidate-backup-limits-revision-NN`. The previous epoch
+is the completed binary transition `7bcdbc...`; admission03, its `090d044...`
+failure closeout and the `9c2a666...` complete state remain immutable authorities.
+
+`additions` is exactly `GOBY_BACKUP_MAX_OBJECT_BYTES=67108864` and
+`GOBY_BACKUP_MAX_TOTAL_BYTES=268435456`. Both keys must be absent from the old
+environment. Preserve its complete byte prefix and explicit
+`GOBY_BACKUP_MIN_FREE_BYTES=67108864`; append the two assignments only. The
+existing file was generated as bare `key=value` assignments and independently
+checked to contain no quoted, escaped or edge-whitespace values. Retain a
+root-owned 0600 byte copy, stage on the same filesystem, and perform one stop,
+one atomic environment replacement and one start. The binary never changes.
+Free space must cover a conservative two 64 MiB payloads, 64 MiB minimum free
+space and 32 MiB plus 64 KiB metadata reserve: `234946560` bytes.
+
+The old closed state uses `runtimeEpoch`; the new operation's before/after
+captures explicitly use `previousEpoch` as their anchor. Neither after capture
+claims that its new PID is the old runtime. Both forms validate all six revoked
+sessions: the original three plus admission03's three identified credentials.
+Preserve all 35 tables, sequences, old rows, the one failed create operation,
+the one generated/failed/empty/zero-size quota object, control/media/secret files,
+and the empty recovery database. Only the declared environment file and normal
+diagnostic rotation/unit-log appends may differ. Keep their complete evidence
+descriptors in `epoch.preservation`.
+
+The resulting runtime epoch is version `2`: all version 1 fields plus
+`previousEpoch`, `productInput`, `operationKind`, and `configurationChange`.
+`operationKind` is `environment_revision`; `calls` is exactly
+`{stop:1,replaceEnvironment:1,start:1}`. `productInput` is the previous binary
+epoch's `transitionInput`; the current `transitionInput` remains this environment
+revision input. `currentSource`, binary and static deployment fields are inherited
+exactly. `candidate.runtime`, current process/listener/lease, and current input
+are updated without rewriting the original manifests.
+
+`configurationChange` has exactly `before`, `after`, `preservedCopy`, `additions`,
+`requiredFreeBytes`, and `observedFreeBytesBefore`. Readers verify the actual old
+copy and new environment bytes through the same pure append validator, then
+verify the process and loaded values. `resolve_epoch_lineage(epoch, reader)`
+returns `productEpoch`, `productInput`, and `configurationInput`; only one v2
+environment epoch pointing to its v1 binary predecessor is supported.
+
+The seed runtime binding is also version `2`, adding `previousBinding`,
+`admission03`, `failureCloseout`, and `closedState` to the version 1 field set.
+Original seed executor/input, business mappings and two-session seed cleanup
+remain unchanged. `currentSessions` contains the six fully attributed revoked
+credentials. A new successful admission for this current epoch is still required
+before browser work; failed admission03 cannot be reused as a success gate.

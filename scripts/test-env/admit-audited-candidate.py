@@ -189,7 +189,7 @@ def validate_input(value):
     return value
 
 
-def validate_epoch_admission(value, epoch, binding, seed, full_report, transition):
+def validate_epoch_admission(value, epoch, binding, seed, full_report, transition, *, product_epoch=None, configuration_input=None):
     """Cross-bind current runtime facts without rewriting original seed provenance."""
     need(value["version"] == 2 and epoch["runtimeHelper"] == value["runtimeHelper"] and
          binding["runtimeEpoch"] == value["runtimeEpoch"] and binding["originalSeed"] == epoch["seedProvenance"] and
@@ -198,6 +198,16 @@ def validate_epoch_admission(value, epoch, binding, seed, full_report, transitio
     for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources"):
         need(binding[key] == seed[key], "epoch_original_seed_business_changed:" + key)
     need(binding["seedCleanup"] == seed["cleanup"], "epoch_original_seed_cleanup_changed")
+    if epoch.get("version", 1) == 2:
+        need(product_epoch is not None and product_epoch["version"] == 1 and configuration_input is not None and
+             epoch["operationKind"] == "environment_revision" and epoch["calls"] == {"stop": 1, "replaceEnvironment": 1, "start": 1} and
+             epoch["productInput"] == product_epoch["transitionInput"] and
+             configuration_input["previousEpoch"] == epoch["previousEpoch"] and
+             epoch["currentSource"] == product_epoch["currentSource"] and
+             epoch["originalProvision"] == product_epoch["originalProvision"] and epoch["seedProvenance"] == product_epoch["seedProvenance"] and
+             epoch["helpers"] == product_epoch["helpers"], "configuration_epoch_must_preserve_product_lineage")
+    else:
+        need(configuration_input is None and (product_epoch is None or product_epoch == epoch), "unexpected_configuration_lineage")
     source, candidate = epoch["currentSource"], epoch["candidate"]
     need(source["archiveSha256"] == EPOCH_ARCHIVE_SHA and source["schema"] == 28 and
          full_report["archive_sha256"] == EPOCH_ARCHIVE_SHA and
@@ -270,6 +280,14 @@ def validate_status(value, generation=None, staged=False):
          type(limits["MaxBackups"]) is int and limits["MaxBackups"] >= 1 and limits["MinPassphraseBytes"] == 12 and
          limits["MaxPassphraseBytes"] == 1024, "backup_limits_projection")
     return value
+
+
+def validate_effective_backup_limits(value, epoch):
+    if epoch is None or epoch["version"] == 1:
+        return
+    need(epoch["version"] == 2 and epoch["operationKind"] == "environment_revision" and
+         value["Limits"]["MaxBackupBytes"] == "67108864" and value["Limits"]["MaxStoredBytes"] == "268435456",
+         "amended_backup_limits_not_effective")
 
 
 def validate_operation(value, kind, request_id, operation_id=None, backup_id=None):
@@ -681,6 +699,7 @@ class Admission:
         need(info["Id"] == self.server_id and info["StartupWizardCompleted"] is True and
              info["LocalAddress"] == self.io.candidate["publicUrl"], "public_candidate_identity")
         self.status_before = validate_status(self.req("backup-status", "GET", BACKUPS + "/status", role="admin")["body"])
+        validate_effective_backup_limits(self.status_before, self.epoch)
         self.generation = self.status_before["GenerationRevision"]
         self.old_backups = bounded_inventory(self.req("backup-list-before", "GET", BACKUPS, role="admin")["body"])
         self.old_operations = bounded_inventory(self.req("operation-list-before", "GET", OPERATIONS, role="admin")["body"])
@@ -1017,7 +1036,15 @@ def main():
         runtime_pin = value["runtimeHelper"]
         runtime = import_bytes("frozen_admission_epoch", runtime_pin["path"], initial_read(runtime_pin["path"], runtime_pin["sha256"]))
         epoch = runtime.validate_epoch(parse(initial_read(value["runtimeEpoch"]["path"], value["runtimeEpoch"]["sha256"])))
-        transition = runtime.validate_transition_input(parse(initial_read(epoch["transitionInput"]["path"], epoch["transitionInput"]["sha256"])))
+        if epoch["version"] == 1:
+            product_epoch = epoch
+            transition = runtime.validate_transition_input(parse(initial_read(epoch["transitionInput"]["path"], epoch["transitionInput"]["sha256"])))
+            configuration_input = None
+        else:
+            lineage = runtime.resolve_epoch_lineage(epoch, lambda pin: parse(initial_read(pin["path"], pin["sha256"])))
+            product_epoch = lineage["productEpoch"]
+            transition = runtime.validate_transition_input(lineage["productInput"])
+            configuration_input = runtime.validate_environment_revision_input(lineage["configurationInput"])
         need(epoch["runtimeHelper"] == runtime_pin and epoch["helpers"] == transition["helpers"], "epoch_runtime_helper_cross_binding")
         modules = {key: runtime.load_helper(key, pin) for key, pin in epoch["helpers"].items()}
         helper = modules["seed"]
@@ -1029,13 +1056,17 @@ def main():
         source_pin = epoch["currentSource"]["sourceManifest"]
         full_report = parse(helper.read_checked(**epoch["currentSource"]["fullReport"]))
         runtime.validate_full_report(full_report, full_report["worker"], {"newBinary": epoch["currentSource"]["binary"]})
-        expected_process = validate_epoch_admission(value, epoch, binding, seed, full_report, transition)
+        expected_process = validate_epoch_admission(value, epoch, binding, seed, full_report, transition,
+                                                    product_epoch=product_epoch, configuration_input=configuration_input)
         io = runtime.EpochIO(value, input_pin, value["admissionHelper"], value["runtimeEpoch"], value["seedRuntimeBinding"], modules)
         inspector = None
         provenance = {"runtimeEpoch": value["runtimeEpoch"], "seedRuntimeBinding": value["seedRuntimeBinding"],
                       "runtimeHelper": runtime_pin, "originalProvision": epoch["originalProvision"],
                       "originalSeed": binding["originalSeed"], "seedExecutor": binding["seedExecutor"],
                       "currentSource": epoch["currentSource"]}
+        if epoch["version"] == 2:
+            provenance.update(previousEpoch=epoch["previousEpoch"], operationKind=epoch["operationKind"],
+                              configurationChange=epoch["configurationChange"])
     helper.read_checked(__file__, value["admissionHelper"]["sha256"])
     catalog = parse(helper.read_checked(**value["compiledCatalog"]))
     source = parse(helper.read_checked(**source_pin))

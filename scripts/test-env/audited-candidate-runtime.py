@@ -35,6 +35,16 @@ PROTECTED = ("goby-client-m3e.service", "goby-foundation-test.service", "postgre
 INPUT_KEYS = {"kind", "version", "output", "originalProvision", "seedManifest", "seedSessionAddendum", "admission02", "newFullReport", "newSourceManifest", "newBinary", "compiledCatalog", "frontendReport", "helpers", "reviewedStateContract", "budgets"}
 EPOCH_KEYS = {"kind", "version", "status", "transitionInput", "transitionHelper", "runtimeHelper", "originalProvision", "seedProvenance", "currentSource", "candidate", "candidateProcess", "postgresProcess", "lease", "before", "after", "preservation", "calls", "helpers", "candidateAdmissionComplete"}
 BINDING_KEYS = {"kind", "version", "runtimeEpoch", "originalSeed", "seedExecutor", "seedInput", "seedSessionAddendum", "admission02", "serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources", "seedCleanup", "currentSessions", "candidateAdmissionComplete"}
+PREVIOUS_BINARY_EPOCH = {"path": str(R / "candidate-cancellation-transition-01/private/runtime-epoch.json"), "sha256": "7bcdbc529fd1ba3f6a62f66585e6788cc9efa1aac22a4accc8d339d69ccf6ae2"}
+ADMISSION03 = {"path": str(R / "candidate-live-admission-03/private/report.json"), "sha256": "a59638abe364b89e9c44482986698d0b1d310147178cbbe2ab4a0c1412c29f97"}
+ADMISSION03_STATE = {"path": str(R / "candidate-admission03-closeout-01/private/state.json"), "sha256": "9c2a6660fda9f2da5c33df8c93fbbc4786c397d158755d1de3712eda6f5e01d0"}
+ADMISSION03_CLOSEOUT = {"path": str(R / "candidate-admission03-failure-closeout.json"), "sha256": "090d04421c8fb847822695143483b153f096e2707571c14a01d4860d48233e2a"}
+BACKUP_ADDITIONS = {"GOBY_BACKUP_MAX_OBJECT_BYTES": "67108864", "GOBY_BACKUP_MAX_TOTAL_BYTES": "268435456"}
+ENV_LIMITS = {"maximumSeconds": 900, "stopSeconds": 60, "readySeconds": 60, "maximumPublicRequests": 10, "stopCalls": 1, "replaceEnvironmentCalls": 1, "startCalls": 1}
+REQUIRED_BACKUP_FREE = 2 * (64 << 20) + (64 << 20) + (32 << 20) + (64 << 10)
+ENV_INPUT_KEYS = {"kind", "version", "output", "previousEpoch", "previousSeedBinding", "admission03", "failureCloseout", "closedState", "runtimeHelper", "additions", "budgets"}
+ENV_EPOCH_KEYS = EPOCH_KEYS | {"previousEpoch", "productInput", "operationKind", "configurationChange"}
+ENV_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "admission03", "failureCloseout", "closedState"}
 
 
 class ContractError(ValueError):
@@ -261,7 +271,8 @@ def validate_reviewed_contract(value):
 
 
 def validate_epoch(epoch):
-    need(set(epoch) == EPOCH_KEYS and epoch["kind"] == "audited-candidate-runtime-epoch" and epoch["version"] == 1 and epoch["status"] == "running_awaiting_live_acceptance" and
+    version = epoch["version"]
+    need(type(version) is int and version in (1, 2) and set(epoch) == (EPOCH_KEYS if version == 1 else ENV_EPOCH_KEYS) and epoch["kind"] == "audited-candidate-runtime-epoch" and epoch["status"] == "running_awaiting_live_acceptance" and
          epoch["originalProvision"] == PROVISION and epoch["seedProvenance"] == SEED and epoch["candidateAdmissionComplete"] is False, "runtime_epoch_schema")
     for key in ("transitionInput", "transitionHelper", "runtimeHelper", "before", "after"):
         descriptor(epoch[key])
@@ -272,26 +283,136 @@ def validate_epoch(epoch):
     candidate = epoch["candidate"]
     need(candidate["bootstrapExecuted"] is True and candidate["sourceState"] == {"users": 8, "schema": 28, "migrations": 28} and candidate["binary"] == source["binary"] and
          candidate["originalProvision"] == PROVISION and candidate["seedProvenance"] == SEED and candidate["currentSourceManifest"] == source["sourceManifest"], "epoch_must_not_impersonate_empty_provision")
-    need(epoch["calls"] == {"stop": 1, "replace": 1, "start": 1}, "epoch_call_count")
+    if version == 1:
+        need(epoch["calls"] == {"stop": 1, "replace": 1, "start": 1}, "epoch_call_count")
+    else:
+        need(epoch["operationKind"] == "environment_revision" and epoch["previousEpoch"] == PREVIOUS_BINARY_EPOCH and
+             epoch["calls"] == {"stop": 1, "replaceEnvironment": 1, "start": 1}, "environment_epoch_operation_invalid")
+        descriptor(epoch["productInput"])
+        change = epoch["configurationChange"]
+        need(set(change) == {"before", "after", "preservedCopy", "additions", "requiredFreeBytes", "observedFreeBytesBefore"} and
+             change["additions"] == BACKUP_ADDITIONS and change["after"] == candidate["runtime"] and change["requiredFreeBytes"] == REQUIRED_BACKUP_FREE and
+             type(change["observedFreeBytesBefore"]) is int and change["observedFreeBytesBefore"] >= REQUIRED_BACKUP_FREE and
+             candidate["input"] == epoch["transitionInput"] and candidate["productInput"] == epoch["productInput"], "environment_epoch_configuration_invalid")
+        for key in ("before", "after", "preservedCopy"):
+            descriptor(change[key])
+        need(change["before"]["path"] == change["after"]["path"] == str(C / "private/runtime.env") and change["preservedCopy"]["sha256"] == change["before"]["sha256"], "environment_epoch_preserved_copy_invalid")
     return epoch
 
 
 def validate_seed_runtime_binding(binding, epoch_pin, epoch, seed):
-    need(set(binding) == BINDING_KEYS and binding["kind"] == "audited-candidate-seed-runtime-binding" and binding["version"] == 1 and
+    version = binding["version"]
+    need(type(version) is int and version in (1, 2) and version == epoch["version"] and set(binding) == (BINDING_KEYS if version == 1 else ENV_BINDING_KEYS) and binding["kind"] == "audited-candidate-seed-runtime-binding" and
          binding["runtimeEpoch"] == epoch_pin and binding["originalSeed"] == SEED and binding["seedExecutor"] == seed["helper"] and binding["seedExecutor"]["sha256"] == SEED_EXECUTOR and
          binding["seedInput"] == seed["input"] and binding["seedSessionAddendum"] == SEED_ADDENDUM and binding["admission02"] == ADMISSION02 and binding["candidateAdmissionComplete"] is False,
          "seed_epoch_provenance_changed")
     for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources"):
         need(binding[key] == seed[key], "seed_business_binding_changed_" + key)
-    need(binding["seedCleanup"] == seed["cleanup"] and len(binding["currentSessions"]) == 3, "seed_epoch_session_binding_changed")
+    need(binding["seedCleanup"] == seed["cleanup"] and len(binding["currentSessions"]) == (3 if version == 1 else 6), "seed_epoch_session_binding_changed")
+    if version == 2:
+        descriptor(binding["previousBinding"])
+        need(binding["admission03"] == ADMISSION03 and binding["failureCloseout"] == ADMISSION03_CLOSEOUT and binding["closedState"] == ADMISSION03_STATE, "environment_binding_history_changed")
     validate_epoch(epoch)
     return binding
+
+
+def validate_environment_revision_input(value):
+    need(set(value) == ENV_INPUT_KEYS and value["kind"] == "audited-candidate-environment-revision-input" and type(value["version"]) is int and value["version"] == 1,
+         "environment_input_schema")
+    for key in ENV_INPUT_KEYS - {"kind", "version", "output", "additions", "budgets"}:
+        descriptor(value[key])
+    need(value["previousEpoch"] == PREVIOUS_BINARY_EPOCH and value["admission03"] == ADMISSION03 and value["failureCloseout"] == ADMISSION03_CLOSEOUT and
+         value["closedState"] == ADMISSION03_STATE and value["additions"] == BACKUP_ADDITIONS and value["budgets"] == ENV_LIMITS and
+         all(type(n) is int for n in value["budgets"].values()), "environment_revision_scope_changed")
+    need(Path(value["output"]).parent == R and re.fullmatch(r"candidate-backup-limits-revision-[0-9]{2}", Path(value["output"]).name) and
+         value["previousSeedBinding"]["path"] == str(R / "candidate-cancellation-transition-01/private/seed-runtime-binding.json"), "environment_output_or_previous_binding_invalid")
+    return value
+
+
+def environment_values(raw):
+    need(isinstance(raw, bytes) and raw.endswith(b"\n") and b"\r" not in raw and b"\x00" not in raw and len(raw) <= 1 << 20, "environment_bytes_invalid")
+    values = {}
+    for line in raw.splitlines():
+        if not line or line.startswith(b"#"):
+            continue
+        match = re.fullmatch(rb"([A-Z][A-Z0-9_]*)=(.*)", line)
+        need(match is not None, "environment_assignment_invalid")
+        key = match[1].decode("ascii")
+        need(key not in values, "environment_duplicate_key")
+        values[key] = match[2]
+    return values
+
+
+def revised_environment(raw):
+    values = environment_values(raw)
+    need(not set(BACKUP_ADDITIONS) & set(values) and values.get("GOBY_BACKUP_MIN_FREE_BYTES") == b"67108864", "environment_keys_not_missing_or_minfree_changed")
+    return raw + b"".join((key + "=" + val + "\n").encode() for key, val in sorted(BACKUP_ADDITIONS.items()))
+
+
+def validate_environment_append(before, after):
+    need(revised_environment(before) == after, "environment_change_is_not_exact_append")
+    return {"addedKeys": sorted(BACKUP_ADDITIONS), "minimumFreeBytes": 64 << 20}
+
+
+def resolve_epoch_lineage(epoch, read_descriptor):
+    """Resolve only v1 product or the single permitted v2 environment successor."""
+    validate_epoch(epoch)
+    if epoch["version"] == 1:
+        return {"productEpoch": epoch, "productInput": read_descriptor(epoch["transitionInput"]), "configurationInput": None}
+    previous = validate_epoch(read_descriptor(epoch["previousEpoch"]))
+    need(previous["version"] == 1 and epoch["productInput"] == previous["transitionInput"] and epoch["currentSource"] == previous["currentSource"] and
+         epoch["helpers"] == previous["helpers"] and epoch["candidate"]["binary"] == previous["candidate"]["binary"] and
+         epoch["configurationChange"]["before"] == previous["candidate"]["runtime"] and epoch["postgresProcess"] == previous["postgresProcess"], "environment_epoch_product_lineage_changed")
+    old_candidate, current_candidate = previous["candidate"], epoch["candidate"]
+    changed = {"input", "runtime", "processes", "serverIdentity", "listener"}
+    need(set(current_candidate) == set(old_candidate) | {"productInput"} and all(current_candidate[key] == old_candidate[key] for key in set(old_candidate) - changed) and
+         current_candidate["processes"]["postgres"] == old_candidate["processes"]["postgres"], "environment_epoch_changed_unrelated_configuration")
+    stable_process_fields = {"bootId", "uid", "exe", "exeDevice", "exeInode", "cmdline", "networkNamespace", "cgroup"}
+    need(all(epoch["candidateProcess"][key] == previous["candidateProcess"][key] for key in stable_process_fields), "environment_epoch_changed_binary_or_sandbox")
+    config_input = validate_environment_revision_input(read_descriptor(epoch["transitionInput"]))
+    need(config_input["previousEpoch"] == epoch["previousEpoch"] and config_input["runtimeHelper"] == epoch["runtimeHelper"], "environment_epoch_input_cross_binding")
+    return {"productEpoch": previous, "productInput": read_descriptor(previous["transitionInput"]), "configurationInput": config_input}
+
+
+def environment_revision_sessions(previous_binding, report, state):
+    anchors = [state[key] for key in ("runtimeEpoch", "previousEpoch") if key in state]
+    need(previous_binding["version"] == 1 and len(previous_binding["currentSessions"]) == 3 and report["kind"] == "audited-candidate-live-admission" and
+         report["status"] == "admission_failed_resources_retained" and report["requests"] == {"normal": 36, "cleanup": 6} and
+         not report["cleanupFailures"] and set(report["operations"]) == {"create"} and report["playbackRequests"] == report["applyRequests"] == report["rollbackRequests"] == 0 and
+         set(report["controllerSessions"]) == {"admin", "P", "Q"} and anchors == [PREVIOUS_BINARY_EPOCH] and state["admission03"] == ADMISSION03,
+         "admission03_revision_baseline_changed")
+    expected = list(previous_binding["currentSessions"])
+    users = {"admin": previous_binding["admin"]["id"], "P": previous_binding["actors"]["movie"]["id"], "Q": previous_binding["controlQ"]["id"]}
+    for role in ("admin", "P", "Q"):
+        row = report["controllerSessions"][role]
+        need(row["sameTokenRejected"] is True and re.fullmatch(r"[0-9a-f]{32}", row["credentialId"]) and re.fullmatch(r"[0-9a-f]{64}", row["tokenSha256"]), "admission03_session_not_closed")
+        expected.append({"kind": "admin" if role == "admin" else "emby", "tokenSha256": row["tokenSha256"], "credentialId": row["credentialId"]})
+    actual = state["source"]["tables"]["sessions"]
+    need(len(actual) == 6 and len({row["tokenSha256"] for row in expected}) == 6 and all(row["revoked_at"] is not None for row in actual) and
+         {(row["kind"], row["token_hash"]) for row in actual} == {(row["kind"], "\\x" + row["tokenSha256"]) for row in expected}, "six_revoked_sessions_not_exact")
+    for role, row in report["controllerSessions"].items():
+        matches = [item for item in actual if item["id"] == row["credentialId"]]
+        need(len(matches) == 1 and matches[0]["user_id"] == users[role] and matches[0]["token_hash"] == "\\x" + row["tokenSha256"], "admission03_actor_session_mismatch")
+    older = {row["tokenSha256"] for row in previous_binding["currentSessions"]}
+    need(all(row["user_id"] == users["admin"] for row in actual if row["token_hash"].removeprefix("\\x") in older), "previous_session_actor_changed")
+    return expected
+
+
+def verify_environment_epoch_files(epoch, seed_module):
+    if epoch["version"] == 1:
+        return
+    resolve_epoch_lineage(epoch, seed_module.descriptor)
+    change = epoch["configurationChange"]
+    before = seed_module.read_checked(change["preservedCopy"]["path"], change["preservedCopy"]["sha256"])
+    after = seed_module.read_checked(change["after"]["path"], change["after"]["sha256"])
+    validate_environment_append(before, after)
 
 
 class EpochReader:
     """Read the explicitly selected epoch; no provisioning or users0 assumptions."""
     def __init__(self, epoch, modules, private):
         self.epoch, self.modules = validate_epoch(epoch), modules
+        verify_environment_epoch_files(self.epoch, modules["seed"])
         self.manifest = self.candidate = epoch["candidate"]
         p = modules["provision"].Provision({"runId": self.candidate["runId"], "ports": self.candidate["ports"]}, epoch["transitionInput"], epoch["helpers"]["provision"])
         p.private = Path(private)
@@ -361,6 +482,15 @@ class EpochIO:
         self.epoch = validate_epoch(self.seed.descriptor(epoch_pin))
         original_seed = self.seed.descriptor(SEED)
         self.binding = validate_seed_runtime_binding(self.seed.descriptor(binding_pin), epoch_pin, self.epoch, original_seed)
+        if self.epoch["version"] == 2:
+            lineage = resolve_epoch_lineage(self.epoch, self.seed.descriptor)
+            need(self.binding["previousBinding"] == lineage["configurationInput"]["previousSeedBinding"], "environment_previous_binding_input_changed")
+            prior_binding = self.seed.descriptor(self.binding["previousBinding"])
+            validate_seed_runtime_binding(prior_binding, self.epoch["previousEpoch"], lineage["productEpoch"], original_seed)
+            closure, state = self.seed.descriptor(ADMISSION03_CLOSEOUT), self.seed.descriptor(ADMISSION03_STATE)
+            need(closure["kind"] == "audited-candidate-admission03-failure-closeout" and closure["status"] == "failed_attempt_closed_for_configuration_revision" and closure["closedState"] == ADMISSION03_STATE,
+                 "environment_failure_closeout_not_bound")
+            need(self.binding["currentSessions"] == environment_revision_sessions(prior_binding, self.seed.descriptor(ADMISSION03), state), "environment_binding_sessions_changed")
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.budgets = value["budgets"]
         need(self.output.parent == R and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", self.output.name) and set(self.budgets) == set(self.seed.BUDGETS) and

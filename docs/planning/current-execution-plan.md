@@ -2,8 +2,8 @@
 
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
 `8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
-**diagnostic and cancellation fixes verified; candidate binary updated;
-backup-capacity configuration revision and live admission pending**. The
+**diagnostic and cancellation fixes verified; candidate binary and capacity
+profile updated; live admission04 running**. The
 [diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
 targeted tests and a full 2,262-test/25-package race run with a Linux build.
 The review itself performed no runtime verification or service operation;
@@ -26,9 +26,10 @@ skips. The existing seeded candidate was preserved through the reviewed
 [schema28 transition plan](../development/audited-candidate-cancellation-transition-plan.md)
 and its new runtime identity was independently bound. Admission03 subsequently
 encountered a real scratch-capacity refusal: the default 8 GiB reservation exceeds
-the host's available space. Apply the bounded
-[candidate profile correction](../development/audited-candidate-backup-capacity.md),
-preserve that failed attempt, then freeze a fresh live admission. The product
+the host's available space. The bounded
+[candidate profile correction](../development/audited-candidate-backup-capacity.md)
+and its separately closed environment revision preserve that failed attempt.
+Admission04 is now running on the new configuration epoch. The product
 binary remains unchanged; its full verification is reusable. An earlier passing suite does not
 override a subsequently identified unsafe state transition. The existing seed
 and original-client host remain useful; they must not be rebuilt to hide this

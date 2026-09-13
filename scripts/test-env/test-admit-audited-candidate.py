@@ -37,7 +37,7 @@ def epoch_fixture():
                "sourceManifest": {"path": "/opt/goby-test/current-source-manifest", "sha256": "3" * 64},
                "binary": {"path": "/opt/goby-test/installed-binary", "sha256": "4" * 64}}
     helpers = {key: pin("runtime-" + key) for key in ("seed", "provision", "gateway", "admission", "reconcile")}
-    epoch = {"runtimeHelper": copy.deepcopy(value["runtimeHelper"]), "seedProvenance": pin("original-seed"),
+    epoch = {"version": 1, "runtimeHelper": copy.deepcopy(value["runtimeHelper"]), "seedProvenance": pin("original-seed"),
              "originalProvision": copy.deepcopy(seed["candidateManifest"]), "currentSource": copy.deepcopy(current),
              "transitionInput": pin("transition-input"), "helpers": copy.deepcopy(helpers),
              "candidateProcess": {"pid": 202, "startTicks": "222"},
@@ -53,6 +53,23 @@ def epoch_fixture():
                   "newBinary": {"path": "/opt/goby-test/build-binary", "sha256": "4" * 64},
                   "compiledCatalog": copy.deepcopy(value["compiledCatalog"]), "helpers": copy.deepcopy(helpers)}
     return value, epoch, binding, seed, full, transition
+
+
+def environment_epoch_fixture():
+    values = epoch_fixture()
+    value, epoch, binding, _seed, _full, _transition = values
+    previous = copy.deepcopy(epoch)
+    value["runtimeEpoch"], value["runtimeHelper"] = pin("amended-epoch"), pin("amended-runtime-helper")
+    binding["runtimeEpoch"] = copy.deepcopy(value["runtimeEpoch"])
+    epoch.update(version=2, operationKind="environment_revision", previousEpoch=pin("previous-epoch"),
+                 runtimeHelper=copy.deepcopy(value["runtimeHelper"]), productInput=copy.deepcopy(previous["transitionInput"]),
+                 transitionInput=pin("configuration-input"), calls={"stop": 1, "replaceEnvironment": 1, "start": 1})
+    epoch["candidate"]["input"] = copy.deepcopy(epoch["transitionInput"])
+    epoch["candidateProcess"].update(pid=303, startTicks="333")
+    epoch["candidate"]["serverIdentity"].update(pid=303, startTicks="333")
+    epoch["candidate"]["listener"]["pid"] = 303
+    configuration = {"previousEpoch": copy.deepcopy(epoch["previousEpoch"])}
+    return values, previous, configuration
 
 
 def status(staged=False):
@@ -71,6 +88,40 @@ def operation():
 
 
 class AdmissionGuards(unittest.TestCase):
+    def test_environment_epoch_reuses_product_with_a_new_process(self):
+        values, previous, configuration = environment_epoch_fixture()
+        original_seed = copy.deepcopy(values[3])
+        current = admission.validate_epoch_admission(*values, product_epoch=previous, configuration_input=configuration)
+        self.assertEqual(current["pid"], 303)
+        self.assertEqual(values[1]["currentSource"], previous["currentSource"])
+        self.assertEqual(values[3], original_seed)
+
+    def test_environment_epoch_cannot_masquerade_as_binary_replacement(self):
+        for mutate in (
+                lambda values, previous, configuration: values[1].update(calls={"stop": 1, "replace": 1, "start": 1}),
+                lambda values, previous, configuration: values[1].update(operationKind="binary_replacement"),
+                lambda values, previous, configuration: values[1].update(productInput=pin("wrong-product-input")),
+                lambda values, previous, configuration: values[1]["currentSource"]["binary"].update(sha256="b" * 64),
+                lambda values, previous, configuration: configuration.update(previousEpoch=pin("wrong-previous-epoch")),
+                lambda values, previous, configuration: previous.update(version=2)):
+            values, previous, configuration = environment_epoch_fixture()
+            mutate(values, previous, configuration)
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_epoch_admission(*values, product_epoch=previous, configuration_input=configuration)
+
+    def test_environment_epoch_requires_exact_effective_backup_limits(self):
+        epoch = {"version": 2, "operationKind": "environment_revision"}
+        value = status()
+        value["Limits"].update(MaxBackupBytes="67108864", MaxStoredBytes="268435456")
+        admission.validate_effective_backup_limits(value, epoch)
+        admission.validate_effective_backup_limits(status(), {"version": 1})
+        for field, changed in (("MaxBackupBytes", "8589934592"), ("MaxStoredBytes", "34359738368"),
+                               ("MaxBackupBytes", 67108864), ("MaxStoredBytes", 268435456)):
+            candidate = copy.deepcopy(value)
+            candidate["Limits"][field] = changed
+            with self.assertRaises(admission.AdmissionError):
+                admission.validate_effective_backup_limits(candidate, epoch)
+
     def test_v2_input_selects_epoch_without_legacy_runtime_pins(self):
         value, *_ = epoch_fixture()
         admission.validate_input(value)

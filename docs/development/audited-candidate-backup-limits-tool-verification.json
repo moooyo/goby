@@ -1,0 +1,36 @@
+{
+  "kind": "audited-candidate-backup-limits-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T09:49:06.553370+00:00",
+  "sourcePins": {
+    "audited-candidate-runtime.py": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66",
+    "revise-audited-candidate-backup-limits.py": "960eb8d7ff06912ad5d6a59f9814d75b72efa31b80bb7529ec958e19665cca61",
+    "test-revise-audited-candidate-backup-limits.py": "4fdf297865db911e1a95b8b76eed2dd5458c75ceaff1edc570d84c775d23bc46",
+    "transition-audited-candidate.py": "5f0956adcadfb63711a141dd850b4ce39dd763f39f71cf26cc26c55934ce404e",
+    "test-audited-candidate-runtime.py": "eaac32d51f30d64e4266cf5b26e78a02d5ac6b80e46835c153077abca6784f06"
+  },
+  "compileChecksPassed": 5,
+  "checks": [
+    {
+      "label": "revision",
+      "exitCode": 0,
+      "testsRun": 5,
+      "passed": true,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "3872f5a85da677f909ec5c55a5821758c34e2394460567a29f8043b480cc1105"
+    },
+    {
+      "label": "legacy",
+      "exitCode": 0,
+      "testsRun": 7,
+      "passed": true,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "bd8b6e98c3fde35b63ab6d268fdd3a11412f774f5efed5e707ad2bef28c91f16"
+    }
+  ],
+  "passed": true,
+  "serviceActions": 0,
+  "sqlQueries": 0,
+  "httpRequests": 0,
+  "productBinaryChanged": false
+}

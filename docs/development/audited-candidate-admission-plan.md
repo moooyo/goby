@@ -2,19 +2,22 @@
 
 Status: the isolated candidate is seeded, and live admission is paused under the
 [current execution plan](../planning/current-execution-plan.md). The cancellation
-fix must finish full verification and one owned runtime transition must close
-before admission v2 can run. Admission01 and admission02 are consumed failures;
-admission03 has not started. No candidate has been admitted. Remote verification
-uses `ssh test-env`.
+fix passed full verification and its single binary transition closed. Admission03
+then failed at backup scratch capacity and is closed, along with admission01/02.
+One explicit environment revision must close before a new admission scope runs.
+No candidate has been admitted. Remote verification uses `ssh test-env`.
 
 ## Selected product and existing evidence
 
 The selected admission target adds the ready-plan cancellation fix to R01-R21
 and diagnostic commit `a9c541a`. Its frozen archive is
 `b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b`.
-Its full race verification and build are still running. A completed full report,
-source manifest and binary must be bound by the subsequent runtime epoch;
-the initial candidate build is not the new admission target.
+Its [full race verification and build](restore-cancellation-full-verification.json)
+passed 2,264 tests across 25 packages. The
+[closed binary transition](audited-candidate-cancellation-transition.json) installed
+`477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
+The upcoming capacity-profile revision preserves that binary, full report and
+source manifest; it does not require a new Go verification run.
 
 The earlier [diagnostic verification](exit-diagnostics-full-verification.json) passed
 2,262 tests across 25 packages with race instrumentation and a Linux build.
@@ -35,7 +38,7 @@ The existing isolated runner at
 `/opt/goby-test/audit-fixes-upload-bd962cdf0722/verify-isolated.py` can create fresh
 private network/mount/PostgreSQL scopes for `pure`, `target` and `full` modes.
 Its exact bytes are bound by the [reboot baseline](resumed-delivery-reboot-baseline.json).
-The current cancellation-fix verification reuses it unchanged in a fresh scope;
+The completed cancellation-fix verification reused it unchanged in a fresh scope;
 do not reopen its old runs.
 It supports `cmd` packages, runs packages serially, reserves recoverydb for last,
 retains failures and verifies its own PostgreSQL/process cleanup. Its private
@@ -121,12 +124,30 @@ Independent runtime inspection and the one-time seed are complete. Admission01
 stopped during preflight with zero HTTP requests. Admission02 stopped at its
 overview assertion and revoked its one new administrator session, with same-token
 401 proof. Neither attempt created a backup or restore plan; both failure scopes
-remain closed. Do not use admission03 to repeat their operations on the old binary.
+remain closed.
 
-After the b712 full gate passes, one transition replaces the existing candidate
-binary while preserving seeded data and PostgreSQL continuity. Its closed epoch
+The b712 binary transition preserved seeded data and PostgreSQL continuity.
+Its closed epoch
 records the current full report, source manifest, installed binary, processes and
-lease. Admission input version 2 selects `runtimeEpoch`, `seedRuntimeBinding`,
+lease. Admission03 completed authentication and storage checks, then its first
+backup failed with `capacity_exceeded`: the default 8 GiB scratch reservation
+exceeded the available filesystem space. Its
+[failure closeout](audited-candidate-admission03-failure-closeout.json) confirms
+36 normal and six cleanup requests, all three new sessions revoked, no restore,
+and exact preservation of previous rows and the other 32 tables. Preserve the
+current six revoked sessions, three devices and the failed zero-byte generated
+object/create operation. The recovery database remains empty; do not resume 03.
+
+The [small-fixture capacity correction](audited-candidate-backup-capacity.md)
+adds `GOBY_BACKUP_MAX_OBJECT_BYTES=67108864` and
+`GOBY_BACKUP_MAX_TOTAL_BYTES=268435456`, retaining
+`GOBY_BACKUP_MIN_FREE_BYTES=67108864`. One atomic environment replacement and
+candidate restart must produce an `environment_revision` epoch linked to its
+previous binary epoch. Current source/binary, PostgreSQL and owned data remain
+unchanged. The existing backup status request must confirm effective decimal
+limits `67108864` and `268435456`; no extra HTTP request or budget is added.
+
+Admission input version 2 selects `runtimeEpoch`, `seedRuntimeBinding`,
 `runtimeHelper` and the matching `compiledCatalog`, together with its own helper,
 run ID, output and budgets. It derives current source authority from the epoch.
 The original seed, its executor and its business mappings remain separate
@@ -134,7 +155,7 @@ provenance; do not rewrite old seed source/process fields to describe the new
 runtime. Transition validation retains the admission02 helper as its historical
 pure validator, while the admission v2 executable has a separate source pin.
 
-Freeze the v2 admission input only after that epoch closes. Use at most 120 HTTP
+Freeze the next v2 admission input only after the environment epoch closes. Use at most 120 HTTP
 requests and 15 minutes: 110 normal requests within 720 seconds and ten cleanup
 requests within the remaining 180 seconds. Observe one continuous
 ten-minute stability window with eleven health/readiness pairs, fixed process
