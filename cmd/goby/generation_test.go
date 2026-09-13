@@ -8,12 +8,15 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/database"
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/recovery"
 )
 
@@ -131,11 +134,140 @@ func TestGenerationCloseTimeoutRetainsAndJoinsItsSingleCleanupPipeline(t *testin
 func TestGenerationErrorsRetainOnlySafeClassificationAndSuppressPanicPayloads(t *testing.T) {
 	const secret = "postgres://private-user:private-secret@private.invalid/private-path"
 	err := generationError("generation initialization failed", fmt.Errorf("%s: %w", secret, database.ErrLeaseUnavailable))
-	if !errors.Is(err, database.ErrLeaseUnavailable) || err.Error() != "generation initialization failed\n"+database.ErrLeaseUnavailable.Error() {
+	if !errors.Is(err, database.ErrLeaseUnavailable) || diagnostics.ErrorClass(err) != "database_lease_unavailable" || err.Error() != "database_lease_unavailable" {
 		t.Fatal("generation failure lost its safe classification or retained private connection data")
 	}
 	err = generationCall("generation cleanup failed", func() error { panic(secret) })
-	if err == nil || err.Error() != "generation cleanup failed" {
+	if err == nil || diagnostics.ErrorClass(err) != "panic" || err.Error() != "panic" {
 		t.Fatal("generation cleanup exposed a panic payload")
+	}
+}
+
+type generationHostileError struct{ calls *int }
+
+func (err generationHostileError) Error() string {
+	*err.calls++
+	panic("private-error-payload")
+}
+
+func (err generationHostileError) Unwrap() error {
+	*err.calls++
+	panic("private-unwrap-payload")
+}
+
+func (err generationHostileError) Is(error) bool {
+	*err.calls++
+	panic("private-is-payload")
+}
+
+func TestGenerationSanitizationDoesNotExecuteUnknownErrorsAndKeepsSentinelPriority(t *testing.T) {
+	calls := 0
+	hostile := generationHostileError{calls: &calls}
+	err := generationError("fixed generation stage", errors.Join(hostile, database.ErrLeaseUnavailable, context.Canceled))
+	if calls != 0 || !errors.Is(err, context.Canceled) || errors.Is(err, database.ErrLeaseUnavailable) {
+		t.Fatal("safe sentinel extraction changed its priority or evaluated an unknown error")
+	}
+	err = generationCall("fixed cleanup stage", func() error { panic(hostile) })
+	if calls != 0 || diagnostics.ErrorClass(err) != "panic" {
+		t.Fatal("panic classification evaluated or retained its payload")
+	}
+}
+
+type generationFailureListener struct {
+	panicOnAccept bool
+	closed        atomic.Bool
+}
+
+func (listener *generationFailureListener) Accept() (net.Conn, error) {
+	if listener.panicOnAccept {
+		panic("private-accept-panic")
+	}
+	return nil, errors.New("private-accept-failure")
+}
+
+func (listener *generationFailureListener) Addr() net.Addr {
+	return &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 12345}
+}
+
+func (listener *generationFailureListener) Close() error {
+	listener.closed.Store(true)
+	return nil
+}
+
+func TestGenerationStartRetainsFailureClassBeforePublishingResult(t *testing.T) {
+	databaseURL := os.Getenv("GOBY_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("GOBY_TEST_DATABASE_URL is required for the generation lease regression")
+	}
+	// The deployment lease covers the test database, so these cases stay serial.
+	for _, test := range []struct {
+		class         string
+		panicOnAccept bool
+	}{{"listener_failed", false}, {"panic", true}} {
+		t.Run(test.class, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			t.Cleanup(cancel)
+			pool, err := pgxpool.New(ctx, databaseURL)
+			if err != nil {
+				t.Fatal("create isolated generation test database pool")
+			}
+			t.Cleanup(pool.Close)
+			lease, err := database.AcquireLease(ctx, pool)
+			if err != nil {
+				t.Fatal("acquire isolated generation test deployment lease")
+			}
+			listener := &generationFailureListener{panicOnAccept: test.panicOnAccept}
+			g := generationTestReserved(listener)
+			g.pool, g.lease = pool, lease
+			cancelled, release := make(chan struct{}), make(chan struct{})
+			var cancelOnce, releaseOnce sync.Once
+			releaseCancel := func() { releaseOnce.Do(func() { close(release) }) }
+			originalCancel := g.cancel
+			g.cancel = func() {
+				originalCancel()
+				cancelOnce.Do(func() {
+					close(cancelled)
+					<-release
+				})
+			}
+			t.Cleanup(func() {
+				releaseCancel()
+				closeCtx, stop := context.WithTimeout(context.Background(), 5*time.Second)
+				defer stop()
+				if err := g.Close(closeCtx); err != nil {
+					t.Error("complete generation cleanup after the Serve regression")
+				}
+			})
+			result := g.Start()
+			select {
+			case <-cancelled:
+			case <-time.After(5 * time.Second):
+				t.Fatal("Serve did not cancel the generation after its listener failure")
+			}
+			select {
+			case <-result:
+				t.Fatal("Serve published its result before the blocked cancellation returned")
+			default:
+			}
+			cause := errors.New("active application generation stopped")
+			observed := g.failureError(cause)
+			if g.ctx.Err() == nil || !errors.Is(observed, cause) || diagnostics.ErrorClass(observed) != test.class {
+				t.Fatal("the cancellation path lost the actual Serve failure class or control cause")
+			}
+			releaseCancel()
+			select {
+			case err := <-result:
+				if diagnostics.ErrorClass(err) != test.class {
+					t.Fatal("the Serve result and cancellation path disagree on the safe failure class")
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Serve did not publish its result after cancellation was released")
+			}
+			closeCtx, stop := context.WithTimeout(context.Background(), 5*time.Second)
+			defer stop()
+			if err := g.Close(closeCtx); err != nil || !listener.closed.Load() {
+				t.Fatal("the failed generation did not completely close its listener and resources")
+			}
+		})
 	}
 }

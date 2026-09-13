@@ -1,10 +1,12 @@
 # Current execution plan
 
 Reviewed on 2026-09-13 against product commit `a623375` and evidence checkpoint
-`8bc7b76`. Status: **planning review complete; implementation, experiments and
-deployment paused by the user's current instruction**. This revision changes
-future work order and gate dependencies. It performs no runtime verification
-and releases no service operation.
+`8bc7b76`. Execution resumed on 2026-09-13 at the user's request. Status:
+**priority 1 complete; priority 2 preparation in progress**. The
+[diagnostic increment](../development/exit-diagnostics-20260913.md) passed 60
+targeted tests and a full 2,262-test/25-package race run with a Linux build.
+The review itself performed no runtime verification or service operation;
+subsequent execution must supply its own evidence and meet the gates below.
 
 This is the current work queue. [Current status](../development/current-status.md)
 records accepted facts; [delivery and verification](delivery-and-verification.md)

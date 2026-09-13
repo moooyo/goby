@@ -1,0 +1,802 @@
+{
+  "archive_sha256": "74247d7584cb750645474deb2a4fc564f5944a32cd9875b2644209d65fbc89df",
+  "existing_services_modified": false,
+  "mode": "target",
+  "recursive_cgroup_empty": true,
+  "scope": "/opt/goby-test/audit-fixes-20260913-20260913T063133Z-e877443cbffb",
+  "status": "passed",
+  "terminal_unit": {
+    "ActiveState": "inactive",
+    "ExecMainStatus": "0",
+    "LoadState": "not-found",
+    "MainPID": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "unit": "goby-audit-fixes-20260913-e877443cbffb.service",
+  "unit_exit_code": 0,
+  "worker": {
+    "cleanup": {
+      "only_worker_process_remains": true,
+      "owned_postgres_stopped": true,
+      "private_bind_removed": true,
+      "source_unchanged": true
+    },
+    "commands": [
+      {
+        "argv": [
+          "/opt/goby-toolchains/go1.27.1/bin/go",
+          "version"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "go-version",
+        "seconds": 0.066,
+        "stderr": "logs/001-go-version.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/001-go-version.stdout",
+        "stdout_sha256": "f554cfdb85411c2bb1d503df3f53dfbad1f753eb8271938833166a5d26a7547c"
+      },
+      {
+        "argv": [
+          "/opt/goby-toolchains/go1.27.1/bin/go",
+          "list",
+          "./cmd/goby",
+          "./internal/diagnostics"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "list-packages",
+        "seconds": 0.615,
+        "stderr": "logs/002-list-packages.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/002-list-packages.stdout",
+        "stdout_sha256": "8cdfb355b3855a8c2155679d850c8bb0666b608a5140e4c7e34004f0b500ffc8"
+      },
+      {
+        "argv": [
+          "/usr/bin/mount",
+          "--bind",
+          "/opt/goby-test/audit-fixes-20260913-20260913T063133Z-e877443cbffb/pg",
+          "/tmp/goby-audit-pg-e877443cbffb"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "bind-private-pg",
+        "seconds": 0.002,
+        "stderr": "logs/003-bind-private-pg.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/003-bind-private-pg.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/postgres",
+          "--version"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "postgres-version",
+        "seconds": 0.009,
+        "stderr": "logs/004-postgres-version.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/004-postgres-version.stdout",
+        "stdout_sha256": "bff7373d2309d3b3cdff08f03dfe8fed4fe20c3039a5e11d14526964b2fcca39"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/initdb",
+          "-D",
+          "/tmp/goby-audit-pg-e877443cbffb/data",
+          "--username=postgres",
+          "--encoding=UTF8",
+          "--locale=C.UTF-8",
+          "--auth-local=peer",
+          "--auth-host=scram-sha-256",
+          "--no-instructions"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "initdb",
+        "seconds": 0.367,
+        "stderr": "logs/005-initdb.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/005-initdb.stdout",
+        "stdout_sha256": "5a62833953a40394630eeda476a8c1acb31944e2b2ab2d6e37599adb5ba7981c"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/pg_ctl",
+          "-D",
+          "/tmp/goby-audit-pg-e877443cbffb/data",
+          "-l",
+          "/tmp/goby-audit-pg-e877443cbffb/postgres.log",
+          "-w",
+          "-t",
+          "30",
+          "start"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "postgres-start",
+        "seconds": 0.115,
+        "stderr": "logs/006-postgres-start.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/006-postgres-start.stdout",
+        "stdout_sha256": "66afd0411ccc09366e99fdd99b85f21899c8d2d064f5835126859618802153ad"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "cluster-identity",
+        "seconds": 0.008,
+        "stderr": "logs/007-cluster-identity.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/007-cluster-identity.stdout",
+        "stdout_sha256": "c2281b4563191d19227513e40258190340c93a060ad9530a0815cf73c266f5ed"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-role-goby_audit_tests",
+        "seconds": 0.008,
+        "stderr": "logs/008-create-role-goby_audit_tests.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/008-create-role-goby_audit_tests.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-db-goby_audit_tests",
+        "seconds": 0.032,
+        "stderr": "logs/009-create-db-goby_audit_tests.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/009-create-db-goby_audit_tests.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "db-access-goby_audit_tests",
+        "seconds": 0.009,
+        "stderr": "logs/010-db-access-goby_audit_tests.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/010-db-access-goby_audit_tests.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-role-goby_backup_audit_source",
+        "seconds": 0.008,
+        "stderr": "logs/011-create-role-goby_backup_audit_source.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/011-create-role-goby_backup_audit_source.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-db-goby_backup_audit_source",
+        "seconds": 0.032,
+        "stderr": "logs/012-create-db-goby_backup_audit_source.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/012-create-db-goby_backup_audit_source.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "db-access-goby_backup_audit_source",
+        "seconds": 0.008,
+        "stderr": "logs/013-db-access-goby_backup_audit_source.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/013-db-access-goby_backup_audit_source.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-role-goby_backup_audit_target",
+        "seconds": 0.009,
+        "stderr": "logs/014-create-role-goby_backup_audit_target.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/014-create-role-goby_backup_audit_target.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "create-db-goby_backup_audit_target",
+        "seconds": 0.065,
+        "stderr": "logs/015-create-db-goby_backup_audit_target.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/015-create-db-goby_backup_audit_target.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "db-access-goby_backup_audit_target",
+        "seconds": 0.017,
+        "stderr": "logs/016-db-access-goby_backup_audit_target.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/016-db-access-goby_backup_audit_target.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/usr/lib/postgresql/17/bin/psql",
+          "-X",
+          "--no-password",
+          "-h",
+          "/tmp/goby-audit-pg-e877443cbffb/socket",
+          "-p",
+          "15432",
+          "-U",
+          "postgres",
+          "-d",
+          "postgres",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-A",
+          "-t",
+          "-q"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "role-check",
+        "seconds": 0.008,
+        "stderr": "logs/017-role-check.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/017-role-check.stdout",
+        "stdout_sha256": "e96c198a3aa8a14e6d93248682a73fd2044738f9f920e52b7bf4c3452779045e"
+      },
+      {
+        "argv": [
+          "/opt/goby-toolchains/go1.27.1/bin/go",
+          "test",
+          "-race",
+          "-p=1",
+          "-parallel=1",
+          "-count=1",
+          "-timeout=570s",
+          "-json",
+          "github.com/moooyo/goby/cmd/goby"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "go-test",
+        "seconds": 38.876,
+        "stderr": "logs/018-go-test.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/018-go-test.stdout",
+        "stdout_sha256": "6bc6a206e7b6c3f386249fd61c2eabdfa98888ecfa49cd6d834c308b937efef9"
+      },
+      {
+        "argv": [
+          "/opt/goby-toolchains/go1.27.1/bin/go",
+          "test",
+          "-race",
+          "-p=1",
+          "-parallel=1",
+          "-count=1",
+          "-timeout=570s",
+          "-json",
+          "github.com/moooyo/goby/internal/diagnostics"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "go-test",
+        "seconds": 2.321,
+        "stderr": "logs/019-go-test.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/019-go-test.stdout",
+        "stdout_sha256": "be952d2c2b45592594eaa9355ebed9b71797f0259fc734e2efabff00070c815e"
+      },
+      {
+        "argv": [
+          "/usr/bin/umount",
+          "/tmp/goby-audit-pg-e877443cbffb"
+        ],
+        "exit_code": 0,
+        "interrupted_or_timed_out": false,
+        "label": "unbind-private-pg",
+        "seconds": 0.004,
+        "stderr": "logs/020-unbind-private-pg.stderr",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout": "logs/020-unbind-private-pg.stdout",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "expected_packages": [
+      "github.com/moooyo/goby/cmd/goby",
+      "github.com/moooyo/goby/internal/diagnostics"
+    ],
+    "mode": "target",
+    "packages": [
+      {
+        "exit_code": 0,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/cmd/goby",
+        "result": "pass",
+        "skipped": 0,
+        "top_level_passes": 19
+      },
+      {
+        "exit_code": 0,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/diagnostics",
+        "result": "pass",
+        "skipped": 0,
+        "top_level_passes": 41
+      }
+    ],
+    "postgres": {
+      "data_in_scope": "pg/data",
+      "port": 15432,
+      "port_scope": "private-network-namespace",
+      "process": {
+        "cmdline": [
+          "/usr/lib/postgresql/17/bin/postgres",
+          "-D",
+          "/tmp/goby-audit-pg-e877443cbffb/data"
+        ],
+        "exe": "/usr/lib/postgresql/17/bin/postgres",
+        "network_namespace": "net:[4026532542]",
+        "pid": 322832,
+        "start_ticks": 77881
+      },
+      "system_identifier": "7684903825433328904"
+    },
+    "retained_scope": "All owned logs, source, cache, and stopped PostgreSQL data remain; the scope cannot be reused.",
+    "runtime": {
+      "mount_namespace": "mnt:[4026532599]",
+      "network_namespace": "net:[4026532542]",
+      "unit": {
+        "ControlGroup": "/system.slice/goby-audit-fixes-20260913-e877443cbffb.service",
+        "MainPID": "322797",
+        "PrivateMounts": "yes",
+        "PrivateNetwork": "yes",
+        "PrivateTmp": "yes",
+        "ProtectSystem": "strict",
+        "Restart": "no"
+      }
+    },
+    "scope": "/opt/goby-test/audit-fixes-20260913-20260913T063133Z-e877443cbffb",
+    "status": "passed",
+    "test_counts": {
+      "failed": 0,
+      "passed": 60,
+      "skipped": 0
+    },
+    "tests": {
+      "failed": [],
+      "passed": [
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationPendingAcceptanceNeverStartsItsReservedListener"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationStopServingClosesAnUnservedReservationWithoutCancellingManagerLifetime"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationCloseTimeoutRetainsAndJoinsItsSingleCleanupPipeline"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationErrorsRetainOnlySafeClassificationAndSuppressPanicPayloads"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationSanitizationDoesNotExecuteUnknownErrorsAndKeepsSentinelPriority"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestGenerationStartRetainsFailureClassBeforePublishingResult"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestRunSanitizesBootstrapFailuresAndDefaultLogging"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestHTTPServerErrorLogSanitizesFormattedMessages"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestStoppedDiagnosticsRetainSafeGenerationFailureClasses"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIPassphraseFilesPreserveExactBytesAndRejectUnsafeInputs"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIPassphraseStdinCancellationClosesOnlyItsOwnedInput"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIArchiveInputRejectsSymlinksDirectoriesEmptyAndNonregularFiles"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIRejectsInvalidInputBeforeSecretsOrRecoveryStorage"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIRequiresExplicitOfflineActivationConsentBeforeOpeningStorage"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIHelpAndServeDispatchHaveNoRecoverySideEffects"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIErrorProjectionNeverReturnsPrivateWrappedDetails"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLICompletedActivationReplayReturnsCurrentStateWithoutPreparingAgain"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIActivationReplayRejectsAnotherPendingOperationBeforePreparation"
+        },
+        {
+          "package": "github.com/moooyo/goby/cmd/goby",
+          "test": "TestCLIActivationWithoutPendingRejectsIncompleteOrUnrelatedOperations"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestErrorTraversalUsesOnlyKnownConcreteWrappers"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestErrorTraversalHandlesNilAndNonComparableValues"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestErrorTraversalBoundsDepthWidthAndCycles"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestWithErrorClassKeepsSafeSentinelsAndRejectsDynamicClasses"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerUnknownEventDropsMessageAndAllAttributes"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerNeverEvaluatesArbitraryValues"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerPreservesGroupBindingOrderAndCopiesAttributes"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerFreezesNestedGroupsAndDropsUnsafeGroupNames"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerRequestAttributeTypesAndRoutes"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerPreservesActivityAndDiagnosticRoutePatterns"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerClassifiesActivityRetentionRetryWithoutErrorText"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerIdentifiersVersionsAndAdministrativeEnums"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerClassifiesOnlyKnownErrorTypesWithoutText"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerBoundsRecordsAndGroupDepth"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerFallbackReceivesSanitizedRecordAndNoProgramCounter"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerContainsFallbackPanicsAndRecursion"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerRejectsRecursiveFallbackEnabled"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestHandlerPersistsTheSameSafeRecordAsFallback"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRotationRetentionAndRestart"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreDayBoundaryAndAgeRetention"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRejectsForeignDirectoriesAndUnsafeAliases"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreIgnoresUnregisteredFiles"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRejectsReplacementAndSpecialFiles"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRejectsHardlinkAddedToActiveFile"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreProcessLockAndReplacedLock"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestSnapshotPinsFixedPrefixAcrossAppendAndRotation"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestSnapshotDoesNotIncludeLaterActiveWrites"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestSnapshotReaderLimitCancellationAndStoreClosure"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestSnapshotCloseWaitsForCancellationReaderSlotRelease"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreCloseWaitsForConcurrentSnapshotRelease"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestSnapshotRepeatedClosePreservesFailure"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreLinesPaginationAndInputBounds"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRejectsInvalidRecordWithoutDegrading"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStorePartialWriteAndDiskReserveFailure"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRecoversIncompleteActiveRecord"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRecoversPublishedRegistryAfterDirectorySyncFailure"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRecoversInterruptedRetentionDeletion"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRecoversInitialMarkerPublicationLink"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreRejectsExternalMarkerHardlink"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestStoreConcurrentWritesAndClose"
+        },
+        {
+          "package": "github.com/moooyo/goby/internal/diagnostics",
+          "test": "TestTaskRetryDiagnosticsRetainSafeFailureIdentity"
+        }
+      ],
+      "skipped": []
+    }
+  },
+  "worker_report_sha256": "e3a4cec0b654ed84857cdf6c810811e5952442f2d8526179bd9d6df407863da3"
+}

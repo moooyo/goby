@@ -6,15 +6,31 @@ an old deployment paragraph elsewhere as a fresh process observation.
 
 ## Current plan
 
-Execution is paused for the 2026-09-13 planning review. The revised
+Execution resumed on 2026-09-13 after the planning review. The revised
 [execution plan](../planning/current-execution-plan.md) prioritizes bounded exit
 diagnosis, an audited candidate, core original-client regression and a new main
 upgrade contract. Global NextUp and automatic-refresh research are parked until
 new discriminating evidence justifies another bounded experiment. Their feature
-gates and complete M2-M6 requirements remain open. This review changes no source
-code, runtime or historical verification result.
+gates and complete M2-M6 requirements remain open. Priority 1 is verified;
+priority 2, independent candidate preparation, is in progress. No new candidate
+admission or main deployment is claimed by this status update.
+
+The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
+[baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate
+and source32 primary inactive, with their original installed bytes retained;
+PostgreSQL 17 main was active. Earlier PIDs and transient units are historical.
+No old service was started and no database state was re-attested by this check.
 
 ## Latest increment
+
+The [process-exit diagnostic increment](exit-diagnostics-20260913.md) passed 60
+targeted tests and a complete 2,262-test race run across all 25 packages, with
+zero failures/skips and a Linux amd64 build. Known lease, panic and listener
+failure classes now survive final shutdown wrappers. The original exit cause
+remains unresolved. A fresh frontend build contains 57 assets, with all 64
+inputs matching the earlier 41-test mocked-API verification. These artifacts
+are selected for the [new candidate](audited-candidate-admission-plan.md);
+they are not yet a deployment or new original-client acceptance.
 
 The resumed round closed after reference matrix07, two bounded original-client
 discoveries, a separate Goby comparison contract and independently verified
@@ -40,12 +56,12 @@ The accepted evidence covers 2,255 top-level Go tests across all 25 packages wit
 race instrumentation: 24 complete passing package runs, plus the server package's
 full run and one explicitly recorded fresh retry after a fixture timeout during
 host memory pressure. The 41 mocked-API browser tests, frontend build and Linux
-amd64 build passed. The containing Git commit records this verified increment
-on main; deployment remains pending.
+amd64 build passed. The remediation was published as `a623375`; deployment
+remains pending.
 Product fixes and regression checks do not establish a new reference matrix,
 original-client acceptance, or production deployment.
 
-## Accepted deployment checkpoint
+## Last accepted deployment before the host reboot
 
 The installed candidate is source55/schema28 and was independently verified
 ready at `2026-09-13T06:01:44Z` as PID1814145, invocation

@@ -1,5 +1,19 @@
 # Development handoff
 
+Priority 1 is now verified: [exit diagnostics](exit-diagnostics-20260913.md),
+60 targeted tests, a single full 2,262-test/25-package race run and Linux build,
+plus matching frontend assets. Priority 2 preparation is in progress; no new
+candidate or main deployment has occurred. Use [current status](current-status.md)
+for the selected artifact and remaining gates.
+
+Execution resumed on 2026-09-13 under the
+[revised plan](../planning/current-execution-plan.md), starting with bounded exit
+diagnosis and audited product selection. SSH recovered after a host reboot at
+`2026-09-13T06:18:45Z`; the [fresh baseline](resumed-delivery-reboot-baseline.json)
+records inactive source55/primary services and retained installed binaries.
+Do not reuse pre-reboot process identities or start consumed experiment units.
+Current execution and verification results belong in the current-status index.
+
 Current planning checkpoint, 2026-09-13: execution is paused at the user's
 request. The [revised execution plan](../planning/current-execution-plan.md)
 is the sole current queue: bounded failure diagnosis, audited candidate

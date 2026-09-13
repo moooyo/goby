@@ -1,0 +1,78 @@
+{
+  "kind": "resumed-delivery-reboot-baseline",
+  "capturedAt": "2026-09-13T06:21:00.338598+00:00",
+  "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+  "bootTimeUtc": "2026-09-13T06:18:45+00:00",
+  "services": {
+    "goby-client-m3e.service": {
+      "MainPID": "0",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "goby-client-m3e.service",
+      "LoadState": "loaded",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "/etc/systemd/system/goby-client-m3e.service",
+      "UnitFileState": "static",
+      "InvocationID": ""
+    },
+    "goby-foundation-test.service": {
+      "MainPID": "0",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "goby-foundation-test.service",
+      "LoadState": "loaded",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "/etc/systemd/system/goby-foundation-test.service",
+      "UnitFileState": "static",
+      "InvocationID": ""
+    },
+    "postgresql@17-main.service": {
+      "MainPID": "893",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "postgresql@17-main.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/postgresql@.service",
+      "UnitFileState": "enabled-runtime",
+      "InvocationID": "d4d78ab469054a9f86dbf0ed6e3ccdc4"
+    }
+  },
+  "pins": {
+    "/opt/goby-client-m3e/goby": {
+      "sha256": "6a8c46cdd0dcff56af28f11084eabcf2497daf5ce11ac072eaad7a5dbf486e81",
+      "bytes": 29337989
+    },
+    "/opt/goby-dev/goby": {
+      "sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+      "bytes": 28172723
+    },
+    "/etc/systemd/system/goby-client-m3e.service": {
+      "sha256": "ee7a5f0c9912fb1a109beebadcaf3e6d0734705831685f83f64160dd2195061c",
+      "bytes": 737
+    },
+    "/etc/systemd/system/goby-foundation-test.service": {
+      "sha256": "91a9b0e55baf053db25281236d0d7c8c055f895b093d4474d9c27e888610117d",
+      "bytes": 437
+    },
+    "/opt/goby-test/audit-fixes-upload-bd962cdf0722/verify-isolated.py": {
+      "sha256": "68948da06d24aa210bad08a8cb1300a071cdaa90561919a3f54ea906d8511edc",
+      "bytes": 33139
+    },
+    "/opt/goby-test/audit-fixes-upload-bd962cdf0722/frontend-02-report.json": {
+      "sha256": "2462ba8cdaffcf2f00939f784f21b867ad1a8fad6cdf99924dec2d9f60926c42",
+      "bytes": 736
+    }
+  },
+  "serviceMutations": 0,
+  "httpRequests": 0,
+  "databaseReadsOrWrites": 0,
+  "historicalDatabasePreservationRechecked": false,
+  "notes": [
+    "Earlier process identities are historical after the host reboot.",
+    "This baseline does not re-attest historical databases or all evidence roots."
+  ]
+}

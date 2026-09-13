@@ -38,12 +38,13 @@ type generation struct {
 	pendingSwitch   string
 	switchActivated bool
 
-	mu          sync.Mutex
-	started     bool
-	stopping    bool
-	serveResult chan error
-	serveDone   chan struct{}
-	watchDone   chan struct{}
+	mu           sync.Mutex
+	started      bool
+	stopping     bool
+	serveResult  chan error
+	serveDone    chan struct{}
+	watchDone    chan struct{}
+	failureClass string
 
 	stopOnce         sync.Once
 	stopDone         chan struct{}
@@ -76,7 +77,7 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 	defer func() {
 		if recover() != nil {
 			prepared = nil
-			resultErr = errors.New("application generation preparation failed unexpectedly")
+			resultErr = diagnostics.WithErrorClass(errors.New("application generation preparation failed unexpectedly"), "panic")
 		}
 		if prepared == nil {
 			cleanup, cancel := context.WithTimeout(context.Background(), generationShutdownTimeout)
@@ -94,7 +95,7 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 	}
 	if g.lease != nil {
 		if !g.lease.Protects(g.pool) {
-			return nil, database.ErrLeaseUnavailable
+			return nil, generationLeaseError()
 		}
 		g.watchLease()
 	}
@@ -243,6 +244,7 @@ func (g *generation) watchLease() {
 		defer close(g.watchDone)
 		defer func() {
 			if recover() != nil {
+				g.recordFailure(diagnostics.WithErrorClass(errors.New("generation lease watcher stopped unexpectedly"), "panic"))
 				g.cancel()
 			}
 		}()
@@ -256,7 +258,7 @@ func (g *generation) watchLease() {
 
 func (g *generation) checkStartup(ctx context.Context) error {
 	if !g.lease.Protects(g.pool) {
-		return database.ErrLeaseUnavailable
+		return generationLeaseError()
 	}
 	if err := ctx.Err(); err != nil {
 		return err
@@ -288,7 +290,7 @@ func (g *generation) Start() <-chan error {
 	case g.ctx.Err() != nil:
 		err = g.ctx.Err()
 	case !g.lease.Protects(g.pool):
-		err = database.ErrLeaseUnavailable
+		err = generationLeaseError()
 	}
 	if err != nil {
 		g.serveResult <- err
@@ -301,9 +303,10 @@ func (g *generation) Start() <-chan error {
 		var serveErr error
 		defer func() {
 			if recover() != nil {
-				serveErr = errors.New("HTTP generation stopped unexpectedly")
+				serveErr = diagnostics.WithErrorClass(errors.New("HTTP generation stopped unexpectedly"), "panic")
 			}
 			if !errors.Is(serveErr, http.ErrServerClosed) {
+				g.recordFailure(serveErr)
 				g.cancel()
 			}
 			g.serveResult <- serveErr
@@ -316,6 +319,28 @@ func (g *generation) Start() <-chan error {
 		}
 	}()
 	return g.serveResult
+}
+
+// Preserve the safe class before cancellation can win the coordinator's select
+// against the Serve result. The returned control cause and shutdown order stay
+// unchanged, and no raw error or panic payload is retained on the generation.
+func (g *generation) recordFailure(err error) {
+	class := diagnostics.ErrorClass(err)
+	g.mu.Lock()
+	if g.failureClass == "" || g.failureClass == "unclassified" {
+		g.failureClass = class
+	}
+	g.mu.Unlock()
+}
+
+func (g *generation) failureError(cause error) error {
+	g.mu.Lock()
+	class := g.failureClass
+	g.mu.Unlock()
+	if class == "" {
+		return cause
+	}
+	return diagnostics.WithErrorClass(cause, class)
 }
 
 // StopServing stops ingress and closes ordinary HTTP connections. It leaves the
@@ -451,19 +476,44 @@ func generationError(stage string, err error) error {
 	if err == nil {
 		return nil
 	}
+	class := diagnostics.ErrorClass(err)
+	safe := error(errors.New(stage))
 	for _, known := range []error{context.Canceled, context.DeadlineExceeded, database.ErrLeaseBusy, database.ErrLeaseUnavailable,
 		http.ErrServerClosed, recovery.ErrInvalid, recovery.ErrUnavailable, recovery.ErrConflict, recovery.ErrBusy} {
-		if errors.Is(err, known) {
-			return errors.Join(errors.New(stage), known)
+		if diagnostics.ErrorMatches(err, known) {
+			safe = errors.Join(safe, known)
+			if class == "unclassified" {
+				switch known {
+				case database.ErrLeaseBusy:
+					class = "database_lease_busy"
+				case database.ErrLeaseUnavailable:
+					class = "database_lease_unavailable"
+				case http.ErrServerClosed:
+					class = "closed"
+				}
+			}
+			break
 		}
 	}
-	return errors.New(stage)
+	if class == "unclassified" {
+		switch stage {
+		case "HTTP listener reservation failed":
+			class = "listener_start_failed"
+		case "HTTP generation listener failed":
+			class = "listener_failed"
+		}
+	}
+	return diagnostics.WithErrorClass(safe, class)
+}
+
+func generationLeaseError() error {
+	return diagnostics.WithErrorClass(database.ErrLeaseUnavailable, "database_lease_unavailable")
 }
 
 func generationCall(stage string, call func() error) (result error) {
 	defer func() {
 		if recover() != nil {
-			result = errors.New(stage)
+			result = diagnostics.WithErrorClass(errors.New(stage), "panic")
 		}
 	}()
 	return generationError(stage, call())

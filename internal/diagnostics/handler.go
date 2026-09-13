@@ -4,16 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
-	"io/fs"
 	"log/slog"
-	"net"
-	"net/url"
-	"os"
-	"os/exec"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -266,7 +259,7 @@ func freezeDiagnosticValue(attr slog.Attr) (slog.Attr, bool) {
 	case "error":
 		if value.Kind() == slog.KindAny {
 			if err, ok := value.Any().(error); ok {
-				return slog.String("error_class", diagnosticErrorClass(err, 0)), true
+				return slog.String("error_class", ErrorClass(err)), true
 			}
 		}
 	case "error_class":
@@ -359,85 +352,10 @@ func diagnosticIDAllowed(value string) bool {
 	return true
 }
 
-// Only known standard wrappers are traversed, with a strict depth limit.
-// errors.Is/As and Unwrap are intentionally avoided because they execute
-// methods on arbitrary error implementations.
-func diagnosticErrorClass(err error, depth int) string {
-	if err == nil {
-		return "none"
-	}
-	if depth >= maxDiagnosticDepth {
-		return "unclassified"
-	}
-	switch err {
-	case context.Canceled:
-		return "cancelled"
-	case context.DeadlineExceeded:
-		return "deadline_exceeded"
-	case io.EOF:
-		return "eof"
-	case io.ErrUnexpectedEOF:
-		return "unexpected_eof"
-	case fs.ErrNotExist:
-		return "not_found"
-	case fs.ErrPermission:
-		return "permission_denied"
-	case fs.ErrClosed:
-		return "closed"
-	}
-	switch typed := err.(type) {
-	case *fs.PathError:
-		if typed != nil {
-			return diagnosticErrorClass(typed.Err, depth+1)
-		}
-	case *os.LinkError:
-		if typed != nil {
-			return diagnosticErrorClass(typed.Err, depth+1)
-		}
-	case *os.SyscallError:
-		if typed != nil {
-			return diagnosticErrorClass(typed.Err, depth+1)
-		}
-	case *net.OpError:
-		if typed != nil {
-			return diagnosticErrorClass(typed.Err, depth+1)
-		}
-	case *url.Error:
-		if typed != nil {
-			return diagnosticErrorClass(typed.Err, depth+1)
-		}
-	case *net.DNSError:
-		if typed != nil && typed.IsTimeout {
-			return "deadline_exceeded"
-		}
-		return "network_error"
-	case *exec.ExitError:
-		return "process_exit"
-	case syscall.Errno:
-		switch typed {
-		case syscall.ENOENT:
-			return "not_found"
-		case syscall.EACCES, syscall.EPERM:
-			return "permission_denied"
-		case syscall.ENOSPC:
-			return "no_space"
-		case syscall.ECONNREFUSED:
-			return "connection_refused"
-		case syscall.ECONNRESET, syscall.EPIPE:
-			return "connection_closed"
-		case syscall.ETIMEDOUT:
-			return "deadline_exceeded"
-		case syscall.EIO:
-			return "io_error"
-		}
-		return "system_error"
-	}
-	return "unclassified"
-}
-
 func diagnosticErrorClassAllowed(value string) bool {
 	switch value {
-	case "none", "cancelled", "deadline_exceeded", "eof", "unexpected_eof", "not_found", "permission_denied", "closed", "network_error", "process_exit", "no_space", "connection_refused", "connection_closed", "io_error", "system_error", "unclassified":
+	case "none", "cancelled", "deadline_exceeded", "eof", "unexpected_eof", "not_found", "permission_denied", "closed", "network_error", "process_exit", "no_space", "connection_refused", "connection_closed", "io_error", "system_error", "unclassified",
+		"panic", "database_lease_busy", "database_lease_unavailable", "listener_start_failed", "listener_failed", "address_in_use":
 		return true
 	}
 	return false

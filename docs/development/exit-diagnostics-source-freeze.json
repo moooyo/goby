@@ -1,0 +1,36 @@
+{
+  "kind": "exit-diagnostics-source-freeze",
+  "capturedAt": "2026-09-13T06:31:11.124516+00:00",
+  "baseCommit": "79ba07f",
+  "formatHost": "test-env",
+  "changedFiles": [
+    "cmd/goby/main.go",
+    "cmd/goby/generation.go",
+    "cmd/goby/main_test.go",
+    "cmd/goby/generation_test.go",
+    "internal/diagnostics/handler.go",
+    "internal/diagnostics/errors.go",
+    "internal/diagnostics/errors_test.go"
+  ],
+  "beforeFormat": {
+    "cmd/goby/main.go": "9ee34659b6b8db2be1c9964e3313e5f9062c8c81f96459d784544eeaa9ce8bf6",
+    "cmd/goby/generation.go": "bb877c1ad3abc30a8b5982b985d52ec721bb286e6bbe412424f4d1e38aeb733c",
+    "cmd/goby/main_test.go": "37439f6d46a45c17beaf6293136aa44248f5ce16e20410e7c86be680fe7ce6ea",
+    "cmd/goby/generation_test.go": "facc4e607c1a58504d1043a747b4ce082d424363bac10508d846d83f5a844f90",
+    "internal/diagnostics/handler.go": "89cac4bcfdbe671059d557500160dd825dd60f8ab040ea6ae83aa0e15462da8f",
+    "internal/diagnostics/errors.go": "0bd3c84b00106be7f9e7716c46126ce1fa2037c30a952bbe15b18b35a5201e74",
+    "internal/diagnostics/errors_test.go": "b4a3cde4860ab6210c6d67424f2ab9ff3b7c6776e457ef692e7ead68bf6fc3cb"
+  },
+  "afterFormat": {
+    "cmd/goby/main.go": "9ee34659b6b8db2be1c9964e3313e5f9062c8c81f96459d784544eeaa9ce8bf6",
+    "cmd/goby/generation.go": "bb877c1ad3abc30a8b5982b985d52ec721bb286e6bbe412424f4d1e38aeb733c",
+    "cmd/goby/main_test.go": "37439f6d46a45c17beaf6293136aa44248f5ce16e20410e7c86be680fe7ce6ea",
+    "cmd/goby/generation_test.go": "facc4e607c1a58504d1043a747b4ce082d424363bac10508d846d83f5a844f90",
+    "internal/diagnostics/handler.go": "89cac4bcfdbe671059d557500160dd825dd60f8ab040ea6ae83aa0e15462da8f",
+    "internal/diagnostics/errors.go": "67b510d8166907b0c704ecd3a4a51578ead4586e85fe45f4ed81a1df81fabe53",
+    "internal/diagnostics/errors_test.go": "b4a3cde4860ab6210c6d67424f2ab9ff3b7c6776e457ef692e7ead68bf6fc3cb"
+  },
+  "archive": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/source-exit-diagnostics.tar",
+  "archiveSha256": "74247d7584cb750645474deb2a4fc564f5944a32cd9875b2644209d65fbc89df",
+  "testsExecuted": false
+}

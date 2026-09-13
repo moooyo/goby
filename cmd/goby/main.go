@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/config"
-	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/lifecycle"
 	"github.com/moooyo/goby/internal/recovery"
@@ -24,7 +23,7 @@ func main() {
 	defer func() {
 		if recover() != nil {
 			// Never allow an unexpected process panic to print its payload or stack.
-			slog.New(diagnostics.NewHandler(nil, fallback)).Error("server stopped")
+			slog.New(diagnostics.NewHandler(nil, fallback)).Error("server stopped", "error_class", "panic")
 			os.Exit(1)
 		}
 	}()
@@ -42,7 +41,7 @@ func run(fallback slog.Handler) (runErr error) {
 	var cliHandled bool
 	defer func() {
 		if recover() != nil {
-			runErr = errors.New("server stopped unexpectedly")
+			runErr = diagnostics.WithErrorClass(errors.New("server stopped unexpectedly"), "panic")
 		}
 		// Generation workers, pools and leases drain before the shared runtime,
 		// and both finish before this final diagnostic event and store close.
@@ -359,9 +358,9 @@ func runGenerationLoop(ctx context.Context, cfg config.Config, owned *generation
 				return ctx.Err()
 			case <-g.ctx.Done():
 				if !g.lease.Protects(g.pool) {
-					return database.ErrLeaseUnavailable
+					return g.failureError(generationLeaseError())
 				}
-				return errors.New("active application generation stopped")
+				return g.failureError(errors.New("active application generation stopped"))
 			case err := <-failure:
 				if err == nil || errors.Is(err, http.ErrServerClosed) {
 					return errors.New("active HTTP generation stopped unexpectedly")

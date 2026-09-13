@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
+	"os"
 	"strings"
+	"syscall"
 	"testing"
 
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/diagnostics"
 )
 
@@ -70,6 +75,37 @@ func TestHTTPServerErrorLogSanitizesFormattedMessages(t *testing.T) {
 	}
 	if strings.Contains(output.String(), secret) {
 		t.Fatal("HTTP server error log exposed a formatted message")
+	}
+}
+
+func TestStoppedDiagnosticsRetainSafeGenerationFailureClasses(t *testing.T) {
+	const secret = "postgres://private-user:private-password@private.invalid/private-path"
+	listener := &net.OpError{Op: secret, Net: secret, Err: &os.SyscallError{Syscall: secret, Err: syscall.EADDRINUSE}}
+	tests := []struct {
+		name  string
+		err   error
+		class string
+	}{
+		{"lease lost", generationLeaseError(), "database_lease_unavailable"},
+		{"lease busy", generationError("fixed ownership stage", fmt.Errorf("%s: %w", secret, database.ErrLeaseBusy)), "database_lease_busy"},
+		{"panic", generationCall("fixed cleanup stage", func() error { panic(secret) }), "panic"},
+		{"listener address", generationError("HTTP listener reservation failed", listener), "address_in_use"},
+		{"listener startup", generationError("HTTP listener reservation failed", errors.New(secret)), "listener_start_failed"},
+		{"listener serving", generationError("HTTP generation listener failed", errors.New(secret)), "listener_failed"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			logger := slog.New(diagnostics.NewHandler(nil, slog.NewJSONHandler(&output, nil)))
+			logger.Error("server stopped", "error", errors.Join(test.err, errors.New(secret)))
+			records := readProcessLogRecords(t, output.String())
+			if len(records) != 1 || records[0]["event"] != "server.stopped" || records[0]["level"] != "ERROR" || records[0]["error_class"] != test.class {
+				t.Fatal("the final process event lost its safe exit class")
+			}
+			if strings.Contains(output.String(), secret) || strings.Contains(output.String(), "fixed cleanup stage") {
+				t.Fatal("the final process event exposed error, panic, or stage text")
+			}
+		})
 	}
 }
 
