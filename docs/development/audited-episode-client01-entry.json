@@ -1,0 +1,65 @@
+{
+  "actor": "de68ca6325f1c84f097ad2d75cd5160a",
+  "actorPlayHistoryEmpty": true,
+  "actorUserdataEmpty": true,
+  "allSessionsRevoked": 19,
+  "automaticBusinessRetry": false,
+  "browserRuns": 0,
+  "businessHttpRequests": 0,
+  "candidateContinuous": true,
+  "capturedAt": "2026-09-13T16:23:35.555436+00:00",
+  "clientPlaybackReferences": 2,
+  "componentVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-03/verification.json",
+    "sha256": "85f831e66d1b2f3574141ebcb3c369156b71673066e31802c62f1398280e80df"
+  },
+  "controller": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-02/run-audited-candidate-client.py",
+    "sha256": "e47f8d19e44d3acc51134080f2e5fe6c126cc5937799ec1566e6a7ba8367e835"
+  },
+  "controllerVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-controller-verification-02/verification.json",
+    "sha256": "7835171d5ffd321ed188dff0052efbf91eac05b96c490f447773a02e3a6caf03"
+  },
+  "encodingJobs": 0,
+  "foreignPlaysPreserved": 9,
+  "foreignUserdataRowsPreserved": 4,
+  "freshRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-episode-client01-entry-review-01/private/runtime.json",
+    "sha256": "80ed354f0fcd956f4ff62bf24bdd3d0f27c71b15b8a936e5966a77325b12891f"
+  },
+  "freshSource": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-episode-client01-entry-review-01/private/source.json",
+    "sha256": "3b519777abb197248e6bbd4f16e44298c07b994e86e621892692f1757caa66d4"
+  },
+  "hostingContinuous": true,
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-episode-client01-entry-review-01/input.json",
+    "sha256": "147c49b0fa8d9499ce1712300f19493fb9ca56992b443f8576b94fa20ffea27d"
+  },
+  "kind": "audited-episode-client01-entry-review",
+  "leaseExact": true,
+  "newOutputAndUnitsAbsent": true,
+  "ownedTablesExact": 35,
+  "postgresContinuous": true,
+  "priorAdmissionCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission05-closeout.json",
+    "sha256": "86b224298601ff922d6fe136c026b87628282c675b925dae4831ce78068f139b"
+  },
+  "priorOwnedCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-flac-client01-closeout.json",
+    "sha256": "03d76d23fa7afac7f4147bd6360073e5602883fd68d7f5b0b02a77fdda68ddb7"
+  },
+  "priorSourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/source-after.json",
+    "sha256": "94bedf2d19f42bf80f87df27237914dd71dd210c1dbf049d389faa7be6342ba4"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "sequencesExact": true,
+  "serviceActions": 0,
+  "status": "ready_for_one_bounded_episode_run",
+  "version": 1
+}

@@ -1,6 +1,6 @@
 # First FLAC client increment on the TV successor
 
-Status: [entry review passed](audited-flac-client01-entry.json); execution pending.
+Status: [FLAC passed and owned state is closed](audited-flac-client01-closeout.json).
 The selected source, runtime and client bundle are unchanged from the passed
 [MP3 workflow](audited-mp3-client01-plan.md). Reuse their verified tools and
 the existing FLAC actor and 180-second fixture.
@@ -27,6 +27,24 @@ Its review SHA-256 is
 Fresh review at `2026-09-13T16:13:50.240039Z` confirms the exact source, actor,
 candidate PID486706, PostgreSQL PID363520, lease and hosting; output and worker
 units are absent. The review performed no business HTTP or service operation.
+The input was then executed once and is consumed.
+
+The original client completed the workflow with zero page errors. Formal
+closeout reconciles287 physical exchanges, one login and one counted Stopped
+lifecycle. Media260 completed HTTP206 with3,127,772 FLAC body bytes forwarded.
+Started264, Progress270-275 and Stop276 match durable state; logout283 and
+same-token401 at285 close the credential. Userdata count is1 and final position
+is553423150 ticks (55.342315 seconds).
+
+Browser PID490906 and gateway PID490898 are absent, both cgroups empty, and
+their units inactive with exit0. Candidate and PostgreSQL remained continuous.
+Nineteen sessions are revoked. Twenty-nine tables remain exact; the six changed
+tables each add one owned session/device/play/userdata/reference row, with two
+audit entries. All older rows, including the MP3 audio reference, remain exact.
+The final snapshot is
+`94bedf2d19f42bf80f87df27237914dd71dd210c1dbf049d389faa7be6342ba4`.
+It contains nine plays, four userdata rows, two retained audio references and
+no encoding job. Device/audit sequences advance by1/2; other sequences are exact.
 
 Keep the existing 1,200-second controller/240-second cleanup budgets,
 600-second browser limit and unchanged gateway bounds. Execute only this one

@@ -11,7 +11,7 @@ their original meanings and are not fresh deployment observations.
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Execute the next independently admitted original-client scenario |
-| Core original client | MP3 passed on the current successor; movie05 playback and TV browse01 navigation were observed with formal failures and closed owned state | FLAC, episode and external subtitles, followed by retained movie/TV acceptance gaps |
+| Core original client | MP3 and FLAC passed on the current successor; movie05 playback and TV browse01 navigation have historical formal failures and closed owned state | Episode with its full browse portion, external subtitles and retained movie acceptance |
 | Main deployment | Old source32/schema27 installation retained; new upgrade contract is a draft | Fresh recovery point, isolated forward and old-binary restoration, core acceptance and bounded promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -70,7 +70,13 @@ Stopped lifecycle, count1/55.346884-second userdata and no page errors. All
 eighteen sessions are revoked; both browser/gateway workers are closed. The
 single retained universal-audio reference is bound to the stopped play and
 revoked credential. Old state is exact. The separately reviewed
-[first FLAC input](audited-flac-client01-plan.md) preserves this full state.
+[first FLAC input](audited-flac-client01-plan.md) preserved this full state.
+FLAC also [passed](audited-flac-client01-closeout.json):287 exchanges,
+3,127,772 bytes of completed media delivery, count1/55.342315-second userdata,
+zero page errors and fully closed workers. All nineteen sessions are revoked,
+with nine plays, four userdata rows and two retained audio references. The
+[episode entry](audited-episode-client01-plan.md) is reviewed against that exact
+state and includes the existing full TV browse journey before playback.
 
 ## Movie checkpoints
 

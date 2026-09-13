@@ -65,19 +65,24 @@ The [actual lineage reader review](../development/tv-parent-client-lineage-revie
 and [first MP3 entry](../development/audited-mp3-client01-plan.md) are complete.
 MP3 has now passed its first run and [owned closeout](../development/audited-mp3-client01-closeout.json),
 with eighteen revoked sessions and one retained audio-reference row. Execute
-the separately reviewed [first FLAC input](../development/audited-flac-client01-plan.md),
-preserving the complete MP3 state before selecting the following scenario.
+the separately reviewed first FLAC input preserved the complete MP3 state and
+[passed](../development/audited-flac-client01-closeout.json). Nineteen sessions
+are now revoked and both retained audio references remain. Execute the reviewed
+[episode input](../development/audited-episode-client01-plan.md) next. Its
+declared journey includes full TV browsing; evaluate that overlapping evidence
+after overall success instead of requiring a redundant TV actor rerun.
 Do not expand this into Live TV or reopen global NextUp research on an error
 timestamp alone.
 
-MP3 is complete for this profile. FLAC, episode playback and subtitles remain
+MP3 and FLAC are complete for this profile. Episode playback and subtitles remain
 independent core increments. They do not depend functionally on movie passing, but they do use
 the shared adapter. Serialize writes and close each owned state before the
 next run. Every increment freezes relevant verified source, fresh actor/state
 facts, expected outcome and existing request/time/cleanup bounds. Movie and TV
 actors are now consumed; future reruns need reviewed retained-state admission,
 not new actor identities or another null-baseline input. Success closes only
-that scenario's gate.
+that scenario's declared coverage; overlapping behavior must have complete
+recorded checks and overall owned-state closure before any additional gate closes.
 
 The [main upgrade contract](../development/audited-main-upgrade-plan.md) remains
 a draft. It needs core acceptance and distinct forward-restoration and actual

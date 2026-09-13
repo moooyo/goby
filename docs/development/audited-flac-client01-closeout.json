@@ -1,0 +1,180 @@
+{
+  "kind": "audited-core-flac-client01-checkpoint",
+  "version": 1,
+  "status": "flac_core_scenario_verified",
+  "capturedAt": "2026-09-13T16:19:40.116587+00:00",
+  "formalCloseout": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/closeout/closeout.json",
+    "sha256": "4c88c9a7d20d4a9503a02df97f97b7962335d05ff3bcf43aa0636b5c38338c22"
+  },
+  "controllerReport": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/report.json",
+    "sha256": "761ec1f48c54634a9b14e09fd37e1b42d290721c164835b89786fdd176ec4a50"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+    "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+  },
+  "source": {
+    "binarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+    "manifestSha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff",
+    "schema": 28
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/source-before.json",
+    "sha256": "7497b93cafa8634d9b4c9507961ca25152d56b1bf541d22731ab34ce00858a77"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/source-after.json",
+    "sha256": "94bedf2d19f42bf80f87df27237914dd71dd210c1dbf049d389faa7be6342ba4"
+  },
+  "boundary": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/boundary.json",
+    "sha256": "03f48b20908ed9b031267bc691e4d41f76fa98f55b24594e7788475a0d0ffff3"
+  },
+  "physicalRequests": 287,
+  "logins": 1,
+  "lifecycles": [
+    {
+      "playSessionId": "play_fad2a415814c06e596bf8a47d78ffc28",
+      "authSessionId": "f219e299be275a84c66bb79110d048ce",
+      "itemId": "b9995f7657b8681a93c86562e68faacf",
+      "mediaSourceId": "mediasource_b9995f7657b8681a93c86562e68faacf",
+      "preparation": {
+        "kind": "universal_audio",
+        "ordinal": 260,
+        "clientNonceSha256": "da1329afff07956c5c87339929872e0471f0efd99846ea5b90a6561b05417ae6"
+      },
+      "startedOrdinals": [
+        264
+      ],
+      "progressOrdinals": [
+        270,
+        271,
+        272,
+        273,
+        274,
+        275
+      ],
+      "stoppedOrdinals": [
+        276
+      ],
+      "effectiveStopOrdinals": [
+        276
+      ],
+      "countingReportOrdinals": [
+        264
+      ],
+      "mediaGetOrdinals": [
+        260
+      ]
+    }
+  ],
+  "media": {
+    "ordinal": 260,
+    "status": 206,
+    "mime": "audio/flac",
+    "bodyBytesForwarded": 3127772,
+    "completeHTTP": true
+  },
+  "userdata": {
+    "item_id": "b9995f7657b8681a93c86562e68faacf",
+    "playback_position_ticks": 553423150,
+    "play_count": 1,
+    "is_favorite": false,
+    "played": false,
+    "last_played_at": "2026-09-13T16:16:40.286048+00:00",
+    "updated_at": "2026-09-13T16:16:48.249027+00:00"
+  },
+  "pageErrors": 0,
+  "workers": {
+    "browser": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/browser-closed.json",
+        "sha256": "2134ace9f6aadbd361696540c8c4cb91c7368fbd5aa025d31b8f29be16d97a5b"
+      },
+      "pid": 490906,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-flac-01-browser.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    },
+    "gateway": {
+      "receipt": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-flac-01/private/gateway-closed.json",
+        "sha256": "3b66c2270662be4d580d22ceec9d5156c9bf77ef532b95c083ca3d57a5f78494"
+      },
+      "pid": 490898,
+      "pidAbsent": true,
+      "cgroupEmpty": true,
+      "unit": {
+        "MainPID": "0",
+        "Result": "success",
+        "NRestarts": "0",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "Id": "goby-core-client-flac-01-gateway.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      }
+    }
+  },
+  "data": {
+    "unchangedTables": 29,
+    "exactNewRowCounts": {
+      "sessions": 1,
+      "devices": 1,
+      "activity_entries": 2,
+      "play_sessions": 1,
+      "user_item_data": 1,
+      "client_playback_references": 1
+    },
+    "sessionsRevoked": 19,
+    "playRows": 9,
+    "userDataRows": 4,
+    "retainedPlaybackReferences": 2,
+    "encodingJobs": 0,
+    "oldRowsExact": true,
+    "sequencesExact": true
+  },
+  "candidateProcess": {
+    "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+    "cgroup": "0::/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service\n",
+    "cmdline": [
+      "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby"
+    ],
+    "exe": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+    "exeDevice": 2049,
+    "exeInode": 1661714,
+    "networkNamespace": "net:[4026531840]",
+    "pid": 486706,
+    "startTicks": "3260806",
+    "uid": 995,
+    "listener": {
+      "host": "127.0.0.1",
+      "port": 28498,
+      "socketInode": "692538"
+    }
+  },
+  "postgresContinuous": true,
+  "candidateRestarted": false,
+  "scope": "MP3 and FLAC are accepted for this profile. Movie, TV browse, episode and subtitle gates remain open.",
+  "limitations": [
+    "Original-client core scenario only; no NextUp or automatic-refresh claim.",
+    "Excluded web/media/WebSocket bodies are not reconstructed or hashed.",
+    "Audio source-container and HTMLMediaElement advancement do not prove audible output or the output codec."
+  ],
+  "newHttpRequests": 0,
+  "newSqlQueries": 0,
+  "newServiceActions": 0
+}
