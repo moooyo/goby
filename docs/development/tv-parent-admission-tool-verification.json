@@ -1,0 +1,51 @@
+{
+  "kind": "tv-parent-affected-admission-tool-verification",
+  "version": 1,
+  "host": "test-env",
+  "capturedAt": "2026-09-13T15:41:35.708781+00:00",
+  "sourcePins": {
+    "admit-audited-candidate.py": "791c7733a2e7fb3dc2c7272c72c372af9a2e30f4bb4d44f0424f10952ad230d3",
+    "test-admit-audited-candidate.py": "3464a82a9437ea0a388afa557727e592271a9f4cfc896b37d3947d1681b24c8a",
+    "test-admit-tv-parent-successor.py": "ed6804f25d39bb020a55d44627ae9e455e528bd480c868bc4f706e43badda0e0"
+  },
+  "checks": {
+    "legacy": {
+      "exitCode": 0,
+      "testsRun": 26,
+      "expectedTests": 26,
+      "passed": true,
+      "failedTests": [],
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-admission-tool-verification-01/legacy.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-admission-tool-verification-01/legacy.stderr",
+        "sha256": "9562de2a6ec65628118dd9062f412650a6749b4ed9a39313346fdca45cecb775"
+      }
+    },
+    "affected": {
+      "exitCode": 0,
+      "testsRun": 19,
+      "expectedTests": 19,
+      "passed": true,
+      "failedTests": [],
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-admission-tool-verification-01/affected.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-admission-tool-verification-01/affected.stderr",
+        "sha256": "3731e6747b37ddd70a341b0afa6fe5fbd66e6cc357ce6fbdc4a591452a6ec741"
+      }
+    }
+  },
+  "sourceUnchanged": true,
+  "passed": true,
+  "httpRequests": 0,
+  "sqlQueries": 0,
+  "browserRuns": 0,
+  "serviceActions": 0,
+  "candidateAdmissionComplete": false,
+  "clientAcceptance": false
+}

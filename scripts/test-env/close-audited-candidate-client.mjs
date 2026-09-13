@@ -33,6 +33,10 @@ export const BINARY_SUCCESSOR = {
   archiveSha256: 'b363afdcf707471c3a95288d04441bb7be89699010b09ca89c4c783e10436177',
   sourceManifest: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json', sha256: 'bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff' },
 };
+export const REUSED_ADMISSION04 = { path: RETAINED_ROOT + '/candidate-live-admission-04/private/report.json', sha256: '05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653' };
+export const AFFECTED_TV_TRANSITION_CLOSEOUT = { path: RETAINED_ROOT + '/candidate-tv-parent-transition-closeout.json', sha256: 'c9e03c008d0d1dbf0b66b8070692738e50a2ca57c29f89cbd40c1fba38d597ba' };
+const AFFECTED_TV_CHECKS = ['runtimeIdentity', 'tvDefaultParents', 'tvDetailParents', 'ordinaryAuthorization', 'healthWindow60Seconds', 'sourceAndInactivePreserved', 'sessionCleanup'];
+const REUSED_ADMISSION_CONTRACTS = ['native_authentication_and_query_carriers', 'storage_and_library_access', 'backup_create_download', 'restore_ready_cancel_retained_stage'];
 const CLOSEOUT_PINS = ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary'];
 const TABLES = 'activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users'.split(' ').sort();
 const SOURCE_FILES = { closer: 'close-audited-candidate-client.mjs', adapter: 'client-browser-audited-candidate.mjs', gateway: 'client-acceptance-gateway.py', proxy: 'client-acceptance-proxy.py',
@@ -1064,6 +1068,30 @@ export function validateRuntimeLineage(epoch, seed, lineage = {}) {
   need(equal(seed.currentSessions, [...previousBinding.currentSessions, ...added]) && seed.currentSessions.length === 6, 'environment_seed_session_history');
 }
 
+/** A historical admission proves its own epoch; successors also need fresh TV checks. */
+export function validateCandidateAdmissionBinding(input, epoch, admission, lineage = {}, reusedAdmission04 = null) {
+  need([1, 2, 3].includes(epoch.version) && admission?.kind === 'audited-candidate-live-admission' &&
+    admission.version === (epoch.version === 3 ? 3 : 2) && admission.status === 'admitted_for_core_client' &&
+    admission.candidateAdmissionComplete === true && admission.failure === null && equal(admission.cleanupFailures, []) &&
+    equal(admission.runtimeEpoch, input.runtimeEpoch) && equal(admission.seedRuntimeBinding, input.seedBinding) && equal(admission.currentSource, epoch.currentSource),
+  'candidate_live_admission_binding');
+  if (epoch.version !== 3) return;
+  need(admission.admissionKind === 'affected_tv_parent' && admission.clientAcceptance === false && exact(admission.freshChecks, AFFECTED_TV_CHECKS) &&
+    Object.values(admission.freshChecks).every(value => value === true) && equal(admission.transitionCloseout, AFFECTED_TV_TRANSITION_CLOSEOUT),
+  'candidate_affected_tv_admission_checks');
+  const reused = admission.reusedAdmission04, previous = lineage.previousEpoch, previousBinding = lineage.previousBinding;
+  need(exact(reused, ['report', 'runtimeEpoch', 'seedRuntimeBinding', 'currentSource', 'contracts']) && equal(reused.report, REUSED_ADMISSION04) &&
+    equal(reused.contracts, REUSED_ADMISSION_CONTRACTS) && equal(reused.runtimeEpoch, BINARY_SUCCESSOR.previousEpoch) &&
+    equal(reused.seedRuntimeBinding, BINARY_SUCCESSOR.previousBinding) && equal(epoch.previousEpoch, reused.runtimeEpoch) &&
+    previous?.version === 2 && previousBinding?.version === 2 && equal(previousBinding.runtimeEpoch, reused.runtimeEpoch) &&
+    equal(reused.currentSource, previous.currentSource), 'candidate_reused_admission04_binding');
+  validateCandidateAdmissionBinding({ runtimeEpoch: reused.runtimeEpoch, seedBinding: reused.seedRuntimeBinding }, previous, reusedAdmission04);
+  need(reusedAdmission04.clientAcceptance === false && reusedAdmission04.inactiveStageRetained === true && reusedAdmission04.activeGenerationChanged === false &&
+    reusedAdmission04.playbackRequests === 0 && reusedAdmission04.applyRequests === 0 && reusedAdmission04.rollbackRequests === 0 &&
+    exact(reusedAdmission04.controllerSessions, ['admin', 'P', 'Q']) && Object.values(reusedAdmission04.controllerSessions).every(row =>
+      /^[0-9a-f]{32}$/.test(row.credentialId) && SHA.test(row.tokenSha256) && row.sameTokenRejected === true), 'candidate_reused_admission04_cleanup');
+}
+
 export function validateCloseoutBindings(input, evidence) {
   const { manifest, observation, summary, gatewayAttestation: gateway, runtimeEpoch: epoch, admission, seedBinding: seed, boundary } = evidence;
   validateCandidateManifest(manifest);
@@ -1075,9 +1103,7 @@ export function validateCloseoutBindings(input, evidence) {
   need(equal(observation.gateway?.admission_request_counts, { normal: 0, cleanup: 0 }), 'gateway_not_fresh_at_client_admission');
   validateCandidateGateway(gateway, manifest, ns(observation.started_monotonic_ns), { normal: 0, cleanup: 0 });
   validateRuntimeLineage(epoch, seed, evidence.lineage);
-  need(admission.kind === 'audited-candidate-live-admission' && admission.version === 2 && admission.status === 'admitted_for_core_client' &&
-    admission.candidateAdmissionComplete === true && admission.failure === null && equal(admission.cleanupFailures, []) &&
-    equal(admission.runtimeEpoch, input.runtimeEpoch) && equal(admission.seedRuntimeBinding, input.seedBinding) && equal(admission.currentSource, epoch.currentSource), 'candidate_live_admission_binding');
+  validateCandidateAdmissionBinding(input, epoch, admission, evidence.lineage, evidence.reusedAdmission04);
   const currentSource = { manifestSha256: epoch.currentSource.sourceManifest.sha256, binarySha256: epoch.currentSource.binary.sha256, schema: epoch.currentSource.schema };
   need(equal(manifest.source, currentSource) && equal(without(manifest.processes.candidate, ['listener']), epoch.candidateProcess) &&
     manifest.processes.candidate.listener.port === epoch.candidate.listener.port && manifest.processes.candidate.listener.socketInode === epoch.candidate.listener.socketInode,
@@ -1234,7 +1260,13 @@ export async function runCloseout(inputPin) {
     await readPin(evidence.serverLog.controller, MAX_FILE, false);
   }
   if (evidence.runtimeEpoch.version === 2) evidence.lineage = await readEnvironmentLineage(evidence.runtimeEpoch, evidence.seedBinding);
-  if (evidence.runtimeEpoch.version === 3) evidence.lineage = await readBinarySuccessorLineage(evidence.runtimeEpoch, evidence.seedBinding);
+  if (evidence.runtimeEpoch.version === 3) {
+    evidence.lineage = await readBinarySuccessorLineage(evidence.runtimeEpoch, evidence.seedBinding);
+    need(equal(evidence.admission.reusedAdmission04?.report, REUSED_ADMISSION04) &&
+      equal(evidence.admission.transitionCloseout, AFFECTED_TV_TRANSITION_CLOSEOUT), 'candidate_affected_admission_reader_authority');
+    evidence.reusedAdmission04 = strictJSON(await readPin(REUSED_ADMISSION04));
+    await readPin(AFFECTED_TV_TRANSITION_CLOSEOUT, MAX_FILE, false);
+  }
   const gateway = evidence.gatewayAttestation, index = evidence.gatewayIndex;
   need(Array.isArray(index.entries) && index.entries.length <= 10000, 'ledger_inventory_limit');
   need(input.gatewayAttestation.path === path.join(gateway.ledgerRoot, 'gateway-attestation.json') && input.gatewayIndex.path === path.join(gateway.ledgerRoot, 'index.json'), 'ledger_paths_not_bound');

@@ -1,0 +1,182 @@
+{
+  "kind": "tv-parent-candidate-client-component-verification",
+  "version": 1,
+  "host": "test-env",
+  "capturedAt": "2026-09-13T15:32:31.497141+00:00",
+  "sourcePins": {
+    "close-audited-candidate-client.mjs": "ca303bb6e14ea9ee94d1456867395668dbce14b5defcb0aa72409ad3803b04bc",
+    "test-close-audited-candidate-client.mjs": "d7d6646e3c2b71a5e3d8a7a8e5b155308ed7a5b34c7f8d74bef5994e9de902b1",
+    "client-browser-audited-candidate.mjs": "07bd277f3c7eb7636e2625565129588f59660a1c4432c17c1c68e424456b0cf0",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-playback.mjs": "280f3457e11bc75ed920da2534fd079ba9888a95eb32590fd031345bd16d9325",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-client-v3-evidence.mjs": "905dcae9d54c1acfc79e76f80bcd51f1d3222c3796cb13b481c088b7883ab654",
+    "test-replay-movie05-evidence.mjs": "1b1f471513dc02e8a0228067398a53d452d76d54102af645a5a60c59e391c2a5",
+    "client-acceptance-gateway.py": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070",
+    "client-acceptance-proxy.py": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874"
+  },
+  "parseChecks": [
+    {
+      "source": "close-audited-candidate-client.mjs",
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-close-audited-candidate-client.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-close-audited-candidate-client.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-close-audited-candidate-client.mjs",
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-close-audited-candidate-client.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-close-audited-candidate-client.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-client-v3-evidence.mjs",
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-client-v3-evidence.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-client-v3-evidence.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": "test-replay-movie05-evidence.mjs",
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-replay-movie05-evidence.mjs.stdout",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/parse-test-replay-movie05-evidence.mjs.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "checks": {
+    "closer": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/closer.stdout",
+        "sha256": "8bb322be1b55120ceb188b4185a490168ef49e6c919be83ed4a9ded92fce7db9"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/closer.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/closer-report.json",
+        "sha256": "9fe8d2bbea1c1e5939eae3ba717944f25b8d0f7385a87b75c0b3582edf843951"
+      },
+      "counts": {
+        "testCount": 31,
+        "passed": 31,
+        "failed": 0,
+        "sourceUnchanged": true
+      },
+      "passed": true,
+      "failedTests": []
+    },
+    "movie05": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/movie05.stdout",
+        "sha256": "72f64ef5933a189db581c148a0d124bfd234da6ff8fedb06917b896d411b3165"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/movie05.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/movie05-report.json",
+        "sha256": "cdc23364b22917111c521104f43509f2051a4a4c3abea277a2c9cc6b8da28d56"
+      },
+      "counts": {
+        "testCount": 13,
+        "passed": 13,
+        "failed": 0,
+        "sourceUnchanged": true
+      },
+      "passed": true,
+      "failedTests": []
+    },
+    "client-v3": {
+      "exitCode": 0,
+      "stdout": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/client-v3.stdout",
+        "sha256": "891fd600b7ed6aebbe64f4c9bf33f0deaef5ce7c2df64db249dcdbdb08c6a0aa"
+      },
+      "stderr": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-parent-client-component-verification-01/client-v3.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "counts": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "passed": true
+    }
+  },
+  "closerCounts": {
+    "testCount": 31,
+    "passed": 31,
+    "failed": 0,
+    "sourceUnchanged": true
+  },
+  "version3Counts": {
+    "tests": 12,
+    "pass": 12,
+    "fail": 0,
+    "skipped": 0
+  },
+  "savedMovie05ReplayCounts": {
+    "testCount": 13,
+    "passed": 13,
+    "failed": 0,
+    "sourceUnchanged": true
+  },
+  "adapterCounts": {
+    "tests": 55,
+    "pass": 55,
+    "fail": 0,
+    "skipped": 0
+  },
+  "adapterSavedReplayChecks": 7,
+  "movieCounts": {
+    "tests": 19,
+    "pass": 19,
+    "fail": 0,
+    "skipped": 0
+  },
+  "reusedAdapterVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/tv-browse01-adapter-verification-01/verification.json",
+    "sha256": "aba01a649f098d367e7c33e793c084bb9b531e47c3947005a633c38eafd4210d"
+  },
+  "reusedMovieVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/movie06-readiness-verification-01/verification.json",
+    "sha256": "67025af18b57864e29229df022c5a95248cfaf3211e9e8e89d75e61e7b463715"
+  },
+  "sourceUnchanged": true,
+  "passed": true,
+  "browserStarted": false,
+  "businessHttp": false,
+  "sqlQueries": 0,
+  "serviceActions": 0,
+  "clientAcceptance": false
+}

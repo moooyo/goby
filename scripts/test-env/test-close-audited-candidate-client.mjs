@@ -333,6 +333,27 @@ function binarySuccessorFixture(closer) {
     transitionInput: input, reviewedSummary, priorCloseout, priorSource, fullReport, fullWorker } };
 }
 
+function affectedAdmissionFixture(closer) {
+  const value = binarySuccessorFixture(closer);
+  const input = { runtimeEpoch: clone(value.seed.runtimeEpoch), seedBinding: { path: '/opt/goby-test/synthetic-successor/binding-v3.json', sha256: sha('synthetic-binding-v3') } };
+  const previous = { kind: 'audited-candidate-live-admission', version: 2, status: 'admitted_for_core_client',
+    candidateAdmissionComplete: true, clientAcceptance: false, failure: null, cleanupFailures: [],
+    runtimeEpoch: clone(closer.BINARY_SUCCESSOR.previousEpoch), seedRuntimeBinding: clone(closer.BINARY_SUCCESSOR.previousBinding),
+    currentSource: clone(value.lineage.previousEpoch.currentSource), inactiveStageRetained: true, activeGenerationChanged: false,
+    playbackRequests: 0, applyRequests: 0, rollbackRequests: 0,
+    controllerSessions: Object.fromEntries(['admin', 'P', 'Q'].map((role, index) => [role, { credentialId: (index + 1).toString(16).padStart(32, '0'),
+      tokenSha256: sha('synthetic-admission04-' + role), sameTokenRejected: true }])) };
+  const admission = { ...clone(previous), version: 3, admissionKind: 'affected_tv_parent', runtimeEpoch: clone(input.runtimeEpoch),
+    seedRuntimeBinding: clone(input.seedBinding), currentSource: clone(value.epoch.currentSource),
+    freshChecks: Object.fromEntries(['runtimeIdentity', 'tvDefaultParents', 'tvDetailParents', 'ordinaryAuthorization', 'healthWindow60Seconds', 'sourceAndInactivePreserved', 'sessionCleanup'].map(key => [key, true])),
+    reusedAdmission04: { report: clone(closer.REUSED_ADMISSION04), runtimeEpoch: clone(previous.runtimeEpoch),
+      seedRuntimeBinding: clone(previous.seedRuntimeBinding), currentSource: clone(previous.currentSource),
+      contracts: ['native_authentication_and_query_carriers', 'storage_and_library_access', 'backup_create_download', 'restore_ready_cancel_retained_stage'] },
+    transitionCloseout: clone(closer.AFFECTED_TV_TRANSITION_CLOSEOUT) };
+  delete admission.controllerSessions.admin;
+  return { input, epoch: value.epoch, lineage: value.lineage, admission, previous };
+}
+
 function guardCases(closer) {
   return [
     ['login_request_decoder_dispatches_json_and_utf8_body_form_without_query_merge', () => {
@@ -739,6 +760,65 @@ function guardCases(closer) {
         assert.throws(() => closer.validateRuntimeLineage(value.epoch, value.seed, value.lineage), expected, name);
       }
     }],
+    ['candidate_admission_requires_legacy_v2_or_fresh_affected_v3_for_its_epoch', () => {
+      const value = affectedAdmissionFixture(closer), original = jsonBytes(value);
+      const oldInput = { runtimeEpoch: value.previous.runtimeEpoch, seedBinding: value.previous.seedRuntimeBinding };
+      for (const version of [1, 2]) assert.equal(closer.validateCandidateAdmissionBinding(oldInput, { ...value.lineage.previousEpoch, version }, value.previous), undefined);
+      assert.equal(closer.validateCandidateAdmissionBinding(value.input, value.epoch, value.admission, value.lineage, value.previous), undefined);
+      assert.deepEqual(jsonBytes(value), original);
+      const oldRelabeled = { ...clone(value.previous), runtimeEpoch: clone(value.input.runtimeEpoch), seedRuntimeBinding: clone(value.input.seedBinding), currentSource: clone(value.epoch.currentSource) };
+      assert.throws(() => closer.validateCandidateAdmissionBinding(value.input, value.epoch, oldRelabeled, value.lineage, value.previous), /candidate_live_admission_binding/);
+      assert.throws(() => closer.validateCandidateAdmissionBinding(oldInput, value.lineage.previousEpoch, { ...clone(value.previous), version: 3 }), /candidate_live_admission_binding/);
+      const legacyWithoutClientClaim = clone(value.previous); delete legacyWithoutClientClaim.clientAcceptance;
+      assert.equal(closer.validateCandidateAdmissionBinding(oldInput, value.lineage.previousEpoch, legacyWithoutClientClaim), undefined);
+      for (const [field, invalid] of [['candidateAdmissionComplete', 1], ['candidateAdmissionComplete', 'true']])
+        assert.throws(() => closer.validateCandidateAdmissionBinding(oldInput, value.lineage.previousEpoch, { ...clone(value.previous), [field]: invalid }), /candidate_live_admission_binding/);
+    }],
+    ['affected_tv_admission_requires_exact_fresh_checks_and_current_epoch_bindings', () => {
+      for (const key of Object.keys(affectedAdmissionFixture(closer).admission.freshChecks)) for (const invalid of [false, 1, 'true', null]) {
+        const value = affectedAdmissionFixture(closer); value.admission.freshChecks[key] = invalid;
+        assert.throws(() => closer.validateCandidateAdmissionBinding(value.input, value.epoch, value.admission, value.lineage, value.previous), /candidate_affected_tv_admission_checks/, key);
+      }
+      for (const [name, mutate, expected] of [
+        ['wrong_admission_kind', value => { value.admission.admissionKind = 'general'; }, /candidate_affected_tv_admission_checks/],
+        ['missing_check', value => { delete value.admission.freshChecks.sessionCleanup; }, /candidate_affected_tv_admission_checks/],
+        ['extra_check', value => { value.admission.freshChecks.unreviewed = true; }, /candidate_affected_tv_admission_checks/],
+        ['transition_closeout_changed', value => { value.admission.transitionCloseout.sha256 = sha('different-transition'); }, /candidate_affected_tv_admission_checks/],
+        ['old_epoch', value => { value.admission.runtimeEpoch = clone(value.previous.runtimeEpoch); }, /candidate_live_admission_binding/],
+        ['old_binding', value => { value.admission.seedRuntimeBinding = clone(value.previous.seedRuntimeBinding); }, /candidate_live_admission_binding/],
+        ['old_source', value => { value.admission.currentSource = clone(value.previous.currentSource); }, /candidate_live_admission_binding/],
+        ['failed_cleanup', value => { value.admission.cleanupFailures = [{ phase: 'logout' }]; }, /candidate_live_admission_binding/],
+        ['failed_run', value => { value.admission.failure = { phase: 'fresh_tv' }; }, /candidate_live_admission_binding/],
+        ['claimed_client_acceptance', value => { value.admission.clientAcceptance = true; }, /candidate_affected_tv_admission_checks/],
+        ['numeric_client_acceptance', value => { value.admission.clientAcceptance = 0; }, /candidate_affected_tv_admission_checks/],
+        ['numeric_complete', value => { value.admission.candidateAdmissionComplete = 1; }, /candidate_live_admission_binding/],
+      ]) {
+        const value = affectedAdmissionFixture(closer); mutate(value);
+        assert.throws(() => closer.validateCandidateAdmissionBinding(value.input, value.epoch, value.admission, value.lineage, value.previous), expected, name);
+      }
+    }],
+    ['affected_tv_admission_reuse_requires_the_exact_successful_cleaned_admission04', () => {
+      for (const [name, mutate, expected] of [
+        ['another_report', value => { value.admission.reusedAdmission04.report.sha256 = sha('different-admission'); }, /candidate_reused_admission04_binding/],
+        ['another_report_path', value => { value.admission.reusedAdmission04.report.path += '.other'; }, /candidate_reused_admission04_binding/],
+        ['missing_contract', value => { value.admission.reusedAdmission04.contracts.pop(); }, /candidate_reused_admission04_binding/],
+        ['another_ancestor', value => { value.admission.reusedAdmission04.runtimeEpoch.sha256 = sha('other-parent'); }, /candidate_reused_admission04_binding/],
+        ['another_ancestor_binding', value => { value.admission.reusedAdmission04.seedRuntimeBinding.sha256 = sha('other-binding'); }, /candidate_reused_admission04_binding/],
+        ['another_ancestor_source', value => { value.admission.reusedAdmission04.currentSource.binary.sha256 = sha('other-product'); }, /candidate_reused_admission04_binding/],
+        ['unlinked_current_epoch', value => { value.epoch.previousEpoch.sha256 = sha('other-parent'); }, /candidate_reused_admission04_binding/],
+        ['failed_previous_report', value => { value.previous.status = 'admission_failed_resources_retained'; }, /candidate_live_admission_binding/],
+        ['previous_source_changed', value => { value.previous.currentSource.binary.sha256 = sha('other-old-binary'); }, /candidate_live_admission_binding/],
+        ['previous_numeric_complete', value => { value.previous.candidateAdmissionComplete = 1; }, /candidate_live_admission_binding/],
+        ['previous_numeric_false', value => { value.previous.clientAcceptance = 0; }, /candidate_reused_admission04_cleanup/],
+        ['previous_live_token', value => { value.previous.controllerSessions.P.sameTokenRejected = false; }, /candidate_reused_admission04_cleanup/],
+        ['previous_numeric_rejection', value => { value.previous.controllerSessions.P.sameTokenRejected = 1; }, /candidate_reused_admission04_cleanup/],
+        ['previous_stage_not_retained', value => { value.previous.inactiveStageRetained = 1; }, /candidate_reused_admission04_cleanup/],
+        ['previous_generation_changed', value => { value.previous.activeGenerationChanged = 0; }, /candidate_reused_admission04_cleanup/],
+      ]) {
+        const value = affectedAdmissionFixture(closer); mutate(value);
+        assert.throws(() => closer.validateCandidateAdmissionBinding(value.input, value.epoch, value.admission, value.lineage, value.previous), expected, name);
+      }
+    }],
     ['universal_audio_preparation_requires_the_same_owned_nonce_and_prior_media_get', () => {
       for (const scenario of ['mp3', 'flac']) {
         const value = universalFixture(closer, scenario), original = jsonBytes(value.exchange.result);
@@ -861,6 +941,11 @@ async function savedRetainedReplay(closer) {
     assert.deepEqual(closer.runtimeEpochJSON(bytes, epoch.previousEpoch), value); return value; });
   const lineage = { previousEpoch, previousBinding: await read(seed.previousBinding), configurationInput: await read(epoch.transitionInput), failedAdmission03: await read(seed.admission03) };
   closer.validateRuntimeLineage(epoch, seed, lineage);
+  const previousAdmission = await read(closer.REUSED_ADMISSION04);
+  const previousAdmissionInput = { runtimeEpoch: seed.runtimeEpoch, seedBinding: seedPin };
+  closer.validateCandidateAdmissionBinding(previousAdmissionInput, epoch, previousAdmission);
+  assert.equal(previousAdmission.clientAcceptance, false);
+  assert.throws(() => closer.validateCandidateAdmissionBinding(previousAdmissionInput, epoch, { ...clone(previousAdmission), candidateAdmissionComplete: 1 }), /candidate_live_admission_binding/);
   // Exercise both live-source roles on the saved bytes as well as the retained role.
   const beforeRaw = await fs.readFile(closeout.sourceBefore.path);
   assert.equal(sha(beforeRaw), closeout.sourceBefore.sha256, 'saved_replay_digest_changed');
@@ -932,7 +1017,7 @@ async function main() {
   }
   const unchanged = (await Promise.all(Object.entries(sources).map(async ([filename, digest]) => sha(await fs.readFile(filename)) === digest))).every(Boolean);
   const report = { kind: 'audited-candidate-client-closeout-pure-guards', version: 1,
-    scope: 'Exported pure functions on synthetic fixtures; optional saved movie04 baseline plus simulated new rows. No live or client acceptance claim.', replayedPins,
+    scope: 'Exported pure functions on synthetic fixtures; optional saved movie04 baseline and admission04 plus simulated new rows. No live or client acceptance claim.', replayedPins,
     source: { path: source, sha256: sources[source] }, sources, output, testCount: tests.length,
     passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, clientAcceptanceClaim: false, endToEndExecuted: false,
@@ -944,7 +1029,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 28 : 27) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (replay ? 31 : 30) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

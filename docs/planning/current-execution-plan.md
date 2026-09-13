@@ -55,7 +55,8 @@ The [current-epoch candidate successor](../development/tv-parent-candidate-trans
 is installed using the existing transition tool, with exact retained state and
 historical hosting provenance. Tool verification passed 103 checks; the one
 stop/replacement/start and independent closeout passed. Complete a bounded
-affected admission for TV projections and access before resuming clients.
+affected [admission for TV projections and access](../development/tv-parent-affected-admission-plan.md)
+before resuming clients.
 Reuse admission04 for unchanged contracts without repeating backup/restore.
 Do not expand this into Live TV or reopen global NextUp research on an error
 timestamp alone.
