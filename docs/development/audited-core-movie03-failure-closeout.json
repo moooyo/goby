@@ -1,0 +1,258 @@
+{
+  "kind": "audited-core-movie03-failure-closeout",
+  "status": "closed_failed_client_attempt_owned_session_revoked",
+  "capturedAt": "2026-09-13T11:08:23.510453+00:00",
+  "reviewMethod": "saved_artifact_and_identity_source_reconciliation",
+  "scenario": "movie",
+  "runId": "movie-03",
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/av-tool-verification-05/movie-input-03.json",
+    "sha256": "65d36ddacc8a9ced8682b22d1af02f068ba85a6dd7c9082355e541e49fc5870c"
+  },
+  "failure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/failure.json",
+    "sha256": "52c3a8584e6f659a34f4999c3853ef61f099f8fecf8d8a6e2ecf788ec98559ba"
+  },
+  "observation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/browser/observation.json",
+    "sha256": "c1f5ba1a4e0742a32d237dc6f9df498d0c199b939b6d6ef7285f7675c376e3fd"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/close-core-movie03-failure-02.py",
+    "sha256": "5fe6317d281fc9b0e8535b4eea694971024145d2b0691ab64a40b83029a1c784"
+  },
+  "identitySourceRules": {
+    "internal/server/auth.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/server/auth.go",
+      "sha256": "7eca8142ccf646db7720346ec166cfbe4e99c2ebbcc28a1dfd3cf0627409e8c8"
+    },
+    "internal/identity/store.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/store.go",
+      "sha256": "ae15b4f1444159f46bdb7f59ca8c96de40965bf1a8379736d2afe3f3a507690a"
+    },
+    "internal/identity/device_registration.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/device_registration.go",
+      "sha256": "6b00888826fd767e4932d2098e67a3904bcd35c8303927280ff246a2b165b6b7"
+    },
+    "internal/identity/client_sessions.go": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source/internal/identity/client_sessions.go",
+      "sha256": "6f918e7864f1fe288123719cde38863b673e2a14b46d86caeed9ad14562f082b"
+    }
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-backup-limits-revision-01/private/runtime-epoch.json",
+    "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"
+  },
+  "gatewayAttestation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/gateway-attestation.json",
+    "sha256": "b2e04c776fe37672c2e06e1022cc8062add0a1ca4fb132a9255d2aa3564fcc3d"
+  },
+  "gatewayIndex": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/index.json",
+    "sha256": "9a4fc546ab0e38a4632b8bbd8d2259cc06b75cc6f826fc14893e2554d94aedc8"
+  },
+  "physicalRequests": 237,
+  "physicalMethods": {
+    "GET": 233,
+    "POST": 2,
+    "CONNECT": 2
+  },
+  "forwardedCompleteHttpExchanges": 235,
+  "loopbackConnectHandshakes": 1,
+  "pairedGatewayLedgerComplete": true,
+  "externalConnect": {
+    "count": 1,
+    "ordinal": 216,
+    "target": "mb3admin.com:443",
+    "reason": "host_origin_mismatch",
+    "upstreamConnected": false,
+    "upstreamBytesWritten": 0,
+    "intent": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000216-intent.json",
+      "sha256": "ae6635b7cfff0dc72b419b76c8cb68dc501a34eea88b29686b7d044cf6a87af7"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000216-result.json",
+      "sha256": "b6a02ca6ad7a15cf74d78b54b8fd1e04fc42e5f9f028620cd4e2f9771b79db64"
+    }
+  },
+  "newLogins": 1,
+  "loginEvidence": {
+    "ordinal": 209,
+    "intent": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000209-intent.json",
+      "sha256": "a242fcfb18e2daaec94595059ac3f658e7a9aa114fc69876004e0a6aa7120c32"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000209-result.json",
+      "sha256": "e90cccb23b55925f9bdc82225a2212af6a18729863b2f441cddfb72587df5a3b"
+    }
+  },
+  "capabilityAnnouncement": {
+    "ordinal": 211,
+    "status": 204,
+    "storedProjectionMatchesBrowserDeclaration": true,
+    "physicalBodyRetained": false,
+    "intent": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000211-intent.json",
+      "sha256": "ddf0d4672cbd7f743b752ca2a16483dddde06bf06d4b7860dd9efc8f0e8e5e00"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/gateway/private/request-000211-result.json",
+      "sha256": "c38de7f48cd6d6d7c144beb8a8b73eabe414c0de9122af96fb3666808492f76a"
+    }
+  },
+  "playbackStarted": false,
+  "clientAcceptance": false,
+  "browserFailure": "candidate_operation_timeout",
+  "specificUiFailureCause": "not_established_by_this_receipt",
+  "sourceBeforeMovie": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/source-before.json",
+    "sha256": "3bd3aa30026c0b00c87e9eae68def234b1d728bfff07a4216ee366644f32baf5"
+  },
+  "sourceAfterMovie": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/source-after.json",
+    "sha256": "a6bebe5b605dcd4ace4b5a9467cde9c580d9303bdd577757bbbcc1a5341f0085"
+  },
+  "sourceBeforeCleanup": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/source-before.json",
+    "sha256": "0f0d88bae625165182b4237821984f86260f903fdde8afffaff54af3c7b4ab68"
+  },
+  "sourceAfterCleanup": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/source-after.json",
+    "sha256": "2a2f26a5a6bb66869db2dc0894eb8fbc2565ad8784b3b07405fc2c4984349ba8"
+  },
+  "sourceBeforeRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/source-before-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "sourceAfterRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/source-after-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "preservation": {
+    "ownedTables": 35,
+    "unchangedTablesAcrossAllPhases": 32,
+    "allPreviouslyExistingRowsPreservedExceptOwnedCleanupTouch": true,
+    "movieToCleanupBridgeAllTablesAndSequencesExact": true,
+    "movieAdditions": {
+      "sessions": 1,
+      "devices": 1,
+      "sessionLoginActivity": 1
+    },
+    "movieSequenceDeltas": {
+      "activity_entries_id_seq": 1,
+      "devices_id_seq": 1
+    },
+    "cleanupOwnedSessionChangedFields": [
+      "last_seen_at",
+      "revoked_at"
+    ],
+    "cleanupOwnedDeviceChangedFields": [
+      "last_seen_at"
+    ],
+    "cleanupNewActivity": {
+      "count": 1,
+      "action": "session.revoked"
+    },
+    "cleanupSequenceDeltas": {
+      "activity_entries_id_seq": 1
+    },
+    "allOtherRowsFieldsAndSequencesExact": true
+  },
+  "ownedSessionId": "19dc6345340fa7c6d231bbf3a4ac6d23",
+  "ownedDeviceRegistryId": 7,
+  "allTenSessionsRevoked": true,
+  "playSessions": 0,
+  "clientPlaybackReferences": 0,
+  "userItemDataRows": 0,
+  "cleanupHttp": [
+    {
+      "method": "POST",
+      "route": "/emby/Sessions/Logout",
+      "status": 204,
+      "complete": true,
+      "intent": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/001-logout-owned-movie03-intent.json",
+        "sha256": "586e569e6541b63abf6ee27e324c00682cf43731fa134e8cca162b79c24d70b1"
+      },
+      "response": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/001-logout-owned-movie03-response.json",
+        "sha256": "5cd1f9e7db6eef46eeb6eceaeeec38c0527c0a0b3a612122ea2a4f85649a444c"
+      },
+      "sameOwnedToken": true
+    },
+    {
+      "method": "GET",
+      "route": "/emby/System/Info",
+      "status": 401,
+      "complete": true,
+      "intent": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/002-prove-owned-movie03-revoked-intent.json",
+        "sha256": "bafa19a664d0a351e1d157f55493ea53dcf25751dd1313418ad174025188ae13"
+      },
+      "response": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/002-prove-owned-movie03-revoked-response.json",
+        "sha256": "033985c30b1cc16e6a72118763b37e468e71b3429854584e13645f0eaf6a51fe"
+      },
+      "sameOwnedToken": true
+    }
+  ],
+  "cleanupReportRetained": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-movie03-cleanup-01/private/report.json",
+    "sha256": "ce2a36b4911a34b2e1ff5d9cc2795aa105f594494a2c6d8decfdcf23bc07c0dc"
+  },
+  "cleanupReportOriginalStatus": "cleanup_incomplete",
+  "cleanupCheckerFailure": {
+    "errorType": "AssertionError",
+    "reason": "The checker excluded only revoked_at; authenticated Logout also legitimately touched the owned session and device last_seen_at.",
+    "businessHttpFailure": false,
+    "cleanupRerun": false
+  },
+  "workers": {
+    "gateway": {
+      "pid": 436669,
+      "invocationId": "146bddd834414b3ea1f419d3d7596287",
+      "exitCode": 0,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/gateway-terminal.json",
+        "sha256": "38dec945df05906fe5cff0416fc0be433928342dc00dc5e921cf030f7b915332"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/gateway-closed.json",
+        "sha256": "72a14f3bde4a5dd7dd5fda96e53bb53765e291bca8537f30e6388b113e867750"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    },
+    "browser": {
+      "pid": 436677,
+      "invocationId": "7979e2e5818f439387a30696cd84c572",
+      "exitCode": 1,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/browser-terminal.json",
+        "sha256": "a1505417942f9ae99d555cb630c803dc9bbfadf71148fbb3d27c060300d71e2f"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-03/private/browser-closed.json",
+        "sha256": "03a5b7545a2b9f7c4f6bc53aa1ad78478e9e8c02eb7534dfa807be9c62844d17"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    }
+  },
+  "browserAndGatewayClosed": true,
+  "gatewayExitCode": 0,
+  "browserExitCode": 1,
+  "scopeConsumed": true,
+  "newScopeRequired": true,
+  "automaticBusinessRetry": false,
+  "vendorAssetBodiesRead": false,
+  "readerCorrection": "The unique pre-forward rejection binds its complete intent header and the gateway result initial-request projection; source behavior was checked without repeating business requests.",
+  "reviewHttpRequests": 0,
+  "reviewSqlQueries": 0,
+  "reviewRuntimeProbes": 0,
+  "reviewBrowserStarts": 0,
+  "reviewServiceActions": 0,
+  "reviewBusinessWrites": 0
+}

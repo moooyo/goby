@@ -1,0 +1,182 @@
+{
+  "kind": "audited-core-client-prelogin-failure-closeout",
+  "status": "closed_prelogin_guard_failure_ui_readiness_unproven",
+  "capturedAt": "2026-09-13T10:52:17.211650+00:00",
+  "reviewMethod": "saved_artifact_reconciliation",
+  "scenario": "movie",
+  "runId": "movie-02",
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/host-startup-tool-verification-01/movie-input-02.json",
+    "sha256": "7739a53285f31f93e949eb0b9423327c79487ee3c585b3e554c6fb6d296546af"
+  },
+  "runner": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/host-startup-tool-verification-01/run-audited-candidate-client.py",
+    "sha256": "068930b00902ddb770f5bea0e49cf32530361fb587313c8cde25831172ca3a11"
+  },
+  "reviewer": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/close-core-movie02-prelogin-01.py",
+    "sha256": "ede2267b9fb23eb95aba8824ed9317479fcbcaef05599936e897629b6a0800a0"
+  },
+  "failure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/failure.json",
+    "sha256": "ac3cb37d99bc31035438e05bffe17e01115949aad4594823a49c04eadef567c1"
+  },
+  "observation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/browser/observation.json",
+    "sha256": "e1604b1f0dc7c48c4b697ff7b807ec1919e3438f32f16a033c5abb4267a4fb83"
+  },
+  "hostingInitialization": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-startup-01/private/report.json",
+    "sha256": "3b951bbee3f124321ca6f8f05b90b3a3243969aa27fff6bc348d157b044b6a8d"
+  },
+  "hosting": {
+    "path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json",
+    "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-backup-limits-revision-01/private/runtime-epoch.json",
+    "sha256": "72e25f907619fbdf82879070c6fce6178cc8c7881e8015a99991f62e64a2a73e"
+  },
+  "initialIndex": {
+    "ordinal": 1,
+    "method": "GET",
+    "path": "/web/index.html",
+    "status": 200,
+    "location": null,
+    "contentType": [
+      "text/html; charset=UTF-8"
+    ],
+    "contentLength": [
+      "15101"
+    ],
+    "intent": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/private/request-000001-intent.json",
+      "sha256": "601d3ef4f453c58313e7bd00ad7a63c5ec6740d969b8171e9bef581a6883528a"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/private/request-000001-result.json",
+      "sha256": "cfc45f199cc0945501797e257413dc7cab2ba7a45044bf6326281d0d1015c761"
+    },
+    "assetBodyReadByReview": false
+  },
+  "manualLoginAssets": {
+    "requests": 2,
+    "status": 200,
+    "evidence": [
+      {
+        "ordinal": 203,
+        "result": {
+          "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/private/request-000203-result.json",
+          "sha256": "06c71039a8da913d9cdcdafc28f946c17f0e080773a73d3e1493dec72fd554e2"
+        }
+      },
+      {
+        "ordinal": 207,
+        "result": {
+          "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/private/request-000207-result.json",
+          "sha256": "4506db83dbbd9e5e7e5e07c7a4fcb50d84508fee359587cc2684a32c9d79eaf7"
+        }
+      }
+    ]
+  },
+  "physicalRequests": 208,
+  "physicalMethods": {
+    "GET": 208
+  },
+  "httpStatusCounts": {
+    "200": 208
+  },
+  "backendRequestCounts": {
+    "reference": 202,
+    "goby": 6
+  },
+  "startupApiRequests": 0,
+  "startupApiErrorResponses": 0,
+  "gatewayAttestation": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/gateway-attestation.json",
+    "sha256": "c252c6ba302ece5e0793dc61e862ad7eb0a46383afe1c97aa9bc1c202443c3c5"
+  },
+  "gatewayIndex": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/gateway/index.json",
+    "sha256": "f6f5ea7cda9b3078d90d82b886266c39a36106a75a5a7b66a2a147c657c6a78c"
+  },
+  "pairedGatewayLedgerComplete": true,
+  "completeHttpExchanges": 208,
+  "unrecordedConnections": 0,
+  "newLogins": 0,
+  "playbackStarted": false,
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/source-before.json",
+    "sha256": "5b96ad6dfd2de03e5c7cad70f4ba92b6a569f47f434f98ceb1929c291ed4f060"
+  },
+  "sourceAfter": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/source-after.json",
+    "sha256": "94c7bc3f1463d0dfe47a3b790bf1389bd6dc6a73c6c49d602760626c03c04f75"
+  },
+  "sourceBeforeRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/source-before-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "sourceAfterRuntime": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/source-after-runtime.json",
+    "sha256": "7e283d5491f1054cb3b8ec14877e3a5e5cb368f1bc918b6d351f0c2994d8adb3"
+  },
+  "sourceTablesExact": 35,
+  "sequencesExact": true,
+  "allNineSessionsStillRevoked": true,
+  "playSessions": 0,
+  "clientPlaybackReferences": 0,
+  "userItemDataRows": 0,
+  "actorPlaybackHistoryStillEmpty": true,
+  "browserFailure": "candidate_guard_rejected",
+  "specificUiFailureCause": "not_established_by_this_receipt",
+  "loginUiReadiness": "unproven",
+  "workers": {
+    "gateway": {
+      "pid": 435262,
+      "invocationId": "6701d49148f34f39922bd0b20502d9c5",
+      "exitCode": 0,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/gateway-terminal.json",
+        "sha256": "77f6eaf2f3145bef4cb6f9b92a4db7259935194878f2c066e85eb601b8c25e01"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/gateway-closed.json",
+        "sha256": "6d0dd47a0227c8506a8a20017e26b3cbf9011236d1d5d83392fccf968bb680df"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    },
+    "browser": {
+      "pid": 435271,
+      "invocationId": "8360c4bcc3d94d8390b3709f0f3a8a3a",
+      "exitCode": 1,
+      "terminal": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/browser-terminal.json",
+        "sha256": "490bf58e791fe53b0a6b9273ff1d6308095b0f0d3f497e7b92972d0712224b77"
+      },
+      "closure": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-movie-02/private/browser-closed.json",
+        "sha256": "5cf7e82e5fa7f0233c4127d14e87341608f561c3af9cffde2d7c7b79056436a0"
+      },
+      "pidAbsentAsRecorded": true,
+      "recursiveCgroupEmptyAsRecorded": true
+    }
+  },
+  "browserAndGatewayClosed": true,
+  "gatewayExitCode": 0,
+  "browserExitCode": 1,
+  "hostingInitializationStillValidAsOfAttempt": true,
+  "candidateAdmissionStillValid": true,
+  "clientAcceptance": false,
+  "scopeConsumed": true,
+  "newScopeRequired": true,
+  "automaticBusinessRetry": false,
+  "vendorAssetBodiesRead": false,
+  "reviewHttpRequests": 0,
+  "reviewSqlQueries": 0,
+  "reviewRuntimeProbes": 0,
+  "reviewBrowserStarts": 0,
+  "reviewServiceActions": 0,
+  "reviewBusinessWrites": 0
+}

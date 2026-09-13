@@ -1,0 +1,19 @@
+{
+  "kind": "audited-candidate-client-runner-pure-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T10:54:59.392570+00:00",
+  "sourcePins": {
+    "run-audited-candidate-client.py": "2c6667d3feae975ead60968bfd1b902af55bfcf957b9918a2e97960889be1975",
+    "test-run-audited-candidate-client.py": "5dfa6af54103ac924dc908a2c99413c8397febf1d89b83127adc86cd8e2cff67"
+  },
+  "compileChecksPassed": 2,
+  "exitCode": 0,
+  "testsRun": 11,
+  "passed": true,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "404e3ede6372af82c4c59ae50e7e0200973613bf5443cee8bc04b33de393cdcc",
+  "browserStarted": false,
+  "serviceActions": 0,
+  "sqlQueries": 0,
+  "httpRequests": 0
+}

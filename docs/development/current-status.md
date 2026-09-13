@@ -91,9 +91,33 @@ one owned administrator, no media libraries, retained network restrictions and
 verified logout/401. All 35 Goby tables and sequences, its processes and lease,
 and the hosting process remain exact. The initializer and new pre-browser gate
 passed [22 targeted remote checks](audited-client-host-startup-tool-verification.json).
-A fresh movie scope consumes that explicit initialization receipt; acceptance
-remains pending. The previous attempt and hosting evidence remain retained;
-the admitted Goby binary and configuration remain unchanged.
+[Movie02](audited-core-movie02-prelogin-closeout.json) consumed that explicit initialization receipt and reached the normal
+manual-login entry, but stopped at a generic adapter guard before authentication.
+It created no session or playback and all source tables and sequences remain
+exact; all 208 GETs completed with status 200 and both workers closed. The adapter
+omitted the form wait used by the accepted client runtime. The corresponding
+form, logout-menu and response waits are restored with unchanged selectors,
+asynchronous regressions and precise failure phases. The revision passed
+[34 adapter checks](audited-core-client-ui-wait-verification.json) and
+[11 controller checks](audited-core-client-ui-wait-runner-verification.json)
+remotely; unchanged offline closeout tests are reused explicitly. Movie03
+authenticated once, then timed out while the browser observer awaited complete
+headers for an already completed Service Worker bootstrap request. The pending
+observer also blocked UI logout. A separate owned-token cleanup returned 204
+and then 401. The [independent four-stage reconciliation](audited-core-movie03-failure-closeout.json)
+confirms ten revoked sessions and only the expected session/device/audit changes.
+The original over-strict cleanup checker remains retained; no logout was repeated.
+No playback occurred. An external registration CONNECT was denied before an
+upstream connection. The bounded observer and independent cleanup correction
+passed [39 adapter tests](audited-core-client-observer-cleanup-verification.json),
+[11 controller checks](audited-core-client-observer-cleanup-runner-verification.json)
+and the [actual saved bootstrap replay](audited-core-client-observer-replay.json).
+The independently reviewed pause permits one new movie04 attempt. Another tooling
+failure stops consecutive browser iterations pending offline lifecycle review.
+The old movie02 generic failure cannot establish
+which individual guard failed. Both attempts and hosting evidence remain
+retained; acceptance is pending and the admitted Goby binary and configuration
+remain unchanged.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27

@@ -1,0 +1,49 @@
+{
+  "kind": "audited-candidate-core-client-closeout-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T11:07:11.350018+00:00",
+  "sourcePins": {
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-close-audited-candidate-client.mjs": "d67f36cc16c4592d930698fd2ec4259716bdd19d239b0879b78c23adc6f1c85c",
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "close-audited-candidate-client.mjs": "38e8a96e057fee491b4c2324d510779e55890d37e04fdc93d0be71df23cca8ce",
+    "client-browser-playback.mjs": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac",
+    "test-client-browser-audited-candidate.mjs": "a5497ff8544e1d960ccc8ba8bbb6cd4e9aed1b196bbb491e7a1266fa07930edc",
+    "client-browser-audited-candidate.mjs": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016"
+  },
+  "compileChecks": [
+    {
+      "source": "client-browser-audited-candidate.mjs",
+      "exitCode": 0
+    },
+    {
+      "source": "test-client-browser-audited-candidate.mjs",
+      "exitCode": 0
+    }
+  ],
+  "adapterExitCode": 0,
+  "adapterCounts": {
+    "tests": 39,
+    "pass": 39,
+    "fail": 0,
+    "skipped": 0
+  },
+  "sourceUnchanged": true,
+  "closerCounts": {
+    "testCount": 12,
+    "passed": 12,
+    "failed": 0,
+    "sourceUnchanged": true
+  },
+  "closerChecksExecuted": false,
+  "reusedCloseoutVerification": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/av-tool-verification-04/verification.json",
+    "sha256": "1ed8fe0d995026aafc2bdd51aed5b685eec28b66082c15ae29f6e9499ef7f0fa"
+  },
+  "browserStarted": false,
+  "businessHttp": false,
+  "sqlQueries": 0,
+  "passed": true
+}

@@ -16,6 +16,7 @@ const SHA = /^[0-9a-f]{64}$/, ID = /^[0-9a-f]{32}$/;
 const PLAYWRIGHT = '/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright';
 const SCENARIOS = ['movie', 'episode', 'mp3', 'flac', 'subtitles', 'tv-browse'];
 export const GATEWAY_CLOSEOUT_SECONDS = 30;
+export const REQUEST_HEADER_TIMEOUT_MS = 5000;
 const sha = value => createHash('sha256').update(value).digest('hex');
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const need = (value, reason = 'candidate_guard_rejected') => { if (!value) throw new Error(reason); };
@@ -175,6 +176,109 @@ export function candidateRequestBody(scope, method, contentType, bytes) {
   catch { return { body_parse_failed: true }; }
 }
 
+export async function candidateLoginControls(form, manual, setPhase = () => {}) {
+  const step = async (phase, operation) => {
+    setPhase(phase);
+    try { return await operation(); }
+    catch (error) {
+      if (error.message === 'candidate_time_budget_exhausted') throw error;
+      throw new Error('candidate_login_' + phase + '_failed');
+    }
+  };
+  await step('entry_wait', () => Promise.any([
+    form.waitFor({ state: 'visible', timeout: 15000 }), manual.waitFor({ state: 'visible', timeout: 15000 }),
+  ]));
+  await step('manual_open', async () => {
+    if (!await form.isVisible()) await manual.locator('xpath=..').getByRole('button').click({ timeout: 10000 });
+  });
+  // SPA navigation may finish its click before the manual form is mounted.
+  await step('form_wait', () => form.waitFor({ state: 'visible', timeout: 10000 }));
+  const user = form.locator('input[type="text"]:visible'), password = form.locator('input[type="password"]:visible');
+  const submit = form.getByRole('button', { name: 'Sign In', exact: true });
+  await step('controls_wait', () => Promise.all([user, password, submit].map(control => control.waitFor({ state: 'visible', timeout: 10000 }))));
+  const counts = await step('controls_count', () => Promise.all([user.count(), password.count(), submit.count()]));
+  need(counts[0] === 1, 'candidate_login_username_not_unique');
+  need(counts[1] === 1, 'candidate_login_password_not_unique');
+  need(counts[2] === 1, 'candidate_login_submit_not_unique');
+  return { user, password, submit };
+}
+
+export async function candidateSignOutControl(control) {
+  try { await control.waitFor({ state: 'visible', timeout: 10000 }); }
+  catch (error) {
+    if (error.message === 'candidate_time_budget_exhausted') throw error;
+    throw new Error('candidate_logout_control_wait_failed');
+  }
+  need(await control.count() === 1, 'candidate_logout_control_not_unique');
+  return control;
+}
+
+export async function candidateAuthenticationAction(control, response, kind, setPhase = () => {}) {
+  const observed = response.catch(() => null);
+  need(['login', 'logout'].includes(kind), 'candidate_authentication_action_invalid');
+  setPhase('submit'); await control.click({ timeout: kind === 'login' ? 10000 : 8000 });
+  setPhase('response'); const reply = await observed, expected = kind === 'login' ? 200 : 204;
+  need(reply !== null, 'candidate_' + kind + '_response_unavailable');
+  need(reply.status() === expected, 'candidate_' + kind + '_response_not_' + expected);
+}
+
+export async function candidateRequestHeaders(request, row, manifest, milliseconds = REQUEST_HEADER_TIMEOUT_MS) {
+  need(Number.isSafeInteger(milliseconds) && milliseconds > 0 && milliseconds <= REQUEST_HEADER_TIMEOUT_MS, 'candidate_header_deadline_invalid');
+  let headers;
+  try { headers = await bounded(Promise.resolve().then(() => request.allHeaders()), milliseconds, 'candidate_request_headers_timeout'); }
+  catch (error) {
+    const reason = error.message === 'candidate_request_headers_timeout' ? error.message : 'candidate_request_headers_unavailable';
+    let bootstrap = false;
+    try {
+      const url = new URL(row.url);
+      bootstrap = row.allowed === true && row.origin === 'target' && row.scope === 'service_worker' && row.main_frame === false &&
+        row.method === 'GET' && row.completed === true && row.failed !== true && row.kind === 'read' &&
+        url.origin === manifest.browserOrigin && url.pathname === '/web/serviceworker.js' && !url.search && !url.hash && !url.username && !url.password;
+    } catch { /* An invalid URL cannot qualify as bootstrap metadata. */ }
+    row.metadata_unavailable = { operation: 'request_headers', reason, accepted_bootstrap: bootstrap };
+    if (!bootstrap) throw new Error(reason);
+    return null;
+  }
+  need(object(headers) && Object.values(headers).every(value => typeof value === 'string'), 'candidate_request_headers_invalid');
+  return headers;
+}
+
+export function createCandidateObserverQueue({ elapsed = () => 0, onFailure = () => {}, onTimeout = () => {} } = {}) {
+  const pending = new Set(), timedOut = new WeakSet();
+  const snapshot = () => [...pending].map(({ ordinal, operation, started_elapsed_ms }) => ({ ordinal, operation, started_elapsed_ms }));
+  return {
+    snapshot,
+    track(ordinal, operation, observe) {
+      const entry = { ordinal, operation, started_elapsed_ms: elapsed(), promise: null };
+      pending.add(entry);
+      entry.promise = Promise.resolve().then(() => observe(value => { entry.operation = value; })).catch(error => {
+        const reason = /^candidate_[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'candidate_observation_failed';
+        onFailure({ ordinal: entry.ordinal, operation: entry.operation, started_elapsed_ms: entry.started_elapsed_ms,
+          finished_elapsed_ms: elapsed(), reason });
+      }).finally(() => pending.delete(entry));
+      return entry.promise;
+    },
+    async drain(milliseconds = 15000) {
+      need(Number.isSafeInteger(milliseconds) && milliseconds > 0 && milliseconds <= 15000, 'candidate_observer_deadline_invalid');
+      need(![...pending].some(entry => timedOut.has(entry)), 'candidate_observer_previous_timeout');
+      try { await bounded((async () => { while (pending.size) await Promise.all([...pending].map(entry => entry.promise)); })(),
+        milliseconds, 'candidate_observer_drain_timeout'); }
+      catch (error) {
+        for (const entry of pending) timedOut.add(entry);
+        onTimeout({ elapsed_ms: elapsed(), pending: snapshot() });
+        throw error;
+      }
+    },
+  };
+}
+
+export async function candidateOwnedUICleanup({ observe, stopMedia, logout, onFailure }) {
+  for (const [operation, action] of [['observer', observe], ['media', stopMedia], ['logout', logout]]) {
+    try { await action(); }
+    catch (error) { onFailure(operation, error); }
+  }
+}
+
 export function candidateLogoutProven(proof, tokenHash) {
   const entries = proof?.entries?.filter(row => row.token_fingerprint === tokenHash) ?? [];
   return proof?.observer_errors === 0 && proof?.logout_overflow === 0 && entries.length === 1 &&
@@ -292,7 +396,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
   const report = { kind: 'audited-candidate-client-report', version: 1, run_id: manifest.runId, scenario: manifest.scenario,
     manifest_sha256: manifestSha256, source: manifest.source, started_at: new Date().toISOString(), started_monotonic_ns: started.toString(), requests: [], sessions: [],
     snapshots: [], page_errors: [], blocked_external: [], external_attempts: [], scope_observations: [], observed_rejections: [],
-    logout: { attempted: false }, cleanup: {}, failure: null,
+    logout: { attempted: false }, cleanup: {}, observer: { failures: [], drain_timeouts: [], pending: [] }, failure: null,
     browser_environment: { service_workers: 'allow', fresh_context: true, proxy_bypass: '<-loopback>', quic: 'disabled', nonproxied_webrtc_udp: 'disabled' },
     gateway: { attestation_sha256: manifest.gatewayAttestation.sha256, input_sha256: gateway.inputSha256,
       ledger_root: gateway.ledgerRoot, started_monotonic_ns: gateway.startedMonotonicNs, deadline_monotonic_ns: gateway.deadlineMonotonicNs,
@@ -301,8 +405,11 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       external_validation: 'pending_outer_gateway_closure' },
     evidence_boundary: 'Original UI and frame/Service Worker context observations; physical gateway validation and P/Q state checks are external. No vendor asset bodies are read.' };
   let browser, context, page, sessionProof, activeSession, episodeLocation = null, cleanupMode = false, requestOrdinal = 0;
-  const secrets = [credential.password], entries = new WeakMap(), pending = new Set(), processAnchors = {};
+  const secrets = [credential.password], entries = new WeakMap(), processAnchors = {};
   const remaining = () => candidateRemainingMilliseconds(manifest.budgets, elapsed(), cleanupMode);
+  const observations = createCandidateObserverQueue({ elapsed,
+    onFailure: failure => { report.observer.failures.push(failure); report.failure ??= failure.reason; },
+    onTimeout: timeout => report.observer.drain_timeouts.push(timeout) });
   // Existing UI functions keep their own control logic. Bound each native action
   // by its remaining phase budget instead of racing an entire live workflow.
   const wrappedObjects = new WeakMap();
@@ -341,12 +448,13 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     try { await directory.sync(); } finally { await directory.close(); }
     return { filename: name, sha256: sha(bytes) };
   }
-  function track(promise) {
-    const operation = Promise.resolve(promise).catch(() => { report.failure ??= 'candidate_observation_failed'; });
-    pending.add(operation); operation.finally(() => pending.delete(operation));
-  }
+  const track = (ordinal, operation, observe) => observations.track(ordinal, operation, observe);
   async function drain() {
-    await bounded((async () => { while (pending.size) await Promise.all([...pending]); })(), 15000);
+    await observations.drain(Math.min(15000, remaining()));
+  }
+  async function drainForCleanup() {
+    try { await drain(); }
+    catch (error) { report.failure ??= /^candidate_[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'candidate_observer_drain_failed'; }
   }
   async function pin() {
     need(elapsed() < (cleanupMode ? manifest.budgets.maximumSeconds * 1000 : normalLimit), 'candidate_time_budget_exhausted');
@@ -391,38 +499,61 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     return values[0] ?? null;
   }
   async function loginUI(initial = false) {
-    await pin();
-    const maximum = manifest.scenario === 'movie' ? 2 : 1;
-    need(report.sessions.length < maximum && (!activeSession || activeSession.logged_out), 'candidate_login_budget_exhausted');
-    if (initial) await page.goto(manifest.clientUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    const form = page.locator('form:has(input[type="password"]:visible)'), manual = page.getByText('Manual Login', { exact: true });
-    await Promise.any([form.waitFor({ state: 'visible', timeout: 15000 }), manual.waitFor({ state: 'visible', timeout: 15000 })]);
-    if (!await form.isVisible()) await manual.locator('xpath=..').getByRole('button').click({ timeout: 10000 });
-    const user = form.locator('input[type="text"]:visible'), password = form.locator('input[type="password"]:visible');
-    const submit = form.getByRole('button', { name: 'Sign In', exact: true });
-    need(await user.count() === 1 && await password.count() === 1 && await submit.count() === 1);
-    await user.fill(credential.username); await password.fill(credential.password);
-    await save('login-' + report.sessions.length + '-intent.json', { actor_id: manifest.actor.id, elapsed_ms: elapsed() });
-    const count = report.sessions.length, response = page.waitForResponse(row => candidateRequestScope(row.url(), row.request().method(), manifest).kind === 'login', { timeout: 15000 });
-    await submit.click({ timeout: 10000 }); need((await response).status() === 200);
-    await password.waitFor({ state: 'hidden', timeout: 15000 }); await drain();
-    need(report.sessions.length === count + 1 && activeSession && !report.failure, 'candidate_login_not_proven');
-    await snapshot('authenticated-' + count);
+    const phase = value => { report.login_phase = value; };
+    try {
+      phase('pin'); await pin();
+      const maximum = manifest.scenario === 'movie' ? 2 : 1;
+      need(report.sessions.length < maximum && (!activeSession || activeSession.logged_out), 'candidate_login_budget_exhausted');
+      phase('navigation');
+      if (initial) await page.goto(manifest.clientUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const form = page.locator('form:has(input[type="password"]:visible)'), manual = page.getByText('Manual Login', { exact: true });
+      const { user, password, submit } = await candidateLoginControls(form, manual, phase);
+      phase('fill_credentials'); await user.fill(credential.username); await password.fill(credential.password);
+      phase('intent'); await save('login-' + report.sessions.length + '-intent.json', { actor_id: manifest.actor.id, elapsed_ms: elapsed() });
+      const count = report.sessions.length;
+      phase('response_arm');
+      const response = page.waitForResponse(row => candidateRequestScope(row.url(), row.request().method(), manifest).kind === 'login', { timeout: 15000 });
+      await candidateAuthenticationAction(submit, response, 'login', phase);
+      phase('form_hidden'); await password.waitFor({ state: 'hidden', timeout: 15000 });
+      phase('observation'); await drain();
+      need(report.sessions.length === count + 1 && activeSession && !report.failure, 'candidate_login_not_proven');
+      phase('snapshot'); await snapshot('authenticated-' + count);
+      phase('authenticated');
+    } catch (error) {
+      report.login_failure_phase = report.login_phase;
+      const reason = /^candidate_[a-z0-9_]+$/.test(error.message ?? '') && error.message !== 'candidate_guard_rejected'
+        ? error.message : 'candidate_login_' + report.login_phase + '_failed';
+      throw new Error(reason);
+    }
   }
   async function logoutUI() {
     if (!activeSession || activeSession.logged_out) return;
-    await pin();
-    let signOut = page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true });
-    if (!await signOut.count()) await page.getByRole('button', { name: 'Settings', exact: true }).filter({ visible: true }).click({ timeout: 8000 });
-    signOut = page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true }); need(await signOut.count() === 1);
-    await signOut.click({ timeout: 8000 });
-    await Promise.any([page.getByText('Manual Login', { exact: true }).waitFor({ state: 'visible', timeout: 15000 }),
-      page.locator('form:has(input[type="password"]:visible)').waitFor({ state: 'visible', timeout: 15000 })]);
-    await drain(); need(activeSession.logged_out, 'candidate_logout_not_observed'); await snapshot('logged-out');
+    const phase = value => { report.logout_phase = value; };
+    try {
+      phase('pin'); await pin();
+      let signOut = page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true });
+      phase('settings');
+      if (!await signOut.count()) await page.getByRole('button', { name: 'Settings', exact: true }).filter({ visible: true }).click({ timeout: 8000 });
+      phase('control_wait');
+      signOut = await candidateSignOutControl(page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true }));
+      phase('response_arm');
+      const response = page.waitForResponse(row => candidateRequestScope(row.url(), row.request().method(), manifest).kind === 'logout', { timeout: 15000 });
+      await candidateAuthenticationAction(signOut, response, 'logout', phase);
+      phase('login_view');
+      await Promise.any([page.getByText('Manual Login', { exact: true }).waitFor({ state: 'visible', timeout: 15000 }),
+        page.locator('form:has(input[type="password"]:visible)').waitFor({ state: 'visible', timeout: 15000 })]);
+      phase('observation'); await drain(); need(activeSession.logged_out, 'candidate_logout_not_observed');
+      phase('snapshot'); await snapshot('logged-out'); phase('logged_out');
+    } catch (error) {
+      report.logout_failure_phase = report.logout_phase;
+      const reason = /^candidate_[a-z0-9_]+$/.test(error.message ?? '') && error.message !== 'candidate_guard_rejected'
+        ? error.message : 'candidate_logout_' + report.logout_phase + '_failed';
+      throw new Error(reason);
+    }
   }
   async function stopVisibleMedia() {
     if (!page) return;
-    await drain();
+    await drainForCleanup();
     const selected = selectedCandidateItem(manifest);
     const starts = report.requests.filter(row => row.kind === 'playback_report' && /\/Playing\/?$/i.test(row.route ?? '') && row.body?.ItemId === selected?.id && row.status >= 200 && row.status < 300);
     const unfinished = starts.filter(start => !report.requests.some(stop => stop.kind === 'playback_report' && /\/Stopped\/?$/i.test(stop.route ?? '') &&
@@ -436,7 +567,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     if (!active && pendingStops.length) {
       const until = Math.min(elapsed() + 15000, manifest.budgets.maximumSeconds * 1000);
       while (pendingStops.some(start => !matchingStops(start).some(stop => stop.completed && stop.status >= 200 && stop.status < 300)) && elapsed() < until) {
-        await page.waitForTimeout(100); await drain();
+        await page.waitForTimeout(100); await drainForCleanup();
       }
       need(pendingStops.every(start => matchingStops(start).some(stop => stop.completed && stop.status >= 200 && stop.status < 300)),
         'candidate_existing_stopped_report_unresolved');
@@ -454,7 +585,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     const deadline = Math.min(elapsed() + 15000, manifest.budgets.maximumSeconds * 1000);
     while (unfinished.some(start => !report.requests.some(stop => /\/Stopped\/?$/i.test(stop.route ?? '') && stop.body?.ItemId === selected?.id &&
       stop.body.PlaySessionId === start.body.PlaySessionId && stop.token_sha256 === start.token_sha256 && stop.completed && stop.status >= 200 && stop.status < 300)) && elapsed() < deadline) {
-      await page.waitForTimeout(100); await drain();
+      await page.waitForTimeout(100); await drainForCleanup();
     }
     need(unfinished.every(start => report.requests.some(stop => /\/Stopped\/?$/i.test(stop.route ?? '') && stop.body?.ItemId === selected?.id &&
       stop.body.PlaySessionId === start.body.PlaySessionId && stop.token_sha256 === start.token_sha256 && stop.completed && stop.status >= 200 && stop.status < 300)),
@@ -553,12 +684,20 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
         if (row.kind === 'external') report.external_attempts.push(observation);
         else if (row.kind !== 'mutation') report.failure ??= 'candidate_observed_scope_violation';
       }
-      track((async () => {
-        row.headers = await request.allHeaders(); const token = tokenFrom(row.headers, request.url()); row.token_sha256 = token ? sha(token) : null;
-        const bytes = request.postDataBuffer(); row.payload_base64 = bytes?.toString('base64') ?? null;
-        Object.assign(row, candidateRequestBody(row, row.method, row.headers['content-type'], bytes));
-        await save('request-' + row.ordinal + '.json', row);
-      })());
+      track(row.ordinal, 'request_headers', async operation => {
+        try {
+          const headers = await candidateRequestHeaders(request, row, manifest, Math.min(REQUEST_HEADER_TIMEOUT_MS, remaining()));
+          if (headers !== null) {
+            row.headers = headers; const token = tokenFrom(headers, request.url()); row.token_sha256 = token ? sha(token) : null;
+            const bytes = request.postDataBuffer(); row.payload_base64 = bytes?.toString('base64') ?? null;
+            Object.assign(row, candidateRequestBody(row, row.method, headers['content-type'], bytes));
+          }
+        } catch (error) {
+          operation('request_save'); await save('request-' + row.ordinal + '.json', row);
+          operation('request_headers'); throw error;
+        }
+        operation('request_save'); await save('request-' + row.ordinal + '.json', row);
+      });
     });
     context.on('response', response => {
       const row = entries.get(response.request()); if (!row) return;
@@ -568,10 +707,12 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
           attribution: 'browser_context_response; gateway association pending' };
         report.observed_rejections.push(rejection); if (row.kind === 'external') report.blocked_external.push(rejection);
       }
-      track((async () => {
+      track(row.ordinal, 'response_observation', async operation => {
         const capture = row.kind === 'login' || row.kind === 'playback_info' || new RegExp('^/Users/' + manifest.actor.id + '/Items/[a-f0-9]{32}/?$', 'i').test(row.route ?? '');
         if (capture) {
-          const bytes = await bounded(response.body(), 15000); need(bytes.length <= 1048576, 'candidate_public_body_limit');
+          operation('response_body');
+          const bytes = await bounded(response.body(), Math.min(15000, remaining())); need(bytes.length <= 1048576, 'candidate_public_body_limit');
+          operation('response_save');
           await save('response-' + row.ordinal + '.json', { status: row.status, headers: row.response_headers, body_base64: bytes.toString('base64'), body_sha256: sha(bytes) });
           if (row.status === 200) {
             const value = JSON.parse(bytes.toString('utf8'));
@@ -593,10 +734,12 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
           }
         }
         if (row.kind === 'logout' && row.scope === 'frame' && row.main_frame && row.status >= 200 && row.status < 300 && activeSession) {
-          const headers = await response.request().allHeaders(); need(sha(tokenFrom(headers, response.request().url()) ?? '') === activeSession.token_sha256);
+          operation('response_logout_headers');
+          const headers = await candidateRequestHeaders(response.request(), row, manifest, Math.min(REQUEST_HEADER_TIMEOUT_MS, remaining()));
+          need(sha(tokenFrom(headers, response.request().url()) ?? '') === activeSession.token_sha256, 'candidate_logout_authority_mismatch');
           activeSession.logged_out = true;
         }
-      })());
+      });
     });
     context.on('requestfinished', request => { const row = entries.get(request); if (row) { row.completed = true; row.finished_elapsed_ms = elapsed(); } });
     context.on('requestfailed', request => {
@@ -628,8 +771,13 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
   finally {
     cleanupMode = true;
     if (page) {
-      try { await pin(); await stopVisibleMedia(); report.cleanup.media_stopped = true; } catch { report.failure ??= 'candidate_media_cleanup_failed'; }
-      try { await drain(); await logoutUI(); } catch { report.failure ??= 'candidate_ui_logout_failed'; }
+      await candidateOwnedUICleanup({ observe: drain,
+        stopMedia: async () => { await pin(); await stopVisibleMedia(); report.cleanup.media_stopped = true; }, logout: logoutUI,
+        onFailure(operation, error) {
+          const reason = /^candidate_[a-z0-9_]+$/.test(error.message ?? '') ? error.message :
+            { observer: 'candidate_observer_drain_failed', media: 'candidate_media_cleanup_failed', logout: 'candidate_ui_logout_failed' }[operation];
+          (report.cleanup.ui_failures ??= []).push({ operation, reason }); report.failure ??= reason;
+        } });
     }
     if (sessionProof) {
       try { await sessionProof.drain(); need(sessionProof.report.outcome === 'all_observed_logout_tokens_rejected' &&
@@ -646,6 +794,7 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
     try { if (browser) await bounded(browser.close(), 15000); report.cleanup.browser_closed = true; } catch { report.failure ??= 'candidate_browser_close_failed'; }
     report.cleanup.gateway_closure = 'owned_by_outer_controller';
     try { await pin(); } catch { report.failure ??= 'candidate_final_pin_failed'; }
+    report.observer.pending = observations.snapshot();
     report.elapsed_ms = elapsed();
     if (report.elapsed_ms > manifest.budgets.maximumSeconds * 1000) report.failure ??= 'candidate_time_budget_exhausted';
     report.outcome = report.failure ? 'failed' : 'scenario_completed';
@@ -658,7 +807,10 @@ export async function runAuditedCandidate({ manifestPath, manifestSha256 }) {
       scope_observation_source: 'BrowserContext events; process-wide and physical scope are verified from the gateway ledger.',
       context_external_attempt_count: report.external_attempts.length, context_external_rejection_event_count: report.blocked_external.length,
       context_observed_rejection_event_count: report.observed_rejections.length,
-      login_count: report.sessions.length, playback_evidence: { required: report.playback_evidence.required, passed: report.playback_evidence.passed,
+      login_count: report.sessions.length, login_phase: report.login_phase ?? null, login_failure_phase: report.login_failure_phase ?? null,
+      logout_phase: report.logout_phase ?? null, logout_failure_phase: report.logout_failure_phase ?? null,
+      observer: report.observer,
+      playback_evidence: { required: report.playback_evidence.required, passed: report.playback_evidence.passed,
         lifecycle_count: report.playback_evidence.lifecycles?.length ?? 0, media_event_count: report.playback_evidence.media_request_ordinals?.length ?? 0,
         progress_event_count: report.playback_evidence.progress_request_ordinals?.length ?? 0 }, cleanup: report.cleanup,
       private_report_sha256: receipt.sha256, evidence_boundary: report.evidence_boundary };

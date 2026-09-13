@@ -8,6 +8,13 @@ import {
   candidateRequestScope,
   validateCandidateLogin,
   candidateRequestBody,
+  candidateLoginControls,
+  candidateSignOutControl,
+  candidateAuthenticationAction,
+  candidateRequestHeaders,
+  createCandidateObserverQueue,
+  candidateOwnedUICleanup,
+  REQUEST_HEADER_TIMEOUT_MS,
   candidateLogoutProven,
   candidateRemainingMilliseconds,
   validateCandidateGateway,
@@ -80,6 +87,224 @@ function loginBody(manifest, number = 1) {
       Client: 'Synthetic Original Client', ApplicationVersion: 'synthetic-version' },
   };
 }
+
+function syntheticLoginControls({ visible = false, counts = {}, formFailure = null } = {}) {
+  const events = [], phases = [];
+  let reveal, clicked, awaitingForm, formWaits = 0;
+  const mounted = new Promise(resolve => { reveal = () => { visible = true; resolve(); }; });
+  const manualClicked = new Promise(resolve => { clicked = resolve; });
+  const postClickFormWait = new Promise(resolve => { awaitingForm = resolve; });
+  if (visible) reveal();
+  const controls = Object.fromEntries(['user', 'password', 'submit'].map(name => [name, {
+    async waitFor(options) { assert.equal(options.state, 'visible'); events.push(name + ':wait'); await mounted; },
+    async count() { assert.equal(visible, true, 'controls must not be counted before the form is mounted'); events.push(name + ':count'); return counts[name] ?? 1; },
+  }]));
+  const form = {
+    async waitFor(options) {
+      assert.equal(options.state, 'visible'); events.push('form:wait');
+      if (++formWaits === 2) awaitingForm();
+      if (formFailure) throw new Error(formFailure);
+      await mounted;
+    },
+    async isVisible() { return visible; },
+    locator(selector) {
+      assert.equal(visible, true, 'controls must not be resolved before the form is mounted');
+      if (selector === 'input[type="text"]:visible') return controls.user;
+      assert.equal(selector, 'input[type="password"]:visible'); return controls.password;
+    },
+    getByRole(role, options) { assert.equal(role, 'button'); assert.deepEqual(options, { name: 'Sign In', exact: true }); return controls.submit; },
+  };
+  const manual = {
+    async waitFor(options) { assert.equal(options.state, 'visible'); events.push('manual:wait'); },
+    locator(selector) {
+      assert.equal(selector, 'xpath=..');
+      return { getByRole(role) {
+        assert.equal(role, 'button');
+        return { async click() { events.push('manual:click'); clicked(); } };
+      } };
+    },
+  };
+  return { form, manual, controls, events, phases, reveal, manualClicked, postClickFormWait, phase: value => phases.push(value) };
+}
+
+test('manual login waits for asynchronous form mounting before resolving or counting its original controls', async () => {
+  const value = syntheticLoginControls();
+  let completed = false;
+  const pending = candidateLoginControls(value.form, value.manual, value.phase).then(result => { completed = true; return result; });
+  await value.manualClicked;
+  await value.postClickFormWait;
+  assert.equal(completed, false);
+  assert.equal(value.events.some(event => event.endsWith(':count')), false);
+  value.reveal();
+  assert.deepEqual(await pending, value.controls);
+  assert.deepEqual(value.phases, ['entry_wait', 'manual_open', 'form_wait', 'controls_wait', 'controls_count']);
+  for (const name of ['user', 'password', 'submit'])
+    assert.ok(value.events.indexOf(name + ':wait') < value.events.indexOf(name + ':count'));
+  assert.equal(value.events.filter(event => event === 'manual:click').length, 1);
+});
+
+test('an already visible login form keeps the same controls and preserves each uniqueness requirement', async () => {
+  const ready = syntheticLoginControls({ visible: true });
+  assert.deepEqual(await candidateLoginControls(ready.form, ready.manual, ready.phase), ready.controls);
+  assert.equal(ready.events.includes('manual:click'), false);
+  for (const [name, reason] of [['user', 'username'], ['password', 'password'], ['submit', 'submit']]) {
+    for (const count of [0, 2]) {
+      const value = syntheticLoginControls({ visible: true, counts: { [name]: count } });
+      await assert.rejects(candidateLoginControls(value.form, value.manual), { message: 'candidate_login_' + reason + '_not_unique' });
+    }
+  }
+});
+
+test('login form wait failures expose a fixed phase code and preserve the existing time budget failure', async () => {
+  const value = syntheticLoginControls({ formFailure: 'synthetic-private-error-detail' });
+  await assert.rejects(candidateLoginControls(value.form, value.manual, value.phase), { message: 'candidate_login_form_wait_failed' });
+  assert.equal(value.phases.at(-1), 'form_wait');
+  assert.equal(value.events.some(event => event.endsWith(':count')), false);
+  const budget = syntheticLoginControls({ formFailure: 'candidate_time_budget_exhausted' });
+  await assert.rejects(candidateLoginControls(budget.form, budget.manual), { message: 'candidate_time_budget_exhausted' });
+});
+
+test('Sign Out waits for the same control to become visible before checking uniqueness', async () => {
+  let reveal, waiting, visible = false, counted = false;
+  const mounted = new Promise(resolve => { reveal = () => { visible = true; resolve(); }; });
+  const waitStarted = new Promise(resolve => { waiting = resolve; });
+  const control = {
+    async waitFor(options) { assert.deepEqual(options, { state: 'visible', timeout: 10000 }); waiting(); await mounted; },
+    async count() { assert.equal(visible, true); counted = true; return 1; },
+  };
+  const pending = candidateSignOutControl(control);
+  await waitStarted;
+  assert.equal(counted, false);
+  reveal();
+  assert.equal(await pending, control);
+  for (const count of [0, 2])
+    await assert.rejects(candidateSignOutControl({ async waitFor() {}, async count() { return count; } }), { message: 'candidate_logout_control_not_unique' });
+});
+
+test('authentication response rejection is handled before a failed click can leave its observer pending', async () => {
+  let rejectResponse, handled = false;
+  const response = new Promise((resolve, reject) => { rejectResponse = reject; });
+  const catchResponse = response.catch.bind(response);
+  response.catch = handler => { handled = true; return catchResponse(handler); };
+  const control = { async click() { assert.equal(handled, true); throw new Error('synthetic_click_failed'); } };
+  await assert.rejects(candidateAuthenticationAction(control, response, 'login'), { message: 'synthetic_click_failed' });
+  rejectResponse(new Error('synthetic_late_observer_failure'));
+  await Promise.resolve();
+});
+
+test('login and logout actions await their observed acknowledgement and retain exact status requirements', async () => {
+  for (const [kind, expected, timeout] of [['login', 200, 10000], ['logout', 204, 8000]]) {
+    let acknowledge, clicked, statusReads = 0, completed = false;
+    const response = new Promise(resolve => { acknowledge = resolve; });
+    const clickFinished = new Promise(resolve => { clicked = resolve; });
+    const phases = [], control = { async click(options) { assert.equal(options.timeout, timeout); clicked(); } };
+    const pending = candidateAuthenticationAction(control, response, kind, phase => phases.push(phase)).then(() => { completed = true; });
+    await clickFinished;
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(completed, false);
+    assert.equal(statusReads, 0);
+    acknowledge({ status() { statusReads++; return expected; } });
+    await pending;
+    assert.equal(statusReads, 1); assert.deepEqual(phases, ['submit', 'response']);
+    await assert.rejects(candidateAuthenticationAction(control, Promise.resolve({ status: () => 401 }), kind),
+      { message: 'candidate_' + kind + '_response_not_' + expected });
+    await assert.rejects(candidateAuthenticationAction(control, Promise.reject(new Error('synthetic_private_transport_detail')), kind),
+      { message: 'candidate_' + kind + '_response_unavailable' });
+  }
+});
+
+function syntheticBootstrapRequest() {
+  return { ordinal: 4, allowed: true, kind: 'read', origin: 'target', scope: 'service_worker', main_frame: false,
+    method: 'GET', url: 'http://127.0.0.1:19196/web/serviceworker.js', elapsed_ms: 10, completed: false, status: null };
+}
+
+test('a finished Service Worker bootstrap with unresolved headers settles its observation and retains explicit unavailable metadata', async () => {
+  const row = syntheticBootstrapRequest(), manifest = syntheticManifest(), failures = [], saved = [];
+  let reads = 0;
+  const queue = createCandidateObserverQueue({ elapsed: () => 10, onFailure: failure => failures.push(failure) });
+  queue.track(row.ordinal, 'request_headers', async operation => {
+    const headers = await candidateRequestHeaders({ allHeaders() { reads++; return new Promise(() => {}); } }, row, manifest, 1);
+    assert.equal(headers, null);
+    operation('request_save'); saved.push(clone(row));
+  });
+  assert.deepEqual(queue.snapshot(), [{ ordinal: 4, operation: 'request_headers', started_elapsed_ms: 10 }]);
+  await Promise.resolve();
+  row.completed = true; row.finished_elapsed_ms = 17;
+  await queue.drain(1000);
+  assert.equal(reads, 1); assert.deepEqual(failures, []); assert.deepEqual(queue.snapshot(), []);
+  assert.equal(saved.length, 1); assert.equal(saved[0].completed, true); assert.equal(saved[0].finished_elapsed_ms, 17);
+  assert.deepEqual(saved[0].metadata_unavailable, {
+    operation: 'request_headers', reason: 'candidate_request_headers_timeout', accepted_bootstrap: true,
+  });
+  for (const field of ['headers', 'token_sha256', 'payload_base64']) assert.equal(Object.hasOwn(saved[0], field), false);
+});
+
+test('unavailable headers remain fatal outside the exact completed same-origin Service Worker bootstrap', async () => {
+  const manifest = syntheticManifest(), never = { allHeaders: () => new Promise(() => {}) };
+  for (const mutate of [
+    row => { row.scope = 'frame'; row.main_frame = true; }, row => { row.method = 'POST'; },
+    row => { row.url = manifest.browserOrigin + '/web/another-script.js'; },
+    row => { row.url = manifest.browserOrigin + '/emby/Users/authenticatebyname'; row.kind = 'login'; },
+    row => { row.url = manifest.browserOrigin + '/emby/Videos/' + id(10) + '/stream'; row.kind = 'media'; },
+    row => { row.url = 'https://mb3admin.com/web/serviceworker.js'; row.origin = 'external'; row.allowed = false; },
+    row => { row.url = 'http://127.0.0.1:19197/web/serviceworker.js'; },
+    row => { row.kind = 'media'; }, row => { row.allowed = false; }, row => { row.origin = 'external'; },
+    row => { row.url += '?api_key=synthetic-query'; }, row => { row.completed = false; },
+    row => { row.failed = true; }, row => { row.main_frame = true; },
+  ]) {
+    const row = syntheticBootstrapRequest(); row.completed = true; mutate(row);
+    await assert.rejects(candidateRequestHeaders(never, row, manifest, 1), { message: 'candidate_request_headers_timeout' });
+    assert.equal(row.metadata_unavailable.accepted_bootstrap, false);
+    assert.equal(Object.hasOwn(row, 'headers'), false);
+  }
+  const row = syntheticBootstrapRequest(), headers = { 'user-agent': 'Synthetic Browser' };
+  assert.equal(await candidateRequestHeaders({ allHeaders: async () => headers }, row, manifest, 100), headers);
+  assert.equal(Object.hasOwn(row, 'metadata_unavailable'), false);
+  await assert.rejects(candidateRequestHeaders({ allHeaders: async () => null }, row, manifest, 100), { message: 'candidate_request_headers_invalid' });
+  for (const milliseconds of [0, -1, REQUEST_HEADER_TIMEOUT_MS + 1])
+    await assert.rejects(candidateRequestHeaders(never, row, manifest, milliseconds), { message: 'candidate_header_deadline_invalid' });
+});
+
+test('observer timeouts preserve pending ordinal and operation without waiting for the same unresolved work again', async () => {
+  let finish;
+  const timeouts = [], queue = createCandidateObserverQueue({ elapsed: () => 12, onTimeout: value => timeouts.push(value) });
+  const observed = queue.track(17, 'request_headers', async operation => {
+    operation('request_save'); await new Promise(resolve => { finish = resolve; });
+  });
+  await assert.rejects(queue.drain(1), { message: 'candidate_observer_drain_timeout' });
+  assert.deepEqual(timeouts, [{ elapsed_ms: 12, pending: [{ ordinal: 17, operation: 'request_save', started_elapsed_ms: 12 }] }]);
+  await assert.rejects(queue.drain(1), { message: 'candidate_observer_previous_timeout' });
+  assert.equal(timeouts.length, 1);
+  finish(); await observed; await queue.drain(1);
+  assert.deepEqual(queue.snapshot(), []);
+});
+
+test('failed critical observations retain their operation and safe reason while releasing the queue', async () => {
+  const failures = [], queue = createCandidateObserverQueue({ elapsed: () => 21, onFailure: failure => failures.push(failure) });
+  queue.track(209, 'request_headers', async () => { throw new Error('candidate_request_headers_timeout'); });
+  queue.track(210, 'response_body', async () => { throw new Error('synthetic private transport detail'); });
+  await queue.drain(1000);
+  assert.deepEqual(queue.snapshot(), []);
+  assert.deepEqual(failures, [
+    { ordinal: 209, operation: 'request_headers', started_elapsed_ms: 21, finished_elapsed_ms: 21, reason: 'candidate_request_headers_timeout' },
+    { ordinal: 210, operation: 'response_body', started_elapsed_ms: 21, finished_elapsed_ms: 21, reason: 'candidate_observation_failed' },
+  ]);
+});
+
+test('observer and media failures cannot prevent an owned UI logout attempt', async () => {
+  const calls = [], failures = [];
+  await candidateOwnedUICleanup({
+    async observe() { calls.push('observer'); throw new Error('candidate_observer_previous_timeout'); },
+    async stopMedia() { calls.push('media'); throw new Error('candidate_owned_stopped_report_missing'); },
+    async logout() { calls.push('logout'); },
+    onFailure(operation, error) { failures.push({ operation, reason: error.message }); },
+  });
+  assert.deepEqual(calls, ['observer', 'media', 'logout']);
+  assert.deepEqual(failures, [
+    { operation: 'observer', reason: 'candidate_observer_previous_timeout' },
+    { operation: 'media', reason: 'candidate_owned_stopped_report_missing' },
+  ]);
+});
 
 test('subtitle language keeps either observed English code without normalization', () => {
   for (const language of ['en', 'eng']) {

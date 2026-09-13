@@ -38,9 +38,31 @@ records no new session or playback, all 35 tables and sequences unchanged, and
 both workers closed. That host's [public startup initialization](../development/audited-original-client-host-startup-closeout.json)
 is now complete: the web entry returns 200, the setup session is revoked,
 the library remains empty, and Goby state is exact. Its tools passed 22 targeted
-remote checks. Run the fresh movie scope using that explicit startup receipt.
-This changes a demonstrated preparation prerequisite; the failed scope remains
-consumed. Continue with TV, audio and subtitle
+remote checks. [Movie02](../development/audited-core-movie02-prelogin-closeout.json)
+reached the normal manual-login entry, then stopped at a
+generic adapter guard before authentication. Source review found that the adapter
+omitted the form wait present in the accepted client runtime. The corresponding
+form, logout-menu and response waits are restored with the original selectors
+and uniqueness checks, delayed-DOM regressions and precise failure phases.
+[34 adapter checks](../development/audited-core-client-ui-wait-verification.json)
+and [11 controller checks](../development/audited-core-client-ui-wait-runner-verification.json)
+passed remotely; the unchanged offline closeout checks are explicitly reused.
+Movie03 used that verified revision and authenticated successfully, but its
+observer then stalled on `request.allHeaders()` for a completed Service Worker
+bootstrap asset. Repeated observer drains also prevented UI logout. The owned
+session was subsequently revoked through two bounded API requests, with 204/401
+responses. Its [failure state is now reconciled](../development/audited-core-movie03-failure-closeout.json),
+including all ten revoked sessions and the expected session/device/audit changes.
+The correction passed [39 observer/UI tests](../development/audited-core-client-observer-cleanup-verification.json),
+[11 controller checks](../development/audited-core-client-observer-cleanup-runner-verification.json)
+and a [captured-data replay](../development/audited-core-client-observer-replay.json).
+Movie04 is the one additional attempt permitted by the pause review below.
+Full authentication and media evidence remain strict;
+the rejected external registration attempt was blocked before any upstream
+connection and does not justify wider network access. The retained movie02 evidence supports
+this race but does not identify every old generic guard retrospectively. Both
+failed scopes remain consumed; neither counts as playback acceptance. Continue
+with TV, audio and subtitle
 scenarios after the movie closes. The product
 binary remains unchanged; its full verification is reusable. An earlier passing suite does not
 override a subsequently identified unsafe state transition. The existing seed
@@ -177,6 +199,21 @@ managed-policy projection. Before dispatching another reconciliation, exercise
 its complete comparison against the already captured DTOs and stored snapshot.
 Bind explicit representation mappings rather than assuming equal field sets or
 counts, or weakening checks to ignore unexplained extra data.
+
+The movie03 tooling pause has been reviewed independently. The shared cause is
+the adapter's replacement of parts of the accepted login, logout and observer
+lifecycle: new evidence collection became a prerequisite for both workflow and
+cleanup. Preserve its required candidate/gateway/durable-state evidence while
+keeping owned Stop/Logout independently attempted. Once movie03's state closure,
+the bounded-header/cleanup regressions and a replay of its captured bootstrap
+observation pass, permit exactly one new movie attempt using the existing
+candidate, hosting, media and budgets. No product suite rerun or broader network
+access is required for this observer-only change. If that attempt is again
+blocked by preparation or observer tooling, stop further browser iterations and
+reconcile the adapter's lifecycle against the accepted runtime offline before
+another execution decision. Do not immediately patch and renumber another run.
+A real product difference instead requires a focused product reproduction and
+fix. This pause/review does not grant an unlimited sequence of retries.
 
 Preserve old receipts and private artifacts. Reuse their accepted manifests and
 checksums; do not recursively reconstruct every historical scope before every

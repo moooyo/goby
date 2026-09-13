@@ -19,12 +19,12 @@ BINDING = {"path": str(R / "candidate-backup-limits-revision-01/private/seed-run
 ADMISSION = {"path": str(R / "candidate-live-admission-04/private/report.json"), "sha256": "05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653"}
 ADMISSION_CLOSEOUT = {"path": str(R / "candidate-live-admission04-closeout.json"), "sha256": "c2aea574a3196b5ef486a2ba2b664d59bb75f5208d3a1a0c53ecaaab81b81eb4"}
 HOSTING = {"path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-reconcile-01/hosting.json", "sha256": "2100142b83941e24503838fdf92942aef862bc785bbcfcbe8f93223dd30c53c0"}
-AV_VERIFICATION = {"path": str(R / "av-tool-verification-04/verification.json"), "sha256": "1ed8fe0d995026aafc2bdd51aed5b685eec28b66082c15ae29f6e9499ef7f0fa"}
+AV_VERIFICATION = {"path": str(R / "av-tool-verification-06/verification.json"), "sha256": "ea82e068b3a50213ec7a182edffb42932005e7035b68796719befae76a275840"}
 RUNTIME = {"path": str(R / "backup-limits-tool-verification-01/audited-candidate-runtime.py"), "sha256": "1650d6267ab78a07f8c5b77130ad009eeb7212a0bb16251322936792a58dbe66"}
 NODE = {"path": "/usr/bin/node", "sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e"}
 SOURCE_FILES = {"closer": "close-audited-candidate-client.mjs", "adapter": "client-browser-audited-candidate.mjs", "gateway": "client-acceptance-gateway.py", "proxy": "client-acceptance-proxy.py",
     "sessionProof": "client-browser-session-proof.mjs", "movie": "client-browser-playback.mjs", "audio": "client-browser-audio-flow.mjs", "subtitles": "client-browser-subtitle-flow.mjs", "tv": "client-browser-tv-flow.mjs"}
-FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "9ff2692ec10254a16f9505ba06c33d81d5980f3421f61a96f8ee917f695b87f6", "closer": "38e8a96e057fee491b4c2324d510779e55890d37e04fdc93d0be71df23cca8ce",
+FROZEN = {"gateway": "b343f522389bbcb6f704ab3b09d2592ed06573b90961f7b9c8f3eb45b7ab0070", "adapter": "32343226dcac4c0d2932c03088816b48b980d661876273fe5589815830ea7ca3", "closer": "38e8a96e057fee491b4c2324d510779e55890d37e04fdc93d0be71df23cca8ce",
     "proxy": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874", "sessionProof": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
     "movie": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac", "audio": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
     "subtitles": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016", "tv": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65"}
@@ -222,7 +222,7 @@ class ClientRun:
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
         need(verification["passed"] is True and verification["browserStarted"] is False and verification["businessHttp"] is False and
-             verification["adapterCounts"] == {"tests": 28, "pass": 28, "fail": 0, "skipped": 0} and
+             verification["adapterCounts"] == {"tests": 39, "pass": 39, "fail": 0, "skipped": 0} and
              verification["closerCounts"] == {"testCount": 12, "passed": 12, "failed": 0, "sourceUnchanged": True} and
              all(verification["sourcePins"][filename] == FROZEN[key] for key, filename in SOURCE_FILES.items() if filename.endswith(".mjs")), "verified_client_sources_differ")
         for pin in [self.value["node"], *self.value["sources"].values()]:
