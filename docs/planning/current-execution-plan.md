@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the execution-order and recovery-material review. Status: **product and
+Reviewed on 2026-09-14 after the source32 startup rejection and owned cleanup. Status: **product and
 candidate verified; MP3 and FLAC accepted; video client acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
@@ -26,18 +26,29 @@ Main preparation resolved configured paths, lifecycle selection, PostgreSQL and
 database identities, schema27 binding and bounded startup candidates. Both
 capacity configurations passed actual parsing; the missing empty cache directory
 was prepared. The old executable and 415 installed administrator assets are
-now archived and verified. The capacity profile remains staged, and installed
-defaults still exceed available space. The separate key observer stopped at a
+now archived and verified. The capacity profile is installed. The separate key observer stopped at a
 helper-permission precondition before execution; key authentication remains
 unproved. See the [material review](../development/audited-main-recovery-materials.md).
+
+The [native-backup input](../development/audited-main-native-backup-plan.md) has
+now been consumed. After a corrected reserved-prefix preflight, one source32
+start reached a strict environment rejection before HTTP. Systemd's two memory
+pressure variables were omitted from the adapter, and full configuration
+acceptance incorrectly preceded the controller's ability to stop its own
+invocation. Independently reviewed ownership recovery stopped that exact
+process. The [actual closeout](../development/audited-main-native-backup-closeout.json)
+preserves all 402 rows and five sequences; capacity and the restart fence remain
+installed. No new archive or key authentication exists. Pause this experiment
+after its two controller failures and retain the changed cache/log baseline.
 
 The ordering needed a substantive correction: paused video investigation must
 not also prevent the old source32 backup and isolated recovery work. Those
 actions require their own safety admission; core acceptance continues to block
 new-binary main promotion. Separate backup inputs from backup outputs, and allow
 independent M2-M6 obligations to progress under their own prerequisites. The next
-deliverable is one concrete source32 native-backup execution input, not another
-general observation framework. Preserve the page-error rule and every failure.
+deliverable is a bounded correction of stop authority and the actual systemd
+environment contract before any new backup admission. Preserve the page-error
+rule and every failure; do not extend the generic observation framework.
 
 ## Accepted baseline
 
@@ -49,7 +60,7 @@ general observation framework. Preserve the page-error rule and every failure.
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
-| Main | [Startup preparation](../development/audited-main-startup-preparation.md) confirms bounded facts; the cache prerequisite is prepared, a tested capacity profile is staged, and [old installation materials](../development/audited-main-recovery-materials.md) are archived; main remains inactive | Key authentication, a fresh schema27 archive, private operational recovery, capacity application and bounded startup remain open; installation files and the retained schema23 object do not prove recovery |
+| Main | [Startup-only closeout](../development/audited-main-native-backup-closeout.json) preserves all 402 rows and five sequences after one owned start/stop. Main is inactive; capacity and the restart fence are installed, cache markers and eleven closed logs are retained; [old installation materials](../development/audited-main-recovery-materials.md) remain archived | No HTTP or native backup occurred. Correct stop authority and environment admission before another start; key authentication, a fresh schema27 archive and both isolated restore proofs remain open |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -68,8 +79,9 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
 | 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
 | 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
-| 4. Source32 backup input — active | Reuse the identity/configuration/startup observations and verified installation archive; freeze private operational material handling, the pre-start baseline, capacity transition, one invocation, one owned administrator session and one native create | Independent review must admit this finite workflow before service changes. Its outputs are one fresh schema27 archive, native key authentication and the reconciled post-workflow baseline; main returns inactive. This checkpoint does not admit execution |
-| 5. Isolated recovery proofs — follows the archive | Restore that one archive with the selected schema28 binary and separately with the actual source32/schema27 binary, including legal lifecycle activation and restart | Use distinct disposable targets and scoped cleanup; both proofs precede main promotion and do not require video acceptance to begin |
+| 4. Source32 backup start — consumed; cleanup closed | Two controller failures are preserved; the second installed capacity/fence and started source32 once before environment rejection. The exact invocation was stopped, with zero HTTP and exact database preservation | Do not execute this input again, remove its evidence or reset its file baseline. Native backup creation and key authentication did not occur |
+| 5. Backup admission reassessment — next | Establish exact start-bound stop authority before full configuration/readiness acceptance; incorporate the observed pressure environment. Reuse installed capacity/fence, cache markers, eleven closed logs and the closed database state | Keep strict source/environment checks, independent review, finite business slots and cleanup. No automatic third attempt or new generic runner |
+| 6. Isolated recovery proofs — follows a fresh archive | Use the [actual CLI draft](../development/audited-main-isolated-restore-plan.md) for selected schema28 and separately actual source32/schema27, including legal activation and restart | Each needs fresh isolated identities/paths/ports/capacity. Apply itself temporarily starts listeners and task management. The draft is unadmitted; both proofs precede main promotion and do not require video acceptance |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation
@@ -103,7 +115,8 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
 
 ## Remaining work and dependencies
 
-1. Recovery work advances next: admit one source32 native backup, retain its
+1. Recovery work first corrects the rejected start contract against retained
+   state; no consumed input is replayed. Then separately admit one source32 native backup, retain its
    schema27 archive and reconcile its exact operational deltas, then complete
    the two distinct isolated restoration proofs. Fresh ownership, configuration,
    capacity, write budgets and private recovery material govern these actions.

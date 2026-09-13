@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after the execution-order and recovery-material review. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after the source32 startup rejection and owned cleanup. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main recovery and deployment | Main remains inactive; bounded startup facts and staged capacity are recorded; the cache prerequisite and verified old installation archive are prepared; the separate key observer was rejected before execution and is retired | Admit one source32 native backup under its own safety gates, including key authentication, then both isolated restore proofs. These can precede core video acceptance; new-binary main promotion still requires both core and full recovery evidence |
+| Main recovery and deployment | One source32 start was rejected before HTTP by the environment checker and then stopped with independently verified ownership. Main is inactive; capacity and the restart fence remain installed; all 402 rows and five sequences are preserved | Reassess stop authority and the actual systemd environment before a new backup admission. No archive or key authentication was produced. Both isolated restore proofs remain required; new-binary main promotion still requires core and complete recovery evidence |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
@@ -21,7 +21,25 @@ Private credential metadata is reconciled; key and passphrase authentication
 remain unproved. The standalone key observer stopped at a helper-mode mismatch
 before any database connection or master read. The native backup's same-snapshot
 `WitnessBackup` is the required authentication step; no repeat observer is queued.
-Capacity remains unapplied and no native schema27 backup has been created.
+Capacity is now installed; no native schema27 backup has been created.
+
+The [native-backup scope](audited-main-native-backup-plan.md) is consumed. Its
+first controller rejected a retained preparation filename before locking. The
+corrected controller started source32 once, then rejected systemd's two memory
+pressure environment variables before login or backup. Full environment checking
+preceded assignment of stop authority, so separate, reviewed ownership recovery
+was required to stop the exact invocation. The scope is paused after those two
+controller failures, with no automatic third attempt.
+
+The [post-stop closeout](audited-main-native-backup-closeout.json) confirms main
+and source55 inactive, 35 tables/402 rows and all five sequences exact, zero new
+sessions/activity/backups, preserved lifecycle/control/old archive/master
+metadata and unchanged external boundaries. Two cache marker files now exist;
+the old 413-byte diagnostic entry and one new 451-byte log are closed. The
+installed capacity and temporary fence remain exact. These are the retained
+inputs for any later admission; the old empty-cache/ten-log baseline is stale.
+The [two-fixture restoration draft](audited-main-isolated-restore-plan.md) records
+the actual import/plan/apply/serve/restart contract but is not admitted.
 
 The dependency review separates pre-backup operational inputs from archive and
 post-workflow outputs. Independent M2-M6 work can advance under its own gates;
@@ -274,7 +292,7 @@ The subsequent [startup/capacity checkpoint](audited-main-startup-preparation.js
 passed the actual configuration loader for current defaults and a prepared
 64 MiB object / 256 MiB total / 128 MiB minimum-free profile. Its conservative
 creation floor is 302,055,424 bytes; final free space was 512,126,976 bytes.
-The profile is staged and installed settings remain unchanged. The default
+At that checkpoint the profile was staged and installed settings were unchanged. The default
 8 GiB scratch reservation explains why fixing only the earlier open threshold
 would not make native backup creation fit.
 
@@ -290,14 +308,19 @@ single actual transaction committed and its owned connection/lock closed.
 The [startup review](audited-main-startup-preparation.md) records the explicit
 filesystem prerequisite: an absent tmpfs cache path was exclusively created
 empty as `goby:goby`, `0700`, without application markers or a service start.
-One unclosed diagnostic file contains 413 complete bytes and requires a registry
-closure update on startup; no truncation or current-age/count pruning is
-expected. Current `Restart=on-failure` still needs a finite one-invocation policy.
+At that checkpoint one unclosed diagnostic file contained 413 complete bytes and
+required a registry closure update on startup; no truncation or current-age/count
+pruning was expected. The then-installed `Restart=on-failure` required a finite
+one-invocation policy before starting.
 The later [material checkpoint](audited-main-recovery-materials.md) preserves
 the old installation and closes the standalone key observer's preflight failure
-without executing it. The next deliverable is one reviewed source32 backup
-input; key authentication belongs to that native archive snapshot. Main startup,
-native backup creation and both restoration proofs remain unperformed.
+without executing it. The later [startup-only closeout](audited-main-native-backup-closeout.json)
+supersedes those runtime prerequisites: one source32 start and owned stop are
+closed; capacity and the fence are installed, both cache markers exist and all
+eleven diagnostic entries are closed. The consumed backup scope is paused after
+two controller failures. Correct stop authority before full environment
+acceptance, then obtain a new admission against this retained state. Native
+backup creation, key authentication and both restoration proofs remain open.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to
