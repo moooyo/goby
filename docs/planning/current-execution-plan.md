@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after Subtitles01 and initial main identity preparation. Status: **product and
+Reviewed on 2026-09-14 after Subtitles01 and main read-only identity preparation. Status: **product and
 candidate verified; MP3 and FLAC accepted; video client acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
@@ -22,8 +22,12 @@ not invalidate accepted MP3/FLAC results or justify unrelated full-suite reruns.
 
 The bounded native-rejection increment is complete. Its actual subtitle
 observation confirms undefined reasons without identifying a response or cause.
-Next, privately review main configuration and recovery/database identity under
-the existing read-only preparation allowance. Defer Debugger, async stacks and
+Main preparation has now resolved configured paths, captured lifecycle selection,
+actual PostgreSQL cluster/database/role identities and the main schema27 binding.
+Next review the actual startup writes, observed capacity deficit and recovery
+materials. The backup filesystem is
+below source32's configured open threshold, so startup requires a concrete
+capacity decision first. Defer Debugger, async stacks and
 extra network instrumentation unless a concrete later question establishes
 their value. Preserve the page-error rule and every original failure.
 
@@ -37,7 +41,7 @@ their value. Preserve the page-error rule and every original failure.
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
-| Main | [Fresh metadata](../development/audited-main-readonly-identity.json) finds main inactive, source32 binary matching, PostgreSQL unit active and stable file identities | Effective configuration, recovery binding, actual database state and upgrade admission remain unverified |
+| Main | [Read-only preparation](../development/audited-main-readonly-preparation.md) resolves configured paths, primary/revision0/default selection and matching schema27 database binding; main remains inactive | Startup safety, capacity, private recovery materials and upgrade admission remain open; the retained schema23 backup is not a current recovery point |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -56,7 +60,7 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
 | 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
 | 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
-| 4. Main read-only preparation — active | Initial service/file identity capture completed; next privately resolve effective configuration and recovery binding, then bind actual PostgreSQL/database ownership and schema | Produce a concrete current recovery input without starting main or applying migration/restore. Promotion still requires the core and safety gates |
+| 4. Main read-only preparation — active | Configuration/store/cluster and application schema/marker observations are complete; next resolve capacity and review actual startup effects and recovery materials | Produce a concrete current recovery input without starting main or applying migration/restore. The old schema23 archive cannot replace a fresh schema27 recovery point; core and safety gates remain |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation

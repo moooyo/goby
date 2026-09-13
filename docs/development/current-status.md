@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after Subtitles01 and main identity preparation. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after Subtitles01 and main read-only identity preparation. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main deployment | Fresh metadata confirms inactive main and matching source32 binary; PostgreSQL unit is active; upgrade contract remains a draft | Privately resolve effective configuration/recovery/database identity, then obtain recovery/restoration proofs and core acceptance before promotion |
+| Main deployment | Main remains inactive with matching source32 bytes; private preparation resolves configured paths, lifecycle selection and matching schema27 database binding | Resolve observed backup capacity deficit, startup writes and private recovery materials; then obtain a fresh schema27 backup, distinct restore proofs and core acceptance before promotion |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 ## Selected product and candidate
@@ -234,8 +234,28 @@ executable matches its historical SHA and 28,172,723-byte size; PostgreSQL's uni
 remains active with PID 893. Units, ordered environment-file references and fixed
 file metadata are stable during the read. Environment/master contents and
 database/recovery state were not read; no lock was acquired and no service,
-migration or restore action occurred. These facts support the next private
-configuration/ownership review, not upgrade admission or data preservation proof.
+migration or restore action occurred. This record supplies the initial baseline
+for the following private review, not upgrade admission or data preservation proof.
+
+The later [read-only preparation checkpoint](audited-main-readonly-preparation.json)
+resolves configured paths and captured primary/revision0/default lifecycle
+selection. One settled create corresponds to the retained schema23 backup;
+that historical archive is not a new schema27 recovery point. Three fixed
+PostgreSQL read-only connections confirm the main5432 cluster/database/role
+identities, exact main migration prefix 1..27, 35 tables and matching recovery
+marker. The recovery database has no observed non-system relations or settings
+table; complete empty-target admission is not claimed. All three transactions
+committed, their owned frontends/backends exited, and the existing deployment
+lock was released unchanged. Main and source55 remain inactive.
+
+The [preparation review](audited-main-readonly-preparation.md) also records an
+actual startup obstacle: backup storage had 520,519,680 available bytes, below
+source32's 570,490,880-byte open threshold with current defaults and metadata
+reserve. Capacity, the complete startup/configuration chain, pending work,
+private recovery materials and key witness remain open. No policy change,
+deletion or startup was attempted. Even settled stores and complete migration
+history cannot establish a zero-write normal startup because `ServerID()`
+performs an upsert and subsystems can reconcile work and retention.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to

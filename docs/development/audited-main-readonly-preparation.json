@@ -1,0 +1,469 @@
+{
+  "kind": "audited-main-readonly-preparation-checkpoint",
+  "version": 1,
+  "status": "identity_observed_capacity_and_startup_preparation_open",
+  "createdAt": "2026-09-13T18:48:19Z",
+  "evidence": {
+    "configuration": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/configuration.json",
+      "sha256": "7533a7df12413e23aa10cb703909b50a9d379e5745b714292b807dd9117fbab7"
+    },
+    "storesReconciliation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/stores-reconciliation.json",
+      "sha256": "0cd4cd7fb84a6f80890c2b3fe7244069a7949e57503e4c19cee1662ddef0f07c"
+    },
+    "postgresIdentity": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/postgres-identity.json",
+      "sha256": "1d64024983ab0e357c50f09c1490605c9cb2c726213d92d3c2f27f3b65d94d8d"
+    },
+    "databaseBinding": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/database-binding.json",
+      "sha256": "cfb74b1726bcd875d89d519d9d9bebf6e2b2f7d3858ae639c25e0e8ac4ef69c3"
+    },
+    "backupCapacity": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/backup-capacity.json",
+      "sha256": "c145578c789efbdbc9bd810e046ce25fea443d33d6ccf9bb1411247915d9c631"
+    }
+  },
+  "configuration": {
+    "capturedAt": "2026-09-13T18:22:06.412158+00:00",
+    "workingDirectory": "/var/lib/goby-test",
+    "serviceUser": "goby",
+    "serviceGroup": "goby",
+    "paths": {
+      "recovery": "/var/lib/goby-test/recovery-m5j",
+      "operations": "/var/lib/goby-test/recovery-operations-m5j",
+      "backups": "/var/lib/goby-test/backups-m5j",
+      "master": "/var/lib/goby-test/application-key-vault/master.key",
+      "web": "/opt/goby-dev/admin",
+      "cache": "/dev/shm/goby-transcodes-test",
+      "logs": "/var/log/goby-test"
+    },
+    "declaredSlots": {
+      "primary": {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "database": "goby_test",
+        "role": "goby_test",
+        "sslmode": "disable",
+        "passwordPresent": true,
+        "credentialAuthenticationChecked": false
+      },
+      "recovery": {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "database": "goby_recovery_m5j",
+        "role": "goby_recovery_m5j",
+        "sslmode": "disable",
+        "passwordPresent": true,
+        "credentialAuthenticationChecked": false
+      }
+    },
+    "startupCommandChainConfirmed": false,
+    "goConfigFullyValidated": false,
+    "previousParseAttempt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/parse-attempt-01.json",
+      "sha256": "c797747dfaddb6c51c9dcf467f0febbaf377ac64a28c6e0ec7d496ed1dd94e1f"
+    }
+  },
+  "selectedLifecycleState": {
+    "deploymentId": "f58d5e0c8ff49fca916499e666bffd9f",
+    "revision": 0,
+    "databaseSlot": "primary",
+    "master": "default",
+    "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "generationId": ""
+  },
+  "lifecycle": {
+    "registeredGenerations": 0,
+    "activeManifestPresent": false,
+    "activationJournalPresent": false,
+    "markerLockIdentityMatches": true,
+    "emptyBaselineDigestMatches": true
+  },
+  "recoveryControl": {
+    "revision": 5,
+    "currentMatches": "candidate",
+    "beforeRevision": 4,
+    "operationCount": 1,
+    "operations": [
+      {
+        "id": "6997e23f94856499b1cda4ffd9d511db",
+        "kind": "create",
+        "state": "completed",
+        "phase": "finished",
+        "backupId": "1f0070537a1288408a9cb116631a2711"
+      }
+    ],
+    "nonterminalOperations": 0,
+    "publicationOrCleanupOperations": 0,
+    "transitionPresent": false,
+    "slots": [
+      {
+        "slot": "primary",
+        "state": "active"
+      },
+      {
+        "slot": "recovery",
+        "state": "unclaimed"
+      }
+    ]
+  },
+  "retainedBackup": {
+    "ownerTokenMatchesCatalog": true,
+    "objects": 1,
+    "pendingCatalogPresent": false,
+    "id": "1f0070537a1288408a9cb116631a2711",
+    "kind": "generated",
+    "state": "ready",
+    "phase": "ready",
+    "deleting": false,
+    "bytes": 177366,
+    "recordedDigest": "d6dddf3fbb7e437409a5a09fbbca9a853b35673ca19e8910b66e49c32cb78f86",
+    "objectIdentitySizeAndMtimeMatch": true,
+    "recordedVerified": true,
+    "archiveBodyRead": false,
+    "archiveDigestVerifiedNow": false,
+    "recordedSchemaVersion": 23,
+    "recordedTableCount": 29,
+    "recordedCreatedAt": "2026-09-10T16:20:19.644467074Z"
+  },
+  "selectedMaster": {
+    "path": "/var/lib/goby-test/application-key-vault/master.key",
+    "bytes": 32,
+    "uid": 995,
+    "gid": 995,
+    "mode": 384,
+    "contentsRead": false,
+    "keyMaterialValidated": false
+  },
+  "postgres": {
+    "cluster": {
+      "backendPid": 498664,
+      "configFile": "/etc/postgresql/17/main/postgresql.conf",
+      "dataDirectory": "/var/lib/postgresql/17/main",
+      "database": "postgres",
+      "hbaFile": "/etc/postgresql/17/main/pg_hba.conf",
+      "port": 5432,
+      "postmasterStartedAt": "2026-09-13T06:18:52.630333+00:00",
+      "searchPath": "pg_catalog",
+      "sessionUser": "postgres",
+      "socketDirectories": "/var/run/postgresql",
+      "systemIdentifier": "7683277964552005578",
+      "transactionReadOnly": "on",
+      "user": "postgres",
+      "version": 170011
+    },
+    "databases": [
+      {
+        "expandedAcl": [
+          {
+            "grantable": false,
+            "granteeOid": 994943,
+            "grantorOid": 994943,
+            "privilege": "CONNECT"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 994943,
+            "grantorOid": 994943,
+            "privilege": "CREATE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 994943,
+            "grantorOid": 994943,
+            "privilege": "TEMPORARY"
+          }
+        ],
+        "name": "goby_recovery_m5j",
+        "oid": 994944,
+        "ownerOid": 994943
+      },
+      {
+        "expandedAcl": [
+          {
+            "grantable": false,
+            "granteeOid": 0,
+            "grantorOid": 16384,
+            "privilege": "CONNECT"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 0,
+            "grantorOid": 16384,
+            "privilege": "TEMPORARY"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 16384,
+            "grantorOid": 16384,
+            "privilege": "CONNECT"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 16384,
+            "grantorOid": 16384,
+            "privilege": "CREATE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 16384,
+            "grantorOid": 16384,
+            "privilege": "TEMPORARY"
+          }
+        ],
+        "name": "goby_test",
+        "oid": 16385,
+        "ownerOid": 16384
+      }
+    ],
+    "roles": [
+      {
+        "configurationEntryCount": 0,
+        "flags": {
+          "bypass": false,
+          "createdb": false,
+          "createrole": false,
+          "inherit": false,
+          "login": true,
+          "replication": false,
+          "super": false
+        },
+        "name": "goby_recovery_m5j",
+        "oid": 994943
+      },
+      {
+        "configurationEntryCount": 0,
+        "flags": {
+          "bypass": false,
+          "createdb": false,
+          "createrole": false,
+          "inherit": true,
+          "login": true,
+          "replication": false,
+          "super": false
+        },
+        "name": "goby_test",
+        "oid": 16384
+      }
+    ],
+    "membershipCount": 0,
+    "identityReadCommitted": true,
+    "identityBackendExited": true
+  },
+  "applicationDatabases": [
+    {
+      "slot": "primary",
+      "database": "goby_test",
+      "catalog": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/database-binding-primary-catalog.json",
+        "sha256": "6bb8b64f4203c8b63fd3aed877596d7d9e8b9490dcfb56133ea44c2380e8b01a"
+      },
+      "publicNamespace": {
+        "expandedAcl": [
+          {
+            "grantable": false,
+            "granteeOid": 0,
+            "grantorOid": 6171,
+            "privilege": "USAGE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 6171,
+            "grantorOid": 6171,
+            "privilege": "CREATE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 6171,
+            "grantorOid": 6171,
+            "privilege": "USAGE"
+          }
+        ],
+        "name": "public",
+        "oid": 2200,
+        "ownerName": "pg_database_owner",
+        "ownerOid": 6171,
+        "rawAcl": "{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}"
+      },
+      "nonSystemNamespaces": [
+        {
+          "name": "public",
+          "oid": 2200,
+          "ownerOid": 6171
+        }
+      ],
+      "relationCounts": {
+        "S": 5,
+        "i": 103,
+        "r": 35
+      },
+      "observedIdentity": {
+        "binding": {
+          "deploymentId": "f58d5e0c8ff49fca916499e666bffd9f",
+          "generationId": "",
+          "slot": "primary",
+          "version": 1
+        },
+        "bindingBytes": 98,
+        "bindingPresent": true,
+        "bindingRawSha256": "561d55f90342e77f20c7cb69660aba17226656465bc86e266048a98ad83ff675",
+        "migrationCount": 27,
+        "migrationTablePresent": true,
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27
+        ],
+        "serverId": "b051277b616acbdf528b9ff9589121cb",
+        "serverIdPresent": true,
+        "settingsTablePresent": true
+      },
+      "readOnlyTransactionCommitted": true,
+      "frontendExited": true,
+      "backendExitObserved": true
+    },
+    {
+      "slot": "recovery",
+      "database": "goby_recovery_m5j",
+      "catalog": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-readonly-config-01/database-binding-recovery-catalog.json",
+        "sha256": "605ce9673dd704eace6160394023a121310e9bda0de202ef6d190f8eb84dbfb8"
+      },
+      "publicNamespace": {
+        "expandedAcl": [
+          {
+            "grantable": false,
+            "granteeOid": 0,
+            "grantorOid": 6171,
+            "privilege": "USAGE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 6171,
+            "grantorOid": 6171,
+            "privilege": "CREATE"
+          },
+          {
+            "grantable": false,
+            "granteeOid": 6171,
+            "grantorOid": 6171,
+            "privilege": "USAGE"
+          }
+        ],
+        "name": "public",
+        "oid": 2200,
+        "ownerName": "pg_database_owner",
+        "ownerOid": 6171,
+        "rawAcl": "{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}"
+      },
+      "nonSystemNamespaces": [
+        {
+          "name": "public",
+          "oid": 2200,
+          "ownerOid": 6171
+        }
+      ],
+      "relationCounts": {},
+      "observedIdentity": {
+        "bindingPresent": false,
+        "migrationCount": null,
+        "migrationTablePresent": false,
+        "migrationVersions": null,
+        "serverIdPresent": false,
+        "settingsTablePresent": false
+      },
+      "readOnlyTransactionCommitted": true,
+      "frontendExited": true,
+      "backendExitObserved": true
+    }
+  ],
+  "backupCapacity": {
+    "kind": "main-source32-backup-capacity-observation",
+    "version": 1,
+    "capturedAt": "2026-09-13T18:41:31Z",
+    "source32Commit": "b9bb7b1cf11e07e011a6e1726ddb9d53ef8e1fe9",
+    "configurationSha256": "7533a7df12413e23aa10cb703909b50a9d379e5745b714292b807dd9117fbab7",
+    "path": "/var/lib/goby-test/backups-m5j",
+    "directoryDevice": 2049,
+    "directoryInode": 2633660,
+    "blockSize": 4096,
+    "availableBlocks": 127080,
+    "availableBytes": 520519680,
+    "minFreeBytes": 536870912,
+    "metadataReserveBytes": 33619968,
+    "openSpaceCheckMinimumBytes": 570490880,
+    "openSpaceCheckPassesAtObservation": false,
+    "deficitBytes": 49971200,
+    "policyOverridesPresent": false,
+    "sourceDirectoryChanged": false,
+    "storeOpenCalled": false,
+    "businessSqlWrites": 0,
+    "serviceMutations": 0,
+    "deletions": 0,
+    "startupAuthorized": false,
+    "boundary": "An instantaneous capacity observation for source32 space(0), with no scratch reservation. It is not a future space guarantee or complete startup admission."
+  },
+  "closure": {
+    "mainInactive": true,
+    "source55ControlInactive": true,
+    "osIdentityStable": true,
+    "existingLockUnchanged": true,
+    "allObservedTransactionsCommitted": true,
+    "allOwnedFrontendsAndBackendsExited": true,
+    "existingLockReleased": true
+  },
+  "limits": {
+    "completeCatalogCompared": false,
+    "completeDataPreservationChecked": false,
+    "commonTwoDatabaseSnapshotClaimed": false,
+    "recoveryDatabaseEmptyAdmitted": false,
+    "credentialAuthenticationChecked": false,
+    "masterContentsRead": false,
+    "masterWitnessChecked": false,
+    "archiveBodiesRead": false,
+    "freshSchema27RecoveryPointCreated": false,
+    "startupCommandChainConfirmed": false,
+    "goConfigFullyValidated": false,
+    "startupEffectsAdmitted": false,
+    "mainStartupAdmitted": false,
+    "mainPromoted": false,
+    "coreClientAcceptance": false
+  },
+  "activity": {
+    "postgresConnections": 3,
+    "applicationHttpRequests": 0,
+    "serviceMutations": 0,
+    "businessSqlWrites": 0,
+    "migrationCalls": 0,
+    "restoreCalls": 0,
+    "filesDeleted": 0,
+    "localVerificationRuns": 0
+  },
+  "nextAction": "Resolve the observed capacity deficit and review concrete source32 startup effects, effective configuration and private recovery materials. Preserve core-client failures and require a fresh schema27 recovery point plus distinct schema28/source32 schema27 restoration proofs before promotion."
+}

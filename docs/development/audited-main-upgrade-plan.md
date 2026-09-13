@@ -2,11 +2,12 @@
 
 Status: **DRAFT, updated 2026-09-14; main preparation only**. The TV successor's
 affected admission05 has passed and reuses the preceding admission04 contracts.
-Core original-client acceptance and full main safety facts remain open. Initial
-[read-only identity capture](audited-main-readonly-identity.json) finds main
-inactive, the source32 binary unchanged and PostgreSQL's unit active. It reads
-no environment/master contents or database/recovery state. This draft
-does not authorize or report any main-deployment operation.
+Core original-client acceptance and full main safety facts remain open. The
+[read-only preparation review](audited-main-readonly-preparation.md) extends the
+initial service/file observation with private configured-path selection,
+captured lifecycle/control/backup metadata and actual PostgreSQL/schema27 binding.
+Main remains inactive. These observations do not authorize startup, backup
+creation, migration, restore or promotion.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
 execution. The [source55 main plan](main-schema28-upgrade-plan.md), its prepared
@@ -44,9 +45,12 @@ The [capacity configuration revision](audited-candidate-backup-limits-revision.j
 preserved the selected binary/source and preceded that admission. Its candidate
 capacity settings do not become main deployment defaults automatically.
 
-Core original-client acceptance remains open. The latest movie06 attempt
-failed at the pre-playback page wait and supplies no passing playback result;
-it made no main-service change. **No main upgrade is admitted until the core
+Core original-client acceptance remains open. MP3/FLAC pass, while movie,
+episode and subtitle acceptance retain their recorded failures. Subtitles01
+completed the visible journey with two unattributed native undefined errors
+and an unresolved partial-media timing difference; its owned state is closed.
+These client increments made no main-service change. **No main upgrade is
+admitted until the core
 gate and fresh main safety/recovery gates pass for the selected product.**
 Require login/browse, movie/TV, seek/stop/resume, MP3/FLAC, supported external
 subtitle, durable-state and user-isolation evidence, with exact owned cleanup.
@@ -81,14 +85,33 @@ through their sealed receipts and manifests; do not recursively reverify all
 ## Minimum fresh main facts
 
 The first metadata observation at 2026-09-13T17:54:09Z confirms the loaded main
-unit, its ordered environment-file references, fixed file identities and installed
-source32 bytes. It does not resolve effective configuration, active recovery
-binding, PostgreSQL/database/schema identity or current operation ownership.
-Those private read-only facts are the next preparation increment. Main remains
-inactive; neither startup nor backup creation is authorized by this metadata record.
+unit, ordered environment-file references, fixed file identities and installed
+source32 bytes. The subsequent private preparation resolves configured paths
+and the captured lifecycle's primary/revision0/default selection. The control
+store has one completed create, no transition and a declared unclaimed recovery
+slot. Its single retained backup records schema23, not a fresh schema27 recovery
+point. Actual cluster and database/role identities match the recorded main5432
+anchors. Main has the exact 1..27 migration version/name prefix, 35 tables and
+a marker matching the independently selected initial primary. Recovery has no
+observed non-system relations or binding table; this does not admit it as an
+empty native restore target. Full catalog and data preservation remain open.
+The [preparation review](audited-main-readonly-preparation.md) records
+the exact evidence boundaries and remaining checks.
 
-The following fields are required execution inputs, not facts established by
-this draft. Acquire private reads and database access under the freshly verified
+Neither settled control metadata nor a complete schema27 migration prefix
+would establish a zero-write startup. Source32 still calls `ServerID` with an
+upsert, and subsystem startup may reconcile pending work and retention. Freeze
+those allowed writes from actual data and clock observations before any start.
+The main startup chain, complete effective Go configuration, private key
+witness, operational baseline and recovery proofs remain separate requirements.
+The fresh capacity observation also falls below source32's backup-store open
+threshold: 520,519,680 bytes available versus 570,490,880 required with current
+defaults and metadata reserve. Resolve this through an explicit capacity
+decision before admitting startup; do not test it by starting main or silently
+inherit the candidate's lower limits.
+
+The following fields define the required execution input. Reuse the particular
+facts already captured above and acquire the remaining private reads under verified
 main operation/deployment authority. The historical shared deployment lock is
 `/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock`; verify its existing
 identity and ownership before use, and do not recreate an absent lock.
