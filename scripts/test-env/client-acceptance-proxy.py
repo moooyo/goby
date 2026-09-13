@@ -147,7 +147,7 @@ class BodyFraming:
                         raise Rejected("request_trailer_invalid")
 
 
-def read_request(client: socket.socket) -> tuple[bytes, bytes, str, BodyFraming | None]:
+def read_request(client: socket.socket, *, target_resolver=None, request_observer=None) -> tuple[bytes, bytes, str, BodyFraming | None]:
     data = bytearray()
     client.settimeout(15)
     while b"\r\n\r\n" not in data:
@@ -165,7 +165,7 @@ def read_request(client: socket.socket) -> tuple[bytes, bytes, str, BodyFraming 
     parts = lines[0].split(b" ")
     if (len(parts) != 3 or not re.fullmatch(rb"[A-Z]{1,20}", parts[0]) or
             parts[2] not in (b"HTTP/1.0", b"HTTP/1.1") or
-            not parts[1].startswith(b"/") or parts[1].startswith(b"//") or
+            target_resolver is None and (not parts[1].startswith(b"/") or parts[1].startswith(b"//")) or
             any(c < 33 or c == 127 for c in parts[1])):
         raise Rejected("request_line_invalid")
     headers = []
@@ -194,6 +194,15 @@ def read_request(client: socket.socket) -> tuple[bytes, bytes, str, BodyFraming 
         raise Rejected("unsupported_protocol_upgrade")
     if websocket and (parts[0] != b"GET" or encodings or lengths and int(lengths[0]) != 0):
         raise Rejected("websocket_request_invalid")
+    if request_observer is not None:
+        request_observer(head + b"\r\n\r\n")
+    if target_resolver is not None:
+        target = target_resolver(parts[0], parts[1], values[b"host"][0], websocket)
+        if (not isinstance(target, bytes) or not target.startswith(b"/") or target.startswith(b"//") or
+                any(c < 33 or c == 127 for c in target)):
+            raise Rejected("resolved_request_target_invalid")
+        parts[1] = target
+        lines[0] = b" ".join(parts)
     # Preserve entity framing headers and their body bytes. Remove conventional
     # proxy transport headers; force ordinary requests to one upstream per TCP
     # connection so a later /web request cannot inherit an earlier API route.
@@ -214,7 +223,7 @@ def read_request(client: socket.socket) -> tuple[bytes, bytes, str, BodyFraming 
 
 
 def relay(client: socket.socket, upstream: socket.socket, initial: bytes,
-          idle_seconds: int, framing: BodyFraming | None) -> None:
+          idle_seconds: int, framing: BodyFraming | None, *, observer=None, counters=None) -> None:
     endpoints = (client, upstream)
     other = {client: upstream, upstream: client}
     pending = {client: bytearray(), upstream: bytearray(initial)}
@@ -246,6 +255,9 @@ def relay(client: socket.socket, upstream: socket.socket, initial: bytes,
                 continue
             if count <= 0:
                 raise Rejected("transport_disconnected")
+            if counters is not None:
+                key = "upstreamBytesWritten" if endpoint is upstream else "clientBytesWritten"
+                counters[key] = counters.get(key, 0) + count
             del pending[endpoint][:count]
             last_activity = time.monotonic()
         for endpoint in ready_read:
@@ -256,9 +268,13 @@ def relay(client: socket.socket, upstream: socket.socket, initial: bytes,
             if chunk:
                 if endpoint is client and framing is not None:
                     framing.consume(chunk)
+                if observer is not None:
+                    observer("request" if endpoint is client else "response", chunk)
                 pending[other[endpoint]].extend(chunk)
                 last_activity = time.monotonic()
             else:
+                if observer is not None:
+                    observer("request" if endpoint is client else "response", b"")
                 eof[endpoint] = True
         if eof[upstream] and not pending[client]:
             return

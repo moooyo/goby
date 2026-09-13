@@ -1,0 +1,70 @@
+{
+  "kind": "audited-candidate-av-pure-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T07:24:14.946015+00:00",
+  "sourcePins": {
+    "client-browser-audio-flow.mjs": "32a828b6c82f3dbd70f3b117bec11e3a6d44192cacb10417e4a75bf781a129e8",
+    "client-browser-audited-candidate.mjs": "565b93d63a89093c6f7da24668b3be8fffa9445737d2b2990ac4402b073d54ef",
+    "client-browser-playback.mjs": "2ddf3ffe7944d92edbb343b4289e0883f01feae09a04d69b902a709566533dac",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "client-browser-subtitle-flow.mjs": "e98d3ca5289ba8362450147484bc4cffd13f3d0177d00a266d21edfae0558016",
+    "client-browser-tv-flow.mjs": "5acb53c7fd5852f501e6590d09974913e888b12bd64ac8aef233953dc7cdfb65",
+    "test-client-browser-audited-candidate.mjs": "5ec382e6279b07829b3b26647385a4fd6337dd1d5ec9014af28b9b0341c03eac"
+  },
+  "compileChecks": [
+    {
+      "source": "client-browser-audio-flow.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "client-browser-audited-candidate.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "client-browser-playback.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "client-browser-session-proof.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "client-browser-subtitle-flow.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "client-browser-tv-flow.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "source": "test-client-browser-audited-candidate.mjs",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "guardExitCode": 0,
+  "counts": {
+    "tests": 25,
+    "pass": 25,
+    "fail": 0,
+    "skipped": 0
+  },
+  "stdoutSha256": "cd437f236979369383367d9e5865c3759536eb11d273784aa27723e75056ed7e",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "browserStarted": false,
+  "businessHttp": false,
+  "passed": true
+}

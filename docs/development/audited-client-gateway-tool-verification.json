@@ -1,0 +1,27 @@
+{
+  "kind": "audited-client-gateway-tool-verification",
+  "host": "test-env",
+  "capturedAt": "2026-09-13T07:25:05.837635+00:00",
+  "sourcePins": {
+    "client-acceptance-proxy.py": "388965fc772dff82ff13d2a641ecc0e9383e20b9f2a9bc929f48edcf6f394874",
+    "test-client-acceptance-proxy.py": "91b45b6b05b88c66e22c18f8142b6b0dbf02af71173e28b112ba794ee3e4207d",
+    "client-acceptance-gateway.py": "9d54b5527935cfac2bd46106a88e8a715159fec9b734d126bae65f30970179ee",
+    "test-client-acceptance-gateway.py": "b89e1f5c6024127b17ddb82671f413678e56bb0704911fbbd47472efa10f94cc"
+  },
+  "compileChecksPassed": 4,
+  "gatewayExitCode": 0,
+  "gateway": {
+    "test_count": 10,
+    "passed": 10,
+    "failed": 0,
+    "errors": 0,
+    "source_unchanged": true
+  },
+  "gatewayReportSha256": "ff1a71d4825f979508b050e207fd9a2700054382fbf840d9bcb12b9a38dde67d",
+  "reusedProxyTests": 16,
+  "reusedProxyReportSha256": "4101eb5511182122668282f2273b5c7105979e3a90744ebc28bfe174637f1b17",
+  "retainedPreviousGatewayFailure": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/gateway-tool-verification-01/gateway-report.json",
+  "browserStarted": false,
+  "applicationServicesContacted": false,
+  "passed": true
+}
