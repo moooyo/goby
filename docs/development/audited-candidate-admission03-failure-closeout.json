@@ -1,0 +1,40 @@
+{
+  "kind": "audited-candidate-admission03-failure-closeout",
+  "status": "failed_attempt_closed_for_configuration_revision",
+  "admission03": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-03/private/report.json",
+    "sha256": "a59638abe364b89e9c44482986698d0b1d310147178cbbe2ab4a0c1412c29f97"
+  },
+  "closedState": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-admission03-closeout-01/private/state.json",
+    "sha256": "9c2a6660fda9f2da5c33df8c93fbbc4786c397d158755d1de3712eda6f5e01d0"
+  },
+  "sourceBefore": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-03/private/source-before.json",
+    "sha256": "c3396658eb840c723e56fb166bf6b10058a19496e35cc482147e24a46e35276a"
+  },
+  "failureCode": "capacity_exceeded",
+  "backupErrorCode": "quota_exceeded",
+  "backupPhase": "empty",
+  "failureStage": "scratch_capacity_reservation",
+  "effectiveMaxObjectBytes": 8589934592,
+  "effectiveMaxTotalBytes": 34359738368,
+  "scratchRequiredFreeBytes": 8690663424,
+  "capturedFreeBytes": 3885617152,
+  "preservedTables": 32,
+  "allPreviousRowsPreserved": true,
+  "newRevokedSessions": 3,
+  "newDevices": 2,
+  "newActivityRows": 8,
+  "totalRevokedSessions": 6,
+  "completeHttpResponses": 42,
+  "cleanupFailures": 0,
+  "failedBackupAndOperationRetained": true,
+  "inactiveRecoveryStillEmpty": true,
+  "restoreAdmitted": false,
+  "candidateAdmissionComplete": false,
+  "verificationRerun": false,
+  "reviewSqlQueries": 0,
+  "reviewHttpRequests": 0,
+  "reviewBusinessWrites": 0
+}

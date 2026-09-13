@@ -1,0 +1,25 @@
+{
+  "candidateAdmissionComplete": false,
+  "cleanupFailures": [],
+  "clientAcceptance": false,
+  "elapsedMilliseconds": 12142,
+  "failure": {
+    "code": "owned_operation_failed_or_interrupted",
+    "sourceFile": "admit-audited-candidate.py",
+    "sourceLine": 64,
+    "stage": "create",
+    "type": "AdmissionError"
+  },
+  "inactiveStageRetained": false,
+  "report": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-03/private/report.json",
+    "sha256": "a59638abe364b89e9c44482986698d0b1d310147178cbbe2ab4a0c1412c29f97"
+  },
+  "reportUnavailable": null,
+  "requests": {
+    "cleanup": 6,
+    "normal": 36
+  },
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-live-admission-03",
+  "status": "admission_failed_resources_retained"
+}

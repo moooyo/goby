@@ -1,0 +1,98 @@
+{
+  "admissionInput": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/admission-tool-verification-04/admission-input-03.json",
+    "sha256": "936cd21a549e0bfa3b6e2543ca01bdb5354e7140484dbb101cd58ead430e2df7"
+  },
+  "calls": {
+    "replace": 1,
+    "start": 1,
+    "stop": 1
+  },
+  "candidateAdmissionComplete": false,
+  "closeoutBusinessWrites": 0,
+  "closeoutHttpRequests": 0,
+  "currentCandidateProcess": {
+    "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+    "cgroup": "0::/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service\n",
+    "cmdline": [
+      "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby"
+    ],
+    "exe": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+    "exeDevice": 2049,
+    "exeInode": 1660475,
+    "listener": {
+      "host": "127.0.0.1",
+      "port": 28498,
+      "socketInode": "404951"
+    },
+    "networkNamespace": "net:[4026531840]",
+    "pid": 406772,
+    "startTicks": "1086733",
+    "uid": 995
+  },
+  "currentSource": {
+    "archiveSha256": "b7120b6f323ace203fe7b49c56cd669ce5b9ff3ef8f3ceddb4359c2951aa658b",
+    "binary": {
+      "path": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby",
+      "sha256": "477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f"
+    },
+    "fullReport": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/report.json",
+      "sha256": "57c5f9bae718f7ae91018bf69363edd11e7ca783651a6f62f38e8a8605db003a"
+    },
+    "schema": 28,
+    "sourceManifest": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3/source-manifest.json",
+      "sha256": "65e11ed30ffc769eddde99a2b9ce2387707f085f85e813c70f7b7d84c9519732"
+    }
+  },
+  "freshSourceSnapshot": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-transition-closeout-01/private/fresh-source.json",
+    "sha256": "2f9e784eb5bca6245bc0a2da4cd2e495af98869e56a63900167ddff9bbb2eb78"
+  },
+  "freshSourceStillMatchesAfterState": true,
+  "kind": "audited-candidate-cancellation-transition-closeout",
+  "mainUpdated": false,
+  "postgresProcess": {
+    "bootId": "4de83999-7586-4716-83d1-0d81c9343126",
+    "cgroup": "0::/system.slice/goby-audited-20260913T073217Z-ef77f9ffcf0b-postgres.service\n",
+    "cmdline": [
+      "/usr/lib/postgresql/17/bin/postgres",
+      "-D",
+      "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/postgres/data",
+      "-c",
+      "config_file=/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/postgres/server.conf"
+    ],
+    "exe": "/usr/lib/postgresql/17/bin/postgres",
+    "exeDevice": 2049,
+    "exeInode": 365692,
+    "networkNamespace": "net:[4026531840]",
+    "pid": 363520,
+    "startTicks": "447753",
+    "uid": 103
+  },
+  "preservation": {
+    "controlMediaAssetsExact": true,
+    "diagnostics": {
+      "newActiveLogs": 1,
+      "oldLogPrefixesPreserved": 1,
+      "prunedLogs": 0
+    },
+    "ownedTablesExact": 35,
+    "postgresContinuous": true,
+    "protectedUnitsExact": true,
+    "recoveryExact": true,
+    "sequencesExact": true
+  },
+  "runtimeEpoch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-cancellation-transition-01/private/runtime-epoch.json",
+    "sha256": "7bcdbc529fd1ba3f6a62f66585e6788cc9efa1aac22a4accc8d339d69ccf6ae2"
+  },
+  "seedRuntimeBinding": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-cancellation-transition-01/private/seed-runtime-binding.json",
+    "sha256": "e00c5a3ae5bf45da5f774b2f71cbecda9150ee876cba082c7fc23a42616db552"
+  },
+  "status": "transition_complete_live_admission_pending",
+  "v2CompletePreflightCapturedReplayPassed": true,
+  "v2ReplayRuntimeReadsSubstitutedWithVerifiedFacts": true
+}

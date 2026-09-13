@@ -1,9 +1,9 @@
 # Audited candidate cancellation-fix transition
 
-Status: preparation only. No binary switch is authorized by a passing targeted
-test alone. Freeze the execution input after the new full verification and
-Linux build have passed and the new binary SHA256 is available. This plan
-implements the separately reviewed candidate-transition option in the
+Status: the [single transition completed](audited-candidate-cancellation-transition.json)
+after the full product verification and Linux build passed. The executed input
+and historical process expectations below remain frozen. This plan implements
+the separately reviewed candidate-transition option in the
 [current execution plan](../planning/current-execution-plan.md).
 
 Preparation now has [seven passing remote tool guards](audited-candidate-transition-tool-verification.json)
@@ -31,10 +31,11 @@ corresponding regression coverage. There is no migration or frontend change.
 The targeted closeout at `R/recovery-cancel-targeted-closeout.json`, SHA256
 `319c56a52a4a4c424787ffd42b17c021a01878f2b2e50e5cb253e2c37edc659f`,
 passed two top-level tests and two subtests, including actual CAS failure.
-The full run is still pending in
+The full run passed in
 `/opt/goby-test/audit-fixes-20260913-20260913T083107Z-fb6c70468fa3`.
-Its report, worker report, source manifest and built binary require final pins;
-do not substitute the previous product's full-test result.
+Its report, worker report, source manifest and built binary are bound by the
+[full closeout](restore-cancellation-full-verification.json); the new executable
+has SHA256 `477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd9f`.
 
 The last reported candidate uses binary SHA256
 `a9b25b6b3e9f04b528ca77cd0a0dd548ae4c2715c06a1a56a6def23c6e00e2d7`,

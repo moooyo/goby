@@ -638,6 +638,87 @@ class GatewayTests(unittest.TestCase):
             with self.assertRaisesRegex(GATEWAY.GatewayRejected, "^listener_address_unsupported$"):
                 GATEWAY.verify_listener_inventory(table(row("0100000A", foreign)), ipv6_pin, listener, {pin})
 
+    def test_12_plain_text_json_capture_is_limited_to_exact_playback_posts(self):
+        item = "0123456789abcdef0123456789abcdef"
+        playback_info = "/emby/Items/" + item + "/PlaybackInfo"
+        plain = b"Content-Type: text/plain\r\n"
+        payload = b'{ "ItemId": "' + item.encode() + b'", "PositionTicks": 12345 } \r\n'
+
+        class MemoryBudget:
+            # Exercise the existing budget implementation without opening a
+            # ledger or a socket in this pure capture-policy guard.
+            capture = GATEWAY.Journal.capture
+
+            def __init__(self, body_limit=1024, total_limit=4096, charged=0):
+                self.lock = threading.Lock()
+                self.budgets = {"maxApiBodyBytes": body_limit, "maxApiTotalBytes": total_limit}
+                self.api_bytes = charged
+
+        def capture(kind, method, path, content_type, body, budget):
+            metadata = {"kind": kind, "method": method, "path": path}
+            head = (method.encode() + b" " + path.encode() + b" HTTP/1.1\r\nHost: " + AUTHORITY + b"\r\n" +
+                    content_type + b"Content-Length: " + str(len(body)).encode() + b"\r\n\r\n")
+            original_metadata, original_head = dict(metadata), bytes(head)
+            observer = GATEWAY.Capture(metadata, head, BASE, budget)
+            if kind == "websocket":
+                # Test retention after the separately tested valid 101 gate.
+                observer.status = 101
+            observer.observe("request", body[:7])
+            observer.observe("request", body[7:])
+            self.assertEqual(metadata, original_metadata)
+            self.assertEqual(head, original_head)
+            self.assertEqual(observer.request_bytes, len(body))
+            return observer
+
+        cases = [
+            ("playback_info", "api", "POST", playback_info, plain, True),
+            ("plain_charset", "api", "POST", playback_info, b"Content-Type: text/plain; charset=UTF-8\r\n", True),
+            ("prefixless_case", "api", "POST", "/iTeMs/" + item + "/pLaYbAcKiNfO", plain, True),
+            ("started", "api", "POST", "/Sessions/Playing", plain, True),
+            ("progress", "api", "POST", "/emby/Sessions/Playing/Progress", plain, True),
+            ("stopped_case", "api", "POST", "/EMBY/sessions/playing/stopped", plain, True),
+            ("get", "api", "GET", playback_info, plain, False),
+            ("put", "api", "PUT", playback_info, plain, False),
+            ("web", "web", "POST", playback_info, plain, False),
+            ("media", "media", "POST", playback_info, plain, False),
+            ("websocket", "websocket", "POST", playback_info, plain, False),
+            ("login", "api", "POST", "/emby/Users/AuthenticateByName", plain, False),
+            ("logout", "api", "POST", "/emby/Sessions/Logout", plain, False),
+            ("ping", "api", "POST", "/emby/Sessions/Playing/Ping", plain, False),
+            ("stopped_suffix", "api", "POST", "/emby/Sessions/Playing/StoppedExtra", plain, False),
+            ("path_suffix", "api", "POST", playback_info + "/Extra", plain, False),
+            ("trailing_slash", "api", "POST", playback_info + "/", plain, False),
+            ("missing_id", "api", "POST", "/emby/Items//PlaybackInfo", plain, False),
+            ("encoded_separator", "api", "POST", "/emby/Items/a%2fb/PlaybackInfo", plain, False),
+            ("other_type", "api", "POST", playback_info, b"Content-Type: application/octet-stream\r\n", False),
+            ("missing_type", "api", "POST", playback_info, b"", False),
+            ("duplicate_type", "api", "POST", playback_info, plain + plain, False),
+            ("existing_json", "api", "POST", "/emby/Users/AuthenticateByName", b"Content-Type: application/json\r\n", True),
+            ("existing_form", "api", "POST", "/emby/Users/AuthenticateByName", b"Content-Type: application/x-www-form-urlencoded\r\n", True),
+        ]
+        for name, kind, method, path, content_type, retained in cases:
+            with self.subTest(policy=name):
+                budget = MemoryBudget()
+                observer = capture(kind, method, path, content_type, payload, budget)
+                self.assertEqual(observer.request_capture, retained)
+                self.assertEqual(bytes(observer.request_body), payload if retained else b"")
+                self.assertFalse(observer.request_truncated)
+                self.assertEqual(budget.api_bytes, len(payload) if retained else 0)
+
+        with self.subTest(budget="per_body"):
+            body = b'{"profile":"' + b"x" * 2048 + b'"}'
+            budget = MemoryBudget()
+            observer = capture("api", "POST", playback_info, plain, body, budget)
+            self.assertEqual(bytes(observer.request_body), body[:1024])
+            self.assertTrue(observer.request_truncated)
+            self.assertEqual(budget.api_bytes, 1024)
+        with self.subTest(budget="global_remaining"):
+            budget = MemoryBudget(total_limit=1024, charged=1020)
+            observer = capture("api", "POST", playback_info, plain, payload, budget)
+            self.assertEqual(bytes(observer.request_body), payload[:4])
+            self.assertTrue(observer.request_truncated)
+            self.assertEqual(budget.api_bytes, 1024)
+
 
 def main():
     global GATEWAY, BASE, SUPPORT
@@ -675,7 +756,7 @@ def main():
         os.fsync(stream.fileno())
     print(json.dumps({"test_count": report["test_count"], "passed": report["passed"], "failed": report["failed"],
                       "errors": report["errors"], "source_unchanged": unchanged}), flush=True)
-    return 0 if result.testsRun == 11 and result.wasSuccessful() and unchanged else 1
+    return 0 if result.testsRun == 12 and result.wasSuccessful() and unchanged else 1
 
 
 if __name__ == "__main__":

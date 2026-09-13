@@ -130,6 +130,15 @@ def request_budget_class(request):
     return "normal"
 
 
+def plain_playback_json_request(request):
+    # Goby's reference-compatible playback handlers also accept JSON carried as
+    # text/plain. Keep that exception on exact POST routes and opaque ID segments;
+    # it does not authorize capture of arbitrary text, assets, or stream bytes.
+    return request.get("kind") == "api" and request.get("method") == "POST" and re.fullmatch(
+        r"/(?:emby/)?(?:Items/[^/%?#\\\x00-\x20\x7f]+/PlaybackInfo|Sessions/Playing(?:/(?:Progress|Stopped))?)",
+        request.get("path", ""), re.IGNORECASE) is not None
+
+
 def framing_done(framing):
     return framing is None or framing.state == "done" or framing.state == "fixed" and framing.remaining == 0
 
@@ -350,7 +359,8 @@ class Capture:
         self.response_capture = False
         request_headers = [line.split(b":", 1) for line in raw_head.split(b"\r\n")[1:] if b":" in line]
         types = [value.strip().lower().split(b";", 1)[0].decode("ascii") for key, value in request_headers if key.lower() == b"content-type"]
-        self.request_capture = request["kind"] == "api" and len(types) == 1 and types[0] in BODY_TYPES
+        self.request_capture = request["kind"] == "api" and len(types) == 1 and (
+            types[0] in BODY_TYPES or types[0] == "text/plain" and plain_playback_json_request(request))
 
     def observe(self, direction, chunk):
         if direction == "request":

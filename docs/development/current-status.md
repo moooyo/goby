@@ -21,8 +21,11 @@ were reproduced on unchanged code. The fix and a real persistence-conflict
 regression passed targeted tests and the
 [full remote race run](restore-cancellation-full-verification.json): 2,264 tests,
 25 packages, zero failures/skips, and a Linux amd64 build. The seeded candidate
-and client host remain retained. The candidate transition and live admission
-remain pending; rebind the verified replacement binary before that admission.
+and client host remain retained. The
+[candidate binary transition](audited-candidate-cancellation-transition.json)
+completed with all 35 tables and owned state unchanged and PostgreSQL continuous.
+Live admission remains pending a
+[backup-capacity configuration correction](audited-candidate-backup-capacity.md).
 
 The test host rebooted at `2026-09-13T06:18:45Z`. A fresh read-only
 [baseline](resumed-delivery-reboot-baseline.json) found the source55 candidate
@@ -58,8 +61,15 @@ The corrected complete preflight passed a captured-data replay. Admission02
 then performed five normal requests and two cleanup requests before its checker
 incorrectly required an empty healthy-transcoding reason instead of `ready`.
 Its administrator session was revoked; no backup or restore was admitted.
-Both scopes remain consumed. Complete the product-race correction before a new
-live admission attempt.
+Both scopes remain consumed. After the product fix and candidate switch,
+Admission03 passed authentication/storage checks but its first backup was
+correctly refused: the default 8 GiB scratch reservation exceeded approximately
+3.9 GB available disk space. Its
+[failure closeout](audited-candidate-admission03-failure-closeout.json) verified
+three new revoked sessions, two devices and eight expected audit rows, with all
+earlier rows and the other 32 tables exact. No restore was admitted. Configure
+the small fixture's explicit 64 MiB object/256 MiB total limits before a fresh
+attempt; preserve all failed records and reuse the unchanged product verification.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) is a draft.
 It explicitly separates schema28 forward restoration from source32/schema27
