@@ -1,0 +1,234 @@
+{
+  "kind": "nextup-reference-client-discovery-report",
+  "version": 1,
+  "run_id": "nextup-reference-client-discovery-01",
+  "input_sha256": "a04496cfd3987e7bc52743f86143b0f079decf4419d221c5f4fe00aca8ef78f2",
+  "source_sha256": {
+    "client-browser-nextup-discovery-runtime.mjs": "bfce485955fece8beb9a0ebde500b649a349a06b26d1288e6cb73948d48c2a8d",
+    "client-browser-nextup-discovery.mjs": "b25887f0aec5b0a7ec16abc989f8ee93042d221893a417f123589bc5b09fcead",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "outcome": "actual_client_global_request_unobserved",
+  "node_version": "v20.19.2",
+  "playback_attempts": 0,
+  "elapsed_ms": 10586,
+  "recorder_requests": 34,
+  "pin_checks": 88,
+  "phases": [
+    {
+      "name": "before_state",
+      "elapsed_ms": 33
+    },
+    {
+      "name": "browser_setup",
+      "elapsed_ms": 309
+    },
+    {
+      "name": "navigate_la",
+      "elapsed_ms": 4482
+    },
+    {
+      "name": "tv_destination_confirmed",
+      "symbol": "LA",
+      "view_id": "133",
+      "elapsed_ms": 6091
+    },
+    {
+      "name": "navigate_home",
+      "elapsed_ms": 6091
+    },
+    {
+      "name": "navigate_lb",
+      "elapsed_ms": 7766
+    },
+    {
+      "name": "tv_destination_confirmed",
+      "symbol": "LB",
+      "view_id": "135",
+      "elapsed_ms": 9387
+    },
+    {
+      "name": "browser_cleanup",
+      "elapsed_ms": 9387
+    },
+    {
+      "name": "after_state",
+      "elapsed_ms": 10241
+    }
+  ],
+  "state": {
+    "comparison": {
+      "preserved": true,
+      "changed": [],
+      "full_profile_equal": false,
+      "profile_comparison": "Full profiles retained; acceptance compares Id, Name, Policy, and Configuration."
+    },
+    "before_sha256": "ac2ea1350b16060ab12894399487222fcf90074392ff3eb92399a244f006900a",
+    "after_sha256": "1ef0fa4851d738bca534c6ac3e41291b1168220a8f3226211130bd0c7f2f0a77"
+  },
+  "visible": [
+    {
+      "label": "home-after-login",
+      "elapsed_ms": 4379,
+      "receipt_sha256": "613d40521a38182e23e21c56ae6f4f4560ed2d542c711c78c1c2fe403544b0bd",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "2156a99c7e5f5974089272c544ce71253295b3c79d3f2e38a554773e88f4dbc3",
+      "cards": []
+    },
+    {
+      "label": "before-la",
+      "elapsed_ms": 4476,
+      "receipt_sha256": "4d55426927fd18e1860207e3afb87f71fa4b3a4dba7e7124a67d985b9f6a15ae",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "2156a99c7e5f5974089272c544ce71253295b3c79d3f2e38a554773e88f4dbc3",
+      "cards": []
+    },
+    {
+      "label": "after-la",
+      "elapsed_ms": 6090,
+      "receipt_sha256": "cda4743c0a7d4e18c4b10a04ac1ee0e03d2e5a5d0ec0356bb1164590ac5c0267",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 A"
+      ],
+      "screenshot_sha256": "4b0d8f3a147d5764ea8146937bbe0920533934258a865450dc756304e01929e6",
+      "cards": []
+    },
+    {
+      "label": "home-between-libraries",
+      "elapsed_ms": 7709,
+      "receipt_sha256": "6a0bd1a154d3990428abad5ae39f65ba86df258ecb04830c561835c9ece6d619",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "e17046c06be0ef90163609c0ea52625092ac43d93472f42e35415e6610b2e52d",
+      "cards": []
+    },
+    {
+      "label": "before-lb",
+      "elapsed_ms": 7757,
+      "receipt_sha256": "ecceb4ac799cb93c235167ebbd683d260760bcbe65b32c09d1b0162c9acf03d3",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "e17046c06be0ef90163609c0ea52625092ac43d93472f42e35415e6610b2e52d",
+      "cards": []
+    },
+    {
+      "label": "after-lb",
+      "elapsed_ms": 9386,
+      "receipt_sha256": "693d91cacbb2eba3771a157327894787a2e7fee3ed9d490913b01206c1fd1c2d",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "73f79f5dec4e5a7695ca0c2cffb5b598adf196ee568737623572b09099c19d6b",
+      "cards": []
+    }
+  ],
+  "nextup": [],
+  "cleanup": {
+    "before_recorder": {
+      "token_sha256": "2528ac87b1851362cdc81de0ab5734e0c0d9cced1091bcd234b00e73eb8685a5",
+      "exact_token_rejected": true
+    },
+    "logout_visible": {
+      "receipt_sha256": "edac3ac0d5414a56e59a7bce2c5762f96a4b95429dd80f8add93243328b9e5f3",
+      "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+      "manual_login_visible": true,
+      "password_forms": 0,
+      "visible_sign_in_buttons": 0
+    },
+    "browser": {
+      "closed": true,
+      "ui_logout_status": 204,
+      "exact_token_status": 401,
+      "login_view_visible": true,
+      "cleanup_failures": [],
+      "visible_receipt": {
+        "receipt_sha256": "edac3ac0d5414a56e59a7bce2c5762f96a4b95429dd80f8add93243328b9e5f3",
+        "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+        "manual_login_visible": true,
+        "password_forms": 0,
+        "visible_sign_in_buttons": 0
+      }
+    },
+    "after_recorder": {
+      "token_sha256": "31570fbc7b24aca821f10d08601541f350f6bedb3c221ea514b9fc1dc06e3265",
+      "exact_token_rejected": true
+    }
+  },
+  "failure": null,
+  "evidence_boundary": {
+    "initial_episode_history": "verified_zero_after_matrix_cleanup",
+    "playback_attempts": 0,
+    "establishes": "Actual original-client parameters, initialization, and Home/TV UI in zero history.",
+    "does_not_establish": "Client results equivalent to watched matrix R1-R4, real playback, or playback-driven refresh."
+  },
+  "client": {
+    "playwright_version": "1.63.0",
+    "browser_version": "153.0.8010.12",
+    "login_proof": {
+      "token_sha256": "e1a110f4a4a0b205ad82c54801bea582365871150e3a52a8c7870399dccc0443",
+      "session_id": "91409554b225ab714153ec4adb703a6d",
+      "user_id": "b886fd2f2c6241db9b973c8f038f9105",
+      "client_name": "Emby Web",
+      "device_name": "HeadlessChrome Linux",
+      "device_id": "0ee621cd-5173-42a5-b866-1260433484f3",
+      "client_version": "4.9.5.0",
+      "server_id": "f56dec8ff7414847873064c4be9fba74",
+      "created_at": "2026-09-13T05:19:36.0647884Z",
+      "created_at_source": "SessionInfo.LastActivityDate",
+      "kind": "emby",
+      "slot": "P",
+      "frame_login_finished": true,
+      "physical_login_completed": true,
+      "request_metadata_matches": true
+    },
+    "ui_logout": {
+      "closed": true,
+      "ui_logout_status": 204,
+      "exact_token_status": 401,
+      "login_view_visible": true,
+      "cleanup_failures": [],
+      "visible_receipt": {
+        "receipt_sha256": "edac3ac0d5414a56e59a7bce2c5762f96a4b95429dd80f8add93243328b9e5f3",
+        "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+        "manual_login_visible": true,
+        "password_forms": 0,
+        "visible_sign_in_buttons": 0
+      }
+    }
+  },
+  "disposition": {
+    "accounts_libraries_media": "retained",
+    "fresh_browser_device": "retained",
+    "recorder_devices": "retained",
+    "protocol_authentication_and_audit_history": "retained",
+    "playback": "none_authorized",
+    "preferences_restored": false
+  },
+  "private_report_sha256": "98a20ed6dd2361eaca1a9f3382701a3146b67d62d5c23a6bbee29df951e49d31"
+}

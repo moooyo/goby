@@ -1,0 +1,36 @@
+{
+  "boundReferenceExecutableBytesRead": false,
+  "businessHttpRequests": 0,
+  "capturedAt": "2026-09-13T05:43:04.300531+00:00",
+  "clientDiscoveryOutcome": "actual_client_global_request_unobserved",
+  "clientTerminal": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-execution-02/independent-client-terminal.json",
+    "sha256": "f04cd6a1b00caf16073accc7b972b2d8d42cb1ea30dee94ff3a831104f65ce04"
+  },
+  "completeBeforeAfterEqualityVerified": true,
+  "freshGobyCompleteStateEqualExceptCaptureTime": true,
+  "freshProtectedTreesExact": true,
+  "gobyCounts": {
+    "activity_entries": 185,
+    "devices": 70,
+    "sessions": 83
+  },
+  "kind": "nextup-client-independent-preservation-closeout",
+  "playbackAcceptance": false,
+  "positiveClientAcceptanceClaim": false,
+  "preservationAfter": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-execution-02/preservation-after.json",
+    "sha256": "2a0c21b02de7e4a8d8def62fe31e1b66deb9ebff7c2ee6fb02516d03618e09ec"
+  },
+  "preservationBefore": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-execution-02/preservation-before.json",
+    "sha256": "19d10cebf550702f02c48ca24baae354928cab847e774c58451dba364cd58723"
+  },
+  "referenceDatabaseRead": false,
+  "refreshAcceptance": false,
+  "resumeOrRetryAllowed": false,
+  "rootCount": 198,
+  "runNumber": 2,
+  "status": "verified",
+  "version": 1
+}

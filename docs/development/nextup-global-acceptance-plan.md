@@ -2,8 +2,10 @@
 
 Execution checkpoint: the [reference matrix07](nextup-global-reference-matrix-07.md)
 completed R0-R4 and cleanup with independent reconstruction. All global
-responses were empty. The separate bounded original-client discovery below is
-next; the full acceptance plan remains open.
+responses were empty. The [bounded original-client discoveries](nextup-client-discovery-closeout.md)
+also completed but produced no physical NextUp request. A separate
+[Goby comparison contract](nextup-goby-comparison-contract.md) is now defined;
+positive reference/client evidence and the full acceptance plan remain open.
 
 Original plan status: **planned; not executed when authored**. Prepared on 2026-09-12 from Goby source and
 retained public API observations. This document creates no fixture, session,

@@ -6,13 +6,21 @@ an old deployment paragraph elsewhere as a fresh process observation.
 
 ## Latest increment
 
+The resumed round closed after reference matrix07, two bounded original-client
+discoveries, a separate Goby comparison contract and independently verified
+source55 candidate recovery. Both clients completed cleanup but produced zero
+physical `Shows/NextUp` requests, including two selected Suggestions windows.
+All 198 protected roots and complete Goby state passed independent preservation.
+See [client closeout](nextup-client-discovery-closeout.md),
+[comparison contract](nextup-goby-comparison-contract.md) and
+[candidate recovery](candidate-source55-restart-closeout.md).
+
 Reference NextUp matrix07 completed 158 actual requests and passed independent
 wire reconstruction plus runtime/identity/preservation closure. All ten global
 responses were empty; `reference_global_positive_unresolved` remains the result.
 The 186 protected roots and complete Goby state were preserved. See the
-[matrix07 checkpoint](nextup-global-reference-matrix-07.md). A separate bounded
-original-client Home/TV discovery is next; no positive selector rule or client
-acceptance is claimed.
+[matrix07 checkpoint](nextup-global-reference-matrix-07.md). The subsequent
+client discoveries did not supply a positive selector rule or client acceptance.
 
 The 2026-09-13 architecture audit identified 21 actionable code and integration
 findings. R01-R21 are implemented and remote regression verification is complete;
@@ -29,11 +37,14 @@ original-client acceptance, or production deployment.
 
 ## Accepted deployment checkpoint
 
-The installed candidate is source55/schema28, but its service was observed
-failed after a preexisting exit1. The primary remains source32/schema27 and was
-observed running as PID1778525 after three automatic restarts. Their binaries
-and complete Goby state are unchanged; audit fixes remain undeployed. These
-observations are recorded in the [runtime investigation](runtime-drift-20260913.md).
+The installed candidate is source55/schema28 and was independently verified
+ready at `2026-09-13T06:01:44Z` as PID1814145, invocation
+`3d9fccdb4f4d4f129ee02b33f6c73ce1`, after one start of the original binary.
+The primary remains source32/schema27, PID1778525. Their binaries and complete
+Goby state are unchanged; audit fixes remain undeployed. The
+[recovery receipt](candidate-source55-restart-closeout.md) supersedes the earlier
+failed-service observation without rewriting its history or identifying its
+original exit cause.
 The source55 product publication authority is
 `16d75c38064008680fa60839c637efee2f12f2ae`.
 
@@ -42,7 +53,9 @@ calibrations and 269 requests were completed and replayed. The reference NextUp
 matrix07 has now run and its original bound matrix05 output is consumed. The
 existing proxy remains preserved.
 Consumed preparation, observer, diagnostic, and matrix scopes must not be rerun.
-See [the current resume boundary](nextup-global-reference-matrix-07.md#next-boundary).
+Client01/client02 and candidate recovery scopes are also consumed. Use the
+[comparison contract](nextup-goby-comparison-contract.md) for a fresh future run;
+the positive global/client prerequisite remains unmet.
 
 ## Delivery gates
 
@@ -52,7 +65,7 @@ See [the current resume boundary](nextup-global-reference-matrix-07.md#next-boun
 | Catalog | Scanning, local metadata/artwork, stable identities, schema28 root binding, bounded storage observation ownership | Capacity profile, actual blocked-NAS measurements, reboot and filesystem matrix |
 | Playback | Direct playback/state, selected subtitles/events, HLS and progressive software paths | Complete pinned original-client journey and broader formats/seeks |
 | Administration | Users, metadata, sessions, keys, devices, tasks, settings, activity/logs, native backups; audit fixes verified | Selected policy/executor/provider extensions |
-| NextUp/reference | Preparation and 158-request matrix independently verified; global results remain empty | Bounded original-client discovery, positive reference contract, separate Goby comparison |
+| NextUp/reference | 158-request matrix and bounded client discovery independently closed; global rule remains unresolved | Positive reference/client control and actual separate Goby comparison |
 | Original-client refresh | Reference v4 and Goby v7 observations are negative | Positive gate remains unmet; no Goby-specific failure is established |
 | Main upgrade | Candidate upgrade accepted | Positive-client gate and fresh independent upgrade preparation |
 | Hardware | Software baseline and explicit hardware configuration | Actual remote GPU decode, encode, and combined-path evidence |

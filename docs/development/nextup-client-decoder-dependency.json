@@ -1,0 +1,29 @@
+{
+  "businessOperationsReplayed": false,
+  "capturedAt": "2026-09-13T05:25:54.008351+00:00",
+  "kind": "nextup-client-readonly-decoder-dependency",
+  "package": "python3-brotli",
+  "packageVersion": "1.1.0-2+b7",
+  "pythonModuleVersion": "1.1.0",
+  "removedPackages": 0,
+  "schemaVersion": 1,
+  "services": {
+    "goby-client-proxy-m3e-fresh.service": {
+      "InvocationID": "7fdc742e0cfc4590ba644727d3424114",
+      "MainPID": "334022"
+    },
+    "goby-emby-client-m3e.service": {
+      "InvocationID": "aa59e192c1c846459bc3f218bd923364",
+      "MainPID": "332054"
+    },
+    "goby-foundation-test.service": {
+      "InvocationID": "af71e306c80b4d11a7683ac819562e48",
+      "MainPID": "1778525"
+    },
+    "postgresql@17-main.service": {
+      "InvocationID": "8a74b0a60c364eebb9ade9202d67e218",
+      "MainPID": "886"
+    }
+  },
+  "upgradedPackages": 0
+}

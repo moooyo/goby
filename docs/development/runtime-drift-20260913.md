@@ -1,5 +1,9 @@
 # Preexisting Goby runtime drift on 2026-09-13
 
+Follow-up: [independent source55 recovery](candidate-source55-restart-closeout.md)
+verified the original candidate running and ready at `2026-09-13T06:01:44Z`.
+The historical failures and the unresolved exit cause below remain unchanged.
+
 The first matrix07 preservation capture stopped before any matrix business
 request because two Goby service identities differed from the retained
 diagnostic04 checkpoint. The [original prelaunch failure](nextup-global-reference-matrix-07-prelaunch-failure.json)

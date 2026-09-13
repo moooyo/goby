@@ -1,0 +1,1716 @@
+{
+  "afterRecorder": {
+    "requestCount": 17,
+    "sameTokenLogout204AndRejection401": true,
+    "tokenSha256": "31570fbc7b24aca821f10d08601541f350f6bedb3c221ea514b9fc1dc06e3265"
+  },
+  "beforeRecorder": {
+    "requestCount": 17,
+    "sameTokenLogout204AndRejection401": true,
+    "tokenSha256": "2528ac87b1851362cdc81de0ab5734e0c0d9cced1091bcd234b00e73eb8685a5"
+  },
+  "capturedAt": "2026-09-13T05:27:37.601546+00:00",
+  "clientDiscoveryEvidenceVerified": false,
+  "closureReceiptNumber": 2,
+  "counters": {
+    "forbidden_read": 0,
+    "network": 0,
+    "unexpected_process": 0,
+    "unexpected_write": 0
+  },
+  "evidence": [
+    {
+      "bytes": 45568,
+      "identity": [
+        2049,
+        2669296,
+        33152,
+        0,
+        0,
+        1,
+        45568,
+        1789277250445997368,
+        1789277250653988739
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-execution-01/verify-nextup-client-discovery-v2.py",
+      "sha256": "c436e7db957d24f2ed3b772b1da620421dbc2b38974e873458c937d85d1e46b6"
+    },
+    {
+      "bytes": 7051,
+      "identity": [
+        2049,
+        2669174,
+        33152,
+        0,
+        0,
+        1,
+        7051,
+        1789276681813703277,
+        1789276681813703277
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-client-discovery-inputs-01/input.json",
+      "sha256": "a04496cfd3987e7bc52743f86143b0f079decf4419d221c5f4fe00aca8ef78f2"
+    },
+    {
+      "bytes": 41248,
+      "identity": [
+        2049,
+        2669144,
+        33152,
+        0,
+        0,
+        1,
+        41248,
+        1789276541703599287,
+        1789276542179579201
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-client-discovery-tool-01/revision-01/client-browser-nextup-discovery.mjs",
+      "sha256": "b25887f0aec5b0a7ec16abc989f8ee93042d221893a417f123589bc5b09fcead"
+    },
+    {
+      "bytes": 108530,
+      "identity": [
+        2049,
+        2669145,
+        33152,
+        0,
+        0,
+        1,
+        108530,
+        1789276541707599118,
+        1789276542231577006
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-client-discovery-tool-01/revision-01/client-browser-nextup-discovery-runtime.mjs",
+      "sha256": "bfce485955fece8beb9a0ebde500b649a349a06b26d1288e6cb73948d48c2a8d"
+    },
+    {
+      "bytes": 18036,
+      "identity": [
+        2049,
+        2669146,
+        33152,
+        0,
+        0,
+        1,
+        18036,
+        1789276044552902576,
+        1789276542279574981
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-client-discovery-tool-01/revision-01/client-browser-session-proof.mjs",
+      "sha256": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+    },
+    {
+      "bytes": 9678,
+      "identity": [
+        2049,
+        2667961,
+        33152,
+        0,
+        0,
+        1,
+        9678,
+        1789275108011675029,
+        1789275108011675029
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-attestation-07/published-execution.json",
+      "sha256": "586860e8109ee3b9d21f13126a9d5b715f02c2c95d7a6d115c060eab7b234766"
+    },
+    {
+      "bytes": 1366,
+      "identity": [
+        2049,
+        2669173,
+        33152,
+        0,
+        0,
+        1,
+        1366,
+        1789276681813703277,
+        1789276681813703277
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-client-discovery-inputs-01/release.json",
+      "sha256": "cde6dc12716a12bce0a760d52d48d8728d1274e343227bf1032d0ee5a0cd9506"
+    },
+    {
+      "bytes": 509,
+      "identity": [
+        2049,
+        2544232,
+        33152,
+        0,
+        0,
+        1,
+        509,
+        1789253251215686786,
+        1789253251215686786
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-preparation-05/private/matrix-credentials.json",
+      "sha256": "46ca9f55b50286158fb92224713fa3399763d1fb75b37f46281166d4fef5242c"
+    },
+    {
+      "bytes": 2780,
+      "identity": [
+        2049,
+        2669106,
+        33152,
+        0,
+        0,
+        1,
+        2780,
+        1789275424134905248,
+        1789275424134905248
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-07/operator-07/private/terminal.json",
+      "sha256": "b08b1a2ea8ce659ac1868df44b557455efccf69ae2dfd5caf33bb0c1b8b627da"
+    },
+    {
+      "bytes": 35320,
+      "identity": [
+        2049,
+        2669114,
+        33152,
+        0,
+        0,
+        1,
+        35320,
+        1789275476224794790,
+        1789275476224794790
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-07/independent-terminal.json",
+      "sha256": "4689a670ad80efcd0334c3f1956e540a986cfbc735da8f4e6b93acd68d804d8c"
+    },
+    {
+      "bytes": 335486,
+      "identity": [
+        2049,
+        2669116,
+        33152,
+        0,
+        0,
+        1,
+        335486,
+        1789275560389382039,
+        1789275560389382039
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-global-matrix-execution-07/independent-runtime-terminal.json",
+      "sha256": "782ab2ddb4e1d979f9f93a42b3c1d9cbb9b1078413d5e8a354242ff715eeae93"
+    },
+    {
+      "bytes": 1220,
+      "identity": [
+        2049,
+        2669108,
+        33152,
+        0,
+        0,
+        1,
+        1220,
+        1789275424154904438,
+        1789275424154904438
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/nextup-global-reference-operator-runs-07/operator-07/private/commit.json",
+      "sha256": "46e5811f1b2099ad49a20a4915fe0d83bd6adeb3ea0cdd5a51d455b714ba2b18"
+    },
+    {
+      "bytes": 2142,
+      "identity": [
+        2049,
+        2669186,
+        33152,
+        0,
+        0,
+        1,
+        2142,
+        1789276772237913264,
+        1789276772237913264
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/admission.json",
+      "sha256": "fd1d71e995051d672160665d032de828bb0b6337667f5ca1980fe96922f1151f"
+    },
+    {
+      "bytes": 12341,
+      "identity": [
+        2049,
+        2669289,
+        33152,
+        0,
+        0,
+        1,
+        12341,
+        1789276782793471500,
+        1789276782793471500
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/report.json",
+      "sha256": "98a20ed6dd2361eaca1a9f3382701a3146b67d62d5c23a6bbee29df951e49d31"
+    },
+    {
+      "bytes": 823,
+      "identity": [
+        2049,
+        2669188,
+        33152,
+        0,
+        0,
+        1,
+        823,
+        1789276772245912929,
+        1789276772245912929
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-1-intent.json",
+      "sha256": "eacb8e127f46eb6aec7fc819fef5ba82b1bb004501d85708ab0db55173baab08"
+    },
+    {
+      "bytes": 5338,
+      "identity": [
+        2049,
+        2669189,
+        33152,
+        0,
+        0,
+        1,
+        5338,
+        1789276772257912427,
+        1789276772257912427
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-1-response.json",
+      "sha256": "142c0dfb824f1f25bd657eea291277bf4baa8c4adb06b736bb31134a63bb7869"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669190,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276772269911925,
+        1789276772269911925
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-2-intent.json",
+      "sha256": "f68b47d4872e334e552005c8c326017cfb06f76c46f7a6bf5868e33daf9cccbb"
+    },
+    {
+      "bytes": 7918,
+      "identity": [
+        2049,
+        2669191,
+        33152,
+        0,
+        0,
+        1,
+        7918,
+        1789276772273911757,
+        1789276772273911757
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-2-response.json",
+      "sha256": "c8e400007711fd5cc2870b28e97ca4c8b8b912b38b9847e63df2c16ecb8b1108"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669192,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276772285911255,
+        1789276772285911255
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-3-intent.json",
+      "sha256": "92399f60d48ec3779d8f8c249aea542535fbde2ef39e9183f557d1192d6d33e0"
+    },
+    {
+      "bytes": 7918,
+      "identity": [
+        2049,
+        2669193,
+        33152,
+        0,
+        0,
+        1,
+        7918,
+        1789276772289911088,
+        1789276772289911088
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-3-response.json",
+      "sha256": "5e53b06aa28c88d3310cf69e3cc042a3874e1c45d45f99294828126effa3996d"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669194,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276772301910585,
+        1789276772301910585
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-4-intent.json",
+      "sha256": "5eaebcc6d127643ee7ced2555da75a4c0af8a843dbe72fadb47a76da2d04dc25"
+    },
+    {
+      "bytes": 7919,
+      "identity": [
+        2049,
+        2669195,
+        33152,
+        0,
+        0,
+        1,
+        7919,
+        1789276772305910418,
+        1789276772305910418
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-4-response.json",
+      "sha256": "67c0d073d0e26418d211060e1cb03e2c1c9586724287df95fbb90afdeedc97a1"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669196,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276772313910083,
+        1789276772313910083
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-5-intent.json",
+      "sha256": "9357aafc255bb16e910aa8cd4e913bd3179f807be0221808c863b70469d14015"
+    },
+    {
+      "bytes": 7919,
+      "identity": [
+        2049,
+        2669197,
+        33152,
+        0,
+        0,
+        1,
+        7919,
+        1789276772321909748,
+        1789276772321909748
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-5-response.json",
+      "sha256": "d7287aa727d87dceabfe1b320702d986239f34e1b285bd3669cb48d1a2c31367"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669198,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276772329909413,
+        1789276772329909413
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-6-intent.json",
+      "sha256": "ad9d59fb395bdb23fb57115b32d73b1e35c1213c112ce9b062e7ad2d19008944"
+    },
+    {
+      "bytes": 7919,
+      "identity": [
+        2049,
+        2669199,
+        33152,
+        0,
+        0,
+        1,
+        7919,
+        1789276772337909078,
+        1789276772337909078
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-6-response.json",
+      "sha256": "6849d1f89228a1d24cd544b4b55de631e9ddac79349d9e4aefde6fa2d51c1c73"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669200,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276772349908576,
+        1789276772349908576
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-7-intent.json",
+      "sha256": "ba96150cf970fabe537f2830173c24f134b0f932b6770a1ca8b68b7d106832f6"
+    },
+    {
+      "bytes": 7919,
+      "identity": [
+        2049,
+        2669201,
+        33152,
+        0,
+        0,
+        1,
+        7919,
+        1789276772357908242,
+        1789276772357908242
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-7-response.json",
+      "sha256": "5ae564937e6b7ee0b8a1bef5988b1f9c8fb75a17f8a61ecd066013cf2ce29805"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669202,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276772365907906,
+        1789276772365907906
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-8-intent.json",
+      "sha256": "c0b580e39edc597b3b0d94e7813dc15eedce50f39e83054deb7053648d11b78b"
+    },
+    {
+      "bytes": 2775,
+      "identity": [
+        2049,
+        2669203,
+        33152,
+        0,
+        0,
+        1,
+        2775,
+        1789276772373907572,
+        1789276772373907572
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-8-response.json",
+      "sha256": "87907e477daa2185783cf7fcd25511ef1cdd0218956e644078639d08e8cc0b54"
+    },
+    {
+      "bytes": 620,
+      "identity": [
+        2049,
+        2669204,
+        33152,
+        0,
+        0,
+        1,
+        620,
+        1789276772381907237,
+        1789276772381907237
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-9-intent.json",
+      "sha256": "7969c55d018e49b1a3ff18923a00ff5b613386d0e597018285ec954c93f1fbf4"
+    },
+    {
+      "bytes": 2715,
+      "identity": [
+        2049,
+        2669205,
+        33152,
+        0,
+        0,
+        1,
+        2715,
+        1789276772389906902,
+        1789276772389906902
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-9-response.json",
+      "sha256": "af4822a59be486324a1189e885d15d6b0c35b608c02e0f07939bd2f385c96b2a"
+    },
+    {
+      "bytes": 620,
+      "identity": [
+        2049,
+        2669206,
+        33152,
+        0,
+        0,
+        1,
+        620,
+        1789276772401906400,
+        1789276772401906400
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-10-intent.json",
+      "sha256": "b5da0149917a9d9518a687e00bba5db28bc23b030909dedd2e5ad9678d0ff3b4"
+    },
+    {
+      "bytes": 2716,
+      "identity": [
+        2049,
+        2669207,
+        33152,
+        0,
+        0,
+        1,
+        2716,
+        1789276772405906232,
+        1789276772405906232
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-10-response.json",
+      "sha256": "3c03b71639849762306de37b64f2dd6c5dd395d8748984bd7f6123132c3762d7"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669208,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276772413905897,
+        1789276772413905897
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-11-intent.json",
+      "sha256": "bf1b1507e3c6662601fb24e8c71f3a1d6d36905ae76fcf6d81f328f870fd2c81"
+    },
+    {
+      "bytes": 2776,
+      "identity": [
+        2049,
+        2669209,
+        33152,
+        0,
+        0,
+        1,
+        2776,
+        1789276772417905730,
+        1789276772417905730
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-11-response.json",
+      "sha256": "ef06b1c7bf8f609b444abaf9c31dff9021d0f1bd6b75092e0e5ab1cacaecd10d"
+    },
+    {
+      "bytes": 620,
+      "identity": [
+        2049,
+        2669210,
+        33152,
+        0,
+        0,
+        1,
+        620,
+        1789276772429905228,
+        1789276772429905228
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-12-intent.json",
+      "sha256": "32f372cb59f59d13d09ee3d9efdb93bbce8ed0bfc979794ebef296ae16f267ff"
+    },
+    {
+      "bytes": 2716,
+      "identity": [
+        2049,
+        2669211,
+        33152,
+        0,
+        0,
+        1,
+        2716,
+        1789276772433905061,
+        1789276772433905061
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-12-response.json",
+      "sha256": "dfb645f9329d73cfd1d9805a9d8ff3e531712b90b2754a422b814f32bdfb0131"
+    },
+    {
+      "bytes": 620,
+      "identity": [
+        2049,
+        2669212,
+        33152,
+        0,
+        0,
+        1,
+        620,
+        1789276772441904725,
+        1789276772441904725
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-13-intent.json",
+      "sha256": "e872e6210df1882fabe3e2a05794e22eee4721bc5b4176661a750778859ea8e5"
+    },
+    {
+      "bytes": 2716,
+      "identity": [
+        2049,
+        2669213,
+        33152,
+        0,
+        0,
+        1,
+        2716,
+        1789276772445904558,
+        1789276772445904558
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-13-response.json",
+      "sha256": "a85b6c473d7410a7c12456e88fb863307e97f62971d8b49065008eff8053a3c6"
+    },
+    {
+      "bytes": 614,
+      "identity": [
+        2049,
+        2669214,
+        33152,
+        0,
+        0,
+        1,
+        614,
+        1789276772457904056,
+        1789276772457904056
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-14-intent.json",
+      "sha256": "73f342bbd449ff9dfcf628eca702c9e9f1158a55bc07e3c32582a92059eb01c2"
+    },
+    {
+      "bytes": 4196,
+      "identity": [
+        2049,
+        2669215,
+        33152,
+        0,
+        0,
+        1,
+        4196,
+        1789276772461903889,
+        1789276772461903889
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-14-response.json",
+      "sha256": "7f93fcddfebd0de90f485d944674c35a30116aea0019018c373a08a9de8daaca"
+    },
+    {
+      "bytes": 625,
+      "identity": [
+        2049,
+        2669216,
+        33152,
+        0,
+        0,
+        1,
+        625,
+        1789276772469903554,
+        1789276772469903554
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-15-intent.json",
+      "sha256": "0ebd9c291204d6057e4b030547252e7914727f8f3c2856ec338c2c33d9155040"
+    },
+    {
+      "bytes": 1349,
+      "identity": [
+        2049,
+        2669217,
+        33152,
+        0,
+        0,
+        1,
+        1349,
+        1789276772477903219,
+        1789276772477903219
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-15-response.json",
+      "sha256": "1583ff9180d732a0c092efcca5ca38ddb45f95a4d7215bf4e429673b24a8b811"
+    },
+    {
+      "bytes": 591,
+      "identity": [
+        2049,
+        2669219,
+        33152,
+        0,
+        0,
+        1,
+        591,
+        1789276772489902716,
+        1789276772489902716
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-16-intent.json",
+      "sha256": "f5ca26c30265725876f45cdd29bb56fbb6359b535988581beb66735d64a00f7c"
+    },
+    {
+      "bytes": 1260,
+      "identity": [
+        2049,
+        2669220,
+        33152,
+        0,
+        0,
+        1,
+        1260,
+        1789276772493902549,
+        1789276772493902549
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-16-response.json",
+      "sha256": "40bdaddf7ca34d50bb16738b52be581e358fea61d9f2e8e560ba878454554690"
+    },
+    {
+      "bytes": 614,
+      "identity": [
+        2049,
+        2669221,
+        33152,
+        0,
+        0,
+        1,
+        614,
+        1789276772505902047,
+        1789276772505902047
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-17-intent.json",
+      "sha256": "e37429e18200047f485c335a577a90c8300a0549b48d7eabce28e8ee9d0c52e9"
+    },
+    {
+      "bytes": 1358,
+      "identity": [
+        2049,
+        2669222,
+        33152,
+        0,
+        0,
+        1,
+        1358,
+        1789276772505902047,
+        1789276772505902047
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-17-response.json",
+      "sha256": "8ce46c0ce854cc952ebf81e4225f6b6b5106e3017fe3474da240a4dc87d45e74"
+    },
+    {
+      "bytes": 4578,
+      "identity": [
+        2049,
+        2669218,
+        33152,
+        0,
+        0,
+        1,
+        4578,
+        1789276772485902884,
+        1789276772485902884
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/before-owned-state.json",
+      "sha256": "ac2ea1350b16060ab12894399487222fcf90074392ff3eb92399a244f006900a"
+    },
+    {
+      "bytes": 823,
+      "identity": [
+        2049,
+        2669254,
+        33152,
+        0,
+        0,
+        1,
+        823,
+        1789276782489484221,
+        1789276782489484221
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-18-intent.json",
+      "sha256": "f539f4dd7d3ee5505359a67392e95f4c480e4f54810d50621825f423b6dbc398"
+    },
+    {
+      "bytes": 5338,
+      "identity": [
+        2049,
+        2669255,
+        33152,
+        0,
+        0,
+        1,
+        5338,
+        1789276782497483886,
+        1789276782497483886
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-18-response.json",
+      "sha256": "46d7a63db1b44fa4efa47bdd07de34cd15f4fe175b6483ae560223248b089ce1"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669256,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782509483384,
+        1789276782509483384
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-19-intent.json",
+      "sha256": "f3830c4758d256e5ae8c0625f4d9dc715684915361516e9fe3e2e22f51693d12"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669257,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782517483049,
+        1789276782517483049
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-19-response.json",
+      "sha256": "0cf2574bccfde3c230b3417e4e23c0f43691d9eaf6d9611acf87ff263d1c5c52"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669258,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782529482547,
+        1789276782529482547
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-20-intent.json",
+      "sha256": "2da07d0ac30cf4e509df4ca2a7757b307f8f76182fb6aefef4ed17a1a70e5158"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669259,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782533482380,
+        1789276782533482380
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-20-response.json",
+      "sha256": "9b46bd1a9f93058802f7a2cd36b35704df42e0660c543b5d35b22c65ee18457d"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669260,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782545481878,
+        1789276782545481878
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-21-intent.json",
+      "sha256": "cb7c80230c4439f019e47945978ee2dfd95ba42a837112fff0d9c2afb25e2ff7"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669261,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782549481710,
+        1789276782549481710
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-21-response.json",
+      "sha256": "25a4bebae0a8cb590907ee49cdee166c0d58afcff6861863c20cf0d94a95a421"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669262,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782573480706,
+        1789276782573480706
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-22-intent.json",
+      "sha256": "a004aaa6a8021cb41ad916ed03676787adcd6b43151cce4ad2e9b94b3c0a7eec"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669263,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782577480539,
+        1789276782577480539
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-22-response.json",
+      "sha256": "442636a4717d55b09ba91ba5afa9b4f6f59ef09029dfa7aaedc6ba5c2f60883d"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669264,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782589480037,
+        1789276782589480037
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-23-intent.json",
+      "sha256": "d9eb8f840f3c4cf183923af2adc1c3bb507c242e63df07f3b622dc2399b457c6"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669265,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782593479869,
+        1789276782593479869
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-23-response.json",
+      "sha256": "abfc9e36b4ee2e1ec235f71e624760972a112c9cc92fff64c242fd8dbdf70f17"
+    },
+    {
+      "bytes": 618,
+      "identity": [
+        2049,
+        2669266,
+        33152,
+        0,
+        0,
+        1,
+        618,
+        1789276782605479367,
+        1789276782605479367
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-24-intent.json",
+      "sha256": "0d416b5413c52bf6264635333255f15e83ac66a0251be835404a3886b6360ad2"
+    },
+    {
+      "bytes": 7922,
+      "identity": [
+        2049,
+        2669267,
+        33152,
+        0,
+        0,
+        1,
+        7922,
+        1789276782609479200,
+        1789276782609479200
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-24-response.json",
+      "sha256": "1ade9c2e830f50734678c4e83914884ef3acea2f53d5723986d5f8683c0487fe"
+    },
+    {
+      "bytes": 617,
+      "identity": [
+        2049,
+        2669268,
+        33152,
+        0,
+        0,
+        1,
+        617,
+        1789276782621478698,
+        1789276782621478698
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-25-intent.json",
+      "sha256": "ceeb19a907d0c0f1740731d4405c2eb5e8b06fe0e247e9fd200998515b28a478"
+    },
+    {
+      "bytes": 2778,
+      "identity": [
+        2049,
+        2669269,
+        33152,
+        0,
+        0,
+        1,
+        2778,
+        1789276782625478530,
+        1789276782625478530
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-25-response.json",
+      "sha256": "cef45f6848f017517ab1a42af2db2908586977abfc770d8f24dd0008c6ac663c"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669270,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276782637478028,
+        1789276782637478028
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-26-intent.json",
+      "sha256": "87f10e33298cd25763397547c4db9eb3f8446ef9b822c4736fcab4c42e88e363"
+    },
+    {
+      "bytes": 2718,
+      "identity": [
+        2049,
+        2669271,
+        33152,
+        0,
+        0,
+        1,
+        2718,
+        1789276782641477861,
+        1789276782641477861
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-26-response.json",
+      "sha256": "8daf80ce3151947bab04e55fd4b53710c28e6b95388d89b8fdd61cd1ce841f21"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669272,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276782653477359,
+        1789276782653477359
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-27-intent.json",
+      "sha256": "dbbf6cc4fe57a34274645ca6deb0ddead05f8ec5f985a9d4d8b8dac7ff307f40"
+    },
+    {
+      "bytes": 2718,
+      "identity": [
+        2049,
+        2669273,
+        33152,
+        0,
+        0,
+        1,
+        2718,
+        1789276782657477191,
+        1789276782657477191
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-27-response.json",
+      "sha256": "98bcc6641c6fe99bbdcc2b2618f78a0ac0a920062fce9e54d0318254ce3b48ca"
+    },
+    {
+      "bytes": 617,
+      "identity": [
+        2049,
+        2669274,
+        33152,
+        0,
+        0,
+        1,
+        617,
+        1789276782673476522,
+        1789276782673476522
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-28-intent.json",
+      "sha256": "822c2b615503e226aa699f3a35f350aa298061c4b1302c0d209e0808d5f49f42"
+    },
+    {
+      "bytes": 2778,
+      "identity": [
+        2049,
+        2669275,
+        33152,
+        0,
+        0,
+        1,
+        2778,
+        1789276782677476354,
+        1789276782677476354
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-28-response.json",
+      "sha256": "37bcef66ef8e83fddf99b32387393f6a7efd509ab36d6179d45959635b78a39f"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669276,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276782693475684,
+        1789276782693475684
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-29-intent.json",
+      "sha256": "5a811afd61470967cd3df553ac04bd4fab455f35c58e14ace63797a14791ef30"
+    },
+    {
+      "bytes": 2718,
+      "identity": [
+        2049,
+        2669277,
+        33152,
+        0,
+        0,
+        1,
+        2718,
+        1789276782697475517,
+        1789276782697475517
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-29-response.json",
+      "sha256": "80661e90712e5bf3c52fd3f885cbdfe1237dc7dca35ce0888ad19dcae006de21"
+    },
+    {
+      "bytes": 619,
+      "identity": [
+        2049,
+        2669278,
+        33152,
+        0,
+        0,
+        1,
+        619,
+        1789276782709475015,
+        1789276782709475015
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-30-intent.json",
+      "sha256": "d923493bb6eb789ac7a8c3086cc89a836615e8a76f2c9eb5025989e3eb0994f0"
+    },
+    {
+      "bytes": 2718,
+      "identity": [
+        2049,
+        2669279,
+        33152,
+        0,
+        0,
+        1,
+        2718,
+        1789276782713474848,
+        1789276782713474848
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-30-response.json",
+      "sha256": "b0b6037f4f6438ea8017ba098fecef2c6901f246eff3055b19530a6fe40c4759"
+    },
+    {
+      "bytes": 613,
+      "identity": [
+        2049,
+        2669280,
+        33152,
+        0,
+        0,
+        1,
+        613,
+        1789276782725474346,
+        1789276782725474346
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-31-intent.json",
+      "sha256": "8f5fdac8e5cc9d21466c9db9ee3ba3055652d1972e9435ca6b1cf94b55f2e38f"
+    },
+    {
+      "bytes": 4198,
+      "identity": [
+        2049,
+        2669281,
+        33152,
+        0,
+        0,
+        1,
+        4198,
+        1789276782725474346,
+        1789276782725474346
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-31-response.json",
+      "sha256": "793b5c38222d2ff1f2c6521ced38bd9255a632ae5bc9bbae4bb60ed81b22b366"
+    },
+    {
+      "bytes": 624,
+      "identity": [
+        2049,
+        2669282,
+        33152,
+        0,
+        0,
+        1,
+        624,
+        1789276782737473843,
+        1789276782737473843
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-32-intent.json",
+      "sha256": "89cac0673f49c9fb02a19d546497cf6e1a95b130ea5f587e13997b2d96311868"
+    },
+    {
+      "bytes": 1351,
+      "identity": [
+        2049,
+        2669283,
+        33152,
+        0,
+        0,
+        1,
+        1351,
+        1789276782741473676,
+        1789276782741473676
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-32-response.json",
+      "sha256": "39a727ebac07159d174c27fc459719c10c3e0ead908b8e0065a7e55ca4230d40"
+    },
+    {
+      "bytes": 590,
+      "identity": [
+        2049,
+        2669285,
+        33152,
+        0,
+        0,
+        1,
+        590,
+        1789276782757473007,
+        1789276782757473007
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-33-intent.json",
+      "sha256": "ae908731fe13c0c223dbc250a2073c4405e18c032370ce0a84e9f50c1aa6ec86"
+    },
+    {
+      "bytes": 1262,
+      "identity": [
+        2049,
+        2669286,
+        33152,
+        0,
+        0,
+        1,
+        1262,
+        1789276782761472839,
+        1789276782761472839
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-33-response.json",
+      "sha256": "54127a3477084e76aee0f2906f72dee6afea8398cbe7562be3043ca35784813d"
+    },
+    {
+      "bytes": 613,
+      "identity": [
+        2049,
+        2669287,
+        33152,
+        0,
+        0,
+        1,
+        613,
+        1789276782773472337,
+        1789276782773472337
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-34-intent.json",
+      "sha256": "d5b1e07a45181e6d591ed1cbf01c1a018d16a7657073e6993ae651ec0cbe574d"
+    },
+    {
+      "bytes": 1360,
+      "identity": [
+        2049,
+        2669288,
+        33152,
+        0,
+        0,
+        1,
+        1360,
+        1789276782777472170,
+        1789276782777472170
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/request-34-response.json",
+      "sha256": "f54d92856312f1689fc0294a55a176e5f80a19da980c60130bcff425c603e723"
+    },
+    {
+      "bytes": 4578,
+      "identity": [
+        2049,
+        2669284,
+        33152,
+        0,
+        0,
+        1,
+        4578,
+        1789276782749473341,
+        1789276782749473341
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/after-owned-state.json",
+      "sha256": "1ef0fa4851d738bca534c6ac3e41291b1168220a8f3226211130bd0c7f2f0a77"
+    },
+    {
+      "bytes": 1313652,
+      "identity": [
+        2049,
+        2669252,
+        33152,
+        0,
+        0,
+        1,
+        1313652,
+        1789276782441486229,
+        1789276782441486229
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/browser-network-private.json",
+      "sha256": "1d6934b898d751169dd39bb78a4f680d7223215faa453c33bd8d611ca1f529e2"
+    },
+    {
+      "bytes": 629,
+      "identity": [
+        2049,
+        2669227,
+        33152,
+        0,
+        0,
+        1,
+        629,
+        1789276776077752547,
+        1789276776077752547
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/browser-login-private.json",
+      "sha256": "eb74ef5da837d5bb43b9129fead47828479c014e06aa08fbb481e52ed5b4b234"
+    },
+    {
+      "bytes": 3805,
+      "identity": [
+        2049,
+        2669226,
+        33152,
+        0,
+        0,
+        1,
+        3805,
+        1789276776073752714,
+        1789276776073752714
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/browser-login-response-physical-208.json",
+      "sha256": "d7ce90a97a91073ea7a0689981a954d7700f6e501da8d8520a43fbe98f0bbaaf"
+    },
+    {
+      "bytes": 2073,
+      "identity": [
+        2049,
+        2669225,
+        33152,
+        0,
+        0,
+        1,
+        2073,
+        1789276776049753719,
+        1789276776049753719
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/browser-mutation-physical-208-intent.json",
+      "sha256": "ec6ef358641dfdd94a62651420c4e64a75c31ea526b05ecb3087797f1207ead3"
+    },
+    {
+      "bytes": 3088,
+      "identity": [
+        2049,
+        2669228,
+        33152,
+        0,
+        0,
+        1,
+        3088,
+        1789276776089752045,
+        1789276776089752045
+      ],
+      "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-01/private/browser-mutation-physical-210-intent.json",
+      "sha256": "2be8a402b369b71fbe5308d4e217f5fdd4edabaa5e1f9bc3174e0c31f9925acd"
+    }
+  ],
+  "failure": {
+    "reason": "media_or_playback_request_observed",
+    "type": "EvidenceError"
+  },
+  "fullEpisodeSummaryUserDataPreserved": true,
+  "fullPreferencesPreserved": true,
+  "fullProfileEqual": false,
+  "initialEpisodeHistory": "zero_after_matrix_cleanup",
+  "kind": "nextup-client-discovery-independent-terminal",
+  "originalClientFullAcceptance": false,
+  "outerPreservationReceiptRequired": true,
+  "outerProtectedRootsAndGobyPreservationVerified": false,
+  "pageRawBodyBytesRetained": false,
+  "playbackAcceptance": false,
+  "profileAcceptedFieldsPreserved": true,
+  "rawURLBytesIndependentlyReconstructed": false,
+  "recorderLedger": [
+    {
+      "intentSha256": "eacb8e127f46eb6aec7fc819fef5ba82b1bb004501d85708ab0db55173baab08",
+      "label": "before-login",
+      "ordinal": 1,
+      "responseSha256": "142c0dfb824f1f25bd657eea291277bf4baa8c4adb06b736bb31134a63bb7869",
+      "status": 200
+    },
+    {
+      "intentSha256": "f68b47d4872e334e552005c8c326017cfb06f76c46f7a6bf5868e33daf9cccbb",
+      "label": "before-A1",
+      "ordinal": 2,
+      "responseSha256": "c8e400007711fd5cc2870b28e97ca4c8b8b912b38b9847e63df2c16ecb8b1108",
+      "status": 200
+    },
+    {
+      "intentSha256": "92399f60d48ec3779d8f8c249aea542535fbde2ef39e9183f557d1192d6d33e0",
+      "label": "before-A2",
+      "ordinal": 3,
+      "responseSha256": "5e53b06aa28c88d3310cf69e3cc042a3874e1c45d45f99294828126effa3996d",
+      "status": 200
+    },
+    {
+      "intentSha256": "5eaebcc6d127643ee7ced2555da75a4c0af8a843dbe72fadb47a76da2d04dc25",
+      "label": "before-A3",
+      "ordinal": 4,
+      "responseSha256": "67c0d073d0e26418d211060e1cb03e2c1c9586724287df95fbb90afdeedc97a1",
+      "status": 200
+    },
+    {
+      "intentSha256": "9357aafc255bb16e910aa8cd4e913bd3179f807be0221808c863b70469d14015",
+      "label": "before-B1",
+      "ordinal": 5,
+      "responseSha256": "d7287aa727d87dceabfe1b320702d986239f34e1b285bd3669cb48d1a2c31367",
+      "status": 200
+    },
+    {
+      "intentSha256": "ad9d59fb395bdb23fb57115b32d73b1e35c1213c112ce9b062e7ad2d19008944",
+      "label": "before-B2",
+      "ordinal": 6,
+      "responseSha256": "6849d1f89228a1d24cd544b4b55de631e9ddac79349d9e4aefde6fa2d51c1c73",
+      "status": 200
+    },
+    {
+      "intentSha256": "ba96150cf970fabe537f2830173c24f134b0f932b6770a1ca8b68b7d106832f6",
+      "label": "before-B3",
+      "ordinal": 7,
+      "responseSha256": "5ae564937e6b7ee0b8a1bef5988b1f9c8fb75a17f8a61ecd066013cf2ce29805",
+      "status": 200
+    },
+    {
+      "intentSha256": "c0b580e39edc597b3b0d94e7813dc15eedce50f39e83054deb7053648d11b78b",
+      "label": "before-A",
+      "ordinal": 8,
+      "responseSha256": "87907e477daa2185783cf7fcd25511ef1cdd0218956e644078639d08e8cc0b54",
+      "status": 200
+    },
+    {
+      "intentSha256": "7969c55d018e49b1a3ff18923a00ff5b613386d0e597018285ec954c93f1fbf4",
+      "label": "before-AS1",
+      "ordinal": 9,
+      "responseSha256": "af4822a59be486324a1189e885d15d6b0c35b608c02e0f07939bd2f385c96b2a",
+      "status": 200
+    },
+    {
+      "intentSha256": "b5da0149917a9d9518a687e00bba5db28bc23b030909dedd2e5ad9678d0ff3b4",
+      "label": "before-AS2",
+      "ordinal": 10,
+      "responseSha256": "3c03b71639849762306de37b64f2dd6c5dd395d8748984bd7f6123132c3762d7",
+      "status": 200
+    },
+    {
+      "intentSha256": "bf1b1507e3c6662601fb24e8c71f3a1d6d36905ae76fcf6d81f328f870fd2c81",
+      "label": "before-B",
+      "ordinal": 11,
+      "responseSha256": "ef06b1c7bf8f609b444abaf9c31dff9021d0f1bd6b75092e0e5ab1cacaecd10d",
+      "status": 200
+    },
+    {
+      "intentSha256": "32f372cb59f59d13d09ee3d9efdb93bbce8ed0bfc979794ebef296ae16f267ff",
+      "label": "before-BS1",
+      "ordinal": 12,
+      "responseSha256": "dfb645f9329d73cfd1d9805a9d8ff3e531712b90b2754a422b814f32bdfb0131",
+      "status": 200
+    },
+    {
+      "intentSha256": "e872e6210df1882fabe3e2a05794e22eee4721bc5b4176661a750778859ea8e5",
+      "label": "before-BS2",
+      "ordinal": 13,
+      "responseSha256": "a85b6c473d7410a7c12456e88fb863307e97f62971d8b49065008eff8053a3c6",
+      "status": 200
+    },
+    {
+      "intentSha256": "73f342bbd449ff9dfcf628eca702c9e9f1158a55bc07e3c32582a92059eb01c2",
+      "label": "before-profile",
+      "ordinal": 14,
+      "responseSha256": "7f93fcddfebd0de90f485d944674c35a30116aea0019018c373a08a9de8daaca",
+      "status": 200
+    },
+    {
+      "intentSha256": "0ebd9c291204d6057e4b030547252e7914727f8f3c2856ec338c2c33d9155040",
+      "label": "before-preferences",
+      "ordinal": 15,
+      "responseSha256": "1583ff9180d732a0c092efcca5ca38ddb45f95a4d7215bf4e429673b24a8b811",
+      "status": 200
+    },
+    {
+      "intentSha256": "f5ca26c30265725876f45cdd29bb56fbb6359b535988581beb66735d64a00f7c",
+      "label": "before-logout",
+      "ordinal": 16,
+      "responseSha256": "40bdaddf7ca34d50bb16738b52be581e358fea61d9f2e8e560ba878454554690",
+      "status": 204
+    },
+    {
+      "intentSha256": "e37429e18200047f485c335a577a90c8300a0549b48d7eabce28e8ee9d0c52e9",
+      "label": "before-invalid",
+      "ordinal": 17,
+      "responseSha256": "8ce46c0ce854cc952ebf81e4225f6b6b5106e3017fe3474da240a4dc87d45e74",
+      "status": 401
+    },
+    {
+      "intentSha256": "f539f4dd7d3ee5505359a67392e95f4c480e4f54810d50621825f423b6dbc398",
+      "label": "after-login",
+      "ordinal": 18,
+      "responseSha256": "46d7a63db1b44fa4efa47bdd07de34cd15f4fe175b6483ae560223248b089ce1",
+      "status": 200
+    },
+    {
+      "intentSha256": "f3830c4758d256e5ae8c0625f4d9dc715684915361516e9fe3e2e22f51693d12",
+      "label": "after-A1",
+      "ordinal": 19,
+      "responseSha256": "0cf2574bccfde3c230b3417e4e23c0f43691d9eaf6d9611acf87ff263d1c5c52",
+      "status": 200
+    },
+    {
+      "intentSha256": "2da07d0ac30cf4e509df4ca2a7757b307f8f76182fb6aefef4ed17a1a70e5158",
+      "label": "after-A2",
+      "ordinal": 20,
+      "responseSha256": "9b46bd1a9f93058802f7a2cd36b35704df42e0660c543b5d35b22c65ee18457d",
+      "status": 200
+    },
+    {
+      "intentSha256": "cb7c80230c4439f019e47945978ee2dfd95ba42a837112fff0d9c2afb25e2ff7",
+      "label": "after-A3",
+      "ordinal": 21,
+      "responseSha256": "25a4bebae0a8cb590907ee49cdee166c0d58afcff6861863c20cf0d94a95a421",
+      "status": 200
+    },
+    {
+      "intentSha256": "a004aaa6a8021cb41ad916ed03676787adcd6b43151cce4ad2e9b94b3c0a7eec",
+      "label": "after-B1",
+      "ordinal": 22,
+      "responseSha256": "442636a4717d55b09ba91ba5afa9b4f6f59ef09029dfa7aaedc6ba5c2f60883d",
+      "status": 200
+    },
+    {
+      "intentSha256": "d9eb8f840f3c4cf183923af2adc1c3bb507c242e63df07f3b622dc2399b457c6",
+      "label": "after-B2",
+      "ordinal": 23,
+      "responseSha256": "abfc9e36b4ee2e1ec235f71e624760972a112c9cc92fff64c242fd8dbdf70f17",
+      "status": 200
+    },
+    {
+      "intentSha256": "0d416b5413c52bf6264635333255f15e83ac66a0251be835404a3886b6360ad2",
+      "label": "after-B3",
+      "ordinal": 24,
+      "responseSha256": "1ade9c2e830f50734678c4e83914884ef3acea2f53d5723986d5f8683c0487fe",
+      "status": 200
+    },
+    {
+      "intentSha256": "ceeb19a907d0c0f1740731d4405c2eb5e8b06fe0e247e9fd200998515b28a478",
+      "label": "after-A",
+      "ordinal": 25,
+      "responseSha256": "cef45f6848f017517ab1a42af2db2908586977abfc770d8f24dd0008c6ac663c",
+      "status": 200
+    },
+    {
+      "intentSha256": "87f10e33298cd25763397547c4db9eb3f8446ef9b822c4736fcab4c42e88e363",
+      "label": "after-AS1",
+      "ordinal": 26,
+      "responseSha256": "8daf80ce3151947bab04e55fd4b53710c28e6b95388d89b8fdd61cd1ce841f21",
+      "status": 200
+    },
+    {
+      "intentSha256": "dbbf6cc4fe57a34274645ca6deb0ddead05f8ec5f985a9d4d8b8dac7ff307f40",
+      "label": "after-AS2",
+      "ordinal": 27,
+      "responseSha256": "98bcc6641c6fe99bbdcc2b2618f78a0ac0a920062fce9e54d0318254ce3b48ca",
+      "status": 200
+    },
+    {
+      "intentSha256": "822c2b615503e226aa699f3a35f350aa298061c4b1302c0d209e0808d5f49f42",
+      "label": "after-B",
+      "ordinal": 28,
+      "responseSha256": "37bcef66ef8e83fddf99b32387393f6a7efd509ab36d6179d45959635b78a39f",
+      "status": 200
+    },
+    {
+      "intentSha256": "5a811afd61470967cd3df553ac04bd4fab455f35c58e14ace63797a14791ef30",
+      "label": "after-BS1",
+      "ordinal": 29,
+      "responseSha256": "80661e90712e5bf3c52fd3f885cbdfe1237dc7dca35ce0888ad19dcae006de21",
+      "status": 200
+    },
+    {
+      "intentSha256": "d923493bb6eb789ac7a8c3086cc89a836615e8a76f2c9eb5025989e3eb0994f0",
+      "label": "after-BS2",
+      "ordinal": 30,
+      "responseSha256": "b0b6037f4f6438ea8017ba098fecef2c6901f246eff3055b19530a6fe40c4759",
+      "status": 200
+    },
+    {
+      "intentSha256": "8f5fdac8e5cc9d21466c9db9ee3ba3055652d1972e9435ca6b1cf94b55f2e38f",
+      "label": "after-profile",
+      "ordinal": 31,
+      "responseSha256": "793b5c38222d2ff1f2c6521ced38bd9255a632ae5bc9bbae4bb60ed81b22b366",
+      "status": 200
+    },
+    {
+      "intentSha256": "89cac0673f49c9fb02a19d546497cf6e1a95b130ea5f587e13997b2d96311868",
+      "label": "after-preferences",
+      "ordinal": 32,
+      "responseSha256": "39a727ebac07159d174c27fc459719c10c3e0ead908b8e0065a7e55ca4230d40",
+      "status": 200
+    },
+    {
+      "intentSha256": "ae908731fe13c0c223dbc250a2073c4405e18c032370ce0a84e9f50c1aa6ec86",
+      "label": "after-logout",
+      "ordinal": 33,
+      "responseSha256": "54127a3477084e76aee0f2906f72dee6afea8398cbe7562be3043ca35784813d",
+      "status": 204
+    },
+    {
+      "intentSha256": "d5b1e07a45181e6d591ed1cbf01c1a018d16a7657073e6993ae651ec0cbe574d",
+      "label": "after-invalid",
+      "ordinal": 34,
+      "responseSha256": "f54d92856312f1689fc0294a55a176e5f80a19da980c60130bcff425c603e723",
+      "status": 401
+    }
+  ],
+  "recorderRequestCount": 34,
+  "recorderTokensIndependentlyRejected": true,
+  "refreshAcceptance": false,
+  "resumeOrRetryAllowed": false,
+  "stage": "browser_responsibilities",
+  "status": "failed",
+  "ui401RawWireReconstructed": false,
+  "verifierSource": {
+    "path": "/opt/goby-test/exec-work-m3e/reference-nextup-client-discovery-execution-01/verify-nextup-client-discovery-v2.py",
+    "sha256": "c436e7db957d24f2ed3b772b1da620421dbc2b38974e873458c937d85d1e46b6"
+  },
+  "version": 1,
+  "watchedMatrixStateClientComparison": false
+}

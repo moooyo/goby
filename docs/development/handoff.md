@@ -1,6 +1,24 @@
 # Development handoff
 
-Current checkpoint: `2026-09-13T05:00:23Z`. Reference matrix07 completed 158
+Current closeout: `2026-09-13T06:01:44Z`. Matrix07 and client01/client02 are
+independently closed. The matrix made 158 requests with ten empty global
+responses; both zero-history clients made no physical NextUp request, including
+the explicitly selected Suggestions tabs. All 68 recorder requests and six
+token closures were reconstructed; the final independent preservation covers
+198 roots and complete Goby state. See [client closeout](nextup-client-discovery-closeout.md).
+
+The original source55/schema28 candidate is now independently verified ready
+as PID1814145 after exactly one start. Its initial worker failure remains
+unchanged; [the separate recovery attestation](candidate-source55-restart-closeout.md)
+binds current health, source, lease and preservation. The original fixture file
+retains its historical PID and must not be used as a fresh live identity.
+Primary source32/schema27 and the reference/proxy processes remain unchanged.
+Audit fixes remain undeployed. The [Goby comparison contract](nextup-goby-comparison-contract.md)
+is written but unexecuted. Positive global/client evidence, primary upgrade,
+and complete M2-M6 acceptance remain open; M7 remains deferred. Preserve every
+consumed matrix, client, recovery and failed-checker scope.
+
+Previous checkpoint: `2026-09-13T05:00:23Z`. Reference matrix07 completed 158
 requests and passed independent exact wire reconstruction and runtime closure.
 All ten global responses remain empty; no positive global rule or client
 acceptance is established. All 186 protected roots and complete Goby state

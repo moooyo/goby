@@ -1,0 +1,480 @@
+{
+  "kind": "nextup-reference-client-discovery-report",
+  "version": 1,
+  "run_id": "nextup-reference-client-discovery-02",
+  "input_sha256": "c36aca2c03c317cc05f725c8545dc5618338aa43ac6d2372338b88b7889ef794",
+  "source_sha256": {
+    "client-browser-nextup-discovery-02.mjs": "aa69812f5cea621fd8544049eeb50b9374f3ff6e809c1bcd8338d5aaf6dfe23d",
+    "client-browser-nextup-discovery-runtime.mjs": "bfce485955fece8beb9a0ebde500b649a349a06b26d1288e6cb73948d48c2a8d",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472"
+  },
+  "outcome": "actual_client_global_request_unobserved",
+  "node_version": "v20.19.2",
+  "playback_attempts": 0,
+  "elapsed_ms": 50592,
+  "recorder_requests": 34,
+  "pin_checks": 90,
+  "phases": [
+    {
+      "name": "before_state",
+      "elapsed_ms": 28
+    },
+    {
+      "name": "browser_setup",
+      "elapsed_ms": 301
+    },
+    {
+      "name": "navigate_la",
+      "elapsed_ms": 4275
+    },
+    {
+      "name": "tv_destination_confirmed",
+      "symbol": "LA",
+      "view_id": "133",
+      "elapsed_ms": 5902
+    },
+    {
+      "name": "suggestions_la",
+      "elapsed_ms": 5921
+    },
+    {
+      "name": "navigate_home",
+      "elapsed_ms": 26003
+    },
+    {
+      "name": "navigate_lb",
+      "elapsed_ms": 27704
+    },
+    {
+      "name": "tv_destination_confirmed",
+      "symbol": "LB",
+      "view_id": "135",
+      "elapsed_ms": 29315
+    },
+    {
+      "name": "suggestions_lb",
+      "elapsed_ms": 29328
+    },
+    {
+      "name": "browser_cleanup",
+      "elapsed_ms": 49403
+    },
+    {
+      "name": "after_state",
+      "elapsed_ms": 50195
+    }
+  ],
+  "state": {
+    "comparison": {
+      "preserved": true,
+      "changed": [],
+      "full_profile_equal": false,
+      "profile_comparison": "Full profiles retained; acceptance compares Id, Name, Policy, and Configuration."
+    },
+    "before_sha256": "d145ea6c107b1eb3afbfb37c898efa36f740d2de7e936e2db04c92cee0e19fc5",
+    "after_sha256": "9e23e2b965dc4b6f1dbbd2cf2cc6b770fc52c0cdb942802517a1d7ae665651e3"
+  },
+  "visible": [
+    {
+      "label": "home-after-login",
+      "elapsed_ms": 4189,
+      "receipt_sha256": "ac8296a0b2e8996e9d31b61141460a7e53dc6737b7962ba6e3790eefcdd75d8e",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "ac59676028a2b1b2e6a1ec5f33daadd6fc59522ea6eaf08bda0993fb26ac5968",
+      "cards": []
+    },
+    {
+      "label": "before-la",
+      "elapsed_ms": 4269,
+      "receipt_sha256": "b7f165ac47ac462342acba53e6c9860a39f9d9b8b42792f71399988a23be12ee",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "ac59676028a2b1b2e6a1ec5f33daadd6fc59522ea6eaf08bda0993fb26ac5968",
+      "cards": []
+    },
+    {
+      "label": "after-la",
+      "elapsed_ms": 5901,
+      "receipt_sha256": "afc389f41d6d8e3e56e526fb828778b807ef29526a41d1cc9f4f14108e7795e0",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 A"
+      ],
+      "screenshot_sha256": "4b0d8f3a147d5764ea8146937bbe0920533934258a865450dc756304e01929e6",
+      "cards": []
+    },
+    {
+      "label": "suggestions-la",
+      "elapsed_ms": 26001,
+      "receipt_sha256": "215e8f732070a8efa5475bbddbd81a016139b777350795e6cd1c9c0fe231088e",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 A",
+        "Latest Episodes"
+      ],
+      "screenshot_sha256": "51aaeb907c88cd968c3a54148b34c5e6dc8620268af41152017ee56e01598ca9",
+      "cards": []
+    },
+    {
+      "label": "home-between-libraries",
+      "elapsed_ms": 27633,
+      "receipt_sha256": "1f376f3529d6755f5931a3c3e6fb122059b73e7a65c93014ce5d6b9dd0011c49",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "e17046c06be0ef90163609c0ea52625092ac43d93472f42e35415e6610b2e52d",
+      "cards": []
+    },
+    {
+      "label": "before-lb",
+      "elapsed_ms": 27700,
+      "receipt_sha256": "28bb045d0bdccdf4b4922b55470ef5733ecef53271e354436bb2204c1f750a3f",
+      "headings": [
+        "",
+        "My Media",
+        "My Media",
+        "Latest NextUp Reference 05 A",
+        "Latest NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "e17046c06be0ef90163609c0ea52625092ac43d93472f42e35415e6610b2e52d",
+      "cards": []
+    },
+    {
+      "label": "after-lb",
+      "elapsed_ms": 29315,
+      "receipt_sha256": "01ce3fcb35c2fe9f8aeaf911e5264c837cdb5cba96261daa7caba3ad1266ce77",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 B"
+      ],
+      "screenshot_sha256": "f2cab7975fded8d9100c6d4f735f70080cc9b59812bd54714728c2fcf3e63cf2",
+      "cards": []
+    },
+    {
+      "label": "suggestions-lb",
+      "elapsed_ms": 49402,
+      "receipt_sha256": "039fc574dce8c86e357bb0085277329240b5553ef2b6c02dad5ee15bc52964b8",
+      "headings": [
+        "",
+        "My Media",
+        "NextUp Reference 05 B",
+        "Latest Episodes"
+      ],
+      "screenshot_sha256": "aed5ed7b9f070c9838b0418efa25ccbf94a3aaf046ff859b3fa02ce70f25ab71",
+      "cards": []
+    }
+  ],
+  "nextup": [],
+  "cleanup": {
+    "before_recorder": {
+      "token_sha256": "9140c8f0219296730df87f57d31f88f8b4c9c97f0f96e54094ec3e3a7c61a9ba",
+      "exact_token_rejected": true
+    },
+    "logout_visible": {
+      "receipt_sha256": "5ab1e2e467ea99afdafec48a82782e2e276078a7c77c6192fadc2868a957e7e9",
+      "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+      "manual_login_visible": true,
+      "password_forms": 0,
+      "visible_sign_in_buttons": 0
+    },
+    "browser": {
+      "closed": true,
+      "ui_logout_status": 204,
+      "exact_token_status": 401,
+      "login_view_visible": true,
+      "cleanup_failures": [],
+      "visible_receipt": {
+        "receipt_sha256": "5ab1e2e467ea99afdafec48a82782e2e276078a7c77c6192fadc2868a957e7e9",
+        "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+        "manual_login_visible": true,
+        "password_forms": 0,
+        "visible_sign_in_buttons": 0
+      }
+    },
+    "after_recorder": {
+      "token_sha256": "0a04b9e7286f89deae20e0436f922a4d6a37fb68761e21dbd035450fc9e7dec7",
+      "exact_token_rejected": true
+    }
+  },
+  "failure": null,
+  "navigation_actions": 5,
+  "suggestions": [
+    {
+      "symbol": "LA",
+      "view_id": "133",
+      "action_ordinal": 2,
+      "selection": {
+        "selected": true,
+        "explicit_accessibility_marker": false,
+        "before_suggestions_explicitly_selected": false,
+        "after_shows_explicitly_selected": false,
+        "transferred_selection_classes": [
+          "emby-tab-button-active"
+        ],
+        "before": {
+          "shows": {
+            "tag": "button",
+            "text": "Shows",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-tab-button-active emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "0",
+            "bounds": {
+              "x": 496.546875,
+              "y": 76.875,
+              "width": 91.71875,
+              "height": 29.078125
+            }
+          },
+          "suggestions": {
+            "tag": "button",
+            "text": "Suggestions",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "1",
+            "bounds": {
+              "x": 588.265625,
+              "y": 76.875,
+              "width": 138.71875,
+              "height": 29.078125
+            }
+          }
+        },
+        "after": {
+          "shows": {
+            "tag": "button",
+            "text": "Shows",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "0",
+            "bounds": {
+              "x": 496.546875,
+              "y": 76.875,
+              "width": 91.71875,
+              "height": 29.078125
+            }
+          },
+          "suggestions": {
+            "tag": "button",
+            "text": "Suggestions",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale emby-tab-button-active",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "1",
+            "bounds": {
+              "x": 588.265625,
+              "y": 76.875,
+              "width": 138.71875,
+              "height": 29.078125
+            }
+          }
+        }
+      },
+      "phase": "suggestions_la",
+      "window": {
+        "start_actor_ms": 5619,
+        "deadline_actor_ms": 25619,
+        "maximum_wait_ms": 20000
+      },
+      "response_physical_ids": [],
+      "response_frame_ids": [],
+      "completed_global_response_count": 0,
+      "result_receipt_sha256": "bbe2ea8c442f3a878618ad963c3a74658e96aa9ea6ef75eb3b28cd19f8dbc209"
+    },
+    {
+      "symbol": "LB",
+      "view_id": "135",
+      "action_ordinal": 5,
+      "selection": {
+        "selected": true,
+        "explicit_accessibility_marker": false,
+        "before_suggestions_explicitly_selected": false,
+        "after_shows_explicitly_selected": false,
+        "transferred_selection_classes": [
+          "emby-tab-button-active"
+        ],
+        "before": {
+          "shows": {
+            "tag": "button",
+            "text": "Shows",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-tab-button-active emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "0",
+            "bounds": {
+              "x": 496.546875,
+              "y": 76.875,
+              "width": 91.71875,
+              "height": 29.078125
+            }
+          },
+          "suggestions": {
+            "tag": "button",
+            "text": "Suggestions",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "1",
+            "bounds": {
+              "x": 588.265625,
+              "y": 76.875,
+              "width": 138.71875,
+              "height": 29.078125
+            }
+          }
+        },
+        "after": {
+          "shows": {
+            "tag": "button",
+            "text": "Shows",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "0",
+            "bounds": {
+              "x": 496.546875,
+              "y": 76.875,
+              "width": 91.71875,
+              "height": 29.078125
+            }
+          },
+          "suggestions": {
+            "tag": "button",
+            "text": "Suggestions",
+            "role": null,
+            "class_name": "emby-button scroll-snap-start secondaryText emby-tab-button main-tab-button emby-button-focusscale emby-tab-button-active",
+            "aria_selected": null,
+            "aria_pressed": null,
+            "aria_current": null,
+            "tab_index": 0,
+            "disabled": false,
+            "data_index": "1",
+            "bounds": {
+              "x": 588.265625,
+              "y": 76.875,
+              "width": 138.71875,
+              "height": 29.078125
+            }
+          }
+        }
+      },
+      "phase": "suggestions_lb",
+      "window": {
+        "start_actor_ms": 29026,
+        "deadline_actor_ms": 49026,
+        "maximum_wait_ms": 20000
+      },
+      "response_physical_ids": [],
+      "response_frame_ids": [],
+      "completed_global_response_count": 0,
+      "result_receipt_sha256": "97edb05443f5ea389821910932c9b5bd350226897dd06be4f60c3de207b27b8c"
+    }
+  ],
+  "continuation": {
+    "prior_report_sha256": "98a20ed6dd2361eaca1a9f3382701a3146b67d62d5c23a6bbee29df951e49d31",
+    "prior_independent_terminal_sha256": "f123a6421aa3ff86eda190dc81bd5338b7fcdeb8ac31e09b5555f8c74cd2f001",
+    "prior_elapsed_ms": 10586,
+    "total_maximum_seconds": 1200,
+    "this_scope_maximum_seconds": 1189,
+    "this_scope_normal_seconds": 829,
+    "total_elapsed_ms": 61178
+  },
+  "evidence_boundary": {
+    "initial_episode_history": "verified_zero_after_client01_cleanup",
+    "playback_attempts": 0,
+    "establishes": "Actual original-client parameters and the visible TV Suggestions tabs in zero history.",
+    "does_not_establish": "Client results equivalent to watched matrix R1-R4, real playback, or playback-driven refresh."
+  },
+  "client": {
+    "playwright_version": "1.63.0",
+    "browser_version": "153.0.8010.12",
+    "login_proof": {
+      "token_sha256": "b6c260aa2bed6d2a110323879f8aad7d5866ab511386ea2a6a8222885f5c4476",
+      "session_id": "889e5e8cf98937fdae2a7c82e0e82756",
+      "user_id": "b886fd2f2c6241db9b973c8f038f9105",
+      "client_name": "Emby Web",
+      "device_name": "HeadlessChrome Linux",
+      "device_id": "c6a3451d-01dc-4a39-a3bc-33c3996ef1fe",
+      "client_version": "4.9.5.0",
+      "server_id": "f56dec8ff7414847873064c4be9fba74",
+      "created_at": "2026-09-13T05:37:10.7778343Z",
+      "created_at_source": "SessionInfo.LastActivityDate",
+      "kind": "emby",
+      "slot": "P",
+      "frame_login_finished": true,
+      "physical_login_completed": true,
+      "request_metadata_matches": true
+    },
+    "ui_logout": {
+      "closed": true,
+      "ui_logout_status": 204,
+      "exact_token_status": 401,
+      "login_view_visible": true,
+      "cleanup_failures": [],
+      "visible_receipt": {
+        "receipt_sha256": "5ab1e2e467ea99afdafec48a82782e2e276078a7c77c6192fadc2868a957e7e9",
+        "screenshot_sha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa",
+        "manual_login_visible": true,
+        "password_forms": 0,
+        "visible_sign_in_buttons": 0
+      }
+    }
+  },
+  "disposition": {
+    "accounts_libraries_media": "retained",
+    "fresh_browser_device": "retained",
+    "recorder_devices": "retained",
+    "protocol_authentication_and_audit_history": "retained",
+    "playback": "none_authorized",
+    "preferences_restored": false
+  },
+  "private_report_sha256": "a65034945348da0f059e32a992989cedc1407ed6ba169b75be6f974ab66da784"
+}

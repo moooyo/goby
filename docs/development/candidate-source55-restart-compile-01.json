@@ -1,0 +1,9 @@
+{
+  "kind": "candidate-source55-restart-remote-compile",
+  "compiled": true,
+  "sourceSha256": "9ffd4aad82999eac52d91e57bc02740e74dda5bbcd7565d5d5c84f32ac136638",
+  "executed": false,
+  "serviceStartCalls": 0,
+  "host": "test-env",
+  "capturedAt": "2026-09-13T05:24:03.032260+00:00"
+}

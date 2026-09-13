@@ -1,5 +1,21 @@
 # Implementation progress
 
+The `2026-09-13T06:01:44Z` closeout completed independent verification of both
+bounded original-client discoveries and source55 candidate recovery. The two
+clients used 61,178 ms cumulatively, made 68 recorder requests, closed all six
+tokens, and performed no playback. Neither produced a physical NextUp request,
+including the actual Suggestions windows. The 198-root preservation and full
+Goby-state comparison passed. The candidate is now ready at PID1814145 with its
+original binary; primary source32 remains unchanged. See
+[client closeout](nextup-client-discovery-closeout.md) and
+[candidate recovery](candidate-source55-restart-closeout.md).
+
+The [separate comparison contract](nextup-goby-comparison-contract.md) is ready
+for future fresh preparation. It has not been executed and does not resolve
+positive global selection, client playback/refresh or full M2-M6 acceptance.
+Audit fixes remain undeployed; M7 remains deferred. Failed observations remain
+immutable alongside separate successful independent receipts.
+
 The `2026-09-13T05:00:23Z` checkpoint completed reference matrix07 with 158
 requests, independent wire reconstruction and independent runtime closure.
 Its ten global responses were empty; EXT/R5/R6 were not run. Cleanup and all

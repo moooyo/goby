@@ -1,0 +1,57 @@
+{
+  "kind": "nextup-client-discovery-pure-verification",
+  "business_http": false,
+  "browser_started": false,
+  "sources": {
+    "client-browser-nextup-discovery.mjs": "b25887f0aec5b0a7ec16abc989f8ee93042d221893a417f123589bc5b09fcead",
+    "client-browser-nextup-discovery-runtime.mjs": "bfce485955fece8beb9a0ebde500b649a349a06b26d1288e6cb73948d48c2a8d",
+    "client-browser-session-proof.mjs": "fea90503a3e279d1ec63723f8785b3421c72d756af4db95f1762fbd67ece2472",
+    "test-client-browser-nextup-discovery.mjs": "2fe1fabdb35192d15df20452c88f90795e90f4a24ce90efdb747ab1a35f8ac39",
+    "test-client-browser-nextup-discovery-runtime.mjs": "c05b8a622a08f654dad7b9aa07bc5561a0aa547149c76951ea28f039e282c8e3"
+  },
+  "compile": [
+    {
+      "file": "client-browser-nextup-discovery.mjs",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "client-browser-nextup-discovery-runtime.mjs",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "client-browser-session-proof.mjs",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "test-client-browser-nextup-discovery.mjs",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "test-client-browser-nextup-discovery-runtime.mjs",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "node_path": "/usr/bin/node",
+  "node_sha256": "ca0728526aa1cc4e3056decec848ecc6d2c5391cecdd4e21a0ebd221d665c84e",
+  "guard_exit_code": 0,
+  "guard_summary": [
+    "# tests 21",
+    "# suites 0",
+    "# pass 21",
+    "# fail 0",
+    "# cancelled 0",
+    "# skipped 0"
+  ],
+  "guard_report_sha256": "cc39f350958151cf418278c22603348622df974f26f1ac35754bbabed1003c2b",
+  "passed": true
+}

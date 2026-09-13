@@ -1,0 +1,40 @@
+{
+  "allScreenshotsReviewed": false,
+  "capturedAt": "2026-09-13T06:00:54.352104+00:00",
+  "kind": "nextup-client-targeted-visual-review",
+  "machineReceiptsRewritten": false,
+  "method": "Assistant visual inspection of retained remote screenshots through private local review copies.",
+  "playbackAcceptance": false,
+  "refreshAcceptance": false,
+  "reviews": [
+    {
+      "label": "after-la",
+      "observation": "Shows is selected; Suggestions is visible and not selected.",
+      "runNumber": 1,
+      "screenshotSha256": "4b0d8f3a147d5764ea8146937bbe0920533934258a865450dc756304e01929e6"
+    },
+    {
+      "label": "suggestions-la",
+      "observation": "Suggestions is selected for LA; Latest Episodes is visible and no NextUp panel is shown.",
+      "runNumber": 2,
+      "screenshotSha256": "51aaeb907c88cd968c3a54148b34c5e6dc8620268af41152017ee56e01598ca9"
+    },
+    {
+      "label": "suggestions-lb",
+      "observation": "Suggestions is selected for LB; Latest Episodes is visible and no NextUp panel is shown.",
+      "runNumber": 2,
+      "screenshotSha256": "aed5ed7b9f070c9838b0418efa25ccbf94a3aaf046ff859b3fa02ce70f25ab71"
+    },
+    {
+      "label": "logout-visible",
+      "observation": "The account-selection sign-in page and Manual Login control are visible; both runs retained the same image bytes.",
+      "runNumbers": [
+        1,
+        2
+      ],
+      "screenshotSha256": "11c7f2901e85918cdd8374091de7673792531ecaa77877c28e37c8e239f42eaa"
+    }
+  ],
+  "screenshotsPublished": false,
+  "version": 1
+}
