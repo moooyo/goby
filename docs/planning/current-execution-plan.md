@@ -12,6 +12,26 @@ The goal remains an independent Linux media server using Go, PostgreSQL and
 FFmpeg, an administrator-only React/MUI dashboard and unmodified compatible
 clients. This review adds no consumer player and removes no release obligations.
 
+The resumption review keeps the native-service restart as the next bounded
+result. The HTTP journey helper has been authored and statically reviewed;
+the new native process workflow has not executed. Its acceptance compares
+catalog identities, authorized counts and persisted favorite/played state
+across a real Goby stop/start, before any second scan or UserData mutation.
+This does not establish nonzero playback resume, a PostgreSQL restart or host
+durability. Check current remote capacity and reuse the existing isolated
+runner before executing; historical free-space readings are not admission.
+
+After this increment, freeze the intended changed source for full regression
+and candidate admission. These checks do not wait for the paused mount
+experiment or unresolved video diagnosis. Later product edits require their
+affected checks and full regression of the final intended snapshot; unchanged
+historical evidence retains its original scope.
+Capacity, blocked I/O and the remaining M4-M6 obligations may progress in
+parallel under their own prerequisites. Completed backup/recovery workflows
+stay closed; a new client journey still needs a discriminating question or a
+justified correction, and main promotion retains both acceptance and recovery
+requirements.
+
 ## Review conclusion
 
 The delivery direction remains appropriate: verify the product, admit an
@@ -139,9 +159,9 @@ verification tools over extending launcher or observation infrastructure.
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 1. Independent native-service restart/catalog consistency | Freeze one bounded service-level stop/start contract over a persisted real-media catalog, with source/configuration identity, native query counts, ACLs and UserData checked before and after startup | Reuse the completed rescan/ACL evidence without rerunning it. Require an actual service process boundary; Store.Close/New is insufficient. Keep the paused mount scope separate and reserve resources/cleanup before execution |
-| 2. Capacity and blocked-I/O preparation | Define the next representative catalog profile and a safely isolated blocked-I/O case, with measurable limits and bounded shutdown requirements | The seven-file catalog result is not representative capacity. Do not fill the host root disk, equate fast EACCES with blocked I/O or claim host durability from process restart |
-| 3. M2 full-scan mount experiment — paused | Review retained launcher evidence to determine the UID-transition failure before proposing any execution change | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. Preserve both failures/resources; no third renamed attempt and no unsupported `NoNewPrivileges` attribution |
-| 4. Changed-version validation and remaining M4-M6 delivery | Freeze the intended changed source for its required full regression and later candidate admission; continue independent media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work | Reuse the completed focused M6 checks within their exact scope. The new embedded binaries are not deployed, arm64 cross-build is not native acceptance, and partial checks do not close full M6 or the unresolved license gate |
+| 2. Changed-version validation | Freeze the intended changed source after the bounded catalog increment, run its complete race regression and Linux build, then admit the corresponding candidate artifact | Do not wait for paused mount/video diagnosis or inherit the old 2,270-test result. Before a changed-binary real-client journey, require that artifact's regression and admission. Full regression does not replace real-client acceptance |
+| 3. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, process restarts, cross-builds and partial M6 checks do not establish capacity, host durability, native hardware acceptance or complete release readiness |
+| 4. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
 | 5. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
 | 6. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
@@ -246,11 +266,11 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    feature work may proceed under their own prerequisites. Main promotion is
    not a blanket dependency. Publish only the support rows actually proved.
 
-Main preparation, a separately admitted old-binary backup and isolated recovery
-rehearsals can proceed independently of core video acceptance. The one empty
-cache-directory prerequisite is recorded separately from the read-only
-observations. Promotion still requires core acceptance and fresh safety/recovery
-evidence. The old source55-specific
+Main preparation, the admitted old-binary backup and both isolated recovery
+rehearsals completed independently of core video acceptance and are retained
+history, not work to execute again. Promotion still requires core acceptance
+and safety/recovery prerequisites bound to its intended artifact and current
+state. Refresh only prerequisites invalidated by actual changes. The old source55-specific
 main plan and runners remain superseded. A new-binary schema27 restore migrates
 to schema28 and does not establish old-binary rollback. A cancelled ready
 restore retains its inactive staged database; bind that occupied state explicitly.
