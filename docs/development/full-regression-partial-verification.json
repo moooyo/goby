@@ -1,0 +1,381 @@
+{
+  "firstPreflight": {
+    "correction": "Every archived file matched its canonical Git blob; only the reviewed byte total changed in a separate controller.",
+    "originalFailurePreserved": true,
+    "reason": "The original size guard used Git blob bytes instead of archive bytes; the single PowerShell file adds 719 carriage returns under the recorded Git attribute.",
+    "status": "rejected_before_test_or_database_start"
+  },
+  "firstTestPhase": {
+    "closure": {
+      "cgroupEmpty": true,
+      "fixtureVolumeDisposalNotClaimed": true,
+      "ownedWorkerAndPostgresPidsAbsent": true,
+      "postgresFastShutdownRecorded": true,
+      "scopeTmpEmpty": true,
+      "terminalUnit": {
+        "ActiveState": "failed",
+        "ExecMainStatus": "1",
+        "InvocationID": "3c0e8bf3cb7f41088ca41fad57604dd1",
+        "LoadState": "loaded",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "SubState": "failed"
+      },
+      "unit": "goby-full-regression-20260914-c08196be3fdc.service",
+      "workerCleanupFourTrue": true
+    },
+    "completePassingPackageCount": 11,
+    "completePassingPackages": [
+      {
+        "commandSeconds": 40.234,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/cmd/goby",
+        "packageResult": "pass",
+        "stdoutSha256": "a01cb616e6cadd98afef4a4e241a483ec6d63a29e88235632877fbada0bca9a1",
+        "topLevelPasses": 21
+      },
+      {
+        "commandSeconds": 3.326,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/activity",
+        "packageResult": "pass",
+        "stdoutSha256": "74b532348b08ebdd9f7a537577246c9577beb9b9eac02d3cc818f15f4958805f",
+        "topLevelPasses": 23
+      },
+      {
+        "commandSeconds": 1.724,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/artwork",
+        "packageResult": "pass",
+        "stdoutSha256": "c0dcca59a84738461165c88ad09589fe80bb04f8eb19df9fdfbe3ec4a9d9342d",
+        "topLevelPasses": 20
+      },
+      {
+        "commandSeconds": 11.907,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/backupformat",
+        "packageResult": "pass",
+        "stdoutSha256": "abe7f7655a2c892e3feb7b3ca232b9fe3e51318ff39ac1f3770d91be9a6d9bd3",
+        "topLevelPasses": 14
+      },
+      {
+        "commandSeconds": 50.917,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "packageResult": "pass",
+        "stdoutSha256": "79ce159aac33859e1038a6f7f8aa92da7f6ce22cad1f241784ef75f6dd531496",
+        "topLevelPasses": 85
+      },
+      {
+        "commandSeconds": 2.783,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/backupstore",
+        "packageResult": "pass",
+        "stdoutSha256": "78380ac18b3d8a8c6c6509f4bfbe5a5a2f0b7efba171f2c39f0ce1fa3d40d7cc",
+        "topLevelPasses": 32
+      },
+      {
+        "commandSeconds": 1.676,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/config",
+        "packageResult": "pass",
+        "stdoutSha256": "ba8a363077890a2037fac3c84dccf2a72621534d32f6dbc22f4108d78a1f8fe3",
+        "topLevelPasses": 27
+      },
+      {
+        "commandSeconds": 10.959,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/database",
+        "packageResult": "pass",
+        "stdoutSha256": "4af9f5f44ecf521c5e32103a726fca7e81be3c96fc4eef531fff02e9e04e194c",
+        "topLevelPasses": 55
+      },
+      {
+        "commandSeconds": 1.721,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/diagnostics",
+        "packageResult": "pass",
+        "stdoutSha256": "c6dd0e6353c02b52cf7d561ca4766e9887b25dddf5614b3d9d5b5c92f7225e40",
+        "topLevelPasses": 41
+      },
+      {
+        "commandSeconds": 1.775,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/events",
+        "packageResult": "pass",
+        "stdoutSha256": "8987a78a1f81b6cd6a0c54fe9e72c128aec112bc8df4f3505a67cc2570487e28",
+        "topLevelPasses": 23
+      },
+      {
+        "commandSeconds": 368.612,
+        "exitCode": 0,
+        "package": "github.com/moooyo/goby/internal/identity",
+        "packageResult": "pass",
+        "stdoutSha256": "1d7504896962b0f6d7735c5b712dac3417a9957ec4947441e7c9e2ef55386a75",
+        "topLevelPasses": 134
+      }
+    ],
+    "configuredCommandTimeoutSeconds": 600,
+    "configuredTestTimeoutSeconds": 570,
+    "configuredWholeBusinessSeconds": 2400,
+    "filesystemProfile": "Root execution; a 512 MiB ext4 image backed by a separate 3 GiB RAM scope, with private-network PostgreSQL and compiler caches in RAM.",
+    "incompletePackage": {
+      "activeSubtestSecondsAtTimeout": 9.497893,
+      "classification": "configured_whole_package_timeout",
+      "commandSeconds": 576.293,
+      "eligibleForReuseAsPackagePass": false,
+      "exitCode": 1,
+      "externalCommandInterruption": false,
+      "package": "github.com/moooyo/goby/internal/library",
+      "packageResult": "fail",
+      "skippedTests": [
+        "TestRootBindingFullScanMountNamespaceHelper"
+      ],
+      "stdoutSha256": "6d612a7fee6c230c61f8efc100dd8a3681306474e70e91468bf6f081154001bb",
+      "testRunningAtTimeout": "TestThemePublicationRejectsSourceChangesAfterTransactionStarts/movie/registered_root",
+      "timeoutSeconds": 570,
+      "topLevelPartialPasses": 537,
+      "topLevelSkipped": 1,
+      "topLevelTestFailures": 0
+    },
+    "independentReview": {
+      "bytes": 6574,
+      "path": "/opt/goby-test/full-regression-20260914/partial-review.json",
+      "sha256": "70e2d76ee0c59764cf2b7b461ef5b35518f6899ea2402d523a89feb727759b00"
+    },
+    "mountProfileCompletionClaimed": false,
+    "raceEnabled": true,
+    "rawPassEventsAreNotCompleteSuitePasses": true,
+    "rawTopLevelEventCounts": {
+      "fail": 0,
+      "pass": 1012,
+      "skip": 1
+    },
+    "reusableTopLevelPasses": 475,
+    "sourcePackageInventoryCount": 25,
+    "status": "failed",
+    "testNameFilterUsed": false
+  },
+  "kind": "full-regression-partial-verification",
+  "linuxBuildCompleted": false,
+  "localVerificationExecuted": false,
+  "notEstablished": [
+    "A complete ordinary regression or Linux build for the frozen changed version.",
+    "Embedded-tag full regression, native arm64, GPU, non-root deployment, representative capacity or host durability.",
+    "The paused full-scan mount scenario, real-client video/subtitle acceptance, candidate admission or main promotion.",
+    "Complete M2-M6 delivery."
+  ],
+  "ordinaryFullSuitePassed": false,
+  "receipts": {
+    "cache-reclaim.json": {
+      "bytes": 19794,
+      "path": "/opt/goby-test/full-regression-20260914/cache-reclaim.json",
+      "sha256": "14d06b610536f066bac43cea2c4acee3b89854b4ca497f2df61ee1d25fc681a1"
+    },
+    "closure-capacity-review.json": {
+      "bytes": 30676,
+      "path": "/opt/goby-test/full-regression-20260914/closure-capacity-review.json",
+      "sha256": "629646077236b88770fd3f58a98f8b5bf9ed7ce106f8b6b992bf79469d52b1a6"
+    },
+    "closure.json": {
+      "bytes": 11277,
+      "path": "/opt/goby-test/full-regression-20260914/closure.json",
+      "sha256": "ec92c3ff050667ca8b2b445844e5db7e8a0a3395589991f9e79d41e0d9552d2b"
+    },
+    "execution-reviewed.json": {
+      "bytes": 10804,
+      "path": "/opt/goby-test/full-regression-20260914/execution-reviewed.json",
+      "sha256": "993602e8fa2e0e7016b3a1054450817b7f377fe5efd44eff01b47e702cdbc68d"
+    },
+    "execution.json": {
+      "bytes": 9362,
+      "path": "/opt/goby-test/full-regression-20260914/execution.json",
+      "sha256": "302df3affab2be4a44fd4d0c8396e6ec0f74a3f6de5d0e4b515f3d37f77ec2ca"
+    },
+    "partial-review.json": {
+      "bytes": 6574,
+      "path": "/opt/goby-test/full-regression-20260914/partial-review.json",
+      "sha256": "70e2d76ee0c59764cf2b7b461ef5b35518f6899ea2402d523a89feb727759b00"
+    },
+    "preparation.json": {
+      "bytes": 36724,
+      "path": "/opt/goby-test/full-regression-20260914/preparation.json",
+      "sha256": "98f1ded1948d4e58e190f0320bea70ef634b147a30951a87253c66edb0667062"
+    },
+    "source-archive-review.json": {
+      "bytes": 824,
+      "path": "/opt/goby-test/full-regression-20260914/source-archive-review.json",
+      "sha256": "cb710f3cbd16268438a47bbd362a16c5195352a532ff75aceb33db29603ed7b5"
+    }
+  },
+  "remainingWork": {
+    "completionRule": "Require complete passing results for all 14 remaining packages, the ordinary Linux build and owned-resource closure before combining them with the 11 reviewed package passes.",
+    "continuationPreparation": {
+      "bytes": 37747,
+      "path": "/opt/goby-test/full-regression-continuation-20260914/preparation.json",
+      "sha256": "7dd500421fc02344a6551e9724b807d0951fae2aba46d8d6dd0b0aeecc95aebd"
+    },
+    "continuationResultEstablishedByThisCheckpoint": false,
+    "continuationRoot": "/opt/goby-test/full-regression-continuation-20260914",
+    "intendedRunner": {
+      "bytes": 52731,
+      "path": "/opt/goby-test/full-regression-20260914/private/verify-full-continuation-20260914.py",
+      "sha256": "c24ae1668219bba006a3d9b84ca460c182c0343ed0f4a5a04079e1e576bca3d4"
+    },
+    "linuxBuildRequired": true,
+    "packageCount": 14,
+    "packages": [
+      "github.com/moooyo/goby/internal/library",
+      "github.com/moooyo/goby/internal/lifecycle",
+      "github.com/moooyo/goby/internal/media",
+      "github.com/moooyo/goby/internal/metadata",
+      "github.com/moooyo/goby/internal/playback",
+      "github.com/moooyo/goby/internal/recovery",
+      "github.com/moooyo/goby/internal/recoverycontrol",
+      "github.com/moooyo/goby/internal/server",
+      "github.com/moooyo/goby/internal/settings",
+      "github.com/moooyo/goby/internal/storagebinding",
+      "github.com/moooyo/goby/internal/subtitle",
+      "github.com/moooyo/goby/internal/tasks",
+      "github.com/moooyo/goby/internal/transcode",
+      "github.com/moooyo/goby/internal/recoverydb"
+    ],
+    "priorInputContractReview": {
+      "bytes": 961,
+      "path": "/opt/goby-test/full-regression-20260914/continuation-input-review.json",
+      "sha256": "9c793702f1df886127db1473335bed785ec8b9797bd029e7d1aae5ab19df13e6"
+    },
+    "profileRule": "Retain the exact full-scan mount helper skip and identify the two older inactive helper returns; do not claim those privileged scenarios executed."
+  },
+  "remoteEnvironment": "ssh test-env",
+  "reproducibleCacheReclamation": {
+    "allocatedFileBytesBefore": 562954240,
+    "cacheFilesBefore": 4466,
+    "openDescriptorOrMappingHoldersObserved": 0,
+    "receipt": {
+      "bytes": 19794,
+      "path": "/opt/goby-test/full-regression-20260914/cache-reclaim.json",
+      "sha256": "14d06b610536f066bac43cea2c4acee3b89854b4ca497f2df61ee1d25fc681a1"
+    },
+    "remainingFiles": [
+      "README",
+      "trim.txt"
+    ],
+    "rootFreeBytesAfter": 728227840,
+    "rootFreeBytesBefore": 164237312,
+    "scope": "Only the completed historical run build-cache was cleared with the pinned go clean -cache; its source, module cache, logs, PostgreSQL data and retained artifacts were not cleaned."
+  },
+  "reviewedOn": "2026-09-14",
+  "source": {
+    "allCanonicalGitBlobHashesMatched": true,
+    "archive": {
+      "bytes": 32143107,
+      "files": 5244,
+      "newCopyWritten": false,
+      "path": "/opt/goby-test/full-regression-20260914/retained/source.tar.gz",
+      "readbackMatched": true,
+      "reusedFromPreviousSeal": true,
+      "sha256": "418f9803237e02e0859f9bef8f6ed646730acb590a3482867a288cd64e8a0fad",
+      "uncompressedBytes": 116624998
+    },
+    "archiveMemberBytes": 116624998,
+    "archiveNewlineDifference": [
+      {
+        "addedCarriageReturns": 719,
+        "archiveBytes": 43964,
+        "gitBlobBytes": 43245,
+        "path": "scripts/docs/export-emby-reference.ps1"
+      }
+    ],
+    "attributeRule": "*.ps1 text eol=crlf",
+    "files": 5244,
+    "gitBlobBytes": 116624279,
+    "gitCommit": "badf39635014ab221da7a75762f3fb40aee28033",
+    "sourceManifestSha256": "95fe6a40ecabdfe6b48260dcf200cf8a49d0cf9664c407ca91cd9eaba539d6f6"
+  },
+  "status": "partial",
+  "storageClosure": {
+    "evidenceArchive": {
+      "archive": {
+        "bytes": 720500,
+        "path": "/opt/goby-test/full-regression-20260914/retained/evidence.tar.gz",
+        "sha256": "6da5b657ea2963de7dcd70ab6921276805f1818068e25d55895a05fa1d6b8e52"
+      },
+      "currentInputReadbackMatched": true,
+      "directories": 8,
+      "files": 92,
+      "newArchiveWritten": false,
+      "readbackMatched": true,
+      "reusedFromPreviousSeal": true,
+      "uncompressedBytes": 6571691
+    },
+    "ext4OrdinarilyUnmounted": true,
+    "failedTransientUnitMetadataRetained": true,
+    "firstArchiveBudgetFailure": {
+      "bytes": 11277,
+      "path": "/opt/goby-test/full-regression-20260914/closure.json",
+      "sha256": "ec92c3ff050667ca8b2b445844e5db7e8a0a3395589991f9e79d41e0d9552d2b"
+    },
+    "firstArchiveCompressedLimitBytes": 50331648,
+    "ownedLoopDetached": true,
+    "privateClosedPostgresArchive": {
+      "archive": {
+        "bytes": 87246726,
+        "path": "/opt/goby-test/full-regression-20260914/retained/closed-postgres-private-complete.tar.gz",
+        "sha256": "11a9364ad488b15c962edf7b23a7382c8b9392b3ec8af29f5af58b72497a22a0"
+      },
+      "directories": 33,
+      "files": 2181,
+      "readbackMatched": true,
+      "uncompressedBytes": 463940571
+    },
+    "privateFailedFixtureImageArchive": {
+      "archive": {
+        "bytes": 952676,
+        "path": "/opt/goby-test/full-regression-20260914/retained/fixture-image-private.tar.gz",
+        "sha256": "db9a21d8384df5738763e8095a8e7a8eecf9b9cd30ccb9e1d95cd76bb976100e"
+      },
+      "directories": 0,
+      "files": 1,
+      "readbackMatched": true,
+      "uncompressedBytes": 536870912
+    },
+    "protectedBoundary": "The predeclared unit, process and critical-file metadata stayed exact; no whole-database comparison of protected installations is claimed.",
+    "ramOrdinarilyUnmounted": true,
+    "rawDatabaseAndFixtureImageRemainRemoteOnly": true,
+    "receipt": {
+      "bytes": 30676,
+      "path": "/opt/goby-test/full-regression-20260914/closure-capacity-review.json",
+      "sha256": "629646077236b88770fd3f58a98f8b5bf9ed7ce106f8b6b992bf79469d52b1a6"
+    },
+    "retainedBytesIncludingOriginalPartial": 170665569,
+    "reviewedCompressedLimitBytes": 268435456,
+    "reviewedTotalRetainedLimitBytes": 402653184,
+    "sourceArchivedOnce": true,
+    "status": "closed",
+    "truncatedArchivePreservedAndNeverUsedAsCompletedInput": true,
+    "truncatedPostgresArchive": {
+      "bytes": 49602560,
+      "path": "/opt/goby-test/full-regression-20260914/retained/closed-postgres-private.tar.gz",
+      "sha256": "79ab9966e234fa103e1f1a9c9753ef9ae75564561e7c79c8cc3a007a28d3a668"
+    }
+  },
+  "timingCorrection": {
+    "completedPackagesWillNotBeRepeated": true,
+    "historicalSeconds": {
+      "allPackageCommands": 2755.104,
+      "library": 782.265,
+      "server": 992.994
+    },
+    "historicalWorkerReport": {
+      "path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/worker-report.json",
+      "sha256": "4d65de4801e261de49ed41024a0506d23a521957ee4b312494a12b5031bf99f5"
+    },
+    "nextCommandTimeoutSeconds": 1560,
+    "nextTestTimeoutSeconds": 1500,
+    "nextUnitRuntimeSeconds": 4800,
+    "nextWholeBusinessSeconds": 4200,
+    "partialLibraryNodesEligibleForReuse": false
+  },
+  "version": 1
+}

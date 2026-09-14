@@ -1,8 +1,8 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after native catalog restart verification and independent
-evidence/resource closure; the separate full-scan mount experiment remains
-paused. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after the first full-regression attempt failed at its
+package time limit and its resources closed; same-source continuation is running.
+The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,11 +12,30 @@ their original meanings and are not fresh deployment observations.
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the selected baseline's latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance; later working-tree changes require their own verification |
+| Intended-version regression | Frozen badf396 first attempt failed overall; 11 packages completed with 475 top-level passes. Library has 537 partial passes and one opt-in skip; raw 1,012 is not a full-suite result | Preserve the 11 complete packages and finish only the other 14, ordinary Linux build and closure on the same source/tool pins; candidate admission and full-version acceptance remain open |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
 | M2 catalog | The rescan/ACL Store-reopen test and separate real native amd64 service stop/start run passed; independent saved-evidence review and resource closure are complete | The native run uses a root profile and the same PG process. Nonroot, PG restart, host durability, representative capacity and the paused full-scan mount proof are not established |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
+
+The [partial full-regression checkpoint](full-regression-partial-verification.json)
+records a 570-second package timeout and natural Go exit 1 after 576.293 seconds.
+Historical library/server/total durations of 782.265/992.994/2755.104 seconds
+exceeded the old 600-second command/2400-second business limits; the active
+test had run 9.497893 seconds, not the entire package budget. The continuation
+uses TEST=1500/COMMAND=1560/BUSINESS=4200/RUNTIME=4800 seconds, the same frozen
+source, 25-package inventory and 12 tool pins. Its prior-input review passed,
+and the new invocation started at 07:08:36 UTC under
+`goby-full-regression-continuation-20260914-1465ffb74e7e.service`.
+Only the remaining 14 complete package
+results plus Linux build and closure can finish the ordinary suite.
+
+All four first-run worker cleanup checks passed, PG stopped normally and the
+unit/cgroup closed. The reviewed copy-only archive closure subsequently closed
+the ext4 mount, exact loop and RAM mount, retaining original failed artifacts
+and complete private archives. Rebuildable Go-cache release preserved source,
+modules, logs and artifacts. No profile, client or deployment gate closed here.
 
 The [M2 full-scan mount checkpoint](m2-fullscan-mount-preparation.json) is paused
 after two launcher failures. The first assumed a nonexistent module-cache path;
@@ -104,8 +123,9 @@ execution at its own boundary. The later native amd64 test above is separate
 evidence; no main/candidate deployment occurred. Full regression and candidate
 admission for the intended changed version remain pending, and the old
 2,270-test proof is not inherited. Native arm64, OCI, GPU, licensing and full M6
-remain open. Next, freeze the intended source for full race regression/Linux
-build and corresponding candidate admission. Capacity/blocked-I/O preparation
+remain open. Next, complete the 14-package same-source continuation, Linux build
+and closure while preserving the 11 complete first-run packages, then admit the
+corresponding candidate. Capacity/blocked-I/O preparation
 can proceed independently; the paused M2 launcher and consumed client/recovery
 scopes retain their existing limits.
 

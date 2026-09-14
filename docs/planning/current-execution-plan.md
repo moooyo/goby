@@ -1,8 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after native catalog restart verification and independent
-evidence/resource closure. Status: **scoped M6/catalog/native restart targets
-passed; intended-version full regression pending; mount and video gates open**.
+Reviewed on 2026-09-14 after the first full-regression attempt and resource
+closure. Status: **11 packages complete; same-source continuation running;
+ordinary full suite incomplete; mount and video gates open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -21,8 +21,27 @@ scan or UserData mutation and no PG restart. This establishes neither nonzero
 playback resume nor browser, nonroot, capacity, native arm64/GPU or host-durability
 acceptance. The consumed run must not be replayed.
 
-Next, freeze the intended changed source for full regression
-and candidate admission. These checks do not wait for the paused mount
+The intended source is frozen at `badf396`. The [partial regression checkpoint](../development/full-regression-partial-verification.json)
+failed overall at a 570-second package timeout; Go exited 1 naturally after
+576.293 seconds. Preserve 11 complete packages/475 top-level passes. Library's
+537 partial passes and one opt-in skip do not complete its package, and the
+raw 1,012 passes are not a passing suite. The active test had run only 9.497893
+seconds; historical library/server/total durations were
+782.265/992.994/2755.104 seconds, exceeding the old command/business budgets.
+
+The continuation at `/opt/goby-test/full-regression-continuation-20260914`
+passed its prior-input review and started on 2026-09-14 at 07:08:36 UTC in
+`goby-full-regression-continuation-20260914-1465ffb74e7e.service`.
+Observe that existing invocation until it is terminal; do not launch a duplicate.
+Use TEST=1500/COMMAND=1560/BUSINESS=4200/RUNTIME=4800 seconds on the same source,
+25-package inventory and 12 tool pins. Complete only the other 14 packages,
+then the ordinary Linux build and closure; do not repeat the 11 completed
+packages or count partial package output as complete. First-run workers, PG,
+ext4 mount/loop and RAM are closed; original archive-byte/capacity failures
+and the corrected private archives remain preserved. The source, modules and
+evidence were not removed with the separately verified rebuildable Go cache.
+
+Full regression and candidate admission do not wait for the paused mount
 experiment or unresolved video diagnosis. Later product edits require their
 affected checks and full regression of the final intended snapshot; unchanged
 historical evidence retains its original scope.
@@ -159,7 +178,7 @@ verification tools over extending launcher or observation infrastructure.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Intended-version freeze, full regression and candidate admission | Freeze the intended source now that the bounded catalog/native targets have passed; run the complete ordinary race suite and Linux build, then admit that exact candidate artifact | Preserve the actual opt-in mount-helper skip described below, reject every other unexpected skip/failure and do not inherit the old 2,270-test result. This work does not wait for paused mount/video diagnosis; it precedes a changed-binary client journey and cannot replace client acceptance |
+| 1. Complete the frozen-source regression continuation | Observe the running continuation, preserving the first run's 11 complete packages/475 passes; complete only the remaining 14 on the same badf396 source, 25-package inventory and 12 tool pins with corrected timing, then Linux build and closure | Only 14 complete package results plus build/closure can combine with the 11 retained packages into ordinary-suite completion. Preserve failures and the declared profile gap; candidate admission follows a completed artifact and does not replace client acceptance |
 | 2. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, root-profile process restarts and cross-builds do not establish capacity, nonroot/host durability, native hardware acceptance or complete release readiness |
 | 3. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
 | 4. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
