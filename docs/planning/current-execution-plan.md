@@ -1,7 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after both isolated recovery/restart proofs and final fixture disposal. Status: **product and
-candidate verified; MP3 and FLAC accepted; video client acceptance open**.
+Reviewed on 2026-09-14 after M6 embedded-asset verification and artifact/resource
+closure. Status: **selected product/candidate verified; scoped M6 checks/builds
+passed; M2 joint scan paused and video acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -116,6 +117,7 @@ and every failure; do not extend the generic observation framework.
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
 | Main | Native backup, selected rollback/restart, [actual old installation return/source32 recovery](../development/isolated-source32-recovery.json) and [final cluster/credential disposal](../development/isolated-restore-disposal.json) passed. Original failures and private evidence remain preserved; main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host durability and the remaining M2-M6 release obligations are unchanged |
+| M6 embedded assets | [Focused race tests, negative manifest guards, actual amd64 embedded build and arm64 cross-build](../development/embedded-administrator-verification.json) passed; artifacts/source/logs were retained and the owned build tmpfs closed | No service deployment or native arm64 execution. The changed version still needs full regression and candidate admission; OCI, GPU, license and full M6 remain open |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -129,7 +131,45 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
+The order sets the immediate focus, not a serial dependency across every row.
+Independent reviews and implementation may run in parallel; paused experiments
+retain their own stop conditions. Prefer bounded product changes and existing
+verification tools over extending launcher or observation infrastructure.
+
 | Order | Concrete deliverable | Completion or stop condition |
+| --- | --- | --- |
+| 1. Independent M2 catalog/operations gap selection | Use existing movie/TV/music and storage evidence to select one bounded rescan/restart and ACL-safe count gap that is independent of the paused mount launcher | Freeze the supported profile, expected state changes, resource budget and smallest meaningful check before execution. Do not bypass the M2 pause by renaming its failed experiment; process restart is not host durability |
+| 2. Core video and subtitle evidence review | Perform a bounded read-only review for one discriminating question or justified product correction before admitting another journey | Existing movie, episode and subtitle errors remain failures. No automatic playback replay or generic observation-tool expansion; core video still blocks main promotion |
+| 3. M2 full-scan mount experiment — paused | Review retained launcher evidence to determine the UID-transition failure before proposing any execution change | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. Preserve both failures/resources; no third renamed attempt and no unsupported `NoNewPrivileges` attribution |
+| 4. Changed-version validation and remaining M4-M6 delivery | Freeze the intended changed source for its required full regression and later candidate admission; continue independent media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work | Reuse the completed focused M6 checks within their exact scope. The new embedded binaries are not deployed, arm64 cross-build is not native acceptance, and partial checks do not close full M6 or the unresolved license gate |
+| 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+
+The earlier planning review confirmed SSH availability and observed only
+335,413,248 available bytes on the root filesystem. Further builds need a separately budgeted scratch
+and cache location after a fresh capacity check. Preserve the paused M2 workspace;
+do not repurpose its RAM mount or assume historical free-space figures.
+
+The [M2 preparation checkpoint](../development/m2-fullscan-mount-preparation.json)
+records a missing assumed module cache, followed by successful helper compilation
+and `runuser: cannot set user id: Operation not permitted` before `initdb`.
+Its unit is terminal with no owned process; the compiled helper and evidence are
+retained. Compilation does not pass the full-scan deletion-protection scenario.
+The [embedded build checkpoint](../development/embedded-administrator-verification.json)
+now records 22 handler tests/subtests plus two ordinary and two tagged provider
+tests with race instrumentation, all passing. Eleven negative manifest cases,
+ordinary-provider tests without `dist` and the expected tagged-compile rejection
+also passed their declared checks. Actual amd64/arm64 embedded artifacts were
+retained; all 57 assets and five HTML references were checked, the 911-file
+source archive was reread, and ordinary unmount closed the M6 build tmpfs.
+This completed increment is not pending work. Native arm64, full regression and
+candidate admission for the changed version remain unproved; neither M2 helper
+compilation nor the new M6 results inherit the selected binary's 2,270-test proof.
+
+## Completed and consumed checkpoints
+
+These entries preserve prior decisions and results; they are not the next queue.
+
+| Checkpoint | Completed work | Retained boundary |
 | --- | --- | --- |
 | 1. Episode01 closeout — complete | Replay saved physical/durable evidence while reproducing the original UI rejection; close workers and check candidate/PostgreSQL continuity | Preserve all three errors, the counted Stopped row and the uncounted Prepared row; no business replay |
 | 2. Minimal rejection observation — complete | Bounded native primitive/Response metadata and the subtitle detail-wait correction passed [targeted verification](../development/native-rejection-observer-verification.json) | 83 component checks, 35 controller guards and three saved integrations passed; pageerror rejection and cleanup remain unchanged |
@@ -138,6 +178,7 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 5. Reviewed native backup — complete | Stop authority was corrected before strict configuration acceptance; a separately admitted child phase created/downloaded the fresh archive and reconciled all data/files. Policy-only cleanup closed the final shared-parent rejection | Retain the original failure and new completion checkpoint. This input is consumed; do not create another backup or start main for a cleanup retry |
 | 6. Isolated recovery proofs and disposal — complete | Selected rollback/restart, actual old installation return and independent source32 recovery/restart passed. [Final disposal](../development/isolated-restore-disposal.json) sealed exact A410/B419, normal PG shutdown, ordinary unmount, anchor/unit closure and inactive A credential disposal | Preserve all consumed inputs, original failures, private evidence and explicitly retained accounts/files. No recovery replay is queued; core video, M2 host durability and complete M2-M6 remain open |
 | 7. Distribution notices — partial parallel progress | [Original legal texts and versioned inventory](../../THIRD_PARTY_NOTICES.md) cover current Go requirements, production npm entries and actual fonts; source/copy checks passed remotely | Resolve project license and the relevant upstream/inclusion gaps against the actual future package. This collection does not close M6 or external distribution |
+| 8. Embedded administrator assets — scoped verification complete | Focused race tests, actual embedded amd64 build, arm64 cross-build, source/asset guards and artifact/tmpfs closure passed | Preserve the exact verification and artifacts. No new service/deployment, native arm64 or full changed-version acceptance is claimed |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation

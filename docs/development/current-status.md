@@ -1,6 +1,7 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after both isolated recovery/restart proofs and final fixture disposal. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after M6 embedded-asset verification and artifact/resource
+closure, with M2 still paused. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -9,11 +10,44 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
+| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the selected baseline's latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance; later working-tree changes require their own verification |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
+
+The [M2 full-scan mount checkpoint](m2-fullscan-mount-preparation.json) is paused
+after two launcher failures. The first assumed a nonexistent module-cache path;
+the reviewed second attempt compiled the helper with race instrumentation, then
+`runuser` failed to change UID before `initdb`. No PostgreSQL daemon or helper test
+started, and none of the seven planned scan stages ran. The failed unit has no
+owned process, while its RAM workspace, compiled helper and evidence remain
+retained. The UID failure's cause remains unassigned; no third renamed attempt
+is queued. This result does not accept full-scan deletion protection or complete M2.
+
+The [M6 embedded administrator increment](embedded-administrator-verification.json)
+now has actual remote results. All 22 handler tests/subtests and two ordinary
+plus two embedded provider tests passed with race instrumentation, without
+failures or skips. The actual embedded amd64 binary is 30,678,868 bytes, SHA256
+`59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312`.
+All 57 production assets and five HTML references were independently checked;
+its manifest binds 848 source files. Eleven negative manifest cases passed,
+including seven pre-Go rejections and four synthetic Go mutation guards. The
+two ordinary provider race tests also passed without `dist`, while an actual
+tagged compile without `dist` rejected as expected.
+
+An actual arm64 cross-build produced 28,598,324 bytes, SHA256
+`11e6e4c0bfdfb1cb4ed9c6debf6f2b7cdf272e2e4abefdd6a35b32ee8870aa3d`,
+with ELF machine 183 confirmed. Both artifacts/manifests, the verified 911-file
+source archive and command logs were retained, and ordinary unmount closed the
+owned M6 build tmpfs. Protected state and the frozen module cache stayed exact.
+The [build document](embedded-administrator-build.md) preserves the detailed
+receipts and scope. No new binary ran as a service or was deployed; full
+regression and candidate admission for this changed version are still pending,
+and the old 2,270-test proof is not inherited. Native arm64, OCI, GPU, licensing
+and full M6 remain open. Immediate work returns to a bounded independent M2
+catalog/operations gap selection and retained core-video evidence review,
+without restarting the paused M2 launcher or consumed client/recovery scenarios.
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
 executable and 415 administrator files in a verified 16,590,013-byte archive.
@@ -483,13 +517,13 @@ discriminating evidence or a concrete product decision before reopening.
 
 | Area | Remaining acceptance obligation |
 | --- | --- |
-| Foundation and recovery | Main migration, forward restore, actual old-binary restoration and bounded post-upgrade workflow |
+| Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
 | Catalog and operations | Representative capacity, blocked storage, reboot and filesystem measurements |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |
 | Hardware | Actual GPU decode, encode and combined-path profiles |
-| Packaging | arm64, OCI, embedded assets, support rows, project license and dependency notices |
+| Packaging | Native arm64/OCI and deployed embedded-bundle/profile acceptance, support rows, project license and dependency notices; focused embedded tests and amd64/arm64 build artifacts are already recorded |
 | M7 | Deferred until explicit feature selection and separate acceptance |
 
 A partial internal deployment does not close M2-M6 or claim broad compatibility.

@@ -214,7 +214,12 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 	}
 	// Server.New and its transcode manager use this argument for initialization
 	// only; their workers are explicitly drained by CloseApplication.
-	g.app, err = server.New(startup, cfg, g.pool, users, logger, version, server.WithDiagnostics(diag), server.WithRecovery(g.manager))
+	assets, err := dashboardAssets(cfg.WebDirectory)
+	if err != nil {
+		return nil, generationError("administrator assets are unavailable", err)
+	}
+	g.app, err = server.New(startup, cfg, g.pool, users, logger, version,
+		server.WithDiagnostics(diag), server.WithRecovery(g.manager), server.WithDashboardAssets(assets))
 	if err != nil {
 		return nil, generationError("application generation initialization failed", err)
 	}

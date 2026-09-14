@@ -13,9 +13,19 @@ without blocking every unrelated internal increment. The project requires
 PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
 updates alone do not close any milestone or reference evidence gap.
 
-The [fresh source32 backup](../development/audited-main-native-backup-completed.json)
-and owned cleanup are now complete; the two isolated restoration proofs are
-next. [Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified
+The [fresh source32 backup](../development/audited-main-native-backup-completed.json),
+both [selected rollback/restart](../development/isolated-selected-online-rollback.json)
+and [actual source32 recovery/restart](../development/isolated-source32-recovery.json)
+proofs, and [final fixture disposal](../development/isolated-restore-disposal.json)
+are complete. [M6 embedded-asset focused verification](../development/embedded-administrator-verification.json)
+has also passed its race checks, manifest guards, actual amd64 build and arm64
+cross-build, with artifacts preserved and the build tmpfs closed. It is partial
+M6 evidence: no service deployment/native arm64 runtime or full regression and
+candidate admission for the changed version is established. The immediate queue
+returns to a bounded independent M2 catalog/operations gap selection and core
+video evidence review. The M2 full-scan mount experiment remains paused after
+two launcher failures, with compilation only and no executed scan stages.
+[Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified
 initial collection for locked dependencies and actual fonts. Project-license,
 relevant upstream/inclusion gaps and the complete packaging/release gate remain
 open; this partial evidence does not narrow the M2-M6 scope.

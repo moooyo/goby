@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,6 +44,7 @@ type Server struct {
 	taskManager     *tasks.Manager
 	settings        *settings.Store
 	diagnostics     *diagnostics.Store
+	dashboardFiles  fs.FS
 	recovery        adminRecoveryManager
 	activityCancel  context.CancelFunc
 	activityDone    chan struct{}

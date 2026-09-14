@@ -1,0 +1,360 @@
+{
+  "version": 1,
+  "kind": "embedded-administrator-verification",
+  "status": "focused_verification_and_two_linux_builds_passed",
+  "milestone": "M6",
+  "milestoneComplete": false,
+  "evidenceRoot": "/opt/goby-test/m6-embedded-20260914",
+  "verificationEnvironment": "ssh test-env",
+  "verificationDate": "2026-09-14",
+  "scope": "Embedded administrator asset selection, HTTP handler contracts, bounded release-build guards, actual Linux amd64 build and Linux arm64 cross-build.",
+  "evidence": {
+    "preparation": {
+      "path": "/opt/goby-test/m6-embedded-20260914/preparation.json",
+      "sha256": "4e6b9ff8c340a4917d804cf0fe8e2ff659147abc461efdfef57eb0d7165950ff",
+      "bytes": 26446,
+      "status": "build_source_prepared_and_remotely_formatted"
+    },
+    "checks": {
+      "path": "/opt/goby-test/m6-embedded-20260914/checks.json",
+      "sha256": "b184b142d57cff7f7b27d5c088f90c28c2f297a6cd72176d69d4f3b662ca9cfe",
+      "bytes": 18848,
+      "status": "focused_tests_and_actual_embedded_build_passed"
+    },
+    "guards": {
+      "path": "/opt/goby-test/m6-embedded-20260914/guards.json",
+      "sha256": "579e9cf11385b06f96a75b20b531d6f598a42247ca6a89fb1a2f99e24c85d612",
+      "bytes": 21182,
+      "status": "fixed_build_guards_passed"
+    },
+    "finalization": {
+      "path": "/opt/goby-test/m6-embedded-20260914/finalization.json",
+      "sha256": "7de4a1f729c1f1199b19f5daa44dbae69aab5e8dc02ad4d95810743490382abf",
+      "bytes": 68201,
+      "status": "artifacts_preserved_and_owned_build_tmpfs_closed"
+    },
+    "sourceManifest": {
+      "path": "/opt/goby-test/m6-embedded-20260914/source-manifest.json",
+      "sha256": "4e14cdcedd57a2e0d318e23d37570e85d24c03a8e4da4c0c49eb4827e0994e07",
+      "bytes": 135201,
+      "regularFileCount": 911
+    }
+  },
+  "tools": {
+    "hostArchitecture": "x86_64",
+    "goVersion": "go version go1.27.1 linux/amd64",
+    "nodeVersion": "v22.23.2",
+    "go": {
+      "path": "/opt/goby-toolchains/go1.27.1/bin/go",
+      "sha256": "30969f97169d7f43fe6a085873d75613adc21e30818a8c61d95bd27275df4624",
+      "bytes": 17142188
+    },
+    "gofmt": {
+      "path": "/opt/goby-toolchains/go1.27.1/bin/gofmt",
+      "sha256": "86dd91f69254432a37ca365f964720677040fd6f049a412c23e25f8b3812f342",
+      "bytes": 3144728
+    },
+    "node": {
+      "path": "/opt/node22/bin/node",
+      "sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
+      "bytes": 124836408
+    },
+    "moduleCacheFiles": 2119,
+    "moduleCacheBytes": 61499652,
+    "moduleCacheManifestSha256": "4b72187093d2c87aed22857cd5464e33cbd6cb1349d0052474f9d27235c97f03",
+    "moduleCacheFilesUnchangedAtFinalization": 2119,
+    "networkDependencyResolution": false,
+    "testEnvironment": {
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off",
+      "GOENV": "off",
+      "GOMAXPROCS": "2",
+      "GOMEMLIMIT": "768MiB",
+      "CGO_ENABLED": "1",
+      "CC": "/usr/bin/x86_64-linux-gnu-gcc-14"
+    }
+  },
+  "codeInputs": {
+    "selection": "The eleven M6 Go files and scripts/build-release.mjs, extracted from the pinned source manifest after remote formatting. This selection is not the complete build source inventory.",
+    "fileCount": 12,
+    "unrelatedM2HelperIncludedInThisSelection": false,
+    "files": [
+      {
+        "path": "cmd/goby/dashboard_assets.go",
+        "bytes": 369,
+        "sha256": "371b77b812dbf3eee1512166dd6959ef0ece7e83594c15e1fbab77c37df47391"
+      },
+      {
+        "path": "cmd/goby/dashboard_assets_embedded.go",
+        "bytes": 198,
+        "sha256": "92ad8e29c3197fab07d2dc510626c17f28d00a0d18a3b8b9a819d2c53aecdec0"
+      },
+      {
+        "path": "cmd/goby/dashboard_assets_embedded_test.go",
+        "bytes": 1559,
+        "sha256": "1dde3c7a8839caa5777233b391aef575ec7c11d1f6299dd8925b2ac77ac1973c"
+      },
+      {
+        "path": "cmd/goby/dashboard_assets_external.go",
+        "bytes": 236,
+        "sha256": "8de5834cc5b591a1cd76c34d9aeb797499b9c2bb2fdc0b29242912ae674df684"
+      },
+      {
+        "path": "cmd/goby/dashboard_assets_external_test.go",
+        "bytes": 666,
+        "sha256": "8289e31868b88bfb5fc388777df138a445b913a027809d9d13f50163130ea9b5"
+      },
+      {
+        "path": "cmd/goby/dashboard_assets_test.go",
+        "bytes": 1198,
+        "sha256": "de8da9ec3fd3241a4c585351bb8ef0fd93fcc943e421d4d0607108ad2d7c993b"
+      },
+      {
+        "path": "cmd/goby/generation.go",
+        "bytes": 16940,
+        "sha256": "56d669ab188bd507b72747829dfa680eee15a5af7b8860202b7e8f1b09d6479f"
+      },
+      {
+        "path": "internal/server/dashboard.go",
+        "bytes": 1698,
+        "sha256": "a7f358089061a703224ca901c08c6ebb929ffa832df667e6a9547a61aad40ce1"
+      },
+      {
+        "path": "internal/server/dashboard_test.go",
+        "bytes": 7370,
+        "sha256": "01dd8849a71df9ff81f6c044dea420841825d98efaa648fa666a725e2dd05613"
+      },
+      {
+        "path": "internal/server/server.go",
+        "bytes": 10680,
+        "sha256": "0539b366a191562cfd1f071ca5d2b4d5d4afb1d6ff89d5d9033de354d97b3db1"
+      },
+      {
+        "path": "scripts/build-release.mjs",
+        "bytes": 11830,
+        "sha256": "ce7ed9cd69ad87e122c5ee5485b3e8d3bd72d2592db0deac11b39cfad84b3962"
+      },
+      {
+        "path": "web/admin/embedded.go",
+        "bytes": 717,
+        "sha256": "a9e37c8bd6d0e1a12d4548a19abfb494ff46174eee7965eeb4c612cc95d14354"
+      }
+    ],
+    "moduleInputs": {
+      "go.mod": {
+        "bytes": 502,
+        "sha256": "cd5137649ee15d846b70dc394b730efda87c325d31b7b947743dd8421c89e314"
+      },
+      "go.sum": {
+        "bytes": 3446,
+        "sha256": "0e8b530d6f1ad5f697aee4bfdba09c2feeea84add0a1e70b13db47f97fa6cdb2"
+      }
+    }
+  },
+  "tests": {
+    "evidenceField": "checks.json#/tests",
+    "focusedTestsAndSubtestsPassed": 26,
+    "failures": 0,
+    "skips": 0,
+    "raceEnabled": true,
+    "groups": [
+      {
+        "label": "dashboard-handler",
+        "package": "./internal/server",
+        "testsAndSubtestsPassed": 22,
+        "tags": [],
+        "contracts": [
+          "GET and HEAD for injected index, SPA routes, authentication shell, scripts and stylesheet",
+          "Missing files and administrator API routes do not receive the SPA document",
+          "External-directory fallback and injected-asset priority"
+        ]
+      },
+      {
+        "label": "dashboard-external",
+        "package": "./cmd/goby",
+        "testsAndSubtestsPassed": 2,
+        "tags": [],
+        "tests": [
+          "TestDashboardAssetsDevelopmentDirectory",
+          "TestDashboardAssetsExplicitDirectory"
+        ]
+      },
+      {
+        "label": "dashboard-embedded",
+        "package": "./cmd/goby",
+        "testsAndSubtestsPassed": 2,
+        "tags": ["goby_embed_admin"],
+        "tests": [
+          "TestDashboardAssetsEmbeddedWithoutExternalDirectory",
+          "TestDashboardAssetsExplicitDirectory"
+        ]
+      }
+    ],
+    "ordinaryWithoutDist": {
+      "evidenceField": "guards.json#/ordinaryBuildWithoutDist",
+      "testsPassed": 2,
+      "raceEnabled": true,
+      "failures": 0,
+      "skips": 0,
+      "tests": [
+        "TestDashboardAssetsDevelopmentDirectory",
+        "TestDashboardAssetsExplicitDirectory"
+      ],
+      "countingBoundary": "A separate execution of two existing tests; not two additional unique test definitions."
+    },
+    "previous2270TestResultReused": false,
+    "fullBackendSuiteExecutedForTheseInputs": false
+  },
+  "buildGuards": {
+    "evidenceField": "guards.json#/cases",
+    "passed": 11,
+    "preGoRejections": [
+      "missing-dist",
+      "missing-script",
+      "missing-stylesheet",
+      "missing-modulepreload",
+      "source-symlink",
+      "existing-output",
+      "output-in-source"
+    ],
+    "syntheticGoFrontendMutationRejections": [
+      "source-change",
+      "source-add",
+      "source-delete",
+      "asset-change"
+    ],
+    "completionManifestAbsentForEveryRejectedGuard": true,
+    "syntheticCasesClaimRealGoBuild": false,
+    "additionalRealTaggedCompileWithoutDist": {
+      "evidenceField": "guards.json#/taggedCompileWithoutDistRejected",
+      "rejected": true,
+      "recordedExitCode": 1,
+      "expectedRejection": true
+    }
+  },
+  "artifacts": [
+    {
+      "target": {"os": "linux", "arch": "amd64", "cgoEnabled": false},
+      "buildKind": "actual_build_on_amd64_host",
+      "elfMachine": 62,
+      "binary": {
+        "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/goby",
+        "bytes": 30678868,
+        "sha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312"
+      },
+      "manifest": {
+        "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/manifest.json",
+        "bytes": 171283,
+        "sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683"
+      },
+      "nativeRuntimeExecuted": false,
+      "ociImageBuilt": false
+    },
+    {
+      "target": {"os": "linux", "arch": "arm64", "cgoEnabled": false},
+      "buildKind": "actual_cross_build_on_amd64_host",
+      "elfMachine": 183,
+      "binary": {
+        "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-arm64/goby",
+        "bytes": 28598324,
+        "sha256": "11e6e4c0bfdfb1cb4ed9c6debf6f2b7cdf272e2e4abefdd6a35b32ee8870aa3d"
+      },
+      "manifest": {
+        "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-arm64/manifest.json",
+        "bytes": 171285,
+        "sha256": "b2cf0936c12d676951dd005f9a2e780961914428adb6663de1c3bf38ca97dffd"
+      },
+      "nativeRuntimeExecuted": false,
+      "ociImageBuilt": false
+    }
+  ],
+  "buildInputClosure": {
+    "buildTag": "goby_embed_admin",
+    "trimpath": true,
+    "administratorAssets": 57,
+    "administratorAssetBytes": 1106130,
+    "htmlEntryReferences": 5,
+    "frontendInput": "Existing web/admin/dist; no frontend dependency installation or frontend rebuild is claimed by this verification.",
+    "sourceInventory": {
+      "scope": ["cmd/", "internal/", "web/admin/embedded.go"],
+      "fileCount": 848,
+      "totalBytes": 11879949,
+      "sha256": "11a529344454fa059ed38d850b12fda750ecbcdf264166be61e291edfed27aca",
+      "digestEncoding": "UTF-8 JSON.stringify(files), sorted by repository-relative name.",
+      "boundary": "All regular files in the stated local scope; not the compiled dependency graph."
+    },
+    "savedSourceArchive": {
+      "path": "/opt/goby-test/m6-embedded-20260914/artifacts/source.tar.gz",
+      "bytes": 2710656,
+      "sha256": "10d88202cc2a06071b3a216330f70e92512f292f51c46764a4230aa136639dff",
+      "regularFiles": 911
+    },
+    "savedOnlyIndependentReadback": {
+      "environment": "ssh test-env",
+      "newTestsOrRuntimeProbes": false,
+      "fourReportHashesMatchedProvidedPins": true,
+      "bothSavedManifestHashesMatchedFinalization": true,
+      "bothSavedBinaryHashesAndSizesMatchedManifests": true,
+      "both848FileInventoriesExactlyMatchedSourceManifestScope": true,
+      "both57AssetListsExactlyMatchedPreparation": true,
+      "archive911RegularFilesExactlyMatchedSourceManifest": true,
+      "archiveDuplicateFiles": 0,
+      "archiveSpecialMembers": 0
+    }
+  },
+  "commandScope": {
+    "evidenceFields": [
+      "preparation.json#/commands",
+      "checks.json#/commands",
+      "guards.json#/commands",
+      "finalization.json#/commands"
+    ],
+    "recordCounts": {"preparation": 12, "checks": 14, "guards": 23, "finalization": 15},
+    "allRecordedCommandGroupsClosed": true,
+    "expectedNonzeroExits": 12,
+    "actions": [
+      "Read protected unit metadata",
+      "Mount the owned build tmpfs and remotely format the source overlay",
+      "Run the three focused race-test groups",
+      "Build the Linux amd64 embedded administrator binary",
+      "Run seven pre-Go rejection cases and four synthetic Go-frontend mutation cases",
+      "Run two ordinary race tests without dist and require the real tagged compile without dist to fail",
+      "Read host and tool versions and cross-build the Linux arm64 binary",
+      "Preserve source, artifacts and command logs, then ordinarily unmount the owned tmpfs"
+    ],
+    "productServiceStarts": 0,
+    "deploymentActions": 0,
+    "browserRuns": 0,
+    "databaseAccess": 0,
+    "builtBinaryRuntimeExecutions": 0
+  },
+  "retentionAndClosure": {
+    "evidenceField": "finalization.json",
+    "protectedBeforeAfterEqualInAllFourReports": true,
+    "ownedUnits": 0,
+    "ramUnmounted": true,
+    "remainingOwnedMounts": [],
+    "underlyingEmptyDirectoryRetained": true,
+    "sourceAndArtifactsRetained": true,
+    "commandLogs": {
+      "mappingEvidenceField": "finalization.json#/preservedLogs",
+      "mappedLogFiles": 104,
+      "savedBytes": 45557,
+      "originalRoot": "/dev/shm/goby-m6-embedded-20260914/command-logs",
+      "retainedRoot": "/opt/goby-test/m6-embedded-20260914/retained-command-logs",
+      "mappingContract": "Each original RAM log path maps to a saved path, SHA256 and metadata in the pinned finalization receipt. Original ext4 preparation logs remain referenced by preparation.json#/commands."
+    }
+  },
+  "limitations": [
+    "This closes the stated focused verification increment; M6 remains incomplete.",
+    "Neither built Goby binary was started as a service or deployed; no browser or database acceptance was performed.",
+    "The arm64 artifact is a real cross-build on an x86_64 host, not a native arm64 execution result.",
+    "No OCI image was built and no image, installation or release publication is accepted by this record.",
+    "The existing 57-file administrator dist and five HTML entry references were checked. The complete JavaScript and CSS dependency graph was not verified.",
+    "The 848-file inventory is a local source-scope snapshot, not a claim about every compiled dependency.",
+    "The previous 2270-test backend result is not reused as verification of these changed inputs; this increment did not rerun the full backend suite.",
+    "No M2 full-scan experiment or completed recovery fixture was restarted by this saved-evidence readback."
+  ]
+}
