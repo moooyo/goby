@@ -59,7 +59,8 @@ symbol and invalid-input entry checks. See the
 [first installation attempt](systemd-installation-first-attempt.json).
 Installation acceptance remains open and new attempts are paused pending a
 review of the execution approach. The shipped unit is unchanged.
-The staged-source bridge matched 863 backend, module and package inputs to
+The [source checkpoint](systemd-package-source-checkpoint.json) records the
+staged-source bridge matching 863 backend, module and package inputs to
 the verified E11 source. Its 58 generated asset/provenance inputs retain their
 separate build evidence. This checkpoint does not complete M6.
 Historical candidate admissions retain their original scope.

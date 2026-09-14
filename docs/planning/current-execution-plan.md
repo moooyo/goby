@@ -94,8 +94,10 @@ The immediate queue is:
    the demonstrated correction. Do not keep a live fixture waiting for more
    operator development.
    Close the new installation and its resources before accepting the increment.
-3. The installation result, its limitations and the staged-source bridge are
-   committed and pushed in partial M6 checkpoint `beaea34`. All 863 backend,
+3. The installation result and its limitations are committed and pushed in
+   partial M6 checkpoint `beaea34`. The separately retained
+   [source bridge](../development/systemd-package-source-checkpoint.json)
+   verified that snapshot. All 863 backend,
    module and package inputs matched the E11 source; the 58 generated inputs
    retain their separate artifact evidence. Continue the actual distribution
    component inventory and outstanding third-party notice/source materials.

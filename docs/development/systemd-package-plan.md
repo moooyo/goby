@@ -14,7 +14,9 @@ checkpoint is committed and pushed as `5faf854`. The subsequent build-script,
 environment-template, installation-document and scoped evidence checkpoint is
 committed and pushed as `beaea34`; the shipped unit remains unchanged. Its staged
 tree matched all 863 backend/module/package inputs in the E11 source manifest;
-the 58 generated asset/provenance files retain their separate build bindings. The
+the 58 generated asset/provenance files retain their separate build bindings.
+The [source checkpoint](systemd-package-source-checkpoint.json) records that
+separately retained bridge. The
 [package build receipt](systemd-package-build-verification.json) records three
 actual builds, seven focused top-level tests (26 including subtests), and 26
 package guards, with no failures or skips. All artifacts and private evidence
@@ -297,6 +299,20 @@ ordinarily unmounted. The shared accounts and all earlier installations remain
 outside this disposal scope.
 
 ## Result boundary and remaining inputs
+
+The post-closure execution review found that normal runtime and seal checks
+also assume retained exit fields in `systemctl show`. The failed infrastructure
+scope demonstrates that those fields can be unavailable; it does not establish
+what the unstarted application would report. Before another installation,
+retain the invocation's exit result with a bounded observer established before
+stopping. Reuse the existing invocation journal, `shutdown.completed` event,
+process/cgroup and database-backend checks, and bind the manager's stop outcome.
+An unavailable exit result stays unknown. Runtime and sealer must consume the
+same saved evidence and distinguish physical closure from proved normal exit.
+The future normal sealer also needs the exact, metadata-checked
+`PG/data/postmaster.opts` exception already used in failed-scope preservation;
+other master/key files remain metadata-only. These are prerequisites for a
+reviewed execution decision, not permission to replay or start another scope.
 
 Passing would prove one actual Linux amd64 embedded package installed and run
 through the shipped nonroot systemd template, with normal application
